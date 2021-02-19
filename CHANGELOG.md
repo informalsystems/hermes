@@ -2,64 +2,50 @@
 
 ## Unreleased Changes
 
-[comment]: <> (> [high level summary])
+- [high level summary]
 
-[comment]: <> (### FEATURES)
+### FEATURES
 
-[comment]: <> (- [ibc])
+- [ibc]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer-cli])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (### IMPROVEMENTS)
-
-[comment]: <> (- [ibc])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer-cli])
-
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer]
 
 ### BUG FIXES
 
 - [ibc]
   - Fix overflow bug in ICS03 client consensus height verification method ([#685])
 
-[comment]: <> (- [ibc-relayer])
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer-cli])
+### BUG FIXES
 
-[comment]: <> (  - [nothing yet])
+- [ibc]
+  - [nothing yet]
 
-[comment]: <> (### BREAKING CHANGES)
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (- [ibc])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+### BREAKING CHANGES
 
-[comment]: <> (- [ibc-relayer])
+- [ibc]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer-cli])
-
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
+[#689]: https://github.com/informalsystems/ibc-rs/issues/689
 
 ## v0.1.1
 *February 17, 2021*

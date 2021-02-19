@@ -1,6 +1,6 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenInit`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
@@ -66,7 +66,7 @@ pub(crate) fn process(
         channel_id: None,
         ..Default::default()
     };
-    output.emit(IBCEvent::OpenInitChannel(event_attributes.into()));
+    output.emit(IbcEvent::OpenInitChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -76,7 +76,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::State as ConnectionState;
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
@@ -179,7 +179,7 @@ mod tests {
                     }
 
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenInitChannel(_)));
+                        assert!(matches!(e, &IbcEvent::OpenInitChannel(_)));
                     }
                 }
                 Err(e) => {

@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::context::ClientReader;
@@ -64,7 +64,7 @@ pub fn process(
         client_id,
         ..Default::default()
     };
-    output.emit(IBCEvent::UpdateClient(event_attributes.into()));
+    output.emit(IbcEvent::UpdateClient(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -73,7 +73,7 @@ pub fn process(
 mod tests {
     use std::str::FromStr;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics02_client::error::Kind;
@@ -113,7 +113,7 @@ mod tests {
                 assert_eq!(events.len(), 1);
                 let event = events.pop().unwrap();
                 assert!(
-                    matches!(event, IBCEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
+                    matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
                 );
                 assert!(log.is_empty());
                 // Check the result
@@ -194,7 +194,7 @@ mod tests {
                     assert_eq!(events.len(), 1);
                     let event = events.pop().unwrap();
                     assert!(
-                        matches!(event, IBCEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
+                        matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
                     );
                     assert!(log.is_empty());
                 }

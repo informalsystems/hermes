@@ -1,10 +1,10 @@
-use crate::chain::{Chain, CosmosSDKChain};
+use crate::chain::{Chain, CosmosSdkChain};
 use thiserror::Error;
 use tracing::error;
 
 use crate::config::ChainConfig;
 use crate::error::Error;
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::tx_msg::Msg;
 use ibc::{
@@ -40,10 +40,10 @@ pub struct TransferOptions {
 }
 
 pub fn build_and_send_transfer_messages(
-    mut packet_src_chain: CosmosSDKChain, // the chain whose account is debited
-    mut packet_dst_chain: CosmosSDKChain, // the chain where the transfer is sent
+    mut packet_src_chain: CosmosSdkChain, // the chain whose account is debited
+    mut packet_dst_chain: CosmosSdkChain, // the chain where the transfer is sent
     opts: &TransferOptions,
-) -> Result<Vec<IBCEvent>, PacketError> {
+) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = packet_dst_chain
         .get_signer()
         .map_err(PacketError::KeyError)?;
@@ -79,12 +79,12 @@ pub fn build_and_send_transfer_messages(
     // Check if the chain rejected the transaction
     let result = events
         .iter()
-        .find(|event| matches!(event, IBCEvent::ChainError(_)));
+        .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
     match result {
         None => Ok(events),
         Some(err) => {
-            if let IBCEvent::ChainError(err) = err {
+            if let IbcEvent::ChainError(err) = err {
                 Err(PacketError::Failed(err.to_string()))
             } else {
                 panic!(

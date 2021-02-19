@@ -8,7 +8,7 @@ use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_relayer::chain::Chain;
-use ibc_relayer::chain::CosmosSDKChain;
+use ibc_relayer::chain::CosmosSdkChain;
 
 use crate::conclude::Output;
 use crate::prelude::*;
@@ -44,7 +44,7 @@ impl Runnable for QueryClientStateCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSDKChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
         match chain.query_client_state(&self.client_id, height) {
@@ -101,7 +101,7 @@ impl Runnable for QueryClientConsensusCmd {
         info!("Options {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSDKChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
         let consensus_height =
             ibc::Height::new(self.consensus_rev_number, self.consensus_rev_height);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
@@ -145,7 +145,7 @@ impl Runnable for QueryClientConnectionsCmd {
         info!("Options {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSDKChain::bootstrap(chain_config.clone(), rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
 
         let req = QueryClientConnectionsRequest {
             client_id: self.client_id.to_string(),
