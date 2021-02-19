@@ -1,64 +1,65 @@
 # Changelog
 
-[comment]: <> (## Unreleased Changes)
+## Unreleased Changes
 
-[comment]: <> (> [high level summary])
+> [high level summary]
 
-[comment]: <> (### FEATURES)
+### FEATURES
 
-[comment]: <> (- [ibc])
+- [ibc]
 
-[comment]: <> (  - [nothing yet])
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer])
+- [ibc-relayer]
 
-[comment]: <> (  - [nothing yet])
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer-cli])
+- [ibc-relayer-cli]
 
-[comment]: <> (  - [nothing yet])
+  - [nothing yet]
 
-[comment]: <> (### IMPROVEMENTS)
+### IMPROVEMENTS
 
-[comment]: <> (- [ibc])
+- [ibc]
 
-[comment]: <> (  - [nothing yet])
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer])
+- [ibc-relayer]
 
-[comment]: <> (  - [nothing yet])
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer-cli])
+- [ibc-relayer-cli]
 
-[comment]: <> (  - [nothing yet])
+  - [nothing yet]
 
-[comment]: <> (### BUG FIXES)
+### BUG FIXES
 
-[comment]: <> (- [ibc])
+- [ibc]
 
-[comment]: <> (  - [nothing yet])
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer])
+- [ibc-relayer]
 
-[comment]: <> (  - [nothing yet])
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer-cli])
+- [ibc-relayer-cli]
+  - Hermes guide: improved installation guideline ([#672]) 
 
-[comment]: <> (  - [nothing yet])
+### BREAKING CHANGES
 
-[comment]: <> (### BREAKING CHANGES)
+- [ibc]
 
-[comment]: <> (- [ibc])
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer]
 
-[comment]: <> (- [ibc-relayer])
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer-cli]
 
-[comment]: <> (- [ibc-relayer-cli])
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 
 ## v0.1.1
 *February 17, 2021*
@@ -117,7 +118,6 @@ involving packet acks in a 3-chain setup. More details below.
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
-[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#682]: https://github.com/informalsystems/ibc-rs/issues/682
 
 ## v0.1.0
