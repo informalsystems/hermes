@@ -107,7 +107,6 @@ mod tests {
 
     use crate::events::IBCEvent;
     use crate::ics03_connection::connection::State;
-    use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -127,13 +126,13 @@ mod tests {
         }
 
         let host_chain_height = Height::new(0, 35);
+        let max_history_size = 5;
         let context = MockContext::new(
             ChainId::new("mockgaia".to_string(), 0),
             HostType::Mock,
-            5,
+            max_history_size,
             host_chain_height,
         );
-        let pruning_window = context.host_chain_history_size() as u64;
         let client_consensus_state_height = 10;
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
@@ -149,7 +148,7 @@ mod tests {
         ))
         .unwrap();
         let pruned_height = host_chain_height
-            .sub(pruning_window + 1)
+            .sub(max_history_size as u64 + 1)
             .unwrap()
             .revision_height;
         // The consensus proof targets a missing height (pruned) on destination chain.

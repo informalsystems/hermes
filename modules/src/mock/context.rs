@@ -475,11 +475,6 @@ impl ConnectionReader for MockContext {
         self.history[0].height()
     }
 
-    /// Returns the number of consensus state historical entries for the local chain.
-    fn host_chain_history_size(&self) -> usize {
-        self.max_history_size
-    }
-
     fn commitment_prefix(&self) -> CommitmentPrefix {
         CommitmentPrefix::from(vec![])
     }
