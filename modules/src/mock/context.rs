@@ -470,6 +470,11 @@ impl ConnectionReader for MockContext {
         self.latest_height
     }
 
+    fn host_oldest_height(&self) -> Height {
+        // history must be non-empty, so `self.history[0]` is valid
+        self.history[0].height()
+    }
+
     /// Returns the number of consensus state historical entries for the local chain.
     fn host_chain_history_size(&self) -> usize {
         self.max_history_size
