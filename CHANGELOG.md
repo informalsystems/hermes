@@ -11,10 +11,10 @@
 
 - [ibc-relayer]
 
-### BUG FIXES
+### IMPROVEMENTS
 
 - [ibc]
-  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
+  - [nothing yet]
 
 - [ibc-relayer]
   - [nothing yet]
@@ -25,7 +25,7 @@
 ### BUG FIXES
 
 - [ibc]
-  - [nothing yet]
+  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
 
 - [ibc-relayer]
   - [nothing yet]
