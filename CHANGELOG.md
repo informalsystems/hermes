@@ -10,11 +10,15 @@
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
+  - [nothing yet]
+
+- [ibc-relayer-cli]
+  - [nothing yet]
 
 ### IMPROVEMENTS
 
 - [ibc]
-  - [nothing yet]
+  - Follow Rust guidelines naming conventions ([#689])
 
 - [ibc-relayer]
   - [nothing yet]
