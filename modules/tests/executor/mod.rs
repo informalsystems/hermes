@@ -382,6 +382,10 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 ICS03ErrorKind::InvalidProof
             ),
             ActionOutcome::ICS03ConnectionOpenAckOK => result.is_ok(),
+            ActionOutcome::ICS03UninitializedConnection => matches!(
+                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
+                ICS03ErrorKind::UninitializedConnection(_)
+            ),
         };
         // also check the state of chains
         outcome_matches && self.validate_chains() && self.check_chain_heights(step.chains)

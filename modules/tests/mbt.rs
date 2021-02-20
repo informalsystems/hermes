@@ -19,6 +19,7 @@ fn mbt() {
         // the following test should fail but doesn't because proofs are not yet verified
         // "ICS03InvalidProofTest",
         "ICS03ConnectionOpenAckOKTest",
+        // "ICS03UninitializedConnectionTest",
     ];
 
     for test in tests {

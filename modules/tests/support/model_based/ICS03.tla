@@ -28,19 +28,24 @@ ICS03_ConnectionOpenInit(
         counterpartyChainId |-> counterpartyChainId,
         counterpartyClientId |-> counterpartyClientId
     ]) IN
-    LET clients == chain.clients IN
-    LET connections == chain.connections IN
-    LET connectionIdCounter == chain.connectionIdCounter IN
     \* check if the client exists
-    IF ICS02_ClientExists(clients, clientId) THEN
+    IF ~ICS02_ClientExists(chain.clients, clientId) THEN
+        \* if the client does not exist, then set an error outcome
+        [
+            connections |-> chain.connections,
+            connectionIdCounter |-> chain.connectionIdCounter,
+            action |-> action,
+            outcome |-> "ICS03MissingClient"
+        ]
+    ELSE
         \* if the client exists,
         \* then check if the connection exists (it shouldn't)
-        IF ICS03_ConnectionExists(connections, connectionIdCounter) THEN
+        IF ICS03_ConnectionExists(chain.connections, chain.connectionIdCounter) THEN
             \* if the connection to be created already exists,
             \* then there's an error in the model
             [
-                connections |-> connections,
-                connectionIdCounter |-> connectionIdCounter,
+                connections |-> chain.connections,
+                connectionIdCounter |-> chain.connectionIdCounter,
                 action |-> action,
                 outcome |-> "ModelError"
             ]
@@ -50,28 +55,20 @@ ICS03_ConnectionOpenInit(
                 state |-> "Init",
                 clientId |-> clientId,
                 counterpartyClientId |-> counterpartyClientId,
-                connectionId |-> connectionIdCounter,
+                connectionId |-> chain.connectionIdCounter,
                 counterpartyConnectionId |-> ConnectionIdNone
             ] IN
             \* return result with updated state
             [
                 connections |-> ICS03_SetConnection(
-                    connections,
-                    connectionIdCounter,
+                    chain.connections,
+                    chain.connectionIdCounter,
                     connection
                 ),
-                connectionIdCounter |-> connectionIdCounter + 1,
+                connectionIdCounter |-> chain.connectionIdCounter + 1,
                 action |-> action,
                 outcome |-> "ICS03ConnectionOpenInitOK"
             ]
-    ELSE
-        \* if the client does not exist, then set an error outcome
-        [
-            connections |-> connections,
-            connectionIdCounter |-> connectionIdCounter,
-            action |-> action,
-            outcome |-> "ICS03MissingClient"
-        ]
 
 ICS03_ConnectionOpenTry(
     chain,
@@ -93,19 +90,12 @@ ICS03_ConnectionOpenTry(
         counterpartyClientId |-> counterpartyClientId,
         counterpartyConnectionId |-> counterpartyConnectionId
     ]) IN
-    LET clients == chain.clients IN
-    LET connections == chain.connections IN
-    LET connectionIdCounter == chain.connectionIdCounter IN
-    LET connectionProofs == chain.connectionProofs IN
     \* check if client's claimed height is higher than the chain's height
     IF height > chain.height THEN
         \* if client's height is too advanced, then set an error outcome
-        \* TODO: in the ICS03, this error also occurs if
-        \*       "height == chain.height", which is not the case in the
-        \*       Rust implementation
         [
-            connections |-> connections,
-            connectionIdCounter |-> connectionIdCounter,
+            connections |-> chain.connections,
+            connectionIdCounter |-> chain.connectionIdCounter,
             action |-> action,
             outcome |-> "ICS03InvalidConsensusHeight"
         ]
@@ -119,62 +109,80 @@ ICS03_ConnectionOpenTry(
         \* identifier, it can reuse the identifier created by its own open init.
         IF previousConnectionId /= ConnectionIdNone THEN
             \* if so, check if the connection exists
-            IF ICS03_ConnectionExists(connections, previousConnectionId) THEN
-                \* if the connection exists, verify that is matches the
-                \* the parameters provided
+            IF ~ICS03_ConnectionExists(chain.connections, previousConnectionId) THEN
+                \* if the connection does not exist, then set an error outcome
+                [
+                    connections |-> chain.connections,
+                    connectionIdCounter |-> chain.connectionIdCounter,
+                    action |-> action,
+                    outcome |-> "ICS03ConnectionNotFound"
+                ]
+            ELSE
+                \* if the connection exists, verify that is matches the the
+                \* parameters provided
                 LET connection == ICS03_GetConnection(
-                    connections,
+                    chain.connections,
                     previousConnectionId
                 ) IN
-                IF /\ connection.state = "Init"
-                   /\ connection.clientId = clientId
-                   /\ connection.counterpartyClientId = counterpartyClientId
-                   /\ connection.counterpartyConnectionId = counterpartyConnectionId
-                THEN
+                LET validConnection ==
+                    /\ connection.state = "Init"
+                    /\ connection.clientId = clientId
+                    /\ connection.counterpartyClientId = counterpartyClientId
+                    /\ connection.counterpartyConnectionId = counterpartyConnectionId IN
+                IF ~validConnection THEN
+                    \* if the existing connection does not match, then set an
+                    \* error outcome
+                    [
+                        connections |-> chain.connections,
+                        connectionIdCounter |-> chain.connectionIdCounter,
+                        action |-> action,
+                        outcome |-> "ICS03ConnectionMismatch"
+                    ]
+                ELSE
                     \* verification passed; update the connection state to
                     \* "TryOpen"
-                    LET updatedConnection == [
-                        state |-> "TryOpen",
-                        clientId |-> clientId,
-                        connectionId |-> previousConnectionId,
-                        counterpartyClientId |-> counterpartyClientId,
-                        counterpartyConnectionId |-> counterpartyConnectionId
+                    LET updatedConnection == [connection EXCEPT
+                        !.state = "TryOpen"
                     ] IN
                     \* return result with updated state
                     [
                         connections |-> ICS03_SetConnection(
-                            connections,
+                            chain.connections,
                             previousConnectionId,
                             updatedConnection
                         ),
                         \* as the connection identifier has already been
                         \* created, here we do not update the
                         \* `connectionIdCounter`
-                        connectionIdCounter |-> connectionIdCounter,
+                        connectionIdCounter |-> chain.connectionIdCounter,
                         action |-> action,
                         outcome |-> "ICS03ConnectionOpenTryOK"
                     ]
-                ELSE
-                    [
-                        connections |-> connections,
-                        connectionIdCounter |-> connectionIdCounter,
-                        action |-> action,
-                        outcome |-> "ICS03ConnectionMismatch"
-                    ]
-            ELSE
-                \* if the connection does not exist, then set an error outcome
-                [
-                    connections |-> connections,
-                    connectionIdCounter |-> connectionIdCounter,
-                    action |-> action,
-                    outcome |-> "ICS03ConnectionNotFound"
-                ]
         ELSE
-            \* check if the client exists
-            IF ICS02_ClientExists(clients, clientId) THEN
+            \* in this case, `previousConnectionId` was not set; check if the
+            \* client exists
+            IF ~ICS02_ClientExists(chain.clients, clientId) THEN
+                \* if the client does not exist, then set an error outcome
+                [
+                    connections |-> chain.connections,
+                    connectionIdCounter |-> chain.connectionIdCounter,
+                    action |-> action,
+                    outcome |-> "ICS03MissingClient"
+                ]
+            ELSE
                 \* check if the client has a consensus state with this height
-                LET client == ICS02_GetClient(clients, clientId) IN
-                IF height \in client.heights THEN
+                LET client == ICS02_GetClient(chain.clients, clientId) IN
+                LET consensusStateExists == height \in client.heights IN
+                IF ~consensusStateExists THEN
+                    \* if the client does have a consensus state with this
+                    \* height, then set an error outcome
+                    [
+                        connections |-> chain.connections,
+                        connectionIdCounter |-> chain.connectionIdCounter,
+                        action |-> action,
+                        outcome |-> "ICS03MissingClientConsensusState"
+                    ]
+                ELSE
                     \* check if there was an open init at the remote chain
                     LET openInitProofs == {
                         proof \in chain.connectionProofs :
@@ -184,59 +192,39 @@ ICS03_ConnectionOpenTry(
                             /\ proof.counterpartyChainId = chainId
                             /\ proof.counterpartyClientId = clientId
                     } IN
-                    IF Cardinality(openInitProofs) > 0 THEN
+                    LET proofExists == Cardinality(openInitProofs) > 0 IN
+                    IF ~proofExists THEN
+                        \* if there wasn't an open init at the remote chain,
+                        \* then set an error outcome
+                        [
+                            connections |-> chain.connections,
+                            connectionIdCounter |-> chain.connectionIdCounter,
+                            action |-> action,
+                            outcome |-> "ICS03InvalidProof"
+                        ]
+                    ELSE
                         \* verification passed; create connection
                         LET connection == [
                             state |-> "TryOpen",
                             clientId |-> clientId,
                             \* generate a new connection identifier
-                            connectionId |-> connectionIdCounter,
+                            connectionId |-> chain.connectionIdCounter,
                             counterpartyClientId |-> counterpartyClientId,
                             counterpartyConnectionId |-> counterpartyConnectionId
                         ] IN
                         \* return result with updated state
                         [
                             connections |-> ICS03_SetConnection(
-                                connections,
-                                connectionIdCounter,
+                                chain.connections,
+                                chain.connectionIdCounter,
                                 connection
                             ),
                             \* since a new connection identifier has been
                             \* created, here we update the `connectionIdCounter`
-                            connectionIdCounter |-> connectionIdCounter + 1,
+                            connectionIdCounter |-> chain.connectionIdCounter + 1,
                             action |-> action,
                             outcome |-> "ICS03ConnectionOpenTryOK"
                         ]
-                    ELSE
-                        \* if there wasn't an open init at the remote chain,
-                        \* then set an error outcome
-                        [
-                            connections |-> connections,
-                            connectionIdCounter |-> connectionIdCounter,
-                            action |-> action,
-                            outcome |-> "ICS03InvalidProof"
-                        ]
-                ELSE
-                    \* if the client does have a consensus state with this
-                    \* height, then set an error outcome
-                    [
-                        connections |-> connections,
-                        connectionIdCounter |-> connectionIdCounter,
-                        action |-> action,
-                        outcome |-> "ICS03MissingClientConsensusState"
-                    ]
-            ELSE
-                \* if the client does not exist, then set an error outcome
-                \* TODO: the generation of tests cannot distinguish between an
-                \*       an error here and an error in
-                \*       `ICS03_ConnectionOpenInit`; we can solve this with in
-                \*       history variable, like in the light client tests.
-                [
-                    connections |-> connections,
-                    connectionIdCounter |-> connectionIdCounter,
-                    action |-> action,
-                    outcome |-> "ICS03MissingClient"
-                ]
 
 ICS03_ConnectionOpenAck(
     chain,
@@ -254,12 +242,91 @@ ICS03_ConnectionOpenAck(
         counterpartyChainId |-> counterpartyChainId,
         counterpartyConnectionId |-> counterpartyConnectionId
     ]) IN
+    LET clients == chain.clients IN
     LET connections == chain.connections IN
     LET connectionProofs == chain.connectionProofs IN
-    [
-        connections |-> connections,
-        action |-> action,
-        outcome |-> "ICS03ConnectionOpenAckOK"
-    ]
+    \* check if client's claimed height is higher than the chain's height
+    IF height > chain.height THEN
+        \* if client's height is too advanced, then set an error outcome
+        [
+            connections |-> connections,
+            action |-> action,
+            outcome |-> "ICS03InvalidConsensusHeight"
+        ]
+        \* TODO: add `chain_max_history_size` to the model to be able to also
+        \*       return a `ICS03StaleConsensusHeight` error outcome
+    ELSE
+        \* check if the connection exists
+        IF ~ICS03_ConnectionExists(connections, connectionId) THEN
+            \* if the connection does not exist, then set an error outcome
+            \* TODO: can't we reuse the same error "ICS03ConnectionNotFound"
+            \* from conn open try?
+            [
+                connections |-> connections,
+                action |-> action,
+                outcome |-> "ICS03UninitializedConnection"
+            ]
+        ELSE
+            \* if the connection exists, verify that is either Init or TryOpen;
+            \* also check that the counterparty connection id matches
+            LET connection == ICS03_GetConnection(connections, connectionId) IN
+            LET validConnection ==
+                /\ connection.state \in {"Init", "TryOpen"} 
+                /\ connection.counterpartyConnectionId = counterpartyConnectionId IN
+            IF ~validConnection THEN
+                \* if the existing connection does not match, then set an
+                \* error outcome
+                [
+                    connections |-> connections,
+                    action |-> action,
+                    outcome |-> "ICS03ConnectionMismatch"
+                ]
+            ELSE
+                \* check if the client has a consensus state with this height
+                LET client == ICS02_GetClient(clients, connection.clientId) IN
+                LET consensusStateExists == height \in client.heights IN
+                IF ~consensusStateExists THEN
+                    \* if the client does have a consensus state with this
+                    \* height, then set an error outcome
+                    [
+                        connections |-> connections,
+                        action |-> action,
+                        outcome |-> "ICS03MissingClientConsensusState"
+                    ]
+                ELSE
+                    \* check if there was an open try at the remote chain
+                    LET openTryProofs == {
+                        proof \in chain.connectionProofs :
+                            /\ proof.type = "ICS03ConnectionOpenTry"
+                            /\ proof.chainId = connection.counterpartyChainId
+                            /\ proof.clientId = connection.counterpartyClientId
+                            /\ proof.counterpartyChainId = connection.chainId
+                            /\ proof.counterpartyClientId = connection.clientId
+                    } IN
+                    LET proofExists == Cardinality(openTryProofs) > 0 IN
+                    IF ~proofExists THEN
+                        \* if there wasn't an open try at the remote chain,
+                        \* then set an error outcome
+                        [
+                            connections |-> chain.connections,
+                            action |-> action,
+                            outcome |-> "ICS03InvalidProof"
+                        ]
+                    ELSE
+                        \* verification passed; update the connection state to
+                        \* "Open"
+                        LET updatedConnection == [connection EXCEPT
+                            !.state = "Open"
+                        ] IN
+                        \* return result with updated state
+                        [
+                            connections |-> ICS03_SetConnection(
+                                connections,
+                                connectionId,
+                                updatedConnection
+                            ),
+                            action |-> action,
+                            outcome |-> "ICS03ConnectionOpenAckOK"
+                        ]
 
 ===============================================================================

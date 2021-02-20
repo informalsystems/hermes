@@ -28,6 +28,7 @@ tests = [
     # "ICS03MissingClientConsensusStateTest",
     # "ICS03InvalidProofTest",
     "ICS03ConnectionOpenAckOKTest",
+    # "ICS03UninitializedConnectionTest",
 ]
 
 for test in tests:

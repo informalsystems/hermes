@@ -116,12 +116,17 @@ ActionOutcomes == {
     "ICS03InvalidConsensusHeight",
     "ICS03ConnectionNotFound",
     "ICS03ConnectionMismatch",
-    \* TODO: "ICS03MissingClient" is also an outcome
     "ICS03MissingClientConsensusState",
     "ICS03InvalidProof",
     \* ICS03_ConnectionOpenAck outcomes:
-    "ICS03ConnectionOpenAckOK"
+    "ICS03ConnectionOpenAckOK",
+    "ICS03UninitializedConnection"
 }
+\* TODO: the current generation of tests cannot distinguish between a
+\*       "ICS03ConnectionMismatch" generated in conn open try or one generated
+\*       in conn open ack; (there are other cases like "ICS03ConnectionMismatch")
+\*       we can solve this with in a variable 'history', like in the light
+\*       client tests.
 
 \* data kept per client
 Client == [
