@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use bech32::ToBase32;
+use bech32::{ToBase32, Variant};
 use bitcoin::{
     network::constants::Network,
     secp256k1::Secp256k1,
@@ -146,7 +146,7 @@ impl KeyRingOperations for KeyRing {
         let address = get_address(public_key);
 
         // Get Bech32 account
-        let account = bech32::encode("cosmos", address.to_base32())
+        let account = bech32::encode("cosmos", address.to_base32(), Variant::Bech32)
             .map_err(|e| Kind::Bech32Account.context(e))?;
 
         let key = KeyEntry {

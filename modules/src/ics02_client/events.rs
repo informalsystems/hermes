@@ -1,6 +1,6 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use crate::attribute;
-use crate::events::{IBCEvent, RawObject};
+use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 use anomaly::BoxError;
@@ -8,7 +8,6 @@ use anomaly::BoxError;
 use crate::ics02_client::height::Height;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
-use tendermint::block;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
@@ -23,12 +22,12 @@ const CLIENT_TYPE_ATTRIBUTE_KEY: &str = "client_type";
 /// The content of the `key` field for the attribute containing the height.
 const CONSENSUS_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
 
-pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.as_ref() {
-        CREATE_EVENT_TYPE => Some(IBCEvent::CreateClient(CreateClient(
+        CREATE_EVENT_TYPE => Some(IbcEvent::CreateClient(CreateClient(
             extract_attributes_from_tx(event),
         ))),
-        UPDATE_EVENT_TYPE => Some(IBCEvent::UpdateClient(UpdateClient(
+        UPDATE_EVENT_TYPE => Some(IbcEvent::UpdateClient(UpdateClient(
             extract_attributes_from_tx(event),
         ))),
         _ => None,
@@ -57,24 +56,30 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
 // TODO - find a better place for NewBlock
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NewBlock {
-    pub height: block::Height,
+    pub height: Height,
 }
 
 impl NewBlock {
-    pub fn new(h: block::Height) -> NewBlock {
+    pub fn new(h: Height) -> NewBlock {
         NewBlock { height: h }
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
+    pub fn height(&self) -> &Height {
+        &self.height
     }
 }
 
-impl From<NewBlock> for IBCEvent {
+impl From<NewBlock> for IbcEvent {
     fn from(v: NewBlock) -> Self {
-        IBCEvent::NewBlock(v)
+        IbcEvent::NewBlock(v)
     }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Attributes {
-    pub height: block::Height,
+    pub height: Height,
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub consensus_height: Height,
@@ -99,6 +104,12 @@ impl CreateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
 }
 
 impl From<Attributes> for CreateClient {
@@ -120,9 +131,9 @@ impl TryFrom<RawObject> for CreateClient {
     }
 }
 
-impl From<CreateClient> for IBCEvent {
+impl From<CreateClient> for IbcEvent {
     fn from(v: CreateClient) -> Self {
-        IBCEvent::CreateClient(v)
+        IbcEvent::CreateClient(v)
     }
 }
 
@@ -135,8 +146,11 @@ impl UpdateClient {
         &self.0.client_id
     }
 
-    pub fn height(&self) -> &tendermint::block::Height {
+    pub fn height(&self) -> &Height {
         &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -159,9 +173,9 @@ impl TryFrom<RawObject> for UpdateClient {
     }
 }
 
-impl From<UpdateClient> for IBCEvent {
+impl From<UpdateClient> for IbcEvent {
     fn from(v: UpdateClient) -> Self {
-        IBCEvent::UpdateClient(v)
+        IbcEvent::UpdateClient(v)
     }
 }
 
@@ -169,6 +183,18 @@ impl From<UpdateClient> for IBCEvent {
 /// misbehavior.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ClientMisbehavior(Attributes);
+
+impl ClientMisbehavior {
+    pub fn client_id(&self) -> &ClientId {
+        &self.0.client_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
+}
 
 impl TryFrom<RawObject> for ClientMisbehavior {
     type Error = BoxError;
@@ -183,8 +209,8 @@ impl TryFrom<RawObject> for ClientMisbehavior {
     }
 }
 
-impl From<ClientMisbehavior> for IBCEvent {
+impl From<ClientMisbehavior> for IbcEvent {
     fn from(v: ClientMisbehavior) -> Self {
-        IBCEvent::ClientMisbehavior(v)
+        IbcEvent::ClientMisbehavior(v)
     }
 }

@@ -7,7 +7,7 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConn
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics02_client::height::Height;
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -369,7 +369,7 @@ impl Connection {
         Ok(vec![new_msg.to_any::<RawMsgConnectionOpenInit>()])
     }
 
-    pub fn build_conn_init_and_send(&self) -> Result<IBCEvent, ConnectionError> {
+    pub fn build_conn_init_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_init()?;
 
         let events = self
@@ -381,8 +381,8 @@ impl Connection {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::OpenInitConnection(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::OpenInitConnection(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ConnectionError::Failed("no conn init event was in the response".to_string())
@@ -390,8 +390,8 @@ impl Connection {
 
         // TODO - make chainError an actual error
         match result {
-            IBCEvent::OpenInitConnection(_) => Ok(result),
-            IBCEvent::ChainError(e) => Err(ConnectionError::Failed(format!(
+            IbcEvent::OpenInitConnection(_) => Ok(result),
+            IbcEvent::ChainError(e) => Err(ConnectionError::Failed(format!(
                 "tx response event consists of an error: {}",
                 e
             ))),
@@ -477,14 +477,11 @@ impl Connection {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgConnectionOpenTry>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgConnectionOpenTry>());
         Ok(msgs)
     }
 
-    pub fn build_conn_try_and_send(&self) -> Result<IBCEvent, ConnectionError> {
+    pub fn build_conn_try_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_try()?;
 
         let events = self
@@ -496,16 +493,16 @@ impl Connection {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::OpenTryConnection(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::OpenTryConnection(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ConnectionError::Failed("no conn try event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::OpenTryConnection(_) => Ok(result),
-            IBCEvent::ChainError(e) => {
+            IbcEvent::OpenTryConnection(_) => Ok(result),
+            IbcEvent::ChainError(e) => {
                 Err(ConnectionError::Failed(format!("tx response error: {}", e)))
             }
             _ => panic!("internal error"),
@@ -576,14 +573,11 @@ impl Connection {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgConnectionOpenAck>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgConnectionOpenAck>());
         Ok(msgs)
     }
 
-    pub fn build_conn_ack_and_send(&self) -> Result<IBCEvent, ConnectionError> {
+    pub fn build_conn_ack_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_ack()?;
 
         let events = self
@@ -595,16 +589,16 @@ impl Connection {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::OpenAckConnection(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::OpenAckConnection(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ConnectionError::Failed("no conn ack event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::OpenAckConnection(_) => Ok(result),
-            IBCEvent::ChainError(e) => {
+            IbcEvent::OpenAckConnection(_) => Ok(result),
+            IbcEvent::ChainError(e) => {
                 Err(ConnectionError::Failed(format!("tx response error: {}", e)))
             }
             _ => panic!("internal error"),
@@ -666,14 +660,11 @@ impl Connection {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgConnectionOpenConfirm>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgConnectionOpenConfirm>());
         Ok(msgs)
     }
 
-    pub fn build_conn_confirm_and_send(&self) -> Result<IBCEvent, ConnectionError> {
+    pub fn build_conn_confirm_and_send(&self) -> Result<IbcEvent, ConnectionError> {
         let dst_msgs = self.build_conn_confirm()?;
 
         let events = self
@@ -685,16 +676,16 @@ impl Connection {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::OpenConfirmConnection(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::OpenConfirmConnection(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ConnectionError::Failed("no conn confirm event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::OpenConfirmConnection(_) => Ok(result),
-            IBCEvent::ChainError(e) => {
+            IbcEvent::OpenConfirmConnection(_) => Ok(result),
+            IbcEvent::ChainError(e) => {
                 Err(ConnectionError::Failed(format!("tx response error: {}", e)))
             }
             _ => panic!("internal error"),
@@ -702,12 +693,12 @@ impl Connection {
     }
 }
 
-fn extract_connection_id(event: &IBCEvent) -> Result<&ConnectionId, ConnectionError> {
+fn extract_connection_id(event: &IbcEvent) -> Result<&ConnectionId, ConnectionError> {
     match event {
-        IBCEvent::OpenInitConnection(ev) => ev.connection_id().as_ref(),
-        IBCEvent::OpenTryConnection(ev) => ev.connection_id().as_ref(),
-        IBCEvent::OpenAckConnection(ev) => ev.connection_id().as_ref(),
-        IBCEvent::OpenConfirmConnection(ev) => ev.connection_id().as_ref(),
+        IbcEvent::OpenInitConnection(ev) => ev.connection_id().as_ref(),
+        IbcEvent::OpenTryConnection(ev) => ev.connection_id().as_ref(),
+        IbcEvent::OpenAckConnection(ev) => ev.connection_id().as_ref(),
+        IbcEvent::OpenConfirmConnection(ev) => ev.connection_id().as_ref(),
         _ => None,
     }
     .ok_or_else(|| ConnectionError::Failed("cannot extract connection_id from result".to_string()))

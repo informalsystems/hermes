@@ -3,11 +3,12 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
-use crate::{Height, ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId}};
-
+use crate::ics04_channel::channel::State;
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::Height;
 use super::packet::Sequence;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
     #[error("channel state unknown")]
     UnknownState,
@@ -18,8 +19,8 @@ pub enum Kind {
     #[error("channel order type unknown")]
     UnknownOrderType,
 
-    #[error("invalid connection hops length")]
-    InvalidConnectionHopsLength,
+    #[error("invalid connection hops length: expected {0}; actual {1}")]
+    InvalidConnectionHopsLength(usize, usize),
 
     #[error("packet destination port/channel doesn't match the counterparty's port/channel")]
     InvalidPacketCounterparty(PortId, ChannelId),
@@ -60,8 +61,8 @@ pub enum Kind {
     #[error("given connection hop {0} does not exist")]
     MissingConnection(ConnectionId),
 
-    #[error("the port has no capability associated")]
-    NoPortCapability,
+    #[error("the port {0} has no capability associated")]
+    NoPortCapability(PortId),
 
     #[error("the module associated with the port does not have the capability it needs")]
     InvalidPortCapability,
@@ -72,8 +73,8 @@ pub enum Kind {
     #[error("the channel ordering is not supported by connection ")]
     ChannelFeatureNotSuportedByConnection,
 
-    #[error("Missing channel")]
-    ChannelNotFound,
+    #[error("the channel end ({0}, {1}) does not exist")]
+    ChannelNotFound(PortId, ChannelId),
 
     #[error(
         "a different channel exists (was initialized) already for the same channel identifier {0}"
@@ -89,14 +90,11 @@ pub enum Kind {
     #[error("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")]
     FailedChanneOpenTryVerification,
 
-    #[error("No client state associated with the channel")]
-    MissingClientState,
+    #[error("No client state associated with client id {0}")]
+    MissingClientState(ClientId),
 
     #[error("No consensus state associated with the host chain")]
     MissingHostConsensusState,
-
-    #[error("the client {0} running locally is frozen")]
-    FrozenClient(ClientId),
 
     #[error("the client is frozen")]
     VerifiedFrozenClient,
@@ -112,9 +110,12 @@ pub enum Kind {
 
     #[error("Receiving chain block timestamp >= packet timeout timestamp")]
     LowPacketTimestamp,
+    
+    #[error("Client with id {0} is frozen")]
+    FrozenClient(ClientId),
 
-    #[error("Missing client consensus state")]
-    MissingClientConsensusState,
+    #[error("Missing client consensus state for client id {0} at height {1}")]
+    MissingClientConsensusState(ClientId, Height),
 
     #[error("Invalid channel id in counterparty")]
     InvalidCounterpartyChannelId,
@@ -122,14 +123,17 @@ pub enum Kind {
     #[error("Client not found in chan open verification")]
     ClientNotFound,
 
-    #[error("Channel is in state {0} which is invalid")]
-    InvalidChannelState(ChannelId),
+    #[error("Channel {0} should not be state {1}")]
+    InvalidChannelState(ChannelId, State),
 
     #[error("Channel {0} is Closed")]
     ChannelClosed(ChannelId),
 
-    #[error("Channel chain verification fails on ChannelOpenAck for ChannelOpenTry")]
-    FailedChanneOpenAckVerification,
+    #[error("Handshake proof verification fails at ChannelOpenAck")]
+    ChanOpenAckProofVerification,
+
+    #[error("Handshake proof verification fails at ChannelOpenConfirm")]
+    ChanOpenConfirmProofVerification,
 }
 
 impl Kind {

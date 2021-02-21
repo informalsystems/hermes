@@ -151,7 +151,7 @@ pub mod test_utils {
             destination_channel: "dstchannelid".to_string(),
             data: vec![],
             timeout_height: Some(RawHeight {
-                revision_number: 1,
+                revision_number: 0,
                 revision_height: timeout_height,
             }),
             timeout_timestamp: 0,

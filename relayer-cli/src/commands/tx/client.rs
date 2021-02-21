@@ -1,6 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::config::StoreConfig;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -43,7 +43,7 @@ impl Runnable for TxCreateClientCmd {
         };
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
-        let res: Result<IBCEvent, Error> = client
+        let res: Result<IbcEvent, Error> = client
             .build_create_client_and_send()
             .map_err(|e| Kind::Tx.context(e).into());
 
@@ -91,7 +91,7 @@ impl Runnable for TxUpdateClientCmd {
             id: self.dst_client_id.clone(),
         };
 
-        let res: Result<IBCEvent, Error> = client
+        let res: Result<IbcEvent, Error> = client
             .build_update_client_and_send()
             .map_err(|e| Kind::Tx.context(e).into());
 

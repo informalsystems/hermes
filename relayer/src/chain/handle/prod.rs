@@ -1,14 +1,12 @@
 use std::fmt::Debug;
 
 use crossbeam_channel as channel;
+// FIXME: the handle should not depend on tendermint-specific types
+use tendermint::account::Id as AccountId;
 
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
-    events::IBCEvent,
+    events::IbcEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
@@ -20,20 +18,19 @@ use ibc::{
     proofs::Proofs,
     Height,
 };
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
-
-use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
-
 use crate::{
-    chain::QueryResponse,
     connection::ConnectionMsgType,
     error::{Error, Kind},
     keyring::store::KeyEntry,
 };
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+
+use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -73,25 +70,11 @@ impl ChainHandle for ProdChainHandle {
         self.chain_id.clone()
     }
 
-    fn query(
-        &self,
-        path: ibc::ics24_host::Path,
-        height: Height,
-        prove: bool,
-    ) -> Result<QueryResponse, Error> {
-        self.send(|reply_to| ChainRequest::Query {
-            path,
-            height,
-            prove,
-            reply_to,
-        })
-    }
-
     fn subscribe(&self) -> Result<Subscription, Error> {
         self.send(|reply_to| ChainRequest::Subscribe { reply_to })
     }
 
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IBCEvent>, Error> {
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error> {
         self.send(|reply_to| ChainRequest::SendMsgs {
             proto_msgs,
             reply_to,
@@ -303,7 +286,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
     }
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
     }
 }

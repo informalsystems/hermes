@@ -8,9 +8,9 @@ use serde::{Serialize, Serializer};
 use tendermint::account::Id as AccountId;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics24_host::{identifier::ChainId, identifier::ClientId, Path};
+use ibc::ics24_host::{identifier::ChainId, identifier::ClientId};
 use ibc::{
-    events::IBCEvent,
+    events::IbcEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
@@ -29,8 +29,6 @@ pub use prod::ProdChainHandle;
 use crate::connection::ConnectionMsgType;
 use crate::keyring::store::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
-
-use super::QueryResponse;
 
 mod prod;
 
@@ -54,16 +52,9 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Subscription>,
     },
 
-    Query {
-        path: Path,
-        height: Height,
-        prove: bool,
-        reply_to: ReplyTo<QueryResponse>,
-    },
-
     SendMsgs {
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 
     GetMinimalSet {
@@ -197,7 +188,7 @@ pub enum ChainRequest {
 
     QueryPacketEventData {
         request: QueryPacketEventDataRequest,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 }
 
@@ -207,12 +198,10 @@ dyn_clone::clone_trait_object!(ChainHandle);
 pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn id(&self) -> ChainId;
 
-    fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;
-
     fn subscribe(&self) -> Result<Subscription, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IBCEvent>, Error>;
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error>;
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
@@ -322,7 +311,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error>;
 }
 
 impl Serialize for dyn ChainHandle {

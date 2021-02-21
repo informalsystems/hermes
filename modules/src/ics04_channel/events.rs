@@ -1,12 +1,12 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
-use crate::events::{IBCEvent, RawObject};
+use crate::events::{IbcEvent, RawObject};
+use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::{attribute, some_attribute};
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
-use tendermint::block;
 
 /// Channel event types
 const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
@@ -29,6 +29,7 @@ const RECV_PACKET: &str = "recv_packet";
 const WRITE_ACK: &str = "write_acknowledgement";
 const ACK_PACKET: &str = "acknowledge_packet";
 const TIMEOUT: &str = "timeout_packet";
+const TIMEOUT_ON_CLOSE: &str = "timeout_on_close_packet";
 
 /// Packet event attribute keys
 const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
@@ -41,31 +42,31 @@ const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 //const PKT_TIMEOUT_STAMP_ATTRIBUTE_KEY: &str = "packet_timeout_stamp";
 
-pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.as_str() {
-        OPEN_INIT_EVENT_TYPE => Some(IBCEvent::OpenInitChannel(OpenInit::from(
+        OPEN_INIT_EVENT_TYPE => Some(IbcEvent::OpenInitChannel(OpenInit::from(
             extract_attributes_from_tx(event),
         ))),
-        OPEN_TRY_EVENT_TYPE => Some(IBCEvent::OpenTryChannel(OpenTry::from(
+        OPEN_TRY_EVENT_TYPE => Some(IbcEvent::OpenTryChannel(OpenTry::from(
             extract_attributes_from_tx(event),
         ))),
-        OPEN_ACK_EVENT_TYPE => Some(IBCEvent::OpenAckChannel(OpenAck::from(
+        OPEN_ACK_EVENT_TYPE => Some(IbcEvent::OpenAckChannel(OpenAck::from(
             extract_attributes_from_tx(event),
         ))),
-        OPEN_CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmChannel(OpenConfirm::from(
+        OPEN_CONFIRM_EVENT_TYPE => Some(IbcEvent::OpenConfirmChannel(OpenConfirm::from(
             extract_attributes_from_tx(event),
         ))),
-        CLOSE_INIT_EVENT_TYPE => Some(IBCEvent::CloseInitChannel(CloseInit::from(
+        CLOSE_INIT_EVENT_TYPE => Some(IbcEvent::CloseInitChannel(CloseInit::from(
             extract_attributes_from_tx(event),
         ))),
-        CLOSE_CONFIRM_EVENT_TYPE => Some(IBCEvent::CloseConfirmChannel(CloseConfirm::from(
+        CLOSE_CONFIRM_EVENT_TYPE => Some(IbcEvent::CloseConfirmChannel(CloseConfirm::from(
             extract_attributes_from_tx(event),
         ))),
         SEND_PACKET => {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::SendPacketChannel(SendPacket {
+            Some(IbcEvent::SendPacket(SendPacket {
                 height: Default::default(),
                 packet,
             }))
@@ -74,19 +75,17 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should have a write ack.
             let write_ack = write_ack.unwrap();
-            Some(IBCEvent::WriteAcknowledgementChannel(
-                WriteAcknowledgement {
-                    height: Default::default(),
-                    packet,
-                    ack: write_ack,
-                },
-            ))
+            Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
+                height: Default::default(),
+                packet,
+                ack: write_ack,
+            }))
         }
         ACK_PACKET => {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::AcknowledgePacketChannel(AcknowledgePacket {
+            Some(IbcEvent::AcknowledgePacket(AcknowledgePacket {
                 height: Default::default(),
                 packet,
             }))
@@ -95,7 +94,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::TimeoutPacketChannel(TimeoutPacket {
+            Some(IbcEvent::TimeoutPacket(TimeoutPacket {
                 height: Default::default(),
                 packet,
             }))
@@ -154,7 +153,7 @@ fn extract_packet_and_write_ack_from_tx(
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Attributes {
-    pub height: block::Height,
+    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -182,6 +181,12 @@ impl OpenInit {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
 }
 
 impl From<Attributes> for OpenInit {
@@ -207,9 +212,9 @@ impl TryFrom<RawObject> for OpenInit {
     }
 }
 
-impl From<OpenInit> for IBCEvent {
+impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
-        IBCEvent::OpenInitChannel(v)
+        IbcEvent::OpenInitChannel(v)
     }
 }
 
@@ -219,6 +224,12 @@ pub struct OpenTry(Attributes);
 impl OpenTry {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -245,9 +256,9 @@ impl TryFrom<RawObject> for OpenTry {
     }
 }
 
-impl From<OpenTry> for IBCEvent {
+impl From<OpenTry> for IbcEvent {
     fn from(v: OpenTry) -> Self {
-        IBCEvent::OpenTryChannel(v)
+        IbcEvent::OpenTryChannel(v)
     }
 }
 
@@ -257,6 +268,12 @@ pub struct OpenAck(Attributes);
 impl OpenAck {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -283,9 +300,9 @@ impl TryFrom<RawObject> for OpenAck {
     }
 }
 
-impl From<OpenAck> for IBCEvent {
+impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
-        IBCEvent::OpenAckChannel(v)
+        IbcEvent::OpenAckChannel(v)
     }
 }
 
@@ -295,6 +312,12 @@ pub struct OpenConfirm(Attributes);
 impl OpenConfirm {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -321,9 +344,9 @@ impl TryFrom<RawObject> for OpenConfirm {
     }
 }
 
-impl From<OpenConfirm> for IBCEvent {
+impl From<OpenConfirm> for IbcEvent {
     fn from(v: OpenConfirm) -> Self {
-        IBCEvent::OpenConfirmChannel(v)
+        IbcEvent::OpenConfirmChannel(v)
     }
 }
 
@@ -331,8 +354,17 @@ impl From<OpenConfirm> for IBCEvent {
 pub struct CloseInit(Attributes);
 
 impl CloseInit {
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
+    }
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -359,9 +391,21 @@ impl TryFrom<RawObject> for CloseInit {
     }
 }
 
-impl From<CloseInit> for IBCEvent {
+impl From<CloseInit> for IbcEvent {
     fn from(v: CloseInit) -> Self {
-        IBCEvent::CloseInitChannel(v)
+        IbcEvent::CloseInitChannel(v)
+    }
+}
+
+impl std::fmt::Display for CloseInit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "{:?} {} {:?}",
+            self.height(),
+            CLOSE_INIT_EVENT_TYPE,
+            self.0
+        )
     }
 }
 
@@ -371,6 +415,12 @@ pub struct CloseConfirm(Attributes);
 impl CloseConfirm {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -397,9 +447,9 @@ impl TryFrom<RawObject> for CloseConfirm {
     }
 }
 
-impl From<CloseConfirm> for IBCEvent {
+impl From<CloseConfirm> for IbcEvent {
     fn from(v: CloseConfirm) -> Self {
-        IBCEvent::CloseConfirmChannel(v)
+        IbcEvent::CloseConfirmChannel(v)
     }
 }
 
@@ -431,8 +481,17 @@ impl TryFrom<RawObject> for Packet {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SendPacket {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
+}
+
+impl SendPacket {
+    pub fn height(&self) -> &Height {
+        &self.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
 }
 
 impl TryFrom<RawObject> for SendPacket {
@@ -446,9 +505,9 @@ impl TryFrom<RawObject> for SendPacket {
     }
 }
 
-impl From<SendPacket> for IBCEvent {
+impl From<SendPacket> for IbcEvent {
     fn from(v: SendPacket) -> Self {
-        IBCEvent::SendPacketChannel(v)
+        IbcEvent::SendPacket(v)
     }
 }
 
@@ -460,8 +519,17 @@ impl std::fmt::Display for SendPacket {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ReceivePacket {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
+}
+
+impl ReceivePacket {
+    pub fn height(&self) -> &Height {
+        &self.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
@@ -475,9 +543,9 @@ impl TryFrom<RawObject> for ReceivePacket {
     }
 }
 
-impl From<ReceivePacket> for IBCEvent {
+impl From<ReceivePacket> for IbcEvent {
     fn from(v: ReceivePacket) -> Self {
-        IBCEvent::ReceivePacketChannel(v)
+        IbcEvent::ReceivePacket(v)
     }
 }
 
@@ -489,10 +557,19 @@ impl std::fmt::Display for ReceivePacket {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct WriteAcknowledgement {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub ack: Vec<u8>,
+}
+
+impl WriteAcknowledgement {
+    pub fn height(&self) -> &Height {
+        &self.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
 }
 
 impl TryFrom<RawObject> for WriteAcknowledgement {
@@ -511,9 +588,9 @@ impl TryFrom<RawObject> for WriteAcknowledgement {
     }
 }
 
-impl From<WriteAcknowledgement> for IBCEvent {
+impl From<WriteAcknowledgement> for IbcEvent {
     fn from(v: WriteAcknowledgement) -> Self {
-        IBCEvent::WriteAcknowledgementChannel(v)
+        IbcEvent::WriteAcknowledgement(v)
     }
 }
 
@@ -525,8 +602,17 @@ impl std::fmt::Display for WriteAcknowledgement {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AcknowledgePacket {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
+}
+
+impl AcknowledgePacket {
+    pub fn height(&self) -> &Height {
+        &self.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
@@ -538,9 +624,9 @@ impl TryFrom<RawObject> for AcknowledgePacket {
     }
 }
 
-impl From<AcknowledgePacket> for IBCEvent {
+impl From<AcknowledgePacket> for IbcEvent {
     fn from(v: AcknowledgePacket) -> Self {
-        IBCEvent::AcknowledgePacketChannel(v)
+        IbcEvent::AcknowledgePacket(v)
     }
 }
 
@@ -552,8 +638,17 @@ impl std::fmt::Display for AcknowledgePacket {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TimeoutPacket {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
+}
+
+impl TimeoutPacket {
+    pub fn height(&self) -> &Height {
+        &self.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
 }
 
 impl TryFrom<RawObject> for TimeoutPacket {
@@ -566,14 +661,51 @@ impl TryFrom<RawObject> for TimeoutPacket {
     }
 }
 
-impl From<TimeoutPacket> for IBCEvent {
+impl From<TimeoutPacket> for IbcEvent {
     fn from(v: TimeoutPacket) -> Self {
-        IBCEvent::TimeoutPacketChannel(v)
+        IbcEvent::TimeoutPacket(v)
     }
 }
 
 impl std::fmt::Display for TimeoutPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{} {} {}", self.height, TIMEOUT, self.packet)
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct TimeoutOnClosePacket {
+    pub height: Height,
+    pub packet: Packet,
+}
+
+impl TimeoutOnClosePacket {
+    pub fn height(&self) -> &Height {
+        &self.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
+}
+
+impl TryFrom<RawObject> for TimeoutOnClosePacket {
+    type Error = BoxError;
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        Ok(TimeoutOnClosePacket {
+            height: obj.height,
+            packet: Packet::try_from(obj)?,
+        })
+    }
+}
+
+impl From<TimeoutOnClosePacket> for IbcEvent {
+    fn from(v: TimeoutOnClosePacket) -> Self {
+        IbcEvent::TimeoutOnClosePacket(v)
+    }
+}
+
+impl std::fmt::Display for TimeoutOnClosePacket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{} {} {}", self.height, TIMEOUT_ON_CLOSE, self.packet)
     }
 }

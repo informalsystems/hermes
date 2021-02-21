@@ -1,17 +1,13 @@
 use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
-
+// FIXME: the handle should not depend on tendermint-specific types
+use tendermint::account::Id as AccountId;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
-    events::IBCEvent,
+    events::IbcEvent,
     ics02_client::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
         header::Header,
@@ -24,13 +20,14 @@ use ibc::{
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::PortId,
     ics24_host::identifier::{ClientId, ConnectionId},
-    ics24_host::Path,
     proofs::Proofs,
     Height,
 };
-
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::{
     config::ChainConfig,
@@ -43,9 +40,8 @@ use crate::{
 
 use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
-    Chain, QueryResponse,
+    Chain,
 };
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 
 pub struct Threads {
     pub light_client: Option<thread::JoinHandle<()>>,
@@ -172,10 +168,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.subscribe(reply_to)?
                         },
 
-                        Ok(ChainRequest::Query { path, height, prove, reply_to, }) => {
-                            self.query(path, height, prove, reply_to)?
-                        },
-
                         Ok(ChainRequest::SendMsgs { proto_msgs, reply_to }) => {
                             self.send_msgs(proto_msgs, reply_to)?
                         },
@@ -295,39 +287,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn query(
-        &self,
-        path: Path,
-        height: Height,
-        prove: bool,
-        reply_to: ReplyTo<QueryResponse>,
-    ) -> Result<(), Error> {
-        if !path.is_provable() & prove {
-            reply_to
-                .send(Err(Kind::NonProvableData.into()))
-                .map_err(|e| Kind::Channel.context(e))?;
-
-            return Ok(());
-        }
-
-        let response = self.chain.query(path, height, prove);
-
-        // Verify response proof, if requested.
-        if prove {
-            dbg!("TODO: implement proof verification."); // TODO: Verify proof
-        }
-
-        reply_to
-            .send(response)
-            .map_err(|e| Kind::Channel.context(e))?;
-
-        Ok(())
-    }
-
     fn send_msgs(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_msgs(proto_msgs);
 
@@ -378,7 +341,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     fn module_version(&self, port_id: PortId, reply_to: ReplyTo<String>) -> Result<(), Error> {
-        let result = self.chain.module_version(&port_id);
+        let result = self.chain.query_module_version(&port_id);
 
         reply_to
             .send(Ok(result))
@@ -698,7 +661,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn query_txs(
         &self,
         request: QueryPacketEventDataRequest,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
 

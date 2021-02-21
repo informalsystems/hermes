@@ -10,17 +10,17 @@ use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
 use ibc::downcast;
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics02_client::client_def::AnyClientState;
-use ibc::ics03_connection::raw::ConnectionIds;
-use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
+use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics18_relayer::context::ICS18Context;
+use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId};
-use ibc::ics24_host::Path;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::test_utils::get_dummy_account_id;
@@ -32,9 +32,11 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+use ibc_proto::ibc::core::connection::v1::{
+    QueryClientConnectionsRequest, QueryConnectionsRequest,
+};
 
-use crate::chain::{Chain, QueryResponse};
+use crate::chain::Chain;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
@@ -49,7 +51,6 @@ pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
 }
-
 impl Chain for MockChain {
     type LightBlock = TMLightBlock;
     type Header = TendermintHeader;
@@ -99,11 +100,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query(&self, _data: Path, _height: Height, _prove: bool) -> Result<QueryResponse, Error> {
-        unimplemented!()
-    }
-
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self
             .context
@@ -118,6 +115,153 @@ impl Chain for MockChain {
     }
 
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        unimplemented!()
+    }
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        unimplemented!()
+    }
+
+    fn query_latest_height(&self) -> Result<Height, Error> {
+        Ok(self.context.query_latest_height())
+    }
+
+    fn query_clients(&self, _request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+        unimplemented!()
+    }
+
+    fn query_client_state(
+        &self,
+        client_id: &ClientId,
+        _height: Height,
+    ) -> Result<Self::ClientState, Error> {
+        // TODO: unclear what are the scenarios where we need to take height into account.
+        let any_state = self
+            .context
+            .query_client_full_state(client_id)
+            .ok_or(Kind::EmptyResponseValue)?;
+        let client_state = downcast!(any_state => AnyClientState::Tendermint).ok_or_else(|| {
+            Kind::Query("client state".into()).context("unexpected client state type")
+        })?;
+        Ok(client_state)
+    }
+
+    fn query_connection(
+        &self,
+        _connection_id: &ConnectionId,
+        _height: Height,
+    ) -> Result<ConnectionEnd, Error> {
+        unimplemented!()
+    }
+
+    fn query_client_connections(
+        &self,
+        _request: QueryClientConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error> {
+        unimplemented!()
+    }
+
+    fn query_connections(
+        &self,
+        _request: QueryConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error> {
+        unimplemented!()
+    }
+
+    fn query_connection_channels(
+        &self,
+        _request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<ChannelId>, Error> {
+        unimplemented!()
+    }
+
+    fn query_channels(&self, _request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
+        unimplemented!()
+    }
+
+    fn query_channel(
+        &self,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _height: Height,
+    ) -> Result<ChannelEnd, Error> {
+        unimplemented!()
+    }
+
+    fn query_packet_commitments(
+        &self,
+        _request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error> {
+        unimplemented!()
+    }
+
+    fn query_unreceived_packets(
+        &self,
+        _request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error> {
+        unimplemented!()
+    }
+
+    fn query_packet_acknowledgements(
+        &self,
+        _request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error> {
+        unimplemented!()
+    }
+
+    fn query_unreceived_acknowledgements(
+        &self,
+        _request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error> {
+        unimplemented!()
+    }
+
+    fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error> {
+        unimplemented!()
+    }
+
+    fn proven_client_state(
+        &self,
+        _client_id: &ClientId,
+        _height: Height,
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        unimplemented!()
+    }
+
+    fn proven_connection(
+        &self,
+        _connection_id: &ConnectionId,
+        _height: Height,
+    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
+        unimplemented!()
+    }
+
+    fn proven_client_consensus(
+        &self,
+        _client_id: &ClientId,
+        _consensus_height: Height,
+        _height: Height,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        unimplemented!()
+    }
+
+    fn proven_channel(
+        &self,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _height: Height,
+    ) -> Result<(ChannelEnd, MerkleProof), Error> {
+        unimplemented!()
+    }
+
+    fn proven_packet(
+        &self,
+        _packet_type: PacketMsgType,
+        _port_id: PortId,
+        _channel_id: ChannelId,
+        _sequence: Sequence,
+        _height: Height,
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
         unimplemented!()
     }
 
@@ -160,98 +304,6 @@ impl Chain for MockChain {
             ),
             trusted_validator_set: trusted_light_block.validators,
         })
-    }
-
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        Ok(self.context.query_latest_height())
-    }
-
-    fn query_client_state(
-        &self,
-        client_id: &ClientId,
-        _height: Height,
-    ) -> Result<Self::ClientState, Error> {
-        // TODO: unclear what are the scenarios where we need to take height into account.
-        let any_state = self
-            .context
-            .query_client_full_state(client_id)
-            .ok_or(Kind::EmptyResponseValue)?;
-        let client_state = downcast!(any_state => AnyClientState::Tendermint).ok_or_else(|| {
-            Kind::Query("client state".into()).context("unexpected client state type")
-        })?;
-        Ok(client_state)
-    }
-
-    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        unimplemented!()
-    }
-
-    fn proven_client_state(
-        &self,
-        _client_id: &ClientId,
-        _height: Height,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
-        unimplemented!()
-    }
-
-    fn proven_client_consensus(
-        &self,
-        _client_id: &ClientId,
-        _consensus_height: Height,
-        _height: Height,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
-        unimplemented!()
-    }
-
-    fn query_packet_commitments(
-        &self,
-        _request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
-        unimplemented!()
-    }
-
-    fn query_unreceived_packets(
-        &self,
-        _request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
-        unimplemented!()
-    }
-
-    fn query_packet_acknowledgements(
-        &self,
-        _request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
-        unimplemented!()
-    }
-
-    fn query_unreceived_acknowledgements(
-        &self,
-        _request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
-        unimplemented!()
-    }
-
-    fn query_connection_channels(
-        &self,
-        _request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<ChannelId>, Error> {
-        unimplemented!()
-    }
-
-    fn query_clients(&self, _request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
-        unimplemented!()
-    }
-
-    fn query_connections(&self, _request: QueryConnectionsRequest) -> Result<ConnectionIds, Error> {
-        unimplemented!()
-    }
-
-    fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
-        unimplemented!()
-    }
-
-    fn query_channels(&self, _request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
-        unimplemented!()
     }
 }
 

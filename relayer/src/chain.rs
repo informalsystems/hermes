@@ -5,21 +5,18 @@ use prost_types::Any;
 // TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
-use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 
-pub use cosmos::CosmosSDKChain;
-use ibc::events::IBCEvent;
+pub use cosmos::CosmosSdkChain;
+use ibc::events::IbcEvent;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
-use ibc::ics03_connection::raw::ConnectionIds;
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::ics24_host::Path;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
@@ -29,7 +26,9 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+use ibc_proto::ibc::core::connection::v1::{
+    QueryClientConnectionsRequest, QueryConnectionsRequest,
+};
 
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
@@ -103,40 +102,14 @@ pub trait Chain: Sized {
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
 
-    /// Perform a generic ICS `query`, and return the corresponding response data.
-    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
-
     /// Sends one or more transactions with `msgs` to chain.
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error>;
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 
     fn get_signer(&mut self) -> Result<AccountId, Error>;
 
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
-    // Build states
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
-
-    fn build_consensus_state(
-        &self,
-        light_block: Self::LightBlock,
-    ) -> Result<Self::ConsensusState, Error>;
-
-    fn build_header(
-        &self,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error>;
-
     // Queries
-
-    /// Query the latest height the chain is at
-    fn query_latest_height(&self) -> Result<ICSHeight, Error>;
-
-    fn query_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<Self::ClientState, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
@@ -145,33 +118,85 @@ pub trait Chain: Sized {
         Ok(get_compatible_versions())
     }
 
+    /// Query the latest height the chain is at
+    fn query_latest_height(&self) -> Result<ICSHeight, Error>;
+
+    /// Performs a query to retrieve the identifiers of all clients associated with a chain.
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+
+    fn query_client_state(
+        &self,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<Self::ClientState, Error>;
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error>;
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_client_connections(
+        &self,
+        request: QueryClientConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error>;
+
     fn query_connection(
         &self,
         connection_id: &ConnectionId,
         height: ICSHeight,
-    ) -> Result<ConnectionEnd, Error> {
-        let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
-        Ok(ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("connection".into()).context(e))?)
-    }
+    ) -> Result<ConnectionEnd, Error>;
+
+    /// Performs a query to retrieve the identifiers of all channels associated with a connection.
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<ChannelId>, Error>;
+
+    /// Performs a query to retrieve the identifiers of all channels.
+    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
 
     fn query_channel(
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
         height: ICSHeight,
-    ) -> Result<ChannelEnd, Error> {
-        let res = self.query(
-            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
-            height,
-            false,
-        )?;
-        Ok(ChannelEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("channel".into()).context(e))?)
+    ) -> Result<ChannelEnd, Error>;
+
+    // TODO: Introduce a newtype for the module version string
+    fn query_module_version(&self, port_id: &PortId) -> String {
+        // TODO - query the chain, currently hardcoded
+        if port_id.as_str() == "transfer" {
+            "ics20-1".to_string()
+        } else {
+            "".to_string()
+        }
     }
 
-    // Provable queries
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
 
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
+
+    fn query_unreceived_acknowledgements(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error>;
+
+    // Provable queries
     fn proven_client_state(
         &self,
         client_id: &ClientId,
@@ -182,20 +207,7 @@ pub trait Chain: Sized {
         &self,
         connection_id: &ConnectionId,
         height: ICSHeight,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        let res = self
-            .query(Path::Connections(connection_id.clone()), height, true)
-            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
-        let connection_end = ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
-
-        Ok((
-            connection_end,
-            res.proof.ok_or_else(|| {
-                Kind::Query("proven connection".into()).context("empty proof".to_string())
-            })?,
-        ))
-    }
+    ) -> Result<(ConnectionEnd, MerkleProof), Error>;
 
     fn proven_client_consensus(
         &self,
@@ -209,25 +221,29 @@ pub trait Chain: Sized {
         port_id: &PortId,
         channel_id: &ChannelId,
         height: ICSHeight,
-    ) -> Result<(ChannelEnd, MerkleProof), Error> {
-        let res = self
-            .query(
-                Path::ChannelEnds(port_id.clone(), channel_id.clone()),
-                height,
-                true,
-            )
-            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
+    ) -> Result<(ChannelEnd, MerkleProof), Error>;
 
-        let channel_end = ChannelEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
+    fn proven_packet(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+        height: ICSHeight,
+    ) -> Result<(Vec<u8>, MerkleProof), Error>;
 
-        Ok((
-            channel_end,
-            res.proof.ok_or_else(|| {
-                Kind::Query("proven channel".into()).context("empty proof".to_string())
-            })?,
-        ))
-    }
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
+
+    fn build_consensus_state(
+        &self,
+        light_block: Self::LightBlock,
+    ) -> Result<Self::ConsensusState, Error>;
+
+    fn build_header(
+        &self,
+        trusted_light_block: Self::LightBlock,
+        target_light_block: Self::LightBlock,
+    ) -> Result<Self::Header, Error>;
 
     /// Builds the required proofs and the client state for connection handshake messages.
     /// The proofs and client state must be obtained from queries at same height.
@@ -310,18 +326,7 @@ pub trait Chain: Sized {
         ))
     }
 
-    // TODO: Introduce a newtype for the module version string
-    fn module_version(&self, port_id: &PortId) -> String {
-        // TODO - query the chain, currently hardcoded
-        if port_id.as_str() == "transfer" {
-            "ics20-1".to_string()
-        } else {
-            "".to_string()
-        }
-    }
-
     /// Builds the proof for channel handshake messages.
-    /// The proof is obtained from queries at height `height`
     fn build_channel_proofs(
         &self,
         port_id: &PortId,
@@ -338,41 +343,7 @@ pub trait Chain: Sized {
         )
     }
 
-    fn query_packet_commitments(
-        &self,
-        request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
-
-    fn query_unreceived_packets(
-        &self,
-        request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error>;
-
-    fn query_packet_acknowledgements(
-        &self,
-        request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
-
-    fn query_unreceived_acknowledgements(
-        &self,
-        request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error>;
-
-    /// Performs a query to retrieve the identifiers of all channels associated with a connection.
-    fn query_connection_channels(
-        &self,
-        request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<ChannelId>, Error>;
-
-    /// Performs a query to retrieve the identifiers of all clients associated with a chain.
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
-
-    /// Performs a query to retrieve the identifiers of all connections.
-    fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error>;
-
-    /// Performs a query to retrieve the identifiers of all channels.
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
-
+    /// Builds the proof for packet messages.
     fn build_packet_proofs(
         &self,
         packet_type: PacketMsgType,
@@ -381,57 +352,19 @@ pub trait Chain: Sized {
         sequence: Sequence,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
-        let (data, channel_proof) = match packet_type {
-            PacketMsgType::Recv => (
-                Path::Commitments {
-                    port_id,
-                    channel_id,
-                    sequence,
-                },
-                None,
-            ),
-            PacketMsgType::Ack => (
-                Path::Acks {
-                    port_id,
-                    channel_id,
-                    sequence,
-                },
-                None,
-            ),
-            PacketMsgType::Timeout => (
-                Path::Receipts {
-                    port_id,
-                    channel_id,
-                    sequence,
-                },
-                None,
-            ),
-            PacketMsgType::TimeoutOnClose => {
-                let commitment = CommitmentProofBytes::from(
-                    self.proven_channel(&port_id, &channel_id, height)?.1,
-                );
-
-                (
-                    Path::Receipts {
-                        port_id,
-                        channel_id,
-                        sequence,
-                    },
-                    Some(commitment),
-                )
-            }
+        let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
+            Some(CommitmentProofBytes::from(
+                self.proven_channel(&port_id, &channel_id, height)?.1,
+            ))
+        } else {
+            None
         };
 
-        let res = self
-            .query(data, height, true)
-            .map_err(|e| Kind::Query(packet_type.to_string()).context(e))?;
-
-        let commitment_proof_bytes = res.proof.ok_or_else(|| {
-            Kind::Query(packet_type.to_string()).context("empty proof".to_string())
-        })?;
+        let (bytes, packet_proof) =
+            self.proven_packet(packet_type, port_id, channel_id, sequence, height)?;
 
         let proofs = Proofs::new(
-            commitment_proof_bytes.into(),
+            CommitmentProofBytes::from(packet_proof),
             None,
             None,
             channel_proof,
@@ -439,8 +372,6 @@ pub trait Chain: Sized {
         )
         .map_err(|_| Kind::MalformedProof)?;
 
-        Ok((res.value, proofs))
+        Ok((bytes, proofs))
     }
-
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
 }
