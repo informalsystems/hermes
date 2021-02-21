@@ -10,8 +10,6 @@ use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
-//use sha2::{Sha256, Digest};
-
 
 use super::PacketResult;
 
@@ -111,20 +109,12 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         );
     }
 
-    //let mut sha =  Sha256::default();
-    //let res = sha2::Sha256::digest(packet.clone().timeout_timestamp);
-    //sha.update(packet.clone().timeout_timestamp);
-    // //+packet.clone().timeout_height+packet.clone().data
-    //let commitment = sha2::Sha256::digest(packet.clone().timeout_timestamp);
-    //commitment.
-    //sha2.result_bytes();
+    
+    // let input = format!("{:?},{:?},{:?}",packet.clone().timeout_timestamp,packet.clone().timeout_height,packet.clone().data); 
+    // let mut sha256 = Sha256::new();
+    // sha256.input_str(&input);
+    // let commitment = sha256.result_str();
 
-    let commitment = packet.clone().timeout_timestamp;
-    // let commitment = CommitmentPrefix::get_prefix(
-    //     packet.clone().data,
-    //     packet.clone().timeout_height,
-    //     packet.clone().timeout_timestamp,
-    // );
 
     output.log("success: packet send ");
 
@@ -132,7 +122,9 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         port_id:packet.source_port.clone(),
         channel_id:packet.source_channel.clone(),
         send_seq_number: Sequence::from(*next_seq_send+1),
-        commitment
+        data: packet.clone().data,
+        timeout_height: packet.clone().timeout_height,
+        timeout_timestamp: packet.clone().timeout_timestamp,
     };
 
     let height = <Height as TryFrom<u64>>::try_from(packet_height.revision_height).unwrap();

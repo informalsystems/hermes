@@ -9,6 +9,9 @@ use chrono::Utc;
 use prost_types::Any;
 use tendermint::account::Id;
 
+use crypto::digest::Digest;
+use crypto::sha2::Sha256;
+
 use crate::{ics02_client::client_type::ClientType, ics23_commitment::commitment::CommitmentPrefix};
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as ICS2Error;
@@ -93,7 +96,7 @@ pub struct MockContext {
     port_capabilities: HashMap<PortId, Capability>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: HashMap<(PortId, ChannelId, Sequence), u64>,
+    packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
 
     /// Counter for connection identifiers (see `next_connection_id`).
     connection_ids_counter: u32,
@@ -427,6 +430,12 @@ impl ChannelReader for MockContext {
     fn channel_host_current_height(&self) -> Height {
         ConnectionReader::host_current_height(self)
     }
+
+    fn hashing(&self, input: String) -> String {
+        let mut sha256 = Sha256::new();
+        sha256.input_str(&input);
+        sha256.result_str()
+    }
 }
 
 impl ChannelKeeper for MockContext {
@@ -499,8 +508,12 @@ impl ChannelKeeper for MockContext {
     fn store_packet_commitment(
         &mut self,
         key: &(PortId, ChannelId, Sequence),
-        value: u64 )-> Result<(), ICS4Error>{      
-            self.packet_commitment.insert(key.clone(), value);
+        timeout_timestamp: u64,
+        timeout_height: Height,
+        data: Vec<u8>
+         )-> Result<(), ICS4Error>{   
+            let input = format!("{:?},{:?},{:?}",timeout_timestamp,timeout_height,data); 
+            self.packet_commitment.insert(key.clone(), ChannelReader::hashing(self,input));
             Ok(())
         }
 

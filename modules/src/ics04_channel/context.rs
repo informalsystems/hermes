@@ -41,6 +41,9 @@ pub trait ChannelReader {
 
     /// Returns the current height of the local chain.
     fn channel_host_current_height(&self) -> Height;
+
+    fn hashing(&self, value: String) -> String;
+
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
@@ -88,7 +91,7 @@ pub trait ChannelKeeper {
             )?;
         self.store_packet_commitment(
             &(result.port_id.clone(), result.channel_id.clone(), result.send_seq_number.clone()), 
-            result.commitment.clone())?;  
+            result.timeout_timestamp.clone(),result.timeout_height.clone(),result.data.clone())?;  
         Ok(())
     }
 
@@ -96,7 +99,9 @@ pub trait ChannelKeeper {
     fn store_packet_commitment(
         &mut self,
         key: &(PortId, ChannelId, Sequence),
-        value:u64)-> Result<(), Error>;
+        timestamp:u64,
+        heigh: Height,
+        data: Vec<u8>)-> Result<(), Error>;
 
     fn store_connection_channels(
         &mut self,
