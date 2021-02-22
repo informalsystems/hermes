@@ -15,18 +15,6 @@ use super::PacketResult;
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // Basic validation cannot be done in the message cause cause it lacks the destination port and channel and the sequence.
-    // TODO: the validation checks in ics24 are outdated. Do we want to replace them ?
-    // validate_port_identifier(&format!("{:?}",packet.source_port.clone()))
-    //     .map_err(|e| Kind::InvalidPortId.context(e.to_string()))?;
-    // validate_channel_identifier(&format!("{:?}",packet.source_channel.clone()))
-    //     .map_err(|e| Kind::InvalidChannelId.context(e.to_string()))?;
-
-    // validate_port_identifier(&format!("{:?}",packet.destination_port.clone()))
-    //     .map_err(|e| Kind::InvalidPortId.context(e.to_string()))?;
-    // validate_channel_identifier(&format!("{:?}",packet.destination_channel.clone()))
-    //     .map_err(|e| Kind::InvalidChannelId.context(e.to_string()))?;
-
     if packet.sequence.is_zero() {
         return Err(Kind::ZeroPacketSequence.into());
     }
