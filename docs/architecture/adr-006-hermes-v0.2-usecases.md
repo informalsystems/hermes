@@ -5,7 +5,7 @@
 
 ## Context
 
-One major problem with planning for the evolution of Hermes, is that presently
+One major problem with planning for the evolution of Hermes is that presently
 there is insufficient clarity regarding its requirements.
 It is not known who are the typical Hermes users (is it human operators or
 automated pipelines?), and what are their primary use-cases.
@@ -19,9 +19,9 @@ Three elements that provide further context for this discussion are:
 1. Hermes is still at an early stage of implementation, so these use-cases are
    not set in stone.
 
-2. Some concrete use-cases are starting to emerge ([#628][628]), which we either
-   do not cover altogether, or cover poorly (e.g., because of inconsistent UX),
-   thus informing this proposal. 
+2. Some concrete use-cases are starting to emerge ([#628][628]), which Hermes
+   v0.1.0 either does not cover altogether, or covers poorly (e.g., because of
+   inconsistent UX), thus informing this proposal.
 
 3. Hermes is one of _three_ relayer binaries that are being developed roughly in
 parallel. The other two are being developed in Go and Typescript, 
@@ -32,8 +32,8 @@ robustness, and richness of features on a longer term.
 ## Decision
 
 This is a summary of the use-cases (commands) discussed in the rest of this ADR.
-Note that we omit the binary name `hermes` from the commands belows, to keep the
-command length to a minimum.
+Note that the commands below omit the binary name `hermes` , to keep the command
+length to a minimum.
 
 To create a connection:
 - `create connection ibc-0 ibc-1 [--delay <delay>]`
@@ -66,7 +66,7 @@ The first of the patterns below seeks to help "unblock" a user.
 The second pattern is a variation on the first; this permits more efficiency
 because it allows the reuse of previously-created objects in the
 creation of new objects on a chain (e.g., reuse a client in the creation of a
-connection).
+connection, or reuse a connection in the creation of a new channel).
 
 #### Patterns
 
@@ -112,11 +112,11 @@ create connection ibc-0 --src-client <client-id> --dst-client <client-id> [--del
 
 **Details:**
 Similar to the previous command, but will reuse the client with identifier from
-option `--src-client-id` which is expected to exist on chain `ibc-0`. The
+option `--src-client` which is expected to exist on chain `ibc-0`. The
 [client state][client-state] from this client will also provide the identifier 
 for the destination chain (this is the "chain_id" field from the client state).
 Similarly, on the destination chain, this command will establish the connection
-using the client with identifier from the option `--dst-client-id`, which must
+using the client with identifier from the option `--dst-client`, which must
 be verifying headers for the source chain.
 
 ##### Create New Channel
@@ -174,7 +174,8 @@ establish channel ibc-0 --src-channel <channel-id>
 
 ### Command Output
 
-By default, we will provide human-readable output, i.e., pretty printing.
+By default, the command will provide human-readable output, i.e., pretty
+printing.
 In practice, the final result of a Hermes command is captured in an 
 [Output][output] structure that has support for JSON serialization. To
 enable JSON, we add a configuration parameter `log_json`. The global section
@@ -188,8 +189,8 @@ log_level = 'error'
 log_json = 'false'
 ```
 
-By default, this parameter
-is `false`. When set to `true`, all the Hermes output will be in JSON.
+By default, this parameter is `false`. When set to `true`, all the Hermes output
+will be in JSON.
 
 ## Status
 
