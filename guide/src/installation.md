@@ -26,17 +26,17 @@ The step-by-step instruction below should carry you through the whole process:
  
 1. Make the directory where we'll place the binary:
    ```shell
-   mkdir $HOME/.hermes/
+   mkdir -p $HOME/.hermes/bin
    ```
 
 2. Extract the binary archive:
    ```shell
-   tar -C $HOME/.hermes/ -vxzf $ARCHIVE_NAME
+   tar -C $HOME/.hermes/bin/ -vxzf $ARCHIVE_NAME
    ```
 
 3. Update your path:
    ```shell
-   export PATH="$HOME/.hermes:$PATH"
+   export PATH="$HOME/.hermes/bin:$PATH"
    ```
 
 > NOTE: The binary may be initially prevented from running if you're
