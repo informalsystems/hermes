@@ -1,7 +1,7 @@
 use abscissa_core::config;
 
 use ibc::ics24_host::identifier::ChainId;
-use ibc_relayer::chain::CosmosSDKChain;
+use ibc_relayer::chain::CosmosSdkChain;
 use ibc_relayer::{chain::handle::ChainHandle, config::StoreConfig};
 use ibc_relayer::{chain::runtime::ChainRuntime, config::ChainConfig};
 
@@ -64,12 +64,12 @@ fn spawn_chain_runtimes(
     spawn_options.apply(&mut src_chain_config);
     spawn_options.apply(&mut dst_chain_config);
 
-    let src_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)
+    let src_chain_res = ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config)
         .map_err(|e| Kind::Runtime.context(e));
 
     let src = src_chain_res.map(|(handle, _)| handle)?;
 
-    let dst_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config)
+    let dst_chain_res = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config)
         .map_err(|e| Kind::Runtime.context(e));
 
     let dst = dst_chain_res.map(|(handle, _)| handle)?;

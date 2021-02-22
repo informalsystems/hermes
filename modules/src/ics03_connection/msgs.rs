@@ -34,22 +34,14 @@ pub enum ConnectionMsg {
 #[cfg(test)]
 pub mod test_util {
 
+    use crate::ics24_host::identifier::{ClientId, ConnectionId};
     use ibc_proto::ibc::core::commitment::v1::MerklePrefix;
     use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
 
-    pub fn get_dummy_counterparty() -> RawCounterparty {
+    pub fn get_dummy_raw_counterparty() -> RawCounterparty {
         RawCounterparty {
-            client_id: "destclient".to_string(),
-            connection_id: "destconnection".to_string(),
-            prefix: Some(MerklePrefix {
-                key_prefix: b"ibc".to_vec(),
-            }),
-        }
-    }
-    pub fn get_dummy_counterparty_ics26() -> RawCounterparty {
-        RawCounterparty {
-            client_id: "9999-mock-0".to_string(),
-            connection_id: "defaultConnection-0".to_string(),
+            client_id: ClientId::default().to_string(),
+            connection_id: ConnectionId::default().to_string(),
             prefix: Some(MerklePrefix {
                 key_prefix: b"ibc".to_vec(),
             }),

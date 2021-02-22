@@ -2,64 +2,52 @@
 
 ## Unreleased Changes
 
-> [high level summary]
+- [high level summary]
 
 ### FEATURES
 
 - [ibc]
-
-  - [nothing yet]
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
 
-  - [nothing yet]
-
 - [ibc-relayer-cli]
-
   - [nothing yet]
 
 ### IMPROVEMENTS
 
 - [ibc]
-
-  - [nothing yet]
+  - Follow Rust guidelines naming conventions ([#689])
 
 - [ibc-relayer]
-
   - [nothing yet]
 
 - [ibc-relayer-cli]
-
   - [nothing yet]
 
 ### BUG FIXES
 
 - [ibc]
-
   - [nothing yet]
 
 - [ibc-relayer]
-
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - Hermes guide: improved installation guideline ([#672]) 
+  - [nothing yet]
 
 ### BREAKING CHANGES
 
 - [ibc]
-
   - [nothing yet]
 
 - [ibc-relayer]
-
   - [nothing yet]
 
 - [ibc-relayer-cli]
-
   - [nothing yet]
 
-[#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#689]: https://github.com/informalsystems/ibc-rs/issues/689
 
 ## v0.1.1
 *February 17, 2021*
@@ -113,12 +101,16 @@ involving packet acks in a 3-chain setup. More details below.
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#572]: https://github.com/informalsystems/ibc-rs/issues/572
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
+[#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
 [#682]: https://github.com/informalsystems/ibc-rs/issues/682
+
+[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
+[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
 
 ## v0.1.0
 *February 4, 2021*

@@ -11,25 +11,25 @@ use crate::Height;
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum IBCEventType {
+pub enum IbcEventType {
     CreateClient,
     SendPacket,
     WriteAck,
 }
 
-impl IBCEventType {
+impl IbcEventType {
     pub fn as_str(&self) -> &'static str {
         match *self {
-            IBCEventType::CreateClient => "create_client",
-            IBCEventType::SendPacket => "send_packet",
-            IBCEventType::WriteAck => "write_acknowledgement",
+            IbcEventType::CreateClient => "create_client",
+            IbcEventType::SendPacket => "send_packet",
+            IbcEventType::WriteAck => "write_acknowledgement",
         }
     }
 }
 
 /// Events created by the IBC component of a chain, destined for a relayer.
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum IBCEvent {
+pub enum IbcEvent {
     NewBlock(NewBlock),
 
     CreateClient(ClientEvents::CreateClient),
@@ -60,7 +60,7 @@ pub enum IBCEvent {
 }
 
 // This is tendermint specific
-pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IBCEvent> {
+pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IbcEvent> {
     // Return the first hit we find
     if let Some(mut client_res) = ClientEvents::try_from_tx(event) {
         client_res.set_height(height);
@@ -76,57 +76,57 @@ pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -
     }
 }
 
-impl IBCEvent {
+impl IbcEvent {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
 
     pub fn height(&self) -> &Height {
         match self {
-            IBCEvent::NewBlock(bl) => bl.height(),
-            IBCEvent::CreateClient(ev) => ev.height(),
-            IBCEvent::UpdateClient(ev) => ev.height(),
-            IBCEvent::ClientMisbehavior(ev) => ev.height(),
-            IBCEvent::OpenInitConnection(ev) => ev.height(),
-            IBCEvent::OpenTryConnection(ev) => ev.height(),
-            IBCEvent::OpenAckConnection(ev) => ev.height(),
-            IBCEvent::OpenConfirmConnection(ev) => ev.height(),
-            IBCEvent::OpenInitChannel(ev) => ev.height(),
-            IBCEvent::OpenTryChannel(ev) => ev.height(),
-            IBCEvent::OpenAckChannel(ev) => ev.height(),
-            IBCEvent::OpenConfirmChannel(ev) => ev.height(),
-            IBCEvent::CloseInitChannel(ev) => ev.height(),
-            IBCEvent::CloseConfirmChannel(ev) => ev.height(),
-            IBCEvent::SendPacket(ev) => ev.height(),
-            IBCEvent::ReceivePacket(ev) => ev.height(),
-            IBCEvent::WriteAcknowledgement(ev) => ev.height(),
-            IBCEvent::AcknowledgePacket(ev) => ev.height(),
-            IBCEvent::TimeoutPacket(ev) => ev.height(),
+            IbcEvent::NewBlock(bl) => bl.height(),
+            IbcEvent::CreateClient(ev) => ev.height(),
+            IbcEvent::UpdateClient(ev) => ev.height(),
+            IbcEvent::ClientMisbehavior(ev) => ev.height(),
+            IbcEvent::OpenInitConnection(ev) => ev.height(),
+            IbcEvent::OpenTryConnection(ev) => ev.height(),
+            IbcEvent::OpenAckConnection(ev) => ev.height(),
+            IbcEvent::OpenConfirmConnection(ev) => ev.height(),
+            IbcEvent::OpenInitChannel(ev) => ev.height(),
+            IbcEvent::OpenTryChannel(ev) => ev.height(),
+            IbcEvent::OpenAckChannel(ev) => ev.height(),
+            IbcEvent::OpenConfirmChannel(ev) => ev.height(),
+            IbcEvent::CloseInitChannel(ev) => ev.height(),
+            IbcEvent::CloseConfirmChannel(ev) => ev.height(),
+            IbcEvent::SendPacket(ev) => ev.height(),
+            IbcEvent::ReceivePacket(ev) => ev.height(),
+            IbcEvent::WriteAcknowledgement(ev) => ev.height(),
+            IbcEvent::AcknowledgePacket(ev) => ev.height(),
+            IbcEvent::TimeoutPacket(ev) => ev.height(),
             _ => unimplemented!(),
         }
     }
 
     pub fn set_height(&mut self, height: Height) {
         match self {
-            IBCEvent::NewBlock(ev) => ev.set_height(height),
-            IBCEvent::CreateClient(ev) => ev.set_height(height),
-            IBCEvent::UpdateClient(ev) => ev.set_height(height),
-            IBCEvent::ClientMisbehavior(ev) => ev.set_height(height),
-            IBCEvent::OpenInitConnection(ev) => ev.set_height(height),
-            IBCEvent::OpenTryConnection(ev) => ev.set_height(height),
-            IBCEvent::OpenAckConnection(ev) => ev.set_height(height),
-            IBCEvent::OpenConfirmConnection(ev) => ev.set_height(height),
-            IBCEvent::OpenInitChannel(ev) => ev.set_height(height),
-            IBCEvent::OpenTryChannel(ev) => ev.set_height(height),
-            IBCEvent::OpenAckChannel(ev) => ev.set_height(height),
-            IBCEvent::OpenConfirmChannel(ev) => ev.set_height(height),
-            IBCEvent::CloseInitChannel(ev) => ev.set_height(height),
-            IBCEvent::CloseConfirmChannel(ev) => ev.set_height(height),
-            IBCEvent::SendPacket(ev) => ev.set_height(height),
-            IBCEvent::ReceivePacket(ev) => ev.set_height(height),
-            IBCEvent::WriteAcknowledgement(ev) => ev.set_height(height),
-            IBCEvent::AcknowledgePacket(ev) => ev.set_height(height),
-            IBCEvent::TimeoutPacket(ev) => ev.set_height(height),
+            IbcEvent::NewBlock(ev) => ev.set_height(height),
+            IbcEvent::CreateClient(ev) => ev.set_height(height),
+            IbcEvent::UpdateClient(ev) => ev.set_height(height),
+            IbcEvent::ClientMisbehavior(ev) => ev.set_height(height),
+            IbcEvent::OpenInitConnection(ev) => ev.set_height(height),
+            IbcEvent::OpenTryConnection(ev) => ev.set_height(height),
+            IbcEvent::OpenAckConnection(ev) => ev.set_height(height),
+            IbcEvent::OpenConfirmConnection(ev) => ev.set_height(height),
+            IbcEvent::OpenInitChannel(ev) => ev.set_height(height),
+            IbcEvent::OpenTryChannel(ev) => ev.set_height(height),
+            IbcEvent::OpenAckChannel(ev) => ev.set_height(height),
+            IbcEvent::OpenConfirmChannel(ev) => ev.set_height(height),
+            IbcEvent::CloseInitChannel(ev) => ev.set_height(height),
+            IbcEvent::CloseConfirmChannel(ev) => ev.set_height(height),
+            IbcEvent::SendPacket(ev) => ev.set_height(height),
+            IbcEvent::ReceivePacket(ev) => ev.set_height(height),
+            IbcEvent::WriteAcknowledgement(ev) => ev.set_height(height),
+            IbcEvent::AcknowledgePacket(ev) => ev.set_height(height),
+            IbcEvent::TimeoutPacket(ev) => ev.set_height(height),
             _ => unimplemented!(),
         }
     }

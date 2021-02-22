@@ -1,6 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::config::StoreConfig;
 use ibc_relayer::link::{Link, LinkParameters};
@@ -49,7 +49,7 @@ impl Runnable for TxRawPacketRecvCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let res: Result<Vec<IBCEvent>, Error> = link
+        let res: Result<Vec<IbcEvent>, Error> = link
             .build_and_send_recv_packet_messages()
             .map_err(|e| Kind::Tx.context(e).into());
 
@@ -99,7 +99,7 @@ impl Runnable for TxRawPacketAckCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let res: Result<Vec<IBCEvent>, Error> = link
+        let res: Result<Vec<IbcEvent>, Error> = link
             .build_and_send_ack_packet_messages()
             .map_err(|e| Kind::Tx.context(e).into());
 
