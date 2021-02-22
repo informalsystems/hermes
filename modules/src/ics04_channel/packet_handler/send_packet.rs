@@ -87,17 +87,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     // check if packet height timeouted on the receiving chain
 
     let latest_height = client_state.latest_height();
-
-    // Question:  Should the height be computed w.r.t. the current height's revision_height field ?
-    // In Height there is only addition with an u64.
-    // In the message it says the timeout_height is relative to the current block height.
-    // What about the revision_number if given in the timeout_height ?
-    // In Go the timeout_height is directly compared with the latest client height, i.e.,
-    // let packet_height = packet.timeout_height;
-
-    let packet_height = ctx
-        .channel_host_current_height()
-        .add(packet.timeout_height.revision_height);
+    let packet_height = packet.timeout_height;
 
     if !packet.timeout_height.is_zero() && packet_height.cmp(&latest_height).eq(&Ordering::Less) {
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
