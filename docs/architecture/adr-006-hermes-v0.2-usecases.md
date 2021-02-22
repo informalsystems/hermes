@@ -31,17 +31,25 @@ robustness, and richness of features on a longer term.
 
 ## Decision
 
-This is a summary of the use-cases (commands) discussed in the rest of this ADR:
+This is a summary of the use-cases (commands) discussed in the rest of this ADR.
+Note that we omit the binary name `hermes` from the commands belows, to keep the
+command length to a minimum.
 
+To create a connection:
 - `create connection ibc-0 ibc-1 [--delay <delay>]`
-- `create connection ibc-0 --src-client-id <client-id> --dst-client-id <client-id> [--delay <delay>]`
-- `create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> --order <order> --version <version>`
-- `create channel ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order> --version <version>`
-- `start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>`
-- `start ibc-0 --src-client-id <client-id> --dst-client-id <client-id> --delay <delay>`
-- `start ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order>
-  --version <version>`
+- `create connection ibc-0 --src-client <client-id> --dst-client <client-id> [--delay <delay>]`
+
+To create a channel:
+- `create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>] [--delay <delay>]`
+- `create channel ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id> [--order <order>] [--version <version>]`
+
+To start packet relaying:
+- `start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>] [--delay <delay>]`
+- `start ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id> [--order <order>]
+  [--version <version>]`
 - `start ibc-0 --src-channel <channel-id>`
+
+For finishing pre-initialized, but unfinished object handshakes, for connection and channel:
 - `establish connection ibc-0 --src-connection <connection-id>`
 - `establish channel ibc-0 --src-channel <channel-id>`
 
@@ -65,9 +73,9 @@ connection).
 We propose two basic patterns that Hermes should be able to fulfil.
 
 1. Simple invocations to perform basic actions.
-    - By _action_ here we mean doing the complete handshake for an object
-      (specifically _connection_ or _channel_) on two chains, or relaying
-      packets between two chains.
+    - By _action_ here we mean doing the complete handshake for an object from
+      scratch (specifically _connection_ or _channel_) on two chains, or
+      relaying packets between two chains.
     - The focus here is for the command to include retrying mechanisms 
       (perform it _robustly_) and have the simplest interface.
 
@@ -84,10 +92,11 @@ commands that Hermes v0.2.0 should fulfil.
 
 ##### Create New Connection
 
-- Minimal invocation: this will create the connection using _new_ clients:
+- Minimal invocation: this will create the connection from scratch, using
+  _new_ clients:
 
 ```
-hermes create connection ibc-0 ibc-1 [--delay <delay>]
+create connection ibc-0 ibc-1 [--delay <delay>]
 ```
 
 **Details:**
@@ -98,7 +107,7 @@ that the new connection should have.
 - Reusing pre-existing state, concretely, with _existing_ clients:
 
 ```
-hermes create connection ibc-0 --src-client-id <client-id> --dst-client-id <client-id> [--delay <delay>]
+create connection ibc-0 --src-client <client-id> --dst-client <client-id> [--delay <delay>]
 ```
 
 **Details:**
@@ -115,13 +124,13 @@ be verifying headers for the source chain.
 - With _new_ connection and clients:
 
 ```
-hermes create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> --order <order> --version <version>
+create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>] [--delay <delay>]
 ```
 
 - With _existing_ specific connection:
 
 ```
-hermes create channel ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order> --version <version>
+create channel ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id> [--order <order>] [--version <version>]
 ```
 
 ##### Packet Relaying
@@ -129,27 +138,20 @@ hermes create channel ibc-0 --src-connection <connection-id> --src-port <port-id
 - relay packets over a _new_ channel, _new_ connection, and _new_ clients:
 
 ```
-hermes start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>
+start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>] [--delay <delay>]
 ```
 
-- relay packets over a _new_ channel that uses a _new_ connection that builds
-  on an _existing_ client:
+- relay packets over a _new_ channel that re-uses an _existing_ connection:
 
 ```
-hermes start ibc-0 --src-client-id <client-id> --dst-client-id <client-id> --delay <delay>
-```
-
-- relay packets over a _new_ channel that uses an _existing_ connection:
-
-```
-hermes start ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order>
---version <version>
+start ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id> [--order <order>]
+[--version <version>]
 ```
 
 - relay packets over an _existing_ channel:
 
 ```
-hermes start ibc-0 --src-channel <channel-id>
+start ibc-0 --src-channel <channel-id>
 ```
 
 ##### Finishing partially complete handshakes:
@@ -160,13 +162,13 @@ handshake may be partially started.
 - Finalize handshake for _partially established_ connection:
 
 ```
-hermes establish connection ibc-0 --src-connection <connection-id>
+establish connection ibc-0 --src-connection <connection-id>
 ```
 
 - Finalize handshake for _partially established_ channel:
 
 ```
-hermes establish channel ibc-0 --src-channel <channel-id>
+establish channel ibc-0 --src-channel <channel-id>
 ```
 
 
@@ -196,7 +198,7 @@ Partially implemented.
 ## Consequences
 ### Positive
 
-- Simpler and more better CLI invocation: "create" is more accurate than "tx" or
+- Simpler, more accurate CLI invocation: "create" is more precise than "tx" or
   "handshake"
 - Improved output for human operators.
 
