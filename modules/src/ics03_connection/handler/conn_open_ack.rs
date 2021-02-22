@@ -30,17 +30,19 @@ pub(crate) fn process(
                 || old_conn_end.state_matches(&State::TryOpen)
                     && old_conn_end.versions().get(0).eq(&Some(msg.version()));
 
-            // Check that if the msg's counterparty connection id is not empty then it matches
-            // the old connection's counterparty.
-            // TODO: the following looks like a bug in two ways:
-            //       - first, it doesn't make sense to not have a counterparty
-            //         connection id
-            //       - second (assuming that a counterparty connection id is
-            //         is required), when we do the open init, we don't know
-            //         the counterparty connection id; so how could it match
-            //         the one in the message?
-            let counterparty_matches = msg.counterparty_connection_id().is_none()
-                || old_conn_end.counterparty().connection_id() == msg.counterparty_connection_id();
+            // Check that if we have a counterparty connection id, then it
+            // matches the one in the message
+            let counterparty_matches = if let Some(counterparty_connection_id) =
+                old_conn_end.counterparty().connection_id()
+            {
+                // it's okay to unwrap as `msg.counterparty_connection_id`
+                // should always be set
+                // TODO: `msg.counterparty_connection_id` should simply be a
+                //       `ConnectionId`, not an `Option<ConnectionId>`
+                msg.counterparty_connection_id.as_ref().unwrap() == counterparty_connection_id
+            } else {
+                true
+            };
 
             if state_is_consistent && counterparty_matches {
                 Ok(old_conn_end)
@@ -175,16 +177,6 @@ mod tests {
             CommitmentPrefix::from(vec![]), // incorrect field
         ));
 
-        // A connection end with correct state & prefix, but incorrect counterparty; exercises
-        // unsuccessful processing path.
-        let mut conn_end_cparty = conn_end_open.clone();
-        conn_end_cparty.set_state(State::Init);
-        conn_end_cparty.set_counterparty(Counterparty::new(
-            client_id.clone(),
-            None, // incorrect field
-            CommitmentPrefix::from(b"ibc".to_vec()),
-        ));
-
         let tests: Vec<Test> = vec![
             Test {
                 name: "Successful processing of an Ack message".to_string(),
@@ -222,15 +214,6 @@ mod tests {
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
                 error_kind: Some(Kind::ConsensusStateVerificationFailure(proof_height))
-            },
-            Test {
-                name: "Processing fails due to mismatching counterparty conn id".to_string(),
-                ctx: default_context
-                    .with_client(&client_id, proof_height)
-                    .with_connection(conn_id.clone(), conn_end_cparty),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
-                want_pass: false,
-                error_kind: Some(Kind::ConnectionMismatch(conn_id))
             },
             /*
             Test {

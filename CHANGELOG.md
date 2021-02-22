@@ -10,6 +10,7 @@
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
+  - [nothing yet]
 
 ### BUG FIXES
 
@@ -25,7 +26,7 @@
 ### BUG FIXES
 
 - [ibc]
-  - [nothing yet]
+  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
 
 - [ibc-relayer]
   - [nothing yet]

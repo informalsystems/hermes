@@ -96,7 +96,7 @@ pub fn verify_connection_proof(
             proof_height,
             connection_end.counterparty().prefix(),
             proof,
-            &connection_end.counterparty().connection_id().unwrap(),
+            connection_end.counterparty().connection_id(),
             expected_conn,
         )
         .map_err(|_| Kind::InvalidProof)?)
