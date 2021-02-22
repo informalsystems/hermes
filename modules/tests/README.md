@@ -6,10 +6,10 @@ This directory contains the model-based tests for the IBC modules. They are "mod
 
 To instantiate the model, we define in [IBC.cfg](support/model_based/IBC.cfg) the following model constants:
 
-    - `ChainIds = {"chain-A", "chain-B"}`, indicating that two chains, `chain-A` and `chain-B`, will be created
-    - `MaxChainHeight = 4`, indicating that each chain will reach at most height 4
-    - `MaxClientsPerChain = 1`, indicating that at most 1 client per chain will be created
-    - `MaxConnectionsPerChain = 1`, indicating that at most 1 connection per chain will be created
+- `ChainIds = {"chain-A", "chain-B"}`, indicating that two chains, `chain-A` and `chain-B`, will be created
+- `MaxChainHeight = 4`, indicating that each chain will reach at most height 4
+- `MaxClientsPerChain = 1`, indicating that at most 1 client per chain will be created
+- `MaxConnectionsPerChain = 1`, indicating that at most 1 connection per chain will be created
 
 The [IBC.cfg](support/model_based/IBC.cfg) file also defines two simple invariants:
 ```tla
