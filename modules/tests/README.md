@@ -56,5 +56,6 @@ cargo install --path .
 The model-based tests can be run with the following command:
  
 ```bash
+cd modules/
 cargo test --features mocks -- mbt
 ```
