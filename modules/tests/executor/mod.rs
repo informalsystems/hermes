@@ -112,7 +112,7 @@ impl IBCTestExecutor {
     }
 
     fn mock_header(height: u64) -> MockHeader {
-        MockHeader(Self::height(height), Utc::now().into())
+        MockHeader(Self::height(height), Utc::now())
     }
 
     fn header(height: u64) -> AnyHeader {
