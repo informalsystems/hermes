@@ -9,7 +9,6 @@ use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
-//use crate::ics24_host::validate::{validate_channel_identifier,validate_port_identifier};
 use super::PacketResult;
 
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
