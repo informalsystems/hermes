@@ -342,7 +342,7 @@ ConnectionOpenConfirm(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "ICS03ConnectionOpenAckConfirm"),
+        !.height = UpdateChainHeight(@, result, "ICS03ConnectionOpenConfirmOK"),
         !.connections = result.connections
     ] IN
     \* no need to update the counterparty chain with a proof (as in the other
