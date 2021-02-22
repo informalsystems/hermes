@@ -309,10 +309,7 @@ impl IBCTestExecutor {
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
                     MsgConnectionOpenAck {
                         connection_id: Self::connection_id(connection_id),
-                        // TODO: the following should not be an option
-                        counterparty_connection_id: Some(Self::connection_id(
-                            counterparty_connection_id,
-                        )),
+                        counterparty_connection_id: Self::connection_id(counterparty_connection_id),
                         // TODO: is this ever needed?
                         client_state: None,
                         proofs: Self::proofs(client_state),
