@@ -24,21 +24,22 @@ where
 
     if destination_channel.is_none() {
         return Err(
-            Kind::DestinationChannelNotFound(msg.source_port.clone(), msg.source_channel).into(),
+            Kind::DestinationChannelNotFound(msg.source_port.clone(), msg.source_channel.clone()).into(),
         );
     }
 
     // get the next sequence
     let sequence = ctx
-        .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()))
-        .ok_or_else(|| {
-            Kind::SequenceSendNotFound(msg.source_port.clone(), msg.source_channel.clone())
-        })?;
+    .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()))
+    .ok_or(
+        Kind::SequenceSendNotFound(msg.source_port.clone(), msg.source_channel.clone())
+    )?;
+
 
     // begin createOutgoingPacket logic
     let _channel_cap = ctx
         .lookup_module_by_port(&msg.source_port.clone())
-        .ok_or_else(|| Kind::ChannelCapabilityNotFound)?;
+        .ok_or(Kind::ChannelCapabilityNotFound)?;
 
     //TODO: Application LOGIC.
 
