@@ -30,6 +30,7 @@
 
 - [ibc]
   - Fix overflow bug in ICS03 client consensus height verification method ([#685])
+  - Allow a conn open ack to succeed in the happy case ([#699])
 
 - [ibc-relayer]
   - [nothing yet]
@@ -49,7 +50,7 @@
   - [nothing yet]
 
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
-[#689]: https://github.com/informalsystems/ibc-rs/issues/689
+[#699]: https://github.com/informalsystems/ibc-rs/issues/699
 
 ## v0.1.1
 *February 17, 2021*
