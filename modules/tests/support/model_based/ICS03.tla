@@ -309,6 +309,7 @@ ICS03_ConnectionOpenAck(
                             /\ proof.clientId = connection.counterpartyClientId
                             /\ proof.counterpartyChainId = connection.chainId
                             /\ proof.counterpartyClientId = connection.clientId
+                            /\ proof.counterpartyConnectionId = connectionId
                     } IN
                     LET proofExists == Cardinality(openTryProofs) > 0 IN
                     IF ~proofExists THEN
@@ -396,9 +397,9 @@ ICS03_ConnectionOpenConfirm(
                     proof \in chain.connectionProofs :
                         /\ proof.type = "ICS03ConnectionOpenAck"
                         /\ proof.chainId = connection.counterpartyChainId
-                        /\ proof.clientId = connection.counterpartyClientId
+                        /\ proof.connectionId = connection.counterpartyConnectionId
                         /\ proof.counterpartyChainId = connection.chainId
-                        /\ proof.counterpartyClientId = connection.clientId
+                        /\ proof.counterpartyConnectionId = connectionId
                 } IN
                 LET proofExists == Cardinality(openAckProofs) > 0 IN
                 IF ~proofExists THEN

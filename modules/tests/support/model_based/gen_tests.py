@@ -38,5 +38,6 @@ for test in tests:
         file.write(CFG + "INVARIANT " + test + "Neg")
 
     # run tlc-json
+    print("> generating " + test)
     os.system("tlc-json IBCTests.tla")
     os.system("mv counterexample.json tests/" + test + ".json")
