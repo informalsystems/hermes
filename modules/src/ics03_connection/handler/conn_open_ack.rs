@@ -32,6 +32,13 @@ pub(crate) fn process(
 
             // Check that if the msg's counterparty connection id is not empty then it matches
             // the old connection's counterparty.
+            // TODO: the following looks like a bug in two ways:
+            //       - first, it doesn't make sense to not have a counterparty
+            //         connection id
+            //       - second (assuming that a counterparty connection id is
+            //         is required), when we do the open init, we don't know
+            //         the counterparty connection id; so how could it match
+            //         the one in the message?
             let counterparty_matches = msg.counterparty_connection_id().is_none()
                 || old_conn_end.counterparty().connection_id() == msg.counterparty_connection_id();
 
