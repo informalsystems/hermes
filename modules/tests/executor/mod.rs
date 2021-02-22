@@ -363,7 +363,6 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
 
     fn next_step(&mut self, step: Step) -> bool {
         let result = self.apply(step.action);
-        println!("{:?}", result);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::ICS02CreateOK => result.is_ok(),
