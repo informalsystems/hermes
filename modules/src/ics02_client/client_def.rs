@@ -292,8 +292,6 @@ pub enum AnyTime {
     Mock(DateTime<Utc>),
 }
 
-//impl Protobuf<Any> for AnyTime {}
-
 impl Add<Duration> for AnyTime {
     type Output = Self;
 

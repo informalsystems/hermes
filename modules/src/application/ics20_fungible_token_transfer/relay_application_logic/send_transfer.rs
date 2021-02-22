@@ -55,6 +55,6 @@ where
 
     let handler_output =
         send_packet(ctx, packet).map_err(|e| Kind::HandlerRaisedError.context(e))?;
-    //TODO:  add event/atributes and write issued by the application logic from the sending of the packet
+    //TODO:  add event/atributes and writes to the store issued by the application logic for packet sending.
     Ok(handler_output)
 }

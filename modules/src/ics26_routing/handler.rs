@@ -422,11 +422,6 @@ mod tests {
                 msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenAck(msg_chan_ack)),
                 want_pass: true,
             },
-            // Test{
-            //     name: "Send packet succedes".to_string(),
-            //     msg: ICS26Envelope::ICS20Msg(msg_transfer),
-            //     want_pass: true,
-            // },
             Test {
                 name: "Channel close init succeeds".to_string(),
                 msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelCloseInit(msg_chan_close_init)),
