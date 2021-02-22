@@ -208,10 +208,9 @@ mod tests {
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
                 ctx: default_context
-                    .clone()
                     .with_client(&client_id, proof_height)
-                    .with_connection(conn_id.clone(), conn_end_prefix),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
+                    .with_connection(conn_id, conn_end_prefix),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
                 want_pass: false,
                 error_kind: Some(Kind::ConsensusStateVerificationFailure(proof_height))
             },
