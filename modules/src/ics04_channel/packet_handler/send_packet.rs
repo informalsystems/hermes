@@ -71,15 +71,13 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .ok_or_else(||Kind::MissingConnection(
-            source_channel_end.connection_hops()[0].clone(),
-        ))?;
+        .ok_or_else(|| Kind::MissingConnection(source_channel_end.connection_hops()[0].clone()))?;
 
     let client_id = connection_end.client_id().clone();
 
     let client_state = ctx
         .client_state(&client_id)
-        .ok_or_else(||Kind::MissingClientState(client_id.clone()))?;
+        .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
 
     // prevent accidental sends with clients that cannot be updated
     if client_state.is_frozen() {
@@ -108,10 +106,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     //check if packet timestamp timeouted on the receiving chain
     let consensus_state = ctx
         .client_consensus_state(&client_id, latest_height)
-        .ok_or_else(||Kind::MissingClientConsensusState(
-            client_id.clone(),
-            latest_height,
-        ))?;
+        .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
 
     let latest_timestamp = consensus_state.latest_timestamp();
 
