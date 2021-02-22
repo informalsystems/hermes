@@ -177,16 +177,6 @@ mod tests {
             CommitmentPrefix::from(vec![]), // incorrect field
         ));
 
-        // A connection end with correct state & prefix, but incorrect counterparty; exercises
-        // unsuccessful processing path.
-        let mut conn_end_cparty = conn_end_open.clone();
-        conn_end_cparty.set_state(State::Init);
-        conn_end_cparty.set_counterparty(Counterparty::new(
-            client_id.clone(),
-            None, // incorrect field
-            CommitmentPrefix::from(b"ibc".to_vec()),
-        ));
-
         let tests: Vec<Test> = vec![
             Test {
                 name: "Successful processing of an Ack message".to_string(),
@@ -224,15 +214,6 @@ mod tests {
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
                 error_kind: Some(Kind::ConsensusStateVerificationFailure(proof_height))
-            },
-            Test {
-                name: "Processing fails due to mismatching counterparty conn id".to_string(),
-                ctx: default_context
-                    .with_client(&client_id, proof_height)
-                    .with_connection(conn_id.clone(), conn_end_cparty),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
-                want_pass: false,
-                error_kind: Some(Kind::ConnectionMismatch(conn_id))
             },
             /*
             Test {
