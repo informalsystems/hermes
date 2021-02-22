@@ -34,7 +34,7 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Hermes guide: improved installation guideline ([#672])
 
 ### BREAKING CHANGES
 
@@ -47,6 +47,7 @@
 - [ibc-relayer-cli]
   - [nothing yet]
 
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 
 ## v0.1.1
