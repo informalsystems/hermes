@@ -29,6 +29,7 @@ tests = [
     "ICS03InvalidProofTest",
     "ICS03ConnectionOpenAckOKTest",
     "ICS03UninitializedConnectionTest",
+    "ICS03ConnectionOpenAckConfirmTest",
 ]
 
 for test in tests:

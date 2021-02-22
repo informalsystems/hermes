@@ -53,9 +53,12 @@ ICS03_ConnectionOpenInit(
             \* if it doesn't, create it
             LET connection == [
                 state |-> "Init",
+                chainId |-> chainId,
                 clientId |-> clientId,
-                counterpartyClientId |-> counterpartyClientId,
+                \* generate a new connection identifier
                 connectionId |-> chain.connectionIdCounter,
+                counterpartyChainId |-> counterpartyChainId,
+                counterpartyClientId |-> counterpartyClientId,
                 counterpartyConnectionId |-> ConnectionIdNone
             ] IN
             \* return result with updated state
@@ -206,9 +209,11 @@ ICS03_ConnectionOpenTry(
                         \* verification passed; create connection
                         LET connection == [
                             state |-> "TryOpen",
+                            chainId |-> chainId,
                             clientId |-> clientId,
                             \* generate a new connection identifier
                             connectionId |-> chain.connectionIdCounter,
+                            counterpartyChainId |-> counterpartyChainId,
                             counterpartyClientId |-> counterpartyClientId,
                             counterpartyConnectionId |-> counterpartyConnectionId
                         ] IN
@@ -330,5 +335,95 @@ ICS03_ConnectionOpenAck(
                             action |-> action,
                             outcome |-> "ICS03ConnectionOpenAckOK"
                         ]
+
+ICS03_ConnectionOpenConfirm(
+    chain,
+    chainId,
+    connectionId,
+    height,
+    counterpartyChainId,
+    counterpartyConnectionId
+) ==
+    LET action == AsAction([
+        type |-> "ICS03ConnectionOpenConfirm",
+        chainId |-> chainId,
+        connectionId |-> connectionId,
+        clientState |-> height,
+        counterpartyChainId |-> counterpartyChainId,
+        counterpartyConnectionId |-> counterpartyConnectionId
+    ]) IN
+    LET clients == chain.clients IN
+    LET connections == chain.connections IN
+    LET connectionProofs == chain.connectionProofs IN
+    \* check if the connection exists
+    IF ~ICS03_ConnectionExists(connections, connectionId) THEN
+        \* if the connection does not exist, then set an error outcome
+        \* TODO: can't we reuse the same error "ICS03ConnectionNotFound"
+        \* from conn open try?
+        [
+            connections |-> connections,
+            action |-> action,
+            outcome |-> "ICS03UninitializedConnection"
+        ]
+    ELSE
+        \* if the connection exists, verify that is either Init or TryOpen;
+        \* also check that the counterparty connection id matches
+        LET connection == ICS03_GetConnection(connections, connectionId) IN
+        LET validConnection == connection.state = "TryOpen" IN
+        IF ~validConnection THEN
+            \* if the existing connection does not match, then set an
+            \* error outcome
+            [
+                connections |-> connections,
+                action |-> action,
+                outcome |-> "ICS03ConnectionMismatch"
+            ]
+        ELSE
+            \* check if the client has a consensus state with this height
+            LET client == ICS02_GetClient(clients, connection.clientId) IN
+            LET consensusStateExists == height \in client.heights IN
+            IF ~consensusStateExists THEN
+                \* if the client does have a consensus state with this
+                \* height, then set an error outcome
+                [
+                    connections |-> connections,
+                    action |-> action,
+                    outcome |-> "ICS03MissingClientConsensusState"
+                ]
+            ELSE
+                \* check if there was an open ack at the remote chain
+                LET openAckProofs == {
+                    proof \in chain.connectionProofs :
+                        /\ proof.type = "ICS03ConnectionOpenAck"
+                        /\ proof.chainId = connection.counterpartyChainId
+                        /\ proof.clientId = connection.counterpartyClientId
+                        /\ proof.counterpartyChainId = connection.chainId
+                        /\ proof.counterpartyClientId = connection.clientId
+                } IN
+                LET proofExists == Cardinality(openAckProofs) > 0 IN
+                IF ~proofExists THEN
+                    \* if there wasn't an open ack at the remote chain,
+                    \* then set an error outcome
+                    [
+                        connections |-> chain.connections,
+                        action |-> action,
+                        outcome |-> "ICS03InvalidProof"
+                    ]
+                ELSE
+                    \* verification passed; update the connection state to
+                    \* "Open"
+                    LET updatedConnection == [connection EXCEPT
+                        !.state = "Open"
+                    ] IN
+                    \* return result with updated state
+                    [
+                        connections |-> ICS03_SetConnection(
+                            connections,
+                            connectionId,
+                            updatedConnection
+                        ),
+                        action |-> action,
+                        outcome |-> "ICS03ConnectionOpenConfirmOK"
+                    ]
 
 ===============================================================================
