@@ -23,7 +23,7 @@ pub enum Kind {
     #[error("consensus height claimed by the client on the other party is too advanced: {0} (host chain current height: {1})")]
     InvalidConsensusHeight(Height, Height),
 
-    #[error("consensus height claimed by the client on the other party falls outside of trusting period: {0} (host chain current height: {1})")]
+    #[error("consensus height claimed by the client on the other party has been pruned: {0} (host chain oldest height: {1})")]
     StaleConsensusHeight(Height, Height),
 
     #[error("identifier error")]
