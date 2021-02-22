@@ -30,16 +30,12 @@ pub(crate) fn process(
                 || old_conn_end.state_matches(&State::TryOpen)
                     && old_conn_end.versions().get(0).eq(&Some(msg.version()));
 
-            // Check that if we have a counterparty connection id, then it
-            // matches the one in the message
+            // Check that, if we have a counterparty connection id, then it
+            // matches the one in the message.
             let counterparty_matches = if let Some(counterparty_connection_id) =
                 old_conn_end.counterparty().connection_id()
             {
-                // it's okay to unwrap as `msg.counterparty_connection_id`
-                // should always be set
-                // TODO: `msg.counterparty_connection_id` should simply be a
-                //       `ConnectionId`, not an `Option<ConnectionId>`
-                msg.counterparty_connection_id.as_ref().unwrap() == counterparty_connection_id
+                &msg.counterparty_connection_id == counterparty_connection_id
             } else {
                 true
             };
@@ -68,8 +64,8 @@ pub(crate) fn process(
         Counterparty::new(
             // The counterparty is the local chain.
             new_conn_end.client_id().clone(), // The local client identifier.
-            msg.counterparty_connection_id().cloned(), // This chain's connection id as known on counterparty.
-            ctx.commitment_prefix(),                   // Local commitment prefix.
+            Some(msg.counterparty_connection_id().clone()), // This chain's connection id as known on counterparty.
+            ctx.commitment_prefix(),                        // Local commitment prefix.
         ),
         vec![msg.version().clone()],
         new_conn_end.delay_period,
@@ -156,7 +152,7 @@ mod tests {
             client_id.clone(),
             Counterparty::new(
                 client_id.clone(),
-                msg_ack.counterparty_connection_id().cloned(),
+                Some(msg_ack.counterparty_connection_id().clone()),
                 CommitmentPrefix::from(b"ibc".to_vec()),
             ),
             vec![msg_ack.version().clone()],
@@ -173,7 +169,7 @@ mod tests {
         conn_end_prefix.set_state(State::Init);
         conn_end_prefix.set_counterparty(Counterparty::new(
             client_id.clone(),
-            msg_ack.counterparty_connection_id().cloned(),
+            Some(msg_ack.counterparty_connection_id().clone()),
             CommitmentPrefix::from(vec![]), // incorrect field
         ));
 
