@@ -3,7 +3,7 @@ use serde::Serialize;
 use thiserror::Error;
 use tracing::error;
 
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
 use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
@@ -346,7 +346,7 @@ impl Channel {
         Ok(vec![new_msg.to_any::<RawMsgChannelOpenInit>()])
     }
 
-    pub fn build_chan_open_init_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_open_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_init()?;
 
         let events = self
@@ -358,16 +358,16 @@ impl Channel {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::OpenInitChannel(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::OpenInitChannel(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan init event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::OpenInitChannel(_) => Ok(result),
-            IBCEvent::ChainError(e) => {
+            IbcEvent::OpenInitChannel(_) => Ok(result),
+            IbcEvent::ChainError(e) => {
                 Err(ChannelError::Failed(format!("tx response error: {}", e)))
             }
             _ => panic!("internal error"),
@@ -509,7 +509,7 @@ impl Channel {
         Ok(msgs)
     }
 
-    pub fn build_chan_open_try_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_try()?;
 
         let events = self
@@ -521,16 +521,16 @@ impl Channel {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::OpenTryChannel(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::OpenTryChannel(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan try event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::OpenTryChannel(_) => Ok(result),
-            IBCEvent::ChainError(e) => {
+            IbcEvent::OpenTryChannel(_) => Ok(result),
+            IbcEvent::ChainError(e) => {
                 Err(ChannelError::Failed(format!("tx response error: {}", e)))
             }
             _ => panic!("internal error"),
@@ -598,7 +598,7 @@ impl Channel {
         Ok(msgs)
     }
 
-    pub fn build_chan_open_ack_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_open_ack_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_ack()?;
 
         let events = self
@@ -610,16 +610,16 @@ impl Channel {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::OpenAckChannel(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::OpenAckChannel(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan ack event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::OpenAckChannel(_) => Ok(result),
-            IBCEvent::ChainError(e) => {
+            IbcEvent::OpenAckChannel(_) => Ok(result),
+            IbcEvent::ChainError(e) => {
                 Err(ChannelError::Failed(format!("tx response error: {}", e)))
             }
             _ => panic!("internal error"),
@@ -675,7 +675,7 @@ impl Channel {
         Ok(msgs)
     }
 
-    pub fn build_chan_open_confirm_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_open_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_confirm()?;
 
         let events = self
@@ -687,16 +687,16 @@ impl Channel {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::OpenConfirmChannel(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::OpenConfirmChannel(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan confirm event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::OpenConfirmChannel(_) => Ok(result),
-            IBCEvent::ChainError(e) => {
+            IbcEvent::OpenConfirmChannel(_) => Ok(result),
+            IbcEvent::ChainError(e) => {
                 Err(ChannelError::Failed(format!("tx response error: {}", e)))
             }
             _ => panic!("internal error"),
@@ -727,7 +727,7 @@ impl Channel {
         Ok(vec![new_msg.to_any::<RawMsgChannelCloseInit>()])
     }
 
-    pub fn build_chan_close_init_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_close_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_close_init()?;
 
         let events = self
@@ -739,16 +739,16 @@ impl Channel {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::CloseInitChannel(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::CloseInitChannel(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan init event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::CloseInitChannel(_) => Ok(result),
-            IBCEvent::ChainError(e) => Err(ChannelError::Failed(format!(
+            IbcEvent::CloseInitChannel(_) => Ok(result),
+            IbcEvent::ChainError(e) => Err(ChannelError::Failed(format!(
                 "tx response event consists of an error: {}",
                 e
             ))),
@@ -806,7 +806,7 @@ impl Channel {
         Ok(msgs)
     }
 
-    pub fn build_chan_close_confirm_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_close_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
         let dst_msgs = self.build_chan_close_confirm()?;
 
         let events = self
@@ -818,16 +818,16 @@ impl Channel {
         let result = events
             .into_iter()
             .find(|event| {
-                matches!(event, IBCEvent::CloseConfirmChannel(_))
-                    || matches!(event, IBCEvent::ChainError(_))
+                matches!(event, IbcEvent::CloseConfirmChannel(_))
+                    || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan confirm event was in the response".to_string())
             })?;
 
         match result {
-            IBCEvent::CloseConfirmChannel(_) => Ok(result),
-            IBCEvent::ChainError(e) => {
+            IbcEvent::CloseConfirmChannel(_) => Ok(result),
+            IbcEvent::ChainError(e) => {
                 Err(ChannelError::Failed(format!("tx response error: {}", e)))
             }
             _ => panic!("internal error"),
@@ -835,12 +835,12 @@ impl Channel {
     }
 }
 
-fn extract_channel_id(event: &IBCEvent) -> Result<&ChannelId, ChannelError> {
+fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> {
     match event {
-        IBCEvent::OpenInitChannel(ev) => ev.channel_id().as_ref(),
-        IBCEvent::OpenTryChannel(ev) => ev.channel_id().as_ref(),
-        IBCEvent::OpenAckChannel(ev) => ev.channel_id().as_ref(),
-        IBCEvent::OpenConfirmChannel(ev) => ev.channel_id().as_ref(),
+        IbcEvent::OpenInitChannel(ev) => ev.channel_id().as_ref(),
+        IbcEvent::OpenTryChannel(ev) => ev.channel_id().as_ref(),
+        IbcEvent::OpenAckChannel(ev) => ev.channel_id().as_ref(),
+        IbcEvent::OpenConfirmChannel(ev) => ev.channel_id().as_ref(),
         _ => None,
     }
     .ok_or_else(|| ChannelError::Failed("cannot extract channel_id from result".to_string()))

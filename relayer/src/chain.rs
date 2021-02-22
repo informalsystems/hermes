@@ -7,8 +7,8 @@ use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
-pub use cosmos::CosmosSDKChain;
-use ibc::events::IBCEvent;
+pub use cosmos::CosmosSdkChain;
+use ibc::events::IbcEvent;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
@@ -103,7 +103,7 @@ pub trait Chain: Sized {
     fn keybase(&self) -> &KeyRing;
 
     /// Sends one or more transactions with `msgs` to chain.
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error>;
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 
     fn get_signer(&mut self) -> Result<AccountId, Error>;
 
@@ -199,7 +199,7 @@ pub trait Chain: Sized {
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error>;
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error>;
 
     // Provable queries
     fn proven_client_state(

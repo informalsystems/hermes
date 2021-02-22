@@ -1,7 +1,7 @@
 use prost_types::Any;
 use tendermint::account::Id as AccountId;
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
@@ -12,7 +12,7 @@ use crate::Height;
 /// Most of the functions in this represent wrappers over the ABCI interface.
 /// This trait mimics the `Chain` trait, but at a lower level of abstraction (no networking, header
 /// types, light client, RPC client, etc.)
-pub trait ICS18Context {
+pub trait Ics18Context {
     /// Returns the latest height of the chain.
     fn query_latest_height(&self) -> Height;
 
@@ -25,7 +25,7 @@ pub trait ICS18Context {
 
     /// Interface that the relayer uses to submit a datagram to this chain.
     /// One can think of this as wrapping around the `/broadcast_tx_commit` ABCI endpoint.
-    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error>;
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 
     /// Temporary solution. Similar to `CosmosSDKChain::key_and_signer()` but simpler.
     fn signer(&self) -> AccountId;

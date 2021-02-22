@@ -11,6 +11,10 @@
 
 - [ibc-relayer]
   - Add support for ordered channels ([#599])
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
+
+- [ibc-relayer]
+  - [nothing yet]
 
 - [ibc-relayer-cli]
   - [nothing yet]
@@ -18,7 +22,7 @@
 ### IMPROVEMENTS
 
 - [ibc]
-  - [nothing yet]
+  - Follow Rust guidelines naming conventions ([#689])
 
 - [ibc-relayer]
   - [nothing yet]
@@ -29,7 +33,7 @@
 ### BUG FIXES
 
 - [ibc]
-  - [nothing yet]
+  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
 
 - [ibc-relayer]
   - [nothing yet]
@@ -49,6 +53,8 @@
   - [nothing yet]
 
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
+[#685]: https://github.com/informalsystems/ibc-rs/issues/685
+[#689]: https://github.com/informalsystems/ibc-rs/issues/689
 
 ## v0.1.1
 *February 17, 2021*
@@ -102,6 +108,7 @@ involving packet acks in a 3-chain setup. More details below.
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#572]: https://github.com/informalsystems/ibc-rs/issues/572
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
+[#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
@@ -109,6 +116,9 @@ involving packet acks in a 3-chain setup. More details below.
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#682]: https://github.com/informalsystems/ibc-rs/issues/682
+
+[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
+[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
 
 ## v0.1.0
 *February 4, 2021*

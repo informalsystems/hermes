@@ -3,10 +3,10 @@ use std::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::{
-    chain::{Chain, CosmosSDKChain},
+    chain::{Chain, CosmosSdkChain},
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
 };
@@ -16,7 +16,7 @@ use crate::error::{Error, Kind};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct TxICS20MsgTransferCmd {
+pub struct TxIcs20MsgTransferCmd {
     #[options(free, required, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
@@ -46,7 +46,7 @@ pub struct TxICS20MsgTransferCmd {
     number_msgs: Option<usize>,
 }
 
-impl TxICS20MsgTransferCmd {
+impl TxIcs20MsgTransferCmd {
     fn validate_options(&self, config: &Config) -> Result<TransferOptions, String> {
         let src_chain_config = config
             .find_chain(&self.src_chain_id)
@@ -79,7 +79,7 @@ impl TxICS20MsgTransferCmd {
     }
 }
 
-impl Runnable for TxICS20MsgTransferCmd {
+impl Runnable for TxIcs20MsgTransferCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -92,21 +92,21 @@ impl Runnable for TxICS20MsgTransferCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
 
         let src_chain_res =
-            CosmosSDKChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone())
+            CosmosSdkChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone())
                 .map_err(|e| Kind::Runtime.context(e));
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let dst_chain_res = CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt)
+        let dst_chain_res = CosmosSdkChain::bootstrap(opts.packet_dst_chain_config.clone(), rt)
             .map_err(|e| Kind::Runtime.context(e));
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let res: Result<Vec<IBCEvent>, Error> =
+        let res: Result<Vec<IbcEvent>, Error> =
             build_and_send_transfer_messages(src_chain, dst_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 

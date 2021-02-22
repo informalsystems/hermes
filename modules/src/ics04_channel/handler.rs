@@ -16,10 +16,23 @@ pub mod chan_open_init;
 pub mod chan_open_try;
 
 mod verify;
+
+/// Defines the possible states of a channel identifier in a `ChannelResult`.
+#[derive(Clone, Debug)]
+pub enum ChannelIdState {
+    /// Specifies that the channel handshake handler allocated a new channel identifier. This
+    /// happens during the processing of either the `MsgChannelOpenInit` or `MsgChannelOpenTry`.
+    Generated,
+
+    /// Specifies that the handler reused a previously-allocated channel identifier.
+    Reused,
+}
+
 #[derive(Clone, Debug)]
 pub struct ChannelResult {
     pub port_id: PortId,
-    pub channel_id: Option<ChannelId>,
+    pub channel_id: ChannelId,
+    pub channel_id_state: ChannelIdState,
     pub channel_cap: Capability,
     pub channel_end: ChannelEnd,
 }

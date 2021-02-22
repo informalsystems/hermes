@@ -7,7 +7,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
-    events::IBCEvent,
+    events::IbcEvent,
     ics02_client::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
         header::Header,
@@ -294,7 +294,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn send_msgs(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_msgs(proto_msgs);
 
@@ -679,7 +679,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn query_txs(
         &self,
         request: QueryPacketEventDataRequest,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
 
