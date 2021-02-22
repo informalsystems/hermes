@@ -50,6 +50,7 @@
   - [nothing yet]
 
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
+[#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 
 ## v0.1.1
