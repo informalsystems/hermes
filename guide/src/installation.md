@@ -5,22 +5,17 @@ There are two main approaches for obtaining Hermes:
 1. Installation:
    1. If you are running on a Unix machine (Linux/MacOS), then the simplest
       option is to [download the latest binary](#Install-by-downloading).
-   2. Alternatively, install via
-      [Cargo installation instructions](#install-via-cargo). 
-
-[comment]: <> (   Regardless of approach you choose, also follow the post-installation)
-
-[comment]: <> (   instructions therein.)
+   2. You can also install via [Cargo](#install-via-cargo).
 
 2. Alternatively, [build Hermes directly from source](#build-from-source).
 
 
 ## Install by downloading
 
-Simply head to the GitHub [Releases][releases] page download the latest version
-of Hermes binary matching your platform:
-- `hermes-v0.1.1-x86_64-apple-darwin.tar.gz` (or .zip) for MacOS,  
-- `hermes-v0.1.1-x86_64-unknown-linux-gnu.tar.gz` (or .zip) for Linux.
+Simply head to the GitHub [Releases][releases] page and download the latest
+version of Hermes binary matching your platform:
+- MacOS: `hermes-v0.1.1-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-v0.1.1-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
  
@@ -34,7 +29,8 @@ The step-by-step instruction below should carry you through the whole process:
    tar -C $HOME/.hermes/bin/ -vxzf $ARCHIVE_NAME
    ```
 
-3. Update your path:
+3. Update your path, by adding this line in your `.bashrc` or `.zshrc` shell
+   configuration file:
    ```shell
    export PATH="$HOME/.hermes/bin:$PATH"
    ```
@@ -56,14 +52,14 @@ hermes 0.1.1
 
 ## Install via Cargo
 
-> NOTE: This approach assume you have installed all
+> NOTE: This approach assumes you have installed all
 > the [pre-requisites](./pre_requisites.md) on your machine.
 
 Hermes is packaged in the `ibc-relayer-cli` Rust crate.
 To install the latest release of Hermes, run the following command in a terminal:
 
 ```shell
-cargo install ibc-relayer-cli --bin hermes
+cargo install ibc-relayer-cli --bin hermes --locked
 ```
 
 This will download and build the crate `ibc-relayer-cli`, and install the 
@@ -86,15 +82,6 @@ hermes version
 
 ```
 hermes 0.1.1
-```
-
-
-__Troubleshooting__:
-In case the `cargo install` command above fails, as a first course of action we
-recommend trying to run the same command with the additional `locked` flag:
-
-```shell
-cargo install ibc-relayer-cli --bin hermes --locked
 ```
 
 ## Build from source
