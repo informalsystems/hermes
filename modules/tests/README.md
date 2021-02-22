@@ -49,7 +49,7 @@ The [`gen_tests.py`](support/model_based/gen_tests.py) script can be used to gen
 git clone https://github.com/vitorenesduarte/tlc-json
 cd tlc-json/
 cargo install --path .
-``
+```
 
 ### Running the model-based tests
 
