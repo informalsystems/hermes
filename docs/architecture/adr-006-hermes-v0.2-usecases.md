@@ -35,6 +35,10 @@ This is a summary of the use-cases (commands) discussed in the rest of this ADR.
 Note that the commands below omit the binary name `hermes` , to keep the command
 length to a minimum.
 
+To create and update a client:
+- `create client ibc-0 ibc-1`
+- `update client ibc-0 <client-id>`
+
 To create a connection:
 - `create connection ibc-0 ibc-1 [--delay <delay>]`
 - `create connection ibc-0 --src-client <client-id> --dst-client <client-id> [--delay <delay>]`
@@ -89,6 +93,29 @@ We propose two basic patterns that Hermes should be able to fulfil.
 
 Applying the above patterns to a few cases, we get the following concrete
 commands that Hermes v0.2.0 should fulfil.
+
+##### Create & Update a Client
+
+- Minimal invocation: this will create the client from scratch:
+
+```
+create client ibc-0 ibc-1
+```
+
+**Details:**
+Submits a transaction of type "client create" to chain `ibc-0` (called the
+_destination_ chain). The new client will be verifying headers for chain
+`ibc-1` (called a _source_ chain).
+
+- Update a client:
+
+```
+update client ibc-0 <client-id>
+```
+**Details:**
+Submits a transaction to chain `ibc-0` to update the client having identifier
+`<client-id>` with new consensus state. Hermes will automatically infer
+the source chain of this client from the [client state][client-state].
 
 ##### Create New Connection
 
