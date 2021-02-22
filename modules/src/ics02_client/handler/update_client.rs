@@ -32,8 +32,6 @@ pub fn process(
     } = msg;
 
     // Read client type from the host chain store. The client should already exist.
-    // TODO: this first get is not needed;
-    //       the client type can be retrieved using the client_state below
     let client_type = ctx
         .client_type(&client_id)
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
@@ -46,15 +44,12 @@ pub fn process(
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
 
     let latest_height = client_state.latest_height();
-    // TODO: how can the following error happen?
-    //       it feels like it should be a panic, not an error
     ctx.consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), latest_height))?;
 
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.
-    // TODO: update_state is confusing as it actually doesn't update the state
     let (new_client_state, new_consensus_state) = client_def
         .check_header_and_update_state(client_state, header)
         .map_err(|e| Kind::HeaderVerificationFailure.context(e.to_string()))?;

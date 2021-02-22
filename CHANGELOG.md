@@ -12,6 +12,8 @@
 - [ibc-relayer]
   - [nothing yet]
 
+- [ibc-relayer-cli]
+  - [nothing yet]
 
 ### IMPROVEMENTS
 

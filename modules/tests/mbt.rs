@@ -16,7 +16,8 @@ fn mbt() {
         "ICS03ConnectionNotFoundTest",
         "ICS03ConnectionMismatchTest",
         "ICS03MissingClientConsensusStateTest",
-        // the following test should fail but doesn't because proofs are not yet verified
+        // TODO: the following test should fail but doesn't because proofs are
+        // not yet verified
         // "ICS03InvalidProofTest",
         "ICS03ConnectionOpenAckOKTest",
         "ICS03UninitializedConnectionTest",
@@ -27,8 +28,8 @@ fn mbt() {
         let test = format!("{}/{}.json", TESTS_DIR, test);
         println!("> running {}", test);
         let executor = executor::IBCTestExecutor::new();
-        // we should be able to just return the `Result` once the following issue
-        // is fixed: https://github.com/rust-lang/rust/issues/43301
+        // we should be able to just return the `Result` once the following
+        // issue is fixed: https://github.com/rust-lang/rust/issues/43301
         if let Err(e) = executor::modelator::test(&test, executor) {
             panic!("{}", e);
         }
