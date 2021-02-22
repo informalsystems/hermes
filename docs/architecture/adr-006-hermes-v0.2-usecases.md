@@ -31,6 +31,22 @@ robustness, and richness of features on a longer term.
 
 ## Decision
 
+This is a summary of the use-cases (commands) discussed in the rest of this ADR:
+
+- `create connection ibc-0 ibc-1 [--delay <delay>]`
+- `create connection ibc-0 --src-client-id <client-id> --dst-client-id <client-id> [--delay <delay>]`
+- `create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> --order <order> --version <version>`
+- `create channel ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order> --version <version>`
+- `start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>`
+- `start ibc-0 --src-client-id <client-id> --dst-client-id <client-id> --delay <delay>`
+- `start ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order>
+  --version <version>`
+- `start ibc-0 --src-channel <channel-id>`
+- `establish connection ibc-0 --src-connection <connection-id>`
+- `establish channel ibc-0 --src-channel <channel-id>`
+
+### Rationale
+
 The primary goal for the uses-cases we decided to cover is to prevent situations
 where users could get stuck. For example, the output of a command may be
 unclear, or there may be an error and thereby some CLI command
@@ -44,7 +60,7 @@ because it allows the reuse of previously-created objects in the
 creation of new objects on a chain (e.g., reuse a client in the creation of a
 connection).
 
-### Patterns
+#### Patterns
 
 We propose two basic patterns that Hermes should be able to fulfil.
 
@@ -61,12 +77,12 @@ We propose two basic patterns that Hermes should be able to fulfil.
       a connection that uses this specific client.
     - This pattern should also include a retrying mechanism.
 
-### Concrete Use-Cases
+#### Details of Use-Cases
 
 Applying the above patterns to a few cases, we get the following concrete
 commands that Hermes v0.2.0 should fulfil.
 
-#### Create New Connection
+##### Create New Connection
 
 - Minimal invocation: this will create the connection using _new_ clients:
 
