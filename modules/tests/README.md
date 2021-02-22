@@ -5,6 +5,7 @@
 This directory contains the model-based tests for the IBC modules. They are "model-based" because they are generated from a `TLA+` model of the IBC modules (see [IBC.tla](support/model_based/IBC.tla)).
 
 To instantiate the model, we define in [IBC.cfg](support/model_based/IBC.cfg) the following model constants:
+
     - `ChainIds = {"chain-A", "chain-B"}`, indicating that two chains, `chain-A` and `chain-B`, will be created
     - `MaxChainHeight = 4`, indicating that each chain will reach at most height 4
     - `MaxClientsPerChain = 1`, indicating that at most 1 client per chain will be created
