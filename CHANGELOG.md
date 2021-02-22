@@ -15,8 +15,8 @@
 
 ### IMPROVEMENTS
 
- - [ibc]
-   - Follow Rust guidelines naming conventions ([#689])
+- [ibc]
+  - Follow Rust guidelines naming conventions ([#689])
 
 - [ibc-relayer]
   - [nothing yet]
