@@ -12,10 +12,11 @@
 - [ibc-relayer]
   - [nothing yet]
 
-### BUG FIXES
 
-- [ibc]
-  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
+### IMPROVEMENTS
+
+ - [ibc]
+   - Follow Rust guidelines naming conventions ([#689])
 
 - [ibc-relayer]
   - [nothing yet]
