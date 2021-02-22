@@ -116,10 +116,11 @@ hermes create channel ibc-0 --src-connection <connection-id> --src-port <port-id
 hermes start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>
 ```
 
-- relay packets over an _existing_ channel:
+- relay packets over a _new_ channel that uses a _new_ connection that builds
+  on an _existing_ client:
 
 ```
-hermes start ibc-0 --src-channel <channel-id>
+hermes start ibc-0 --src-client-id <client-id> --dst-client-id <client-id> --delay <delay>
 ```
 
 - relay packets over a _new_ channel that uses an _existing_ connection:
@@ -129,11 +130,10 @@ hermes start ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-p
 --version <version>
 ```
 
-- relay packets over a _new_ channel that uses a _new_ connection that builds
-  on an _existing_ client:
+- relay packets over an _existing_ channel:
 
 ```
-hermes start ibc-0 --src-client-id <client-id> --dst-client-id <client-id> --delay <delay>
+hermes start ibc-0 --src-channel <channel-id>
 ```
 
 ##### Finishing partially complete handshakes:
