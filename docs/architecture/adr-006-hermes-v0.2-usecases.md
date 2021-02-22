@@ -36,7 +36,7 @@ Note that the commands below omit the binary name `hermes` , to keep the command
 length to a minimum.
 
 To create and update a client:
-- `create client ibc-0 ibc-1`
+- `create client ibc-0 ibc-1 create client ibc-0 ibc-1 [--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]`
 - `update client ibc-0 <client-id>`
 
 To create a connection:
@@ -99,7 +99,7 @@ commands that Hermes v0.2.0 should fulfil.
 - Minimal invocation: this will create the client from scratch:
 
 ```
-create client ibc-0 ibc-1
+create client ibc-0 ibc-1 [--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]
 ```
 
 **Details:**
