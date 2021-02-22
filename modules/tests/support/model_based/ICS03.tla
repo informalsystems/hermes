@@ -1,6 +1,6 @@
 ------------------------------ MODULE ICS03 -----------------------------------
 
-EXTENDS Integers, FiniteSets, IBCDefinitions, ICS02
+EXTENDS ICS02
 
 \* retrieves `connectionId`'s data
 ICS03_GetConnection(connections, connectionId) ==
@@ -272,7 +272,9 @@ ICS03_ConnectionOpenAck(
             LET connection == ICS03_GetConnection(connections, connectionId) IN
             LET validConnection ==
                 /\ connection.state \in {"Init", "TryOpen"} 
-                /\ connection.counterpartyConnectionId = counterpartyConnectionId IN
+                \* TODO: the implementation is not checking the following;
+                \*       should it?
+                /\ connection.counterpartyChainId = counterpartyChainId IN
             IF ~validConnection THEN
                 \* if the existing connection does not match, then set an
                 \* error outcome

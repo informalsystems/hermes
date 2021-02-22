@@ -1,6 +1,6 @@
 ------------------------------- MODULE ICS02 ----------------------------------
 
-EXTENDS Integers, FiniteSets, IBCDefinitions
+EXTENDS IBCDefinitions
 
 \* retrieves `clientId`'s data
 ICS02_GetClient(clients, clientId) ==

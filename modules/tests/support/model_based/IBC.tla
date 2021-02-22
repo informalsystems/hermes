@@ -1,6 +1,6 @@
 --------------------------------- MODULE IBC ----------------------------------
 
-EXTENDS Integers, FiniteSets, ICS02, ICS03
+EXTENDS ICS02, ICS03
 
 \* ids of existing chains
 CONSTANT ChainIds

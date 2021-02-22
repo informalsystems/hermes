@@ -1,6 +1,6 @@
 --------------------------- MODULE IBCDefinitions -----------------------------
 
-EXTENDS Integers, FiniteSets
+EXTENDS Integers, FiniteSets, TLC
 
 (********************** TYPE ANNOTATIONS FOR APALACHE ************************)
 \* operator for type annotations
