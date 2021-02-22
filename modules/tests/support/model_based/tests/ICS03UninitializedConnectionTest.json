@@ -16,8 +16,10 @@
         "connectionProofs": [],
         "connections": {
           "0": {
+            "chainId": "-1",
             "clientId": -1,
             "connectionId": -1,
+            "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
             "state": "Uninit"
@@ -36,8 +38,67 @@
         "connectionProofs": [],
         "connections": {
           "0": {
+            "chainId": "-1",
             "clientId": -1,
             "connectionId": -1,
+            "counterpartyChainId": "-1",
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninit"
+          }
+        },
+        "height": 1
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainA",
+      "clientState": 3,
+      "consensusState": 3,
+      "type": "ICS02CreateClient"
+    },
+    "actionOutcome": "ICS02CreateOK",
+    "chains": {
+      "chainA": {
+        "clientIdCounter": 1,
+        "clients": {
+          "0": {
+            "heights": [
+              3
+            ]
+          }
+        },
+        "connectionIdCounter": 0,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "chainId": "-1",
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyChainId": "-1",
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninit"
+          }
+        },
+        "height": 2
+      },
+      "chainB": {
+        "clientIdCounter": 0,
+        "clients": {
+          "0": {
+            "heights": []
+          }
+        },
+        "connectionIdCounter": 0,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "chainId": "-1",
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
             "state": "Uninit"
@@ -59,24 +120,28 @@
     "actionOutcome": "ICS03UninitializedConnection",
     "chains": {
       "chainA": {
-        "clientIdCounter": 0,
+        "clientIdCounter": 1,
         "clients": {
           "0": {
-            "heights": []
+            "heights": [
+              3
+            ]
           }
         },
         "connectionIdCounter": 0,
         "connectionProofs": [],
         "connections": {
           "0": {
+            "chainId": "-1",
             "clientId": -1,
             "connectionId": -1,
+            "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
             "state": "Uninit"
           }
         },
-        "height": 1
+        "height": 2
       },
       "chainB": {
         "clientIdCounter": 0,
@@ -89,8 +154,10 @@
         "connectionProofs": [],
         "connections": {
           "0": {
+            "chainId": "-1",
             "clientId": -1,
             "connectionId": -1,
+            "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
             "state": "Uninit"

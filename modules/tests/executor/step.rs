@@ -87,6 +87,22 @@ pub enum Action {
         #[serde(alias = "counterpartyConnectionId")]
         counterparty_connection_id: u64,
     },
+    ICS03ConnectionOpenConfirm {
+        #[serde(alias = "chainId")]
+        chain_id: String,
+
+        #[serde(alias = "connectionId")]
+        connection_id: u64,
+
+        #[serde(alias = "clientState")]
+        client_state: u64,
+
+        #[serde(alias = "counterpartyChainId")]
+        counterparty_chain_id: String,
+
+        #[serde(alias = "counterpartyConnectionId")]
+        counterparty_connection_id: u64,
+    },
 }
 
 /// On the model, a non-existing `connection_id` is represented with -1.
@@ -121,6 +137,7 @@ pub enum ActionOutcome {
     ICS03InvalidProof,
     ICS03ConnectionOpenAckOK,
     ICS03UninitializedConnection,
+    ICS03ConnectionOpenConfirmOK,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

@@ -10,6 +10,7 @@ use ibc::ics02_client::msgs::ClientMsg;
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::error::Kind as ICS03ErrorKind;
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::msgs::ConnectionMsg;
@@ -321,6 +322,26 @@ impl IBCTestExecutor {
                 )));
                 ctx.deliver(msg)
             }
+            Action::ICS03ConnectionOpenConfirm {
+                chain_id,
+                connection_id,
+                client_state,
+                counterparty_chain_id: _,
+                counterparty_connection_id: _,
+            } => {
+                // get chain's context
+                let ctx = self.chain_context_mut(chain_id);
+
+                // create ICS26 message and deliver it
+                let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(
+                    MsgConnectionOpenConfirm {
+                        connection_id: Self::connection_id(connection_id),
+                        proofs: Self::proofs(client_state),
+                        signer: Self::signer(),
+                    },
+                ));
+                ctx.deliver(msg)
+            }
         }
     }
 }
@@ -386,6 +407,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::UninitializedConnection(_)
             ),
+            ActionOutcome::ICS03ConnectionOpenConfirmOK => result.is_ok(),
         };
         // also check the state of chains
         outcome_matches && self.validate_chains() && self.check_chain_heights(step.chains)
