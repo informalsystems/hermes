@@ -144,13 +144,13 @@ handshake may be partially started.
 - Finalize handshake for _partially established_ connection:
 
 ```
-hermes create connection ibc-0 --src-connection <connection-id>
+hermes establish connection ibc-0 --src-connection <connection-id>
 ```
 
 - Finalize handshake for _partially established_ channel:
 
 ```
-hermes create channel ibc-0 --src-channel <channel-id>
+hermes establish channel ibc-0 --src-channel <channel-id>
 ```
 
 
