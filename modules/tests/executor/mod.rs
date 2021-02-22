@@ -1,5 +1,6 @@
 pub mod modelator;
 pub mod step;
+use chrono::Utc;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
@@ -111,7 +112,7 @@ impl IBCTestExecutor {
     }
 
     fn mock_header(height: u64) -> MockHeader {
-        MockHeader(Self::height(height))
+        MockHeader(Self::height(height), Utc::now().into())
     }
 
     fn header(height: u64) -> AnyHeader {

@@ -7,31 +7,30 @@ use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::create_client;
 use crate::ics02_client::msgs::update_client;
 use crate::ics02_client::msgs::ClientMsg;
-use crate::ics03_connection::msgs::ConnectionMsg;
-use crate::ics03_connection::msgs::conn_open_init;
-use crate::ics03_connection::msgs::conn_open_try;
 use crate::ics03_connection::msgs::conn_open_ack;
 use crate::ics03_connection::msgs::conn_open_confirm;
+use crate::ics03_connection::msgs::conn_open_init;
+use crate::ics03_connection::msgs::conn_open_try;
+use crate::ics03_connection::msgs::ConnectionMsg;
 
-use crate::ics04_channel::msgs::ChannelMsg;
-use crate::ics04_channel::msgs::chan_open_init;
-use crate::ics04_channel::msgs::chan_open_try;
+use crate::ics04_channel::msgs::chan_close_confirm;
+use crate::ics04_channel::msgs::chan_close_init;
 use crate::ics04_channel::msgs::chan_open_ack;
 use crate::ics04_channel::msgs::chan_open_confirm;
-use crate::ics04_channel::msgs::chan_close_init;
-use crate::ics04_channel::msgs::chan_close_confirm;
+use crate::ics04_channel::msgs::chan_open_init;
+use crate::ics04_channel::msgs::chan_open_try;
+use crate::ics04_channel::msgs::ChannelMsg;
 
-
+use crate::application::ics20_fungible_token_transfer::relay_application_logic::dispatch as ics20_msg_dispatcher;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
-use crate::application::ics20_fungible_token_transfer::relay_application_logic::dispatch as ics20_msg_dispatcher;
 
 use crate::application::ics20_fungible_token_transfer::msgs::transfer;
 
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::Ics26Envelope;
-use crate::ics26_routing::msgs::Ics26Envelope::{Ics2Msg, Ics3Msg, Ics4Msg,Ics20Msg};
+use crate::ics26_routing::msgs::Ics26Envelope::{Ics20Msg, Ics2Msg, Ics3Msg, Ics4Msg};
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
@@ -64,56 +63,63 @@ where
             }
 
             //ICS03
-            conn_open_init::TYPE_URL=>{
+            conn_open_init::TYPE_URL => {
                 let domain_msg = conn_open_init::MsgConnectionOpenInit::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics3Msg(ConnectionMsg::ConnectionOpenInit(domain_msg)))
-            }            
-            conn_open_try::TYPE_URL=>{
+            }
+            conn_open_try::TYPE_URL => {
                 let domain_msg = conn_open_try::MsgConnectionOpenTry::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(domain_msg))))
+                Ok(Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                    domain_msg,
+                ))))
             }
-            conn_open_ack::TYPE_URL=>{
+            conn_open_ack::TYPE_URL => {
                 let domain_msg = conn_open_ack::MsgConnectionOpenAck::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(domain_msg))))
+                Ok(Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
+                    domain_msg,
+                ))))
             }
-            conn_open_confirm::TYPE_URL=>{
-                let domain_msg = conn_open_confirm::MsgConnectionOpenConfirm::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+            conn_open_confirm::TYPE_URL => {
+                let domain_msg =
+                    conn_open_confirm::MsgConnectionOpenConfirm::decode_vec(&any_msg.value)
+                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(domain_msg)))
             }
 
             //ICS04
-            chan_open_init::TYPE_URL=>{
+            chan_open_init::TYPE_URL => {
                 let domain_msg = chan_open_init::MsgChannelOpenInit::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4Msg(ChannelMsg::ChannelOpenInit(domain_msg)))
             }
-            chan_open_try::TYPE_URL=>{
+            chan_open_try::TYPE_URL => {
                 let domain_msg = chan_open_try::MsgChannelOpenTry::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4Msg(ChannelMsg::ChannelOpenTry(domain_msg)))
             }
-            chan_open_ack::TYPE_URL=>{
+            chan_open_ack::TYPE_URL => {
                 let domain_msg = chan_open_ack::MsgChannelOpenAck::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4Msg(ChannelMsg::ChannelOpenAck(domain_msg)))
-            }          
-            chan_open_confirm::TYPE_URL=>{
-                let domain_msg = chan_open_confirm::MsgChannelOpenConfirm::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+            }
+            chan_open_confirm::TYPE_URL => {
+                let domain_msg =
+                    chan_open_confirm::MsgChannelOpenConfirm::decode_vec(&any_msg.value)
+                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4Msg(ChannelMsg::ChannelOpenConfirm(domain_msg)))
             }
-            chan_close_init::TYPE_URL=>{
+            chan_close_init::TYPE_URL => {
                 let domain_msg = chan_close_init::MsgChannelCloseInit::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4Msg(ChannelMsg::ChannelCloseInit(domain_msg)))
             }
-            chan_close_confirm::TYPE_URL=>{
-                let domain_msg = chan_close_confirm::MsgChannelCloseConfirm::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+            chan_close_confirm::TYPE_URL => {
+                let domain_msg =
+                    chan_close_confirm::MsgChannelCloseConfirm::decode_vec(&any_msg.value)
+                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4Msg(ChannelMsg::ChannelCloseConfirm(domain_msg)))
             }
             //ICS20
@@ -121,10 +127,10 @@ where
                 // Pop out the message and then wrap it in the corresponding type.
                 let domain_msg = transfer::MsgTransfer::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                    Ok(Ics20Msg(domain_msg))
-                }
-            
-            _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)), 
+                Ok(Ics20Msg(domain_msg))
+            }
+
+            _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)),
         }?;
 
         // Process the envelope, and accumulate any events that were generated.
@@ -208,8 +214,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
     use chrono::Utc;
+    use std::convert::TryFrom;
 
     use crate::events::IbcEvent;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
@@ -262,8 +268,11 @@ mod tests {
         let mut ctx = MockContext::default();
 
         let create_client_msg = MsgCreateAnyClient::new(
-            AnyClientState::from(MockClientState(MockHeader(start_client_height,Utc::now()))),
-            AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height,Utc::now()))),
+            AnyClientState::from(MockClientState(MockHeader(start_client_height, Utc::now()))),
+            AnyConsensusState::from(MockConsensusState(MockHeader(
+                start_client_height,
+                Utc::now(),
+            ))),
             default_signer,
         )
         .unwrap();

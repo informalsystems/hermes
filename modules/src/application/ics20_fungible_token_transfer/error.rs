@@ -24,6 +24,9 @@ pub enum Kind {
     #[error("Missing channel for port_id {0} and channel_id {1} ")]
     ChannelNotFound(PortId, ChannelId),
 
+    #[error("Basic validation of the message failed")]
+    InvalidMessageTransfer,
+
     #[error(
         "Destination channel not found in the counterparty of port_id {0} and channel_id {1} "
     )]

@@ -6,4 +6,3 @@ use crate::ics05_port::context::PortReader;
 /// In other words, this is the
 /// representation of a chain from the perspective of the IBC20 of that chain.
 pub trait ICS20Context: ChannelReader + ChannelKeeper + PortReader + Clone {}
-

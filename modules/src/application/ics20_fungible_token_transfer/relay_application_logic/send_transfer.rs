@@ -1,17 +1,17 @@
-use crate::ics26_routing::context::ICS26Context;
 use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
 use crate::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use crate::handler::HandlerOutput;
 use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::ics04_channel::packet_handler::send_packet::send_packet;
 use crate::ics04_channel::packet_handler::PacketResult;
+use crate::ics26_routing::context::Ics26Context;
 
 pub(crate) fn send_transfer<Ctx>(
     ctx: &Ctx,
     msg: MsgTransfer,
 ) -> Result<HandlerOutput<PacketResult>, Error>
 where
-    Ctx: ICS26Context,
+    Ctx: Ics26Context,
 {
     let source_channel_end = ctx
         .channel_end(&(msg.source_port.clone(), msg.source_channel.clone()))
@@ -40,7 +40,7 @@ where
         .lookup_module_by_port(&msg.source_port.clone())
         .ok_or_else(|| Kind::ChannelCapabilityNotFound)?;
 
-    //TODO: Application LOGIC. 
+    //TODO: Application LOGIC.
 
     let packet = Packet {
         sequence: <Sequence as From<u64>>::from(*sequence),
@@ -55,6 +55,6 @@ where
 
     let handler_output =
         send_packet(ctx, packet).map_err(|e| Kind::HandlerRaisedError.context(e))?;
-    //TODO:  add event/atributes and write issued by the application logic from the sending of the packet 
+    //TODO:  add event/atributes and write issued by the application logic from the sending of the packet
     Ok(handler_output)
 }

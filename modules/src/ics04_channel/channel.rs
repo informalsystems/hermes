@@ -117,9 +117,6 @@ impl ChannelEnd {
     pub fn set_version(&mut self, v: String) {
         self.version = v;
     }
-    pub fn set_counterparty_channel_id(&mut self, c: ChannelId) {
-        self.remote.channel_id = Some(c);
-    }
 
     pub fn set_counterparty_channel_id(&mut self, c: ChannelId) {
         self.remote.channel_id = Some(c);

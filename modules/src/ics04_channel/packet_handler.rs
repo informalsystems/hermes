@@ -1,4 +1,7 @@
-use crate::{ics02_client::height::Height, ics24_host::identifier::{PortId,ChannelId}};
+use crate::{
+    ics02_client::height::Height,
+    ics24_host::identifier::{ChannelId, PortId},
+};
 
 use super::packet::Sequence;
 
@@ -11,5 +14,5 @@ pub struct PacketResult {
     pub send_seq_number: Sequence,
     pub data: Vec<u8>,
     pub timeout_height: Height,
-    pub timeout_timestamp: u64
+    pub timeout_timestamp: u64,
 }

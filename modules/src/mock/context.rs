@@ -12,12 +12,14 @@ use tendermint::account::Id;
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
 
-use crate::{ics02_client::client_type::ClientType, ics23_commitment::commitment::CommitmentPrefix};
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as Ics2Error;
 use crate::{
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics04_channel::packet::Sequence,
+};
+use crate::{
+    ics02_client::client_type::ClientType, ics23_commitment::commitment::CommitmentPrefix,
 };
 
 use crate::ics05_port::capabilities::Capability;
@@ -448,7 +450,7 @@ impl ChannelKeeper for MockContext {
         port_channel_id: &(PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Ics4Error> {
-        self.next_sequence_send.insert(port_channel_id.clone(),seq);
+        self.next_sequence_send.insert(port_channel_id.clone(), seq);
         Ok(())
     }
 
@@ -479,13 +481,13 @@ impl ChannelKeeper for MockContext {
         key: &(PortId, ChannelId, Sequence),
         timeout_timestamp: u64,
         timeout_height: Height,
-        data: Vec<u8>
-         )-> Result<(), Ics4Error>{   
-            let input = format!("{:?},{:?},{:?}",timeout_timestamp,timeout_height,data); 
-            self.packet_commitment.insert(key.clone(), ChannelReader::hashing(self,input));
-            Ok(())
-        }
-
+        data: Vec<u8>,
+    ) -> Result<(), Ics4Error> {
+        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
+        self.packet_commitment
+            .insert(key.clone(), ChannelReader::hashing(self, input));
+        Ok(())
+    }
 }
 
 impl ConnectionReader for MockContext {

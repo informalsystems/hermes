@@ -3,10 +3,10 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
+use super::packet::Sequence;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
-use super::packet::Sequence;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
@@ -36,6 +36,21 @@ pub enum Kind {
 
     #[error("invalid proof: missing height")]
     MissingHeight,
+
+    #[error("packet sequence cannot be 0")]
+    ZeroPacketSequence,
+
+    #[error("packet data bytes cannot be empty")]
+    ZeroPacketData,
+
+    #[error("Port id validation failed")]
+    InvalidPortId,
+
+    #[error("Channel id validation failed")]
+    InvalidChannelId,
+
+    #[error("packet timeout height and packet timeout timestamp cannot both be 0")]
+    ZeroPacketTimeout,
 
     #[error("invalid timeout height for the packet")]
     InvalidTimeoutHeight,
@@ -110,7 +125,7 @@ pub enum Kind {
 
     #[error("Receiving chain block timestamp >= packet timeout timestamp")]
     LowPacketTimestamp,
-    
+
     #[error("Client with id {0} is frozen")]
     FrozenClient(ClientId),
 

@@ -2,7 +2,7 @@
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //!
 
-use crate::{ics02_client::client_def::{AnyClientState, AnyConsensusState}};
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::error::Error;
@@ -82,25 +82,31 @@ pub trait ChannelKeeper {
         Ok(())
     }
 
-
     fn store_packet_result(&mut self, result: PacketResult) -> Result<(), Error> {
         self.store_next_sequence_send(
             &(result.port_id.clone(), result.channel_id.clone()),
-            From::<Sequence>::from(result.send_seq_number)
-            )?;
+            From::<Sequence>::from(result.send_seq_number),
+        )?;
         self.store_packet_commitment(
-            &(result.port_id.clone(), result.channel_id.clone(), result.send_seq_number.clone()), 
-            result.timeout_timestamp.clone(),result.timeout_height.clone(),result.data.clone())?;  
+            &(
+                result.port_id.clone(),
+                result.channel_id.clone(),
+                result.send_seq_number,
+            ),
+            result.timeout_timestamp,
+            result.timeout_height,
+            result.data,
+        )?;
         Ok(())
     }
-
 
     fn store_packet_commitment(
         &mut self,
         key: &(PortId, ChannelId, Sequence),
-        timestamp:u64,
+        timestamp: u64,
         heigh: Height,
-        data: Vec<u8>)-> Result<(), Error>;
+        data: Vec<u8>,
+    ) -> Result<(), Error>;
 
     fn store_connection_channels(
         &mut self,

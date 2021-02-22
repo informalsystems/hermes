@@ -71,8 +71,8 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use chrono::Utc;
+    use std::str::FromStr;
 
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
@@ -97,9 +97,10 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
+        let time = Utc::now();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader(Height::new(0, 46), Utc::now()).into(),
+            header: MockHeader(Height::new(0, 46), time).into(),
             signer,
         };
 
@@ -125,7 +126,7 @@ mod tests {
                             upd_res.client_state,
                             AnyClientState::Mock(MockClientState(MockHeader(
                                 msg.header.height(),
-                                Utc::now()
+                                time
                             )))
                         )
                     }

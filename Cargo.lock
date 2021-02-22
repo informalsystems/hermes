@@ -1138,6 +1138,7 @@ dependencies = [
  "prost 0.7.0",
  "prost-types",
  "regex",
+ "rust-crypto",
  "serde",
  "serde_derive",
  "serde_json",

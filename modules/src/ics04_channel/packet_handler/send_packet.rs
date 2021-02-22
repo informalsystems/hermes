@@ -1,8 +1,7 @@
-use std::{cmp::Ordering, convert::TryFrom, ops::Add, time::Duration};
-use tendermint::block::Height;
+use std::{cmp::Ordering, ops::Add, time::Duration};
 
-use crate::{events::IBCEvent, ics02_client::client_def::AnyTime};
 use crate::handler::{HandlerOutput, HandlerResult};
+use crate::{events::IbcEvent, ics02_client::client_def::AnyTime};
 
 use crate::ics02_client::state::ClientState;
 use crate::ics04_channel::channel::Counterparty;
@@ -10,23 +9,46 @@ use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
-
+//use crate::ics24_host::validate::{validate_channel_identifier,validate_port_identifier};
 use super::PacketResult;
 
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // TODO: check if there is a validate basic. Maybe it should be in the message.
+    // Basic validation cannot be done in the message cause cause it lacks the destination port and channel and the sequence.
+    // TODO: the validation checks in ics24 are outdated. Do we want to replace them ?
+    // validate_port_identifier(&format!("{:?}",packet.source_port.clone()))
+    //     .map_err(|e| Kind::InvalidPortId.context(e.to_string()))?;
+    // validate_channel_identifier(&format!("{:?}",packet.source_channel.clone()))
+    //     .map_err(|e| Kind::InvalidChannelId.context(e.to_string()))?;
+
+    // validate_port_identifier(&format!("{:?}",packet.destination_port.clone()))
+    //     .map_err(|e| Kind::InvalidPortId.context(e.to_string()))?;
+    // validate_channel_identifier(&format!("{:?}",packet.destination_channel.clone()))
+    //     .map_err(|e| Kind::InvalidChannelId.context(e.to_string()))?;
+
+    if packet.sequence.is_zero() {
+        return Err(Kind::ZeroPacketSequence.into());
+    }
+    if packet.timeout_height.is_zero() && packet.timeout_timestamp == 0 {
+        return Err(Kind::ZeroPacketTimeout.into());
+    }
+    if packet.data.is_empty() {
+        return Err(Kind::ZeroPacketData.into());
+    }
 
     let source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
-        .ok_or_else(|| Kind::ChannelNotFound.context(packet.source_channel.clone().to_string()))?;
+        .ok_or_else(|| {
+            Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
+                .context(packet.source_channel.clone().to_string())
+        })?;
 
     if source_channel_end.state_matches(&State::Closed) {
         return Err(Kind::ChannelClosed(packet.source_channel).into());
     }
 
-    // TODO: Capability Checked in ICS20 as well. Check Difs.
+    // TODO: Capability Checked in Ics20 as well. Check Difs.
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
 
     let channel_id = match source_channel_end.counterparty().channel_id() {
@@ -51,9 +73,11 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .connection_end(&source_channel_end.connection_hops()[0])
         .ok_or_else(|| Kind::MissingConnection(source_channel_end.connection_hops()[0].clone()))?;
 
+    let client_id = connection_end.client_id().clone();
+
     let client_state = ctx
-        .channel_client_state(&(packet.source_port.clone(), packet.source_channel.clone()))
-        .ok_or_else(|| Kind::MissingClientState)?;
+        .client_state(&client_id)
+        .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
 
     // prevent accidental sends with clients that cannot be updated
     if client_state.is_frozen() {
@@ -75,11 +99,8 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     //check if packet timestamp timeouted on the receiving chain
     let consensus_state = ctx
-        .channel_client_consensus_state(
-            &(packet.source_port.clone(), packet.source_channel.clone()),
-            latest_height,
-        )
-        .ok_or_else(|| Kind::MissingClientConsensusState)?;
+        .client_consensus_state(&client_id, latest_height)
+        .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
 
     let latest_timestamp = consensus_state.latest_timestamp();
 
@@ -109,27 +130,21 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         );
     }
 
-    
-    // let input = format!("{:?},{:?},{:?}",packet.clone().timeout_timestamp,packet.clone().timeout_height,packet.clone().data); 
-    // let mut sha256 = Sha256::new();
-    // sha256.input_str(&input);
-    // let commitment = sha256.result_str();
-
-
     output.log("success: packet send ");
 
     let result = PacketResult {
-        port_id:packet.source_port.clone(),
-        channel_id:packet.source_channel.clone(),
-        send_seq_number: Sequence::from(*next_seq_send+1),
+        port_id: packet.source_port.clone(),
+        channel_id: packet.source_channel.clone(),
+        send_seq_number: Sequence::from(*next_seq_send + 1),
         data: packet.clone().data,
-        timeout_height: packet.clone().timeout_height,
-        timeout_timestamp: packet.clone().timeout_timestamp,
+        timeout_height: packet.timeout_height,
+        timeout_timestamp: packet.timeout_timestamp,
     };
 
-    let height = <Height as TryFrom<u64>>::try_from(packet_height.revision_height).unwrap();
-
-    output.emit(IBCEvent::SendPacketChannel(SendPacket { height, packet }));
+    output.emit(IbcEvent::SendPacket(SendPacket {
+        height: packet_height,
+        packet,
+    }));
 
     Ok(output.with_result(result))
 }
@@ -147,7 +162,7 @@ mod tests {
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::{
-        events::IBCEvent,
+        events::IbcEvent,
         ics04_channel::packet::{Packet, Sequence},
     };
 
@@ -168,12 +183,12 @@ mod tests {
             source_channel: ChannelId::default(),
             destination_port: PortId::default(),
             destination_channel: ChannelId::default(),
-            data: vec![],
+            data: vec![0],
             timeout_height: Height::default(),
-            timeout_timestamp: 0,
+            timeout_timestamp: 6,
         };
 
-        let packet_timed = Packet {
+        let packet_untimed = Packet {
             sequence: <Sequence as From<u64>>::from(1),
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
@@ -181,7 +196,7 @@ mod tests {
             destination_channel: ChannelId::default(),
             data: vec![],
             timeout_height: Height::default(),
-            timeout_timestamp: 6,
+            timeout_timestamp: 0,
         };
 
         let channel_end = ChannelEnd::new(
@@ -214,7 +229,7 @@ mod tests {
             Test {
                 name: "Processing fails because the port does not have a capability associated"
                     .to_string(),
-                ctx: context.clone().with_channel_init(
+                ctx: context.clone().with_channel(
                     PortId::default(),
                     ChannelId::default(),
                     channel_end.clone(),
@@ -224,25 +239,26 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.clone()
+                ctx: context
+                    .clone()
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_port_capability(PortId::default())
-                    .with_channel_init(PortId::default(), ChannelId::default(), channel_end.clone())
+                    .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1),
-                packet: packet,
+                packet,
                 want_pass: true,
             },
             Test {
-                name: "Good parameters with time".to_string(),
+                name: "Zero timeout".to_string(),
                 ctx: context
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
-                    .with_channel_init(PortId::default(), ChannelId::default(), channel_end)
+                    .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1),
-                packet: packet_timed,
-                want_pass: true,
+                packet: packet_untimed,
+                want_pass: false,
             },
         ]
         .into_iter()
@@ -264,9 +280,9 @@ mod tests {
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
 
                     // TODO: The object in the output is a PacketResult what can we check on it?
-                   
+
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::SendPacketChannel(_)));
+                        assert!(matches!(e, &IbcEvent::SendPacket(_)));
                     }
                 }
                 Err(e) => {

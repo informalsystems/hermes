@@ -56,9 +56,9 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
+    use chrono::Utc;
     use std::convert::TryInto;
     use std::time::Duration;
-    use chrono::Utc;
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
     use crate::events::IbcEvent;

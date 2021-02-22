@@ -1,9 +1,9 @@
 use std::{convert::TryFrom, ops::Add};
 
 use chrono::{DateTime, Utc};
-use std::time::{Duration, SystemTime};
 use prost_types::Any;
 use serde::Serialize;
+use std::time::{Duration, SystemTime};
 use tendermint::Time;
 use tendermint_proto::Protobuf;
 
@@ -286,7 +286,7 @@ pub enum AnyConsensusState {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize)]
 // #[serde(try_from = "Timestamp", into = "Timestamp")]
-pub enum AnyTime{
+pub enum AnyTime {
     Tendermint(Time),
 
     Mock(DateTime<Utc>),
@@ -294,33 +294,28 @@ pub enum AnyTime{
 
 //impl Protobuf<Any> for AnyTime {}
 
- 
-
 impl Add<Duration> for AnyTime {
     type Output = Self;
 
     fn add(self, rhs: Duration) -> Self::Output {
-
         match self {
-            Self::Tendermint(t) => 
-                AnyTime::Tendermint(<Time as Add<Duration>>::add(t,rhs)),
+            Self::Tendermint(t) => AnyTime::Tendermint(<Time as Add<Duration>>::add(t, rhs)),
 
-            Self::Mock(t)=> {
+            Self::Mock(t) => {
                 let st: SystemTime = t.into();
                 AnyTime::Mock((st + rhs).into())
             }
-        } 
+        }
     }
 }
 
 impl AnyConsensusState {
-
     pub fn latest_timestamp(&self) -> AnyTime {
         match self {
             Self::Tendermint(cs_state) => AnyTime::Tendermint(cs_state.timestamp),
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) =>  AnyTime::Mock(mock_state.latest_timestamp()),
+            Self::Mock(mock_state) => AnyTime::Mock(mock_state.latest_timestamp()),
         }
     }
 

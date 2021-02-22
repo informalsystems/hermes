@@ -85,4 +85,3 @@ impl From<MsgTransfer> for RawMsgTransfer {
         }
     }
 }
-
