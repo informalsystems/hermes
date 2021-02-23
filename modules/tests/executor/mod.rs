@@ -254,7 +254,10 @@ impl IBCTestExecutor {
                                             .map(|connection_id| Self::connection_id(connection_id))
                                             .as_ref();
 
-                                states_match && client_ids && counterparty_client_ids && counterparty_connection_ids
+                                states_match
+                                    && client_ids
+                                    && counterparty_client_ids
+                                    && counterparty_connection_ids
                             } else {
                                 // if the connection exists in the model, then it must
                                 // also exist in the implementation; in this case it
