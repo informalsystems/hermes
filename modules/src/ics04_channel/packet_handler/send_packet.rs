@@ -1,7 +1,6 @@
-use std::{cmp::Ordering, ops::Add, time::Duration};
-
+use std::cmp::Ordering;
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::{events::IbcEvent, ics02_client::client_def::AnyTime};
+use crate::events::IbcEvent;
 
 use crate::ics02_client::state::ClientState;
 use crate::ics04_channel::channel::Counterparty;
@@ -88,7 +87,6 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     let latest_timestamp = consensus_state.latest_timestamp();
     
     let packet_timestamp = packet.timeout_timestamp;
-
     if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
     {
         return Err(Kind::LowPacketTimestamp.into());

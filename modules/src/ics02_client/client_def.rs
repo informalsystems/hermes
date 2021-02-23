@@ -292,30 +292,26 @@ pub enum AnyTime {
     Mock(DateTime<Utc>),
 }
 
-impl Add<Duration> for AnyTime {
-    type Output = Self;
-
-    fn add(self, rhs: Duration) -> Self::Output {
-        match self {
-            Self::Tendermint(t) => AnyTime::Tendermint(<Time as Add<Duration>>::add(t, rhs)),
-
-            Self::Mock(t) => {
-                let st: SystemTime = t.into();
-                AnyTime::Mock((st + rhs).into())
-            }
-        }
-    }
-}
 
 impl AnyConsensusState {
-    pub fn latest_timestamp(&self) -> AnyTime {
+    pub fn latest_timestamp(&self) -> u64 {
         match self {
-            Self::Tendermint(cs_state) => AnyTime::Tendermint(cs_state.timestamp),
+            Self::Tendermint(cs_state) =>{
+               let date=  <DateTime<Utc> as From<Time>>::from(cs_state.timestamp); 
+               let value = date.timestamp();
+               if value<0 {
+                   panic!("Negative timestamp") }
+               else { 
+                   value as u64
+                }
+            }
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => AnyTime::Mock(mock_state.latest_timestamp()),
+            Self::Mock(mock_state) => 0,
         }
     }
+
+    //AnyTime::Mock(mock_state.latest_timestamp())
 
     pub fn client_type(&self) -> ClientType {
         match self {
