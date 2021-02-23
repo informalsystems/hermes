@@ -1,14 +1,14 @@
-use std::cmp::Ordering;
-use crate::handler::{HandlerOutput, HandlerResult};
 use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
+use std::cmp::Ordering;
 
+use super::PacketResult;
 use crate::ics02_client::state::ClientState;
 use crate::ics04_channel::channel::Counterparty;
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
-use super::PacketResult;
 
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -85,7 +85,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
 
     let latest_timestamp = consensus_state.latest_timestamp();
-    
+
     let packet_timestamp = packet.timeout_timestamp;
     if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
     {

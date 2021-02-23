@@ -291,17 +291,16 @@ pub enum AnyTime {
     Mock(DateTime<Utc>),
 }
 
-
 impl AnyConsensusState {
     pub fn latest_timestamp(&self) -> u64 {
         match self {
-            Self::Tendermint(cs_state) =>{
-               let date=  <DateTime<Utc> as From<Time>>::from(cs_state.timestamp); 
-               let value = date.timestamp();
-               if value<0 {
-                   panic!("Negative timestamp") }
-               else { 
-                   value as u64
+            Self::Tendermint(cs_state) => {
+                let date = <DateTime<Utc> as From<Time>>::from(cs_state.timestamp);
+                let value = date.timestamp();
+                if value < 0 {
+                    panic!("Negative timestamp")
+                } else {
+                    value as u64
                 }
             }
 
