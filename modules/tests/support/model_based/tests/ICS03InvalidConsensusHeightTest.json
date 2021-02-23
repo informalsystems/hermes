@@ -20,7 +20,7 @@
             "connectionId": -1,
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 1
@@ -40,7 +40,7 @@
             "connectionId": -1,
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 1
@@ -75,7 +75,7 @@
             "connectionId": -1,
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 1
@@ -95,7 +95,7 @@
             "connectionId": -1,
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 1

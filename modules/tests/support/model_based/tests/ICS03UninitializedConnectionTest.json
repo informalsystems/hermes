@@ -22,7 +22,7 @@
             "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 1
@@ -44,7 +44,7 @@
             "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 1
@@ -79,7 +79,7 @@
             "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 2
@@ -101,7 +101,7 @@
             "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 1
@@ -138,7 +138,7 @@
             "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 2
@@ -160,7 +160,7 @@
             "counterpartyChainId": "-1",
             "counterpartyClientId": -1,
             "counterpartyConnectionId": -1,
-            "state": "Uninit"
+            "state": "Uninitialized"
           }
         },
         "height": 1

@@ -30,7 +30,7 @@ ClientIds == 0..(MaxClientsPerChain - 1)
 ConnectionIds == 0..(MaxConnectionsPerChain- 1)
 \* set of possible connection states
 ConnectionStates == {
-    "Uninit",
+    "Uninitialized",
     "Init",
     "TryOpen",
     "Open"
@@ -469,7 +469,7 @@ Init ==
         heights |-> AsSetInt({})
     ] IN
     LET connectionNone == [
-        state |-> "Uninit",
+        state |-> "Uninitialized",
         chainId |-> ChainIdNone,
         clientId |-> ClientIdNone,
         connectionId |-> ConnectionIdNone,

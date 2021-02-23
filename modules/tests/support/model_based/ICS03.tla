@@ -8,7 +8,7 @@ ICS03_GetConnection(connections, connectionId) ==
 
 \* check if `connectionId` exists
 ICS03_ConnectionExists(connections, connectionId) ==
-    ICS03_GetConnection(connections, connectionId).state /= "Uninit"
+    ICS03_GetConnection(connections, connectionId).state /= "Uninitialized"
 
 \* update `connectionId`'s data
 ICS03_SetConnection(connections, connectionId, connection) ==
