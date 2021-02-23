@@ -46,6 +46,9 @@ POSITIONAL ARGUMENTS:
     dst_conn_id               identifier of the destination connection
     dst_port_id               identifier of the destination port
     src_port_id               identifier of the source port
+
+FLAGS:
+    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 ```
 
 __Example__

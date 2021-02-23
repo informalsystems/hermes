@@ -20,8 +20,8 @@ use ibc::{
 };
 use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
@@ -131,6 +131,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<ChannelEnd>,
     },
 
+    QueryNextSequenceReceive {
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
+    },
+
     ProvenClientState {
         client_id: ClientId,
         height: Height,
@@ -228,6 +233,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error>;
 
     fn query_channel(
         &self,

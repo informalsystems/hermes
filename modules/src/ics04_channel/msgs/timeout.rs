@@ -29,13 +29,13 @@ impl MsgTimeout {
         next_sequence_recv: Sequence,
         proofs: Proofs,
         signer: AccountId,
-    ) -> Result<MsgTimeout, Error> {
-        Ok(Self {
+    ) -> MsgTimeout {
+        Self {
             packet,
             next_sequence_recv,
             proofs,
             signer,
-        })
+        }
     }
 }
 

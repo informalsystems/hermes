@@ -14,7 +14,6 @@ use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
-
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
@@ -475,7 +474,7 @@ impl Channel {
 
         let channel = ChannelEnd::new(
             State::TryOpen,
-            self.ordering,
+            *src_channel.ordering(),
             counterparty,
             vec![self.dst_connection_id().clone()],
             v_dst,
@@ -705,6 +704,11 @@ impl Channel {
     }
 
     pub fn build_chan_close_init(&self) -> Result<Vec<Any>, ChannelError> {
+        let _channel = self
+            .dst_chain()
+            .query_channel(self.dst_port_id(), self.dst_channel_id(), Height::default())
+            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ChannelError::Failed(format!(
                 "failed while fetching the signer for dst chain ({}) with error: {}",

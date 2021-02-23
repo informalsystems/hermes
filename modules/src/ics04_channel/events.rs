@@ -647,7 +647,13 @@ impl TimeoutPacket {
         &self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height;
+        self.height = height
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
     }
 }
 
