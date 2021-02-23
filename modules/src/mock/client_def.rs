@@ -28,7 +28,7 @@ impl ClientDef for MockClient {
             );
         }
         //TODO check timestamp
-        Ok((MockClientState(header), MockConsensusState(header, 1)))
+        Ok((MockClientState(header), MockConsensusState(header)))
     }
 
     fn verify_client_consensus_state(

@@ -266,10 +266,14 @@ mod tests {
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
 
+        let timestamp: u64 = 1;
         //TODO check timestamp
         let create_client_msg = MsgCreateAnyClient::new(
-            AnyClientState::from(MockClientState(MockHeader(start_client_height))),
-            AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height), 1)),
+            AnyClientState::from(MockClientState(MockHeader(start_client_height, timestamp))),
+            AnyConsensusState::from(MockConsensusState(MockHeader(
+                start_client_height,
+                timestamp,
+            ))),
             default_signer,
         )
         .unwrap();
@@ -348,6 +352,7 @@ mod tests {
             IbcEvent::CreateClient(create_client) => create_client.client_id().clone(),
             event => panic!("unexpected IBC event: {:?}", event),
         };
+        let timestamp: u64 = 1;
 
         let tests: Vec<Test> = vec![
             // Test some ICS2 client functionality.
@@ -355,7 +360,7 @@ mod tests {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader(update_client_height).into(),
+                    header: MockHeader(update_client_height, timestamp).into(),
                     signer: default_signer,
                 })),
                 want_pass: true,
@@ -364,7 +369,7 @@ mod tests {
                 name: "Client update fails due to stale header".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader(update_client_height).into(),
+                    header: MockHeader(update_client_height, timestamp).into(),
                     signer: default_signer,
                 })),
                 want_pass: false,
