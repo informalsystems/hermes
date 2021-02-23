@@ -46,7 +46,7 @@ where
         source_channel: msg.source_channel,
         destination_port,
         destination_channel: destination_channel.unwrap().clone(),
-        data: vec![],
+        data: vec![0],
         timeout_height: msg.timeout_height,
         timeout_timestamp: msg.timeout_timestamp,
     };

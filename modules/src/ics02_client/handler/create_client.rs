@@ -83,9 +83,10 @@ mod tests {
         let height = Height::new(0, 42);
 
         //TODO check timestamp
+        let timestamp = 1;
         let msg = MsgCreateAnyClient::new(
             MockClientState(MockHeader(height)).into(),
-            MockConsensusState(MockHeader(height), 1).into(),
+            MockConsensusState(MockHeader(height), timestamp).into(),
             signer,
         )
         .unwrap();
@@ -129,6 +130,8 @@ mod tests {
         let ctx = MockContext::default().with_client(&existing_client_id, height);
 
         //TODO check timestamp
+        let timestamp = 1;
+
         let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
                 MockClientState(MockHeader(Height {
@@ -141,7 +144,7 @@ mod tests {
                         revision_height: 42,
                         ..height
                     }),
-                    1,
+                    timestamp,
                 )
                 .into(),
                 signer,
@@ -158,7 +161,7 @@ mod tests {
                         revision_height: 42,
                         ..height
                     }),
-                    1,
+                    timestamp,
                 )
                 .into(),
                 signer,
@@ -175,7 +178,7 @@ mod tests {
                         revision_height: 50,
                         ..height
                     }),
-                    1,
+                    timestamp,
                 )
                 .into(),
                 signer,

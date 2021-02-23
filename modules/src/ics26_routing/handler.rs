@@ -266,10 +266,14 @@ mod tests {
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
 
+        let timestamp = 1;
         //TODO check timestamp
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState(MockHeader(start_client_height))),
-            AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height), 1)),
+            AnyConsensusState::from(MockConsensusState(
+                MockHeader(start_client_height),
+                timestamp,
+            )),
             default_signer,
         )
         .unwrap();

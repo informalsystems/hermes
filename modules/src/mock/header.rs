@@ -66,7 +66,7 @@ impl Header for MockHeader {
 
 impl From<MockHeader> for AnyConsensusState {
     fn from(h: MockHeader) -> Self {
-        //TODO fix timestamps
+        //TODO check timestamps
         AnyConsensusState::Mock(MockConsensusState(h, 1))
     }
 }

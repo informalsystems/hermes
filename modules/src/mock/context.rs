@@ -200,7 +200,7 @@ impl MockContext {
     ) -> Self {
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
-        //TODO: Move parameter
+        //TODO: check timestamp
         let client_consensus_timestamp = 1;
 
         let client_type = client_type.unwrap_or(ClientType::Mock);
