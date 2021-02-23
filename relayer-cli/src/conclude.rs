@@ -76,7 +76,9 @@ pub fn exit_with(out: Output) {
 }
 
 /// Exits the program. Useful when a type produces an error which can no longer be propagated, and
-/// must be handled instead.
+/// the program must exit instead. Any type that implements the `Unrecoverable` trait can pass
+/// control to this method to bail with an error (which must be a `Display`). The implementation
+/// of `Unrecoverable` is blank.
 ///
 pub fn exit_with_unrecoverable_error<T: Unrecoverable, E: Display>(err: E) -> T {
     Output::error(format!("{}", err)).exit();

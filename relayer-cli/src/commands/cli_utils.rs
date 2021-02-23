@@ -1,13 +1,13 @@
 use abscissa_core::config;
 
 use ibc::ics24_host::identifier::ChainId;
-use ibc_relayer::chain::CosmosSdkChain;
 use ibc_relayer::{chain::handle::ChainHandle, config::StoreConfig};
 use ibc_relayer::{chain::runtime::ChainRuntime, config::ChainConfig};
+use ibc_relayer::chain::CosmosSdkChain;
+use ibc_relayer::util::Unrecoverable;
 
 use crate::application::CliApp;
 use crate::error::{Error, Kind};
-use ibc_relayer::util::Unrecoverable;
 
 /// Pair of chain handlers that are used by most CLIs.
 pub struct ChainHandlePair {
