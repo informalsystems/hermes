@@ -24,8 +24,8 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -262,6 +262,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to }) => {
                             self.query_unreceived_acknowledgement(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryNextSequenceReceive { request, reply_to }) => {
+                            self.query_next_sequence_receive(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
@@ -650,6 +654,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_acknowledgements(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_next_sequence_receive(request);
 
         reply_to
             .send(result)

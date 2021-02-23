@@ -7,6 +7,10 @@
 ### FEATURES
 
 - [ibc]
+  - [nothing yet]
+
+- [ibc-relayer]
+  - Add support for ordered channels ([#599])
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
@@ -48,6 +52,7 @@
 - [ibc-relayer-cli]
   - [nothing yet]
 
+[#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 
