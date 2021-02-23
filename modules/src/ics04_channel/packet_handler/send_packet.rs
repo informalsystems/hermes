@@ -2,7 +2,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use std::cmp::Ordering;
 
-use super::PacketResult;
+use super::{PacketResult, PacketType};
 use crate::ics02_client::state::ClientState;
 use crate::ics04_channel::channel::Counterparty;
 use crate::ics04_channel::channel::State;
@@ -108,7 +108,10 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     let result = PacketResult {
         port_id: packet.source_port.clone(),
         channel_id: packet.source_channel.clone(),
-        send_seq_number: Sequence::from(*next_seq_send + 1),
+        seq: packet.sequence,
+        seq_number: Sequence::from(*next_seq_send + 1),
+        receipt: None,
+        action: PacketType::Send,
         data: packet.clone().data,
         timeout_height: packet.timeout_height,
         timeout_timestamp: packet.timeout_timestamp,

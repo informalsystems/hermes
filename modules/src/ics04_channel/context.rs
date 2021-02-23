@@ -11,7 +11,10 @@ use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
-use super::{packet::Sequence, packet_handler::PacketResult};
+use super::{
+    packet::Sequence,
+    packet_handler::{PacketResult, PacketType},
+};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReader {
@@ -83,20 +86,23 @@ pub trait ChannelKeeper {
     }
 
     fn store_packet_result(&mut self, result: PacketResult) -> Result<(), Error> {
-        self.store_next_sequence_send(
-            &(result.port_id.clone(), result.channel_id.clone()),
-            From::<Sequence>::from(result.send_seq_number),
-        )?;
-        self.store_packet_commitment(
-            &(
-                result.port_id.clone(),
-                result.channel_id.clone(),
-                result.send_seq_number,
-            ),
-            result.timeout_timestamp,
-            result.timeout_height,
-            result.data,
-        )?;
+        if result.action.eq(&PacketType::Send) {
+            self.store_next_sequence_send(
+                &(result.port_id.clone(), result.channel_id.clone()),
+                From::<Sequence>::from(result.seq_number),
+            )?;
+
+            self.store_packet_commitment(
+                &(
+                    result.port_id.clone(),
+                    result.channel_id.clone(),
+                    result.seq,
+                ),
+                result.timeout_timestamp,
+                result.timeout_height,
+                result.data,
+            )?;
+        }
         Ok(())
     }
 

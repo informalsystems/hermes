@@ -207,6 +207,7 @@ where
                 .with_events(handler_output.events)
                 .with_result(())
         }
+        _ => panic!(),
     };
 
     Ok(output)

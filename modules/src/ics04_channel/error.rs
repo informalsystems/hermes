@@ -105,6 +105,9 @@ pub enum Kind {
     #[error("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")]
     FailedChanneOpenTryVerification,
 
+    #[error("Error from the appliaction logic on send transfer")]
+    SendTransferError,
+
     #[error("No client state associated with client id {0}")]
     MissingClientState(ClientId),
 
