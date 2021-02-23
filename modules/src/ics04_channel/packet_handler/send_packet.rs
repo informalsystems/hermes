@@ -86,16 +86,8 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
 
     let latest_timestamp = consensus_state.latest_timestamp();
-
-    let host_consensus_state = ctx
-        .channel_host_consensus_state()
-        .ok_or(Kind::MissingHostConsensusState)?;
-    let mut packet_timestamp = host_consensus_state.latest_timestamp();
-
-    packet_timestamp = <AnyTime as Add<Duration>>::add(
-        packet_timestamp,
-        Duration::from_nanos(packet.timeout_timestamp),
-    );
+    
+    let packet_timestamp = packet.timeout_timestamp;
 
     if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
     {
