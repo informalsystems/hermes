@@ -1,3 +1,4 @@
+use ibc::ics03_connection::connection::State as ConnectionState;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -166,14 +167,6 @@ pub struct Connection {
     pub counterparty_connection_id: Option<u64>,
 
     pub state: ConnectionState,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub enum ConnectionState {
-    Uninit,
-    Init,
-    TryOpen,
-    Open,
 }
 
 /// On the model, a non-existing `client_id` and a `connection_id` is
