@@ -297,7 +297,7 @@ impl AnyConsensusState {
             }
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(_mock_state) => 1,
+            Self::Mock(mock_state) => mock_state.latest_timestamp(),
         }
     }
 
