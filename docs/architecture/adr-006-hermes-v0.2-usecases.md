@@ -36,7 +36,7 @@ Note that the commands below omit the binary name `hermes` , to keep the command
 length to a minimum.
 
 To create and update a client:
-- `create client ibc-0 ibc-1 create client ibc-0 ibc-1`
+- `create client ibc-0 ibc-1`
     - Optional params: `[--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]`
 - `update client ibc-0 <client-id>`
 
@@ -112,6 +112,9 @@ create client ibc-0 ibc-1 [--clock-drift <millis>] [--trusting-period <days>] [-
 Submits a transaction of type "client create" to chain `ibc-0` (called the
 _destination_ chain). The new client will be verifying headers for chain
 `ibc-1` (called a _source_ chain).
+
+See also the [limitations](#limitations) section discussing the optional
+security parameters for this command.
 
 - Update a client:
 
@@ -229,6 +232,15 @@ will be in JSON.
 
 Partially implemented.
 
+## Limitations
+
+There are currently certain limitations on how a light client can be
+instantiated, which can pose issues to the "client create" use-case that has
+parametrized trust options.
+(The discussion in [673] provides further context on this.)
+Consequently, the parametrized client create use-case may involve more complex
+discussions and may not be handled within v0.2.0.
+
 ## Consequences
 ### Positive
 
@@ -239,6 +251,8 @@ Partially implemented.
 ### Negative
 
 - Some commands will possibly turn out to be useless.
+- Requires some rethinking of the Relayer architecture (mainly because of the
+  [limitations](#limitations) surrounding light clients.)
 
 ### Neutral
 
@@ -251,5 +265,6 @@ Partially implemented.
 
 
 [628]: https://github.com/informalsystems/ibc-rs/issues/628
+[673]: https://github.com/informalsystems/ibc-rs/issues/673
 [client-state]: https://hermes.informal.systems/query_client.html#query-the-client-state
 [output]: https://github.com/informalsystems/ibc-rs/blob/1f2e72dbcafee5a8bbdab381ff4927d5870b4b59/relayer-cli/src/conclude.rs#L80
