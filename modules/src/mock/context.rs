@@ -208,7 +208,7 @@ impl MockContext {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => (
                 Some(MockClientState(MockHeader(client_state_height)).into()),
-                MockConsensusState(MockHeader(cs_height), client_consensus_timestamp).into(),
+                MockConsensusState(MockHeader(cs_height,client_consensus_timestamp)).into(),
             ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {

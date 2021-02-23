@@ -98,7 +98,7 @@ impl From<MockConsensusState> for MockClientState {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct MockConsensusState(pub MockHeader, pub u64);
+pub struct MockConsensusState(pub MockHeader);
 
 //pub struct MockConsensusState(pub MockHeader);
 
@@ -111,9 +111,8 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
         let raw_header = raw
             .header
             .ok_or_else(|| ClientKind::InvalidRawConsensusState.context("missing header"))?;
-        let raw_timestamp = raw.timestamp;
 
-        Ok(Self(MockHeader::try_from(raw_header)?, raw_timestamp))
+        Ok(Self(MockHeader::try_from(raw_header)?))
     }
 }
 
@@ -128,8 +127,8 @@ impl From<MockConsensusState> for RawMockConsensusState {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
+                timestamp: value.0.1,
             }),
-            timestamp: value.1,
         }
     }
 }

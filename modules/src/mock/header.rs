@@ -15,7 +15,7 @@ use crate::mock::client_state::MockConsensusState;
 use crate::Height;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct MockHeader(pub Height);
+pub struct MockHeader(pub Height, pub u64);
 
 impl Protobuf<RawMockHeader> for MockHeader {}
 
@@ -28,6 +28,7 @@ impl TryFrom<RawMockHeader> for MockHeader {
                 .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
                 .try_into()
                 .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
+            raw.timestamp,
         ))
     }
 }
@@ -67,6 +68,6 @@ impl Header for MockHeader {
 impl From<MockHeader> for AnyConsensusState {
     fn from(h: MockHeader) -> Self {
         //TODO fix timestamps
-        AnyConsensusState::Mock(MockConsensusState(h, 1))
+        AnyConsensusState::Mock(MockConsensusState(h))
     }
 }
