@@ -49,13 +49,13 @@ To create a connection:
 To create a channel:
 - `create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>`
     - Optional: `[--order <order>] [--version <version>] [--delay <delay>]`
-- `create channel ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id>`
+- `create channel ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id>`
     - Optional: `[--order <order>] [--version <version>]`
 
 To start packet relaying:
 - `start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>`
     - Optional: `[--order <order>] [--version <version>] [--delay <delay>]`
-- `start ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id>`
+- `start ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id>`
     - Optional: `[--order <order>] [--version <version>]`
 - `start ibc-0 --src-channel <channel-id>`
 
@@ -166,7 +166,7 @@ create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> [--order <o
 - With _existing_ specific connection:
 
 ```
-create channel ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id> [--order <order>] [--version <version>]
+create channel ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>]
 ```
 
 ##### Packet Relaying
@@ -180,8 +180,7 @@ start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> [--order <order>] [-
 - relay packets over a _new_ channel that re-uses an _existing_ connection:
 
 ```
-start ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id> [--order <order>]
-[--version <version>]
+start ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>]
 ```
 
 - relay packets over an _existing_ channel:
