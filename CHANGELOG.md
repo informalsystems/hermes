@@ -40,7 +40,7 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Hermes guide: improved installation guideline ([#672])
 
 ### BREAKING CHANGES
 
@@ -53,6 +53,7 @@
 - [ibc-relayer-cli]
   - [nothing yet]
 
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
@@ -117,7 +118,6 @@ involving packet acks in a 3-chain setup. More details below.
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
-[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#682]: https://github.com/informalsystems/ibc-rs/issues/682
 
 [ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
