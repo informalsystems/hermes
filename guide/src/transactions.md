@@ -27,7 +27,7 @@ The main purpose of these commands is to support development and testing, and co
 At a high level, most commands follow this template:
 
 ```shell
-hermes tx raw <ibc-datagram> <dst-chain-id> <src-chain-id> [<dst-obj-id> <src-obj-id>]*
+hermes tx raw <ibc-datagram> <dst-chain-id> <src-chain-id> [-d <dst-obj-id> -s <src-obj-id>]*
 ```
 
 In the command template above:

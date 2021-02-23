@@ -43,8 +43,8 @@ use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -676,11 +676,12 @@ impl Chain for CosmosSdkChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
+        let mut response = self
             .block_on(client.unreceived_packets(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
+        response.sequences.sort_unstable();
         Ok(response.sequences)
     }
 
@@ -734,12 +735,37 @@ impl Chain for CosmosSdkChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
+        let mut response = self
             .block_on(client.unreceived_acks(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
+        response.sequences.sort_unstable();
         Ok(response.sequences)
+    }
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error> {
+        crate::time!("query_next_sequence_receive");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.next_sequence_receive(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        Ok(Sequence::from(response.next_sequence_receive))
     }
 
     /// Queries the packet data for all packets with sequences included in the request.
@@ -899,10 +925,14 @@ impl Chain for CosmosSdkChain {
                 channel_id,
                 sequence,
             },
-            PacketMsgType::Timeout => Path::Receipts {
+            PacketMsgType::TimeoutUnordered => Path::Receipts {
                 port_id,
                 channel_id,
                 sequence,
+            },
+            PacketMsgType::TimeoutOrdered => Path::SeqRecvs {
+                0: port_id,
+                1: channel_id,
             },
             PacketMsgType::TimeoutOnClose => Path::Receipts {
                 port_id,

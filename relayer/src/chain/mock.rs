@@ -27,8 +27,8 @@ use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -51,6 +51,7 @@ pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
 }
+
 impl Chain for MockChain {
     type LightBlock = TMLightBlock;
     type Header = TendermintHeader;
@@ -213,6 +214,13 @@ impl Chain for MockChain {
         &self,
         _request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
+        unimplemented!()
+    }
+
+    fn query_next_sequence_receive(
+        &self,
+        _request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error> {
         unimplemented!()
     }
 

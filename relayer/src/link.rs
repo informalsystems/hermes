@@ -2,16 +2,18 @@ use std::thread;
 use std::time::Duration;
 
 use prost_types::Any;
+use tendermint::account::Id;
 use thiserror::Error;
 use tracing::{error, info};
 
+use ibc::ics04_channel::channel::{ChannelEnd, State};
 use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use ibc::{
     downcast,
     events::{IbcEvent, IbcEventType},
     ics03_connection::connection::State as ConnectionState,
-    ics04_channel::channel::{QueryPacketEventDataRequest, State as ChannelState},
+    ics04_channel::channel::{Order, QueryPacketEventDataRequest, State as ChannelState},
     ics04_channel::events::{SendPacket, WriteAcknowledgement},
     ics04_channel::msgs::acknowledgement::MsgAcknowledgement,
     ics04_channel::msgs::recv_packet::MsgRecvPacket,
@@ -24,8 +26,9 @@ use ibc::{
 use ibc_proto::ibc::core::channel::v1::{
     MsgAcknowledgement as RawMsgAck, MsgChannelCloseConfirm as RawMsgChannelCloseConfirm,
     MsgRecvPacket as RawMsgRecvPacket, MsgTimeout as RawMsgTimeout,
-    MsgTimeoutOnClose as RawMsgTimeoutOnClose, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    MsgTimeoutOnClose as RawMsgTimeoutOnClose, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 
 use crate::chain::handle::{ChainHandle, Subscription};
@@ -34,8 +37,6 @@ use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
-use ibc::ics04_channel::channel::State;
-use ibc::ics04_channel::events::CloseInit;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -139,6 +140,54 @@ impl RelayPath {
         &self.channel.dst_channel_id()
     }
 
+    fn src_channel(&self) -> Result<ChannelEnd, LinkError> {
+        Ok(self
+            .src_chain()
+            .query_channel(self.src_port_id(), self.src_channel_id(), self.src_height)
+            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
+    }
+
+    fn dst_channel(&self) -> Result<ChannelEnd, LinkError> {
+        Ok(self
+            .dst_chain()
+            .query_channel(self.dst_port_id(), self.dst_channel_id(), self.dst_height)
+            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
+    }
+
+    fn src_signer(&self) -> Result<Id, LinkError> {
+        self.src_chain.get_signer().map_err(|e| {
+            LinkError::Failed(format!(
+                "could not retrieve signer from src chain {} with error: {}",
+                self.src_chain.id(),
+                e
+            ))
+        })
+    }
+
+    fn dst_signer(&self) -> Result<Id, LinkError> {
+        self.dst_chain.get_signer().map_err(|e| {
+            LinkError::Failed(format!(
+                "could not retrieve signer from dst chain {} with error: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })
+    }
+
+    fn dst_latest_height(&self) -> Result<Height, LinkError> {
+        self.dst_chain
+            .query_latest_height()
+            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))
+    }
+
+    fn unordered_channel(&self) -> bool {
+        self.channel.ordering == Order::Unordered
+    }
+
+    fn ordered_channel(&self) -> bool {
+        self.channel.ordering == Order::Ordered
+    }
+
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = ForeignClient {
             id: self.dst_client_id().clone(),
@@ -171,9 +220,29 @@ impl RelayPath {
             IbcEvent::CloseInitChannel(close_init_ev) => {
                 info!("{} => event {}", self.src_chain.id(), close_init_ev);
                 Ok((
-                    Some(self.build_chan_close_confirm_from_close_init_event(&close_init_ev)?),
+                    Some(self.build_chan_close_confirm_from_event(&event)?),
                     None,
                 ))
+            }
+            IbcEvent::TimeoutPacket(timeout_ev) => {
+                // When a timeout packet for an ordered channel is processed on-chain (src here)
+                // the chain closes the channel but no close init event is emitted, instead
+                // we get a timeout packet event (this happens for both unordered and ordered channels)
+                // Here we check it the channel is closed on src and send a channel close confirm
+                // to the counterparty.
+                if self.ordered_channel() && self.src_channel()?.state_matches(&State::Closed) {
+                    info!(
+                        "{} => event {} closes the channel",
+                        self.src_chain.id(),
+                        timeout_ev
+                    );
+                    Ok((
+                        Some(self.build_chan_close_confirm_from_event(&event)?),
+                        None,
+                    ))
+                } else {
+                    Ok((None, None))
+                }
             }
             IbcEvent::SendPacket(send_packet_ev) => {
                 info!("{} => event {}", self.src_chain.id(), send_packet_ev);
@@ -187,31 +256,18 @@ impl RelayPath {
         }
     }
 
-    fn build_chan_close_confirm_from_close_init_event(
-        &self,
-        event: &CloseInit,
-    ) -> Result<Any, LinkError> {
-        // TODO - change event types to return ICS height
+    fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), self.src_channel_id(), *event.height())
             .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
-
-        // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ChannelError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
             channel_id: self.dst_channel_id().clone(),
             proofs,
-            signer,
+            signer: self.dst_signer()?,
         };
 
         Ok(new_msg.to_any::<RawMsgChannelCloseConfirm>())
@@ -226,8 +282,12 @@ impl RelayPath {
         }
 
         if let Some(msg) = timeout {
-            self.timeout_msgs.push(msg);
-            self.src_msgs_input_events.push(event.clone());
+            // For Ordered channels a single timeout event should be sent as this closes the channel.
+            // Otherwise a multi message transaction will fail.
+            if self.unordered_channel() || self.timeout_msgs.is_empty() {
+                self.timeout_msgs.push(msg);
+                self.src_msgs_input_events.push(event.clone());
+            }
         }
 
         Ok(())
@@ -259,6 +319,13 @@ impl RelayPath {
                         self.all_events.push(event.clone());
                     }
                 }
+                IbcEvent::TimeoutPacket(timeout_ev) => {
+                    if self.channel.src_channel_id() == timeout_ev.src_channel_id()
+                        && self.channel.src_port_id() == timeout_ev.src_port_id()
+                    {
+                        self.all_events.push(event.clone());
+                    }
+                }
                 _ => {}
             }
         }
@@ -277,8 +344,7 @@ impl RelayPath {
         if self.all_events.is_empty() {
             return Ok(());
         }
-        // All events are at the same height
-        let event_height = self.all_events[0].height();
+        let event_height = &self.src_height;
 
         // Check if a consensus state at event_height + 1 exists on destination chain already
         // and update src_height
@@ -313,8 +379,6 @@ impl RelayPath {
             self.all_events
                 .iter_mut()
                 .for_each(|ev| ev.set_height(new_height));
-        } else {
-            self.src_height = *event_height;
         }
 
         Ok(())
@@ -342,16 +406,15 @@ impl RelayPath {
             for _i in 0..MAX_ITER {
                 self.reset_buffers();
 
-                self.dst_height = self
-                    .dst_chain
-                    .query_latest_height()
-                    .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
+                self.dst_height = self.dst_latest_height()?;
 
+                // Collect the messages for all events
                 for event in self.all_events.clone() {
                     println!("{} => {:?}", self.src_chain.id(), event);
                     self.handle_packet_event(&event)?;
                 }
 
+                // Send client update and messages
                 let res = self.send_update_client_and_msgs();
                 println!("\nresult {:?}", res);
 
@@ -431,7 +494,7 @@ impl RelayPath {
 
             if let Some(_e) = ev {
                 self.all_events
-                    .append(&mut self.dst_msgs_input_events.clone());
+                    .append(&mut self.src_msgs_input_events.clone());
             }
         }
 
@@ -580,10 +643,7 @@ impl RelayPath {
         // Get the events for the send packets on source chain that have not been received on
         // destination chain (i.e. ack was not seen on source chain)
         self.target_height_and_send_packet_events()?;
-        self.dst_height = self
-            .dst_chain
-            .query_latest_height()
-            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
+        self.dst_height = self.dst_latest_height()?;
 
         for event in self.all_events.iter_mut() {
             event.set_height(self.src_height);
@@ -599,10 +659,7 @@ impl RelayPath {
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
         self.target_height_and_write_ack_events()?;
-        self.dst_height = self
-            .dst_chain
-            .query_latest_height()
-            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
+        self.dst_height = self.dst_latest_height()?;
 
         for event in self.all_events.iter_mut() {
             event.set_height(self.src_height);
@@ -614,15 +671,6 @@ impl RelayPath {
     }
 
     fn build_recv_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
-        // Get signer
-        let signer = self.dst_chain.get_signer().map_err(|e| {
-            LinkError::Failed(format!(
-                "could not retrieve signer from dst chain {} with error: {}",
-                self.dst_chain.id(),
-                e
-            ))
-        })?;
-
         let (_, proofs) = self
             .src_chain
             .build_packet_proofs(
@@ -634,13 +682,15 @@ impl RelayPath {
             )
             .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain.id(), e))?;
 
-        let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), signer).map_err(|e| {
-            LinkError::Failed(format!(
-                "error while building the recv packet for src channel {} due to error {}",
-                packet.source_channel.clone(),
-                e
-            ))
-        })?;
+        let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?).map_err(
+            |e| {
+                LinkError::Failed(format!(
+                    "error while building the recv packet for src channel {} due to error {}",
+                    packet.source_channel.clone(),
+                    e
+                ))
+            },
+        )?;
 
         info!(
             "built recv_packet msg {}, proofs at height {:?}",
@@ -652,15 +702,6 @@ impl RelayPath {
     }
 
     fn build_ack_from_recv_event(&self, event: &WriteAcknowledgement) -> Result<Any, LinkError> {
-        // Get signer
-        let signer = self.dst_chain.get_signer().map_err(|e| {
-            LinkError::Failed(format!(
-                "could not retrieve signer from dst chain {} with error: {}",
-                self.dst_chain.id(),
-                e
-            ))
-        })?;
-
         let packet = event.packet.clone();
         let (_, proofs) = self
             .src_chain
@@ -673,15 +714,12 @@ impl RelayPath {
             )
             .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain.id(), e))?;
 
-        let msg =
-            MsgAcknowledgement::new(packet.clone(), event.ack.clone(), proofs.clone(), signer)
-                .map_err(|e| {
-                    LinkError::Failed(format!(
-                        "error while building the ack packet for dst channel {} due to error {}",
-                        packet.destination_channel.clone(),
-                        e
-                    ))
-                })?;
+        let msg = MsgAcknowledgement::new(
+            packet,
+            event.ack.clone(),
+            proofs.clone(),
+            self.dst_signer()?,
+        );
 
         info!(
             "built acknowledgment msg {}, proofs at height {:?}",
@@ -693,34 +731,36 @@ impl RelayPath {
     }
 
     fn build_timeout_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
-        // Get signer
-        let signer = self.src_chain.get_signer().map_err(|e| {
-            LinkError::Failed(format!(
-                "could not retrieve signer from src chain {} with error: {}",
-                self.src_chain.id(),
-                e
-            ))
-        })?;
+        let (packet_type, next_sequence_received) = if self.ordered_channel() {
+            let next_seq = self
+                .dst_chain()
+                .query_next_sequence_receive(QueryNextSequenceReceiveRequest {
+                    port_id: self.dst_port_id().to_string(),
+                    channel_id: self.dst_channel_id().to_string(),
+                })
+                .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+            (PacketMsgType::TimeoutOrdered, next_seq)
+        } else {
+            (PacketMsgType::TimeoutUnordered, packet.sequence)
+        };
 
         let (_, proofs) = self
             .dst_chain
             .build_packet_proofs(
-                PacketMsgType::Timeout,
+                packet_type,
                 &packet.destination_port,
                 &packet.destination_channel,
-                packet.sequence,
+                next_sequence_received,
                 height,
             )
             .map_err(|e| LinkError::PacketProofsConstructor(self.dst_chain.id(), e))?;
 
-        let msg = MsgTimeout::new(packet.clone(), packet.sequence, proofs.clone(), signer)
-            .map_err(|e| {
-                LinkError::Failed(format!(
-                    "error while building the timeout packet for src channel {} due to error {}",
-                    packet.source_channel.clone(),
-                    e
-                ))
-            })?;
+        let msg = MsgTimeout::new(
+            packet.clone(),
+            next_sequence_received,
+            proofs.clone(),
+            self.dst_signer()?,
+        );
 
         info!(
             "built timeout msg {}, proofs at height {:?}",
@@ -736,15 +776,6 @@ impl RelayPath {
         packet: &Packet,
         height: Height,
     ) -> Result<Any, LinkError> {
-        // Get signer
-        let signer = self.src_chain.get_signer().map_err(|e| {
-            LinkError::Failed(format!(
-                "could not retrieve signer from src chain {} with error: {}",
-                self.src_chain.id(),
-                e
-            ))
-        })?;
-
         let (_, proofs) = self
             .dst_chain
             .build_packet_proofs(
@@ -756,14 +787,12 @@ impl RelayPath {
             )
             .map_err(|e| LinkError::PacketProofsConstructor(self.dst_chain.id(), e))?;
 
-        let msg = MsgTimeoutOnClose::new(packet.clone(), packet.sequence, proofs.clone(), signer)
-            .map_err(|e| {
-            LinkError::Failed(format!(
-                "error while building the timeout packet for src channel {} due to error {}",
-                packet.source_channel.clone(),
-                e
-            ))
-        })?;
+        let msg = MsgTimeoutOnClose::new(
+            packet.clone(),
+            packet.sequence,
+            proofs.clone(),
+            self.src_signer()?,
+        );
 
         info!(
             "built timeout on close msg {}, proofs at height {:?}",
@@ -779,22 +808,15 @@ impl RelayPath {
         event: &SendPacket,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let packet = event.packet.clone();
-        let dst_height = self
-            .dst_chain
-            .query_latest_height()
-            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
 
-        let dst_channel = self
-            .dst_chain
-            .query_channel(self.dst_port_id(), self.dst_channel_id(), self.dst_height)
-            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
-
-        if dst_channel.state_matches(&ChannelState::Closed) {
+        if self.dst_channel()?.state_matches(&ChannelState::Closed) {
             Ok((
                 None,
                 Some(self.build_timeout_on_close_packet(&event.packet, self.dst_height)?),
             ))
-        } else if packet.timeout_height != Height::zero() && packet.timeout_height < dst_height {
+        } else if packet.timeout_height != Height::zero()
+            && packet.timeout_height < self.dst_latest_height()?
+        {
             Ok((
                 None,
                 Some(self.build_timeout_packet(&event.packet, self.dst_height)?),

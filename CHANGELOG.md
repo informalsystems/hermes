@@ -7,6 +7,10 @@
 ### FEATURES
 
 - [ibc]
+  - [nothing yet]
+
+- [ibc-relayer]
+  - Add support for ordered channels ([#599])
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
@@ -41,7 +45,7 @@
 ### BREAKING CHANGES
 
 - [ibc]
-  - [nothing yet]
+  - `MsgConnectionOpenAck.counterparty_connection_id` is now a `ConnectionId` instead of an `Option<ConnectionId>`([#700])
 
 - [ibc-relayer]
   - [nothing yet]
@@ -49,9 +53,11 @@
 - [ibc-relayer-cli]
   - [nothing yet]
 
+[#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
+[#700]: https://github.com/informalsystems/ibc-rs/pull/700
 
 ## v0.1.1
 *February 17, 2021*
