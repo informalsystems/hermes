@@ -1,6 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -41,7 +41,7 @@ macro_rules! tx_chan_cmd {
 
         info!("Message {}: {:?}", $dbg_string, channel);
 
-        let res: Result<IBCEvent, Error> = channel.$func().map_err(|e| Kind::Tx.context(e).into());
+        let res: Result<IbcEvent, Error> = channel.$func().map_err(|e| Kind::Tx.context(e).into());
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
@@ -66,6 +66,12 @@ pub struct TxRawChanOpenInitCmd {
 
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
+
+    #[options(
+        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
+        short = "o"
+    )]
+    ordering: Order,
 }
 
 impl Runnable for TxRawChanOpenInitCmd {
@@ -76,7 +82,7 @@ impl Runnable for TxRawChanOpenInitCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: Order::default(),
+                    ordering: self.ordering,
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),

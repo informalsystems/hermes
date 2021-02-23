@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
-use crate::chain::{Chain, CosmosSDKChain};
+use crate::chain::{Chain, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error;
 use crate::error::{Error, Kind};
@@ -20,7 +20,7 @@ pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
     let rt = TokioRuntime::new().unwrap();
 
     // Get the destination chain
-    let chain = CosmosSDKChain::bootstrap(opts.clone().chain_config, Arc::new(rt))?;
+    let chain = CosmosSdkChain::bootstrap(opts.clone().chain_config, Arc::new(rt))?;
 
     let key_contents = fs::read_to_string(&opts.file)
         .map_err(|_| Kind::KeyBase.context("error reading the key file"))?;

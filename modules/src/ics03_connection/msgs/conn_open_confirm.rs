@@ -1,9 +1,9 @@
 use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
 use crate::address::{account_to_string, string_to_account};
 use crate::ics03_connection::error::{Error, Kind};
@@ -41,12 +41,12 @@ impl Msg for MsgConnectionOpenConfirm {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
+    }
+
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 
@@ -93,7 +93,7 @@ pub mod test_util {
 
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
-    pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
+    pub fn get_dummy_raw_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
             connection_id: "srcconnection".to_string(),
             proof_ack: get_dummy_proof(),
@@ -113,7 +113,7 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
-    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
+    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_raw_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 
     #[test]
@@ -125,7 +125,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_ack_msg = get_dummy_msg_conn_open_confirm();
+        let default_ack_msg = get_dummy_raw_msg_conn_open_confirm();
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_confirm();
+        let raw = get_dummy_raw_msg_conn_open_confirm();
         let msg = MsgConnectionOpenConfirm::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenConfirm::from(msg.clone());
         let msg_back = MsgConnectionOpenConfirm::try_from(raw_back.clone()).unwrap();

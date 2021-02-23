@@ -77,7 +77,7 @@ pub enum TxRawCommands {
 
     /// The `tx raw packet-send` subcommand
     #[options(help = "Send a fungible token transfer test transaction (ICS20 MsgTransfer)")]
-    FtTransfer(transfer::TxICS20MsgTransferCmd),
+    FtTransfer(transfer::TxIcs20MsgTransferCmd),
 
     /// The `tx raw packet-recv` subcommand
     #[options(help = "Relay receive or timeout packets")]

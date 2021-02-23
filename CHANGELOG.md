@@ -1,64 +1,64 @@
 # Changelog
 
-[comment]: <> (## Unreleased Changes)
+## Unreleased Changes
 
-[comment]: <> (> [high level summary])
+- [high level summary]
 
-[comment]: <> (### FEATURES)
+### FEATURES
 
-[comment]: <> (- [ibc])
+- [ibc]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer]
+  - Add support for ordered channels ([#599])
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
-[comment]: <> (- [ibc-relayer])
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer-cli])
+### IMPROVEMENTS
 
-[comment]: <> (  - [nothing yet])
+- [ibc]
+  - Follow Rust guidelines naming conventions ([#689])
 
-[comment]: <> (### IMPROVEMENTS)
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (- [ibc])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+### BUG FIXES
 
-[comment]: <> (- [ibc-relayer])
+- [ibc]
+  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
+  - Allow a conn open ack to succeed in the happy case ([#699])
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer-cli])
+- [ibc-relayer-cli]
+  - Hermes guide: improved installation guideline ([#672])
 
-[comment]: <> (  - [nothing yet])
+### BREAKING CHANGES
 
-[comment]: <> (### BUG FIXES)
+- [ibc]
+  - `MsgConnectionOpenAck.counterparty_connection_id` is now a `ConnectionId` instead of an `Option<ConnectionId>`([#700])
 
-[comment]: <> (- [ibc])
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer-cli])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (### BREAKING CHANGES)
-
-[comment]: <> (- [ibc])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer-cli])
-
-[comment]: <> (  - [nothing yet])
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#599]: https://github.com/informalsystems/ibc-rs/issues/599
+[#685]: https://github.com/informalsystems/ibc-rs/issues/685
+[#689]: https://github.com/informalsystems/ibc-rs/issues/689
+[#699]: https://github.com/informalsystems/ibc-rs/issues/699
+[#700]: https://github.com/informalsystems/ibc-rs/pull/700
 
 ## v0.1.1
 *February 17, 2021*
@@ -112,13 +112,16 @@ involving packet acks in a 3-chain setup. More details below.
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#572]: https://github.com/informalsystems/ibc-rs/issues/572
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
+[#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
-[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#682]: https://github.com/informalsystems/ibc-rs/issues/682
+
+[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
+[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
 
 ## v0.1.0
 *February 4, 2021*

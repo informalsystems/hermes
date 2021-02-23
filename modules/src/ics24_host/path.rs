@@ -79,17 +79,17 @@ impl Display for Path {
             }
             Path::SeqSends(port_id, channel_id) => write!(
                 f,
-                "seqSends/ports/{}/channels/{}/nextSequenceSend",
+                "nextSequenceSend/ports/{}/channels/{}",
                 port_id, channel_id
             ),
             Path::SeqRecvs(port_id, channel_id) => write!(
                 f,
-                "seqRecvs/ports/{}/channels/{}/nextSequenceRecv",
+                "nextSequenceRecv/ports/{}/channels/{}",
                 port_id, channel_id
             ),
             Path::SeqAcks(port_id, channel_id) => write!(
                 f,
-                "seqAcks/ports/{}/channels/{}/nextSequenceAck",
+                "nextSequenceAck/ports/{}/channels/{}",
                 port_id, channel_id
             ),
             Path::Commitments {

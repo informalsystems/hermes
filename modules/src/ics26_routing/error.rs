@@ -12,7 +12,7 @@ pub enum Kind {
     KeeperRaisedError,
 
     #[error("unknown type URL {0}")]
-    UnknownMessageTypeURL(String),
+    UnknownMessageTypeUrl(String),
 
     #[error("the message is malformed and cannot be decoded")]
     MalformedMessageBytes,
