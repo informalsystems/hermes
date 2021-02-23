@@ -2,6 +2,8 @@
 pub struct Header {
     #[prost(message, optional, tag="1")]
     pub height: ::core::option::Option<super::core::client::v1::Height>,
+    #[prost(uint64, tag="2")]
+    pub timestamp: u64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
@@ -12,6 +14,4 @@ pub struct ClientState {
 pub struct ConsensusState {
     #[prost(message, optional, tag="1")]
     pub header: ::core::option::Option<Header>,
-    #[prost(uint64, tag="2")]
-    pub timestamp: u64,
 }
