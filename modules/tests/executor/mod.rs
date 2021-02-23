@@ -1,6 +1,5 @@
 pub mod modelator;
 pub mod step;
-use chrono::Utc;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
@@ -112,7 +111,7 @@ impl IBCTestExecutor {
     }
 
     fn mock_header(height: u64) -> MockHeader {
-        MockHeader(Self::height(height), Utc::now())
+        MockHeader(Self::height(height))
     }
 
     fn header(height: u64) -> AnyHeader {
@@ -124,7 +123,8 @@ impl IBCTestExecutor {
     }
 
     fn consensus_state(height: u64) -> AnyConsensusState {
-        AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)))
+        //TODO check timestamp
+        AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height), 1))
     }
 
     fn signer() -> AccountId {

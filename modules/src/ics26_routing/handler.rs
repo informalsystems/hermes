@@ -214,7 +214,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
     use std::convert::TryFrom;
 
     use crate::events::IbcEvent;
@@ -267,12 +266,10 @@ mod tests {
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
 
+        //TODO check timestamp
         let create_client_msg = MsgCreateAnyClient::new(
-            AnyClientState::from(MockClientState(MockHeader(start_client_height, Utc::now()))),
-            AnyConsensusState::from(MockConsensusState(MockHeader(
-                start_client_height,
-                Utc::now(),
-            ))),
+            AnyClientState::from(MockClientState(MockHeader(start_client_height))),
+            AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height), 1)),
             default_signer,
         )
         .unwrap();
@@ -358,7 +355,7 @@ mod tests {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader(update_client_height, Utc::now()).into(),
+                    header: MockHeader(update_client_height).into(),
                     signer: default_signer,
                 })),
                 want_pass: true,
@@ -367,7 +364,7 @@ mod tests {
                 name: "Client update fails due to stale header".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader(update_client_height, Utc::now()).into(),
+                    header: MockHeader(update_client_height).into(),
                     signer: default_signer,
                 })),
                 want_pass: false,

@@ -7,8 +7,6 @@ use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::Height;
 
-use chrono::Utc;
-
 use tendermint::chain::Id as TMChainId;
 use tendermint_testgen::light_block::TMLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
@@ -49,10 +47,7 @@ impl HostBlock {
     /// Generates a new block at `height` for the given chain identifier and chain type.
     pub fn generate_block(chain_id: ChainId, chain_type: HostType, height: u64) -> HostBlock {
         match chain_type {
-            HostType::Mock => HostBlock::Mock(MockHeader(
-                Height::new(chain_id.version(), height),
-                Utc::now(),
-            )),
+            HostType::Mock => HostBlock::Mock(MockHeader(Height::new(chain_id.version(), height))),
             HostType::SyntheticTendermint => {
                 HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))
             }

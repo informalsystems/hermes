@@ -283,14 +283,6 @@ pub enum AnyConsensusState {
     Mock(MockConsensusState),
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize)]
-// #[serde(try_from = "Timestamp", into = "Timestamp")]
-pub enum AnyTime {
-    Tendermint(Time),
-
-    Mock(DateTime<Utc>),
-}
-
 impl AnyConsensusState {
     pub fn latest_timestamp(&self) -> u64 {
         match self {
@@ -308,8 +300,6 @@ impl AnyConsensusState {
             Self::Mock(_mock_state) => 1,
         }
     }
-
-    //AnyTime::Mock(mock_state.latest_timestamp())
 
     pub fn client_type(&self) -> ClientType {
         match self {
