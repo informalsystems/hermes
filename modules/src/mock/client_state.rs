@@ -101,8 +101,6 @@ impl From<MockConsensusState> for MockClientState {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct MockConsensusState(pub MockHeader);
 
-//pub struct MockConsensusState(pub MockHeader);
-
 impl Protobuf<RawMockConsensusState> for MockConsensusState {}
 
 impl TryFrom<RawMockConsensusState> for MockConsensusState {

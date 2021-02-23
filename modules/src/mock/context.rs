@@ -200,18 +200,12 @@ impl MockContext {
     ) -> Self {
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
-        //TODO: Move parameter
-        let client_consensus_timestamp = 1;
-
         let client_type = client_type.unwrap_or(ClientType::Mock);
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => (
-                Some(
-                    MockClientState(MockHeader(client_state_height, client_consensus_timestamp))
-                        .into(),
-                ),
-                MockConsensusState(MockHeader(cs_height, client_consensus_timestamp)).into(),
+                Some(MockClientState(MockHeader::new(client_state_height)).into()),
+                MockConsensusState(MockHeader::new(cs_height)).into(),
             ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {

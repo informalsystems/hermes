@@ -43,6 +43,9 @@ impl MockHeader {
     pub fn height(&self) -> Height {
         self.0
     }
+    pub fn new(height: Height) -> Self {
+        Self(height, Default::default())
+    }
 }
 
 impl From<MockHeader> for AnyHeader {
@@ -67,7 +70,6 @@ impl Header for MockHeader {
 
 impl From<MockHeader> for AnyConsensusState {
     fn from(h: MockHeader) -> Self {
-        //TODO fix timestamps
         AnyConsensusState::Mock(MockConsensusState(h))
     }
 }

@@ -110,9 +110,8 @@ impl IBCTestExecutor {
         Height::new(Self::revision(), height)
     }
 
-    //TODO add timestamp
     fn mock_header(height: u64) -> MockHeader {
-        MockHeader(Self::height(height), 1)
+        MockHeader::new(Self::height(height))
     }
 
     fn header(height: u64) -> AnyHeader {
@@ -124,7 +123,6 @@ impl IBCTestExecutor {
     }
 
     fn consensus_state(height: u64) -> AnyConsensusState {
-        //TODO check timestamp
         AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)))
     }
 
