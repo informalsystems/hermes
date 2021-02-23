@@ -1,9 +1,8 @@
-use std::{convert::TryFrom, ops::Add};
+use std::convert::TryFrom;
 
 use chrono::{DateTime, Utc};
 use prost_types::Any;
 use serde::Serialize;
-use std::time::{Duration, SystemTime};
 use tendermint::Time;
 use tendermint_proto::Protobuf;
 
@@ -307,7 +306,7 @@ impl AnyConsensusState {
             }
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => 0,
+            Self::Mock(_mock_state) => 1,
         }
     }
 
