@@ -5,7 +5,6 @@ use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-use tendermint::account::Id;
 use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
@@ -23,7 +22,7 @@ use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::test_utils::get_dummy_account_id;
+use ibc::test_utils::get_dummy_account_id_raw;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
@@ -110,8 +109,8 @@ impl Chain for MockChain {
         Ok(events)
     }
 
-    fn get_signer(&mut self) -> Result<Id, Error> {
-        Ok(get_dummy_account_id())
+    fn get_signer(&mut self) -> Result<String, Error> {
+        Ok(get_dummy_account_id_raw())
     }
 
     fn get_key(&mut self) -> Result<KeyEntry, Error> {

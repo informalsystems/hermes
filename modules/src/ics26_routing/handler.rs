@@ -157,7 +157,7 @@ mod tests {
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::get_dummy_account_id_raw;
     use crate::Height;
 
     #[test]
@@ -172,14 +172,14 @@ mod tests {
             msg: ICS26Envelope,
             want_pass: bool,
         }
-        let default_signer = get_dummy_account_id();
+        let default_signer = get_dummy_account_id_raw();
         let start_client_height = Height::new(0, 5);
         let update_client_height = Height::new(0, 34);
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState(MockHeader(start_client_height))),
             AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height))),
-            get_dummy_account_id(),
+            get_dummy_account_id_raw(),
         )
         .unwrap();
 
@@ -270,7 +270,7 @@ mod tests {
                 msg: ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
                     header: MockHeader(update_client_height).into(),
-                    signer: default_signer,
+                    signer: default_signer.clone(),
                 })),
                 want_pass: true,
             },

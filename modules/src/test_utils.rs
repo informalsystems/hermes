@@ -29,7 +29,7 @@ pub fn get_dummy_proof() -> Vec<u8> {
         .to_vec()
 }
 
-fn get_dummy_account_id_raw() -> String {
+pub fn get_dummy_account_id_raw() -> String {
     "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
 }
 

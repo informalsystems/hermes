@@ -4,8 +4,6 @@ use std::sync::Arc;
 use crossbeam_channel as channel;
 use dyn_clone::DynClone;
 use serde::{Serialize, Serializer};
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::{identifier::ChainId, identifier::ClientId};
@@ -64,7 +62,7 @@ pub enum ChainRequest {
     },
 
     Signer {
-        reply_to: ReplyTo<AccountId>,
+        reply_to: ReplyTo<String>,
     },
 
     Key {
@@ -205,7 +203,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
-    fn get_signer(&self) -> Result<AccountId, Error>;
+    fn get_signer(&self) -> Result<String, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 

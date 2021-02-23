@@ -1,15 +1,11 @@
 use crate::ics04_channel::channel::{validate_version, ChannelEnd};
 use crate::ics04_channel::error::{Error, Kind};
+use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{
-    address::{account_to_string, string_to_account},
-    ics24_host::error::ValidationError,
-};
 use crate::{proofs::Proofs, tx_msg::Msg};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
@@ -27,7 +23,7 @@ pub struct MsgChannelOpenTry {
     pub channel: ChannelEnd,
     pub counterparty_version: String,
     pub proofs: Proofs,
-    pub signer: AccountId,
+    pub signer: String,
 }
 
 impl MsgChannelOpenTry {
@@ -59,10 +55,6 @@ impl Msg for MsgChannelOpenTry {
         TYPE_URL.to_string()
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
-
     fn validate_basic(&self) -> Result<(), ValidationError> {
         match self.channel().counterparty().channel_id() {
             None => Err(ValidationKind::InvalidCounterpartyChannelId.into()),
@@ -77,9 +69,6 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelOpenTry) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_init.into(),
             None,
@@ -108,7 +97,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
-            signer,
+            signer: raw_msg.signer,
         };
 
         match msg.validate_basic() {
@@ -129,7 +118,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
             counterparty_version: domain_msg.counterparty_version,
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer,
         }
     }
 }

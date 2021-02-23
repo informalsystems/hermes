@@ -4,9 +4,6 @@ use std::str::FromStr;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
-
-use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
@@ -31,7 +28,7 @@ pub struct MsgConnectionOpenTry {
     pub counterparty_versions: Vec<Version>,
     pub proofs: Proofs,
     pub delay_period: u64,
-    pub signer: AccountId,
+    pub signer: String,
 }
 
 impl MsgConnectionOpenTry {
@@ -91,10 +88,6 @@ impl Msg for MsgConnectionOpenTry {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 
     fn type_url(&self) -> String {
@@ -171,7 +164,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
             delay_period: msg.delay_period,
-            signer: string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?,
+            signer: msg.signer,
         })
     }
 }
@@ -208,7 +201,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .proofs
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
-            signer: account_to_string(ics_msg.signer).unwrap(),
+            signer: ics_msg.signer,
         }
     }
 }

@@ -1,5 +1,4 @@
 use prost_types::Any;
-use tendermint::account::Id as AccountId;
 
 use crate::events::IBCEvent;
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
@@ -28,5 +27,5 @@ pub trait ICS18Context {
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error>;
 
     /// Temporary solution. Similar to `CosmosSDKChain::key_and_signer()` but simpler.
-    fn signer(&self) -> AccountId;
+    fn signer(&self) -> String;
 }

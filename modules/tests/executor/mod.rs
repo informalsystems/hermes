@@ -21,7 +21,6 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
 use step::{ActionOutcome, ActionType, Chain, Step};
-use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
 pub struct IBCTestExecutor {
@@ -126,8 +125,8 @@ impl IBCTestExecutor {
         AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)))
     }
 
-    fn signer() -> AccountId {
-        AccountId::new([0; 20])
+    fn signer() -> String {
+        "".to_string()
     }
 
     /// Check that chain heights match the ones in the model.

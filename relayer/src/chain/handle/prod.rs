@@ -1,8 +1,6 @@
 use std::fmt::Debug;
 
 use crossbeam_channel as channel;
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
@@ -85,7 +83,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::GetMinimalSet { from, to, reply_to })
     }
 
-    fn get_signer(&self) -> Result<AccountId, Error> {
+    fn get_signer(&self) -> Result<String, Error> {
         self.send(|reply_to| ChainRequest::Signer { reply_to })
     }
 

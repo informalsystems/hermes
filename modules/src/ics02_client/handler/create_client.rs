@@ -71,13 +71,13 @@ mod tests {
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::get_dummy_account_id_raw;
     use crate::Height;
 
     #[test]
     fn test_create_client_ok() {
         let ctx = MockContext::default();
-        let signer = get_dummy_account_id();
+        let signer = get_dummy_account_id_raw();
         let height = Height::new(0, 42);
 
         let msg = MsgCreateAnyClient::new(
@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn test_create_client_ok_multiple() {
         let existing_client_id = ClientId::default();
-        let signer = get_dummy_account_id();
+        let signer = get_dummy_account_id_raw();
         let height = Height::new(0, 80);
 
         let ctx = MockContext::default().with_client(&existing_client_id, height);
@@ -137,7 +137,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                signer,
+                signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(
@@ -151,7 +151,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                signer,
+                signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_tm_create_client_ok() {
-        let signer = get_dummy_account_id();
+        let signer = get_dummy_account_id_raw();
 
         let ctx = MockContext::default();
 

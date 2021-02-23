@@ -9,7 +9,6 @@ use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
-use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
@@ -363,7 +362,7 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<AccountId, Error> {
+    fn get_signer(&mut self) -> Result<String, Error> {
         crate::time!("get_signer");
 
         // Get the key from key seed file
@@ -372,8 +371,9 @@ impl Chain for CosmosSDKChain {
             .get_key()
             .map_err(|e| Kind::KeyBase.context(e))?;
 
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
+        // let signer =
+        //     string_to_account(key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
+        let signer = key.address.to_hex();
 
         Ok(signer)
     }

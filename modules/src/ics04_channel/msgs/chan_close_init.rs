@@ -1,11 +1,9 @@
 use std::convert::TryFrom;
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::tx_msg::Msg;
@@ -19,7 +17,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseInit";
 pub struct MsgChannelCloseInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub signer: AccountId,
+    pub signer: String,
 }
 
 impl MsgChannelCloseInit {
@@ -42,10 +40,6 @@ impl Msg for MsgChannelCloseInit {
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
 }
 
 impl Protobuf<RawMsgChannelCloseInit> for MsgChannelCloseInit {}
@@ -54,9 +48,6 @@ impl TryFrom<RawMsgChannelCloseInit> for MsgChannelCloseInit {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelCloseInit) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         Ok(MsgChannelCloseInit {
             port_id: raw_msg
                 .port_id
@@ -66,7 +57,7 @@ impl TryFrom<RawMsgChannelCloseInit> for MsgChannelCloseInit {
                 .channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            signer,
+            signer: raw_msg.signer,
         })
     }
 }
@@ -76,7 +67,7 @@ impl From<MsgChannelCloseInit> for RawMsgChannelCloseInit {
         RawMsgChannelCloseInit {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer,
         }
     }
 }

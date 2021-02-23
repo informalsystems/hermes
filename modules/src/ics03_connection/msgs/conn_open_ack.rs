@@ -4,9 +4,6 @@ use std::str::FromStr;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
-
-use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::Version;
@@ -26,7 +23,7 @@ pub struct MsgConnectionOpenAck {
     pub client_state: Option<AnyClientState>,
     pub proofs: Proofs,
     pub version: Version,
-    pub signer: AccountId,
+    pub signer: String,
 }
 
 impl MsgConnectionOpenAck {
@@ -72,10 +69,6 @@ impl Msg for MsgConnectionOpenAck {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
@@ -87,8 +80,6 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
-        let signer = string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
-
         let consensus_height = msg
             .consensus_height
             .ok_or(Kind::MissingConsensusHeight)?
@@ -137,7 +128,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer,
+            signer: msg.signer,
         })
     }
 }
@@ -168,7 +159,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
             version: Some(ics_msg.version.into()),
-            signer: account_to_string(ics_msg.signer).unwrap(),
+            signer: ics_msg.signer,
         }
     }
 }

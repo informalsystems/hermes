@@ -1,11 +1,9 @@
 use std::convert::{TryFrom, TryInto};
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::{proofs::Proofs, tx_msg::Msg};
@@ -21,7 +19,7 @@ pub struct MsgChannelCloseConfirm {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub proofs: Proofs,
-    pub signer: AccountId,
+    pub signer: String,
 }
 
 impl Msg for MsgChannelCloseConfirm {
@@ -33,10 +31,6 @@ impl Msg for MsgChannelCloseConfirm {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -59,9 +53,6 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelCloseConfirm) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_init.into(),
             None,
@@ -85,7 +76,7 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs,
-            signer,
+            signer: raw_msg.signer,
         })
     }
 }
@@ -97,7 +88,7 @@ impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
             channel_id: domain_msg.channel_id.to_string(),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer,
         }
     }
 }

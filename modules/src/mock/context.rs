@@ -6,7 +6,6 @@ use std::error::Error;
 use std::str::FromStr;
 
 use prost_types::Any;
-use tendermint::account::Id;
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
@@ -632,8 +631,8 @@ impl ICS18Context for MockContext {
         Ok(events)
     }
 
-    fn signer(&self) -> Id {
-        Id::from_str("0CDA3F47EF3C4906693B170EF650EB968C5F4B2C").unwrap()
+    fn signer(&self) -> String {
+        "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
     }
 }
 

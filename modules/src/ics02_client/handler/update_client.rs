@@ -86,13 +86,13 @@ mod tests {
     use crate::mock::client_state::MockClientState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::get_dummy_account_id_raw;
     use crate::Height;
 
     #[test]
     fn test_update_client_ok() {
         let client_id = ClientId::default();
-        let signer = get_dummy_account_id();
+        let signer = get_dummy_account_id_raw();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn test_update_nonexisting_client() {
         let client_id = ClientId::from_str("mockclient1").unwrap();
-        let signer = get_dummy_account_id();
+        let signer = get_dummy_account_id_raw();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
@@ -166,7 +166,7 @@ mod tests {
             ClientId::from_str("mockclient2").unwrap(),
             ClientId::from_str("mockclient3").unwrap(),
         ];
-        let signer = get_dummy_account_id();
+        let signer = get_dummy_account_id_raw();
         let initial_height = Height::new(0, 45);
         let update_height = Height::new(0, 49);
 
@@ -180,7 +180,7 @@ mod tests {
             let msg = MsgUpdateAnyClient {
                 client_id: cid.clone(),
                 header: MockHeader(update_height).into(),
-                signer,
+                signer: signer.clone(),
             };
 
             let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));

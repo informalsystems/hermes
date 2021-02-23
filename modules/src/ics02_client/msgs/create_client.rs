@@ -6,12 +6,10 @@
 
 use std::convert::TryFrom;
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::error;
 use crate::ics02_client::error::{Error, Kind};
@@ -24,14 +22,14 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 pub struct MsgCreateAnyClient {
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
-    pub signer: AccountId,
+    pub signer: String,
 }
 
 impl MsgCreateAnyClient {
     pub fn new(
         client_state: AnyClientState,
         consensus_state: AnyConsensusState,
-        signer: AccountId,
+        signer: String,
     ) -> Result<Self, Error> {
         if client_state.client_type() != consensus_state.client_type() {
             return Err(error::Kind::RawClientAndConsensusStateTypesMismatch {
@@ -46,6 +44,7 @@ impl MsgCreateAnyClient {
             signer,
         })
     }
+
     pub fn client_state(&self) -> AnyClientState {
         self.client_state.clone()
     }
@@ -64,10 +63,6 @@ impl Msg for MsgCreateAnyClient {
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
 }
 
 impl Protobuf<RawMsgCreateClient> for MsgCreateAnyClient {}
@@ -84,14 +79,12 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
             .consensus_state
             .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing consensus state"))?;
 
-        let signer = string_to_account(raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
-
         MsgCreateAnyClient::new(
             AnyClientState::try_from(raw_client_state)
                 .map_err(|e| Kind::InvalidRawClientState.context(e))?,
             AnyConsensusState::try_from(raw_consensus_state)
                 .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
-            signer,
+            raw.signer,
         )
     }
 }
@@ -101,7 +94,7 @@ impl From<MsgCreateAnyClient> for RawMsgCreateClient {
         RawMsgCreateClient {
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: Some(ics_msg.consensus_state.into()),
-            signer: account_to_string(ics_msg.signer).unwrap(),
+            signer: ics_msg.signer,
         }
     }
 }
@@ -117,11 +110,11 @@ mod tests {
 
     use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::test_utils::get_dummy_account_id;
+    use crate::test_utils::get_dummy_account_id_raw;
 
     #[test]
     fn msg_create_client_serialization() {
-        let signer = get_dummy_account_id();
+        let signer = get_dummy_account_id_raw();
 
         let tm_header = get_dummy_tendermint_header();
         let tm_client_state = get_dummy_tendermint_client_state(tm_header.clone());

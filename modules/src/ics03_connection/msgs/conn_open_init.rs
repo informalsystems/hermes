@@ -3,9 +3,6 @@ use std::convert::{TryFrom, TryInto};
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
-
-use crate::address::{account_to_string, string_to_account};
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::Version;
@@ -23,7 +20,7 @@ pub struct MsgConnectionOpenInit {
     pub counterparty: Counterparty,
     pub version: Version,
     pub delay_period: u64,
-    pub signer: AccountId,
+    pub signer: String,
 }
 
 impl MsgConnectionOpenInit {
@@ -50,10 +47,6 @@ impl Msg for MsgConnectionOpenInit {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
@@ -65,8 +58,6 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
-        let signer = string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
-
         Ok(Self {
             client_id: msg
                 .client_id
@@ -82,7 +73,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .try_into()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
             delay_period: msg.delay_period,
-            signer,
+            signer: msg.signer,
         })
     }
 }
@@ -94,7 +85,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             counterparty: Some(ics_msg.counterparty.into()),
             version: Some(ics_msg.version.into()),
             delay_period: ics_msg.delay_period,
-            signer: account_to_string(ics_msg.signer).unwrap(),
+            signer: ics_msg.signer,
         }
     }
 }

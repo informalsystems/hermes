@@ -2,8 +2,6 @@ use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-// TODO - tendermint deps should not be here
-use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -105,7 +103,7 @@ pub trait Chain: Sized {
     /// Sends one or more transactions with `msgs` to chain.
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error>;
 
-    fn get_signer(&mut self) -> Result<AccountId, Error>;
+    fn get_signer(&mut self) -> Result<String, Error>;
 
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 

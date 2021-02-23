@@ -1,8 +1,6 @@
 use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -320,7 +318,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         todo!()
     }
 
-    fn get_signer(&mut self, reply_to: ReplyTo<AccountId>) -> Result<(), Error> {
+    fn get_signer(&mut self, reply_to: ReplyTo<String>) -> Result<(), Error> {
         let result = self.chain.get_signer();
 
         reply_to
