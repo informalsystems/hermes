@@ -1041,21 +1041,21 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 <p>In the next section, we'll <a href="./tutorial_chan_open_raw.html">establish a new channel</a></p>
 <h1><a class="header" href="#3-channel-handshake" id="3-channel-handshake">3. Channel Handshake</a></h1>
 <h3><a class="header" href="#31-chan-open-init" id="31-chan-open-init">3.1 chan-open-init</a></h3>
-<p>Initialize a new channel on <code>ibc-0</code>:</p>
-<pre><code class="language-shell">hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
+<p>Initialize a new unordered channel on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer -o UNORDERED
 </code></pre>
 <h3><a class="header" href="#32-chan-open-try" id="32-chan-open-try">3.2 chan-open-try</a></h3>
 <p>Send a channel open try to <code>ibc-1</code>:</p>
-<pre><code class="language-shell">hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
+<pre><code class="language-shell">hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channel-0
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>channel-1</code> on <code>ibc-1</code>. Use in the <code>chan-open-ack</code> CLI</p>
 <h3><a class="header" href="#33-chan-open-ack" id="33-chan-open-ack">3.3 chan-open-ack</a></h3>
 <p>Send a channel open acknowledgment to <code>ibc-0</code>:</p>
-<pre><code class="language-shell">hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+<pre><code class="language-shell">hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1
 </code></pre>
 <h3><a class="header" href="#34-chan-open-confirm" id="34-chan-open-confirm">3.4 chan-open-confirm</a></h3>
 <p>Send the open confirmation to <code>ibc-1</code>:</p>
-<pre><code class="language-shell">hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+<pre><code class="language-shell">hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0
 </code></pre>
 <h3><a class="header" href="#35-query-channel" id="35-query-channel">3.5 query channel</a></h3>
 <p>To verify that the two ends are in <code>Open</code> state:</p>
@@ -1719,7 +1719,7 @@ FLAGS:
 </tbody></table>
 <p>The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters and they are explained in the individual sub-sections.</p>
 <p>At a high level, most commands follow this template:</p>
-<pre><code class="language-shell">hermes tx raw &lt;ibc-datagram&gt; &lt;dst-chain-id&gt; &lt;src-chain-id&gt; [&lt;dst-obj-id&gt; &lt;src-obj-id&gt;]*
+<pre><code class="language-shell">hermes tx raw &lt;ibc-datagram&gt; &lt;dst-chain-id&gt; &lt;src-chain-id&gt; [-d &lt;dst-obj-id&gt; -s &lt;src-obj-id&gt;]*
 </code></pre>
 <p>In the command template above:</p>
 <ul>
@@ -2075,6 +2075,9 @@ POSITIONAL ARGUMENTS:
     dst_conn_id               identifier of the destination connection
     dst_port_id               identifier of the destination port
     src_port_id               identifier of the source port
+
+FLAGS:
+    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 </code></pre>
 <p><strong>Example</strong></p>
 <p>First, let's initialize the channel on <code>ibc-0</code> using an existing connection identified by <code>connection-0</code>:</p>
