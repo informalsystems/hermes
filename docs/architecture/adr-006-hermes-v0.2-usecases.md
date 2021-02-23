@@ -36,26 +36,32 @@ Note that the commands below omit the binary name `hermes` , to keep the command
 length to a minimum.
 
 To create and update a client:
-- `create client ibc-0 ibc-1 create client ibc-0 ibc-1 [--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]`
+- `create client ibc-0 ibc-1 create client ibc-0 ibc-1`
+    - Optional params: `[--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]`
 - `update client ibc-0 <client-id>`
 
 To create a connection:
-- `create connection ibc-0 ibc-1 [--delay <delay>]`
-- `create connection ibc-0 --src-client <client-id> --dst-client <client-id> [--delay <delay>]`
+- `create connection ibc-0 ibc-1`
+    - Optional: `[--delay <delay>]`
+- `create connection ibc-0 --src-client <client-id> --dst-client <client-id>`
+    - Optional: `[--delay <delay>]`
 
 To create a channel:
-- `create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>] [--delay <delay>]`
-- `create channel ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id> [--order <order>] [--version <version>]`
+- `create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>`
+    - Optional: `[--order <order>] [--version <version>] [--delay <delay>]`
+- `create channel ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id>`
+    - Optional: `[--order <order>] [--version <version>]`
 
 To start packet relaying:
-- `start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>] [--delay <delay>]`
-- `start ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id> [--order <order>]
-  [--version <version>]`
+- `start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>`
+    - Optional: `[--order <order>] [--version <version>] [--delay <delay>]`
+- `start ibc-0 --src-port <port-id> --dst-port <port-id> --src-connection <connection-id>`
+    - Optional: `[--order <order>] [--version <version>]`
 - `start ibc-0 --src-channel <channel-id>`
 
 For finishing pre-initialized, but unfinished object handshakes, for connection and channel:
 - `establish connection ibc-0 --src-connection <connection-id>`
-- `establish channel ibc-0 --src-channel <channel-id>`
+- `establish channel ibc-0 --src-port <port-id> --src-channel <channel-id>`
 
 ### Rationale
 
