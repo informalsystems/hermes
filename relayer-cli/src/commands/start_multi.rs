@@ -4,6 +4,7 @@ use std::{collections::HashMap, thread::JoinHandle};
 
 use abscissa_core::{Command, Options, Runnable};
 use crossbeam_channel::{Receiver, Sender};
+use itertools::Itertools;
 use prost_types::Any;
 
 use ibc::{
@@ -14,11 +15,15 @@ use ibc::{
         msgs::recv_packet::MsgRecvPacket,
         packet::{Packet, PacketMsgType},
     },
-    ics24_host::identifier::{ChainId, ChannelId},
+    ics24_host::identifier::{ChainId, ChannelId, PortId},
     tx_msg::Msg,
     Height,
 };
-use ibc_relayer::{config::Config, link::LinkError};
+use ibc_relayer::{
+    channel::Channel,
+    config::Config,
+    link::{Link, LinkError, LinkParameters, RelayPath},
+};
 
 use crate::commands::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
@@ -45,8 +50,15 @@ impl Runnable for StartMultiCmd {
 }
 
 struct WorkerCmd {
-    event: HandledEvent,
+    events: Vec<HandledEvent>,
     dst_height: Height,
+}
+
+impl WorkerCmd {
+    fn new(events: Vec<HandledEvent>, dst_height: Height) -> Self {
+        assert!(!events.is_empty());
+        Self { events, dst_height }
+    }
 }
 
 struct WorkerHandle {
@@ -55,8 +67,13 @@ struct WorkerHandle {
 }
 
 impl WorkerHandle {
-    fn handle_packet_event(&self, event: HandledEvent, dst_height: Height) -> Result<(), BoxError> {
-        self.tx.send(WorkerCmd { event, dst_height })?;
+    fn handle_packet_events(
+        &self,
+        events: Vec<HandledEvent>,
+        dst_height: Height,
+    ) -> Result<(), BoxError> {
+        assert!(!events.is_empty());
+        self.tx.send(WorkerCmd::new(events, dst_height))?;
         Ok(())
     }
 }
@@ -95,10 +112,17 @@ impl Supervisor {
                 .map_err(|e| LinkError::QueryError(self.chains.dst.id(), e))?;
 
             let events = collect_events(&batch.events);
-            for event in events {
-                let object = event.object();
+            let events_per_object = events.into_iter().group_by(|e| e.object());
+
+            for (object, events) in events_per_object.into_iter() {
+                let events: Vec<_> = events.collect();
+                if events.is_empty() {
+                    println!("no events in batch");
+                }
+
+                assert!(!events.is_empty());
                 let worker = self.worker_for_object(object);
-                worker.handle_packet_event(event, dst_height)?;
+                worker.handle_packet_events(events, dst_height)?;
             }
         }
 
@@ -125,7 +149,6 @@ struct Msgs {
 
 struct Worker {
     chains: ChainHandlePair,
-    object: Object,
     rx: Receiver<WorkerCmd>,
 }
 
@@ -133,46 +156,73 @@ impl Worker {
     fn spawn(chains: ChainHandlePair, object: Object) -> WorkerHandle {
         let (tx, rx) = crossbeam_channel::unbounded();
 
-        let worker = Self { chains, object, rx };
-        let thread_handle = std::thread::spawn(move || worker.run());
+        let worker = Self { chains, rx };
+        let thread_handle = std::thread::spawn(move || worker.run(object));
 
         WorkerHandle { tx, thread_handle }
     }
 
-    fn run(self) {
+    fn run(self, object: Object) {
+        let result = match object {
+            Object::ChannelPair(channel_pair) => self.run_channel_pair(channel_pair),
+        };
+
+        if let Err(e) = result {
+            eprintln!("worker error: {}", e);
+        }
+    }
+
+    fn run_channel_pair(self, channel_pair: ChannelPair) -> Result<(), BoxError> {
+        let link = Link::new_from_opts(
+            self.chains.src.clone(),
+            self.chains.dst.clone(),
+            LinkParameters {
+                src_port_id: channel_pair.src_port,
+                src_channel_id: channel_pair.src_channel,
+            },
+        )?;
+
         while let Ok(cmd) = self.rx.recv() {
-            let msgs = handle_packet_event(&self.chains, cmd.event, cmd.dst_height);
+            let WorkerCmd {
+                mut events,
+                dst_height,
+            } = cmd;
+
+            assert!(!events.is_empty());
+
+            let src_height =
+                adjust_events_height(&self.chains, &link.a_to_b, events.as_mut_slice());
+            let msgs = handle_packet_events(&self.chains, events, dst_height);
 
             match msgs {
-                Ok(msgs) => {
-                    println!("got messages after processing event: {:?}", msgs);
-                }
-                Err(e) => eprintln!(
-                    "error when handling packet event for object '{:?}': {}",
-                    self.object, e
-                ),
+                Ok(msgs) => println!("got messages after processing event: {:?}", msgs),
+                Err(e) => eprintln!("error when handling packet event: {}", e),
             }
         }
+
+        Ok(())
     }
 }
 
-fn handle_packet_event(
+fn handle_packet_events(
     chains: &ChainHandlePair,
-    event: HandledEvent,
+    events: Vec<HandledEvent>,
     dst_height: Height,
 ) -> Result<Msgs, BoxError> {
     let mut msgs = Msgs::default();
 
-    let (dst_msg, timeout) = build_msg_from_event(&chains, &event, dst_height)?;
+    for event in events {
+        let (dst_msg, timeout) = build_msg_from_event(&chains, &event, dst_height)?;
 
-    if let Some(msg) = dst_msg {
-        msgs.packets.push(msg);
-        msgs.dst_msgs_input_events.push(event.clone());
-    }
+        if let Some(msg) = dst_msg {
+            msgs.packets.push(msg);
+            msgs.dst_msgs_input_events.push(event.clone());
+        }
 
-    if let Some(msg) = timeout {
-        msgs.timeouts.push(msg);
-        msgs.src_msgs_input_events.push(event);
+        if let Some(msg) = timeout {
+            msgs.timeouts.push(msg);
+            msgs.src_msgs_input_events.push(event);
+        }
     }
 
     Ok(msgs)
@@ -282,10 +332,65 @@ fn build_recv_packet(
     Ok(msg.to_any::<RawMsgRecvPacket>())
 }
 
+fn adjust_events_height(
+    chains: &ChainHandlePair,
+    relay_path: &RelayPath,
+    all_events: &mut [HandledEvent],
+) -> Result<Option<Height>, BoxError> {
+    if all_events.is_empty() {
+        return Ok(None);
+    }
+
+    // All events are at the same height
+    let event_height = all_events[0].height();
+
+    // Check if a consensus state at event_height + 1 exists on destination chain already
+    // and update src_height
+    if relay_path
+        .dst_chain()
+        .proven_client_consensus(
+            relay_path.dst_client_id(),
+            event_height.increment(),
+            Height::zero(),
+        )
+        .is_ok()
+    {
+        return Ok(Some(event_height));
+    }
+
+    // Get the latest trusted height from the client state on destination.
+    let trusted_height = relay_path
+        .dst_chain()
+        .query_client_state(relay_path.dst_client_id(), Height::zero())
+        .map_err(|e| LinkError::QueryError(relay_path.dst_chain().id(), e))?
+        .latest_height();
+
+    // event_height + 1 is the height at which the client on destination chain
+    // should be updated, unless ...
+    if trusted_height > event_height.increment() {
+        // ... client is already at a higher height.
+        let src_height = trusted_height
+            .decrement()
+            .map_err(|e| LinkError::Failed(e.to_string()))?;
+
+        println!("adjusting events height to {}", src_height);
+
+        all_events
+            .iter_mut()
+            .for_each(|ev| ev.set_height(src_height));
+
+        Ok(Some(src_height))
+    } else {
+        Ok(Some(event_height))
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct ChannelPair {
-    pub src: ChannelId,
-    pub dst: ChannelId,
+    pub src_channel: ChannelId,
+    pub dst_channel: ChannelId,
+    pub src_port: PortId,
+    pub dst_port: PortId,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -304,9 +409,23 @@ impl HandledEvent {
     fn object(&self) -> Object {
         match self {
             Self::SendPacket(e) => Object::ChannelPair(ChannelPair {
-                src: e.packet.source_channel.clone(),
-                dst: e.packet.destination_channel.clone(),
+                src_channel: e.packet.source_channel.clone(),
+                dst_channel: e.packet.destination_channel.clone(),
+                src_port: e.packet.source_port.clone(),
+                dst_port: e.packet.destination_port.clone(),
             }),
+        }
+    }
+
+    fn height(&self) -> Height {
+        match self {
+            Self::SendPacket(e) => e.height(),
+        }
+    }
+
+    fn set_height(&mut self, height: Height) {
+        match self {
+            Self::SendPacket(e) => e.set_height(height),
         }
     }
 }

@@ -884,10 +884,11 @@ impl Link {
     pub fn new(channel: Channel) -> Result<Link, LinkError> {
         let a_chain = channel.src_chain();
         let b_chain = channel.dst_chain();
+        let flipped = channel.flipped();
 
         Ok(Link {
-            a_to_b: RelayPath::new(a_chain.clone(), b_chain.clone(), channel.clone())?,
-            b_to_a: RelayPath::new(b_chain, a_chain, channel.flipped())?,
+            a_to_b: RelayPath::new(a_chain.clone(), b_chain.clone(), channel)?,
+            b_to_a: RelayPath::new(b_chain, a_chain, flipped)?,
         })
     }
 
@@ -953,7 +954,7 @@ impl Link {
     pub fn new_from_opts(
         a_chain: Box<dyn ChainHandle>,
         b_chain: Box<dyn ChainHandle>,
-        opts: &LinkParameters,
+        opts: LinkParameters,
     ) -> Result<Link, LinkError> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
