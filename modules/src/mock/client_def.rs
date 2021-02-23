@@ -27,8 +27,8 @@ impl ClientDef for MockClient {
                 "received header height is lower than (or equal to) client latest height".into(),
             );
         }
-
-        Ok((MockClientState(header), MockConsensusState(header)))
+        //TODO check timestamp
+        Ok((MockClientState(header), MockConsensusState(header, 1)))
     }
 
     fn verify_client_consensus_state(

@@ -71,7 +71,6 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
     use std::str::FromStr;
 
     use crate::events::IbcEvent;
@@ -97,10 +96,9 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
-        let time = Utc::now();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader(Height::new(0, 46), time).into(),
+            header: MockHeader(Height::new(0, 46)).into(),
             signer,
         };
 
@@ -124,10 +122,7 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(MockHeader(
-                                msg.header.height(),
-                                time
-                            )))
+                            AnyClientState::Mock(MockClientState(MockHeader(msg.header.height(),)))
                         )
                     }
                     Create(_) => panic!("update handler result has type CreateResult"),
@@ -148,7 +143,7 @@ mod tests {
 
         let msg = MsgUpdateAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
-            header: MockHeader(Height::new(0, 46), Utc::now()).into(),
+            header: MockHeader(Height::new(0, 46)).into(),
             signer,
         };
 
@@ -174,7 +169,6 @@ mod tests {
         let signer = get_dummy_account_id();
         let initial_height = Height::new(0, 45);
         let update_height = Height::new(0, 49);
-        let timestamp = Utc::now();
 
         let mut ctx = MockContext::default();
 
@@ -185,7 +179,7 @@ mod tests {
         for cid in &client_ids {
             let msg = MsgUpdateAnyClient {
                 client_id: cid.clone(),
-                header: MockHeader(update_height, timestamp).into(),
+                header: MockHeader(update_height).into(),
                 signer,
             };
 
