@@ -30,10 +30,15 @@ pub(crate) fn process(
                 || old_conn_end.state_matches(&State::TryOpen)
                     && old_conn_end.versions().get(0).eq(&Some(msg.version()));
 
-            // Check that if the msg's counterparty connection id is not empty then it matches
-            // the old connection's counterparty.
-            let counterparty_matches = msg.counterparty_connection_id().is_none()
-                || old_conn_end.counterparty().connection_id() == msg.counterparty_connection_id();
+            // Check that, if we have a counterparty connection id, then it
+            // matches the one in the message.
+            let counterparty_matches = if let Some(counterparty_connection_id) =
+                old_conn_end.counterparty().connection_id()
+            {
+                &msg.counterparty_connection_id == counterparty_connection_id
+            } else {
+                true
+            };
 
             if state_is_consistent && counterparty_matches {
                 Ok(old_conn_end)
@@ -59,8 +64,8 @@ pub(crate) fn process(
         Counterparty::new(
             // The counterparty is the local chain.
             new_conn_end.client_id().clone(), // The local client identifier.
-            msg.counterparty_connection_id().cloned(), // This chain's connection id as known on counterparty.
-            ctx.commitment_prefix(),                   // Local commitment prefix.
+            Some(msg.counterparty_connection_id().clone()), // This chain's connection id as known on counterparty.
+            ctx.commitment_prefix(),                        // Local commitment prefix.
         ),
         vec![msg.version().clone()],
         new_conn_end.delay_period,
@@ -147,7 +152,7 @@ mod tests {
             client_id.clone(),
             Counterparty::new(
                 client_id.clone(),
-                msg_ack.counterparty_connection_id().cloned(),
+                Some(msg_ack.counterparty_connection_id().clone()),
                 CommitmentPrefix::from(b"ibc".to_vec()),
             ),
             vec![msg_ack.version().clone()],
@@ -164,18 +169,8 @@ mod tests {
         conn_end_prefix.set_state(State::Init);
         conn_end_prefix.set_counterparty(Counterparty::new(
             client_id.clone(),
-            msg_ack.counterparty_connection_id().cloned(),
+            Some(msg_ack.counterparty_connection_id().clone()),
             CommitmentPrefix::from(vec![]), // incorrect field
-        ));
-
-        // A connection end with correct state & prefix, but incorrect counterparty; exercises
-        // unsuccessful processing path.
-        let mut conn_end_cparty = conn_end_open.clone();
-        conn_end_cparty.set_state(State::Init);
-        conn_end_cparty.set_counterparty(Counterparty::new(
-            client_id.clone(),
-            None, // incorrect field
-            CommitmentPrefix::from(b"ibc".to_vec()),
         ));
 
         let tests: Vec<Test> = vec![
@@ -209,21 +204,11 @@ mod tests {
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
                 ctx: default_context
-                    .clone()
                     .with_client(&client_id, proof_height)
-                    .with_connection(conn_id.clone(), conn_end_prefix),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
-                want_pass: false,
-                error_kind: Some(Kind::ConsensusStateVerificationFailure(proof_height))
-            },
-            Test {
-                name: "Processing fails due to mismatching counterparty conn id".to_string(),
-                ctx: default_context
-                    .with_client(&client_id, proof_height)
-                    .with_connection(conn_id.clone(), conn_end_cparty),
+                    .with_connection(conn_id, conn_end_prefix),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
                 want_pass: false,
-                error_kind: Some(Kind::ConnectionMismatch(conn_id))
+                error_kind: Some(Kind::ConsensusStateVerificationFailure(proof_height))
             },
             /*
             Test {

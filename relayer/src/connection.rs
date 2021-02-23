@@ -566,7 +566,7 @@ impl Connection {
 
         let new_msg = MsgConnectionOpenAck {
             connection_id: self.dst_connection_id().clone(),
-            counterparty_connection_id: Option::from(self.src_connection_id().clone()),
+            counterparty_connection_id: self.src_connection_id().clone(),
             client_state,
             proofs,
             version: src_connection.versions()[0].clone(),
