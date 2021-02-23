@@ -164,14 +164,65 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#install-the-relayer" id="install-the-relayer">Install the relayer</a></h1>
-<p>In order to install and run Hermes, please follow the steps below:</p>
+<p>There are two main approaches for obtaining Hermes:</p>
+<ol>
+<li>
+<p>Installation:</p>
+<ol>
+<li>If you are running on a Unix machine (Linux/MacOS), then the simplest
+option is to <a href="#Install-by-downloading">download the latest binary</a>.</li>
+<li>You can also install via <a href="#install-via-cargo">Cargo</a>.</li>
+</ol>
+</li>
+<li>
+<p>Alternatively, <a href="#build-from-source">build Hermes directly from source</a>.</p>
+</li>
+</ol>
+<h2><a class="header" href="#install-by-downloading" id="install-by-downloading">Install by downloading</a></h2>
+<p>Simply head to the GitHub <a href="https://github.com/informalsystems/ibc-rs/releases">Releases</a> page and download the latest
+version of Hermes binary matching your platform:</p>
+<ul>
+<li>MacOS: <code>hermes-v0.1.1-x86_64-apple-darwin.tar.gz</code> (or .zip),</li>
+<li>Linux: <code>hermes-v0.1.1-x86_64-unknown-linux-gnu.tar.gz</code> (or .zip).</li>
+</ul>
+<p>The step-by-step instruction below should carry you through the whole process:</p>
+<ol>
+<li>
+<p>Make the directory where we'll place the binary:</p>
+<pre><code class="language-shell">mkdir -p $HOME/.hermes/bin
+</code></pre>
+</li>
+<li>
+<p>Extract the binary archive:</p>
+<pre><code class="language-shell">tar -C $HOME/.hermes/bin/ -vxzf $ARCHIVE_NAME
+</code></pre>
+</li>
+<li>
+<p>Update your path, by adding this line in your <code>.bashrc</code> or <code>.zshrc</code> shell
+configuration file:</p>
+<pre><code class="language-shell">export PATH=&quot;$HOME/.hermes/bin:$PATH&quot;
+</code></pre>
+</li>
+</ol>
 <blockquote>
-<p>NOTE: This assumes you have installed all the <a href="./pre_requisites.html">pre-requisites</a> on your machine.</p>
+<p>NOTE: The binary may be initially prevented from running if you're
+on MacOS.
+See the <a href="https://support.apple.com/en-gb/HT202491">&quot;Open Anyway&quot; instructions from this support forum</a>
+if that is the case.</p>
 </blockquote>
+<p>You should now be able to run Hermes by invoking the <code>hermes</code> executable.</p>
+<pre><code class="language-shell">hermes version
+</code></pre>
+<pre><code>hermes 0.1.1
+</code></pre>
 <h2><a class="header" href="#install-via-cargo" id="install-via-cargo">Install via Cargo</a></h2>
+<blockquote>
+<p>NOTE: This approach assumes you have installed all
+the <a href="./pre_requisites.html">pre-requisites</a> on your machine.</p>
+</blockquote>
 <p>Hermes is packaged in the <code>ibc-relayer-cli</code> Rust crate.
 To install the latest release of Hermes, run the following command in a terminal:</p>
-<pre><code class="language-shell">cargo install ibc-relayer-cli
+<pre><code class="language-shell">cargo install ibc-relayer-cli --bin hermes --locked
 </code></pre>
 <p>This will download and build the crate <code>ibc-relayer-cli</code>, and install the 
 <code>hermes</code> binary in <code>$HOME/.cargo/bin</code>.</p>
@@ -208,6 +259,11 @@ The last of these crates contains the <code>hermes</code> binary.</p>
 </code></pre>
 <p>If the build is successful, the <code>hermes</code> executable will be located in the following location:</p>
 <pre><code class="language-shell">./target/release/hermes
+</code></pre>
+<p><strong>Troubleshooting</strong>:
+In case the <code>cargo build</code> command above fails, as a first course of action we
+recommend trying to run the same command with the additional <code>locked</code> flag:</p>
+<pre><code class="language-shell">cargo build --release --bin hermes --locked
 </code></pre>
 <h3><a class="header" href="#running-for-the-first-time" id="running-for-the-first-time">Running for the first time</a></h3>
 <p>If you run the <code>hermes</code> without any additional parameters you should see the usage and help information:</p>
