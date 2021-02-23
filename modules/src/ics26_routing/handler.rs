@@ -21,7 +21,7 @@ use crate::ics04_channel::msgs::chan_open_init;
 use crate::ics04_channel::msgs::chan_open_try;
 use crate::ics04_channel::msgs::ChannelMsg;
 
-use crate::application::ics20_fungible_token_transfer::relay_application_logic::dispatch as ics20_msg_dispatcher;
+use crate::application::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
 
