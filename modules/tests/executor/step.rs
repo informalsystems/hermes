@@ -54,7 +54,7 @@ pub enum Action {
         chain_id: String,
 
         #[serde(alias = "previousConnectionId")]
-        #[serde(default, deserialize_with = "deserialize_int_id")]
+        #[serde(default, deserialize_with = "deserialize_id")]
         previous_connection_id: Option<u64>,
 
         #[serde(alias = "clientId")]
@@ -142,28 +142,20 @@ pub struct Client {
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Connection {
-    #[serde(alias = "chainId")]
-    #[serde(default, deserialize_with = "deserialize_string_id")]
-    pub chain_id: Option<String>,
-
     #[serde(alias = "clientId")]
-    #[serde(default, deserialize_with = "deserialize_int_id")]
+    #[serde(default, deserialize_with = "deserialize_id")]
     pub client_id: Option<u64>,
 
     #[serde(alias = "connectionId")]
-    #[serde(default, deserialize_with = "deserialize_int_id")]
+    #[serde(default, deserialize_with = "deserialize_id")]
     pub connection_id: Option<u64>,
 
-    #[serde(alias = "counterpartyChainId")]
-    #[serde(default, deserialize_with = "deserialize_string_id")]
-    pub counterparty_chain_id: Option<String>,
-
     #[serde(alias = "counterpartyClientId")]
-    #[serde(default, deserialize_with = "deserialize_int_id")]
+    #[serde(default, deserialize_with = "deserialize_id")]
     pub counterparty_client_id: Option<u64>,
 
     #[serde(alias = "counterpartyConnectionId")]
-    #[serde(default, deserialize_with = "deserialize_int_id")]
+    #[serde(default, deserialize_with = "deserialize_id")]
     pub counterparty_connection_id: Option<u64>,
 
     pub state: ConnectionState,
@@ -172,7 +164,7 @@ pub struct Connection {
 /// On the model, a non-existing `client_id` and a `connection_id` is
 /// represented with -1.
 /// For this reason, this function maps a `Some(-1)` to a `None`.
-fn deserialize_int_id<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+fn deserialize_id<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -180,22 +172,7 @@ where
     let id = if id == Some(-1) {
         None
     } else {
-        id.map(|connection_id| connection_id as u64)
-    };
-    Ok(id)
-}
-
-/// On the model, a non-existing `chain_id` is represented with "-1".
-/// For this reason, this function maps a `Some("-1")` to a `None`.
-fn deserialize_string_id<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let id: Option<String> = Deserialize::deserialize(deserializer)?;
-    let id = if id == Some("-1".to_string()) {
-        None
-    } else {
-        id
+        id.map(|id| id as u64)
     };
     Ok(id)
 }

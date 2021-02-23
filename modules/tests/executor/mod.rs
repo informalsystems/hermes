@@ -234,7 +234,27 @@ impl IBCTestExecutor {
                                 ctx.connection_end(&Self::connection_id(connection_id))
                             {
                                 // states must match
-                                *connection_end.state() == connection.state
+                                let states_match = *connection_end.state() == connection.state;
+
+                                // client ids must match
+                                let client_ids = *connection_end.client_id()
+                                    == Self::client_id(connection.client_id.unwrap());
+
+                                // counterparty client ids must match
+                                let counterparty_client_ids = *connection_end
+                                    .counterparty()
+                                    .client_id()
+                                    == Self::client_id(connection.counterparty_client_id.unwrap());
+
+                                // counterparty connection ids must match
+                                let counterparty_connection_ids =
+                                    connection_end.counterparty().connection_id()
+                                        == connection
+                                            .counterparty_connection_id
+                                            .map(|connection_id| Self::connection_id(connection_id))
+                                            .as_ref();
+
+                                states_match && client_ids && counterparty_client_ids && counterparty_connection_ids
                             } else {
                                 // if the connection exists in the model, then it must
                                 // also exist in the implementation; in this case it
