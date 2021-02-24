@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
@@ -33,7 +33,10 @@ pub fn process(
         Kind::ClientIdentifierConstructor(msg.client_state().client_type(), id_counter).context(e)
     })?;
 
-    output.log("success: generated new client identifier");
+    output.log(format!(
+        "success: generated new client identifier: {}",
+        client_id
+    ));
 
     let result = ClientResult::Create(Result {
         client_id: client_id.clone(),
@@ -46,7 +49,7 @@ pub fn process(
         client_id,
         ..Default::default()
     };
-    output.emit(IBCEvent::CreateClient(event_attributes.into()));
+    output.emit(IbcEvent::CreateClient(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -58,7 +61,7 @@ mod tests {
 
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
@@ -71,13 +74,13 @@ mod tests {
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::test_utils::get_dummy_account_id_raw;
+    use crate::test_utils::get_dummy_account_id;
     use crate::Height;
 
     #[test]
     fn test_create_client_ok() {
         let ctx = MockContext::default();
-        let signer = get_dummy_account_id_raw();
+        let signer = get_dummy_account_id();
         let height = Height::new(0, 42);
 
         let msg = MsgCreateAnyClient::new(
@@ -97,7 +100,7 @@ mod tests {
                 let event = events.pop().unwrap();
                 let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
                 assert!(
-                    matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                    matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
                 );
                 match result {
                     ClientResult::Create(create_result) => {
@@ -120,7 +123,7 @@ mod tests {
     #[test]
     fn test_create_client_ok_multiple() {
         let existing_client_id = ClientId::default();
-        let signer = get_dummy_account_id_raw();
+        let signer = get_dummy_account_id();
         let height = Height::new(0, 80);
 
         let ctx = MockContext::default().with_client(&existing_client_id, height);
@@ -187,7 +190,7 @@ mod tests {
                     assert_eq!(events.len(), 1);
                     let event = events.pop().unwrap();
                     assert!(
-                        matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                        matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
                     );
                     match result {
                         ClientResult::Create(create_res) => {
@@ -210,7 +213,7 @@ mod tests {
 
     #[test]
     fn test_tm_create_client_ok() {
-        let signer = get_dummy_account_id_raw();
+        let signer = get_dummy_account_id();
 
         let ctx = MockContext::default();
 
@@ -248,7 +251,7 @@ mod tests {
                 let event = events.pop().unwrap();
                 let expected_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
                 assert!(
-                    matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                    matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
                 );
                 match result {
                     ClientResult::Create(create_res) => {

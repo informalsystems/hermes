@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::context::ClientReader;
@@ -64,7 +64,7 @@ pub fn process(
         client_id,
         ..Default::default()
     };
-    output.emit(IBCEvent::UpdateClient(event_attributes.into()));
+    output.emit(IbcEvent::UpdateClient(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -73,7 +73,7 @@ pub fn process(
 mod tests {
     use std::str::FromStr;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics02_client::error::Kind;
@@ -86,13 +86,13 @@ mod tests {
     use crate::mock::client_state::MockClientState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::test_utils::get_dummy_account_id_raw;
+    use crate::test_utils::get_dummy_account_id;
     use crate::Height;
 
     #[test]
     fn test_update_client_ok() {
         let client_id = ClientId::default();
-        let signer = get_dummy_account_id_raw();
+        let signer = get_dummy_account_id();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
@@ -113,7 +113,7 @@ mod tests {
                 assert_eq!(events.len(), 1);
                 let event = events.pop().unwrap();
                 assert!(
-                    matches!(event, IBCEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
+                    matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
                 );
                 assert!(log.is_empty());
                 // Check the result
@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn test_update_nonexisting_client() {
         let client_id = ClientId::from_str("mockclient1").unwrap();
-        let signer = get_dummy_account_id_raw();
+        let signer = get_dummy_account_id();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
@@ -166,7 +166,7 @@ mod tests {
             ClientId::from_str("mockclient2").unwrap(),
             ClientId::from_str("mockclient3").unwrap(),
         ];
-        let signer = get_dummy_account_id_raw();
+        let signer = get_dummy_account_id();
         let initial_height = Height::new(0, 45);
         let update_height = Height::new(0, 49);
 
@@ -194,7 +194,7 @@ mod tests {
                     assert_eq!(events.len(), 1);
                     let event = events.pop().unwrap();
                     assert!(
-                        matches!(event, IBCEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
+                        matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
                     );
                     assert!(log.is_empty());
                 }

@@ -84,12 +84,12 @@ mod tests {
     use crate::ics24_host::identifier::ClientId;
 
     use crate::ics07_tendermint::header::test_util::get_dummy_ics07_header;
-    use crate::test_utils::get_dummy_account_id_raw;
+    use crate::test_utils::get_dummy_account_id;
 
     #[test]
     fn msg_update_client_serialization() {
         let client_id: ClientId = "tendermint".parse().unwrap();
-        let signer = get_dummy_account_id_raw();
+        let signer = get_dummy_account_id();
 
         let header = get_dummy_ics07_header();
 

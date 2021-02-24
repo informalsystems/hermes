@@ -27,13 +27,13 @@ impl MsgTimeoutOnClose {
         next_sequence_recv: Sequence,
         proofs: Proofs,
         signer: String,
-    ) -> Result<MsgTimeoutOnClose, Error> {
-        Ok(Self {
+    ) -> MsgTimeoutOnClose {
+        Self {
             packet,
             next_sequence_recv,
             proofs,
             signer,
-        })
+        }
     }
 }
 

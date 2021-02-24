@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::str::FromStr;
-use tendermint::account::Id as AccountId;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 // Needed in mocks.
@@ -29,14 +27,10 @@ pub fn get_dummy_proof() -> Vec<u8> {
         .to_vec()
 }
 
-pub fn get_dummy_account_id_raw() -> String {
+pub fn get_dummy_account_id() -> String {
     "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
 }
 
 pub fn get_dummy_bech32_account() -> String {
     "cosmos1wxeyh7zgn4tctjzs0vtqpc6p5cxq5t2muzl7ng".to_string()
-}
-
-pub fn get_dummy_account_id() -> AccountId {
-    AccountId::from_str(&get_dummy_account_id_raw()).unwrap()
 }

@@ -27,13 +27,13 @@ impl MsgAcknowledgement {
         acknowledgement: Vec<u8>,
         proofs: Proofs,
         signer: String,
-    ) -> Result<MsgAcknowledgement, Error> {
-        Ok(Self {
+    ) -> MsgAcknowledgement {
+        Self {
             packet,
             acknowledgement,
             proofs,
             signer,
-        })
+        }
     }
 }
 

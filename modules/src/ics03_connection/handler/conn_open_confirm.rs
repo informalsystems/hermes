@@ -1,13 +1,13 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::verify_proofs;
-use crate::ics03_connection::handler::ConnectionResult;
+use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 
 pub(crate) fn process(
@@ -60,15 +60,16 @@ pub(crate) fn process(
     new_conn_end.set_state(State::Open);
 
     let result = ConnectionResult {
-        connection_id: Some(msg.connection_id().clone()),
+        connection_id: msg.connection_id().clone(),
+        connection_id_state: ConnectionIdState::Reused,
         connection_end: new_conn_end,
     };
 
     let event_attributes = Attributes {
-        connection_id: result.connection_id.clone(),
+        connection_id: Some(result.connection_id.clone()),
         ..Default::default()
     };
-    output.emit(IBCEvent::OpenConfirmConnection(event_attributes.into()));
+    output.emit(IbcEvent::OpenConfirmConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -78,11 +79,11 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
+    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_raw_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
@@ -101,7 +102,7 @@ mod tests {
 
         let client_id = ClientId::from_str("mock_clientid").unwrap();
         let msg_confirm =
-            MsgConnectionOpenConfirm::try_from(get_dummy_msg_conn_open_confirm()).unwrap();
+            MsgConnectionOpenConfirm::try_from(get_dummy_raw_msg_conn_open_confirm()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
             Some(msg_confirm.connection_id().clone()),
@@ -172,7 +173,7 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenConfirmConnection(_)));
+                        assert!(matches!(e, &IbcEvent::OpenConfirmConnection(_)));
                     }
                 }
                 Err(e) => {

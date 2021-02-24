@@ -1,8 +1,9 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::Counterparty;
@@ -60,17 +61,6 @@ impl MsgConnectionOpenTry {
     /// Getter for accessing the proofs in this message.
     pub fn proofs(&self) -> &Proofs {
         &self.proofs
-    }
-
-    /// Moves the given message into another one, and updates the `previous_connection_id` field.
-    pub fn with_previous_connection_id(
-        self,
-        previous_connection_id: Option<ConnectionId>,
-    ) -> MsgConnectionOpenTry {
-        MsgConnectionOpenTry {
-            previous_connection_id,
-            ..self
-        }
     }
 
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
@@ -208,54 +198,47 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty_ics26;
-    use crate::ics03_connection::version::get_compatible_versions;
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+
+    use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+    use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
+    use crate::ics03_connection::version::get_compatible_versions;
+    use crate::ics24_host::identifier::{ClientId, ConnectionId};
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+
+    /// Testing-specific helper methods.
+    impl MsgConnectionOpenTry {
+        /// Moves the given message into another one, and updates the `previous_connection_id` field.
+        pub fn with_previous_connection_id(
+            self,
+            previous_connection_id: Option<ConnectionId>,
+        ) -> MsgConnectionOpenTry {
+            MsgConnectionOpenTry {
+                previous_connection_id,
+                ..self
+            }
+        }
+
+        /// Setter for `client_id`.
+        pub fn with_client_id(self, client_id: ClientId) -> MsgConnectionOpenTry {
+            MsgConnectionOpenTry { client_id, ..self }
+        }
+    }
 
     /// Returns a dummy `RawMsgConnectionOpenTry` with parametrized heights. The parameter
     /// `proof_height` represents the height, on the source chain, at which this chain produced the
     /// proof. Parameter `consensus_height` represents the height of destination chain which a
     /// client on the source chain stores.
-    pub fn get_dummy_msg_conn_open_try(
+    pub fn get_dummy_raw_msg_conn_open_try(
         proof_height: u64,
         consensus_height: u64,
     ) -> RawMsgConnectionOpenTry {
         RawMsgConnectionOpenTry {
-            client_id: "srcclient".to_string(),
-            previous_connection_id: "srcconnection".to_string(),
+            client_id: ClientId::default().to_string(),
+            previous_connection_id: ConnectionId::default().to_string(),
             client_state: None,
-            counterparty: Some(get_dummy_counterparty()),
-            delay_period: 0,
-            counterparty_versions: get_compatible_versions()
-                .iter()
-                .map(|v| v.clone().into())
-                .collect(),
-            proof_init: get_dummy_proof(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: proof_height,
-            }),
-            proof_consensus: get_dummy_proof(),
-            consensus_height: Some(Height {
-                revision_number: 0,
-                revision_height: consensus_height,
-            }),
-            proof_client: vec![],
-            signer: get_dummy_bech32_account(),
-        }
-    }
-    pub fn get_dummy_msg_conn_open_try_ics26(
-        proof_height: u64,
-        consensus_height: u64,
-    ) -> RawMsgConnectionOpenTry {
-        RawMsgConnectionOpenTry {
-            client_id: "9999-mock-0".to_string(),
-            previous_connection_id: "defaultConnection-0".to_string(),
-            client_state: None,
-            counterparty: Some(get_dummy_counterparty_ics26()),
+            counterparty: Some(get_dummy_raw_counterparty()),
             delay_period: 0,
             counterparty_versions: get_compatible_versions()
                 .iter()
@@ -285,9 +268,9 @@ mod tests {
     use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
 
     #[test]
     fn parse_connection_open_try_msg() {
@@ -298,7 +281,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_try_msg = get_dummy_msg_conn_open_try(10, 34);
+        let default_try_msg = get_dummy_raw_msg_conn_open_try(10, 34);
 
         let tests: Vec<Test> =
             vec![
@@ -322,7 +305,7 @@ mod tests {
                             connection_id:
                             "abcdasdfasdfsdfasfdwefwfsdfsfsfasfwewvxcvdvwgadvaadsefghijklmnopqrstu"
                                 .to_string(),
-                            ..get_dummy_counterparty()
+                            ..get_dummy_raw_counterparty()
                         }),
                         ..default_try_msg.clone()
                     },
@@ -334,7 +317,7 @@ mod tests {
                     raw: RawMsgConnectionOpenTry {
                         counterparty: Some(RawCounterparty {
                             client_id: "ClientId_".to_string(),
-                            ..get_dummy_counterparty()
+                            ..get_dummy_raw_counterparty()
                         }),
                         ..default_try_msg.clone()
                     },
@@ -400,7 +383,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_try(10, 34);
+        let raw = get_dummy_raw_msg_conn_open_try(10, 34);
         let msg = MsgConnectionOpenTry::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenTry::from(msg.clone());
         let msg_back = MsgConnectionOpenTry::try_from(raw_back.clone()).unwrap();

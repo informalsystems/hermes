@@ -9,7 +9,7 @@ use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
 use ibc::downcast;
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics02_client::client_def::AnyClientState;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
@@ -17,17 +17,16 @@ use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics18_relayer::context::ICS18Context;
+use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::test_utils::get_dummy_account_id_raw;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -41,6 +40,7 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+use ibc::test_utils::get_dummy_account_id;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -50,6 +50,7 @@ pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
 }
+
 impl Chain for MockChain {
     type LightBlock = TMLightBlock;
     type Header = TendermintHeader;
@@ -99,7 +100,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self
             .context
@@ -110,7 +111,7 @@ impl Chain for MockChain {
     }
 
     fn get_signer(&mut self) -> Result<String, Error> {
-        Ok(get_dummy_account_id_raw())
+        Ok(get_dummy_account_id())
     }
 
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
@@ -215,7 +216,14 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+    fn query_next_sequence_receive(
+        &self,
+        _request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error> {
+        unimplemented!()
+    }
+
+    fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error> {
         unimplemented!()
     }
 

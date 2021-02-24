@@ -110,11 +110,11 @@ mod tests {
 
     use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::test_utils::get_dummy_account_id_raw;
+    use crate::test_utils::get_dummy_account_id;
 
     #[test]
     fn msg_create_client_serialization() {
-        let signer = get_dummy_account_id_raw();
+        let signer = get_dummy_account_id();
 
         let tm_header = get_dummy_tendermint_header();
         let tm_client_state = get_dummy_tendermint_client_state(tm_header.clone());

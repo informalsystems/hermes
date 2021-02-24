@@ -1,4 +1,4 @@
-use crate::chain::{runtime::ChainRuntime, CosmosSDKChain};
+use crate::chain::{runtime::ChainRuntime, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error;
 use crate::error::Error;
@@ -12,7 +12,7 @@ pub struct KeysRestoreOptions {
 
 pub fn restore_key(opts: KeysRestoreOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
-    let (chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(opts.chain_config)?;
+    let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(opts.chain_config)?;
 
     let address = chain
         .get_key()

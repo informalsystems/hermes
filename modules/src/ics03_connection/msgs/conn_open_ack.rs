@@ -1,8 +1,8 @@
 use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
+
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::error::{Error, Kind};
@@ -19,7 +19,7 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenAck {
     pub connection_id: ConnectionId,
-    pub counterparty_connection_id: Option<ConnectionId>,
+    pub counterparty_connection_id: ConnectionId,
     pub client_state: Option<AnyClientState>,
     pub proofs: Proofs,
     pub version: Version,
@@ -33,8 +33,8 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for accessing the counterparty's connection identifier from this message.
-    pub fn counterparty_connection_id(&self) -> Option<&ConnectionId> {
-        self.counterparty_connection_id.as_ref()
+    pub fn counterparty_connection_id(&self) -> &ConnectionId {
+        &self.counterparty_connection_id
     }
 
     /// Getter for accessing the client state.
@@ -98,18 +98,15 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             .filter(|x| !x.is_empty())
             .map(CommitmentProofBytes::from);
 
-        let counterparty_connection_id = Some(msg.counterparty_connection_id)
-            .filter(|x| !x.is_empty())
-            .map(|v| FromStr::from_str(v.as_str()))
-            .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
-
         Ok(Self {
             connection_id: msg
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_connection_id,
+            counterparty_connection_id: msg
+                .counterparty_connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
             client_state: msg
                 .client_state
                 .map(AnyClientState::try_from)
@@ -137,9 +134,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
     fn from(ics_msg: MsgConnectionOpenAck) -> Self {
         RawMsgConnectionOpenAck {
             connection_id: ics_msg.connection_id.as_str().to_string(),
-            counterparty_connection_id: ics_msg
-                .counterparty_connection_id
-                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
+            counterparty_connection_id: ics_msg.counterparty_connection_id.as_str().to_string(),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
@@ -166,39 +161,20 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::ics03_connection::version::Version;
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
-        RawMsgConnectionOpenAck {
-            connection_id: "srcconnection".to_string(),
-            counterparty_connection_id: "tgtconnection".to_string(),
-            proof_try: get_dummy_proof(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: 10,
-            }),
-            proof_consensus: get_dummy_proof(),
-            consensus_height: Some(Height {
-                revision_number: 0,
-                revision_height: 10,
-            }),
-            client_state: None,
-            proof_client: vec![],
-            version: Some(Version::default().into()),
-            signer: get_dummy_bech32_account(),
-        }
-    }
+    use crate::ics03_connection::version::Version;
+    use crate::ics24_host::identifier::ConnectionId;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
-    pub fn get_dummy_msg_conn_open_ack_ics26(
+    pub fn get_dummy_raw_msg_conn_open_ack(
         proof_height: u64,
         consensus_height: u64,
     ) -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
-            connection_id: "defaultConnection-0".to_string(),
-            counterparty_connection_id: "defaultConnection-0".to_string(),
+            connection_id: ConnectionId::default().to_string(),
+            counterparty_connection_id: ConnectionId::default().to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
                 revision_number: 0,
@@ -224,7 +200,7 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
+    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 
     #[test]
@@ -236,7 +212,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_ack_msg = get_dummy_msg_conn_open_ack();
+        let default_ack_msg = get_dummy_raw_msg_conn_open_ack(5, 5);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -302,7 +278,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_ack();
+        let raw = get_dummy_raw_msg_conn_open_ack(5, 6);
         let msg = MsgConnectionOpenAck::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenAck::from(msg.clone());
         let msg_back = MsgConnectionOpenAck::try_from(raw_back.clone()).unwrap();

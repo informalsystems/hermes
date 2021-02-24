@@ -9,7 +9,7 @@ For this purpose, we recommend a few ideas that could be of help:
 - [patch][patching] your local gaia chain(s) to enable some corner-case methods
   (e.g., channel close);
 
-And if the above do not help:
+And if the above options do not address your specific problem:
 - you can [request a new feature][feature];
 - or consult the [list of reported issues][issues] and search by relevant
   keywords to see if you're dealing with a known problem;
