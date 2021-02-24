@@ -149,15 +149,14 @@ mod test {
                 },
                 want_pass: false,
             },
-            //TODO: Check why this is failing now
-            // Test {
-            //     name: "Missing signer".to_string(),
-            //     raw: RawMsgRecvPacket {
-            //         signer: "".to_string(),
-            //         ..default_raw_msg
-            //     },
-            //     want_pass: false,
-            // },
+            Test {
+                name: "Missing signer".to_string(),
+                raw: RawMsgRecvPacket {
+                    signer: "".to_string(),
+                    ..default_raw_msg
+                },
+                want_pass: false,
+            },
         ];
 
         for test in tests {
