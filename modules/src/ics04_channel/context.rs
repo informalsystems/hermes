@@ -40,12 +40,6 @@ pub trait ChannelReader {
 
     fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<&u64>;
 
-    /// Returns the current ConsensusState of the host (local) chain
-    fn channel_host_consensus_state(&self) -> Option<AnyConsensusState>;
-
-    /// Returns the current height of the local chain.
-    fn channel_host_current_height(&self) -> Height;
-
     /// A hashing function for packet commitments  
     fn hashing(&self, value: String) -> String;
 

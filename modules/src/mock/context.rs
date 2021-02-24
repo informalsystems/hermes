@@ -400,15 +400,6 @@ impl ChannelReader for MockContext {
         self.next_sequence_send.get(port_channel_id)
     }
 
-    fn channel_host_consensus_state(&self) -> Option<AnyConsensusState> {
-        let h = ConnectionReader::host_current_height(self);
-        ConnectionReader::host_consensus_state(self, h)
-    }
-
-    fn channel_host_current_height(&self) -> Height {
-        ConnectionReader::host_current_height(self)
-    }
-
     fn hashing(&self, input: String) -> String {
         let mut sha256 = Sha256::new();
         sha256.input_str(&input);
