@@ -63,6 +63,12 @@ pub enum LinkError {
 
     #[error("exhausted max number of retries:")]
     RetryError,
+
+    #[error("old packets not cleared yet")]
+    OldPacketClearingPending,
+
+    #[error("clearing of old packets failed")]
+    OldPacketClearingFailed,
 }
 
 pub struct RelayPath {
@@ -391,10 +397,39 @@ impl RelayPath {
         self.timeout_msgs = vec![];
     }
 
-    fn relay_from_events(&mut self) -> Result<(), LinkError> {
+    fn relay_pending_packets(&mut self) -> Result<(), LinkError> {
+        println!("clearing old packets on {:#?}", self.channel);
+        for _i in 0..MAX_ITER {
+            if self.build_recv_packet_and_timeout_msgs().is_ok()
+                && self.send_update_client_and_msgs().is_ok()
+                && self.build_packet_ack_msgs().is_ok()
+                && self.send_update_client_and_msgs().is_ok()
+            {
+                return Ok(());
+            }
+            self.reset_buffers();
+            self.all_events = vec![];
+        }
+        Err(LinkError::OldPacketClearingFailed)
+    }
+
+    fn relay_from_events(&mut self, clear_packets: bool) -> Result<(), LinkError> {
         // Iterate through the IBC Events, build the message for each and collect all at same height.
         // Send a multi message transaction with these, prepending the client update
+
+        if self.subscription.is_empty() {
+            return Err(LinkError::OldPacketClearingPending);
+        }
+
         for batch in self.subscription.try_iter().collect::<Vec<_>>().iter() {
+            if clear_packets {
+                let first_event_height = batch.events[0].height();
+                self.src_height = first_event_height
+                    .decrement()
+                    .map_err(|e| LinkError::Failed(e.to_string()))?;
+                self.relay_pending_packets()?;
+            }
+
             // collect relevant events in self.all_events
             self.collect_events(&batch.events);
             self.adjust_events_height()?;
@@ -513,7 +548,9 @@ impl RelayPath {
         if packet_commitments.is_empty() {
             return Ok(());
         }
-        self.src_height = query_height;
+        if self.src_height == Height::zero() {
+            self.src_height = query_height;
+        }
         let commit_sequences = packet_commitments.iter().map(|p| p.sequence).collect();
         info!(
             "packets that still have commitments on {}: {:?}",
@@ -583,7 +620,9 @@ impl RelayPath {
             return Ok(());
         }
 
-        self.src_height = query_height;
+        if self.src_height == Height::zero() {
+            self.src_height = query_height;
+        }
 
         let acked_sequences = acks_on_source.iter().map(|p| p.sequence).collect();
         info!(
@@ -625,7 +664,7 @@ impl RelayPath {
                 destination_port_id: self.src_port_id().clone(),
                 destination_channel_id: self.src_channel_id().clone(),
                 sequences,
-                height: query_height,
+                height: self.src_height,
             })
             .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
@@ -759,7 +798,7 @@ impl RelayPath {
             packet.clone(),
             next_sequence_received,
             proofs.clone(),
-            self.dst_signer()?,
+            self.src_signer()?,
         );
 
         info!(
@@ -856,13 +895,39 @@ impl Link {
 
     pub fn relay(&mut self) -> Result<(), LinkError> {
         println!("relaying packets on {:#?}", self.a_to_b.channel);
+
+        // First time in the loop the old events emitted before the link started the event
+        // subscription need to be processed.
+        let mut clear_events_a = true;
+        let mut clear_events_b = true;
+
         loop {
             if self.is_closed()? {
                 println!("channel is closed, exiting");
                 return Ok(());
             }
-            self.a_to_b.relay_from_events()?;
-            self.b_to_a.relay_from_events()?;
+
+            match self.a_to_b.relay_from_events(clear_events_a) {
+                Ok(()) => {
+                    clear_events_a = false;
+                    Ok(())
+                }
+                Err(e) => match e {
+                    LinkError::OldPacketClearingPending => Ok(()),
+                    _ => Err(e),
+                },
+            }?;
+
+            match self.b_to_a.relay_from_events(clear_events_b) {
+                Ok(()) => {
+                    clear_events_b = false;
+                    Ok(())
+                }
+                Err(e) => match e {
+                    LinkError::OldPacketClearingPending => Ok(()),
+                    _ => Err(e),
+                },
+            }?;
 
             // TODO - select over the two subscriptions
             thread::sleep(Duration::from_millis(100))
