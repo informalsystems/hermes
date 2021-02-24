@@ -16,7 +16,6 @@ use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::chain::handle::ChainHandle;
-use ibc::address::encode_to_bech32;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -119,12 +118,7 @@ impl ForeignClient {
             .wrap_any();
 
         //TODO Get acct_prefix
-        let msg = MsgCreateAnyClient::new(
-            client_state,
-            consensus_state,
-            encode_to_bech32(signer, "cosmos".to_string()).unwrap(),
-        )
-        .map_err(|e| {
+        let msg = MsgCreateAnyClient::new(client_state, consensus_state, signer).map_err(|e| {
             ForeignClientError::ClientCreate(format!(
                 "failed while building the create client message: {}",
                 e

@@ -60,6 +60,7 @@ use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
+use ibc::address::encode_to_bech32;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -371,9 +372,8 @@ impl Chain for CosmosSDKChain {
             .get_key()
             .map_err(|e| Kind::KeyBase.context(e))?;
 
-        // let signer =
-        //     string_to_account(key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-        let signer = key.address.to_hex();
+        let signer =
+            encode_to_bech32(key.address.to_hex(), self.config.clone().account_prefix).unwrap();
 
         Ok(signer)
     }
