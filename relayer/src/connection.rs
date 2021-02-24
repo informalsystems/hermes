@@ -66,6 +66,7 @@ impl ConnectionSide {
 
 #[derive(Clone, Debug)]
 pub struct Connection {
+    pub delay_period: u64,
     pub a_side: ConnectionSide,
     pub b_side: ConnectionSide,
 }
@@ -76,6 +77,7 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
+        delay_period: Option<u64>,
     ) -> Result<Connection, ConnectionError> {
         // Validate that the two clients serve the same two chains
         if a_client.src_chain().id().ne(&b_client.dst_chain().id()) {
@@ -94,6 +96,7 @@ impl Connection {
         }
 
         let mut c = Connection {
+            delay_period: delay_period.unwrap_or(0),
             a_side: ConnectionSide::new(
                 a_client.dst_chain(),
                 a_client.id().clone(),
@@ -138,6 +141,7 @@ impl Connection {
         Connection {
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
+            delay_period: self.delay_period,
         }
     }
 
@@ -362,7 +366,7 @@ impl Connection {
             client_id: self.dst_client_id().clone(),
             counterparty,
             version,
-            delay_period: 0,
+            delay_period: self.delay_period,
             signer,
         };
 
