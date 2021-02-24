@@ -2,7 +2,7 @@
 
 ## Unreleased Changes
 
-> [high level summary]
+- [high level summary]
 
 ### FEATURES
 
@@ -10,7 +10,11 @@
   - [nothing yet]
 
 - [ibc-relayer]
-  - Listen to channel close initialization event and perform the close handshake ([#560])
+  - Add support for ordered channels ([#599])
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
+
+- [ibc-relayer]
+  - [nothing yet]
 
 - [ibc-relayer-cli]
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
@@ -18,10 +22,66 @@
 ### IMPROVEMENTS
 
 - [ibc]
-  - Change event height to ICS height ([#549])
+  - Follow Rust guidelines naming conventions ([#689])
 
 - [ibc-relayer]
   - [nothing yet]
+
+- [ibc-relayer-cli]
+  - [nothing yet]
+
+### BUG FIXES
+
+- [ibc]
+  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
+  - Allow a conn open ack to succeed in the happy case ([#699])
+
+- [ibc-relayer]
+  - [nothing yet]
+
+- [ibc-relayer-cli]
+  - Hermes guide: improved installation guideline ([#672])
+
+### BREAKING CHANGES
+
+- [ibc]
+  - `MsgConnectionOpenAck.counterparty_connection_id` is now a `ConnectionId` instead of an `Option<ConnectionId>`([#700])
+
+- [ibc-relayer]
+  - [nothing yet]
+
+- [ibc-relayer-cli]
+  - [nothing yet]
+
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#599]: https://github.com/informalsystems/ibc-rs/issues/599
+[#685]: https://github.com/informalsystems/ibc-rs/issues/685
+[#689]: https://github.com/informalsystems/ibc-rs/issues/689
+[#699]: https://github.com/informalsystems/ibc-rs/issues/699
+[#700]: https://github.com/informalsystems/ibc-rs/pull/700
+
+## v0.1.1
+*February 17, 2021*
+
+This release brings a quick fix for a problem with a dependency of crate
+`ibc-relayer`, which causes build & installation issues. Many thanks to 
+@Fraccaman for bringing this problem to our attention! ([#672])
+
+
+Additionally, this release also introduces initial implementation for most of
+ICS 004 handlers, and several bug fixes and improvements, e.g., refactored
+some CLI code, refactored the Height type in the IBC Events, and a bug fix
+involving packet acks in a 3-chain setup. More details below. 
+
+### FEATURES
+- [ibc-relayer]
+  - Listen to channel close initialization event and perform the close handshake ([#560])
+  - Updated to tendermint-rs `v0.18.1` ([#682], [#671])
+
+### IMPROVEMENTS
+
+- [ibc]
+  - Change event height to ICS height ([#549])
 
 - [ibc-relayer-cli]
   - Cleanup CLI code ([#572])
@@ -44,9 +104,6 @@
   - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
   - Remove dependency on `tendermint-rpc` ([#624])
 
-- [ibc-relayer]
-  - [nothing yet]
-
 - [ibc-relayer-cli]
   - Remove the `proof` option from CLI ([#572])
 
@@ -55,11 +112,17 @@
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#572]: https://github.com/informalsystems/ibc-rs/issues/572
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
+[#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#637]: https://github.com/informalsystems/ibc-rs/issues/637
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
+[#671]: https://github.com/informalsystems/ibc-rs/pull/671
+[#682]: https://github.com/informalsystems/ibc-rs/issues/682
+
+[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
+[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
 
 ## v0.1.0
 *February 4, 2021*

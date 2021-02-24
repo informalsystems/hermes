@@ -7,7 +7,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
-    events::IBCEvent,
+    events::IbcEvent,
     ics02_client::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
         header::Header,
@@ -24,8 +24,8 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -264,6 +264,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_unreceived_acknowledgement(request, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryNextSequenceReceive { request, reply_to }) => {
+                            self.query_next_sequence_receive(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
                             self.query_txs(request, reply_to)?
                         },
@@ -290,7 +294,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn send_msgs(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_msgs(proto_msgs);
 
@@ -658,10 +662,24 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_next_sequence_receive(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn query_txs(
         &self,
         request: QueryPacketEventDataRequest,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
 

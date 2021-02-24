@@ -1,6 +1,6 @@
 [package]
 name    = "ibc-relayer-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -16,13 +16,16 @@ description = """
     This crate is a CLI wrapper over the `ibc-relayer` library.
 """
 
+[[bin]]
+name = "hermes"
+
 [features]
 profiling = ["ibc-relayer/profiling"]
 
 [dependencies]
-ibc         = { version = "0.1.0", path = "../modules" }
-ibc-relayer = { version = "0.1.0", path = "../relayer" }
-ibc-proto   = { version = "0.7.0", path = "../proto" }
+ibc         = { version = "0.1.1", path = "../modules" }
+ibc-relayer = { version = "0.1.1", path = "../relayer" }
+ibc-proto   = { version = "0.7.1", path = "../proto" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"
@@ -30,7 +33,7 @@ serde = { version = "1", features = ["serde_derive"] }
 thiserror = "1"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.13"
-tracing-subscriber = "0.2.3"
+tracing-subscriber = "0.2.16"
 futures = "0.3.5"
 toml = "0.5.6"
 serde_derive = "1.0.116"

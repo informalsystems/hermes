@@ -2,9 +2,10 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+use crate::ics02_client::client_type::ClientType;
+
 use super::error::ValidationError;
 use super::validate::*;
-use crate::ics02_client::client_type::ClientType;
 
 /// This type is subject to future changes.
 ///
@@ -175,7 +176,7 @@ impl FromStr for ClientId {
 
 impl Default for ClientId {
     fn default() -> Self {
-        "defaultClient".to_string().parse().unwrap()
+        Self::new(ClientType::Tendermint, 0).unwrap()
     }
 }
 
@@ -197,6 +198,26 @@ impl PartialEq<str> for ClientId {
 pub struct ConnectionId(String);
 
 impl ConnectionId {
+    /// Builds a new connection identifier. Connection identifiers are deterministically formed from
+    /// two elements: a prefix `prefix`, and a monotonically increasing `counter`; these are
+    /// separated by a dash "-". The prefix is currently determined statically (see
+    /// `ConnectionId::prefix()`) so this method accepts a single argument, the `counter`.
+    ///
+    /// ```
+    /// # use ibc::ics24_host::identifier::ConnectionId;
+    /// let conn_id = ConnectionId::new(11);
+    /// assert_eq!(&conn_id, "connection-11");
+    /// ```
+    pub fn new(counter: u64) -> Self {
+        let id = format!("{}-{}", Self::prefix(), counter);
+        Self::from_str(id.as_str()).unwrap()
+    }
+
+    /// Returns the static prefix to be used across all connection identifiers.
+    pub fn prefix() -> &'static str {
+        "connection"
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0
@@ -225,7 +246,7 @@ impl FromStr for ConnectionId {
 
 impl Default for ConnectionId {
     fn default() -> Self {
-        "defaultConnection".to_string().parse().unwrap()
+        Self::new(0)
     }
 }
 
@@ -233,9 +254,9 @@ impl Default for ConnectionId {
 /// ```
 /// use std::str::FromStr;
 /// use ibc::ics24_host::identifier::ConnectionId;
-/// let conn_id = ConnectionId::from_str("connectionId");
+/// let conn_id = ConnectionId::from_str("connectionId-0");
 /// assert!(conn_id.is_ok());
-/// conn_id.map(|id| {assert_eq!(&id, "connectionId")});
+/// conn_id.map(|id| {assert_eq!(&id, "connectionId-0")});
 /// ```
 impl PartialEq<str> for ConnectionId {
     fn eq(&self, other: &str) -> bool {
@@ -283,6 +304,26 @@ impl Default for PortId {
 pub struct ChannelId(String);
 
 impl ChannelId {
+    /// Builds a new channel identifier. Like client and connection identifiers, channel ids are
+    /// deterministically formed from two elements: a prefix `prefix`, and a monotonically
+    /// increasing `counter`, separated by a dash "-".
+    /// The prefix is currently determined statically (see `ChannelId::prefix()`) so this method
+    /// accepts a single argument, the `counter`.
+    ///
+    /// ```
+    /// # use ibc::ics24_host::identifier::ChannelId;
+    /// let chan_id = ChannelId::new(27);
+    /// assert_eq!(&chan_id, "channel-27");
+    /// ```
+    pub fn new(counter: u64) -> Self {
+        let id = format!("{}-{}", Self::prefix(), counter);
+        Self::from_str(id.as_str()).unwrap()
+    }
+
+    pub fn prefix() -> &'static str {
+        "channel"
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0
@@ -311,6 +352,13 @@ impl FromStr for ChannelId {
 
 impl Default for ChannelId {
     fn default() -> Self {
-        "defaultChannel".to_string().parse().unwrap()
+        Self::new(0)
+    }
+}
+
+/// Equality check against string literal (satisfies &ChannelId == &str).
+impl PartialEq<str> for ChannelId {
+    fn eq(&self, other: &str) -> bool {
+        self.as_str().eq(other)
     }
 }

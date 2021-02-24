@@ -13,7 +13,8 @@ use crate::Height;
 pub enum PacketMsgType {
     Recv,
     Ack,
-    Timeout,
+    TimeoutUnordered,
+    TimeoutOrdered,
     TimeoutOnClose,
 }
 
@@ -22,7 +23,8 @@ impl std::fmt::Display for PacketMsgType {
         match self {
             PacketMsgType::Recv => write!(f, "(PacketMsgType::Recv)"),
             PacketMsgType::Ack => write!(f, "(PacketMsgType::Ack)"),
-            PacketMsgType::Timeout => write!(f, "(PacketMsgType::Timeout)"),
+            PacketMsgType::TimeoutUnordered => write!(f, "(PacketMsgType::TimeoutUnordered)"),
+            PacketMsgType::TimeoutOrdered => write!(f, "(PacketMsgType::TimeoutOrdered)"),
             PacketMsgType::TimeoutOnClose => write!(f, "(PacketMsgType::TimeoutOnClose)"),
         }
     }
@@ -151,7 +153,7 @@ pub mod test_utils {
             destination_channel: "dstchannelid".to_string(),
             data: vec![],
             timeout_height: Some(RawHeight {
-                revision_number: 1,
+                revision_number: 0,
                 revision_height: timeout_height,
             }),
             timeout_timestamp: 0,

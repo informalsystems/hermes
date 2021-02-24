@@ -1,6 +1,6 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use crate::attribute;
-use crate::events::{IBCEvent, RawObject};
+use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 use anomaly::BoxError;
@@ -22,12 +22,12 @@ const CLIENT_TYPE_ATTRIBUTE_KEY: &str = "client_type";
 /// The content of the `key` field for the attribute containing the height.
 const CONSENSUS_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
 
-pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.as_ref() {
-        CREATE_EVENT_TYPE => Some(IBCEvent::CreateClient(CreateClient(
+        CREATE_EVENT_TYPE => Some(IbcEvent::CreateClient(CreateClient(
             extract_attributes_from_tx(event),
         ))),
-        UPDATE_EVENT_TYPE => Some(IBCEvent::UpdateClient(UpdateClient(
+        UPDATE_EVENT_TYPE => Some(IbcEvent::UpdateClient(UpdateClient(
             extract_attributes_from_tx(event),
         ))),
         _ => None,
@@ -71,9 +71,9 @@ impl NewBlock {
     }
 }
 
-impl From<NewBlock> for IBCEvent {
+impl From<NewBlock> for IbcEvent {
     fn from(v: NewBlock) -> Self {
-        IBCEvent::NewBlock(v)
+        IbcEvent::NewBlock(v)
     }
 }
 
@@ -131,9 +131,9 @@ impl TryFrom<RawObject> for CreateClient {
     }
 }
 
-impl From<CreateClient> for IBCEvent {
+impl From<CreateClient> for IbcEvent {
     fn from(v: CreateClient) -> Self {
-        IBCEvent::CreateClient(v)
+        IbcEvent::CreateClient(v)
     }
 }
 
@@ -173,9 +173,9 @@ impl TryFrom<RawObject> for UpdateClient {
     }
 }
 
-impl From<UpdateClient> for IBCEvent {
+impl From<UpdateClient> for IbcEvent {
     fn from(v: UpdateClient) -> Self {
-        IBCEvent::UpdateClient(v)
+        IbcEvent::UpdateClient(v)
     }
 }
 
@@ -209,8 +209,8 @@ impl TryFrom<RawObject> for ClientMisbehavior {
     }
 }
 
-impl From<ClientMisbehavior> for IBCEvent {
+impl From<ClientMisbehavior> for IbcEvent {
     fn from(v: ClientMisbehavior) -> Self {
-        IBCEvent::ClientMisbehavior(v)
+        IbcEvent::ClientMisbehavior(v)
     }
 }
