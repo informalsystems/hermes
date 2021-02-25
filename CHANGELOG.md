@@ -17,7 +17,7 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Added `create connection` CLI ([#630])
 
 ### IMPROVEMENTS
 
@@ -55,6 +55,7 @@
 
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
+[#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
