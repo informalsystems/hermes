@@ -912,10 +912,8 @@ impl Link {
                     clear_events_a = false;
                     Ok(())
                 }
-                Err(e) => match e {
-                    LinkError::OldPacketClearingPending => Ok(()),
-                    _ => Err(e),
-                },
+                Err(LinkError::OldPacketClearingPending) => Ok(()),
+                Err(e) => Err(e),
             }?;
 
             match self.b_to_a.relay_from_events(clear_events_b) {
@@ -923,10 +921,8 @@ impl Link {
                     clear_events_b = false;
                     Ok(())
                 }
-                Err(e) => match e {
-                    LinkError::OldPacketClearingPending => Ok(()),
-                    _ => Err(e),
-                },
+                Err(LinkError::OldPacketClearingPending) => Ok(()),
+                Err(e) => Err(e),
             }?;
 
             // TODO - select over the two subscriptions
