@@ -14,7 +14,7 @@ pub enum CreateCmds {
     Help(Help<Self>),
 
     /// Subcommand for creating a `connection`
-    #[options(help = "create a new connection between two chains")]
+    #[options(help = "Create a new connection between two chains")]
     Connection(CreateConnectionCommand),
     // /// Subcommand for creating a `channel` with various
     // #[options(help = "create a new channel between two chains")]

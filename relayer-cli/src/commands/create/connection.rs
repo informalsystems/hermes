@@ -13,126 +13,125 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct CreateConnectionCommand {
-    #[options(free, required, help = "identifier of the source chain")]
-    src_chain_id: ChainId,
+    #[options(free, required, help = "identifier of the side `a` chain for the new connection")]
+    chain_a_id: ChainId,
 
-    #[options(free, help = "identifier of the destination chain")]
-    dst_chain_id: Option<ChainId>,
+    #[options(free, help = "identifier of the side `b` chain for the new connection")]
+    chain_b_id: Option<ChainId>,
 
     #[options(help = "delay period parameter for the new connection", no_short)]
     delay: Option<u64>,
 
     #[options(
-        help = "client identifier on the source chain; default: None (creates a new client)",
+        help = "identifier of client hosted on chain `a`; default: None (creates a new client)",
         no_short
     )]
-    src_client: Option<ClientId>,
+    client_a: Option<ClientId>,
 
     #[options(
-        help = "client identifier on the destination chain; default: None (creates a new client)",
+        help = "identifier of client hosted on chain `b`; default: None (creates a new client)",
         no_short
     )]
-    dst_client: Option<ClientId>,
+    client_b: Option<ClientId>,
 }
 
 // cargo run --bin hermes -- create connection ibc-0 ibc-1
 // cargo run --bin hermes -- create connection ibc-0 ibc-1 --delay 1000
-// cargo run --bin hermes -- create connection ibc-0 --src-client-id 07-tendermint-0 --dst-client-id 07-tendermint-0 [--delay <delay>]
+// cargo run --bin hermes -- create connection ibc-0 --client-a-id 07-tendermint-0 --client-b-id 07-tendermint-0 [--delay <delay>]
 impl Runnable for CreateConnectionCommand {
     fn run(&self) {
-        match &self.dst_chain_id {
-            Some(dst_chain_id) => self.create_from_scratch(dst_chain_id),
+        match &self.chain_b_id {
+            Some(side_b) => self.create_from_scratch(side_b),
             None => self.create_reusing_clients(),
         }
     }
 }
 
 impl CreateConnectionCommand {
-    /// Create a connection with new clients.
-    fn create_from_scratch(&self, dst_chain_id: &ChainId) {
+    /// Creates a connection as well as brand-new clients on each side.
+    fn create_from_scratch(&self, chain_b_id: &ChainId) {
         let config = app_config();
 
         let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
 
         let chains =
-            ChainHandlePair::spawn_with(spawn_options, &config, &self.src_chain_id, dst_chain_id)
+            ChainHandlePair::spawn_with(spawn_options, &config, &self.chain_a_id, chain_b_id)
                 .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Validate the other options. Bail if the CLI was invoked with incompatible options.
-        if matches!(self.src_client, Some(_)) {
+        if self.client_a.is_some() {
             return Output::error(
-                "Option `<dst-chain-id>` is incompatible with `--src-client`".to_string(),
+                "Option `<chain-b-id>` is incompatible with `--client-a`".to_string(),
             )
             .exit();
         }
-        if matches!(self.dst_client, Some(_)) {
+        if self.client_b.is_some() {
             return Output::error(
-                "Option `<dst-chain-id>` is incompatible with `--dst-client`".to_string(),
+                "Option `<chain-b-id>` is incompatible with `--client-b`".to_string(),
             )
             .exit();
         }
 
         info!(
-            "Creating new client on chains {} and {}",
-            self.src_chain_id, dst_chain_id
+            "Creating new clients hosted on chains {} and {}",
+            self.chain_a_id, chain_b_id
         );
 
-        // Create the two clients.
-        let src_client = ForeignClient::new(chains.src.clone(), chains.dst.clone())
+        let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
             .unwrap_or_else(exit_with_unrecoverable_error);
-        let dst_client = ForeignClient::new(chains.dst.clone(), chains.src.clone())
+        let client_b = ForeignClient::new(chains.dst.clone(), chains.src.clone())
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // Now execute the connection handshake.
-        let c = Connection::new(src_client, dst_client, self.delay);
+        // Finally, execute the connection handshake.
+        let c = Connection::new(client_a, client_b, self.delay);
     }
 
     /// Create a connection reusing pre-existing clients on both chains.
     fn create_reusing_clients(&self) {
         let config = app_config();
 
-        // Validate & spawn runtime for the source chain.
-        let src_chain = match spawn_chain_runtime_memory(&config, &self.src_chain_id) {
+        // Validate & spawn runtime for chain_a.
+        let chain_a = match spawn_chain_runtime_memory(&config, &self.chain_a_id) {
             Ok(handle) => handle,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        // Unwrap the identifier of the client on the source chain.
-        let src_client_id = match &self.src_client {
+        // Unwrap the identifier of the client on chain_a.
+        let client_a_id = match &self.client_a {
             Some(c) => c,
             None => {
                 return Output::error(
-                    "Option `--src-client` is necessary when <dst-chain-id> is missing".to_string(),
+                    "Option `--client-a` is necessary when <chain-b-id> is missing".to_string(),
                 )
                 .exit()
             }
         };
 
-        // Verify that the client exists on the source chain, and fetch the chain_id that this client is verifying.
-        let height = Height::new(src_chain.id().version(), 0);
-        let dst_chain_id = match src_chain.query_client_state(&src_client_id, height) {
+        // Query client state. Extract the target chain (chain_id which this client is verifying).
+        let height = Height::new(chain_a.id().version(), 0);
+        let chain_b_id = match chain_a.query_client_state(&client_a_id, height) {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
                 return Output::error(format!(
                     "Failed while querying client {} on chain {} with error {}",
-                    src_client_id, self.src_chain_id, e
+                    client_a_id, self.chain_a_id, e
                 ))
                 .exit()
             }
         };
 
-        // Validate & spawn runtime for the destination chain.
-        let dst_chain = match spawn_chain_runtime_memory(&config, &dst_chain_id) {
+        // Validate & spawn runtime for chain_b.
+        let chain_b = match spawn_chain_runtime_memory(&config, &chain_b_id) {
             Ok(handle) => handle,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        // Unwrap the identifier of the client on the destination chain.
-        let dst_client_id = match &self.dst_client {
+        // Unwrap the identifier of the client on chain_b.
+        let client_b_id = match &self.client_b {
             Some(c) => c,
             None => {
                 return Output::error(
-                    "Option `--dst-client` is necessary when <dst-chain-id> is missing".to_string(),
+                    "Option `--client-b` is necessary when <chain-b-id> is missing".to_string(),
                 )
                 .exit()
             }
@@ -140,16 +139,16 @@ impl CreateConnectionCommand {
 
         info!(
             "Creating a new connection with pre-existing clients {} and {}",
-            src_client_id, dst_client_id
+            client_a_id, client_b_id
         );
 
         // Create the two ForeignClient objects.
-        let src_client = ForeignClient::find(src_chain.clone(), dst_chain.clone(), &src_client_id)
+        let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), &client_a_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
-        let dst_client = ForeignClient::find(dst_chain.clone(), src_chain.clone(), &dst_client_id)
+        let client_b = ForeignClient::find(chain_a.clone(), chain_b.clone(), &client_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // All verification passed. Create the Connection object & do the handshake.
-        let c = Connection::new(src_client, dst_client, self.delay);
+        let c = Connection::new(client_a, client_b, self.delay);
     }
 }

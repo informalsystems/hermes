@@ -75,37 +75,38 @@ impl ForeignClient {
         Ok(client)
     }
 
-    /// Queries `dst_chain` to verify that a client with identifier `client_id` exists.
-    /// If the client does not exist, returns an error; otherwise, cross-checks that the identifier
-    /// for the source chain of this client (i.e., the chain whose headers this client is verifying)
-    /// is consistent with `expected_src_chain`, and if so, return a new `ForeignClient`.
+    /// Queries `host_chain` to verify that a client with identifier `client_id` exists.
+    /// If the client does not exist, returns an error. If the client exists, cross-checks that the
+    /// identifier for the target chain of this client (i.e., the chain whose headers this client is
+    /// verifying) is consistent with `expected_target_chain`, and if so, return a new
+    /// `ForeignClient` representing this client.
     pub fn find(
-        expected_src_chain: Box<dyn ChainHandle>,
-        dst_chain: Box<dyn ChainHandle>,
+        expected_target_chain: Box<dyn ChainHandle>,
+        host_chain: Box<dyn ChainHandle>,
         client_id: &ClientId,
     ) -> Result<ForeignClient, ForeignClientError> {
-        let height = Height::new(expected_src_chain.id().version(), 0);
+        let height = Height::new(expected_target_chain.id().version(), 0);
 
-        match dst_chain.query_client_state(&client_id, height) {
+        match host_chain.query_client_state(&client_id, height) {
             Ok(cs) => {
-                if cs.chain_id() != expected_src_chain.id() {
+                if cs.chain_id() != expected_target_chain.id() {
                     Err(ForeignClientError::ClientFind(
                         client_id.clone(),
-                        expected_src_chain.id(),
+                        expected_target_chain.id(),
                         cs.chain_id(),
                     ))
                 } else {
                     // TODO: Any additional checks?
                     Ok(ForeignClient {
                         id: client_id.clone(),
-                        dst_chain: dst_chain.clone(),
-                        src_chain: expected_src_chain.clone(),
+                        dst_chain: host_chain.clone(),
+                        src_chain: expected_target_chain.clone(),
                     })
                 }
             }
             Err(e) => Err(ForeignClientError::ClientQuery(
                 client_id.clone(),
-                dst_chain.id(),
+                host_chain.id(),
                 format!("{}", e),
             )),
         }
