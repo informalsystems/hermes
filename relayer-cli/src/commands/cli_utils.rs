@@ -43,6 +43,27 @@ impl ChainHandlePair {
 
 impl Unrecoverable for ChainHandlePair {}
 
+pub fn spawn_chain_runtime_memory(
+    config: &config::Reader<CliApp>,
+    chain_id: &ChainId,
+) -> Result<Box<dyn ChainHandle>, Error> {
+    let mut chain_config = config
+        .find_chain(chain_id)
+        .cloned()
+        .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))
+        .map_err(|e| Kind::Config.context(e))?;
+
+    let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+    spawn_options.apply(&mut chain_config);
+
+    let src_chain_res =
+        ChainRuntime::<CosmosSdkChain>::spawn(chain_config).map_err(|e| Kind::Runtime.context(e));
+
+    let src = src_chain_res.map(|(handle, _)| handle)?;
+
+    Ok(src)
+}
+
 /// Spawn the source and destination chain runtime from the configuration and chain identifiers,
 /// and return the pair of associated handles.
 fn spawn_chain_runtimes(

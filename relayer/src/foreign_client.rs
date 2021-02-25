@@ -27,10 +27,10 @@ pub enum ForeignClientError {
     #[error("error raised while updating client: {0}")]
     ClientUpdate(String),
 
-    #[error("failed while querying for client {0} on chain id: {1}")]
-    ClientQuery(ClientId, ChainId),
+    #[error("failed while querying for client {0} on chain id: {1} with error: {2}")]
+    ClientQuery(ClientId, ChainId, String),
 
-    #[error("failed while finding client {0}: expected chain_id: {1}; actual chain_id: {2}")]
+    #[error("failed while finding client {0}: expected chain_id in client state: {1}; actual chain_id: {2}")]
     ClientFind(ClientId, ChainId, ChainId),
 }
 
@@ -75,35 +75,38 @@ impl ForeignClient {
         Ok(client)
     }
 
-    /// Queries chain `dst_chain` to verify that a client with identifier `expected_id`
-    /// exists on that chain, and that this client is indeed serving chain `src_chain`.
+    /// Queries `dst_chain` to verify that a client with identifier `client_id` exists.
+    /// If the client does not exist, returns an error; otherwise, cross-checks that the identifier
+    /// for the source chain of this client (i.e., the chain whose headers this client is verifying)
+    /// is consistent with `expected_src_chain`, and if so, return a new `ForeignClient`.
     pub fn find(
+        expected_src_chain: Box<dyn ChainHandle>,
         dst_chain: Box<dyn ChainHandle>,
-        src_chain: Box<dyn ChainHandle>,
-        expected_client_id: ClientId,
+        client_id: &ClientId,
     ) -> Result<ForeignClient, ForeignClientError> {
-        let height = Height::new(dst_chain.id().version(), 0);
+        let height = Height::new(expected_src_chain.id().version(), 0);
 
-        match dst_chain.query_client_state(&expected_client_id, height) {
+        match dst_chain.query_client_state(&client_id, height) {
             Ok(cs) => {
-                if cs.chain_id() != src_chain.id() {
+                if cs.chain_id() != expected_src_chain.id() {
                     Err(ForeignClientError::ClientFind(
-                        expected_client_id,
-                        src_chain.id(),
+                        client_id.clone(),
+                        expected_src_chain.id(),
                         cs.chain_id(),
                     ))
                 } else {
                     // TODO: Any additional checks?
                     Ok(ForeignClient {
-                        id: expected_client_id,
+                        id: client_id.clone(),
                         dst_chain: dst_chain.clone(),
-                        src_chain: src_chain.clone(),
+                        src_chain: expected_src_chain.clone(),
                     })
                 }
             }
-            Err(_e) => Err(ForeignClientError::ClientQuery(
-                expected_client_id,
+            Err(e) => Err(ForeignClientError::ClientQuery(
+                client_id.clone(),
                 dst_chain.id(),
+                format!("{}", e),
             )),
         }
     }

@@ -1,13 +1,15 @@
 use abscissa_core::{Command, Options, Runnable};
 
+use ibc::ics02_client::state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::Height;
 use ibc_relayer::config::StoreConfig;
+use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
+use crate::commands::cli_utils::{spawn_chain_runtime_memory, ChainHandlePair, SpawnOptions};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
-use ibc_relayer::connection::Connection;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct CreateConnectionCommand {
@@ -81,35 +83,63 @@ impl CreateConnectionCommand {
 
     /// Create a connection reusing pre-existing clients on both chains.
     fn create_reusing_clients(&self) {
-        // let config = app_config();
+        let config = app_config();
 
-        // let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+        // Validate & spawn runtime for the source chain.
+        let src_chain = match spawn_chain_runtime_memory(&config, &self.src_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
-        // Validate the client options.
-        let src_client = match &self.src_client_id {
-            None => Output::error(
-                "Option `--src-client-id` is necessary when <dst-chain-id> is missing".to_string(),
-            )
-            .exit(),
-            Some(expected_src_client_id) => {
-                // TODO(Adi) Modify the `find` method.
-                // ForeignClient::find(
-                //     chains.src.clone(),
-                //     chains.dst.clone(),
-                //     expected_src_client_id,
-                // )
-                //     .unwrap_or_else(exit_with_unrecoverable_error)
+        // Unwrap the identifier of the client on the source chain.
+        let src_client_id = match &self.src_client_id {
+            Some(c) => c,
+            None => {
+                return Output::error(
+                    "Option `--src-client-id` is necessary when <dst-chain-id> is missing"
+                        .to_string(),
+                )
+                .exit()
             }
         };
 
-        match &self.dst_client_id {
-            None => Output::error(
-                "Option `--dst-client-id` is necessary when <dst-chain-id> is missing".to_string(),
-            )
-            .exit(),
-            Some(dst_client_id) => {
-                unimplemented!()
+        // Verify that the client exists on the source chain, and fetch the chain_id that this client is verifying.
+        let height = Height::new(src_chain.id().version(), 0);
+        let dst_chain_id = match src_chain.query_client_state(&src_client_id, height) {
+            Ok(cs) => cs.chain_id(),
+            Err(e) => {
+                return Output::error(format!(
+                    "Failed while querying client {} on chain {} with error {}",
+                    src_client_id, self.src_chain_id, e
+                ))
+                .exit()
             }
-        }
+        };
+
+        // Validate & spawn runtime for the destination chain.
+        let dst_chain = match spawn_chain_runtime_memory(&config, &dst_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
+
+        // Unwrap the identifier of the client on the destination chain.
+        let dst_client_id = match &self.dst_client_id {
+            Some(c) => c,
+            None => {
+                return Output::error(
+                    "Option `--dst-client-id` is necessary when <dst-chain-id> is missing"
+                        .to_string(),
+                )
+                .exit()
+            }
+        };
+
+        // Create the two ForeignClient objects.
+        let src_client = ForeignClient::find(src_chain.clone(), dst_chain.clone(), &src_client_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
+        let dst_client = ForeignClient::find(dst_chain.clone(), src_chain.clone(), &dst_client_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        // All verification passed. Create the two ForeignClient, then the Connection object.
     }
 }
