@@ -19,7 +19,7 @@ Three elements that provide further context for this discussion are:
 1. Hermes is still at an early stage of implementation, so these use-cases are
    not set in stone.
 
-2. Some concrete use-cases are starting to emerge ([#628][628]), which Hermes
+2. Some concrete use-cases are starting to emerge ([#628][#628]), which Hermes
    v0.1.0 either does not cover altogether, or covers poorly (e.g., because of
    inconsistent UX), thus informing this proposal.
 
@@ -48,13 +48,13 @@ To create a connection:
 
 To create a channel:
 - `create channel <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id>`
-    - Optional: `[--order <order>] [--version <version>] [--delay <delay>]`
+    - Optional: `[--order <order>] [--version <version>]`
 - `create channel <src-chain-id> --src-connection <connection-id> --src-port <port-id> --dst-port <port-id>`
     - Optional: `[--order <order>] [--version <version>]`
 
 To start packet relaying:
 - `start <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id>`
-    - Optional: `[--order <order>] [--version <version>] [--delay <delay>]`
+    - Optional: `[--order <order>] [--version <version>]`
 - `start <src-chain-id> --src-connection <connection-id> --src-port <port-id> --dst-port <port-id>`
     - Optional: `[--order <order>] [--version <version>]`
 - `start <src-chain-id> --src-port <port-id> --src-channel <channel-id>`
@@ -140,6 +140,8 @@ Starts a transaction to perform the connection open handshake protocol between
 chains `<src-chain-id>` and `<dst-chain-id>`. The optional parameter `--delay`
 is the delay period that the new connection should have.
 
+Note also the [limitations](#limitations) around the `delay_period` feature.
+
 - Reusing pre-existing state, concretely, with _existing_ clients:
 
 ```
@@ -160,7 +162,7 @@ be verifying headers for the source chain `<src-chain-id>`.
 - With _new_ connection and clients:
 
 ```
-create channel <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>] [--delay <delay>]
+create channel <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>]
 ```
 
 - With _existing_ specific connection:
@@ -174,7 +176,7 @@ create channel <src-chain-id> --src-connection <connection-id> --src-port <port-
 - relay packets over a _new_ channel, _new_ connection, and _new_ clients:
 
 ```
-start <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>] [--delay <delay>]
+start <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>]
 ```
 
 - relay packets over a _new_ channel that re-uses an _existing_ connection:
@@ -233,12 +235,20 @@ Partially implemented.
 
 ## Limitations
 
+### Light client security parameters
+
 There are currently certain limitations on how a light client can be
 instantiated, which can pose issues to the "client create" use-case that has
 parametrized trust options.
-(The discussion in [673] provides further context on this.)
+(The discussion in [#673] provides further context on this.)
 Consequently, the parametrized client create use-case may involve more complex
 discussions and may not be handled within v0.2.0.
+
+### Connection `delay_period` parameter
+
+The present version v0.1.1 of Hermes as well as the planned v0.2.0 will __not__
+include mechanism to obey the `delay_period` option of connections.
+(Issue [#640] tracks this feature.)
 
 ## Consequences
 ### Positive
@@ -263,7 +273,8 @@ discussions and may not be handled within v0.2.0.
 
 
 
-[628]: https://github.com/informalsystems/ibc-rs/issues/628
-[673]: https://github.com/informalsystems/ibc-rs/issues/673
+[#628]: https://github.com/informalsystems/ibc-rs/issues/628
+[#673]: https://github.com/informalsystems/ibc-rs/issues/673
+[#640]: https://github.com/informalsystems/ibc-rs/issues/640
 [client-state]: https://hermes.informal.systems/query_client.html#query-the-client-state
 [output]: https://github.com/informalsystems/ibc-rs/blob/1f2e72dbcafee5a8bbdab381ff4927d5870b4b59/relayer-cli/src/conclude.rs#L80
