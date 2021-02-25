@@ -101,7 +101,6 @@ pub fn exit_with_unrecoverable_error<T: Unrecoverable, E: Display>(err: E) -> T 
     T::conclude()
 }
 
-
 /// A CLI output with support for JSON serialization. The only mandatory field is the `status`,
 /// which typically signals a success (UNIX process return code `0`) or an error (code `1`). An
 /// optional `result` can be added to an output.
