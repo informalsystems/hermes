@@ -80,15 +80,27 @@ pub fn exit_with(out: Output) {
 /// control to this method to bail with an error (which must be a `Display`). The implementation
 /// of `Unrecoverable` is blank.
 ///
+/// ## Example of use
+/// - Without support from `Unrecoverable`:
+/// ```ignore
+/// let res = ForeignClient::new(chains.src.clone(), chains.dst.clone());
+/// let client = match res {
+///     Ok(client) => client,
+///     Err(e) => return Output::error(format!("{}", e)).exit(),
+/// };
+/// ```
+/// - With support from `Unrecoverable`:
+/// ```ignore
+/// impl Unrecoverable for ForeignClient {}
+///
+/// let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
+///     .unwrap_or_else(exit_with_unrecoverable_error);
+/// ```
 pub fn exit_with_unrecoverable_error<T: Unrecoverable, E: Display>(err: E) -> T {
     Output::error(format!("{}", err)).exit();
     T::conclude()
 }
 
-// pub fn exit_with_output(e: ForeignClientError) -> Result<(), ()> {
-//     Output::error(format!("{}", e)).exit();
-//     Ok(())
-// }
 
 /// A CLI output with support for JSON serialization. The only mandatory field is the `status`,
 /// which typically signals a success (UNIX process return code `0`) or an error (code `1`). An
