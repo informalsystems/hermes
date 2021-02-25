@@ -211,7 +211,7 @@ impl TryFrom<Any> for AnyClientState {
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            "" => Err(Kind::EmptyClientState.into()),
+            "" => Err(Kind::EmptyClientStateResponse.into()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 TendermintClientState::decode_vec(&raw.value)
@@ -304,7 +304,7 @@ impl TryFrom<Any> for AnyConsensusState {
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
-            "" => Err(Kind::EmptyConsensusState.into()),
+            "" => Err(Kind::EmptyConsensusStateResponse.into()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
                 TendermintConsensusState::decode_vec(&value.value)

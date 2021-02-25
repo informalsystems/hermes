@@ -7,13 +7,17 @@ use ibc_relayer::config::StoreConfig;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::commands::cli_utils::{spawn_chain_runtime_memory, ChainHandlePair, SpawnOptions};
+use crate::commands::cli_utils::{spawn_chain_runtime, ChainHandlePair, SpawnOptions};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct CreateConnectionCommand {
-    #[options(free, required, help = "identifier of the side `a` chain for the new connection")]
+    #[options(
+        free,
+        required,
+        help = "identifier of the side `a` chain for the new connection"
+    )]
     chain_a_id: ChainId,
 
     #[options(free, help = "identifier of the side `b` chain for the new connection")]
@@ -90,8 +94,9 @@ impl CreateConnectionCommand {
     fn create_reusing_clients(&self) {
         let config = app_config();
 
+        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
         // Validate & spawn runtime for chain_a.
-        let chain_a = match spawn_chain_runtime_memory(&config, &self.chain_a_id) {
+        let chain_a = match spawn_chain_runtime(spawn_options.clone(), &config, &self.chain_a_id) {
             Ok(handle) => handle,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
@@ -113,7 +118,7 @@ impl CreateConnectionCommand {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
                 return Output::error(format!(
-                    "Failed while querying client {} on chain {} with error {}",
+                    "Failed while querying client '{}' on chain '{}' with error: {}",
                     client_a_id, self.chain_a_id, e
                 ))
                 .exit()
@@ -121,7 +126,7 @@ impl CreateConnectionCommand {
         };
 
         // Validate & spawn runtime for chain_b.
-        let chain_b = match spawn_chain_runtime_memory(&config, &chain_b_id) {
+        let chain_b = match spawn_chain_runtime(spawn_options, &config, &chain_b_id) {
             Ok(handle) => handle,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
