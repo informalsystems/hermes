@@ -17,7 +17,7 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
 
 ### IMPROVEMENTS
 
@@ -115,6 +115,7 @@ involving packet acks in a 3-chain setup. More details below.
 [#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
+[#637]: https://github.com/informalsystems/ibc-rs/issues/637
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
