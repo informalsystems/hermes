@@ -61,13 +61,13 @@ impl CreateConnectionCommand {
         // Validate the other options. Bail if the CLI was invoked with incompatible options.
         if matches!(self.src_client, Some(_)) {
             return Output::error(
-                "Option `<dst-chain-id>` is incompatible with `--src-client-id`".to_string(),
+                "Option `<dst-chain-id>` is incompatible with `--src-client`".to_string(),
             )
             .exit();
         }
         if matches!(self.dst_client, Some(_)) {
             return Output::error(
-                "Option `<dst-chain-id>` is incompatible with `--dst-client-id`".to_string(),
+                "Option `<dst-chain-id>` is incompatible with `--dst-client`".to_string(),
             )
             .exit();
         }
@@ -102,8 +102,7 @@ impl CreateConnectionCommand {
             Some(c) => c,
             None => {
                 return Output::error(
-                    "Option `--src-client-id` is necessary when <dst-chain-id> is missing"
-                        .to_string(),
+                    "Option `--src-client` is necessary when <dst-chain-id> is missing".to_string(),
                 )
                 .exit()
             }
@@ -133,12 +132,16 @@ impl CreateConnectionCommand {
             Some(c) => c,
             None => {
                 return Output::error(
-                    "Option `--dst-client-id` is necessary when <dst-chain-id> is missing"
-                        .to_string(),
+                    "Option `--dst-client` is necessary when <dst-chain-id> is missing".to_string(),
                 )
                 .exit()
             }
         };
+
+        info!(
+            "Creating a new connection with pre-existing clients {} and {}",
+            src_client_id, dst_client_id
+        );
 
         // Create the two ForeignClient objects.
         let src_client = ForeignClient::find(src_chain.clone(), dst_chain.clone(), &src_client_id)
@@ -146,6 +149,7 @@ impl CreateConnectionCommand {
         let dst_client = ForeignClient::find(dst_chain.clone(), src_chain.clone(), &dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // All verification passed. Create the two ForeignClient, then the Connection object.
+        // All verification passed. Create the Connection object & do the handshake.
+        let c = Connection::new(src_client, dst_client, self.delay);
     }
 }
