@@ -1214,6 +1214,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ibc-relayer",
+ "itertools 0.10.0",
  "once_cell",
  "prost 0.7.0",
  "prost-types",

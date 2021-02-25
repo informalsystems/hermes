@@ -1,5 +1,5 @@
-use std::thread;
 use std::time::Duration;
+use std::{sync::Arc, thread};
 
 use prost_types::Any;
 use tendermint::account::Id;
@@ -31,10 +31,11 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedPacketsRequest,
 };
 
-use crate::chain::handle::{ChainHandle, Subscription};
+use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
 use crate::error::Error;
+use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
 
@@ -71,7 +72,6 @@ pub enum LinkError {
 pub struct RelayPath {
     src_chain: Box<dyn ChainHandle>,
     dst_chain: Box<dyn ChainHandle>,
-    subscription: Subscription,
     channel: Channel,
     clear_packets: bool,
     all_events: Vec<IbcEvent>,
@@ -88,11 +88,10 @@ impl RelayPath {
         src_chain: Box<dyn ChainHandle>,
         dst_chain: Box<dyn ChainHandle>,
         channel: Channel,
-    ) -> Result<Self, LinkError> {
-        Ok(RelayPath {
-            src_chain: src_chain.clone(),
-            dst_chain: dst_chain.clone(),
-            subscription: src_chain.subscribe()?,
+    ) -> Self {
+        Self {
+            src_chain,
+            dst_chain,
             channel,
             clear_packets: true,
             all_events: vec![],
@@ -102,7 +101,7 @@ impl RelayPath {
             src_msgs_input_events: vec![],
             packet_msgs: vec![],
             timeout_msgs: vec![],
-        })
+        }
     }
 
     pub fn src_chain(&self) -> Box<dyn ChainHandle> {
@@ -363,7 +362,6 @@ impl RelayPath {
             )
             .is_ok()
         {
-            self.src_height = event_height;
             return Ok(());
         }
 
@@ -413,53 +411,52 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    fn relay_from_events(&mut self) -> Result<(), LinkError> {
-        // Iterate through the IBC Events, build the message for each and collect all at same height.
-        // Send a multi message transaction with these, prepending the client update
+    /// Iterate through the IBC Events, build the message for each and collect all at same height.
+    /// Send a multi message transaction with these, prepending the client update
+    pub fn relay_from_events(&mut self, batch: Arc<EventBatch>) -> Result<(), LinkError> {
+        if self.clear_packets {
+            self.src_height = batch
+                .height
+                .decrement()
+                .map_err(|e| LinkError::Failed(e.to_string()))?;
 
-        for batch in self.subscription.try_iter().collect::<Vec<_>>().iter() {
-            if self.clear_packets {
-                let first_event_height = batch.events[0].height();
-                self.src_height = first_event_height
-                    .decrement()
-                    .map_err(|e| LinkError::Failed(e.to_string()))?;
-                self.relay_pending_packets()?;
-                self.clear_packets = false;
+            self.relay_pending_packets()?;
+            self.clear_packets = false;
+        }
+
+        // collect relevant events in self.all_events
+        self.collect_events(&batch.events);
+        self.adjust_events_height()?;
+
+        if self.all_events.is_empty() {
+            return Ok(());
+        }
+
+        for _i in 0..MAX_ITER {
+            self.reset_buffers();
+
+            self.dst_height = self.dst_latest_height()?;
+
+            // Collect the messages for all events
+            for event in self.all_events.clone() {
+                println!("{} => {:?}", self.src_chain.id(), event);
+                self.handle_packet_event(&event)?;
             }
 
-            // collect relevant events in self.all_events
-            self.collect_events(&batch.events);
-            self.adjust_events_height()?;
+            // Send client update and messages
+            let res = self.send_update_client_and_msgs();
+            println!("\nresult {:?}", res);
 
             if self.all_events.is_empty() {
-                continue;
+                break;
             }
 
-            for _i in 0..MAX_ITER {
-                self.reset_buffers();
-
-                self.dst_height = self.dst_latest_height()?;
-
-                // Collect the messages for all events
-                for event in self.all_events.clone() {
-                    println!("{} => {:?}", self.src_chain.id(), event);
-                    self.handle_packet_event(&event)?;
-                }
-
-                // Send client update and messages
-                let res = self.send_update_client_and_msgs();
-                println!("\nresult {:?}", res);
-
-                if self.all_events.is_empty() {
-                    break;
-                }
-
-                println!("retrying");
-            }
-
-            // TODO - add error
-            self.all_events = vec![];
+            println!("retrying");
         }
+
+        // TODO - add error
+        self.all_events = vec![];
+
         Ok(())
     }
 
@@ -869,31 +866,34 @@ impl RelayPath {
     }
 }
 
-pub struct Link {
-    pub a_to_b: RelayPath,
-    pub b_to_a: RelayPath,
-}
-
 #[derive(Clone, Debug)]
 pub struct LinkParameters {
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
 }
 
+pub struct Link {
+    pub a_to_b: RelayPath,
+    pub b_to_a: RelayPath,
+}
+
 impl Link {
-    pub fn new(channel: Channel) -> Result<Link, LinkError> {
+    pub fn new(channel: Channel) -> Self {
         let a_chain = channel.src_chain();
         let b_chain = channel.dst_chain();
         let flipped = channel.flipped();
 
-        Ok(Link {
-            a_to_b: RelayPath::new(a_chain.clone(), b_chain.clone(), channel)?,
-            b_to_a: RelayPath::new(b_chain, a_chain, flipped)?,
-        })
+        Self {
+            a_to_b: RelayPath::new(a_chain.clone(), b_chain.clone(), channel),
+            b_to_a: RelayPath::new(b_chain, a_chain, flipped),
+        }
     }
 
     pub fn relay(&mut self) -> Result<(), LinkError> {
         println!("relaying packets on {:#?}", self.a_to_b.channel);
+
+        let events_a = self.a_to_b.src_chain().subscribe()?;
+        let events_b = self.b_to_a.src_chain().subscribe()?;
 
         loop {
             if self.is_closed()? {
@@ -901,8 +901,13 @@ impl Link {
                 return Ok(());
             }
 
-            self.a_to_b.relay_from_events()?;
-            self.b_to_a.relay_from_events()?;
+            if let Ok(events) = events_a.try_recv() {
+                self.a_to_b.relay_from_events(events)?;
+            }
+
+            if let Ok(events) = events_b.try_recv() {
+                self.b_to_a.relay_from_events(events)?;
+            }
 
             // TODO - select over the two subscriptions
             thread::sleep(Duration::from_millis(100))
@@ -1022,7 +1027,8 @@ impl Link {
                 b_channel_id,
             ),
         };
-        Link::new(channel)
+
+        Ok(Link::new(channel))
     }
 
     pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
