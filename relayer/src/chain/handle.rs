@@ -14,7 +14,7 @@ use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::{identifier::ChainId, identifier::ClientId};
 use ibc::query::QueryTxRequest;
 use ibc::{
-    events::IBCEvent,
+    events::IbcEvent,
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
     ics04_channel::channel::ChannelEnd,
@@ -23,8 +23,8 @@ use ibc::{
 };
 use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
@@ -57,7 +57,7 @@ pub enum ChainRequest {
 
     SendMsgs {
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 
     GetMinimalSet {
@@ -134,6 +134,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<ChannelEnd>,
     },
 
+    QueryNextSequenceReceive {
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
+    },
+
     ProvenClientState {
         client_id: ClientId,
         height: Height,
@@ -191,7 +196,7 @@ pub enum ChainRequest {
 
     QueryPacketEventData {
         request: QueryTxRequest,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 }
 
@@ -204,7 +209,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn subscribe(&self) -> Result<Subscription, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IBCEvent>, Error>;
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error>;
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
@@ -231,6 +236,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error>;
 
     fn query_channel(
         &self,
@@ -314,7 +324,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IBCEvent>, Error>;
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 }
 
 impl Serialize for dyn ChainHandle {

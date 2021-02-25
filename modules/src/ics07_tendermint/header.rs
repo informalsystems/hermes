@@ -8,7 +8,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
-use crate::events::IBCEventType;
+use crate::events::IbcEventType;
 use crate::ics02_client::client_header::AnyHeader;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
@@ -94,7 +94,7 @@ impl From<Header> for RawHeader {
 
 #[derive(Clone, Debug)]
 pub struct QueryHeaderRequest {
-    pub event_id: IBCEventType,
+    pub event_id: IbcEventType,
     pub client_id: ClientId,
     pub consensus_height: Height,
     pub height: Height,

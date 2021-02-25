@@ -13,7 +13,7 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_relayer::chain::{Chain, CosmosSDKChain, QueryPacketOptions};
+use ibc_relayer::chain::{Chain, CosmosSdkChain, QueryPacketOptions};
 use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
@@ -63,7 +63,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
         info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
 
         let grpc_request = QueryPacketCommitmentsRequest {
             port_id: opts.port_id.to_string(),
@@ -139,7 +139,7 @@ impl Runnable for QueryPacketCommitmentCmd {
 
         // cargo run --bin hermes -- query packet commitment ibc-0 transfer ibconexfer 3 --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
 
         let res = chain.build_packet_proofs(
             PacketMsgType::Recv,
@@ -234,8 +234,8 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();
-        let dst_chain = CosmosSDKChain::bootstrap(dst_chain_config, rt).unwrap();
+        let src_chain = CosmosSdkChain::bootstrap(src_chain_config, rt.clone()).unwrap();
+        let dst_chain = CosmosSdkChain::bootstrap(dst_chain_config, rt).unwrap();
 
         // get the channel information from source chain
         let channel_res = src_chain
@@ -358,7 +358,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
         info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
 
         let grpc_request = QueryPacketAcknowledgementsRequest {
             port_id: opts.port_id.to_string(),
@@ -434,7 +434,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
 
         // cargo run --bin hermes -- query packet acknowledgment ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
+        let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
 
         let res = chain.build_packet_proofs(
             PacketMsgType::Ack,
@@ -529,8 +529,8 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();
-        let dst_chain = CosmosSDKChain::bootstrap(dst_chain_config, rt).unwrap();
+        let src_chain = CosmosSdkChain::bootstrap(src_chain_config, rt.clone()).unwrap();
+        let dst_chain = CosmosSdkChain::bootstrap(dst_chain_config, rt).unwrap();
 
         // get the channel information from source chain
         let channel_res = src_chain

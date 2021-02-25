@@ -5,7 +5,7 @@ use abscissa_core::{config, error::BoxError, Command, Options, Runnable};
 use prost_types::Any;
 
 use ibc::downcast;
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics02_client::client_header::TENDERMINT_HEADER_TYPE_URL;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::client_type::ClientType;
@@ -54,7 +54,7 @@ pub fn monitor_misbehaviour(
     while let Ok(event_batch) = subscription.recv() {
         for event in event_batch.events.iter() {
             match event {
-                IBCEvent::UpdateClient(update) => {
+                IbcEvent::UpdateClient(update) => {
                     dbg!(update);
                     // 1 - make sure client is supported and then create the counterparty chain handle
                     let client_id = update.client_id();
@@ -94,7 +94,7 @@ pub fn monitor_misbehaviour(
                     }
                 }
 
-                IBCEvent::CreateClient(create) => {
+                IbcEvent::CreateClient(create) => {
                     // TODO - get header from full node, consensus state from chain, compare
                 }
                 _ => {}

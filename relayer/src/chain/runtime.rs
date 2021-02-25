@@ -5,27 +5,29 @@ use crossbeam_channel as channel;
 use tendermint::account::Id as AccountId;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
-use ibc::ics02_client::client_header::AnyHeader;
-use ibc::ics02_client::client_state::{AnyClientState, ClientState};
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::query::QueryTxRequest;
 use ibc::{
-    events::IBCEvent,
-    ics02_client::client_header::Header,
+    events::IbcEvent,
+    ics02_client::{
+        client_consensus::{AnyConsensusState, ConsensusState},
+        client_header::AnyHeader,
+        client_header::Header,
+        client_state::{AnyClientState, ClientState},
+    },
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
     ics04_channel::channel::ChannelEnd,
+    ics04_channel::packet::{PacketMsgType, Sequence},
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::PortId,
     ics24_host::identifier::{ClientId, ConnectionId},
     proofs::Proofs,
+    query::QueryTxRequest,
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -264,6 +266,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_unreceived_acknowledgement(request, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryNextSequenceReceive { request, reply_to }) => {
+                            self.query_next_sequence_receive(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
                             self.query_txs(request, reply_to)?
                         },
@@ -290,7 +296,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn send_msgs(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_msgs(proto_msgs);
 
@@ -658,10 +664,24 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_next_sequence_receive(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn query_txs(
         &self,
         request: QueryTxRequest,
-        reply_to: ReplyTo<Vec<IBCEvent>>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
 

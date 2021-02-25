@@ -5,7 +5,7 @@ use thiserror::Error;
 use tracing::{error, info};
 
 use ibc::downcast;
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::ConsensusState;
 use ibc::ics02_client::client_header::{AnyHeader, Header};
 use ibc::ics02_client::client_misbehaviour::{AnyMisbehaviour, Misbehaviour};
@@ -93,7 +93,7 @@ impl ForeignClient {
         &self,
         consensus_height: &Height,
         chain_header: AnyHeader,
-    ) -> Result<Vec<IBCEvent>, ForeignClientError> {
+    ) -> Result<Vec<IbcEvent>, ForeignClientError> {
         let tm_chain_header =
             downcast!(chain_header => AnyHeader::Tendermint).ok_or_else(|| {
                 ForeignClientError::Misbehaviour(format!(
@@ -227,7 +227,7 @@ impl ForeignClient {
     }
 
     /// Returns the identifier of the newly created client.
-    pub fn build_create_client_and_send(&self) -> Result<IBCEvent, ForeignClientError> {
+    pub fn build_create_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {
         let new_msg = self.build_create_client()?;
 
         let res = self
@@ -319,7 +319,7 @@ impl ForeignClient {
         Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
     }
 
-    pub fn build_update_client_and_send(&self) -> Result<IBCEvent, ForeignClientError> {
+    pub fn build_update_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {
         let h = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::ClientUpdate(format!(
                 "failed while querying src chain ({}) for latest height: {}",
@@ -358,10 +358,10 @@ impl ForeignClient {
     }
 }
 
-pub fn extract_client_id(event: &IBCEvent) -> Result<&ClientId, ForeignClientError> {
+pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientError> {
     match event {
-        IBCEvent::CreateClient(ev) => Ok(ev.client_id()),
-        IBCEvent::UpdateClient(ev) => Ok(ev.client_id()),
+        IbcEvent::CreateClient(ev) => Ok(ev.client_id()),
+        IbcEvent::UpdateClient(ev) => Ok(ev.client_id()),
         _ => Err(ForeignClientError::ClientCreate(
             "cannot extract client_id from result".to_string(),
         )),
@@ -375,7 +375,7 @@ pub fn extract_client_id(event: &IBCEvent) -> Result<&ClientId, ForeignClientErr
 mod test {
     use std::str::FromStr;
 
-    use ibc::events::IBCEvent;
+    use ibc::events::IbcEvent;
     use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
 
@@ -411,7 +411,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
-        assert!(matches!(res.unwrap(), IBCEvent::CreateClient(_)));
+        assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
 
         // Create the client on chain b
         let res = b_client.build_create_client_and_send();
@@ -420,7 +420,7 @@ mod test {
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
-        assert!(matches!(res.unwrap(), IBCEvent::CreateClient(_)));
+        assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.
@@ -507,7 +507,7 @@ mod test {
                 "build_update_client_and_send failed (chain a) with error: {:?}",
                 res
             );
-            assert!(matches!(res.as_ref().unwrap(), IBCEvent::UpdateClient(_)));
+            assert!(matches!(res.as_ref().unwrap(), IbcEvent::UpdateClient(_)));
 
             let a_height_current = a_chain.query_latest_height().unwrap();
             a_height_last = a_height_last.increment();
@@ -523,7 +523,7 @@ mod test {
                 "build_update_client_and_send failed (chain b) with error: {:?}",
                 res
             );
-            assert!(matches!(res.as_ref().unwrap(), IBCEvent::UpdateClient(_)));
+            assert!(matches!(res.as_ref().unwrap(), IbcEvent::UpdateClient(_)));
 
             let b_height_current = b_chain.query_latest_height().unwrap();
             b_height_last = b_height_last.increment();
