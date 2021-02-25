@@ -36,9 +36,9 @@ Note that the commands below omit the binary name `hermes` , to keep the command
 length to a minimum.
 
 To create and update a client:
-- `create client <dst-chain-id> <src-chain-id>`
+- `create client <host-chain-id> <target-chain-id>`
     - Optional params: `[--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]`
-- `update client <dst-chain-id> <client-id>`
+- `update client <host-chain-id> <client-id>`
 
 To create a connection:
 - `create connection <chain-a-id> <chain-b-id>`
@@ -105,13 +105,14 @@ commands that Hermes v0.2.0 should fulfil.
 - Minimal invocation: this will create the client from scratch:
 
 ```
-create client <dst-chain-id> <src-chain-id> [--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]
+create client <host-chain-id> <target-chain-id> [--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]
 ```
 
 **Details:**
-Submits a transaction of type "client create" to chain `<dst-chain-id>` (called
-the _destination_ chain). The new client will be verifying headers for chain
-`<src-chain-id>` (called a _source_ chain).
+Submits a transaction of type [client create][client-create] to chain
+`<host-chain-id>` (sometimes called the _destination_ chain of this
+transaction). The new client will be verifying headers for
+chain `<target-chain-id>` (often called the _source_ chain).
 
 See also the [limitations](#limitations) section discussing the optional
 security parameters for this command.
@@ -119,13 +120,13 @@ security parameters for this command.
 - Update a client:
 
 ```
-update client <dst-chain-id> <client-id>
+update client <host-chain-id> <client-id>
 ```
 
 **Details:**
-Submits a transaction to chain id `<dst-chain-id>` to update the client having
+Submits a transaction to chain id `<host-chain-id>` to update the client having
 identifier `<client-id>` with new consensus state from up-to-date headers.
-Hermes will automatically infer the source chain of this client from
+Hermes will automatically infer the target chain of this client from
 the [client state][client-state].
 
 ##### Create New Connection
@@ -143,7 +144,7 @@ two chains.
 The chains are called symbolically `a` and `b`, hence the option names
 `<chain-a-id>` and `<chain-b-id>`. In all handshakes, Hermes submits the first
 step (typically called _init_, e.g., `ConnOpenInit`), to side `a`, then the
-second step (_try_) to side `b`, and so on.
+second step (e.g., `ConnOpenTry`) to side `b`, and so on.
 
 The optional parameter `--delay` is the delay period that the new connection
 should have. Note also the [limitations](#limitations) around the
@@ -156,13 +157,15 @@ create connection <chain-a-id> --client-a <client-id> --client-b <client-id> [--
 ```
 
 **Details:**
-Similar to the previous command, but will reuse the client with identifier from
-option `--client-a` which is expected to exist on chain `<chain-a-id>`. The
-[client state][client-state] from this client will also provide the identifier 
-for the destination chain (this is the "chain_id" field from the client state).
-On the destination chain, this command will establish the connection
-using the client with identifier from the option `--client-b`, which must
-be verifying headers for the source chain `<chain-a-id>`.
+Similar to the previous command, this command will perform the connection
+open handshake protocol, but will reuse the client with identifier from
+option `--client-a`. This client is expected to exist on chain `<chain-a-id>`.
+The target chain of this client is identified in the
+[client state][client-state] (concretely, the target chain is represented under
+`chain_id` field of the client state), which provides the identifier for the 
+side `b` of the new connection. On the side `b` chain, this command will
+establish the connection using the client with identifier from the option
+`--client-b`, which must be verifying headers for chain `<chain-a-id>`.
 
 ##### Create New Channel
 
@@ -284,4 +287,5 @@ include mechanism to obey the `delay_period` option of connections.
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#640]: https://github.com/informalsystems/ibc-rs/issues/640
 [client-state]: https://hermes.informal.systems/query_client.html#query-the-client-state
+[client-create]: https://docs.rs/ibc/0.1.1/ibc/ics02_client/msgs/create_client/index.html
 [output]: https://github.com/informalsystems/ibc-rs/blob/1f2e72dbcafee5a8bbdab381ff4927d5870b4b59/relayer-cli/src/conclude.rs#L80
