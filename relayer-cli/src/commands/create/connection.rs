@@ -19,19 +19,20 @@ pub struct CreateConnectionCommand {
     #[options(free, help = "identifier of the destination chain")]
     dst_chain_id: Option<ChainId>,
 
-    // TODO: document the default value in the help output? use constant.
-    #[options(help = "delay period parameter for the new connection", short = "d")]
+    #[options(help = "delay period parameter for the new connection", no_short)]
     delay: Option<u64>,
 
     #[options(
-        help = "client identifier on the source chain; default: None (new client is created) "
+        help = "client identifier on the source chain; default: None (creates a new client)",
+        no_short
     )]
-    src_client_id: Option<ClientId>,
+    src_client: Option<ClientId>,
 
     #[options(
-        help = "client identifier on the destination chain; default: None (new client is created) "
+        help = "client identifier on the destination chain; default: None (creates a new client)",
+        no_short
     )]
-    dst_client_id: Option<ClientId>,
+    dst_client: Option<ClientId>,
 }
 
 // cargo run --bin hermes -- create connection ibc-0 ibc-1
@@ -58,18 +59,23 @@ impl CreateConnectionCommand {
                 .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Validate the other options. Bail if the CLI was invoked with incompatible options.
-        if matches!(self.src_client_id, Some(_)) {
+        if matches!(self.src_client, Some(_)) {
             return Output::error(
                 "Option `<dst-chain-id>` is incompatible with `--src-client-id`".to_string(),
             )
             .exit();
         }
-        if matches!(self.dst_client_id, Some(_)) {
+        if matches!(self.dst_client, Some(_)) {
             return Output::error(
                 "Option `<dst-chain-id>` is incompatible with `--dst-client-id`".to_string(),
             )
             .exit();
         }
+
+        info!(
+            "Creating new client on chains {} and {}",
+            self.src_chain_id, dst_chain_id
+        );
 
         // Create the two clients.
         let src_client = ForeignClient::new(chains.src.clone(), chains.dst.clone())
@@ -92,7 +98,7 @@ impl CreateConnectionCommand {
         };
 
         // Unwrap the identifier of the client on the source chain.
-        let src_client_id = match &self.src_client_id {
+        let src_client_id = match &self.src_client {
             Some(c) => c,
             None => {
                 return Output::error(
@@ -123,7 +129,7 @@ impl CreateConnectionCommand {
         };
 
         // Unwrap the identifier of the client on the destination chain.
-        let dst_client_id = match &self.dst_client_id {
+        let dst_client_id = match &self.dst_client {
             Some(c) => c,
             None => {
                 return Output::error(

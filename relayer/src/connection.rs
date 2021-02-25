@@ -1,6 +1,6 @@
 use prost_types::Any;
 use thiserror::Error;
-use tracing::error;
+use tracing::{error, warn};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
@@ -412,6 +412,19 @@ impl Connection {
 
         // TODO - check that the src connection is consistent with the try options
 
+        // Cross-check the delay_period
+        let delay = if src_connection.delay_period() != self.delay_period {
+            warn!("`delay_period` for ConnectionEnd @{} is {}; delay period on local Connection object is set to {}",
+                self.src_chain().id(), src_connection.delay_period(), self.delay_period);
+            warn!(
+                "Overriding delay period for local connection object to {}",
+                src_connection.delay_period()
+            );
+            src_connection.delay_period()
+        } else {
+            self.delay_period
+        };
+
         // Build add send the message(s) for updating client on source
         // TODO - add check if update client is required
         let src_client_target_height = self
@@ -477,7 +490,7 @@ impl Connection {
             counterparty,
             counterparty_versions,
             proofs,
-            delay_period: 0,
+            delay_period: delay,
             signer,
         };
 
