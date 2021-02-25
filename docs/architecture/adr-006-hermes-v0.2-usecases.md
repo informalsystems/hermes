@@ -36,32 +36,32 @@ Note that the commands below omit the binary name `hermes` , to keep the command
 length to a minimum.
 
 To create and update a client:
-- `create client <src-chain-id> <dst-chain-id>`
+- `create client <dst-chain-id> <src-chain-id>`
     - Optional params: `[--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]`
 - `update client <dst-chain-id> <client-id>`
 
 To create a connection:
-- `create connection <src-chain-id> <dst-chain-id>`
+- `create connection <chain-a-id> <chain-b-id>`
     - Optional: `[--delay <delay>]`
-- `create connection <src-chain-id> --src-client <client-id> --dst-client <client-id>`
+- `create connection <chain-a-id> --client-a <client-a-id> --client-b <client-b-id>`
     - Optional: `[--delay <delay>]`
 
 To create a channel:
-- `create channel <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id>`
+- `create channel <chain-a-id> <chain-b-id> --port-a <port-id> --port-b <port-id>`
     - Optional: `[--order <order>] [--version <version>]`
-- `create channel <src-chain-id> --src-connection <connection-id> --src-port <port-id> --dst-port <port-id>`
+- `create channel <chain-a-id> --connection-a <connection-id> --port-a <port-id> --port-b <port-id>`
     - Optional: `[--order <order>] [--version <version>]`
 
 To start packet relaying:
-- `start <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id>`
+- `start <chain-a-id> <chain-b-id> --port-a <port-id> --port-b <port-id>`
     - Optional: `[--order <order>] [--version <version>]`
-- `start <src-chain-id> --src-connection <connection-id> --src-port <port-id> --dst-port <port-id>`
+- `start <chain-a-id> --connection-a <connection-id> --port-a <port-id> --port-b <port-id>`
     - Optional: `[--order <order>] [--version <version>]`
-- `start <src-chain-id> --src-port <port-id> --src-channel <channel-id>`
+- `start <chain-a-id> --channel-a <channel-id> --port-a <port-id>`
 
 For finishing pre-initialized, but unfinished object handshakes, for connection and channel:
-- `establish connection <src-chain-id> --src-connection <connection-id>`
-- `establish channel <src-chain-id> --src-port <port-id> --src-channel <channel-id>`
+- `establish connection <chain-a-id> --connection-a <connection-id>`
+- `establish channel <chain-a-id> --channel-a <channel-id> --port-a <port-id>`
 
 ### Rationale
 
@@ -105,7 +105,7 @@ commands that Hermes v0.2.0 should fulfil.
 - Minimal invocation: this will create the client from scratch:
 
 ```
-create client <src-chain-id> <dst-chain-id> [--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]
+create client <dst-chain-id> <src-chain-id> [--clock-drift <millis>] [--trusting-period <days>] [--trust-threshold <numerator/denominator>]
 ```
 
 **Details:**
@@ -121,10 +121,12 @@ security parameters for this command.
 ```
 update client <dst-chain-id> <client-id>
 ```
+
 **Details:**
 Submits a transaction to chain id `<dst-chain-id>` to update the client having
-identifier `<client-id>` with new consensus state. Hermes will automatically
-infer the source chain of this client from the [client state][client-state].
+identifier `<client-id>` with new consensus state from up-to-date headers.
+Hermes will automatically infer the source chain of this client from
+the [client state][client-state].
 
 ##### Create New Connection
 
@@ -132,43 +134,48 @@ infer the source chain of this client from the [client state][client-state].
   _new_ clients:
 
 ```
-create connection <src-chain-id> <dst-chain-id> [--delay <delay>]
+create connection <chain-a-id> <chain-b-id> [--delay <delay>]
 ```
 
 **Details:**
 Starts a transaction to perform the connection open handshake protocol between
-chains `<src-chain-id>` and `<dst-chain-id>`. The optional parameter `--delay`
-is the delay period that the new connection should have.
+two chains.
+The chains are called symbolically `a` and `b`, hence the option names
+`<chain-a-id>` and `<chain-b-id>`. In all handshakes, Hermes submits the first
+step (typically called _init_, e.g., `ConnOpenInit`), to side `a`, then the
+second step (_try_) to side `b`, and so on.
 
-Note also the [limitations](#limitations) around the `delay_period` feature.
+The optional parameter `--delay` is the delay period that the new connection
+should have. Note also the [limitations](#limitations) around the
+`delay_period` feature.
 
 - Reusing pre-existing state, concretely, with _existing_ clients:
 
 ```
-create connection <src-chain-id> --src-client <client-id> --dst-client <client-id> [--delay <delay>]
+create connection <chain-a-id> --client-a <client-id> --client-b <client-id> [--delay <delay>]
 ```
 
 **Details:**
 Similar to the previous command, but will reuse the client with identifier from
-option `--src-client` which is expected to exist on chain `<src-chain-id>`. The
+option `--client-a` which is expected to exist on chain `<chain-a-id>`. The
 [client state][client-state] from this client will also provide the identifier 
 for the destination chain (this is the "chain_id" field from the client state).
 On the destination chain, this command will establish the connection
-using the client with identifier from the option `--dst-client`, which must
-be verifying headers for the source chain `<src-chain-id>`.
+using the client with identifier from the option `--client-b`, which must
+be verifying headers for the source chain `<chain-a-id>`.
 
 ##### Create New Channel
 
 - With _new_ connection and clients:
 
 ```
-create channel <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>]
+create channel <chain-a-id> <chain-b-id> --port-a <port-id> --port-b <port-id> [--order <order>] [--version <version>]
 ```
 
 - With _existing_ specific connection:
 
 ```
-create channel <src-chain-id> --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>]
+create channel <chain-a-id> --connection-a <connection-id> --port-a <port-id> --port-b <port-id> [--order <order>] [--version <version>]
 ```
 
 ##### Packet Relaying
@@ -176,19 +183,19 @@ create channel <src-chain-id> --src-connection <connection-id> --src-port <port-
 - relay packets over a _new_ channel, _new_ connection, and _new_ clients:
 
 ```
-start <src-chain-id> <dst-chain-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>]
+start <chain-a-id> <chain-b-id> --port-a <port-id> --port-b <port-id> [--order <order>] [--version <version>]
 ```
 
 - relay packets over a _new_ channel that re-uses an _existing_ connection:
 
 ```
-start <src-chain-id> --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> [--order <order>] [--version <version>]
+start <chain-a-id> --connection-a <connection-id> --port-a <port-id> --port-b <port-id> [--order <order>] [--version <version>]
 ```
 
 - relay packets over an _existing_ channel:
 
 ```
-start <src-chain-id> --src-port <port-id> --src-channel <channel-id>
+start <chain-a-id> --channel-a <channel-id> --port-a <port-id>
 ```
 
 ##### Finishing partially complete handshakes:
@@ -199,13 +206,13 @@ handshake may be partially started.
 - Finalize handshake for _partially established_ connection:
 
 ```
-establish connection <src-chain-id> --src-connection <connection-id>
+establish connection <chain-a-id> --connection-a <connection-id>
 ```
 
 - Finalize handshake for _partially established_ channel:
 
 ```
-establish channel <src-chain-id> --src-port <port-id> --src-channel <channel-id>
+establish channel <chain-a-id> --channel-a <channel-id> --port-a <port-id>
 ```
 
 
