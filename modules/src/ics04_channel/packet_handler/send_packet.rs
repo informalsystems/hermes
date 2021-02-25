@@ -37,20 +37,15 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     // TODO: Capability Checked in Ics20 as well. Check Difs.
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
 
-    let channel_id = match source_channel_end.counterparty().channel_id() {
-        Some(c) => Some(c.clone()),
-        None => None,
-    };
-
     let counterparty = Counterparty::new(
-        source_channel_end.counterparty().port_id().clone(),
-        channel_id,
+        packet.destination_port.clone(),
+        Some(packet.destination_channel.clone()),
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
         return Err(Kind::InvalidPacketCounterparty(
-            packet.source_port.clone(),
-            packet.source_channel,
+            packet.destination_port.clone(),
+            packet.destination_channel,
         )
         .into());
     }
