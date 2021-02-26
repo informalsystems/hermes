@@ -81,7 +81,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let latest_timestamp = consensus_state
         .timestamp()
-        .map_err(|ts_error| Kind::ErrorInvalidConsensusState(ts_error))?;
+        .map_err(|ts_error| Kind::ErrorInvalidConsensusState.context(ts_error))?;
 
     let packet_timestamp = packet.timeout_timestamp;
     if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)

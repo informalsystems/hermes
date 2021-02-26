@@ -5,11 +5,8 @@ pub type Error = anomaly::Error<Kind>;
 
 use super::packet::Sequence;
 use crate::ics04_channel::channel::State;
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
-use crate::{
-    ics02_client,
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
@@ -132,10 +129,9 @@ pub enum Kind {
     #[error("Receiving chain block timestamp >= packet timeout timestamp")]
     LowPacketTimestamp,
 
-    #[error("Invalid timestamp in consensus state {0}; timestamp must be a positive value")]
-    ErrorInvalidConsensusState(ics02_client::error::Kind),
-    //ErrorInvalidConsensusState(ics02_client::error::Error),
-
+    #[error("Invalid timestamp in consensus state; timestamp must be a positive value")]
+    //ErrorInvalidConsensusState(ics02_client::error::Kind),
+    ErrorInvalidConsensusState,
 
     #[error("Client with id {0} is frozen")]
     FrozenClient(ClientId),
