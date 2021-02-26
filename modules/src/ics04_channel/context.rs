@@ -41,7 +41,7 @@ pub trait ChannelReader {
     fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<&u64>;
 
     /// A hashing function for packet commitments  
-    fn hashing(&self, value: String) -> String;
+    fn hash(&self, value: String) -> String;
 
     /// Returns a counter on the number of channel ids have been created thus far.
     /// The value of this counter should increase only via method
@@ -55,7 +55,7 @@ pub trait ChannelKeeper {
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         // The handler processed this channel & some modifications occurred, store the new end.
         self.store_channel(
-            &(result.port_id.clone(), result.channel_id.clone()),
+            (result.port_id.clone(), result.channel_id.clone()),
             &result.channel_end,
         )?;
 
@@ -66,14 +66,14 @@ pub trait ChannelKeeper {
 
             // Associate also the channel end to its connection.
             self.store_connection_channels(
-                &result.channel_end.connection_hops()[0].clone(),
+                result.channel_end.connection_hops()[0].clone(),
                 &(result.port_id.clone(), result.channel_id.clone()),
             )?;
 
             // Initialize send, recv, and ack sequence numbers.
-            self.store_next_sequence_send(&(result.port_id.clone(), result.channel_id.clone()), 1)?;
-            self.store_next_sequence_recv(&(result.port_id.clone(), result.channel_id.clone()), 1)?;
-            self.store_next_sequence_ack(&(result.port_id, result.channel_id), 1)?;
+            self.store_next_sequence_send((result.port_id.clone(), result.channel_id.clone()), 1)?;
+            self.store_next_sequence_recv((result.port_id.clone(), result.channel_id.clone()), 1)?;
+            self.store_next_sequence_ack((result.port_id, result.channel_id), 1)?;
         }
 
         Ok(())
@@ -82,12 +82,12 @@ pub trait ChannelKeeper {
     fn store_packet_result(&mut self, result: PacketResult) -> Result<(), Error> {
         if result.action.eq(&PacketType::Send) {
             self.store_next_sequence_send(
-                &(result.port_id.clone(), result.channel_id.clone()),
+                (result.port_id.clone(), result.channel_id.clone()),
                 From::<Sequence>::from(result.seq_number),
             )?;
 
             self.store_packet_commitment(
-                &(
+                (
                     result.port_id.clone(),
                     result.channel_id.clone(),
                     result.seq,
@@ -102,7 +102,7 @@ pub trait ChannelKeeper {
 
     fn store_packet_commitment(
         &mut self,
-        key: &(PortId, ChannelId, Sequence),
+        key: (PortId, ChannelId, Sequence),
         timestamp: u64,
         heigh: Height,
         data: Vec<u8>,
@@ -110,32 +110,32 @@ pub trait ChannelKeeper {
 
     fn store_connection_channels(
         &mut self,
-        conn_id: &ConnectionId,
+        conn_id: ConnectionId,
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<(), Error>;
 
     /// Stores the given channel_end at a path associated with the port_id and channel_id.
     fn store_channel(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         channel_end: &ChannelEnd,
     ) -> Result<(), Error>;
 
     fn store_next_sequence_send(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Error>;
 
     fn store_next_sequence_recv(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Error>;
 
     fn store_next_sequence_ack(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Error>;
 

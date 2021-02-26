@@ -7,7 +7,7 @@ pub type Error = anomaly::Error<Kind>;
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum Kind {
     #[error("unrecognized ICS-20 transfer message type URL {0}")]
-    UnknownMessageTypeURL(String),
+    UnknownMessageTypeUrl(String),
 
     #[error("the message is malformed and cannot be decoded")]
     MalformedMessageBytes,

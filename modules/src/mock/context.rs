@@ -400,7 +400,7 @@ impl ChannelReader for MockContext {
         self.next_sequence_send.get(port_channel_id)
     }
 
-    fn hashing(&self, input: String) -> String {
+    fn hash(&self, input: String) -> String {
         let mut sha256 = Sha256::new();
         sha256.input_str(&input);
         sha256.result_str()
@@ -414,11 +414,11 @@ impl ChannelReader for MockContext {
 impl ChannelKeeper for MockContext {
     fn store_connection_channels(
         &mut self,
-        cid: &ConnectionId,
+        cid: ConnectionId,
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<(), Ics4Error> {
         self.connection_channels
-            .entry(cid.clone())
+            .entry(cid)
             .or_insert_with(Vec::new)
             .push(port_channel_id.clone());
         Ok(())
@@ -426,38 +426,37 @@ impl ChannelKeeper for MockContext {
 
     fn store_channel(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         channel_end: &ChannelEnd,
     ) -> Result<(), Ics4Error> {
-        self.channels
-            .insert(port_channel_id.clone(), channel_end.clone());
+        self.channels.insert(port_channel_id, channel_end.clone());
         Ok(())
     }
 
     fn store_next_sequence_send(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Ics4Error> {
-        self.next_sequence_send.insert(port_channel_id.clone(), seq);
+        self.next_sequence_send.insert(port_channel_id, seq);
         Ok(())
     }
 
     fn store_next_sequence_recv(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Ics4Error> {
-        self.next_sequence_recv.insert(port_channel_id.clone(), seq);
+        self.next_sequence_recv.insert(port_channel_id, seq);
         Ok(())
     }
 
     fn store_next_sequence_ack(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Ics4Error> {
-        self.next_sequence_ack.insert(port_channel_id.clone(), seq);
+        self.next_sequence_ack.insert(port_channel_id, seq);
         Ok(())
     }
 
@@ -467,14 +466,14 @@ impl ChannelKeeper for MockContext {
 
     fn store_packet_commitment(
         &mut self,
-        key: &(PortId, ChannelId, Sequence),
+        key: (PortId, ChannelId, Sequence),
         timeout_timestamp: u64,
         timeout_height: Height,
         data: Vec<u8>,
     ) -> Result<(), Ics4Error> {
         let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
         self.packet_commitment
-            .insert(key.clone(), ChannelReader::hashing(self, input));
+            .insert(key, ChannelReader::hash(self, input));
         Ok(())
     }
 }
@@ -524,21 +523,21 @@ impl ConnectionReader for MockContext {
 impl ConnectionKeeper for MockContext {
     fn store_connection(
         &mut self,
-        connection_id: &ConnectionId,
+        connection_id: ConnectionId,
         connection_end: &ConnectionEnd,
     ) -> Result<(), Ics3Error> {
         self.connections
-            .insert(connection_id.clone(), connection_end.clone());
+            .insert(connection_id, connection_end.clone());
         Ok(())
     }
 
     fn store_connection_to_client(
         &mut self,
-        connection_id: &ConnectionId,
+        connection_id: ConnectionId,
         client_id: &ClientId,
     ) -> Result<(), Ics3Error> {
         self.client_connections
-            .insert(client_id.clone(), connection_id.clone());
+            .insert(client_id.clone(), connection_id);
         Ok(())
     }
 

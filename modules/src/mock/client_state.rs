@@ -116,7 +116,7 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
 }
 
 impl MockConsensusState {
-    pub fn latest_timestamp(&self) -> u64 {
+    pub fn timestamp(&self) -> u64 {
         (self.0).1
     }
 }

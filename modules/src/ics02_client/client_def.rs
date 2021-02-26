@@ -1,9 +1,8 @@
-use std::convert::TryFrom;
+use std::{convert::TryFrom, num::TryFromIntError};
 
 use chrono::{DateTime, Utc};
 use prost_types::Any;
 use serde::Serialize;
-use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use crate::downcast;
@@ -284,20 +283,16 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
-    pub fn latest_timestamp(&self) -> u64 {
+    pub fn timestamp(&self) -> Result<u64, TryFromIntError> {
         match self {
             Self::Tendermint(cs_state) => {
-                let date = <DateTime<Utc> as From<Time>>::from(cs_state.timestamp);
+                let date: DateTime<Utc> = cs_state.timestamp.into();
                 let value = date.timestamp();
-                if value < 0 {
-                    panic!("Negative timestamp")
-                } else {
-                    value as u64
-                }
+                u64::try_from(value)
             }
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => mock_state.latest_timestamp(),
+            Self::Mock(mock_state) => Ok(mock_state.timestamp()),
         }
     }
 

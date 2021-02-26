@@ -1,7 +1,7 @@
 use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
 use crate::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use crate::handler::HandlerOutput;
-use crate::ics04_channel::packet::{Packet, Sequence};
+use crate::ics04_channel::packet::Packet;
 use crate::ics04_channel::packet_handler::send_packet::send_packet;
 use crate::ics04_channel::packet_handler::PacketResult;
 use crate::ics26_routing::context::Ics26Context;
@@ -20,11 +20,12 @@ where
         })?;
 
     let destination_port = source_channel_end.counterparty().port_id().clone();
-    let destination_channel = source_channel_end.counterparty().channel_id();
-
-    if destination_channel.is_none() {
-        return Err(Kind::DestinationChannelNotFound(msg.source_port, msg.source_channel).into());
-    }
+    let destination_channel = source_channel_end
+        .counterparty()
+        .channel_id()
+        .ok_or_else(|| {
+            Kind::DestinationChannelNotFound(msg.source_port.clone(), msg.source_channel.clone())
+        })?;
 
     // get the next sequence
     let sequence = ctx
@@ -41,11 +42,11 @@ where
     //TODO: Application LOGIC.
 
     let packet = Packet {
-        sequence: <Sequence as From<u64>>::from(*sequence),
+        sequence: (*sequence).into(),
         source_port: msg.source_port,
         source_channel: msg.source_channel,
         destination_port,
-        destination_channel: destination_channel.unwrap().clone(),
+        destination_channel: destination_channel.clone(),
         data: vec![],
         timeout_height: msg.timeout_height,
         timeout_timestamp: msg.timeout_timestamp,

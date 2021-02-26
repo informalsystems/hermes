@@ -79,7 +79,9 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .client_consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
 
-    let latest_timestamp = consensus_state.latest_timestamp();
+    let latest_timestamp = consensus_state
+        .timestamp()
+        .map_err(|e| Kind::NegativeChainTimestamp.context(e))?;
 
     let packet_timestamp = packet.timeout_timestamp;
     if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
@@ -149,7 +151,7 @@ mod tests {
         let context = MockContext::default();
 
         let packet = Packet {
-            sequence: <Sequence as From<u64>>::from(1),
+            sequence: 1.into(),
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
             destination_port: PortId::default(),
