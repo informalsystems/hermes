@@ -8,7 +8,7 @@ use tendermint_rpc as rpc;
 
 use crate::{
     chain::CosmosSdkChain,
-    config::{ChainConfig, LightClientConfig},
+    config::{ChainConfig, LightClientConfig, StoreConfig},
     error,
 };
 use ibc::ics24_host::identifier::ChainId;
@@ -82,17 +82,15 @@ fn build_instance(
     let rpc_client = rpc::HttpClient::new(config.address.clone())
         .map_err(|e| error::Kind::LightClientInstance(config.address.to_string()).context(e))?;
 
-    // let store: Box<dyn store::LightStore> = match &config.store {
-    //     StoreConfig::Disk { path } => {
-    //         let db = sled::open(path).map_err(|e| {
-    //             error::Kind::LightClientInstance(config.address.to_string()).context(e)
-    //         })?;
-    //         Box::new(store::sled::SledStore::new(db))
-    //     }
-    //     StoreConfig::Memory { .. } => Box::new(store::memory::MemoryStore::new()),
-    // };
-
-    let store = Box::new(store::memory::MemoryStore::new());
+    let store: Box<dyn store::LightStore> = match &config.store {
+        StoreConfig::Disk { path } => {
+            let db = sled::open(path).map_err(|e| {
+                error::Kind::LightClientInstance(config.address.to_string()).context(e)
+            })?;
+            Box::new(store::sled::SledStore::new(db))
+        }
+        StoreConfig::Memory { .. } => Box::new(store::memory::MemoryStore::new()),
+    };
 
     let builder = LightClientBuilder::prod(
         config.peer_id,
