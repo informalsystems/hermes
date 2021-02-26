@@ -134,10 +134,7 @@ mod tests {
     use crate::ics04_channel::packet_handler::send_packet::send_packet;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
-    use crate::{
-        events::IbcEvent,
-        ics04_channel::packet::{Packet, Sequence},
-    };
+    use crate::{events::IbcEvent, ics04_channel::packet::Packet};
 
     #[test]
     fn send_packet_processing() {
@@ -162,7 +159,7 @@ mod tests {
         };
 
         let packet_untimed = Packet {
-            sequence: <Sequence as From<u64>>::from(1),
+            sequence: 1.into(),
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
             destination_port: PortId::default(),
