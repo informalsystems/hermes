@@ -258,7 +258,10 @@ fn start_multi(
     src_chain_id: &ChainId,
     dst_chain_id: &ChainId,
 ) -> Result<Output, BoxError> {
-    let mut supervisor = Supervisor::spawn(config, src_chain_id, dst_chain_id)?;
+    let mut src_to_dst = Supervisor::spawn(config.clone(), src_chain_id, dst_chain_id)?;
+    std::thread::spawn(move || src_to_dst.run());
+
+    let mut supervisor = Supervisor::spawn(config, dst_chain_id, src_chain_id)?;
     supervisor.run()?;
 
     Ok(Output::success("ok"))
