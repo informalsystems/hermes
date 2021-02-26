@@ -11,7 +11,7 @@ use ibc::{
     events::IbcEvent,
     ics04_channel::{
         channel::State as ChannelState,
-        events::{CloseInit, SendPacket, WriteAcknowledgement},
+        events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
         msgs::recv_packet::MsgRecvPacket,
         packet::{Packet, PacketMsgType},
     },
@@ -99,12 +99,12 @@ impl Supervisor {
         println!("iterating over event batches");
 
         for batch in subscription.iter() {
-            // FIXME(romac): Need to send NewBlock events to all workers
-            let events = collect_events(&batch.events);
-            let events_per_object = events.into_iter().group_by(ibc_event_object);
+            // TODO(romac): Need to send NewBlock events to all workers
+
+            let events = collect_events(&batch.events, self.chains.src.id());
+            let events_per_object = events.into_iter().into_group_map();
 
             for (object, events) in events_per_object.into_iter() {
-                let events = events.collect::<Vec<_>>();
                 if events.is_empty() {
                     println!("no events in batch");
                     continue;
@@ -151,7 +151,7 @@ impl Worker {
 
     fn run(self, object: Object) {
         let result = match object {
-            Object::ChannelPair(channel_pair) => self.run_channel_pair(channel_pair),
+            Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
         };
 
         if let Err(e) = result {
@@ -159,13 +159,14 @@ impl Worker {
         }
     }
 
-    fn run_channel_pair(self, channel_pair: ChannelPair) -> Result<(), BoxError> {
+    fn run_uni_chan_path(self, path: UnidirectionalChannelPath) -> Result<(), BoxError> {
+        println!("running worker for object {:?}", path);
         let mut link = Link::new_from_opts(
             self.chains.src.clone(),
             self.chains.dst.clone(),
             LinkParameters {
-                src_port_id: channel_pair.src_port,
-                src_channel_id: channel_pair.src_channel,
+                src_port_id: path.src_port_id,
+                src_channel_id: path.src_channel_id,
             },
         )?;
 
@@ -178,37 +179,72 @@ impl Worker {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-struct ChannelPair {
-    pub src_channel: ChannelId,
-    pub dst_channel: ChannelId,
-    pub src_port: PortId,
-    pub dst_port: PortId,
+struct UnidirectionalChannelPath {
+    pub src_chain_id: ChainId,
+    pub src_channel_id: ChannelId,
+    pub src_port_id: PortId,
+}
+
+impl UnidirectionalChannelPath {
+    fn for_packet(p: &Packet, chain_id: &ChainId) -> Self {
+        Self {
+            src_chain_id: chain_id.clone(),
+            src_channel_id: p.source_channel.clone(),
+            src_port_id: p.source_port.clone(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum Object {
-    ChannelPair(ChannelPair),
+    UnidirectionalChannelPath(UnidirectionalChannelPath),
 }
 
-fn ibc_event_object(event: &IbcEvent) -> Object {
-    match event {
-        IbcEvent::SendPacket(e) => Object::ChannelPair(ChannelPair {
-            src_channel: e.packet.source_channel.clone(),
-            dst_channel: e.packet.destination_channel.clone(),
-            src_port: e.packet.source_port.clone(),
-            dst_port: e.packet.destination_port.clone(),
-        }),
-        _ => unreachable!(),
+impl From<UnidirectionalChannelPath> for Object {
+    fn from(p: UnidirectionalChannelPath) -> Self {
+        Self::UnidirectionalChannelPath(p)
     }
 }
 
-fn collect_events(events: &[IbcEvent]) -> Vec<IbcEvent> {
+impl Object {
+    fn for_send_packet(e: &SendPacket, chain_id: &ChainId) -> Self {
+        UnidirectionalChannelPath::for_packet(&e.packet, chain_id).into()
+    }
+
+    fn for_write_ack(e: &WriteAcknowledgement, chain_id: &ChainId) -> Self {
+        UnidirectionalChannelPath::for_packet(&e.packet, chain_id).into()
+    }
+
+    fn for_timeout_packet(e: &TimeoutPacket, chain_id: &ChainId) -> Self {
+        UnidirectionalChannelPath::for_packet(&e.packet, chain_id).into()
+    }
+
+    fn for_close_init_channel(e: &CloseInit, chain_id: &ChainId) -> Self {
+        UnidirectionalChannelPath {
+            src_chain_id: chain_id.clone(),
+            src_channel_id: e.channel_id().clone(),
+            src_port_id: e.port_id().clone(),
+        }
+        .into()
+    }
+}
+
+fn collect_events(events: &[IbcEvent], chain_id: ChainId) -> Vec<(Object, IbcEvent)> {
     events
         .iter()
-        .filter(|e| matches!(e, IbcEvent::SendPacket(_)))
-        // IbcEvent::WriteAcknowledgement(e) => Some(HandledEvent::WriteAcknowledgement(e)),
-        // IbcEvent::CloseInitChannel(e) => Some(HandledEvent::CloseInit(e)),
-        .cloned()
+        .filter_map(|e| match e {
+            IbcEvent::SendPacket(p) => Some((Object::for_send_packet(p, &chain_id), e.clone())),
+            IbcEvent::TimeoutPacket(p) => {
+                Some((Object::for_timeout_packet(p, &chain_id), e.clone()))
+            }
+            IbcEvent::WriteAcknowledgement(p) => {
+                Some((Object::for_write_ack(p, &chain_id), e.clone()))
+            }
+            IbcEvent::CloseInitChannel(p) => {
+                Some((Object::for_close_init_channel(p, &chain_id), e.clone()))
+            }
+            _ => None,
+        })
         .collect()
 }
 

@@ -317,7 +317,7 @@ impl RelayPath {
                     }
                 }
                 IbcEvent::CloseInitChannel(chan_close_ev) => {
-                    if Some(self.channel.src_channel_id()) == chan_close_ev.channel_id().as_ref()
+                    if self.channel.src_channel_id() == chan_close_ev.channel_id()
                         && self.channel.src_port_id() == chan_close_ev.port_id()
                     {
                         self.all_events.push(event.clone());
