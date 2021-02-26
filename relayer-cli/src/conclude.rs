@@ -96,9 +96,9 @@ pub fn exit_with(out: Output) {
 /// let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
 ///     .unwrap_or_else(exit_with_unrecoverable_error);
 /// ```
-pub fn exit_with_unrecoverable_error<T: Unrecoverable, E: Display>(err: E) -> T {
+pub fn exit_with_unrecoverable_error<T, E: Display>(err: E) -> T {
     Output::error(format!("{}", err)).exit();
-    T::conclude()
+    unreachable!()
 }
 
 /// A CLI output with support for JSON serialization. The only mandatory field is the `status`,
