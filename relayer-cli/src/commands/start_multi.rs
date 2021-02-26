@@ -1,6 +1,6 @@
 #![allow(unused_imports, unreachable_code, dead_code, unused_variables)]
 
-use std::{collections::HashMap, sync::Arc, thread::JoinHandle};
+use std::{collections::HashMap, sync::Arc, thread::JoinHandle, time::Duration};
 
 use abscissa_core::{Command, Options, Runnable};
 use crossbeam_channel::{Receiver, Sender};
@@ -20,6 +20,7 @@ use ibc::{
     Height,
 };
 use ibc_relayer::{
+    chain::handle::ChainHandle,
     channel::Channel,
     config::Config,
     event::monitor::EventBatch,
@@ -79,12 +80,8 @@ struct Supervisor {
 }
 
 impl Supervisor {
-    fn spawn(
-        config: Config,
-        src_chain_id: &ChainId,
-        dst_chain_id: &ChainId,
-    ) -> Result<Self, BoxError> {
-        let chains = ChainHandlePair::spawn(&config, src_chain_id, dst_chain_id)?;
+    fn spawn(config: Config, chain_a: &ChainId, chain_b: &ChainId) -> Result<Self, BoxError> {
+        let chains = ChainHandlePair::spawn(&config, chain_a, chain_b)?;
 
         Ok(Self {
             config,
@@ -94,41 +91,61 @@ impl Supervisor {
     }
 
     fn run(&mut self) -> Result<(), BoxError> {
-        let subscription = self.chains.src.subscribe()?;
+        let subscription_a = self.chains.src.subscribe()?;
+        let subscription_b = self.chains.dst.subscribe()?;
 
-        println!("iterating over event batches");
-
-        for batch in subscription.iter() {
-            // TODO(romac): Need to send NewBlock events to all workers
-
-            let events = collect_events(&batch.events, self.chains.src.id());
-            let events_per_object = events.into_iter().into_group_map();
-
-            for (object, events) in events_per_object.into_iter() {
-                if events.is_empty() {
-                    println!("no events in batch");
-                    continue;
-                }
-
-                let worker_batch = EventBatch {
-                    height: batch.height,
-                    chain_id: batch.chain_id.clone(),
-                    events,
-                };
-
-                let worker = self.worker_for_object(object);
-                worker.handle_packet_events(worker_batch)?;
+        loop {
+            println!("{} => iterating over event batches", self.chains.src.id());
+            for batch in subscription_a.try_iter() {
+                self.process_batch(batch)?;
             }
+
+            println!("{} => iterating over event batches", self.chains.dst.id());
+            for batch in subscription_b.try_iter() {
+                self.process_batch(batch)?;
+            }
+
+            std::thread::sleep(Duration::from_millis(600));
+        }
+    }
+
+    fn process_batch(&mut self, batch: Arc<EventBatch>) -> Result<(), BoxError> {
+        // TODO(romac): Need to send NewBlock events to all workers
+
+        let events = collect_events(&batch.events, batch.chain_id.clone());
+        let events_per_object = events.into_iter().into_group_map();
+
+        for (object, events) in events_per_object.into_iter() {
+            if events.is_empty() {
+                println!("no events in batch");
+                return Ok(());
+            }
+
+            let worker_batch = EventBatch {
+                height: batch.height,
+                chain_id: batch.chain_id.clone(),
+                events,
+            };
+
+            let is_dest = batch.chain_id == self.chains.dst.id();
+            let worker = self.worker_for_object(object, is_dest);
+            worker.handle_packet_events(worker_batch)?;
         }
 
         Ok(())
     }
 
-    fn worker_for_object(&mut self, object: Object) -> &WorkerHandle {
+    fn worker_for_object(&mut self, object: Object, swap: bool) -> &WorkerHandle {
         if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
-            let worker = Worker::spawn(self.chains.clone(), object.clone());
+            let chains = if swap {
+                self.chains.clone().swap()
+            } else {
+                self.chains.clone()
+            };
+
+            let worker = Worker::spawn(chains, object.clone());
             self.workers.entry(object).or_insert(worker)
         }
     }
@@ -253,15 +270,8 @@ fn collect_events(events: &[IbcEvent], chain_id: ChainId) -> Vec<(Object, IbcEve
         .collect()
 }
 
-fn start_multi(
-    config: Config,
-    src_chain_id: &ChainId,
-    dst_chain_id: &ChainId,
-) -> Result<Output, BoxError> {
-    let mut src_to_dst = Supervisor::spawn(config.clone(), src_chain_id, dst_chain_id)?;
-    std::thread::spawn(move || src_to_dst.run());
-
-    let mut supervisor = Supervisor::spawn(config, dst_chain_id, src_chain_id)?;
+fn start_multi(config: Config, chain_a: &ChainId, chain_b: &ChainId) -> Result<Output, BoxError> {
+    let mut supervisor = Supervisor::spawn(config, chain_a, chain_b)?;
     supervisor.run()?;
 
     Ok(Output::success("ok"))

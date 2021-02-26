@@ -36,6 +36,14 @@ impl ChainHandlePair {
     ) -> Result<Self, Error> {
         spawn_chain_runtimes(options, config, src_chain_id, dst_chain_id)
     }
+
+    /// Swap the two handles to that `dst` becomes `src` and `src` becomes `dst`
+    pub fn swap(self) -> Self {
+        Self {
+            src: self.dst,
+            dst: self.src,
+        }
+    }
 }
 
 /// Spawn the source and destination chain runtime from the configuration and chain identifiers,
