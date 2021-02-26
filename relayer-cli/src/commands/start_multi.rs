@@ -185,16 +185,6 @@ struct UnidirectionalChannelPath {
     pub src_port_id: PortId,
 }
 
-impl UnidirectionalChannelPath {
-    fn for_packet(p: &Packet, chain_id: &ChainId) -> Self {
-        Self {
-            src_chain_id: chain_id.clone(),
-            src_channel_id: p.source_channel.clone(),
-            src_port_id: p.source_port.clone(),
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum Object {
     UnidirectionalChannelPath(UnidirectionalChannelPath),
@@ -208,15 +198,30 @@ impl From<UnidirectionalChannelPath> for Object {
 
 impl Object {
     fn for_send_packet(e: &SendPacket, chain_id: &ChainId) -> Self {
-        UnidirectionalChannelPath::for_packet(&e.packet, chain_id).into()
+        UnidirectionalChannelPath {
+            src_chain_id: chain_id.clone(),
+            src_channel_id: e.packet.source_channel.clone(),
+            src_port_id: e.packet.source_port.clone(),
+        }
+        .into()
     }
 
     fn for_write_ack(e: &WriteAcknowledgement, chain_id: &ChainId) -> Self {
-        UnidirectionalChannelPath::for_packet(&e.packet, chain_id).into()
+        UnidirectionalChannelPath {
+            src_chain_id: chain_id.clone(),
+            src_channel_id: e.packet.destination_channel.clone(),
+            src_port_id: e.packet.destination_port.clone(),
+        }
+        .into()
     }
 
     fn for_timeout_packet(e: &TimeoutPacket, chain_id: &ChainId) -> Self {
-        UnidirectionalChannelPath::for_packet(&e.packet, chain_id).into()
+        UnidirectionalChannelPath {
+            src_chain_id: chain_id.clone(),
+            src_channel_id: e.src_channel_id().clone(),
+            src_port_id: e.src_port_id().clone(),
+        }
+        .into()
     }
 
     fn for_close_init_channel(e: &CloseInit, chain_id: &ChainId) -> Self {
