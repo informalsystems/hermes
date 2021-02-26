@@ -23,9 +23,6 @@ pub struct CreateConnectionCommand {
     #[options(free, help = "identifier of the side `b` chain for the new connection")]
     chain_b_id: Option<ChainId>,
 
-    #[options(help = "delay period parameter for the new connection", no_short)]
-    delay: Option<u64>,
-
     #[options(
         help = "identifier of client hosted on chain `a`; default: None (creates a new client)",
         no_short
@@ -37,6 +34,12 @@ pub struct CreateConnectionCommand {
         no_short
     )]
     client_b: Option<ClientId>,
+
+    #[options(
+        help = "delay period parameter for the new connection; default: `0`.",
+        no_short
+    )]
+    delay: Option<u64>,
 }
 
 // cargo run --bin hermes -- create connection ibc-0 ibc-1
@@ -45,15 +48,15 @@ pub struct CreateConnectionCommand {
 impl Runnable for CreateConnectionCommand {
     fn run(&self) {
         match &self.chain_b_id {
-            Some(side_b) => self.create_from_scratch(side_b),
-            None => self.create_reusing_clients(),
+            Some(side_b) => self.run_using_new_clients(side_b),
+            None => self.run_reusing_clients(),
         }
     }
 }
 
 impl CreateConnectionCommand {
-    /// Creates a connection as well as brand-new clients on each side.
-    fn create_from_scratch(&self, chain_b_id: &ChainId) {
+    /// Creates a connection that uses newly created clients on each side.
+    fn run_using_new_clients(&self, chain_b_id: &ChainId) {
         let config = app_config();
 
         let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
@@ -87,11 +90,11 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally, execute the connection handshake.
-        let c = Connection::new(client_a, client_b, self.delay);
+        let c = Connection::new(client_a, client_b, self.delay.unwrap_or(0));
     }
 
     /// Create a connection reusing pre-existing clients on both chains.
-    fn create_reusing_clients(&self) {
+    fn run_reusing_clients(&self) {
         let config = app_config();
 
         let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
@@ -147,13 +150,13 @@ impl CreateConnectionCommand {
             client_a_id, client_b_id
         );
 
-        // Create the two ForeignClient objects.
+        // Get the two ForeignClient objects.
         let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), &client_a_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
         let client_b = ForeignClient::find(chain_a.clone(), chain_b.clone(), &client_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // All verification passed. Create the Connection object & do the handshake.
-        let c = Connection::new(client_a, client_b, self.delay);
+        let c = Connection::new(client_a, client_b, self.delay.unwrap_or(0));
     }
 }

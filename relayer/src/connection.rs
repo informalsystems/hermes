@@ -77,7 +77,7 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
-        delay_period: Option<u64>,
+        delay_period: u64,
     ) -> Result<Connection, ConnectionError> {
         // Validate that the two clients serve the same two chains
         if a_client.src_chain().id().ne(&b_client.dst_chain().id()) {
@@ -96,7 +96,7 @@ impl Connection {
         }
 
         let mut c = Connection {
-            delay_period: delay_period.unwrap_or(0),
+            delay_period,
             a_side: ConnectionSide::new(
                 a_client.dst_chain(),
                 a_client.id().clone(),

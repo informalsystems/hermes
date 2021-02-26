@@ -54,7 +54,7 @@ pub fn connect_with_new_channel(
     let client_on_b = ForeignClient::new(b_chain_handle.clone(), a_chain_handle.clone())?;
 
     // Setup the connection between the two chains
-    let connection = Connection::new(client_on_a, client_on_b, None)?;
+    let connection = Connection::new(client_on_a, client_on_b, 0)?;
 
     // Setup the channel over the connection
     Ok(Channel::new(
