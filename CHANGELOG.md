@@ -10,6 +10,7 @@
   - [nothing yet]
 
 - [ibc-relayer]
+  - Support for relayer restart ([#561])
   - Add support for ordered channels ([#599])
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
@@ -54,9 +55,10 @@
 - [ibc-relayer-cli]
   - [nothing yet]
 
-[#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#561]: https://github.com/informalsystems/ibc-rs/issues/561
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
