@@ -129,8 +129,8 @@ pub enum Kind {
     #[error("Receiving chain block timestamp >= packet timeout timestamp")]
     LowPacketTimestamp,
 
-    #[error("Negativ chain timestamp: overflow ")]
-    NegativeChainTimestamp,
+    #[error("Invalid timestamp in consensus state {0}; timestamp must be a positive value")]
+    NegativeConsensusStateTimestamp(String),
 
     #[error("Client with id {0} is frozen")]
     FrozenClient(ClientId),

@@ -1,11 +1,10 @@
-use std::{convert::TryFrom, num::TryFromIntError};
+use std::convert::TryFrom;
 
 use chrono::{DateTime, Utc};
 use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
-use crate::downcast;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
@@ -19,6 +18,7 @@ use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
+use crate::{downcast, ics04_channel};
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::{
@@ -283,12 +283,14 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
-    pub fn timestamp(&self) -> Result<u64, TryFromIntError> {
+    pub fn timestamp(&self) -> Result<u64, ics04_channel::error::Kind> {
         match self {
             Self::Tendermint(cs_state) => {
                 let date: DateTime<Utc> = cs_state.timestamp.into();
                 let value = date.timestamp();
-                u64::try_from(value)
+                u64::try_from(value).map_err(|_e| {
+                    ics04_channel::error::Kind::NegativeConsensusStateTimestamp(value.to_string())
+                })
             }
 
             #[cfg(any(test, feature = "mocks"))]
