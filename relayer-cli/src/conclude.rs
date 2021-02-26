@@ -53,11 +53,10 @@
 //! Output::success(h).with_result(end).exit();
 //! ```
 
+use std::fmt::Display;
+
 use serde::Serialize;
 use tracing::error;
-
-use ibc_relayer::util::Unrecoverable;
-use std::fmt::Display;
 
 /// Functional-style method to exit a program.
 ///
@@ -76,12 +75,10 @@ pub fn exit_with(out: Output) {
 }
 
 /// Exits the program. Useful when a type produces an error which can no longer be propagated, and
-/// the program must exit instead. Any type that implements the `Unrecoverable` trait can pass
-/// control to this method to bail with an error (which must be a `Display`). The implementation
-/// of `Unrecoverable` is blank.
+/// the program must exit instead.
 ///
 /// ## Example of use
-/// - Without support from `Unrecoverable`:
+/// - Without this function:
 /// ```ignore
 /// let res = ForeignClient::new(chains.src.clone(), chains.dst.clone());
 /// let client = match res {
@@ -89,14 +86,14 @@ pub fn exit_with(out: Output) {
 ///     Err(e) => return Output::error(format!("{}", e)).exit(),
 /// };
 /// ```
-/// - With support from `Unrecoverable`:
+/// - With support from `exit_with_unrecoverable_error`:
 /// ```ignore
-/// impl Unrecoverable for ForeignClient {}
-///
 /// let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
 ///     .unwrap_or_else(exit_with_unrecoverable_error);
 /// ```
 pub fn exit_with_unrecoverable_error<T, E: Display>(err: E) -> T {
+    // TODO(@romac): Once never (!) stabilizes, adapt `Output::exit` to return !
+    //  https://github.com/informalsystems/ibc-rs/pull/688#discussion_r583758439
     Output::error(format!("{}", err)).exit();
     unreachable!()
 }

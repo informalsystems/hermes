@@ -17,7 +17,6 @@ use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::chain::handle::ChainHandle;
-use crate::util::Unrecoverable;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -304,8 +303,6 @@ impl ForeignClient {
         Ok(())
     }
 }
-
-impl Unrecoverable for ForeignClient {}
 
 pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientError> {
     match event {
