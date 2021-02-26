@@ -64,9 +64,6 @@ pub enum LinkError {
     #[error("exhausted max number of retries:")]
     RetryError,
 
-    #[error("old packets not cleared yet")]
-    OldPacketClearingPending,
-
     #[error("clearing of old packets failed")]
     OldPacketClearingFailed,
 }
@@ -76,6 +73,7 @@ pub struct RelayPath {
     dst_chain: Box<dyn ChainHandle>,
     subscription: Subscription,
     channel: Channel,
+    clear_packets: bool,
     all_events: Vec<IbcEvent>,
     src_height: Height,
     dst_height: Height,
@@ -96,6 +94,7 @@ impl RelayPath {
             dst_chain: dst_chain.clone(),
             subscription: src_chain.subscribe()?,
             channel,
+            clear_packets: true,
             all_events: vec![],
             src_height: Height::zero(),
             dst_height: Height::zero(),
@@ -413,21 +412,18 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    fn relay_from_events(&mut self, clear_packets: bool) -> Result<(), LinkError> {
+    fn relay_from_events(&mut self) -> Result<(), LinkError> {
         // Iterate through the IBC Events, build the message for each and collect all at same height.
         // Send a multi message transaction with these, prepending the client update
 
-        if self.subscription.is_empty() {
-            return Err(LinkError::OldPacketClearingPending);
-        }
-
         for batch in self.subscription.try_iter().collect::<Vec<_>>().iter() {
-            if clear_packets {
+            if self.clear_packets {
                 let first_event_height = batch.events[0].height();
                 self.src_height = first_event_height
                     .decrement()
                     .map_err(|e| LinkError::Failed(e.to_string()))?;
                 self.relay_pending_packets()?;
+                self.clear_packets = false;
             }
 
             // collect relevant events in self.all_events
@@ -896,34 +892,14 @@ impl Link {
     pub fn relay(&mut self) -> Result<(), LinkError> {
         println!("relaying packets on {:#?}", self.a_to_b.channel);
 
-        // First time in the loop the old events emitted before the link started the event
-        // subscription need to be processed.
-        let mut clear_events_a = true;
-        let mut clear_events_b = true;
-
         loop {
             if self.is_closed()? {
                 println!("channel is closed, exiting");
                 return Ok(());
             }
 
-            match self.a_to_b.relay_from_events(clear_events_a) {
-                Ok(()) => {
-                    clear_events_a = false;
-                    Ok(())
-                }
-                Err(LinkError::OldPacketClearingPending) => Ok(()),
-                Err(e) => Err(e),
-            }?;
-
-            match self.b_to_a.relay_from_events(clear_events_b) {
-                Ok(()) => {
-                    clear_events_b = false;
-                    Ok(())
-                }
-                Err(LinkError::OldPacketClearingPending) => Ok(()),
-                Err(e) => Err(e),
-            }?;
+            self.a_to_b.relay_from_events()?;
+            self.b_to_a.relay_from_events()?;
 
             // TODO - select over the two subscriptions
             thread::sleep(Duration::from_millis(100))
