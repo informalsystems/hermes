@@ -43,12 +43,6 @@ pub enum Kind {
     #[error("packet data bytes cannot be empty")]
     ZeroPacketData,
 
-    #[error("Port id validation failed")]
-    InvalidPortId,
-
-    #[error("Channel id validation failed")]
-    InvalidChannelId,
-
     #[error("packet timeout height and packet timeout timestamp cannot both be 0")]
     ZeroPacketTimeout,
 
@@ -61,12 +55,8 @@ pub enum Kind {
     #[error("there is no packet in this message")]
     MissingPacket,
 
-    #[error("acknowledgement too long")]
-    AcknowledgementTooLong,
-
     #[error("missing counterparty")]
     MissingCounterparty,
-
     #[error("no commong version")]
     NoCommonVersion,
 
@@ -105,14 +95,8 @@ pub enum Kind {
     #[error("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")]
     FailedChanneOpenTryVerification,
 
-    #[error("Error from the appliaction logic on send transfer")]
-    SendTransferError,
-
     #[error("No client state associated with client id {0}")]
     MissingClientState(ClientId),
-
-    #[error("No consensus state associated with the host chain")]
-    MissingHostConsensusState,
 
     #[error("Missing sequence number for send packets")]
     MissingNextSendSeq,
