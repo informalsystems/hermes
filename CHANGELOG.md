@@ -39,7 +39,7 @@
   - Allow a conn open ack to succeed in the happy case ([#699])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Replaced `rust-crypto` deprecated dependency ([#352])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -55,6 +55,7 @@
 - [ibc-relayer-cli]
   - [nothing yet]
 
+[#352]: https://github.com/informalsystems/ibc-rs/issues/352
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
