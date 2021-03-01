@@ -5,11 +5,10 @@ use serde_derive::{Deserialize, Serialize};
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use crate::ics04_channel::error::Kind;
-
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
 
-/// Enumeration of proof carrying ICS3 message, helper for relayer.
+/// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PacketMsgType {
     Recv,
@@ -36,6 +35,10 @@ pub struct Sequence(u64);
 impl Sequence {
     pub fn is_zero(&self) -> bool {
         self.0 == 0
+    }
+
+    pub fn increment(&self) -> Sequence {
+        Sequence(self.0 + 1)
     }
 }
 impl From<u64> for Sequence {

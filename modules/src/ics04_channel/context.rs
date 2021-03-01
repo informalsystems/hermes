@@ -11,10 +11,7 @@ use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
-use super::{
-    packet::Sequence,
-    packet_handler::{PacketResult, PacketType},
-};
+use super::{packet::Sequence, packet_handler::PacketResult};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReader {
@@ -38,7 +35,7 @@ pub trait ChannelReader {
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
 
-    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<&u64>;
+    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence>;
 
     /// A hashing function for packet commitments  
     fn hash(&self, value: String) -> String;
@@ -71,31 +68,35 @@ pub trait ChannelKeeper {
             )?;
 
             // Initialize send, recv, and ack sequence numbers.
-            self.store_next_sequence_send((result.port_id.clone(), result.channel_id.clone()), 1)?;
-            self.store_next_sequence_recv((result.port_id.clone(), result.channel_id.clone()), 1)?;
-            self.store_next_sequence_ack((result.port_id, result.channel_id), 1)?;
+            self.store_next_sequence_send(
+                (result.port_id.clone(), result.channel_id.clone()),
+                1.into(),
+            )?;
+            self.store_next_sequence_recv(
+                (result.port_id.clone(), result.channel_id.clone()),
+                1.into(),
+            )?;
+            self.store_next_sequence_ack((result.port_id, result.channel_id), 1.into())?;
         }
 
         Ok(())
     }
 
-    fn store_packet_result(&mut self, result: PacketResult) -> Result<(), Error> {
-        if result.action.eq(&PacketType::Send) {
-            self.store_next_sequence_send(
-                (result.port_id.clone(), result.channel_id.clone()),
-                From::<Sequence>::from(result.seq_number),
-            )?;
+    fn store_packet_result(&mut self, general_result: PacketResult) -> Result<(), Error> {
+        match general_result {
+            PacketResult::Send(res) => {
+                self.store_next_sequence_send(
+                    (res.port_id.clone(), res.channel_id.clone()),
+                    res.seq_number,
+                )?;
 
-            self.store_packet_commitment(
-                (
-                    result.port_id.clone(),
-                    result.channel_id.clone(),
-                    result.seq,
-                ),
-                result.timeout_timestamp,
-                result.timeout_height,
-                result.data,
-            )?;
+                self.store_packet_commitment(
+                    (res.port_id.clone(), res.channel_id.clone(), res.seq),
+                    res.timeout_timestamp,
+                    res.timeout_height,
+                    res.data,
+                )?;
+            }
         }
         Ok(())
     }
@@ -124,19 +125,19 @@ pub trait ChannelKeeper {
     fn store_next_sequence_send(
         &mut self,
         port_channel_id: (PortId, ChannelId),
-        seq: u64,
+        seq: Sequence,
     ) -> Result<(), Error>;
 
     fn store_next_sequence_recv(
         &mut self,
         port_channel_id: (PortId, ChannelId),
-        seq: u64,
+        seq: Sequence,
     ) -> Result<(), Error>;
 
     fn store_next_sequence_ack(
         &mut self,
         port_channel_id: (PortId, ChannelId),
-        seq: u64,
+        seq: Sequence,
     ) -> Result<(), Error>;
 
     /// Called upon channel identifier creation (Init or Try message processing).

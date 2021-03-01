@@ -192,7 +192,7 @@ where
                 .with_log(handler_output.log)
                 .with_events(handler_output.events)
                 .with_result(())
-        } // TODO: add dispatchers for others.
+        }
 
         Ics20Msg(msg) => {
             let handler_output =

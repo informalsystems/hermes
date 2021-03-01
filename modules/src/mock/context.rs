@@ -91,13 +91,13 @@ pub struct MockContext {
     channels: HashMap<(PortId, ChannelId), ChannelEnd>,
 
     /// Tracks the sequence number for the next packet to be sent.
-    next_sequence_send: HashMap<(PortId, ChannelId), u64>,
+    next_sequence_send: HashMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be received.
-    next_sequence_recv: HashMap<(PortId, ChannelId), u64>,
+    next_sequence_recv: HashMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be acknowledged.
-    next_sequence_ack: HashMap<(PortId, ChannelId), u64>,
+    next_sequence_ack: HashMap<(PortId, ChannelId), Sequence>,
 
     /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
@@ -259,7 +259,12 @@ impl MockContext {
         Self { channels, ..self }
     }
 
-    pub fn with_send_sequence(self, port_id: PortId, chan_id: ChannelId, seq_number: u64) -> Self {
+    pub fn with_send_sequence(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq_number: Sequence,
+    ) -> Self {
         let mut next_sequence_send = self.next_sequence_send.clone();
         next_sequence_send.insert((port_id, chan_id), seq_number);
         Self {
@@ -396,8 +401,8 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<&u64> {
-        self.next_sequence_send.get(port_channel_id)
+    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+        self.next_sequence_send.get(port_channel_id).cloned()
     }
 
     fn hash(&self, input: String) -> String {
@@ -436,7 +441,7 @@ impl ChannelKeeper for MockContext {
     fn store_next_sequence_send(
         &mut self,
         port_channel_id: (PortId, ChannelId),
-        seq: u64,
+        seq: Sequence,
     ) -> Result<(), Ics4Error> {
         self.next_sequence_send.insert(port_channel_id, seq);
         Ok(())
@@ -445,7 +450,7 @@ impl ChannelKeeper for MockContext {
     fn store_next_sequence_recv(
         &mut self,
         port_channel_id: (PortId, ChannelId),
-        seq: u64,
+        seq: Sequence,
     ) -> Result<(), Ics4Error> {
         self.next_sequence_recv.insert(port_channel_id, seq);
         Ok(())
@@ -454,7 +459,7 @@ impl ChannelKeeper for MockContext {
     fn store_next_sequence_ack(
         &mut self,
         port_channel_id: (PortId, ChannelId),
-        seq: u64,
+        seq: Sequence,
     ) -> Result<(), Ics4Error> {
         self.next_sequence_ack.insert(port_channel_id, seq);
         Ok(())

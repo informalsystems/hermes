@@ -1,14 +1,28 @@
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
 use std::cmp::Ordering;
 
-use super::{PacketResult, PacketType};
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::state::ClientState;
 use crate::ics04_channel::channel::Counterparty;
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
+use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::Height;
+
+use super::PacketResult;
+
+#[derive(Clone, Debug)]
+pub struct SendPacketResult {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub seq: Sequence,
+    pub seq_number: Sequence,
+    pub timeout_height: Height,
+    pub timeout_timestamp: u64,
+    pub data: Vec<u8>,
+}
 
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -81,7 +95,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let latest_timestamp = consensus_state
         .timestamp()
-        .map_err(|ts_error| Kind::ErrorInvalidConsensusState.context(ts_error))?;
+        .map_err(Kind::ErrorInvalidConsensusState)?;
 
     let packet_timestamp = packet.timeout_timestamp;
     if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
@@ -94,25 +108,21 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or(Kind::MissingNextSendSeq)?;
 
-    if !packet.sequence.eq(&Sequence::from(*next_seq_send)) {
-        return Err(
-            Kind::InvalidPacketSequence(packet.sequence, Sequence::from(*next_seq_send)).into(),
-        );
+    if !packet.sequence.eq(&next_seq_send) {
+        return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_send).into());
     }
 
     output.log("success: packet send ");
 
-    let result = PacketResult {
+    let result = PacketResult::Send(SendPacketResult {
         port_id: packet.source_port.clone(),
         channel_id: packet.source_channel.clone(),
         seq: packet.sequence,
-        seq_number: Sequence::from(*next_seq_send + 1),
-        receipt: None,
-        action: PacketType::Send,
+        seq_number: next_seq_send.increment(),
         data: packet.clone().data,
         timeout_height: packet.timeout_height,
         timeout_timestamp: packet.timeout_timestamp,
-    };
+    });
 
     output.emit(IbcEvent::SendPacket(SendPacket {
         height: packet_height,
@@ -124,7 +134,6 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
 #[cfg(test)]
 mod tests {
-
     use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -215,7 +224,7 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
-                    .with_send_sequence(PortId::default(), ChannelId::default(), 1),
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet,
                 want_pass: true,
             },
@@ -226,7 +235,7 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
-                    .with_send_sequence(PortId::default(), ChannelId::default(), 1),
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet: packet_untimed,
                 want_pass: false,
             },

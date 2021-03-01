@@ -283,13 +283,13 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
-    pub fn timestamp(&self) -> Result<u64, Error> {
+    pub fn timestamp(&self) -> Result<u64, Kind> {
         match self {
             Self::Tendermint(cs_state) => {
                 let date: DateTime<Utc> = cs_state.timestamp.into();
                 let value = date.timestamp();
                 u64::try_from(value)
-                    .map_err(|_e| Kind::NegativeConsensusStateTimestamp(value.to_string()).into())
+                    .map_err(|_| Kind::NegativeConsensusStateTimestamp(value.to_string()))
             }
 
             #[cfg(any(test, feature = "mocks"))]

@@ -6,7 +6,7 @@ pub type Error = anomaly::Error<Kind>;
 use super::packet::Sequence;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::Height;
+use crate::{ics02_client, Height};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
@@ -114,9 +114,6 @@ pub enum Kind {
     #[error("No consensus state associated with the host chain")]
     MissingHostConsensusState,
 
-    #[error("the client is frozen")]
-    VerifiedFrozenClient,
-
     #[error("Missing sequence number for send packets")]
     MissingNextSendSeq,
 
@@ -130,8 +127,7 @@ pub enum Kind {
     LowPacketTimestamp,
 
     #[error("Invalid timestamp in consensus state; timestamp must be a positive value")]
-    //ErrorInvalidConsensusState(ics02_client::error::Kind),
-    ErrorInvalidConsensusState,
+    ErrorInvalidConsensusState(ics02_client::error::Kind),
 
     #[error("Client with id {0} is frozen")]
     FrozenClient(ClientId),

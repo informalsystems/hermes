@@ -42,7 +42,7 @@ where
     //TODO: Application LOGIC.
 
     let packet = Packet {
-        sequence: (*sequence).into(),
+        sequence,
         source_port: msg.source_port,
         source_channel: msg.source_channel,
         destination_port,
