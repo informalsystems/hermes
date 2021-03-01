@@ -1180,12 +1180,13 @@ dependencies = [
  "prost 0.7.0",
  "prost-types",
  "retry",
- "rust-crypto",
+ "ripemd160 0.9.1",
  "serde",
  "serde_cbor",
  "serde_derive",
  "serde_json",
  "serial_test",
+ "sha2 0.9.3",
  "sled",
  "subtle-encoding",
  "tendermint",
@@ -1243,7 +1244,7 @@ dependencies = [
  "failure",
  "hex 0.4.2",
  "prost 0.6.1",
- "ripemd160",
+ "ripemd160 0.8.0",
  "sha2 0.8.2",
  "sha3",
 ]
@@ -1988,6 +1989,17 @@ dependencies = [
  "block-buffer 0.7.3",
  "digest 0.8.1",
  "opaque-debug 0.2.3",
+]
+
+[[package]]
+name = "ripemd160"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eca4ecc81b7f313189bf73ce724400a07da2a6dac19588b03c8bd76a2dcc251"
+dependencies = [
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "opaque-debug 0.3.0",
 ]
 
 [[package]]
