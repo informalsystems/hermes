@@ -1,8 +1,10 @@
+use std::convert::TryFrom;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
 use crate::ics02_client::client_type::ClientType;
+use crate::ics24_host::error::ValidationKind;
 
 use super::error::ValidationError;
 use super::validate::*;
@@ -112,6 +114,14 @@ impl From<tendermint::chain::Id> for ChainId {
 impl Default for ChainId {
     fn default() -> Self {
         "defaultChainId".to_string().parse().unwrap()
+    }
+}
+
+impl TryFrom<String> for ChainId {
+    type Error = ValidationKind;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::from_str(value.as_str()).map_err(|e| e.kind().clone())
     }
 }
 

@@ -13,6 +13,7 @@ use crate::ics02_client::error::Error;
 use crate::ics02_client::error::Kind;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
+use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::Height;
 
@@ -69,7 +70,7 @@ impl From<MockClientState> for RawMockClientState {
 }
 
 impl ClientState for MockClientState {
-    fn chain_id(&self) -> String {
+    fn chain_id(&self) -> ChainId {
         todo!()
     }
 
