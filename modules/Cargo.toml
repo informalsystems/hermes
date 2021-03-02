@@ -18,7 +18,7 @@ description = """
 [features]
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = [ "tendermint-testgen", "rust-crypto" ]
+mocks = [ "tendermint-testgen", "sha2" ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -37,7 +37,7 @@ dyn-clonable = "0.9.0"
 regex = "1"
 bech32 = "0.8.0"
 subtle-encoding = "0.5"
-rust-crypto = { version = "0.2.36", optional = true }
+sha2 = { version = "0.9.3", optional = true }
 
 [dependencies.tendermint]
 version = "=0.18.1"

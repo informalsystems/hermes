@@ -6,10 +6,8 @@ use std::error::Error;
 use std::str::FromStr;
 
 use prost_types::Any;
+use sha2::Digest;
 use tendermint::account::Id;
-
-use crypto::digest::Digest;
-use crypto::sha2::Sha256;
 
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as Ics2Error;
@@ -392,12 +390,12 @@ impl ChannelReader for MockContext {
         match cap {
             Some(key) => {
                 if !PortReader::authenticate(self, &key, port_id) {
-                    Err(Ics4Error::from(Ics4Kind::InvalidPortCapability))
+                    Err(Ics4Kind::InvalidPortCapability.into())
                 } else {
                     Ok(key)
                 }
             }
-            None => Err(Ics4Error::from(Ics4Kind::NoPortCapability(port_id.clone()))),
+            None => Err(Ics4Kind::NoPortCapability(port_id.clone()).into()),
         }
     }
 
@@ -406,9 +404,8 @@ impl ChannelReader for MockContext {
     }
 
     fn hash(&self, input: String) -> String {
-        let mut sha256 = Sha256::new();
-        sha256.input_str(&input);
-        sha256.result_str()
+        let r = sha2::Sha256::digest(input.as_bytes());
+        format!("{:x}", r)
     }
 
     fn channel_counter(&self) -> u64 {
