@@ -1,16 +1,65 @@
 # Install the relayer
 
-In order to install and run Hermes, please follow the steps below:
+There are two main approaches for obtaining Hermes:
 
-> NOTE: This assumes you have installed all the [pre-requisites](./pre_requisites.md) on your machine.
+1. Installation:
+   1. If you are running on a Unix machine (Linux/MacOS), then the simplest
+      option is to [download the latest binary](#Install-by-downloading).
+   2. You can also install via [Cargo](#install-via-cargo).
+
+2. Alternatively, [build Hermes directly from source](#build-from-source).
+
+
+## Install by downloading
+
+Simply head to the GitHub [Releases][releases] page and download the latest
+version of Hermes binary matching your platform:
+- MacOS: `hermes-v0.1.1-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-v0.1.1-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+
+The step-by-step instruction below should carry you through the whole process:
+ 
+1. Make the directory where we'll place the binary:
+   ```shell
+   mkdir -p $HOME/.hermes/bin
+   ```
+
+2. Extract the binary archive:
+   ```shell
+   tar -C $HOME/.hermes/bin/ -vxzf $ARCHIVE_NAME
+   ```
+
+3. Update your path, by adding this line in your `.bashrc` or `.zshrc` shell
+   configuration file:
+   ```shell
+   export PATH="$HOME/.hermes/bin:$PATH"
+   ```
+
+> NOTE: The binary may be initially prevented from running if you're
+> on MacOS.
+> See the ["Open Anyway" instructions from this support forum][developer-app]
+> if that is the case.
+
+You should now be able to run Hermes by invoking the `hermes` executable.
+
+```shell
+hermes version
+```
+
+```
+hermes 0.1.1
+```
 
 ## Install via Cargo
+
+> NOTE: This approach assumes you have installed all
+> the [pre-requisites](./pre_requisites.md) on your machine.
 
 Hermes is packaged in the `ibc-relayer-cli` Rust crate.
 To install the latest release of Hermes, run the following command in a terminal:
 
 ```shell
-cargo install ibc-relayer-cli
+cargo install ibc-relayer-cli --bin hermes --locked
 ```
 
 This will download and build the crate `ibc-relayer-cli`, and install the 
@@ -75,6 +124,14 @@ If the build is successful, the `hermes` executable will be located in the follo
 ./target/release/hermes
 ```
 
+__Troubleshooting__:
+In case the `cargo build` command above fails, as a first course of action we
+recommend trying to run the same command with the additional `locked` flag:
+
+```shell
+cargo build --release --bin hermes --locked
+```
+
 ### Running for the first time
 
 If you run the `hermes` without any additional parameters you should see the usage and help information:
@@ -113,3 +170,7 @@ alias hermes='cargo run --release --bin hermes --'
 ### Next Steps
 
 Go to the [`Configuration`](./config.md) section to learn how to create a configuration file to be used by Hermes.
+
+
+[releases]: https://github.com/informalsystems/ibc-rs/releases
+[developer-app]: https://support.apple.com/en-gb/HT202491

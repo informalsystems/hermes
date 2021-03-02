@@ -13,7 +13,8 @@ use crate::Height;
 pub enum PacketMsgType {
     Recv,
     Ack,
-    Timeout,
+    TimeoutUnordered,
+    TimeoutOrdered,
     TimeoutOnClose,
 }
 
@@ -22,7 +23,8 @@ impl std::fmt::Display for PacketMsgType {
         match self {
             PacketMsgType::Recv => write!(f, "(PacketMsgType::Recv)"),
             PacketMsgType::Ack => write!(f, "(PacketMsgType::Ack)"),
-            PacketMsgType::Timeout => write!(f, "(PacketMsgType::Timeout)"),
+            PacketMsgType::TimeoutUnordered => write!(f, "(PacketMsgType::TimeoutUnordered)"),
+            PacketMsgType::TimeoutOrdered => write!(f, "(PacketMsgType::TimeoutOrdered)"),
             PacketMsgType::TimeoutOnClose => write!(f, "(PacketMsgType::TimeoutOnClose)"),
         }
     }

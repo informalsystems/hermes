@@ -1,6 +1,6 @@
 use prost_types::Any;
 use thiserror::Error;
-use tracing::error;
+use tracing::{error, warn};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
@@ -66,6 +66,7 @@ impl ConnectionSide {
 
 #[derive(Clone, Debug)]
 pub struct Connection {
+    pub delay_period: u64,
     pub a_side: ConnectionSide,
     pub b_side: ConnectionSide,
 }
@@ -76,6 +77,7 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
+        delay_period: u64,
     ) -> Result<Connection, ConnectionError> {
         // Validate that the two clients serve the same two chains
         if a_client.src_chain().id().ne(&b_client.dst_chain().id()) {
@@ -94,6 +96,7 @@ impl Connection {
         }
 
         let mut c = Connection {
+            delay_period,
             a_side: ConnectionSide::new(
                 a_client.dst_chain(),
                 a_client.id().clone(),
@@ -138,6 +141,7 @@ impl Connection {
         Connection {
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
+            delay_period: self.delay_period,
         }
     }
 
@@ -362,7 +366,7 @@ impl Connection {
             client_id: self.dst_client_id().clone(),
             counterparty,
             version,
-            delay_period: 0,
+            delay_period: self.delay_period,
             signer,
         };
 
@@ -407,6 +411,19 @@ impl Connection {
             .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the try options
+
+        // Cross-check the delay_period
+        let delay = if src_connection.delay_period() != self.delay_period {
+            warn!("`delay_period` for ConnectionEnd @{} is {}; delay period on local Connection object is set to {}",
+                self.src_chain().id(), src_connection.delay_period(), self.delay_period);
+            warn!(
+                "Overriding delay period for local connection object to {}",
+                src_connection.delay_period()
+            );
+            src_connection.delay_period()
+        } else {
+            self.delay_period
+        };
 
         // Build add send the message(s) for updating client on source
         // TODO - add check if update client is required
@@ -473,7 +490,7 @@ impl Connection {
             counterparty,
             counterparty_versions,
             proofs,
-            delay_period: 0,
+            delay_period: delay,
             signer,
         };
 
@@ -566,7 +583,7 @@ impl Connection {
 
         let new_msg = MsgConnectionOpenAck {
             connection_id: self.dst_connection_id().clone(),
-            counterparty_connection_id: Option::from(self.src_connection_id().clone()),
+            counterparty_connection_id: self.src_connection_id().clone(),
             client_state,
             proofs,
             version: src_connection.versions()[0].clone(),

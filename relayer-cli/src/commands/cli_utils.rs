@@ -8,7 +8,7 @@ use ibc_relayer::{chain::runtime::ChainRuntime, config::ChainConfig};
 use crate::application::CliApp;
 use crate::error::{Error, Kind};
 
-/// Pair of chain handlers that are used by most CLIs.
+/// Pair of chain handles that are used by most CLIs.
 pub struct ChainHandlePair {
     /// Source chain handle
     pub src: Box<dyn ChainHandle>,
@@ -36,45 +36,34 @@ impl ChainHandlePair {
         src_chain_id: &ChainId,
         dst_chain_id: &ChainId,
     ) -> Result<Self, Error> {
-        spawn_chain_runtimes(options, config, src_chain_id, dst_chain_id)
+        let src = spawn_chain_runtime(options.clone(), config, src_chain_id)?;
+        let dst = spawn_chain_runtime(options, config, dst_chain_id)?;
+
+        Ok(ChainHandlePair { src, dst })
     }
 }
 
-/// Spawn the source and destination chain runtime from the configuration and chain identifiers,
-/// and return the pair of associated handles.
-fn spawn_chain_runtimes(
+/// Spawns a chain runtime from the configuration and given a chain identifier.
+/// Returns the corresponding handle if successful.
+pub fn spawn_chain_runtime(
     spawn_options: SpawnOptions,
     config: &config::Reader<CliApp>,
-    src_chain_id: &ChainId,
-    dst_chain_id: &ChainId,
-) -> Result<ChainHandlePair, Error> {
-    let src_config = config
-        .find_chain(src_chain_id)
+    chain_id: &ChainId,
+) -> Result<Box<dyn ChainHandle>, Error> {
+    let mut chain_config = config
+        .find_chain(chain_id)
         .cloned()
-        .ok_or_else(|| "missing source chain in configuration file".to_string());
+        .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))
+        .map_err(|e| Kind::Config.context(e))?;
 
-    let dst_config = config
-        .find_chain(dst_chain_id)
-        .cloned()
-        .ok_or_else(|| "missing destination chain configuration file".to_string());
+    spawn_options.apply(&mut chain_config);
 
-    let (mut src_chain_config, mut dst_chain_config) =
-        zip_result(src_config, dst_config).map_err(|e| Kind::Config.context(e))?;
+    let chain_res =
+        ChainRuntime::<CosmosSdkChain>::spawn(chain_config).map_err(|e| Kind::Runtime.context(e));
 
-    spawn_options.apply(&mut src_chain_config);
-    spawn_options.apply(&mut dst_chain_config);
+    let handle = chain_res.map(|(handle, _)| handle)?;
 
-    let src_chain_res = ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config)
-        .map_err(|e| Kind::Runtime.context(e));
-
-    let src = src_chain_res.map(|(handle, _)| handle)?;
-
-    let dst_chain_res = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config)
-        .map_err(|e| Kind::Runtime.context(e));
-
-    let dst = dst_chain_res.map(|(handle, _)| handle)?;
-
-    Ok(ChainHandlePair { src, dst })
+    Ok(handle)
 }
 
 /// Allows override the chain configuration just before
@@ -109,13 +98,5 @@ impl SpawnOptions {
                 light_client.store = store_config.clone();
             }
         }
-    }
-}
-
-/// Zip two results together.
-fn zip_result<A, B, E>(a: Result<A, E>, b: Result<B, E>) -> Result<(A, B), E> {
-    match (a, b) {
-        (Ok(a), Ok(b)) => Ok((a, b)),
-        (Err(e), _) | (_, Err(e)) => Err(e),
     }
 }

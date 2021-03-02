@@ -7,12 +7,19 @@
 ### FEATURES
 
 - [ibc]
+  - [nothing yet]
+
+- [ibc-relayer]
+  - Support for relayer restart ([#561])
+  - Add support for ordered channels ([#599])
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
+  - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Added `create connection` CLI ([#630])
+  - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
 
 ### IMPROVEMENTS
 
@@ -28,18 +35,19 @@
 ### BUG FIXES
 
 - [ibc]
-  - [nothing yet]
+  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
+  - Allow a conn open ack to succeed in the happy case ([#699])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Replaced `rust-crypto` & `bitcoin-wallet` deprecated dependencies ([#352])
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Hermes guide: improved installation guideline ([#672])
 
 ### BREAKING CHANGES
 
 - [ibc]
-  - [nothing yet]
+  - `MsgConnectionOpenAck.counterparty_connection_id` is now a `ConnectionId` instead of an `Option<ConnectionId>`([#700])
 
 - [ibc-relayer]
   - [nothing yet]
@@ -47,7 +55,15 @@
 - [ibc-relayer-cli]
   - [nothing yet]
 
+[#352]: https://github.com/informalsystems/ibc-rs/issues/352
+[#561]: https://github.com/informalsystems/ibc-rs/issues/561
+[#599]: https://github.com/informalsystems/ibc-rs/issues/599
+[#630]: https://github.com/informalsystems/ibc-rs/issues/630
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
+[#699]: https://github.com/informalsystems/ibc-rs/issues/699
+[#700]: https://github.com/informalsystems/ibc-rs/pull/700
 
 ## v0.1.1
 *February 17, 2021*
@@ -104,10 +120,10 @@ involving packet acks in a 3-chain setup. More details below.
 [#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
+[#637]: https://github.com/informalsystems/ibc-rs/issues/637
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
-[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#682]: https://github.com/informalsystems/ibc-rs/issues/682
 
 [ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules

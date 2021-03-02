@@ -27,8 +27,8 @@ use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -51,6 +51,7 @@ pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
 }
+
 impl Chain for MockChain {
     type LightBlock = TMLightBlock;
     type Header = TendermintHeader;
@@ -216,6 +217,13 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
+    fn query_next_sequence_receive(
+        &self,
+        _request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error> {
+        unimplemented!()
+    }
+
     fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error> {
         unimplemented!()
     }
@@ -267,7 +275,7 @@ impl Chain for MockChain {
 
     fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
         let client_state = Self::ClientState::new(
-            self.id().to_string(),
+            self.id().clone(),
             self.config.trust_threshold,
             self.config.trusting_period,
             self.config.trusting_period.add(Duration::from_secs(1000)),

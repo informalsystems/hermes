@@ -10,12 +10,12 @@ pub enum ModelatorError<Executor: Debug, Step: Debug> {
     TestNotFound { path: String, error: String },
     #[error("test '{path}' could not be deserialized: {error}")]
     InvalidTest { path: String, error: String },
-    #[error("test '{path}' failed on step {step_index}/{step_count}:\nstep:\n{step:#?}\nexecutor:\n{executor:#?}")]
+    #[error("test '{path}' failed on step {step_index}/{step_count}:\nsteps: {steps:#?}\nexecutor: {executor:#?}")]
     FailedTest {
         path: String,
         step_index: usize,
         step_count: usize,
-        step: Step,
+        steps: Vec<Step>,
         executor: Executor,
     },
 }
@@ -47,7 +47,7 @@ where
         })?;
     let step_count = steps.len();
 
-    for (i, step) in steps.into_iter().enumerate() {
+    for (i, step) in steps.iter().enumerate() {
         // check the step
         let ok = if i == 0 {
             executor.initial_step(step.clone())
@@ -60,7 +60,7 @@ where
                 path: path.to_string(),
                 step_index: i + 1,
                 step_count,
-                step,
+                steps,
                 executor,
             });
         }
