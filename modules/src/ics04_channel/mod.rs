@@ -9,5 +9,3 @@ pub mod handler;
 pub mod msgs;
 pub mod packet;
 pub mod version;
-
-pub mod packet_handler;

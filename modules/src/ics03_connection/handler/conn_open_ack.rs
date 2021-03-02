@@ -84,6 +84,7 @@ pub(crate) fn process(
 
     new_conn_end.set_state(State::Open);
     new_conn_end.set_version(msg.version().clone());
+    new_conn_end.set_counterparty_connection_id(msg.counterparty_connection_id.clone());
 
     let result = ConnectionResult {
         connection_id: msg.connection_id().clone(),

@@ -6,12 +6,10 @@ use crate::ics02_client::state::ClientState;
 use crate::ics04_channel::channel::Counterparty;
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
-use crate::ics04_channel::packet::Sequence;
+use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
-
-use super::PacketResult;
 
 #[derive(Clone, Debug)]
 pub struct SendPacketResult {
@@ -140,7 +138,7 @@ mod tests {
     use crate::ics03_connection::connection::State as ConnectionState;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
-    use crate::ics04_channel::packet_handler::send_packet::send_packet;
+    use crate::ics04_channel::handler::send_packet::send_packet;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::{events::IbcEvent, ics04_channel::packet::Packet};

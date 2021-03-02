@@ -14,6 +14,7 @@ pub mod chan_open_ack;
 pub mod chan_open_confirm;
 pub mod chan_open_init;
 pub mod chan_open_try;
+pub mod send_packet;
 
 mod verify;
 

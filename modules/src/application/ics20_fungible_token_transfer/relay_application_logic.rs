@@ -6,7 +6,7 @@ use super::error::{Error, Kind};
 use super::msgs::transfer::MsgTransfer;
 use super::relay_application_logic;
 use crate::handler::HandlerOutput;
-use crate::{ics04_channel::packet_handler::PacketResult, ics26_routing::context::Ics26Context};
+use crate::{ics04_channel::packet::PacketResult, ics26_routing::context::Ics26Context};
 
 /// Entry point for processing a transfer message in ICS20 token transfrom
 pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: MsgTransfer) -> Result<HandlerOutput<PacketResult>, Error>

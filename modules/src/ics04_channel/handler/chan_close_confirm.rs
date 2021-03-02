@@ -1,4 +1,4 @@
-//! Protocol logic specific to ICS4 messages of type `MsgChannelCloseInit`.
+//! Protocol logic specific to ICS4 messages of type `MsgChannelCloseConfirm`.
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;

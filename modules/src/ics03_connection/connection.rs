@@ -118,6 +118,11 @@ impl ConnectionEnd {
         self.versions = vec![new_version];
     }
 
+    /// Setter for the `version` field.
+    pub fn set_counterparty_connection_id(&mut self, conn_id: ConnectionId) {
+        self.counterparty.connection_id = Some(conn_id);
+    }
+
     /// Helper function to compare the counterparty of this end with another counterparty.
     pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
         self.counterparty.eq(other)
