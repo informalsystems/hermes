@@ -1,6 +1,7 @@
-use crate::ics24_host::identifier::{ChannelId, PortId};
 use anomaly::{BoxError, Context};
 use thiserror::Error;
+
+use crate::ics24_host::identifier::{ChannelId, PortId};
 
 pub type Error = anomaly::Error<Kind>;
 

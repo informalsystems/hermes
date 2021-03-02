@@ -32,6 +32,7 @@ use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::ics04_channel::error::Error as Ics4Error;
 use crate::ics04_channel::error::Kind as Ics4Kind;
 
+use crate::application::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::Ics18Context;
 use crate::ics18_relayer::error::{Error as Ics18Error, Kind as Ics18ErrorKind};
@@ -349,6 +350,8 @@ impl MockContext {
 }
 
 impl Ics26Context for MockContext {}
+
+impl Ics20Context for MockContext {}
 
 impl PortReader for MockContext {
     fn lookup_module_by_port(&self, port_id: &PortId) -> Option<Capability> {
