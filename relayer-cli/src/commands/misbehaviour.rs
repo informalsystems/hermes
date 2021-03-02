@@ -1,14 +1,13 @@
-use std::convert::TryInto;
+use std::convert::TryFrom;
 use std::str::FromStr;
 
-use abscissa_core::{config, error::BoxError, Command, Options, Runnable};
+use abscissa_core::{Command, config, error::BoxError, Options, Runnable};
 use prost_types::Any;
 
 use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_header::TENDERMINT_HEADER_TYPE_URL;
+use ibc::ics02_client::client_header::AnyHeader;
 use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::config::StoreConfig;
@@ -76,22 +75,17 @@ pub fn monitor_misbehaviour(
                     );
 
                     // 3 - decode light block from the update event
-                    // TODO - code below may change depending on the header representation in the new update event
-                    // Currently this doesn't work as `update.header` has a weird format
-                    if update.client_type() == ClientType::Tendermint {
-                        let chain_header = Any {
-                            type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-                            value: Vec::from(update.header.as_bytes()),
-                        };
+                    let valid_raw_bytes=  update.header.as_bytes();
 
-                        let res = client
-                            .handle_misbehaviour(
-                                update.consensus_height(),
-                                chain_header.try_into().unwrap(),
-                            )
-                            .unwrap();
-                        println!("Handled misbehavior {:?}", res);
-                    }
+                    let any: Any = prost::Message::decode(valid_raw_bytes).unwrap();
+                    let header: AnyHeader = AnyHeader::try_from(any).unwrap();
+                    let res = client
+                        .handle_misbehaviour(
+                            update.consensus_height(),
+                            header,
+                        )
+                        .unwrap();
+                    println!("Handled misbehavior {:?}", res);
                 }
 
                 IbcEvent::CreateClient(create) => {
