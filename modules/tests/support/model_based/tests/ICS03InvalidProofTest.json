@@ -104,10 +104,14 @@
     "action": {
       "chainId": "chainA",
       "clientId": 0,
-      "header": 1,
-      "type": "ICS02UpdateClient"
+      "clientState": 1,
+      "counterpartyChainId": "chainB",
+      "counterpartyClientId": 0,
+      "counterpartyConnectionId": 0,
+      "previousConnectionId": -1,
+      "type": "ICS03ConnectionOpenTry"
     },
-    "actionOutcome": "ICS02HeaderVerificationFailure",
+    "actionOutcome": "ICS03InvalidProof",
     "chains": {
       "chainA": {
         "clientIdCounter": 1,
