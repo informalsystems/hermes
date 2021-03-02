@@ -14,7 +14,7 @@ use crate::config::Config;
 
 use self::{
     create::CreateCmds, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
-    start_multi::StartMultiCmd, start::StartCmd, tx::TxCmd, version::VersionCmd,
+    start::StartCmd, start_multi::StartMultiCmd, tx::TxCmd, version::VersionCmd,
 };
 
 mod channel;
