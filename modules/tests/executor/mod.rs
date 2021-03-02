@@ -1,14 +1,12 @@
 pub mod modelator;
 pub mod step;
 
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use ibc::ics02_client::context::ClientReader;
 use ibc::ics02_client::error::Kind as ICS02ErrorKind;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
-use ibc::ics02_client::{
-    client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-    context::ClientReader,
-};
 use ibc::ics03_connection::connection::{Counterparty, State as ConnectionState};
 use ibc::ics03_connection::error::Kind as ICS03ErrorKind;
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;

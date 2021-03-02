@@ -176,7 +176,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
-            delay_period: 0,
+            delay_period: ics_msg.delay_period,
             counterparty_versions: ics_msg
                 .counterparty_versions
                 .iter()

@@ -1,0 +1,219 @@
+[
+  {
+    "action": {
+      "type": "None"
+    },
+    "actionOutcome": "None",
+    "chains": {
+      "chainA": {
+        "clients": {},
+        "connections": {},
+        "height": 1
+      },
+      "chainB": {
+        "clients": {},
+        "connections": {},
+        "height": 1
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainA",
+      "clientState": 1,
+      "consensusState": 1,
+      "type": "ICS02CreateClient"
+    },
+    "actionOutcome": "ICS02CreateOK",
+    "chains": {
+      "chainA": {
+        "clients": {},
+        "connections": {},
+        "height": 2
+      },
+      "chainB": {
+        "clients": {},
+        "connections": {},
+        "height": 1
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainB",
+      "clientState": 1,
+      "consensusState": 1,
+      "type": "ICS02CreateClient"
+    },
+    "actionOutcome": "ICS02CreateOK",
+    "chains": {
+      "chainA": {
+        "clients": {},
+        "connections": {},
+        "height": 2
+      },
+      "chainB": {
+        "clients": {},
+        "connections": {},
+        "height": 2
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainA",
+      "clientId": 0,
+      "counterpartyChainId": "chainB",
+      "counterpartyClientId": 0,
+      "type": "ICS03ConnectionOpenInit"
+    },
+    "actionOutcome": "ICS03ConnectionOpenInitOK",
+    "chains": {
+      "chainA": {
+        "clients": {},
+        "connections": {},
+        "height": 3
+      },
+      "chainB": {
+        "clients": {},
+        "connections": {},
+        "height": 2
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainB",
+      "clientId": 0,
+      "counterpartyChainId": "chainA",
+      "counterpartyClientId": 0,
+      "type": "ICS03ConnectionOpenInit"
+    },
+    "actionOutcome": "ICS03ConnectionOpenInitOK",
+    "chains": {
+      "chainA": {
+        "clients": {},
+        "connections": {},
+        "height": 3
+      },
+      "chainB": {
+        "clients": {},
+        "connections": {},
+        "height": 3
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainA",
+      "clientId": 0,
+      "clientState": 1,
+      "counterpartyChainId": "chainB",
+      "counterpartyClientId": 0,
+      "counterpartyConnectionId": 0,
+      "previousConnectionId": -1,
+      "type": "ICS03ConnectionOpenTry"
+    },
+    "actionOutcome": "ICS03ConnectionOpenTryOK",
+    "chains": {
+      "chainA": {
+        "clients": {},
+        "connections": {},
+        "height": 4
+      },
+      "chainB": {
+        "clients": {},
+        "connections": {},
+        "height": 3
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainB",
+      "clientId": 0,
+      "clientState": 1,
+      "counterpartyChainId": "chainA",
+      "counterpartyClientId": 0,
+      "counterpartyConnectionId": 0,
+      "previousConnectionId": -1,
+      "type": "ICS03ConnectionOpenTry"
+    },
+    "actionOutcome": "ICS03ConnectionOpenTryOK",
+    "chains": {
+      "chainA": {
+        "clients": {},
+        "connections": {
+          "0": {
+            "chainId": "chainA",
+            "clientId": 1,
+            "connectionId": 1,
+            "counterpartyChainId": "chainB",
+            "counterpartyClientId": 1,
+            "counterpartyConnectionId": 1,
+            "state": "TryOpen"
+          }
+        },
+        "height": 4
+      },
+      "chainB": {
+        "clients": {},
+        "connections": {
+          "0": {
+            "chainId": "chainB",
+            "clientId": 1,
+            "connectionId": 1,
+            "counterpartyChainId": "chainA",
+            "counterpartyClientId": 1,
+            "counterpartyConnectionId": 1,
+            "state": "TryOpen"
+          }
+        },
+        "height": 4
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainA",
+      "clientState": 1,
+      "connectionId": 0,
+      "counterpartyChainId": "chainB",
+      "counterpartyConnectionId": 0,
+      "type": "ICS03ConnectionOpenAck"
+    },
+    "actionOutcome": "ICS03ConnectionOpenAckOK",
+    "chains": {
+      "chainA": {
+        "clients": {},
+        "connections": {
+          "0": {
+            "chainId": "chainA",
+            "clientId": 1,
+            "connectionId": 1,
+            "counterpartyChainId": "chainB",
+            "counterpartyClientId": 1,
+            "counterpartyConnectionId": 1,
+            "state": "Open"
+          }
+        },
+        "height": 5
+      },
+      "chainB": {
+        "clients": {},
+        "connections": {
+          "0": {
+            "chainId": "chainB",
+            "clientId": 1,
+            "connectionId": 1,
+            "counterpartyChainId": "chainA",
+            "counterpartyClientId": 1,
+            "counterpartyConnectionId": 1,
+            "state": "TryOpen"
+          }
+        },
+        "height": 4
+      }
+    }
+  }
+]

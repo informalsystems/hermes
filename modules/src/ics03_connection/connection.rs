@@ -76,7 +76,7 @@ impl From<ConnectionEnd> for RawConnectionEnd {
                 .collect(),
             state: value.state as i32,
             counterparty: Some(value.counterparty.into()),
-            delay_period: 0,
+            delay_period: value.delay_period,
         }
     }
 }
@@ -146,6 +146,11 @@ impl ConnectionEnd {
     /// Getter for the counterparty. Returns a `clone()`.
     pub fn counterparty(&self) -> Counterparty {
         self.counterparty.clone()
+    }
+
+    /// Getter for the delay_period field.
+    pub fn delay_period(&self) -> u64 {
+        self.delay_period
     }
 
     /// TODO: Clean this up, probably not necessary.

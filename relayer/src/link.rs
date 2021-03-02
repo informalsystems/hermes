@@ -63,6 +63,9 @@ pub enum LinkError {
 
     #[error("exhausted max number of retries:")]
     RetryError,
+
+    #[error("clearing of old packets failed")]
+    OldPacketClearingFailed,
 }
 
 pub struct RelayPath {
@@ -70,6 +73,7 @@ pub struct RelayPath {
     dst_chain: Box<dyn ChainHandle>,
     subscription: Subscription,
     channel: Channel,
+    clear_packets: bool,
     all_events: Vec<IbcEvent>,
     src_height: Height,
     dst_height: Height,
@@ -90,6 +94,7 @@ impl RelayPath {
             dst_chain: dst_chain.clone(),
             subscription: src_chain.subscribe()?,
             channel,
+            clear_packets: true,
             all_events: vec![],
             src_height: Height::zero(),
             dst_height: Height::zero(),
@@ -391,10 +396,36 @@ impl RelayPath {
         self.timeout_msgs = vec![];
     }
 
+    fn relay_pending_packets(&mut self) -> Result<(), LinkError> {
+        println!("clearing old packets on {:#?}", self.channel);
+        for _i in 0..MAX_ITER {
+            if self.build_recv_packet_and_timeout_msgs().is_ok()
+                && self.send_update_client_and_msgs().is_ok()
+                && self.build_packet_ack_msgs().is_ok()
+                && self.send_update_client_and_msgs().is_ok()
+            {
+                return Ok(());
+            }
+            self.reset_buffers();
+            self.all_events = vec![];
+        }
+        Err(LinkError::OldPacketClearingFailed)
+    }
+
     fn relay_from_events(&mut self) -> Result<(), LinkError> {
         // Iterate through the IBC Events, build the message for each and collect all at same height.
         // Send a multi message transaction with these, prepending the client update
+
         for batch in self.subscription.try_iter().collect::<Vec<_>>().iter() {
+            if self.clear_packets {
+                let first_event_height = batch.events[0].height();
+                self.src_height = first_event_height
+                    .decrement()
+                    .map_err(|e| LinkError::Failed(e.to_string()))?;
+                self.relay_pending_packets()?;
+                self.clear_packets = false;
+            }
+
             // collect relevant events in self.all_events
             self.collect_events(&batch.events);
             self.adjust_events_height()?;
@@ -513,7 +544,9 @@ impl RelayPath {
         if packet_commitments.is_empty() {
             return Ok(());
         }
-        self.src_height = query_height;
+        if self.src_height == Height::zero() {
+            self.src_height = query_height;
+        }
         let commit_sequences = packet_commitments.iter().map(|p| p.sequence).collect();
         info!(
             "packets that still have commitments on {}: {:?}",
@@ -583,7 +616,9 @@ impl RelayPath {
             return Ok(());
         }
 
-        self.src_height = query_height;
+        if self.src_height == Height::zero() {
+            self.src_height = query_height;
+        }
 
         let acked_sequences = acks_on_source.iter().map(|p| p.sequence).collect();
         info!(
@@ -625,7 +660,7 @@ impl RelayPath {
                 destination_port_id: self.src_port_id().clone(),
                 destination_channel_id: self.src_channel_id().clone(),
                 sequences,
-                height: query_height,
+                height: self.src_height,
             })
             .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
@@ -759,7 +794,7 @@ impl RelayPath {
             packet.clone(),
             next_sequence_received,
             proofs.clone(),
-            self.dst_signer()?,
+            self.src_signer()?,
         );
 
         info!(
@@ -856,11 +891,13 @@ impl Link {
 
     pub fn relay(&mut self) -> Result<(), LinkError> {
         println!("relaying packets on {:#?}", self.a_to_b.channel);
+
         loop {
             if self.is_closed()? {
                 println!("channel is closed, exiting");
                 return Ok(());
             }
+
             self.a_to_b.relay_from_events()?;
             self.b_to_a.relay_from_events()?;
 
