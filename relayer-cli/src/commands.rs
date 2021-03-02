@@ -13,13 +13,14 @@ use crate::commands::channel::ChannelCmds;
 use crate::config::Config;
 
 use self::{
-    keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    start_multi::StartMultiCmd, tx::TxCmd, version::VersionCmd,
+    create::CreateCmds, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
+    start_multi::StartMultiCmd, start::StartCmd, tx::TxCmd, version::VersionCmd,
 };
 
 mod channel;
 mod cli_utils;
 mod config;
+mod create;
 mod keys;
 mod light;
 mod listen;
@@ -53,6 +54,10 @@ pub enum CliCmd {
     /// The `light` subcommand
     #[options(help = "Basic functionality for managing the light clients")]
     Light(LightCmd),
+
+    /// The `create` subcommand
+    #[options(help = "Create objects on chains")]
+    Create(CreateCmds),
 
     /// The `start` subcommand
     #[options(help = "Start the relayer")]
