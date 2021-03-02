@@ -39,7 +39,7 @@
   - Allow a conn open ack to succeed in the happy case ([#699])
 
 - [ibc-relayer]
-  - Replaced `rust-crypto` deprecated dependency ([#352])
+  - Replaced `rust-crypto` & `bitcoin-wallet` deprecated dependencies ([#352])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])

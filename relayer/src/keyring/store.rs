@@ -11,7 +11,7 @@ use bitcoin::{
     secp256k1::Secp256k1,
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
-use bitcoin_wallet::mnemonic::Mnemonic;
+use bip39::{Mnemonic, Language, Seed};
 use hdpath::StandardHDPath;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use ripemd160::Ripemd160;
@@ -130,14 +130,13 @@ impl KeyRingOperations for KeyRing {
 
     /// Add a key entry in the store using a mnemonic.
     fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
-        // Generate seed from mnemonic
-        let mnemonic =
-            Mnemonic::from_str(mnemonic_words).map_err(|e| Kind::InvalidMnemonic.context(e))?;
-        let seed = mnemonic.to_seed(Some(""));
+        let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
+            .map_err(|e| Kind::InvalidMnemonic.context(e))?;
+        let seed = Seed::new(&mnemonic, "");
 
         // Get Private Key from seed and standard derivation path
         let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
-        let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, &seed.0)
+        let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
             .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
             .map_err(|e| Kind::PrivateKey.context(e))?;
 
