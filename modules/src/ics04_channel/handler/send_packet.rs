@@ -132,6 +132,9 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryInto;
+
+    use crate::events::IbcEvent;
     use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -139,9 +142,10 @@ mod tests {
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
     use crate::ics04_channel::handler::send_packet::send_packet;
+    use crate::ics04_channel::packet::test_utils::get_dummy_raw_packet;
+    use crate::ics04_channel::packet::{Packet, Sequence};
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
-    use crate::{events::IbcEvent, ics04_channel::packet::Packet};
 
     #[test]
     fn send_packet_processing() {
@@ -154,27 +158,12 @@ mod tests {
 
         let context = MockContext::default();
 
-        let packet = Packet {
-            sequence: 1.into(),
-            source_port: PortId::default(),
-            source_channel: ChannelId::default(),
-            destination_port: PortId::default(),
-            destination_channel: ChannelId::default(),
-            data: vec![0],
-            timeout_height: Height::default(),
-            timeout_timestamp: 6,
-        };
+        let mut packet: Packet = get_dummy_raw_packet(0, 6).try_into().unwrap();
+        let mut packet_untimed: Packet = get_dummy_raw_packet(0, 0).try_into().unwrap();
 
-        let packet_untimed = Packet {
-            sequence: 1.into(),
-            source_port: PortId::default(),
-            source_channel: ChannelId::default(),
-            destination_port: PortId::default(),
-            destination_channel: ChannelId::default(),
-            data: vec![],
-            timeout_height: Height::default(),
-            timeout_timestamp: 0,
-        };
+        packet.sequence = Sequence::from(1);
+        packet.data = vec![0];
+        packet_untimed.sequence = Sequence::from(10);
 
         let channel_end = ChannelEnd::new(
             State::TryOpen,
@@ -257,7 +246,6 @@ mod tests {
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
 
                     // TODO: The object in the output is a PacketResult what can we check on it?
-
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::SendPacket(_)));
                     }

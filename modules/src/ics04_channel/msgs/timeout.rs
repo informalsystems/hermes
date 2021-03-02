@@ -116,7 +116,7 @@ mod test_util {
     /// The `height` parametrizes both the proof height as well as the timeout height.
     pub fn get_dummy_raw_msg_timeout(height: u64) -> RawMsgTimeout {
         RawMsgTimeout {
-            packet: Some(get_dummy_raw_packet(height)),
+            packet: Some(get_dummy_raw_packet(height, 0)),
             proof_unreceived: get_dummy_proof(),
             proof_height: Some(RawHeight {
                 revision_number: 0,

@@ -156,23 +156,24 @@ impl From<Packet> for RawPacket {
 
 #[cfg(test)]
 pub mod test_utils {
+    use crate::ics24_host::identifier::{ChannelId, PortId};
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     /// Returns a dummy `RawPacket`, for testing only!
-    pub fn get_dummy_raw_packet(timeout_height: u64) -> RawPacket {
+    pub fn get_dummy_raw_packet(timeout_height: u64, timeout_timestamp: u64) -> RawPacket {
         RawPacket {
             sequence: 0,
-            source_port: "sourceportid".to_string(),
-            source_channel: "srchannelid".to_string(),
-            destination_port: "destinationport".to_string(),
-            destination_channel: "dstchannelid".to_string(),
+            source_port: PortId::default().to_string(),
+            source_channel: ChannelId::default().to_string(),
+            destination_port: PortId::default().to_string(),
+            destination_channel: ChannelId::default().to_string(),
             data: vec![],
             timeout_height: Some(RawHeight {
                 revision_number: 0,
                 revision_height: timeout_height,
             }),
-            timeout_timestamp: 0,
+            timeout_timestamp,
         }
     }
 }
@@ -195,7 +196,7 @@ mod tests {
         }
 
         let proof_height = 10;
-        let default_raw_msg = get_dummy_raw_packet(proof_height);
+        let default_raw_msg = get_dummy_raw_packet(proof_height, 0);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -325,7 +326,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_raw_packet(15);
+        let raw = get_dummy_raw_packet(15, 0);
         let msg = Packet::try_from(raw.clone()).unwrap();
         let raw_back = RawPacket::from(msg.clone());
         let msg_back = Packet::try_from(raw_back.clone()).unwrap();
