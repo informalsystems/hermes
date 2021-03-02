@@ -6,12 +6,12 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use bech32::{ToBase32, Variant};
+use bip39::{Language, Mnemonic, Seed};
 use bitcoin::{
     network::constants::Network,
     secp256k1::Secp256k1,
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
-use bip39::{Mnemonic, Language, Seed};
 use hdpath::StandardHDPath;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use ripemd160::Ripemd160;
