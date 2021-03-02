@@ -92,7 +92,7 @@ impl ForeignClient {
     pub fn handle_misbehaviour(
         &self,
         consensus_height: &Height,
-        chain_header: AnyHeader,
+        chain_header: &AnyHeader,
     ) -> Result<Vec<IbcEvent>, ForeignClientError> {
         let tm_chain_header =
             downcast!(chain_header => AnyHeader::Tendermint).ok_or_else(|| {
@@ -147,7 +147,7 @@ impl ForeignClient {
             client_id: self.id.clone(),
             misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
                 client_id: self.id().clone(),
-                header1: tm_chain_header,
+                header1: tm_chain_header.clone(),
                 header2: tm_local_header,
             })
             .wrap_any(),

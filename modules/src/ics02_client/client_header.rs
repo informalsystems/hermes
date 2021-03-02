@@ -9,6 +9,7 @@ use crate::ics07_tendermint::header::Header as TmHeader;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
 use crate::Height;
+use serde_derive::{Deserialize, Serialize};
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 
@@ -28,7 +29,7 @@ pub trait Header: Clone + std::fmt::Debug + Send + Sync {
     fn wrap_any(self) -> AnyHeader;
 }
 
-#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)] // TODO: Add Eq bound once possible
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
     Tendermint(TmHeader),
@@ -101,16 +102,16 @@ impl From<AnyHeader> for Any {
 
 #[cfg(test)]
 mod tests {
-    use prost_types::Any;
     use crate::ics02_client::client_header::AnyHeader;
+    use subtle_encoding::hex;
     use tendermint_proto::Protobuf;
 
     #[test]
     fn header_event_deserialization() {
-        let header: String = "\n&/ibc.lightclients.tendermint.v1.Header\u{12}�\u{6}\n�\u{4}\n�\u{3}\n\u{2}\u{8}\u{b}\u{12}\u{5}ibc-1\u{18}�\u{18}\"\u{c}\u{8}ȋ��\u{6}\u{10}����\u{2}*H\n xVW���\u{1a}嵌���>e\u{1f}j����|\t��0%��}��\u{12}$\u{8}\u{1}\u{12} �\u{1d}>x��5�j����5��G(���s�\u{13}/<n\u{1a}�I��2 ���ꑤ��CОlj\u{1}�|D�w�)\u{7a9}\u{6}M��a\u{18}�F`: ���B��\u{1c}\u{14}���șo�$\'�A�d��L���\u{1b}xR�UB A��a�V��{�n#\u{1c}�\u{2}b�6QݥD���k��ʤg�J A��a�V��{�n#\u{1c}�\u{2}b�6QݥD���k��ʤg�R \u{4}���}�(?w����<D�X�ߊ���t\u{5}ط�ڭ�/Z \u{18}h\u{1a}�\u{11}����\u{b}z\u{2}�N�s�}r\u{1}n\u{c}�\u{8}�E�d,���b ���B��\u{1c}\u{14}���șo�$\'�A�d��L���\u{1b}xR�Uj ���B��\u{1c}\u{14}���șo�$\'�A�d��L���\u{1b}xR�Ur\u{14}(��\u{f}�;|A\u{c}������Qk�\u{5}�\u{12}�\u{1}\u{8}�\u{18}\u{1a}H\n J�I�;w��(;�\nnj��r\u{1}����/�S �|(\u{14}�;\u{12}$\u{8}\u{1}\u{12} �g�᮶��\'�����\u{742}]�#�;��K�\r9�T��x\"h\u{8}\u{2}\u{12}\u{14}(��\u{f}�;|A\u{c}������Qk�\u{5}�\u{1a}\u{c}\u{8}ɋ��\u{6}\u{10}����\u{3}\"@���+ƨ\u{4}s\u{1}��\u{1a};\u{12}��\u{0}f\u{1e}�\u{1b}(\u{10}�kB/B\u{12}��0\u{1f}\u{19}���)�����b}�j�9��I�z]\u{12}��L71;7\n\u{12}�\u{1}\n>\n\u{14}(��\u{f}�;|A\u{c}������Qk�\u{5}�\u{12}\"\n �ŧ(�fl&&FR�s��o�;�b4UҘ�)�J�\u{1e}��\u{18}��\u{6}\u{12}>\n\u{14}(��\u{f}�;|A\u{c}������Qk�\u{5}�\u{12}\"\n �ŧ(�fl&&FR�s��o�;�b4UҘ�)�J�\u{1e}��\u{18}��\u{6}\u{18}��\u{6}\u{1a}\u{5}\u{8}\u{1}\u{10}�\u{16}\"�\u{1}\n>\n\u{14}(��\u{f}�;|A\u{c}������Qk�\u{5}�\u{12}\"\n �ŧ(�fl&&FR�s��o�;�b4UҘ�)�J�\u{1e}��\u{18}��\u{6}\u{12}>\n\u{14}(��\u{f}�;|A\u{c}������Qk�\u{5}�\u{12}\"\n �ŧ(�fl&&FR�s��o�;�b4UҘ�)�J�\u{1e}��\u{18}��\u{6}\u{18}��\u{6}".to_string();
-        let valid_raw_bytes = header.as_bytes();
+        let header: String = "0a262f6962632e6c69676874636c69656e74732e74656e6465726d696e742e76312e48656164657212df060ac8040a8b030a02080b12056962632d31188702220b08b1e8f9810610b8efdd702a480a208a07230bff1273f52dea8bdddc4426ac233e426a344d4cd35a3cbb6421ecffc8122408011220818cead2dd3001745fc966a5957a61bf052be9fe2b8028c1514298bc846963ab322065bae3ff941faf014d3a7d919a9d95462b98a684e8726bdd76c8d3fa190ba14e3a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8554220c694926664a47cb04cd3c701bc739f5debb22d19d6b62d122ea52791b039540a4a20c694926664a47cb04cd3c701bc739f5debb22d19d6b62d122ea52791b039540a5220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a2065b84d4af60c5e63201ab074bdc341382bb9ae6d356ae5c82bba1ffced9c326a6220e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8556a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8557214504e435ade1edf7f93f8a74dd5ea8f433088882c12b7010887021a480a20ab01dc644cac63878152d234520092833821acff43a73841a4e139089921fec1122408011220a8529fc7fcc11abbc001bf3af9f5c24e0b5b360e6d2ceb5c7201757969b2566f226808021214504e435ade1edf7f93f8a74dd5ea8f433088882c1a0c08b2e8f9810610d8c8c48e01224073f7f13bfe7a4f3a28405c21c7713e4f7a5ec83e3d73cfc89b35c29957292a905e2339b4a9fc2cb9bdc2c366837a2ed8bc2e329e463b66ec49c0ecd46d6765011284010a3e0a14504e435ade1edf7f93f8a74dd5ea8f433088882c12220a20c42ea9df299950d361120972c0ccf57d33afd387171a865093087c9f0835c2f418a08d06123e0a14504e435ade1edf7f93f8a74dd5ea8f433088882c12220a20c42ea9df299950d361120972c0ccf57d33afd387171a865093087c9f0835c2f418a08d0618a08d061a04080110182284010a3e0a14504e435ade1edf7f93f8a74dd5ea8f433088882c12220a20c42ea9df299950d361120972c0ccf57d33afd387171a865093087c9f0835c2f418a08d06123e0a14504e435ade1edf7f93f8a74dd5ea8f433088882c12220a20c42ea9df299950d361120972c0ccf57d33afd387171a865093087c9f0835c2f418a08d0618a08d06".to_string();
+        let header_bytes = hex::decode(header).unwrap();
 
-        let _any_prost: Any = prost::Message::decode(valid_raw_bytes).unwrap();
-        let _any_header: AnyHeader = Protobuf::decode(valid_raw_bytes).unwrap();
+        let any_header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
+        println!("header {:?}", any_header);
     }
 }

@@ -24,7 +24,6 @@ use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::client_type::ClientType;
-use ibc::ics02_client::events::UpdateClient2;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
@@ -65,6 +64,8 @@ use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
+use ibc::ics02_client::client_header::AnyHeader;
+use ibc::ics02_client::events::{Attributes, UpdateClient};
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -874,16 +875,18 @@ impl Chain for CosmosSdkChain {
                 let raw_update_client: ibc_proto::ibc::core::client::v1::MsgUpdateClient =
                     prost::Message::decode(update_raw.value.as_ref()).unwrap();
                 let header_bytes = raw_update_client.header.unwrap().value;
-
-                let event = UpdateClient2 {
-                    height: request.height,
-                    client_id: request.client_id,
-                    client_type: ClientType::Tendermint,
-                    consensus_height: request.consensus_height,
-                    header_bytes,
+                let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
+                let event = UpdateClient {
+                    common: Attributes {
+                        height: request.height,
+                        client_id: request.client_id,
+                        client_type: ClientType::Tendermint,
+                        consensus_height: request.consensus_height,
+                    },
+                    header: Some(header),
                 };
 
-                Ok(vec![IbcEvent::UpdateClient2(event)])
+                Ok(vec![IbcEvent::UpdateClient(event)])
             }
         }
     }

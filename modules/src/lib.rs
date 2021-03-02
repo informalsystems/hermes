@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all)]
+#![allow(clippy::large_enum_variant)]
 #![deny(
     warnings,
     // missing_docs,

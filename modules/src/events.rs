@@ -59,7 +59,6 @@ pub enum IbcEvent {
 
     Empty(String),      // Special event, signifying empty response
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
-    UpdateClient2(ClientEvents::UpdateClient2), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
 // This is tendermint specific

@@ -1,12 +1,9 @@
-use std::convert::TryFrom;
 use std::str::FromStr;
 
-use abscissa_core::{Command, config, error::BoxError, Options, Runnable};
-use prost_types::Any;
+use abscissa_core::{config, error::BoxError, Command, Options, Runnable};
 
 use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_header::AnyHeader;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::ChainId;
@@ -74,15 +71,11 @@ pub fn monitor_misbehaviour(
                         client_id,
                     );
 
-                    // 3 - decode light block from the update event
-                    let valid_raw_bytes=  update.header.as_bytes();
-
-                    let any: Any = prost::Message::decode(valid_raw_bytes).unwrap();
-                    let header: AnyHeader = AnyHeader::try_from(any).unwrap();
+                    // 3 - handle potential misbehaviour
                     let res = client
                         .handle_misbehaviour(
                             update.consensus_height(),
-                            header,
+                            update.header.as_ref().unwrap(),
                         )
                         .unwrap();
                     println!("Handled misbehavior {:?}", res);
