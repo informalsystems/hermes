@@ -49,13 +49,37 @@
         },
         "height": 1
       }
-    }
+    },
+    "history": [
+      {
+        "actionOutcome_": "None",
+        "action_": {
+          "type": "None"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      }
+    ]
   },
   {
     "action": {
       "chainId": "chainA",
-      "clientState": 4,
-      "consensusState": 4,
+      "clientState": 2,
+      "consensusState": 2,
       "type": "ICS02CreateClient"
     },
     "actionOutcome": "ICS02CreateOK",
@@ -65,7 +89,7 @@
         "clients": {
           "0": {
             "heights": [
-              4
+              2
             ]
           }
         },
@@ -106,7 +130,187 @@
         },
         "height": 1
       }
-    }
+    },
+    "history": [
+      {
+        "actionOutcome_": "None",
+        "action_": {
+          "type": "None"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      },
+      {
+        "actionOutcome_": "ICS02CreateOK",
+        "action_": {
+          "chainId": "chainA",
+          "clientState": 2,
+          "consensusState": 2,
+          "type": "ICS02CreateClient"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "action": {
+      "chainId": "chainA",
+      "clientState": 2,
+      "consensusState": 2,
+      "type": "ICS02CreateClient"
+    },
+    "actionOutcome": "ICS02CreateOK",
+    "chains": {
+      "chainA": {
+        "clientIdCounter": 1,
+        "clients": {
+          "0": {
+            "heights": [
+              2
+            ]
+          }
+        },
+        "connectionIdCounter": 0,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "chainId": "-1",
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyChainId": "-1",
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninitialized"
+          }
+        },
+        "height": 2
+      },
+      "chainB": {
+        "clientIdCounter": 0,
+        "clients": {
+          "0": {
+            "heights": []
+          }
+        },
+        "connectionIdCounter": 0,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "chainId": "-1",
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyChainId": "-1",
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninitialized"
+          }
+        },
+        "height": 1
+      }
+    },
+    "history": [
+      {
+        "actionOutcome_": "None",
+        "action_": {
+          "type": "None"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      },
+      {
+        "actionOutcome_": "ICS02CreateOK",
+        "action_": {
+          "chainId": "chainA",
+          "clientState": 2,
+          "consensusState": 2,
+          "type": "ICS02CreateClient"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      },
+      {
+        "actionOutcome_": "ICS02CreateOK",
+        "action_": {
+          "chainId": "chainA",
+          "clientState": 2,
+          "consensusState": 2,
+          "type": "ICS02CreateClient"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      }
+    ]
   },
   {
     "action": {
@@ -116,17 +320,17 @@
       "counterpartyChainId": "chainB",
       "counterpartyClientId": 0,
       "counterpartyConnectionId": 0,
-      "previousConnectionId": -1,
+      "previousConnectionId": 0,
       "type": "ICS03ConnectionOpenTry"
     },
-    "actionOutcome": "ICS03MissingClientConsensusState",
+    "actionOutcome": "ICS03ConnectionNotFound",
     "chains": {
       "chainA": {
         "clientIdCounter": 1,
         "clients": {
           "0": {
             "heights": [
-              4
+              2
             ]
           }
         },
@@ -167,6 +371,109 @@
         },
         "height": 1
       }
-    }
+    },
+    "history": [
+      {
+        "actionOutcome_": "None",
+        "action_": {
+          "type": "None"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      },
+      {
+        "actionOutcome_": "ICS02CreateOK",
+        "action_": {
+          "chainId": "chainA",
+          "clientState": 2,
+          "consensusState": 2,
+          "type": "ICS02CreateClient"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      },
+      {
+        "actionOutcome_": "ICS02CreateOK",
+        "action_": {
+          "chainId": "chainA",
+          "clientState": 2,
+          "consensusState": 2,
+          "type": "ICS02CreateClient"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      },
+      {
+        "actionOutcome_": "ICS03ConnectionNotFound",
+        "action_": {
+          "chainId": "chainA",
+          "clientId": 0,
+          "clientState": 1,
+          "counterpartyChainId": "chainB",
+          "counterpartyClientId": 0,
+          "counterpartyConnectionId": 0,
+          "previousConnectionId": 0,
+          "type": "ICS03ConnectionOpenTry"
+        },
+        "chains_": {
+          "chainA": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          },
+          "chainB": {
+            "connections": {
+              "0": {
+                "state": "Uninitialized"
+              }
+            }
+          }
+        }
+      }
+    ]
   }
 ]

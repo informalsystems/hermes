@@ -48,6 +48,7 @@ where
     let step_count = steps.len();
 
     for (i, step) in steps.iter().enumerate() {
+        println!("({}/{}) {:?}", i + 1, step_count, step);
         // check the step
         let ok = if i == 0 {
             executor.initial_step(step.clone())

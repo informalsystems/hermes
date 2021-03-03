@@ -231,6 +231,7 @@ impl IBCTestExecutor {
                             if let Some(connection_end) =
                                 ctx.connection_end(&Self::connection_id(connection_id))
                             {
+                                println!("END: {:?}", connection_end);
                                 // states must match
                                 let states_match = *connection_end.state() == connection.state;
 
@@ -421,6 +422,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
 
     fn next_step(&mut self, step: Step) -> bool {
         let result = self.apply(step.action);
+        println!("{:?} vs {:?}", result, step.action_outcome);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::ICS02CreateOK => result.is_ok(),

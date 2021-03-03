@@ -1,6 +1,20 @@
 ------------------------------ MODULE IBCTests --------------------------------
 
-EXTENDS IBC
+EXTENDS IBC, Sequences
+
+VARIABLE
+    previousChains
+
+PreviousConnectionState(chainId, connectionId) ==
+    previousChains[chainId].connections[connectionId].state
+
+InitTest ==
+    /\ Init
+    /\ previousChains = chains
+
+NextTest ==
+    /\ Next
+    /\ previousChains' = chains
 
 ICS02CreateOKTest ==
     /\ actionOutcome = "ICS02CreateOK"
@@ -23,6 +37,12 @@ ICS03MissingClientTest ==
 ICS03ConnectionOpenTryOKTest ==
     /\ actionOutcome = "ICS03ConnectionOpenTryOK"
 
+ICS03ConnectionOpenTryStateInitTest ==
+    /\ action.type = "ICS03ConnectionOpenTry"
+    /\ action.previousConnectionId /= -1
+    /\ PreviousConnectionState(action.chainId, action.previousConnectionId) = "Init"
+    /\ actionOutcome = "ICS03ConnectionOpenTryOK"
+
 ICS03InvalidConsensusHeightTest ==
     /\ actionOutcome = "ICS03InvalidConsensusHeight"
 
@@ -39,6 +59,11 @@ ICS03InvalidProofTest ==
     /\ actionOutcome = "ICS03InvalidProof"
 
 ICS03ConnectionOpenAckOKTest ==
+    /\ actionOutcome = "ICS03ConnectionOpenAckOK"
+
+ICS03ConnectionOpenAckStateTryOpenTest ==
+    /\ action.type = "ICS03ConnectionOpenAck"
+    /\ PreviousConnectionState(action.chainId, action.connectionId) = "TryOpen"
     /\ actionOutcome = "ICS03ConnectionOpenAckOK"
 
 ICS03UninitializedConnectionTest ==
@@ -61,6 +86,7 @@ ICS03MissingClientTestNeg == ~ICS03MissingClientTest
 
 \* ICS03ConnectionOpenTry tests
 ICS03ConnectionOpenTryOKTestNeg == ~ICS03ConnectionOpenTryOKTest
+ICS03ConnectionOpenTryStateInitTestNeg == ~ICS03ConnectionOpenTryStateInitTest
 ICS03InvalidConsensusHeightTestNeg == ~ICS03InvalidConsensusHeightTest
 ICS03ConnectionNotFoundTestNeg == ~ICS03ConnectionNotFoundTest
 ICS03ConnectionMismatchTestNeg == ~ICS03ConnectionMismatchTest
@@ -69,6 +95,7 @@ ICS03InvalidProofTestNeg == ~ICS03InvalidProofTest
 
 \* ICS03ConnectionOpenAck tests
 ICS03ConnectionOpenAckOKTestNeg == ~ICS03ConnectionOpenAckOKTest
+ICS03ConnectionOpenAckStateTryOpenTestNeg == ~ICS03ConnectionOpenAckStateTryOpenTest
 ICS03UninitializedConnectionTestNeg == ~ICS03UninitializedConnectionTest
 
 \* ICS03ConnectionOpenConfirm tests

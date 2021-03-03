@@ -5,31 +5,33 @@ import os
 CFG = """
 CONSTANTS
     ChainIds = {"chainA", "chainB"}
-    MaxChainHeight = 4
+    MaxChainHeight = 5
     MaxClientsPerChain = 1
     MaxConnectionsPerChain = 1
 
-INIT Init
-NEXT Next
+INIT InitTest
+NEXT NextTest
 
 """
 
 tests = [
-    "ICS02CreateOKTest",
-    "ICS02UpdateOKTest",
-    "ICS02ClientNotFoundTest",
-    "ICS02HeaderVerificationFailureTest",
-    "ICS03ConnectionOpenInitOKTest",
-    "ICS03MissingClientTest",
-    "ICS03ConnectionOpenTryOKTest",
-    "ICS03InvalidConsensusHeightTest",
-    "ICS03ConnectionNotFoundTest",
-    "ICS03ConnectionMismatchTest",
-    "ICS03MissingClientConsensusStateTest",
-    "ICS03InvalidProofTest",
-    "ICS03ConnectionOpenAckOKTest",
-    "ICS03UninitializedConnectionTest",
-    "ICS03ConnectionOpenConfirmOKTest",
+    # "ICS02CreateOKTest",
+    # "ICS02UpdateOKTest",
+    # "ICS02ClientNotFoundTest",
+    # "ICS02HeaderVerificationFailureTest",
+    # "ICS03ConnectionOpenInitOKTest",
+    # "ICS03MissingClientTest",
+    # "ICS03ConnectionOpenTryOKTest",
+    "ICS03ConnectionOpenTryStateInitTest",
+    # "ICS03InvalidConsensusHeightTest",
+    # "ICS03ConnectionNotFoundTest",
+    # "ICS03ConnectionMismatchTest",
+    # "ICS03MissingClientConsensusStateTest",
+    # "ICS03InvalidProofTest",
+    # "ICS03ConnectionOpenAckOKTest",
+    # "ICS03UninitializedConnectionTest",
+    # "ICS03ConnectionOpenAckStateTryOpenTest",
+    # "ICS03ConnectionOpenConfirmOKTest",
 ]
 
 for test in tests:
@@ -40,4 +42,4 @@ for test in tests:
     # run tlc-json
     print("> generating " + test)
     os.system("tlc-json IBCTests.tla")
-    os.system("mv counterexample.json tests/" + test + ".json")
+    os.system("mv counterexample0.json tests/" + test + ".json")
