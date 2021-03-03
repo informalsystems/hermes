@@ -17,5 +17,5 @@ pub mod upgrade_client;
 pub enum ClientMsg {
     CreateClient(MsgCreateAnyClient),
     UpdateClient(MsgUpdateAnyClient),
-    UpgradeClient(MsgUpgradeAnyClient)
+    UpgradeClient(MsgUpgradeAnyClient),
 }

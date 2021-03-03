@@ -7,8 +7,9 @@ use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
 use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
-use crate::conclude::{Output, exit_with_unrecoverable_error};
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::{Error, Kind};
+use ibc::ics02_client::height::Height;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -107,15 +108,19 @@ pub struct TxUpgradeClientCmd {
     #[options(free, required, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
+    #[options(
+        free,
+        required,
+        help = "identifier of the chain which underwent upgrade (source chain)"
+    )]
     src_chain_id: ChainId,
 
     #[options(
-    free,
-    required,
-    help = "identifier of the client to be updated on destination chain"
+        free,
+        required,
+        help = "identifier of the client to be upgraded on destination chain"
     )]
-    dst_client_id: ClientId,
+    client_id: ClientId,
 }
 
 impl Runnable for TxUpgradeClientCmd {
@@ -128,21 +133,19 @@ impl Runnable for TxUpgradeClientCmd {
             &config,
             &self.src_chain_id,
             &self.dst_chain_id,
-        ).unwrap_or_else(exit_with_unrecoverable_error);
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let client = ForeignClient {
-            dst_chain: chains.dst,
-            src_chain: chains.src,
-            id: self.dst_client_id.clone(),
-        };
+        // Query the source chain for the upgraded client state, consensus state & proofs
+        let (client_state, proof) = chains
+            .src
+            .query_upgraded_client_state(&self.client_id, Height::default())
+            .map_err(|e| Kind::Tx.context(e))
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let res: Result<IbcEvent, Error> = client
-            .build_update_client_and_send()
-            .map_err(|e| Kind::Tx.context(e).into());
-
-        match res {
-            Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        }
+        // match res {
+        //     Ok(receipt) => Output::success(receipt).exit(),
+        //     Err(e) => Output::error(format!("{}", e)).exit(),
+        // }
     }
 }

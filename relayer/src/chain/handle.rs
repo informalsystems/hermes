@@ -224,6 +224,12 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         height: Height,
     ) -> Result<AnyClientState, Error>;
 
+    fn query_upgraded_client_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<(AnyClientState, MerkleProof), Error>;
+
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
