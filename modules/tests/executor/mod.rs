@@ -157,7 +157,7 @@ impl IBCTestExecutor {
 
     pub fn counterparty(client_id: u64, connection_id: Option<u64>) -> Counterparty {
         let client_id = Self::client_id(client_id);
-        let connection_id = connection_id.map(|connection_id| Self::connection_id(connection_id));
+        let connection_id = connection_id.map(Self::connection_id);
         let prefix = Self::commitment_prefix();
         Counterparty::new(client_id, connection_id, prefix)
     }
@@ -228,41 +228,38 @@ impl IBCTestExecutor {
                             // if the connection has not yet been initialized, then
                             // there's nothing to check
                             true
-                        } else {
-                            if let Some(connection_end) =
-                                ctx.connection_end(&Self::connection_id(connection_id))
-                            {
-                                // states must match
-                                let states_match = *connection_end.state() == connection.state;
+                        } else if let Some(connection_end) =
+                            ctx.connection_end(&Self::connection_id(connection_id))
+                        {
+                            // states must match
+                            let states_match = *connection_end.state() == connection.state;
 
-                                // client ids must match
-                                let client_ids = *connection_end.client_id()
-                                    == Self::client_id(connection.client_id.unwrap());
+                            // client ids must match
+                            let client_ids = *connection_end.client_id()
+                                == Self::client_id(connection.client_id.unwrap());
 
-                                // counterparty client ids must match
-                                let counterparty_client_ids = *connection_end
-                                    .counterparty()
-                                    .client_id()
+                            // counterparty client ids must match
+                            let counterparty_client_ids =
+                                *connection_end.counterparty().client_id()
                                     == Self::client_id(connection.counterparty_client_id.unwrap());
 
-                                // counterparty connection ids must match
-                                let counterparty_connection_ids =
-                                    connection_end.counterparty().connection_id()
-                                        == connection
-                                            .counterparty_connection_id
-                                            .map(|connection_id| Self::connection_id(connection_id))
-                                            .as_ref();
+                            // counterparty connection ids must match
+                            let counterparty_connection_ids =
+                                connection_end.counterparty().connection_id()
+                                    == connection
+                                        .counterparty_connection_id
+                                        .map(Self::connection_id)
+                                        .as_ref();
 
-                                states_match
-                                    && client_ids
-                                    && counterparty_client_ids
-                                    && counterparty_connection_ids
-                            } else {
-                                // if the connection exists in the model, then it must
-                                // also exist in the implementation; in this case it
-                                // doesn't, so we fail the verification
-                                false
-                            }
+                            states_match
+                                && client_ids
+                                && counterparty_client_ids
+                                && counterparty_connection_ids
+                        } else {
+                            // if the connection exists in the model, then it must
+                            // also exist in the implementation; in this case it
+                            // doesn't, so we fail the verification
+                            false
                         }
                     });
 
