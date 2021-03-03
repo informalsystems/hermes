@@ -22,7 +22,7 @@ pub fn relay_on_new_link(
     // Setup the clients, connection and channel
     let channel = connect_with_new_channel(a_chain_handle, b_chain_handle, ordering, path)?;
 
-    let mut link = Link::new(channel)?;
+    let mut link = Link::new(channel);
     link.relay()?;
 
     Ok(())
@@ -33,7 +33,7 @@ pub fn relay_on_new_link(
 pub fn channel_relay(
     a_chain: Box<dyn ChainHandle>,
     b_chain: Box<dyn ChainHandle>,
-    opts: &LinkParameters,
+    opts: LinkParameters,
 ) -> Result<(), BoxError> {
     let mut link = Link::new_from_opts(a_chain, b_chain, opts)?;
     Ok(link.relay()?)
