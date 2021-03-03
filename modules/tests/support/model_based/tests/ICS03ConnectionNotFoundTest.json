@@ -50,8 +50,8 @@
   {
     "action": {
       "chainId": "chainA",
-      "clientState": 1,
-      "consensusState": 1,
+      "clientState": 3,
+      "consensusState": 3,
       "type": "ICS02CreateClient"
     },
     "actionOutcome": "ICS02CreateOK",
@@ -61,7 +61,7 @@
         "clients": {
           "0": {
             "heights": [
-              1
+              3
             ]
           }
         },
@@ -104,17 +104,21 @@
     "action": {
       "chainId": "chainA",
       "clientId": 0,
-      "header": 1,
-      "type": "ICS02UpdateClient"
+      "clientState": 1,
+      "counterpartyChainId": "chainB",
+      "counterpartyClientId": 0,
+      "counterpartyConnectionId": 0,
+      "previousConnectionId": 0,
+      "type": "ICS03ConnectionOpenTry"
     },
-    "actionOutcome": "ICS02HeaderVerificationFailure",
+    "actionOutcome": "ICS03ConnectionNotFound",
     "chains": {
       "chainA": {
         "clientIdCounter": 1,
         "clients": {
           "0": {
             "heights": [
-              1
+              3
             ]
           }
         },

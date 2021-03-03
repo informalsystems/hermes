@@ -6,15 +6,17 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use bech32::{ToBase32, Variant};
+use bip39::{Language, Mnemonic, Seed};
 use bitcoin::{
     network::constants::Network,
     secp256k1::Secp256k1,
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
-use bitcoin_wallet::mnemonic::Mnemonic;
 use hdpath::StandardHDPath;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
+use ripemd160::Ripemd160;
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use tendermint::account::Id as AccountId;
 
 use crate::config::ChainConfig;
@@ -128,14 +130,13 @@ impl KeyRingOperations for KeyRing {
 
     /// Add a key entry in the store using a mnemonic.
     fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
-        // Generate seed from mnemonic
-        let mnemonic =
-            Mnemonic::from_str(mnemonic_words).map_err(|e| Kind::InvalidMnemonic.context(e))?;
-        let seed = mnemonic.to_seed(Some(""));
+        let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
+            .map_err(|e| Kind::InvalidMnemonic.context(e))?;
+        let seed = Seed::new(&mnemonic, "");
 
         // Get Private Key from seed and standard derivation path
         let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
-        let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, &seed.0)
+        let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
             .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
             .map_err(|e| Kind::PrivateKey.context(e))?;
 
@@ -270,19 +271,18 @@ impl KeyRingOperations for KeyRing {
 
 /// Return an address from a Public Key
 fn get_address(pk: ExtendedPubKey) -> Vec<u8> {
-    use crypto::digest::Digest;
-    use crypto::ripemd160::Ripemd160;
-    use crypto::sha2::Sha256;
+    let mut hasher = Sha256::new();
+    hasher.update(pk.public_key.to_bytes().as_slice());
 
-    let mut sha256 = Sha256::new();
-    sha256.input(pk.public_key.to_bytes().as_slice());
-    let mut bytes = vec![0; sha256.output_bytes()];
-    sha256.result(&mut bytes);
-    let mut hash = Ripemd160::new();
-    hash.input(bytes.as_slice());
-    let mut acct = vec![0; hash.output_bytes()];
-    hash.result(&mut acct);
-    acct.to_vec()
+    // Read hash digest over the public key bytes & consume hasher
+    let pk_hash = hasher.finalize();
+
+    // Plug the hash result into the next crypto hash function.
+    let mut rip_hasher = Ripemd160::new();
+    rip_hasher.update(pk_hash);
+    let rip_result = rip_hasher.finalize();
+
+    rip_result.to_vec()
 }
 
 fn get_test_backend_folder(chain_config: &ChainConfig) -> Result<PathBuf, Error> {
