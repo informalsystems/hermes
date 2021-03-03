@@ -34,6 +34,7 @@ pub enum IbcEvent {
 
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
+    UpgradeClient(ClientEvents::UpgradeClient),
     ClientMisbehavior(ClientEvents::ClientMisbehavior),
 
     OpenInitConnection(ConnectionEvents::OpenInit),
