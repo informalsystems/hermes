@@ -3,11 +3,12 @@ pub mod step;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
+use ibc::ics02_client::context::ClientReader;
 use ibc::ics02_client::error::Kind as ICS02ErrorKind;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
-use ibc::ics03_connection::connection::Counterparty;
+use ibc::ics03_connection::connection::{Counterparty, State as ConnectionState};
 use ibc::ics03_connection::error::Kind as ICS03ErrorKind;
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
@@ -15,6 +16,7 @@ use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::msgs::ConnectionMsg;
 use ibc::ics03_connection::version::Version;
+use ibc::ics04_channel::context::ChannelReader;
 use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
@@ -200,11 +202,71 @@ impl IBCTestExecutor {
         self.contexts.values().all(|ctx| ctx.validate().is_ok())
     }
 
-    /// Check that chain heights match the ones in the model.
-    pub fn check_chain_heights(&self, chains: HashMap<String, Chain>) -> bool {
+    /// Check that chain states match the ones in the model.
+    pub fn check_chain_states(&self, chains: HashMap<String, Chain>) -> bool {
         chains.into_iter().all(|(chain_id, chain)| {
             let ctx = self.chain_context(chain_id);
-            ctx.query_latest_height() == Self::height(chain.height)
+            // check that heights match
+            let heights_match = ctx.query_latest_height() == Self::height(chain.height);
+
+            // check that clients match
+            let clients_match = chain.clients.into_iter().all(|(client_id, client)| {
+                client.heights.into_iter().all(|height| {
+                    // check that each consensus state from the model exists
+                    ctx.consensus_state(&Self::client_id(client_id), Self::height(height))
+                        .is_some()
+                })
+            });
+
+            // check that connections match
+            let connections_match =
+                chain
+                    .connections
+                    .into_iter()
+                    .all(|(connection_id, connection)| {
+                        if connection.state == ConnectionState::Uninitialized {
+                            // if the connection has not yet been initialized, then
+                            // there's nothing to check
+                            true
+                        } else {
+                            if let Some(connection_end) =
+                                ctx.connection_end(&Self::connection_id(connection_id))
+                            {
+                                // states must match
+                                let states_match = *connection_end.state() == connection.state;
+
+                                // client ids must match
+                                let client_ids = *connection_end.client_id()
+                                    == Self::client_id(connection.client_id.unwrap());
+
+                                // counterparty client ids must match
+                                let counterparty_client_ids = *connection_end
+                                    .counterparty()
+                                    .client_id()
+                                    == Self::client_id(connection.counterparty_client_id.unwrap());
+
+                                // counterparty connection ids must match
+                                let counterparty_connection_ids =
+                                    connection_end.counterparty().connection_id()
+                                        == connection
+                                            .counterparty_connection_id
+                                            .map(|connection_id| Self::connection_id(connection_id))
+                                            .as_ref();
+
+                                states_match
+                                    && client_ids
+                                    && counterparty_client_ids
+                                    && counterparty_connection_ids
+                            } else {
+                                // if the connection exists in the model, then it must
+                                // also exist in the implementation; in this case it
+                                // doesn't, so we fail the verification
+                                false
+                            }
+                        }
+                    });
+
+            heights_match && clients_match && connections_match
         })
     }
 
@@ -406,6 +468,6 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
             ActionOutcome::ICS03ConnectionOpenConfirmOK => result.is_ok(),
         };
         // also check the state of chains
-        outcome_matches && self.validate_chains() && self.check_chain_heights(step.chains)
+        outcome_matches && self.validate_chains() && self.check_chain_states(step.chains)
     }
 }

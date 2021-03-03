@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{
@@ -248,7 +248,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,
