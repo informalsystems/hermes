@@ -34,11 +34,6 @@ where
             Kind::SequenceSendNotFound(msg.source_port.clone(), msg.source_channel.clone())
         })?;
 
-    // begin createOutgoingPacket logic
-    let _channel_cap = ctx
-        .lookup_module_by_port(&msg.source_port)
-        .ok_or(Kind::ChannelCapabilityNotFound)?;
-
     //TODO: Application LOGIC.
 
     let packet = Packet {
