@@ -79,12 +79,10 @@ impl Supervisor {
         let subscription_b = self.chains.b.subscribe()?;
 
         loop {
-            println!("{} => iterating over event batches", self.chains.a.id());
             for batch in subscription_a.try_iter() {
                 self.process_batch(batch)?;
             }
 
-            println!("{} => iterating over event batches", self.chains.b.id());
             for batch in subscription_b.try_iter() {
                 self.process_batch(batch)?;
             }
@@ -101,7 +99,6 @@ impl Supervisor {
 
         for (object, events) in events_per_object.into_iter() {
             if events.is_empty() {
-                println!("no events in batch");
                 return Ok(());
             }
 
