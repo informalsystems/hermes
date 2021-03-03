@@ -53,6 +53,7 @@ impl CompileCmd {
             format!("{}/proto/cosmos/tx", sdk_dir.display()),
             format!("{}/proto/cosmos/base", sdk_dir.display()),
             format!("{}/proto/cosmos/staking", sdk_dir.display()),
+            format!("{}/proto/cosmos/upgrade", sdk_dir.display()),
         ];
 
         let proto_includes_paths = [

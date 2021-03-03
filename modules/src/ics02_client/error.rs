@@ -21,6 +21,9 @@ pub enum Kind {
     #[error("client not found: {0}")]
     ClientNotFound(ClientId),
 
+    #[error("client is frozen: {0}")]
+    ClientFrozen(ClientId),
+
     #[error("consensus state not found at: {0} at height {1}")]
     ConsensusStateNotFound(ClientId, Height),
 

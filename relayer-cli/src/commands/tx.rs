@@ -1,7 +1,7 @@
 //! `tx` subcommand
 use abscissa_core::{Command, Help, Options, Runnable};
 
-use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd};
+use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd, TxUpgradeClientCmd};
 
 mod channel;
 mod client;
@@ -34,6 +34,10 @@ pub enum TxRawCommands {
     /// The `tx raw update-client` subcommand submits a MsgUpdateClient in a transaction to a chain
     #[options(help = "Update the specified client on destination chain")]
     UpdateClient(TxUpdateClientCmd),
+
+    /// The `tx raw upgrade-client` subcommand. Submits a MsgUpgradeClient in a transaction to a chain.
+    #[options(help = "Upgrade the specified client on destination chain")]
+    UpgradeClient(TxUpgradeClientCmd),
 
     /// The `tx raw conn-init` subcommand
     #[options(help = "Initialize a connection (ConnectionOpenInit)")]

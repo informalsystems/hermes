@@ -618,6 +618,8 @@ impl ClientDef for AnyClient {
             }
         }
     }
+
+    // TODO: Add upgrade method here
 }
 
 #[cfg(test)]

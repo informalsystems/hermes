@@ -214,3 +214,8 @@ impl From<ClientMisbehavior> for IbcEvent {
         IbcEvent::ClientMisbehavior(v)
     }
 }
+
+
+/// Signals a recent upgrade of an on-chain client (IBC Client).
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct UpgradeClient(Attributes);

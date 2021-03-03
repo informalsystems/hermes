@@ -84,9 +84,8 @@ mod tests {
 
     use crate::ics02_client::client_def::AnyHeader;
     use crate::ics02_client::msgs::MsgUpdateAnyClient;
-    use crate::ics24_host::identifier::ClientId;
-
     use crate::ics07_tendermint::header::test_util::get_dummy_ics07_header;
+    use crate::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_account_id;
 
     #[test]
