@@ -2,8 +2,8 @@
 
 use tendermint::account::Id as AccountId;
 
-use crate::ics24_host::identifier::ClientId;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
 pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
@@ -17,7 +17,6 @@ pub struct MsgUpgradeAnyClient {
     pub proof_upgrade_client: String,
     pub proof_upgrade_consensus_state: String,
 }
-
 
 impl Msg for MsgUpgradeAnyClient {
     type ValidationError = crate::ics24_host::error::ValidationError;

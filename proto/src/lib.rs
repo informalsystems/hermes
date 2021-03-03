@@ -69,6 +69,11 @@ pub mod cosmos {
             include!("prost/cosmos.tx.v1beta1.rs");
         }
     }
+    pub mod upgrade {
+        pub mod v1beta1 {
+            include!("prost/cosmos.upgrade.v1beta1.rs");
+        }
+    }
 }
 
 pub mod ibc {

@@ -215,7 +215,6 @@ impl From<ClientMisbehavior> for IbcEvent {
     }
 }
 
-
 /// Signals a recent upgrade of an on-chain client (IBC Client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UpgradeClient(Attributes);
