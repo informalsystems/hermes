@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::state::ClientState;
@@ -70,7 +68,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     let latest_height = client_state.latest_height();
     let packet_height = packet.timeout_height;
 
-    if !packet.timeout_height.is_zero() && packet_height.cmp(&latest_height).eq(&Ordering::Less) {
+    if !packet.timeout_height.is_zero() && packet_height <= latest_height {
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
