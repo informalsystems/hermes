@@ -1,29 +1,24 @@
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
+use crate::application::ics20_fungible_token_transfer::msgs::transfer;
+use crate::application::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::events::IbcEvent;
 use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::{create_client, update_client, ClientMsg};
+use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics03_connection::msgs::{
     conn_open_ack, conn_open_confirm, conn_open_init, conn_open_try, ConnectionMsg,
 };
-
+use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
 use crate::ics04_channel::msgs::{
     chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm, chan_open_init,
     chan_open_try, ChannelMsg,
 };
-
-use crate::application::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
-use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
-use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
-
-use crate::application::ics20_fungible_token_transfer::msgs::transfer;
-
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::error::{Error, Kind};
-use crate::ics26_routing::msgs::Ics26Envelope;
-use crate::ics26_routing::msgs::Ics26Envelope::{Ics20Msg, Ics2Msg, Ics3Msg, Ics4Msg};
+use crate::ics26_routing::msgs::Ics26Envelope::{self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4Msg};
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
