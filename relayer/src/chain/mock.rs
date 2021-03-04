@@ -147,6 +147,13 @@ impl Chain for MockChain {
         Ok(client_state)
     }
 
+    fn query_upgraded_client_state(
+        &self,
+        _height: Height,
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        unimplemented!()
+    }
+
     fn query_connection(
         &self,
         _connection_id: &ConnectionId,

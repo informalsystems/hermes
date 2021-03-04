@@ -216,6 +216,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_client_state(client_id, height, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryUpgradedClientState { height, reply_to }) => {
+                            self.query_upgraded_client_state(height, reply_to)?
+                        }
+
                         Ok(ChainRequest::QueryCommitmentPrefix { reply_to }) => {
                             self.query_commitment_prefix(reply_to)?
                         },
@@ -460,6 +464,23 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(client_state)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_upgraded_client_state(
+        &self,
+        height: Height,
+        reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .query_upgraded_client_state(height)
+            .map(|(cs, proof)| (cs.wrap_any(), proof));
+
+        reply_to
+            .send(result)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
