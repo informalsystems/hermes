@@ -60,9 +60,6 @@ pub enum Kind {
     #[error("invalid raw header")]
     InvalidRawHeader,
 
-    #[error("time value Value outof-range")]
-    OutOfRange,
-
     #[error("invalid height result")]
     InvalidHeightResult,
 
