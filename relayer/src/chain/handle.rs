@@ -110,6 +110,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<AnyClientState>,
     },
 
+    QueryUpgradedClientState {
+        height: Height,
+        reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
+    },
+
     QueryCommitmentPrefix {
         reply_to: ReplyTo<CommitmentPrefix>,
     },
@@ -226,7 +231,6 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query_upgraded_client_state(
         &self,
-        client_id: &ClientId,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error>;
 

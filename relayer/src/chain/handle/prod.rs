@@ -118,10 +118,9 @@ impl ChainHandle for ProdChainHandle {
 
     fn query_upgraded_client_state(
         &self,
-        _client_id: &ClientId,
-        _height: Height,
+        height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        unimplemented!()
+        self.send(|reply_to| ChainRequest::QueryUpgradedClientState { height, reply_to })
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {

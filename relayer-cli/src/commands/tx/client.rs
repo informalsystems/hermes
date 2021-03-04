@@ -1,6 +1,7 @@
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
+use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::config::StoreConfig;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -9,7 +10,6 @@ use crate::application::app_config;
 use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::{Error, Kind};
-use ibc::ics02_client::height::Height;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -139,7 +139,7 @@ impl Runnable for TxUpgradeClientCmd {
         // Query the source chain for the upgraded client state, consensus state & proofs
         let (client_state, proof) = chains
             .src
-            .query_upgraded_client_state(&self.client_id, Height::default())
+            .query_upgraded_client_state(Height::default())
             .map_err(|e| Kind::Tx.context(e))
             .unwrap_or_else(exit_with_unrecoverable_error);
 

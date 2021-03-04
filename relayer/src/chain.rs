@@ -130,6 +130,11 @@ pub trait Chain: Sized {
         height: ICSHeight,
     ) -> Result<Self::ClientState, Error>;
 
+    fn query_upgraded_client_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ClientState, MerkleProof), Error>;
+
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_connections(
         &self,
