@@ -25,16 +25,6 @@ pub struct SendPacketResult {
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    if packet.sequence.is_zero() {
-        return Err(Kind::ZeroPacketSequence.into());
-    }
-    if packet.timeout_height.is_zero() && packet.timeout_timestamp == 0 {
-        return Err(Kind::ZeroPacketTimeout.into());
-    }
-    if packet.data.is_empty() {
-        return Err(Kind::ZeroPacketData.into());
-    }
-
     let source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or_else(|| {
@@ -46,7 +36,6 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         return Err(Kind::ChannelClosed(packet.source_channel).into());
     }
 
-    // TODO: Capability Checked in Ics20 as well. Check Difs.
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
 
     let counterparty = Counterparty::new(
@@ -77,7 +66,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
     }
 
-    // check if packet height timeouted on the receiving chain
+    // check if packet height is newer than the height of the latest client state on the receiving chain
 
     let latest_height = client_state.latest_height();
     let packet_height = packet.timeout_height;
@@ -86,7 +75,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
-    //check if packet timestamp timeouted on the receiving chain
+    //check if packet timestamp is newer than the timestamp of the latest consensus state of the receiving chain
     let consensus_state = ctx
         .client_consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
@@ -96,8 +85,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .map_err(Kind::ErrorInvalidConsensusState)?;
 
     let packet_timestamp = packet.timeout_timestamp;
-    if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
-    {
+    if !packet.timeout_timestamp == 0 && packet_timestamp <= latest_timestamp {
         return Err(Kind::LowPacketTimestamp.into());
     }
 
@@ -106,7 +94,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or(Kind::MissingNextSendSeq)?;
 
-    if !packet.sequence.eq(&next_seq_send) {
+    if packet.sequence != next_seq_send {
         return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_send).into());
     }
 
@@ -158,12 +146,9 @@ mod tests {
 
         let context = MockContext::default();
 
-        let mut packet: Packet = get_dummy_raw_packet(0, 6).try_into().unwrap();
-        let mut packet_untimed: Packet = get_dummy_raw_packet(0, 0).try_into().unwrap();
-
+        let mut packet: Packet = get_dummy_raw_packet(1, 6).try_into().unwrap();
         packet.sequence = Sequence::from(1);
         packet.data = vec![0];
-        packet_untimed.sequence = Sequence::from(10);
 
         let channel_end = ChannelEnd::new(
             State::TryOpen,
@@ -206,25 +191,13 @@ mod tests {
             Test {
                 name: "Good parameters".to_string(),
                 ctx: context
-                    .clone()
-                    .with_client(&ClientId::default(), Height::default())
-                    .with_connection(ConnectionId::default(), connection_end.clone())
-                    .with_port_capability(PortId::default())
-                    .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
-                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
-                packet,
-                want_pass: true,
-            },
-            Test {
-                name: "Zero timeout".to_string(),
-                ctx: context
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
-                packet: packet_untimed,
-                want_pass: false,
+                packet,
+                want_pass: true,
             },
         ]
         .into_iter()

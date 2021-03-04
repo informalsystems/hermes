@@ -9,7 +9,6 @@ use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-//use crate::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 
 use self::{recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose};
 
@@ -46,5 +45,4 @@ pub enum PacketMsg {
     AckPacket(MsgAcknowledgement),
     ToPacket(MsgTimeout),
     ToClosePacket(MsgTimeoutOnClose),
-    //SendPacket(MsgTransfer)
 }

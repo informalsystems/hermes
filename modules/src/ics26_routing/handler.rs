@@ -4,22 +4,15 @@ use tendermint_proto::Protobuf;
 use crate::events::IbcEvent;
 use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
-use crate::ics02_client::msgs::create_client;
-use crate::ics02_client::msgs::update_client;
-use crate::ics02_client::msgs::ClientMsg;
-use crate::ics03_connection::msgs::conn_open_ack;
-use crate::ics03_connection::msgs::conn_open_confirm;
-use crate::ics03_connection::msgs::conn_open_init;
-use crate::ics03_connection::msgs::conn_open_try;
-use crate::ics03_connection::msgs::ConnectionMsg;
+use crate::ics02_client::msgs::{create_client, update_client, ClientMsg};
+use crate::ics03_connection::msgs::{
+    conn_open_ack, conn_open_confirm, conn_open_init, conn_open_try, ConnectionMsg,
+};
 
-use crate::ics04_channel::msgs::chan_close_confirm;
-use crate::ics04_channel::msgs::chan_close_init;
-use crate::ics04_channel::msgs::chan_open_ack;
-use crate::ics04_channel::msgs::chan_open_confirm;
-use crate::ics04_channel::msgs::chan_open_init;
-use crate::ics04_channel::msgs::chan_open_try;
-use crate::ics04_channel::msgs::ChannelMsg;
+use crate::ics04_channel::msgs::{
+    chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm, chan_open_init,
+    chan_open_try, ChannelMsg,
+};
 
 use crate::application::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;

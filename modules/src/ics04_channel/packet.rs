@@ -110,6 +110,22 @@ impl TryFrom<RawPacket> for Packet {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_pkt: RawPacket) -> Result<Self, Self::Error> {
+        if Sequence::from(raw_pkt.sequence).is_zero() {
+            return Err(Kind::ZeroPacketSequence.into());
+        }
+        let packet_timeout_height: Height = raw_pkt
+            .timeout_height
+            .ok_or(Kind::MissingHeight)?
+            .try_into()
+            .map_err(|e| Kind::InvalidTimeoutHeight.context(e))?;
+
+        if packet_timeout_height.is_zero() && raw_pkt.timeout_timestamp == 0 {
+            return Err(Kind::ZeroPacketTimeout.into());
+        }
+        if raw_pkt.data.is_empty() {
+            return Err(Kind::ZeroPacketData.into());
+        }
+
         Ok(Packet {
             sequence: Sequence::from(raw_pkt.sequence),
             source_port: raw_pkt
@@ -129,11 +145,7 @@ impl TryFrom<RawPacket> for Packet {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             data: raw_pkt.data,
-            timeout_height: raw_pkt
-                .timeout_height
-                .ok_or(Kind::MissingHeight)?
-                .try_into()
-                .map_err(|e| Kind::InvalidTimeoutHeight.context(e))?,
+            timeout_height: packet_timeout_height,
             timeout_timestamp: raw_pkt.timeout_timestamp,
         })
     }
@@ -163,12 +175,12 @@ pub mod test_utils {
     /// Returns a dummy `RawPacket`, for testing only!
     pub fn get_dummy_raw_packet(timeout_height: u64, timeout_timestamp: u64) -> RawPacket {
         RawPacket {
-            sequence: 0,
+            sequence: 1,
             source_port: PortId::default().to_string(),
             source_channel: ChannelId::default().to_string(),
             destination_port: PortId::default().to_string(),
             destination_channel: ChannelId::default().to_string(),
-            data: vec![],
+            data: vec![0],
             timeout_height: Some(RawHeight {
                 revision_number: 0,
                 revision_height: timeout_height,

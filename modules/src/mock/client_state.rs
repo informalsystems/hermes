@@ -41,7 +41,7 @@ impl Protobuf<RawMockClientState> for MockClientState {}
 
 impl MockClientState {
     pub fn latest_height(&self) -> Height {
-        (self.0).0
+        (self.0).height
     }
 }
 
@@ -64,7 +64,7 @@ impl From<MockClientState> for RawMockClientState {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
-                timestamp: (value.0).1,
+                timestamp: (value.0).timestamp,
             }),
         }
     }
@@ -102,6 +102,12 @@ impl From<MockConsensusState> for MockClientState {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct MockConsensusState(pub MockHeader);
 
+impl MockConsensusState {
+    pub fn timestamp(&self) -> u64 {
+        (self.0).timestamp
+    }
+}
+
 impl Protobuf<RawMockConsensusState> for MockConsensusState {}
 
 impl TryFrom<RawMockConsensusState> for MockConsensusState {
@@ -116,18 +122,12 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
     }
 }
 
-impl MockConsensusState {
-    pub fn timestamp(&self) -> u64 {
-        (self.0).1
-    }
-}
-
 impl From<MockConsensusState> for RawMockConsensusState {
     fn from(value: MockConsensusState) -> Self {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
-                timestamp: (value.0).1,
+                timestamp: (value.0).timestamp,
             }),
         }
     }

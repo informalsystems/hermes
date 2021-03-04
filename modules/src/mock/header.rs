@@ -15,7 +15,10 @@ use crate::mock::client_state::MockConsensusState;
 use crate::Height;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct MockHeader(pub Height, pub u64);
+pub struct MockHeader {
+    pub height: Height,
+    pub timestamp: u64,
+}
 
 impl Protobuf<RawMockHeader> for MockHeader {}
 
@@ -23,13 +26,14 @@ impl TryFrom<RawMockHeader> for MockHeader {
     type Error = Error;
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
-        Ok(MockHeader(
-            raw.height
+        Ok(MockHeader {
+            height: raw
+                .height
                 .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
                 .try_into()
                 .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
-            raw.timestamp,
-        ))
+            timestamp: raw.timestamp,
+        })
     }
 }
 
@@ -41,10 +45,13 @@ impl From<MockHeader> for RawMockHeader {
 
 impl MockHeader {
     pub fn height(&self) -> Height {
-        self.0
+        self.height
     }
     pub fn new(height: Height) -> Self {
-        Self(height, Default::default())
+        Self {
+            height,
+            timestamp: Default::default(),
+        }
     }
 }
 

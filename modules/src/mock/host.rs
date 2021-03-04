@@ -47,10 +47,10 @@ impl HostBlock {
     /// Generates a new block at `height` for the given chain identifier and chain type.
     pub fn generate_block(chain_id: ChainId, chain_type: HostType, height: u64) -> HostBlock {
         match chain_type {
-            //TODO: check timestamp
-            HostType::Mock => {
-                HostBlock::Mock(MockHeader(Height::new(chain_id.version(), height), 1))
-            }
+            HostType::Mock => HostBlock::Mock(MockHeader {
+                height: Height::new(chain_id.version(), height),
+                timestamp: 1,
+            }),
             HostType::SyntheticTendermint => {
                 HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))
             }
