@@ -12,7 +12,7 @@ pub const IBC_QUERY_PATH: &str = "store/ibc/key";
 
 /// ABCI Query path for the upgrade sub-store
 /// ## Note: This is SDK/Tendermint specific!
-pub const SDK_CLIENT_UPGRADE_PATH: &str = "store/upgrade/key";
+pub const SDK_UPGRADE_QUERY_PATH: &str = "store/upgrade/key";
 
 /// ABCI client upgrade keys
 /// - The key identifying the upgraded IBC state within the upgrade sub-store
@@ -32,8 +32,6 @@ pub enum Path {
         epoch: u64,
         height: u64,
     },
-    UpgradedClientState(u64),
-    UpgradedClientConsensusState(u64),
     ClientConnections(ClientId),
     Connections(ConnectionId),
     Ports(PortId),
@@ -56,6 +54,14 @@ pub enum Path {
         channel_id: ChannelId,
         sequence: Sequence,
     },
+    Upgrade(ClientUpgradePath),
+}
+
+/// Paths that are specific for client upgrades.
+#[derive(Clone, Debug)]
+pub enum ClientUpgradePath {
+    UpgradedClientState(u64),
+    UpgradedClientConsensusState(u64),
 }
 
 impl Path {
@@ -85,16 +91,6 @@ impl Display for Path {
                 f,
                 "clients/{}/consensusStates/{}-{}",
                 client_id, epoch, height
-            ),
-            Path::UpgradedClientState(height) => write!(
-                f,
-                "{}/{}/{}",
-                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_STATE
-            ),
-            Path::UpgradedClientConsensusState(height) => write!(
-                f,
-                "{}/{}/{}",
-                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_CONSENSUS_STATE
             ),
             Path::ClientConnections(client_id) => write!(f, "clients/{}/connections", client_id),
             Path::Connections(connection_id) => write!(f, "connections/{}", connection_id),
@@ -143,6 +139,16 @@ impl Display for Path {
                 f,
                 "receipts/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
+            ),
+            Path::Upgrade(ClientUpgradePath::UpgradedClientState(height)) => write!(
+                f,
+                "{}/{}/{}",
+                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_STATE
+            ),
+            Path::Upgrade(ClientUpgradePath::UpgradedClientConsensusState(height)) => write!(
+                f,
+                "{}/{}/{}",
+                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_CONSENSUS_STATE
             ),
         }
     }

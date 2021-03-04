@@ -1,7 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
-use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::config::StoreConfig;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -136,10 +135,22 @@ impl Runnable for TxUpgradeClientCmd {
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // Query the source chain for the upgraded client state, consensus state & proofs
-        let (client_state, proof) = chains
+        // Fetch the latest height of the source chain.
+        let src_height = chains
             .src
-            .query_upgraded_client_state(Height::default())
+            .query_latest_height()
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        // Query the source chain for the upgraded client state, consensus state & their proofs.
+        let (client_state, proof_client_state) = chains
+            .src
+            .query_upgraded_client_state(src_height)
+            .map_err(|e| Kind::Tx.context(e))
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        let (consensus_state, proof_consensus_state) = chains
+            .src
+            .query_upgraded_consensus_state(src_height)
             .map_err(|e| Kind::Tx.context(e))
             .unwrap_or_else(exit_with_unrecoverable_error);
 
