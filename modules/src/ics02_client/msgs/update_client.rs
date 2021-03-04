@@ -13,6 +13,7 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
@@ -22,11 +23,11 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 pub struct MsgUpdateAnyClient {
     pub client_id: ClientId,
     pub header: AnyHeader,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl MsgUpdateAnyClient {
-    pub fn new(client_id: ClientId, header: AnyHeader, signer: String) -> Self {
+    pub fn new(client_id: ClientId, header: AnyHeader, signer: Signer) -> Self {
         MsgUpdateAnyClient {
             client_id,
             header,
@@ -58,7 +59,7 @@ impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
         Ok(MsgUpdateAnyClient {
             client_id: raw.client_id.parse().unwrap(),
             header: AnyHeader::try_from(raw_header).unwrap(),
-            signer: raw.signer,
+            signer: raw.signer.into(),
         })
     }
 }
@@ -68,7 +69,7 @@ impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
         RawMsgUpdateClient {
             client_id: ics_msg.client_id.to_string(),
             header: Some(ics_msg.header.into()),
-            signer: ics_msg.signer,
+            signer: ics_msg.signer.to_string(),
         }
     }
 }

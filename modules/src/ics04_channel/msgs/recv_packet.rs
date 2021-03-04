@@ -6,7 +6,9 @@ use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 
@@ -16,12 +18,12 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgRecvPacket {
     pub packet: Packet,
-    proofs: Proofs,
-    signer: String,
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgRecvPacket {
-    pub fn new(packet: Packet, proofs: Proofs, signer: String) -> Result<MsgRecvPacket, Error> {
+    pub fn new(packet: Packet, proofs: Proofs, signer: Signer) -> Result<MsgRecvPacket, Error> {
         Ok(Self {
             packet,
             proofs,
@@ -68,7 +70,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             proofs,
-            signer: raw_msg.signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -79,7 +81,7 @@ impl From<MsgRecvPacket> for RawMsgRecvPacket {
             packet: Some(domain_msg.packet.into()),
             proof_commitment: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: domain_msg.signer,
+            signer: domain_msg.signer.to_string(),
         }
     }
 }

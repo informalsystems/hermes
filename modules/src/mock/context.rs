@@ -6,10 +6,13 @@ use std::error::Error;
 
 use prost_types::Any;
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as ICS2Error;
+use crate::{
+    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+    signer::Signer,
+};
 
 use crate::ics05_port::capabilities::Capability;
 use crate::ics05_port::context::PortReader;
@@ -610,8 +613,8 @@ impl Ics18Context for MockContext {
         Ok(events)
     }
 
-    fn signer(&self) -> String {
-        "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
+    fn signer(&self) -> Signer {
+        "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".parse().unwrap()
     }
 }
 

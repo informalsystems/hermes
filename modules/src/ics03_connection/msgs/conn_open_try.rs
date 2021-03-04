@@ -12,6 +12,7 @@ use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 use crate::Height;
 
@@ -28,8 +29,8 @@ pub struct MsgConnectionOpenTry {
     pub counterparty: Counterparty,
     pub counterparty_versions: Vec<Version>,
     pub proofs: Proofs,
-    pub delay_period: u64,
-    pub signer: String,
+    pub delay_period: u64, // FIXME(romac): Introduce newtype for `delay_period`
+    pub signer: Signer,
 }
 
 impl MsgConnectionOpenTry {
@@ -154,7 +155,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
             delay_period: msg.delay_period,
-            signer: msg.signer,
+            signer: msg.signer.into(),
         })
     }
 }
@@ -191,7 +192,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .proofs
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
-            signer: ics_msg.signer,
+            signer: ics_msg.signer.to_string(),
         }
     }
 }

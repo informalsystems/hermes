@@ -5,30 +5,34 @@ use crossbeam_channel as channel;
 use dyn_clone::DynClone;
 use serde::{Serialize, Serializer};
 
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics24_host::{identifier::ChainId, identifier::ClientId};
 use ibc::{
     events::IbcEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-    ics03_connection::connection::ConnectionEnd,
-    ics03_connection::version::Version,
-    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
-    ics24_host::identifier::{ChannelId, ConnectionId, PortId},
+    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics04_channel::{
+        channel::{ChannelEnd, QueryPacketEventDataRequest},
+        packet::{PacketMsgType, Sequence},
+    },
+    ics23_commitment::commitment::CommitmentPrefix,
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    signer::Signer,
+    Height,
 };
-use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
+
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
+
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-pub use prod::ProdChainHandle;
 
 use crate::connection::ConnectionMsgType;
 use crate::keyring::store::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
 
 mod prod;
+pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
 
@@ -62,7 +66,7 @@ pub enum ChainRequest {
     },
 
     Signer {
-        reply_to: ReplyTo<String>,
+        reply_to: ReplyTo<Signer>,
     },
 
     Key {
@@ -208,7 +212,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
-    fn get_signer(&self) -> Result<String, Error>;
+    fn get_signer(&self) -> Result<Signer, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 

@@ -7,6 +7,7 @@ use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::Version;
 use crate::ics24_host::identifier::ClientId;
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
@@ -20,7 +21,7 @@ pub struct MsgConnectionOpenInit {
     pub counterparty: Counterparty,
     pub version: Version,
     pub delay_period: u64,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl MsgConnectionOpenInit {
@@ -68,7 +69,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .try_into()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
             delay_period: msg.delay_period,
-            signer: msg.signer,
+            signer: msg.signer.into(),
         })
     }
 }
@@ -80,7 +81,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             counterparty: Some(ics_msg.counterparty.into()),
             version: Some(ics_msg.version.into()),
             delay_period: ics_msg.delay_period,
-            signer: ics_msg.signer,
+            signer: ics_msg.signer.to_string(),
         }
     }
 }

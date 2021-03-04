@@ -6,7 +6,9 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConn
 
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenConfirm";
 
@@ -17,7 +19,7 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenConfirm";
 pub struct MsgConnectionOpenConfirm {
     pub connection_id: ConnectionId,
     pub proofs: Proofs,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl MsgConnectionOpenConfirm {
@@ -62,7 +64,7 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs: Proofs::new(msg.proof_ack.into(), None, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: msg.signer,
+            signer: msg.signer.into(),
         })
     }
 }
@@ -73,7 +75,7 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
             connection_id: ics_msg.connection_id.as_str().to_string(),
             proof_ack: ics_msg.proofs.object_proof().clone().into(),
             proof_height: Some(ics_msg.proofs.height().into()),
-            signer: ics_msg.signer,
+            signer: ics_msg.signer.to_string(),
         }
     }
 }

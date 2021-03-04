@@ -6,7 +6,9 @@ use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgeme
 
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
@@ -18,7 +20,7 @@ pub struct MsgAcknowledgement {
     pub packet: Packet,
     acknowledgement: Vec<u8>,
     proofs: Proofs,
-    signer: String,
+    signer: Signer,
 }
 
 impl MsgAcknowledgement {
@@ -26,7 +28,7 @@ impl MsgAcknowledgement {
         packet: Packet,
         acknowledgement: Vec<u8>,
         proofs: Proofs,
-        signer: String,
+        signer: Signer,
     ) -> MsgAcknowledgement {
         Self {
             packet,
@@ -75,7 +77,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement: raw_msg.acknowledgement,
-            signer: raw_msg.signer,
+            signer: raw_msg.signer.into(),
             proofs,
         })
     }
@@ -86,7 +88,7 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
         RawMsgAcknowledgement {
             packet: Some(domain_msg.packet.into()),
             acknowledgement: domain_msg.acknowledgement,
-            signer: domain_msg.signer,
+            signer: domain_msg.signer.to_string(),
             proof_height: Some(domain_msg.proofs.height().into()),
             proof_acked: domain_msg.proofs.object_proof().clone().into(),
         }

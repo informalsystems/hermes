@@ -10,6 +10,7 @@ use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 use crate::Height;
 
@@ -23,7 +24,7 @@ pub struct MsgConnectionOpenAck {
     pub client_state: Option<AnyClientState>,
     pub proofs: Proofs,
     pub version: Version,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl MsgConnectionOpenAck {
@@ -125,7 +126,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: msg.signer,
+            signer: msg.signer.into(),
         })
     }
 }
@@ -154,7 +155,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
             version: Some(ics_msg.version.into()),
-            signer: ics_msg.signer,
+            signer: ics_msg.signer.to_string(),
         }
     }
 }

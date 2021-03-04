@@ -1,7 +1,10 @@
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
+use crate::Height;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint_proto::Protobuf;
@@ -19,7 +22,7 @@ pub struct MsgChannelOpenConfirm {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub proofs: Proofs,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl MsgChannelOpenConfirm {
@@ -30,7 +33,7 @@ impl MsgChannelOpenConfirm {
         channel_id: String,
         proof_ack: CommitmentProofBytes,
         proofs_height: Height,
-        signer: String,
+        signer: Signer,
     ) -> Result<MsgChannelOpenConfirm, Error> {
         Ok(Self {
             port_id: port_id
@@ -99,7 +102,7 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs,
-            signer: raw_msg.signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -111,7 +114,7 @@ impl From<MsgChannelOpenConfirm> for RawMsgChannelOpenConfirm {
             channel_id: domain_msg.channel_id.to_string(),
             proof_ack: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: domain_msg.signer,
+            signer: domain_msg.signer.to_string(),
         }
     }
 }

@@ -6,6 +6,7 @@ use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelClose
 
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseInit";
@@ -17,7 +18,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseInit";
 pub struct MsgChannelCloseInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl MsgChannelCloseInit {
@@ -57,7 +58,7 @@ impl TryFrom<RawMsgChannelCloseInit> for MsgChannelCloseInit {
                 .channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            signer: raw_msg.signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -67,7 +68,7 @@ impl From<MsgChannelCloseInit> for RawMsgChannelCloseInit {
         RawMsgChannelCloseInit {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
-            signer: domain_msg.signer,
+            signer: domain_msg.signer.to_string(),
         }
     }
 }

@@ -6,7 +6,9 @@ use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCl
 
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseConfirm";
 
@@ -19,7 +21,7 @@ pub struct MsgChannelCloseConfirm {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub proofs: Proofs,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl Msg for MsgChannelCloseConfirm {
@@ -76,7 +78,7 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs,
-            signer: raw_msg.signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -88,7 +90,7 @@ impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
             channel_id: domain_msg.channel_id.to_string(),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: domain_msg.signer,
+            signer: domain_msg.signer.to_string(),
         }
     }
 }

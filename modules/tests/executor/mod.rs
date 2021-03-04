@@ -30,6 +30,7 @@ use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::proofs::{ConsensusProof, Proofs};
+use ibc::signer::Signer;
 use ibc::Height;
 
 use step::{Action, ActionOutcome, Chain, Step};
@@ -150,8 +151,8 @@ impl IBCTestExecutor {
         AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)))
     }
 
-    fn signer() -> String {
-        "".to_string()
+    fn signer() -> Signer {
+        Signer::new("")
     }
 
     pub fn counterparty(client_id: u64, connection_id: Option<u64>) -> Counterparty {

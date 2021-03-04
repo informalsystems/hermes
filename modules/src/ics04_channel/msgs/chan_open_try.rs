@@ -3,7 +3,9 @@ use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 use tendermint_proto::Protobuf;
@@ -23,7 +25,7 @@ pub struct MsgChannelOpenTry {
     pub channel: ChannelEnd,
     pub counterparty_version: String,
     pub proofs: Proofs,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl MsgChannelOpenTry {
@@ -97,7 +99,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
-            signer: raw_msg.signer,
+            signer: raw_msg.signer.into(),
         };
 
         match msg.validate_basic() {
@@ -118,7 +120,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
             counterparty_version: domain_msg.counterparty_version,
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: domain_msg.signer,
+            signer: domain_msg.signer.to_string(),
         }
     }
 }

@@ -5,23 +5,25 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, info};
 
-use ibc::ics04_channel::channel::{ChannelEnd, State};
-use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use ibc::{
     downcast,
     events::{IbcEvent, IbcEventType},
     ics03_connection::connection::State as ConnectionState,
-    ics04_channel::channel::{Order, QueryPacketEventDataRequest, State as ChannelState},
-    ics04_channel::events::{SendPacket, WriteAcknowledgement},
-    ics04_channel::msgs::acknowledgement::MsgAcknowledgement,
-    ics04_channel::msgs::recv_packet::MsgRecvPacket,
-    ics04_channel::msgs::timeout::MsgTimeout,
-    ics04_channel::packet::{Packet, PacketMsgType, Sequence},
+    ics04_channel::{
+        channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
+        events::{SendPacket, WriteAcknowledgement},
+        msgs::{
+            acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+            recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
+        },
+        packet::{Packet, PacketMsgType, Sequence},
+    },
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    signer::Signer,
     tx_msg::Msg,
     Height,
 };
+
 use ibc_proto::ibc::core::channel::v1::{
     MsgAcknowledgement as RawMsgAck, MsgChannelCloseConfirm as RawMsgChannelCloseConfirm,
     MsgRecvPacket as RawMsgRecvPacket, MsgTimeout as RawMsgTimeout,
@@ -157,7 +159,7 @@ impl RelayPath {
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
     }
 
-    fn src_signer(&self) -> Result<String, LinkError> {
+    fn src_signer(&self) -> Result<Signer, LinkError> {
         self.src_chain.get_signer().map_err(|e| {
             LinkError::Failed(format!(
                 "could not retrieve signer from src chain {} with error: {}",
@@ -167,7 +169,7 @@ impl RelayPath {
         })
     }
 
-    fn dst_signer(&self) -> Result<String, LinkError> {
+    fn dst_signer(&self) -> Result<Signer, LinkError> {
         self.dst_chain.get_signer().map_err(|e| {
             LinkError::Failed(format!(
                 "could not retrieve signer from dst chain {} with error: {}",
@@ -233,7 +235,9 @@ impl RelayPath {
                 // we get a timeout packet event (this happens for both unordered and ordered channels)
                 // Here we check it the channel is closed on src and send a channel close confirm
                 // to the counterparty.
-                if self.ordered_channel() && self.src_channel()?.state_matches(&State::Closed) {
+                if self.ordered_channel()
+                    && self.src_channel()?.state_matches(&ChannelState::Closed)
+                {
                     info!(
                         "{} => event {} closes the channel",
                         self.src_chain.id(),
@@ -948,7 +952,9 @@ impl Link {
                 ))
             })?;
 
-        if a_channel.state_matches(&State::Closed) && b_channel.state_matches(&State::Closed) {
+        if a_channel.state_matches(&ChannelState::Closed)
+            && b_channel.state_matches(&ChannelState::Closed)
+        {
             Ok(true)
         } else {
             Ok(false)

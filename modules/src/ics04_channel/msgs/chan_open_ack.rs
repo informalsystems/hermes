@@ -1,7 +1,9 @@
 use crate::ics04_channel::channel::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use tendermint_proto::Protobuf;
@@ -18,9 +20,9 @@ pub struct MsgChannelOpenAck {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub counterparty_channel_id: ChannelId,
-    pub counterparty_version: String,
+    pub counterparty_version: String, // FIXME(romac): Introduce newtype for versions
     pub proofs: Proofs,
-    pub signer: String,
+    pub signer: Signer,
 }
 
 impl MsgChannelOpenAck {
@@ -90,7 +92,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
-            signer: raw_msg.signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -104,7 +106,7 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
             counterparty_version: domain_msg.counterparty_version.to_string(),
             proof_try: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: domain_msg.signer,
+            signer: domain_msg.signer.to_string(),
         }
     }
 }

@@ -6,7 +6,9 @@ use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::{Packet, Sequence};
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 
@@ -16,9 +18,9 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgTimeout {
     pub packet: Packet,
-    next_sequence_recv: Sequence,
-    proofs: Proofs,
-    signer: String,
+    pub next_sequence_recv: Sequence,
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgTimeout {
@@ -26,7 +28,7 @@ impl MsgTimeout {
         packet: Packet,
         next_sequence_recv: Sequence,
         proofs: Proofs,
-        signer: String,
+        signer: Signer,
     ) -> MsgTimeout {
         Self {
             packet,
@@ -77,7 +79,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),
-            signer: raw_msg.signer,
+            signer: raw_msg.signer.into(),
             proofs,
         })
     }
@@ -90,7 +92,7 @@ impl From<MsgTimeout> for RawMsgTimeout {
             proof_unreceived: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             next_sequence_recv: domain_msg.next_sequence_recv.into(),
-            signer: domain_msg.signer,
+            signer: domain_msg.signer.to_string(),
         }
     }
 }

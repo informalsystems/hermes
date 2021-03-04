@@ -37,6 +37,7 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
+use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
@@ -365,7 +366,7 @@ impl Chain for CosmosSdkChain {
     }
 
     /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<String, Error> {
+    fn get_signer(&mut self) -> Result<Signer, Error> {
         crate::time!("get_signer");
 
         // Get the key from key seed file
@@ -374,7 +375,8 @@ impl Chain for CosmosSdkChain {
             .get_key()
             .map_err(|e| Kind::KeyBase.context(e))?;
 
-        encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)
+        let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
+        Ok(Signer::new(bech32))
     }
 
     /// Get the signing key
