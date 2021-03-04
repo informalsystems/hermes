@@ -12,7 +12,6 @@
 
 //! IBC Relayer implementation
 
-pub mod auth;
 pub mod chain;
 pub mod channel;
 pub mod config;
@@ -26,5 +25,6 @@ pub mod light_client;
 pub mod link;
 pub mod macros;
 pub mod relay;
+pub mod supervisor;
 pub mod transfer;
 pub mod util;

@@ -81,7 +81,7 @@ impl IbcEvent {
         serde_json::to_string(self).unwrap()
     }
 
-    pub fn height(&self) -> &Height {
+    pub fn height(&self) -> Height {
         match self {
             IbcEvent::NewBlock(bl) => bl.height(),
             IbcEvent::CreateClient(ev) => ev.height(),

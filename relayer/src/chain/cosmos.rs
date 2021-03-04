@@ -955,7 +955,7 @@ impl Chain for CosmosSdkChain {
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
         Ok(ibc::ics07_tendermint::client_state::ClientState::new(
-            self.id().to_string(),
+            self.id().clone(),
             self.config.trust_threshold,
             self.config.trusting_period,
             self.unbonding_period()?,

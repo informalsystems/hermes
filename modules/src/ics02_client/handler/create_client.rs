@@ -218,8 +218,9 @@ mod tests {
         let ctx = MockContext::default();
 
         let tm_header = get_dummy_tendermint_header();
+
         let tm_client_state = AnyClientState::Tendermint(ClientState {
-            chain_id: tm_header.chain_id.to_string(),
+            chain_id: tm_header.chain_id.clone().into(),
             trust_level: TrustThreshold {
                 numerator: 1,
                 denominator: 3,

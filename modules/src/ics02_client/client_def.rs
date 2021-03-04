@@ -16,7 +16,7 @@ use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
-use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -211,7 +211,7 @@ impl TryFrom<Any> for AnyClientState {
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            "" => Err(Kind::EmptyClientState.into()),
+            "" => Err(Kind::EmptyClientStateResponse.into()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 TendermintClientState::decode_vec(&raw.value)
@@ -246,8 +246,13 @@ impl From<AnyClientState> for Any {
 }
 
 impl ClientState for AnyClientState {
-    fn chain_id(&self) -> String {
-        todo!()
+    fn chain_id(&self) -> ChainId {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.chain_id(),
+        }
     }
 
     fn client_type(&self) -> ClientType {
@@ -299,7 +304,7 @@ impl TryFrom<Any> for AnyConsensusState {
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
-            "" => Err(Kind::EmptyConsensusState.into()),
+            "" => Err(Kind::EmptyConsensusStateResponse.into()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
                 TendermintConsensusState::decode_vec(&value.value)

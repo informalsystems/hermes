@@ -274,7 +274,7 @@ impl Chain for MockChain {
 
     fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
         let client_state = Self::ClientState::new(
-            self.id().to_string(),
+            self.id().clone(),
             self.config.trust_threshold,
             self.config.trusting_period,
             self.config.trusting_period.add(Duration::from_secs(1000)),
