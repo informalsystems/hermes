@@ -67,7 +67,6 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     }
 
     // check if packet height is newer than the height of the latest client state on the receiving chain
-
     let latest_height = client_state.latest_height();
     let packet_height = packet.timeout_height;
 
