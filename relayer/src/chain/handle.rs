@@ -115,6 +115,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
     },
 
+    QueryUpgradedConsensusState {
+        height: Height,
+        reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
+    },
+
     QueryCommitmentPrefix {
         reply_to: ReplyTo<CommitmentPrefix>,
     },
@@ -233,6 +238,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error>;
+
+    fn query_upgraded_consensus_state(
+        &self,
+        height: Height,
+    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
