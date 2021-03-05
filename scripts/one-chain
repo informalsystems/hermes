@@ -133,5 +133,7 @@ $BINARY --home $CHAIN_DIR/$CHAIN_ID start --pruning=nothing --grpc.address="0.0.
 # Show validator's and user's balance
 sleep 3
 RPC_ADDR="tcp://localhost:$RPC_PORT"
+echo "Balances for validator '$VALIDATOR' @ '$RPC_ADDR'"
 $BINARY --node $RPC_ADDR query bank balances $VALIDATOR
+echo "Balances for user '$USER' @ '$RPC_ADDR'"
 $BINARY --node $RPC_ADDR query bank balances $USER

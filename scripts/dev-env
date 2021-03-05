@@ -11,8 +11,8 @@ missing() {
   usage
 }
 
-if [ -z "$1" ]; then
-  missing "CONFIG_FILE"
+if [ ! -r "$1" ]; then
+  missing "CONFIG_FILE ($1)"
 fi
 
 if [ -z "$2" ]; then
