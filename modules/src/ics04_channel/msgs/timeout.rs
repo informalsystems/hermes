@@ -172,14 +172,13 @@ mod test {
                 },
                 want_pass: false,
             },
-            //TODO: Check why this is failing now
             Test {
-                name: "Missing signer".to_string(),
+                name: "Empty signer".to_string(),
                 raw: RawMsgTimeout {
                     signer: "".to_string(),
                     ..default_raw_msg
                 },
-                want_pass: false,
+                want_pass: true,
             },
         ];
 

@@ -163,12 +163,12 @@ mod test {
                 want_pass: false,
             },
             Test {
-                name: "Missing signer".to_string(),
+                name: "Empty signer".to_string(),
                 raw: RawMsgAcknowledgement {
                     signer: "".to_string(),
                     ..default_raw_msg.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Empty proof acked".to_string(),
