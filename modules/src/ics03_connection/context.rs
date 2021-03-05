@@ -64,7 +64,7 @@ pub trait ConnectionReader {
 /// for processing any `ConnectionMsg`.
 pub trait ConnectionKeeper {
     fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Error> {
-        self.store_connection(&result.connection_id, &result.connection_end)?;
+        self.store_connection(result.connection_id.clone(), &result.connection_end)?;
 
         // If we generated an identifier, increase the counter & associate this new identifier
         // with the client id.
@@ -73,7 +73,7 @@ pub trait ConnectionKeeper {
 
             // Also associate the connection end to its client identifier.
             self.store_connection_to_client(
-                &result.connection_id,
+                result.connection_id.clone(),
                 &result.connection_end.client_id(),
             )?;
         }
@@ -84,14 +84,14 @@ pub trait ConnectionKeeper {
     /// Stores the given connection_end at a path associated with the connection_id.
     fn store_connection(
         &mut self,
-        connection_id: &ConnectionId,
+        connection_id: ConnectionId,
         connection_end: &ConnectionEnd,
     ) -> Result<(), Error>;
 
     /// Stores the given connection_id at a path associated with the client_id.
     fn store_connection_to_client(
         &mut self,
-        connection_id: &ConnectionId,
+        connection_id: ConnectionId,
         client_id: &ClientId,
     ) -> Result<(), Error>;
 

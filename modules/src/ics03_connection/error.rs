@@ -74,7 +74,7 @@ pub enum Kind {
     #[error("client proof must be present")]
     NullClientProof,
 
-    #[error("the client running locally is frozen")]
+    #[error("the client {0} running locally is frozen")]
     FrozenClient(ClientId),
 
     #[error("the connection proof verification failed")]

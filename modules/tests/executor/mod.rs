@@ -133,8 +133,8 @@ impl IBCTestExecutor {
         Height::new(Self::revision(), height)
     }
 
-    pub fn mock_header(height: u64) -> MockHeader {
-        MockHeader(Self::height(height))
+    fn mock_header(height: u64) -> MockHeader {
+        MockHeader::new(Self::height(height))
     }
 
     pub fn header(height: u64) -> AnyHeader {

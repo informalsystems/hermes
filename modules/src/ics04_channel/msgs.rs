@@ -1,12 +1,16 @@
 //! Message definitions for all ICS4 domain types: channel open & close handshake datagrams, as well
 //! as packets.
 
+use acknowledgement::MsgAcknowledgement;
+
 use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
 use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+
+use self::{recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose};
 
 // Opening handshake messages.
 pub mod chan_open_ack;
@@ -33,4 +37,12 @@ pub enum ChannelMsg {
     ChannelOpenConfirm(MsgChannelOpenConfirm),
     ChannelCloseInit(MsgChannelCloseInit),
     ChannelCloseConfirm(MsgChannelCloseConfirm),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum PacketMsg {
+    RecvPacket(MsgRecvPacket),
+    AckPacket(MsgAcknowledgement),
+    ToPacket(MsgTimeout),
+    ToClosePacket(MsgTimeoutOnClose),
 }
