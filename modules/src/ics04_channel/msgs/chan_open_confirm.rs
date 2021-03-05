@@ -1,10 +1,8 @@
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
-use crate::Height;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint_proto::Protobuf;
@@ -26,28 +24,16 @@ pub struct MsgChannelOpenConfirm {
 }
 
 impl MsgChannelOpenConfirm {
-    #[allow(dead_code)]
-    // TODO: Not in use (yet), hence private.
-    fn new(
-        port_id: String,
-        channel_id: String,
-        proof_ack: CommitmentProofBytes,
-        proofs_height: Height,
-        signer: Signer,
-    ) -> Result<MsgChannelOpenConfirm, Error> {
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_ack, None, None, None, proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+    pub fn new(port_id: PortId, channel_id: ChannelId, proofs: Proofs, signer: Signer) -> Self {
+        Self {
+            port_id,
+            channel_id,
+            proofs,
             signer,
-        })
+        }
     }
 }
+
 impl MsgChannelOpenConfirm {
     /// Getter: borrow the `port_id` from this message.
     pub fn port_id(&self) -> &PortId {

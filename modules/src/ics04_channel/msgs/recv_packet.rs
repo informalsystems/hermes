@@ -23,12 +23,12 @@ pub struct MsgRecvPacket {
 }
 
 impl MsgRecvPacket {
-    pub fn new(packet: Packet, proofs: Proofs, signer: Signer) -> Result<MsgRecvPacket, Error> {
-        Ok(Self {
+    pub fn new(packet: Packet, proofs: Proofs, signer: Signer) -> MsgRecvPacket {
+        Self {
             packet,
             proofs,
             signer,
-        })
+        }
     }
 }
 

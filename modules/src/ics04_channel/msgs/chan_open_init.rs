@@ -22,6 +22,14 @@ pub struct MsgChannelOpenInit {
 }
 
 impl MsgChannelOpenInit {
+    pub fn new(port_id: PortId, channel: ChannelEnd, signer: Signer) -> Self {
+        Self {
+            port_id,
+            channel,
+            signer,
+        }
+    }
+
     /// Getter: borrow the `port_id` from this message.
     pub fn port_id(&self) -> &PortId {
         &self.port_id

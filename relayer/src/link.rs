@@ -719,15 +719,7 @@ impl RelayPath {
             )
             .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain.id(), e))?;
 
-        let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?).map_err(
-            |e| {
-                LinkError::Failed(format!(
-                    "error while building the recv packet for src channel {} due to error {}",
-                    packet.source_channel.clone(),
-                    e
-                ))
-            },
-        )?;
+        let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?);
 
         info!(
             "built recv_packet msg {}, proofs at height {:?}",

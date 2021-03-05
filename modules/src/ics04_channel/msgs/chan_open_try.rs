@@ -23,12 +23,30 @@ pub struct MsgChannelOpenTry {
     pub port_id: PortId,
     pub previous_channel_id: Option<ChannelId>,
     pub channel: ChannelEnd,
-    pub counterparty_version: String,
+    pub counterparty_version: String, // TODO(romac): newtype this
     pub proofs: Proofs,
     pub signer: Signer,
 }
 
 impl MsgChannelOpenTry {
+    pub fn new(
+        port_id: PortId,
+        previous_channel_id: Option<ChannelId>,
+        channel: ChannelEnd,
+        counterparty_version: String,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            port_id,
+            previous_channel_id,
+            channel,
+            counterparty_version,
+            proofs,
+            signer,
+        }
+    }
+
     /// Getter: borrow the `port_id` from this message.
     pub fn port_id(&self) -> &PortId {
         &self.port_id

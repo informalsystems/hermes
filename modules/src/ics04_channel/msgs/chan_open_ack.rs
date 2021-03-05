@@ -26,6 +26,24 @@ pub struct MsgChannelOpenAck {
 }
 
 impl MsgChannelOpenAck {
+    pub fn new(
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_channel_id: ChannelId,
+        counterparty_version: String,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            port_id,
+            channel_id,
+            counterparty_channel_id,
+            counterparty_version,
+            proofs,
+            signer,
+        }
+    }
+
     /// Getter: borrow the `port_id` from this message.
     pub fn port_id(&self) -> &PortId {
         &self.port_id
@@ -37,6 +55,7 @@ impl MsgChannelOpenAck {
     pub fn counterparty_channel_id(&self) -> &ChannelId {
         &self.counterparty_channel_id
     }
+
     pub fn counterparty_version(&self) -> &String {
         &self.counterparty_version
     }
