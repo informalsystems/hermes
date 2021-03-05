@@ -15,9 +15,7 @@ pub trait Msg: Clone {
     }
 
     /// Unique type identifier for this message, to support encoding to/from `prost_types::Any`.
-    fn type_url(&self) -> String {
-        unimplemented!()
-    }
+    fn type_url(&self) -> String;
 
     fn to_any<M: From<Self> + prost::Message>(&self) -> Any {
         Any {
