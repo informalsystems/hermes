@@ -41,6 +41,7 @@ impl MsgChannelCloseInit {
 
 impl Msg for MsgChannelCloseInit {
     type ValidationError = Error;
+    type Raw = RawMsgChannelCloseInit;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()

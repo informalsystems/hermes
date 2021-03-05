@@ -37,6 +37,7 @@ pub struct MsgTransfer {
 
 impl Msg for MsgTransfer {
     type ValidationError = Error;
+    type Raw = RawMsgTransfer;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()

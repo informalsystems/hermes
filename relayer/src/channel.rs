@@ -14,12 +14,6 @@ use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
-use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
 use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
@@ -343,7 +337,7 @@ impl Channel {
             signer,
         };
 
-        Ok(vec![new_msg.to_any::<RawMsgChannelOpenInit>()])
+        Ok(vec![new_msg.to_any()])
     }
 
     pub fn build_chan_open_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
@@ -505,7 +499,7 @@ impl Channel {
             signer,
         };
 
-        msgs.push(new_msg.to_any::<RawMsgChannelOpenTry>());
+        msgs.push(new_msg.to_any());
         Ok(msgs)
     }
 
@@ -594,7 +588,7 @@ impl Channel {
             signer,
         };
 
-        msgs.push(new_msg.to_any::<RawMsgChannelOpenAck>());
+        msgs.push(new_msg.to_any());
         Ok(msgs)
     }
 
@@ -671,7 +665,7 @@ impl Channel {
             signer,
         };
 
-        msgs.push(new_msg.to_any::<RawMsgChannelOpenConfirm>());
+        msgs.push(new_msg.to_any());
         Ok(msgs)
     }
 
@@ -724,7 +718,7 @@ impl Channel {
             signer,
         };
 
-        Ok(vec![new_msg.to_any::<RawMsgChannelCloseInit>()])
+        Ok(vec![new_msg.to_any()])
     }
 
     pub fn build_chan_close_init_and_send(&self) -> Result<IbcEvent, ChannelError> {
@@ -802,7 +796,7 @@ impl Channel {
             signer,
         };
 
-        msgs.push(new_msg.to_any::<RawMsgChannelCloseConfirm>());
+        msgs.push(new_msg.to_any());
         Ok(msgs)
     }
 

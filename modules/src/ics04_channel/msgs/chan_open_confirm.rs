@@ -49,6 +49,7 @@ impl MsgChannelOpenConfirm {
 
 impl Msg for MsgChannelOpenConfirm {
     type ValidationError = Error;
+    type Raw = RawMsgChannelOpenConfirm;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()

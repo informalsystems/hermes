@@ -41,6 +41,7 @@ impl MsgAcknowledgement {
 
 impl Msg for MsgAcknowledgement {
     type ValidationError = Error;
+    type Raw = RawMsgAcknowledgement;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()

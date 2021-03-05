@@ -41,6 +41,7 @@ impl MsgTimeout {
 
 impl Msg for MsgTimeout {
     type ValidationError = Error;
+    type Raw = RawMsgTimeout;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()

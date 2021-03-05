@@ -66,6 +66,7 @@ impl MsgChannelOpenTry {
 }
 impl Msg for MsgChannelOpenTry {
     type ValidationError = Error;
+    type Raw = RawMsgChannelOpenTry;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()

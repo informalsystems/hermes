@@ -25,11 +25,8 @@ use ibc::{
 };
 
 use ibc_proto::ibc::core::channel::v1::{
-    MsgAcknowledgement as RawMsgAck, MsgChannelCloseConfirm as RawMsgChannelCloseConfirm,
-    MsgRecvPacket as RawMsgRecvPacket, MsgTimeout as RawMsgTimeout,
-    MsgTimeoutOnClose as RawMsgTimeoutOnClose, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
 use crate::chain::handle::ChainHandle;
@@ -277,7 +274,7 @@ impl RelayPath {
             signer: self.dst_signer()?,
         };
 
-        Ok(new_msg.to_any::<RawMsgChannelCloseConfirm>())
+        Ok(new_msg.to_any())
     }
 
     fn handle_packet_event(&mut self, event: &IbcEvent) -> Result<(), LinkError> {
@@ -727,7 +724,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any::<RawMsgRecvPacket>())
+        Ok(msg.to_any())
     }
 
     fn build_ack_from_recv_event(&self, event: &WriteAcknowledgement) -> Result<Any, LinkError> {
@@ -756,7 +753,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any::<RawMsgAck>())
+        Ok(msg.to_any())
     }
 
     fn build_timeout_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
@@ -797,7 +794,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any::<RawMsgTimeout>())
+        Ok(msg.to_any())
     }
 
     fn build_timeout_on_close_packet(
@@ -829,7 +826,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any::<RawMsgTimeoutOnClose>())
+        Ok(msg.to_any())
     }
 
     fn build_recv_or_timeout_from_send_packet_event(

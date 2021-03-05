@@ -38,6 +38,7 @@ impl MsgConnectionOpenInit {
 
 impl Msg for MsgConnectionOpenInit {
     type ValidationError = Error;
+    type Raw = RawMsgConnectionOpenInit;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()

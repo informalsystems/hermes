@@ -13,8 +13,6 @@ use ibc::ics02_client::state::ConsensusState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::chain::handle::ChainHandle;
 
@@ -179,7 +177,7 @@ impl ForeignClient {
 
         let res = self
             .dst_chain
-            .send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])
+            .send_msgs(vec![new_msg.to_any()])
             .map_err(|e| {
                 ForeignClientError::ClientCreate(format!(
                     "failed sending message to dst chain ({}) with err: {}",
@@ -263,7 +261,7 @@ impl ForeignClient {
             signer,
         };
 
-        Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
+        Ok(vec![new_msg.to_any()])
     }
 
     pub fn build_update_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {

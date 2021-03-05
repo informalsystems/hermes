@@ -34,6 +34,7 @@ impl MsgRecvPacket {
 
 impl Msg for MsgRecvPacket {
     type ValidationError = Error;
+    type Raw = RawMsgRecvPacket;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
