@@ -58,7 +58,6 @@ pub fn process(
 mod tests {
     use std::convert::TryInto;
     use std::time::Duration;
-
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
     use crate::events::IbcEvent;
@@ -84,8 +83,8 @@ mod tests {
         let height = Height::new(0, 42);
 
         let msg = MsgCreateAnyClient::new(
-            MockClientState(MockHeader(height)).into(),
-            MockConsensusState(MockHeader(height)).into(),
+            MockClientState(MockHeader::new(height)).into(),
+            MockConsensusState(MockHeader::new(height)).into(),
             signer,
         )
         .unwrap();
@@ -130,26 +129,12 @@ mod tests {
 
         let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader(Height {
+                MockClientState(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
-                signer,
-            )
-            .unwrap(),
-            MsgCreateAnyClient::new(
-                MockClientState(MockHeader(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
-                MockConsensusState(MockHeader(Height {
+                MockConsensusState(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -158,12 +143,26 @@ mod tests {
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader(Height {
+                MockClientState(MockHeader::new(Height {
+                    revision_height: 42,
+                    ..height
+                }))
+                .into(),
+                MockConsensusState(MockHeader::new(Height {
+                    revision_height: 42,
+                    ..height
+                }))
+                .into(),
+                signer,
+            )
+            .unwrap(),
+            MsgCreateAnyClient::new(
+                MockClientState(MockHeader::new(Height {
                     revision_height: 50,
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader(Height {
+                MockConsensusState(MockHeader::new(Height {
                     revision_height: 50,
                     ..height
                 }))

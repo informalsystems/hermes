@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 
+use chrono::{DateTime, Utc};
 use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
@@ -287,6 +288,20 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
+    pub fn timestamp(&self) -> Result<u64, Kind> {
+        match self {
+            Self::Tendermint(cs_state) => {
+                let date: DateTime<Utc> = cs_state.timestamp.into();
+                let value = date.timestamp();
+                u64::try_from(value)
+                    .map_err(|_| Kind::NegativeConsensusStateTimestamp(value.to_string()))
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(mock_state) => Ok(mock_state.timestamp()),
+        }
+    }
+
     pub fn client_type(&self) -> ClientType {
         match self {
             AnyConsensusState::Tendermint(_cs) => ClientType::Tendermint,

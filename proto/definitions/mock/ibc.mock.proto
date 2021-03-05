@@ -5,6 +5,7 @@ import "ibc/core/client/v1/client.proto";
 
 message Header {
   ibc.core.client.v1.Height height = 1;
+  uint64 timestamp = 2; 
 }
 
 message ClientState {

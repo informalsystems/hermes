@@ -114,7 +114,7 @@ mod test_util {
     /// The `height` parametrizes both the proof height as well as the timeout height.
     pub fn get_dummy_raw_msg_acknowledgement(height: u64) -> RawMsgAcknowledgement {
         RawMsgAcknowledgement {
-            packet: Some(get_dummy_raw_packet(height)),
+            packet: Some(get_dummy_raw_packet(height, 1)),
             acknowledgement: get_dummy_proof(),
             proof_acked: get_dummy_proof(),
             proof_height: Some(RawHeight {

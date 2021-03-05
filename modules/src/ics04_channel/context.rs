@@ -1,6 +1,7 @@
 //! ICS4 (channel) context. The two traits `ChannelReader ` and `ChannelKeeper` define
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //!
+
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
@@ -9,6 +10,8 @@ use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
+
+use super::packet::{PacketResult, Sequence};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReader {
@@ -32,6 +35,11 @@ pub trait ChannelReader {
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
 
+    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence>;
+
+    /// A hashing function for packet commitments  
+    fn hash(&self, value: String) -> String;
+
     /// Returns a counter on the number of channel ids have been created thus far.
     /// The value of this counter should increase only via method
     /// `ChannelKeeper::increase_channel_counter`.
@@ -44,7 +52,7 @@ pub trait ChannelKeeper {
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         // The handler processed this channel & some modifications occurred, store the new end.
         self.store_channel(
-            &(result.port_id.clone(), result.channel_id.clone()),
+            (result.port_id.clone(), result.channel_id.clone()),
             &result.channel_end,
         )?;
 
@@ -55,48 +63,81 @@ pub trait ChannelKeeper {
 
             // Associate also the channel end to its connection.
             self.store_connection_channels(
-                &result.channel_end.connection_hops()[0].clone(),
+                result.channel_end.connection_hops()[0].clone(),
                 &(result.port_id.clone(), result.channel_id.clone()),
             )?;
 
             // Initialize send, recv, and ack sequence numbers.
-            self.store_next_sequence_send(&(result.port_id.clone(), result.channel_id.clone()), 1)?;
-            self.store_next_sequence_recv(&(result.port_id.clone(), result.channel_id.clone()), 1)?;
-            self.store_next_sequence_ack(&(result.port_id, result.channel_id), 1)?;
+            self.store_next_sequence_send(
+                (result.port_id.clone(), result.channel_id.clone()),
+                1.into(),
+            )?;
+            self.store_next_sequence_recv(
+                (result.port_id.clone(), result.channel_id.clone()),
+                1.into(),
+            )?;
+            self.store_next_sequence_ack((result.port_id, result.channel_id), 1.into())?;
         }
 
         Ok(())
     }
 
+    fn store_packet_result(&mut self, general_result: PacketResult) -> Result<(), Error> {
+        match general_result {
+            PacketResult::Send(res) => {
+                self.store_next_sequence_send(
+                    (res.port_id.clone(), res.channel_id.clone()),
+                    res.seq_number,
+                )?;
+
+                self.store_packet_commitment(
+                    (res.port_id.clone(), res.channel_id.clone(), res.seq),
+                    res.timeout_timestamp,
+                    res.timeout_height,
+                    res.data,
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    fn store_packet_commitment(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        timestamp: u64,
+        heigh: Height,
+        data: Vec<u8>,
+    ) -> Result<(), Error>;
+
     fn store_connection_channels(
         &mut self,
-        conn_id: &ConnectionId,
+        conn_id: ConnectionId,
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<(), Error>;
 
     /// Stores the given channel_end at a path associated with the port_id and channel_id.
     fn store_channel(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         channel_end: &ChannelEnd,
     ) -> Result<(), Error>;
 
     fn store_next_sequence_send(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
-        seq: u64,
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
     ) -> Result<(), Error>;
 
     fn store_next_sequence_recv(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
-        seq: u64,
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
     ) -> Result<(), Error>;
 
     fn store_next_sequence_ack(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
-        seq: u64,
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
     ) -> Result<(), Error>;
 
     /// Called upon channel identifier creation (Init or Try message processing).
