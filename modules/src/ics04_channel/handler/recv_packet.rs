@@ -1,14 +1,14 @@
-use std::cmp::Ordering;
-
-use crate::{handler::{HandlerOutput, HandlerResult}, ics24_host::identifier::{ChannelId, PortId}};
 use crate::{events::IbcEvent, ics04_channel::events::ReceivePacket};
-
+use crate::{
+    handler::{HandlerOutput, HandlerResult},
+    ics24_host::identifier::{ChannelId, PortId},
+};
 
 use super::verify::verify_packet_proofs;
 use crate::ics02_client::state::ClientState;
 use crate::ics03_connection::connection::State as ConnectionState;
 
-use crate::ics04_channel::channel::{Counterparty,Order, State};
+use crate::ics04_channel::channel::{Counterparty, Order, State};
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
@@ -18,9 +18,8 @@ pub struct RecvPacketResult {
     pub channel_id: ChannelId,
     pub seq: Sequence,
     pub seq_number: Sequence,
-    pub receipt: Option<String>
+    pub receipt: Option<String>,
 }
-
 
 pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -71,40 +70,36 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     let client_state = ctx
         .client_state(&client_id)
         .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
-    // check if packet height timeouted on the receiving chain
 
     // prevent accidental sends with clients that cannot be updated
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
+        return Err(Kind::FrozenClient(client_id.clone()).into());
     }
 
+    // check if packet height is newer than the height of the latest client state on the receiving chain
     let latest_height = client_state.latest_height();
     let packet_height = packet.timeout_height;
 
-    if !packet.timeout_height.is_zero() && packet_height.cmp(&latest_height).eq(&Ordering::Less) {
+    if !packet.timeout_height.is_zero() && packet_height <= latest_height {
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
-    //check if packet timestamp timeouted on the receiving chain
+    //check if packet timestamp is newer than the timestamp of the latest consensus state of the receiving chain
     let consensus_state = ctx
         .client_consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
 
-    let latest_timestamp = consensus_state.timestamp()
+    let latest_timestamp = consensus_state
+        .timestamp()
         .map_err(Kind::ErrorInvalidConsensusState)?;
-    
 
     let packet_timestamp = packet.timeout_timestamp;
-    if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
-    {
+    if !packet.timeout_timestamp == 0 && packet_timestamp <= latest_timestamp {
         return Err(Kind::LowPacketTimestamp.into());
     }
 
-    verify_packet_proofs(ctx, &packet, client_id, &msg.proofs.clone())?;
+    verify_packet_proofs(ctx, &packet, client_id, &msg.proofs)?;
 
-    //map_or_else(|| Kind::PacketVerificationFailed(packet.sequence.clone()))?;
-
-    output.log("success: packet send ");
     let result;
 
     if dest_channel_end.order_matches(&Order::Ordered) {
@@ -115,11 +110,11 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         if !packet.sequence.eq(&next_seq_recv) {
             return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_recv).into());
         }
-        
+
         result = PacketResult::Recv(RecvPacketResult {
             port_id: packet.source_port.clone(),
             channel_id: packet.source_channel.clone(),
-            seq: packet.sequence.clone(),
+            seq: packet.sequence,
             seq_number: next_seq_recv.increment(),
             receipt: None,
         });
@@ -127,27 +122,24 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         let packet_rec = ctx.get_packet_receipt(&(
             packet.source_port.clone(),
             packet.source_channel.clone(),
-            packet.sequence.clone(),
+            packet.sequence,
         ));
 
         match packet_rec {
-            Some(_r) => {
-                return Err(Kind::PacketReceived(<u64 as From<Sequence>>::from(
-                    packet.sequence.clone(),
-                ))
-                .into())
-            }
+            Some(_r) => return Err(Kind::PacketAlreadyReceived(packet.sequence).into()),
             None => {
                 result = PacketResult::Recv(RecvPacketResult {
                     port_id: packet.source_port.clone(),
                     channel_id: packet.source_channel.clone(),
-                    seq: packet.sequence.clone(),
+                    seq: packet.sequence,
                     seq_number: 1.into(),
                     receipt: Some("1".to_string()),
                 });
             }
         }
     }
+
+    output.log("success: packet receive ");
 
     output.emit(IbcEvent::ReceivePacket(ReceivePacket {
         height: packet_height,
@@ -168,16 +160,15 @@ mod tests {
     use crate::ics03_connection::connection::State as ConnectionState;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
+    use crate::ics04_channel::handler::recv_packet::process;
     use crate::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-    use crate::ics04_channel::handler::recv_packet::process;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::{
         events::IbcEvent,
         ics04_channel::packet::{Packet, Sequence},
     };
-    use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
     #[test]
     fn recv_packet_processing() {
@@ -194,15 +185,8 @@ mod tests {
 
         let h = Height::new(0, Height::default().revision_height + 1);
 
-        let raw_msg = get_dummy_raw_msg_recv_packet(height);
-        
-        let msg = <MsgRecvPacket as TryFrom<RawMsgRecvPacket>>::try_from(raw_msg).unwrap();
-        
-        //let msg:MsgRecvPacket = raw_msg.into();
+        let msg = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(height)).unwrap();
 
-        //map_err(|e| Kind::InvalidPacket.context(e).into()).into_ok();
-        //unwrap_or_else(return Error::Kind::InvalidPacket.context(e).into());
-        //map_err(|e| Kind::InvalidPacket.context(e).into());
         let packet = msg.packet.clone();
 
         let packet_untimed = Packet {
@@ -215,7 +199,6 @@ mod tests {
             timeout_height: Height::default(),
             timeout_timestamp: 0,
         };
-
 
         let dest_channel_end = ChannelEnd::new(
             State::Open,
@@ -307,9 +290,6 @@ mod tests {
                         test.ctx.clone()
                     );
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
-
-                    // TODO: The object in the output is a PacketResult what can we check on it?
-
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::ReceivePacket(_)));
                     }

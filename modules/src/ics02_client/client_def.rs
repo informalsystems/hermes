@@ -5,7 +5,6 @@ use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
-use crate::{downcast, ics04_channel::packet::Sequence};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
@@ -19,6 +18,7 @@ use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
+use crate::{downcast, ics04_channel::packet::Sequence};
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::{
@@ -103,7 +103,7 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>>;
-    
+
     /// Verify a `proof` that a packet has been commited.
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
@@ -116,7 +116,6 @@ pub trait ClientDef: Clone {
         seq: &Sequence,
         commitment: String,
     ) -> Result<(), Box<dyn std::error::Error>>;
-
 }
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible

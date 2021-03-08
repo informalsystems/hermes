@@ -103,7 +103,7 @@ pub struct MockContext {
 
     /// Constant-size commitments to packets data fields
     packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
-    
+
     //Used by unorded channel
     packet_receipt: HashMap<(PortId, ChannelId, Sequence), String>,
 }
@@ -413,7 +413,7 @@ impl ChannelReader for MockContext {
     fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
         self.next_sequence_recv.get(port_channel_id).cloned()
     }
-    
+
     fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
         self.packet_receipt.get(key).cloned()
     }
@@ -499,7 +499,7 @@ impl ChannelKeeper for MockContext {
         key: (PortId, ChannelId, Sequence),
         receipt: String,
     ) -> Result<(), Ics4Error> {
-        self.packet_receipt.insert(key.clone(), receipt);
+        self.packet_receipt.insert(key, receipt);
         Ok(())
     }
 }

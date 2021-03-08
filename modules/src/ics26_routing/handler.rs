@@ -3,7 +3,6 @@ use tendermint_proto::Protobuf;
 
 use crate::application::ics20_fungible_token_transfer::msgs::transfer;
 use crate::application::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
-use crate::{events::IbcEvent, handler::HandlerOutput};
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::{create_client, update_client, ClientMsg};
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
@@ -12,14 +11,17 @@ use crate::ics03_connection::msgs::{
 };
 use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
 use crate::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
+use crate::{events::IbcEvent, handler::HandlerOutput};
 
 use crate::ics04_channel::msgs::{
     chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm, chan_open_init,
-    chan_open_try, ChannelMsg,
+    chan_open_try, ChannelMsg, PacketMsg, recv_packet
 };
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::error::{Error, Kind};
-use crate::ics26_routing::msgs::Ics26Envelope::{self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4Msg, Ics4PacketMsg};
+use crate::ics26_routing::msgs::Ics26Envelope::{
+    self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4Msg, Ics4PacketMsg,
+};
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
@@ -111,12 +113,19 @@ where
                         .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4Msg(ChannelMsg::ChannelCloseConfirm(domain_msg)))
             }
-            //ICS20
+            //ICS20-04-send packet
             transfer::TYPE_URL => {
                 // Pop out the message and then wrap it in the corresponding type.
                 let domain_msg = transfer::MsgTransfer::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics20Msg(domain_msg))
+            }
+            //ICS04-packets
+            recv_packet::TYPE_URL => {
+                let domain_msg =
+                recv_packet::MsgRecvPacket::decode_vec(&any_msg.value)
+                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                Ok(Ics4PacketMsg(PacketMsg::RecvPacket(domain_msg)))
             }
 
             _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)),
@@ -210,7 +219,6 @@ where
                 .with_events(handler_output.events)
                 .with_result(())
         }
-        _ => todo!(),
     };
 
     Ok(output)
@@ -220,6 +228,7 @@ where
 mod tests {
     use std::convert::TryFrom;
 
+    use crate::application::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer;
     use crate::events::IbcEvent;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::msgs::{
@@ -239,10 +248,9 @@ mod tests {
         chan_open_ack::{test_util::get_dummy_raw_msg_chan_open_ack, MsgChannelOpenAck},
         chan_open_init::{test_util::get_dummy_raw_msg_chan_open_init, MsgChannelOpenInit},
         chan_open_try::{test_util::get_dummy_raw_msg_chan_open_try, MsgChannelOpenTry},
-        ChannelMsg,
         recv_packet::{test_util::get_dummy_raw_msg_recv_packet, MsgRecvPacket},
+        ChannelMsg, PacketMsg,
     };
-    use crate::application::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer;
 
     use crate::ics24_host::identifier::ConnectionId;
     use crate::ics26_routing::handler::dispatch;
@@ -269,6 +277,7 @@ mod tests {
         let client_height = 5;
         let start_client_height = Height::new(0, client_height);
         let update_client_height = Height::new(0, 34);
+        let update_client_height2 = Height::new(0, 35);
 
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
@@ -327,9 +336,9 @@ mod tests {
             MsgChannelCloseConfirm::try_from(get_dummy_raw_msg_chan_close_confirm(client_height))
                 .unwrap();
 
-        let msg_transfer = get_dummy_msg_transfer(34);
+        let msg_transfer = get_dummy_msg_transfer(35);
 
-        let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(34)).unwrap();
+        let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 
         // First, create a client..
         let res = dispatch(
@@ -397,7 +406,7 @@ mod tests {
             Test {
                 name: "Connection open try succeeds".to_string(),
                 msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
-                    correct_msg_conn_try.with_client_id(client_id),
+                    correct_msg_conn_try.with_client_id(client_id.clone()),
                 ))),
                 want_pass: true,
             },
@@ -436,11 +445,25 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Receive packet".to_string(),
-                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
+                name: "Client update successful".to_string(),
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                    client_id,
+                    header: MockHeader::new(update_client_height2).into(),
+                    signer: default_signer,
+                })),
                 want_pass: true,
             },
-            //ICS04-close channel 
+            Test {
+                name: "Receive packet".to_string(),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet.clone())),
+                want_pass: true,
+            },
+            Test {
+                name: "Re-Receive packet".to_string(),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
+                want_pass: false,
+            },
+            //ICS04-close channel
             Test {
                 name: "Channel close init succeeds".to_string(),
                 msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelCloseInit(msg_chan_close_init)),

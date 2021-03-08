@@ -101,6 +101,22 @@ pub trait ChannelKeeper {
                     res.data,
                 )?;
             }
+            PacketResult::Recv(res) => {
+                if res.receipt.is_none() {
+                    //Ordered cchannel
+                    self.store_next_sequence_recv(
+                        (res.port_id.clone(), res.channel_id.clone()),
+                        res.seq_number,
+                    )?;
+                } else {
+                    //Unorderd channel: store a receipt that does not contain any data, since the packet has not yet been processed,
+                    // it's just a single store key set to an empty string to indicate that the packet has been received
+                    self.store_packet_receipt(
+                        (res.port_id.clone(), res.channel_id.clone(), res.seq),
+                        "".to_string(),
+                    )?;
+                }
+            }
         }
         Ok(())
     }

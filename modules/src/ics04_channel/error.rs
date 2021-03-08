@@ -37,6 +37,9 @@ pub enum Kind {
     #[error("invalid proof: missing height")]
     MissingHeight,
 
+    #[error("Missing sequence number for receving packets")]
+    MissingNextRecvSeq,
+
     #[error("packet sequence cannot be 0")]
     ZeroPacketSequence,
 
@@ -54,6 +57,9 @@ pub enum Kind {
 
     #[error("there is no packet in this message")]
     MissingPacket,
+
+    #[error("Packet with the sequence number {0} has been already received")]
+    PacketAlreadyReceived(Sequence),
 
     #[error("missing counterparty")]
     MissingCounterparty,
@@ -94,6 +100,9 @@ pub enum Kind {
 
     #[error("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")]
     FailedChanneOpenTryVerification,
+
+    #[error("Verification fails for the packet with the sequence number {0}")]
+    PacketVerificationFailed(Sequence),
 
     #[error("No client state associated with client id {0}")]
     MissingClientState(ClientId),

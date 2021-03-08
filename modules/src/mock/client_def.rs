@@ -1,4 +1,3 @@
-use crate::{ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef}, ics04_channel::packet::Sequence};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
@@ -8,6 +7,10 @@ use crate::ics24_host::Path;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
 use crate::Height;
+use crate::{
+    ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef},
+    ics04_channel::packet::Sequence,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MockClient;
@@ -94,7 +97,7 @@ impl ClientDef for MockClient {
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
-    
+
     fn verify_packet_data(
         &self,
         _client_state: &Self::ClientState,

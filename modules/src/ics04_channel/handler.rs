@@ -16,8 +16,8 @@ pub mod chan_open_ack;
 pub mod chan_open_confirm;
 pub mod chan_open_init;
 pub mod chan_open_try;
-pub mod send_packet;
 pub mod recv_packet;
+pub mod send_packet;
 
 mod verify;
 
@@ -59,10 +59,10 @@ where
 
 pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: PacketMsg) -> Result<HandlerOutput<PacketResult>, Error>
 where
-Ctx: ChannelReader,
+    Ctx: ChannelReader,
 {
-match msg {
-PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
-_ => todo!(),
-}
+    match msg {
+        PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
+        _ => todo!(),
+    }
 }

@@ -1,10 +1,13 @@
-use crate::{ics02_client::state::ClientState, ics04_channel::packet::Packet, ics24_host::identifier::ClientId};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::proofs::Proofs;
+use crate::{
+    ics02_client::state::ClientState, ics04_channel::packet::Packet,
+    ics24_host::identifier::ClientId,
+};
 
 /// Entry point for verifying all proofs bundled in any ICS4 message.
 pub fn verify_proofs(
@@ -50,7 +53,6 @@ pub fn verify_proofs(
         .map_err(|_| Kind::InvalidProof)?)
 }
 
-
 /// Entry point for verifying all proofs bundled in any ICS4 message.
 pub fn verify_packet_proofs(
     ctx: &dyn ChannelReader,
@@ -81,8 +83,8 @@ pub fn verify_packet_proofs(
         packet.timeout_timestamp, packet.timeout_height, packet.data
     );
     let commitment = ctx.hash(input);
-    // Verify the proof for the channel state against the expected channel end.
-    // A counterparty channel id of None in not possible, and is checked by validate_basic in msg.
+
+    // Verify the proof for the packet against the chain store.
     Ok(client_def
         .verify_packet_data(
             &client_state,
@@ -93,5 +95,5 @@ pub fn verify_packet_proofs(
             &packet.sequence,
             commitment,
         )
-        .map_err(|_| Kind::InvalidProof)?)
+        .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
 }
