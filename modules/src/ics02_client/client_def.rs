@@ -5,7 +5,7 @@ use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
-use crate::downcast;
+use crate::{downcast, ics04_channel::packet::Sequence};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
@@ -103,6 +103,20 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>>;
+    
+    /// Verify a `proof` that a packet has been commited.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_data(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        seq: &Sequence,
+        commitment: String,
+    ) -> Result<(), Box<dyn std::error::Error>>;
+
 }
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
@@ -614,6 +628,53 @@ impl ClientDef for AnyClient {
                     client_id,
                     proof,
                     client_state_on_counterparty,
+                )
+            }
+        }
+    }
+    fn verify_packet_data(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        seq: &Sequence,
+        commitment: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            Self::Tendermint(client) => {
+                let client_state = downcast!(
+                    client_state => AnyClientState::Tendermint
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                client.verify_packet_data(
+                    client_state,
+                    height,
+                    proof,
+                    port_id,
+                    channel_id,
+                    seq,
+                    commitment,
+                )
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(client) => {
+                let client_state = downcast!(
+                    client_state => AnyClientState::Mock
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+
+                client.verify_packet_data(
+                    client_state,
+                    height,
+                    proof,
+                    port_id,
+                    channel_id,
+                    seq,
+                    commitment,
                 )
             }
         }
