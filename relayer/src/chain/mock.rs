@@ -320,6 +320,10 @@ impl Chain for MockChain {
             trusted_validator_set: trusted_light_block.validators,
         })
     }
+
+    fn query_upgraded_consensus_state(&self, _height: Height) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        unimplemented!()
+    }
 }
 
 // For integration tests with the modules
