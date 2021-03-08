@@ -12,11 +12,13 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::merkle::cosmos_specs;
+use crate::ics24_host::identifier::ChainId;
 use crate::Height;
+use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ClientState {
-    pub chain_id: String,
+    pub chain_id: ChainId,
     pub trust_level: TrustThreshold,
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
@@ -34,7 +36,7 @@ impl Protobuf<RawClientState> for ClientState {}
 impl ClientState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        chain_id: String,
+        chain_id: ChainId,
         trust_level: TrustThreshold,
         trusting_period: Duration,
         unbonding_period: Duration,
@@ -105,7 +107,7 @@ impl ClientState {
 }
 
 impl crate::ics02_client::client_state::ClientState for ClientState {
-    fn chain_id(&self) -> String {
+    fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
 
@@ -136,7 +138,8 @@ impl TryFrom<RawClientState> for ClientState {
             .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?;
 
         Ok(Self {
-            chain_id: raw.chain_id,
+            chain_id: ChainId::from_str(raw.chain_id.as_str())
+                .map_err(|_| Kind::InvalidRawClientState.context("Invalid chain identifier"))?,
             trust_level: TrustThreshold {
                 numerator: trust_level.numerator,
                 denominator: trust_level.denominator,
@@ -176,7 +179,7 @@ impl TryFrom<RawClientState> for ClientState {
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         RawClientState {
-            chain_id: value.chain_id.clone(),
+            chain_id: value.chain_id.as_str().parse().unwrap(),
             trust_level: Some(Fraction {
                 numerator: value.trust_level.numerator,
                 denominator: value.trust_level.denominator,
@@ -306,7 +309,7 @@ mod tests {
             let p = test.params.clone();
 
             let cs_result = ClientState::new(
-                p.id,
+                p.id.parse().unwrap(),
                 p.trust_level,
                 p.trusting_period,
                 p.unbonding_period,
@@ -344,7 +347,7 @@ pub mod test_util {
     pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {
         AnyClientState::Tendermint(
             ClientState::new(
-                tm_header.chain_id.to_string(),
+                ChainId::from(tm_header.chain_id.clone()),
                 Default::default(),
                 Duration::from_secs(64000),
                 Duration::from_secs(128000),

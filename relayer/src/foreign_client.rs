@@ -5,24 +5,25 @@ use thiserror::Error;
 use tracing::{error, info};
 
 use ibc::downcast;
-use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::ConsensusState;
-use ibc::ics02_client::client_header::{AnyHeader, Header};
-use ibc::ics02_client::client_misbehaviour::{AnyMisbehaviour, Misbehaviour};
+use ibc::events::{IbcEvent, IbcEventType};
+use ibc::ics02_client::client_consensus::{ConsensusState, QueryClientEventRequest};
+use ibc::ics02_client::client_header::Header;
 use ibc::ics02_client::client_state::ClientState;
+use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 use ibc::ics24_host::identifier::ClientId;
+use ibc::query::QueryTxRequest;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::{
     MsgCreateClient as RawMsgCreateClient, MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour,
-    MsgUpdateClient as RawMsgUpdateClient,
+    MsgUpdateClient as RawMsgUpdateClient, QueryConsensusStatesRequest,
 };
 
 use crate::chain::handle::ChainHandle;
+use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -87,82 +88,6 @@ impl ForeignClient {
             dst_chain: dst_chain.clone(),
             src_chain: src_chain.clone(),
         }
-    }
-
-    pub fn handle_misbehaviour(
-        &self,
-        consensus_height: &Height,
-        chain_header: &AnyHeader,
-    ) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        let tm_chain_header =
-            downcast!(chain_header => AnyHeader::Tendermint).ok_or_else(|| {
-                ForeignClientError::Misbehaviour(format!(
-                    "client type not supported for {}",
-                    self.dst_chain.id()
-                ))
-            })?;
-
-        // Get the latest trusted height from the chain header.
-        let trusted_height = tm_chain_header.trusted_height;
-
-        let local_header = self
-            .src_chain
-            .build_header(trusted_height, *consensus_height)
-            .map_err(|e| {
-                ForeignClientError::Misbehaviour(format!(
-                    "error {} while building local header at height {} from src chain ({})",
-                    e,
-                    *consensus_height,
-                    self.dst_chain.id(),
-                ))
-            })?;
-
-        let tm_local_header =
-            downcast!(local_header => AnyHeader::Tendermint).ok_or_else(|| {
-                ForeignClientError::Misbehaviour(format!(
-                    "client type not supported for {}",
-                    self.dst_chain.id()
-                ))
-            })?;
-
-        // 5 - verify that the headers are the same
-        // TODO - remove comments
-        // Commented out temporarily for testing, we submit evidence with two identical headers
-        // if tm_chain_header == tm_local_header {
-        //     return Ok(vec![]);
-        // }
-
-        // 6 - submit evidence
-        error!("local and chain headers are different, submitting evidence");
-
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ForeignClientError::Misbehaviour(format!(
-                "failed getting signer for dst chain ({}) with error: {}",
-                self.dst_chain.id(),
-                e
-            ))
-        })?;
-
-        let new_msg = MsgSubmitAnyMisbehaviour {
-            client_id: self.id.clone(),
-            misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
-                client_id: self.id().clone(),
-                header1: tm_chain_header.clone(),
-                header2: tm_local_header,
-            })
-            .wrap_any(),
-            signer,
-        };
-
-        let msg = new_msg.to_any::<RawMsgSubmitMisbehaviour>();
-        let events = self.dst_chain().send_msgs(vec![msg]).map_err(|e| {
-            ForeignClientError::Misbehaviour(format!(
-                "failed sending message to dst chain ({}) with err: {}",
-                self.dst_chain.id(),
-                e
-            ))
-        })?;
-        Ok(events)
     }
 
     /// Returns a handle to the chain hosting this client.
@@ -355,6 +280,165 @@ impl ForeignClient {
         );
 
         Ok(())
+    }
+
+    pub fn update_client_event(
+        &self,
+        consensus_height: Height,
+    ) -> Result<Option<UpdateClient>, ForeignClientError> {
+        let request = QueryClientEventRequest {
+            height: Height::zero(),
+            event_id: IbcEventType::UpdateClient,
+            client_id: self.id.clone(),
+            consensus_height,
+        };
+
+        // Tx query fails if we don't wait a bit here (block is not ready/ indexed?)
+        thread::sleep(Duration::from_millis(100));
+        let res = self
+            .dst_chain
+            .query_txs(QueryTxRequest::Client(request))
+            .map_err(|e| {
+                ForeignClientError::Misbehaviour(format!(
+                    "failed to query Tx-es for update client event {}",
+                    e
+                ))
+            })?;
+
+        if res.is_empty() {
+            return Ok(None);
+        };
+
+        assert_eq!(res.len(), 1);
+        let event = res[0].clone();
+        let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
+            ForeignClientError::Misbehaviour(format!(
+                "query Tx-es returned unexpected event {}",
+                event.to_json()
+            ))
+        })?;
+        Ok(Some(update))
+    }
+
+    /// Retrieves all consensus heights for this client and sorts them in reverse
+    /// order. If they are not pruned on chain then last consensus state is the one
+    /// installed by the `CreateClient` operation.
+    fn consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
+        let mut consensus_state_heights: Vec<Height> = self
+            .dst_chain
+            .query_consensus_states(QueryConsensusStatesRequest {
+                client_id: self.id.to_string(),
+                pagination: None,
+            })
+            .map_err(|e| {
+                ForeignClientError::Misbehaviour(format!("failed to query consensus states {}", e))
+            })?
+            .iter()
+            .filter_map(|cs| Option::from(cs.height))
+            .collect();
+
+        consensus_state_heights.sort();
+        consensus_state_heights.reverse();
+        Ok(consensus_state_heights)
+    }
+
+    pub fn handle_misbehaviour(
+        &self,
+        mut update_event: UpdateClient,
+    ) -> Result<Option<AnyMisbehaviour>, ForeignClientError> {
+        let consensus_state_heights = self.consensus_state_heights()?;
+
+        let mut first_misbehaviour = None;
+
+        info!("consensus state heights {:?}", consensus_state_heights);
+
+        for (i, _consensus_height) in consensus_state_heights.iter().enumerate() {
+            crate::time!("handle_misbehaviour");
+
+            let trusted_height = consensus_state_heights[i + 1];
+            let misbehavior = self
+                .src_chain
+                .build_misbehaviour(update_event.clone(), trusted_height)
+                .map_err(|e| {
+                    ForeignClientError::Misbehaviour(format!("failed to build misbehaviour {}", e))
+                })?;
+
+            if misbehavior.is_none() {
+                break;
+            }
+            first_misbehaviour = misbehavior;
+
+            if let Some(new_update) = self.update_client_event(trusted_height)? {
+                update_event = new_update;
+                continue;
+            }
+            break;
+        }
+
+        if first_misbehaviour.is_some() {
+            error!("\n MISBEHAVIOUR detected {:?}", first_misbehaviour);
+        }
+        Ok(first_misbehaviour)
+    }
+
+    pub fn detect_misbehaviour_and_send_evidence(
+        &self,
+        update: Option<UpdateClient>,
+    ) -> Result<Option<IbcEvent>, ForeignClientError> {
+        // if event is None start with the last client update event
+        let update = match update {
+            Some(update) => Some(update),
+            None => {
+                let client_state = self
+                    .dst_chain
+                    .query_client_state(self.id(), Height::zero())
+                    .map_err(|e| {
+                        ForeignClientError::Misbehaviour(format!(
+                            "failed to query client state {}",
+                            e
+                        ))
+                    })?;
+                self.update_client_event(client_state.latest_height())?
+            }
+        };
+
+        if update.is_none() {
+            return Ok(None);
+        }
+        let misbehaviour = self.handle_misbehaviour(update.unwrap())?;
+
+        match misbehaviour {
+            None => Ok(None),
+            Some(misbehaviour) => {
+                error!("\nmisbehaviour detected {:?}", misbehaviour);
+
+                let signer = self.dst_chain().get_signer().map_err(|e| {
+                    ForeignClientError::Misbehaviour(format!(
+                        "failed getting signer for dst chain ({}) with error: {}",
+                        self.dst_chain.id(),
+                        e
+                    ))
+                })?;
+
+                let msg = MsgSubmitAnyMisbehaviour {
+                    client_id: self.id.clone(),
+                    misbehaviour,
+                    signer,
+                };
+
+                let msg = msg.to_any::<RawMsgSubmitMisbehaviour>();
+
+                let events = self.dst_chain().send_msgs(vec![msg]).map_err(|e| {
+                    ForeignClientError::Misbehaviour(format!(
+                        "failed sending evidence to dst chain ({}) with err: {}",
+                        self.dst_chain.id(),
+                        e
+                    ))
+                })?;
+
+                Ok(Some(events[0].clone()))
+            }
+        }
     }
 }
 

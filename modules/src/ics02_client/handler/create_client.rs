@@ -72,7 +72,7 @@ mod tests {
     use crate::ics02_client::msgs::ClientMsg;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::ics24_host::identifier::ClientId;
+    use crate::ics24_host::identifier::{ChainId, ClientId};
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
@@ -221,7 +221,7 @@ mod tests {
 
         let tm_header = get_dummy_tendermint_header();
         let tm_client_state = AnyClientState::Tendermint(ClientState {
-            chain_id: tm_header.chain_id.to_string(),
+            chain_id: ChainId::from(tm_header.chain_id.clone()),
             trust_level: TrustThreshold {
                 numerator: 1,
                 denominator: 3,

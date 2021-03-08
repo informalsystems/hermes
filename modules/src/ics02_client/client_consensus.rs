@@ -6,11 +6,13 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 
+use crate::events::IbcEventType;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::height::Height;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::ics23_commitment::commitment::CommitmentRoot;
+use crate::ics24_host::identifier::ClientId;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
 
@@ -98,8 +100,8 @@ impl From<AnyConsensusState> for Any {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AnyConsensusStateWithHeight {
-    height: Height,
-    consensus_state: AnyConsensusState,
+    pub height: Height,
+    pub consensus_state: AnyConsensusState,
 }
 
 impl Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {}
@@ -147,4 +149,12 @@ impl ConsensusState for AnyConsensusState {
     fn wrap_any(self) -> AnyConsensusState {
         self
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct QueryClientEventRequest {
+    pub height: crate::Height,
+    pub event_id: IbcEventType,
+    pub client_id: ClientId,
+    pub consensus_height: crate::Height,
 }

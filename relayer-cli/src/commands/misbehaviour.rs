@@ -1,19 +1,19 @@
-use std::str::FromStr;
-
 use abscissa_core::{config, error::BoxError, Command, Options, Runnable};
-
-use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::height::Height;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::StoreConfig;
+use ibc_relayer::error::Kind;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::CliApp;
 use crate::commands::cli_utils::{spawn_chain_runtime, SpawnOptions};
 use crate::conclude::Output;
 use crate::prelude::*;
+use ibc::ics02_client::client_state::ClientState;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct MisbehaviourCmd {
@@ -43,42 +43,36 @@ pub fn monitor_misbehaviour(
 ) -> Result<(), BoxError> {
     let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
 
-    let chain = spawn_chain_runtime(&spawn_options, &config, chain_id).unwrap();
+    let chain = spawn_chain_runtime(&spawn_options, &config, chain_id)
+        .map_err(|e| format!("could not spawn the chain runtime for {}", chain_id))?;
 
     let subscription = chain.subscribe()?;
 
+    let mut restart = true;
     while let Ok(event_batch) = subscription.recv() {
         for event in event_batch.events.iter() {
             match event {
+                IbcEvent::NewBlock(_bl) => {
+                    if !restart {
+                        continue;
+                    }
+                    let clients = chain
+                        .query_clients(QueryClientStatesRequest { pagination: None })
+                        .map_err(|e| format!("could not query clients for {}", chain.id()))?;
+
+                    for client_id in clients.iter() {
+                        misbehaviour_handling(chain.clone(), config, client_id, None)?;
+                    }
+                    restart = false;
+                }
                 IbcEvent::UpdateClient(update) => {
                     dbg!(update);
-                    // 1 - make sure client is supported and then create the counterparty chain handle
-                    let client_id = update.client_id();
-                    let client_state = chain.query_client_state(client_id, Height::zero()).unwrap();
-                    let tm_client_state =
-                        downcast!(client_state => AnyClientState::Tendermint).unwrap();
-                    let counterparty_chain = spawn_chain_runtime(
-                        &spawn_options,
-                        &config,
-                        &ChainId::from_str(tm_client_state.chain_id.as_str()).unwrap(),
-                    )
-                    .unwrap();
-
-                    // 2 - restore the foreign client
-                    let client = ForeignClient::restore_client(
+                    misbehaviour_handling(
                         chain.clone(),
-                        counterparty_chain.clone(),
-                        client_id,
-                    );
-
-                    // 3 - handle potential misbehaviour
-                    let res = client
-                        .handle_misbehaviour(
-                            update.consensus_height(),
-                            update.header.as_ref().unwrap(),
-                        )
-                        .unwrap();
-                    println!("Handled misbehavior {:?}", res);
+                        config,
+                        update.client_id(),
+                        Some(update.clone()),
+                    )?;
                 }
 
                 IbcEvent::CreateClient(create) => {
@@ -87,6 +81,49 @@ pub fn monitor_misbehaviour(
                 _ => {}
             }
         }
+    }
+
+    Ok(())
+}
+
+fn misbehaviour_handling(
+    chain: Box<dyn ChainHandle>,
+    config: &config::Reader<CliApp>,
+    client_id: &ClientId,
+    update: Option<UpdateClient>,
+) -> Result<(), BoxError> {
+    let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+
+    let client_state = chain
+        .query_client_state(client_id, Height::zero())
+        .map_err(|e| format!("could not query client state for {}", client_id))?;
+
+    if client_state.is_frozen() {
+        return Err(Box::new(Kind::Misbehaviour(format!(
+            "client {} is forzen",
+            client_id
+        ))));
+    }
+    let counterparty_chain = spawn_chain_runtime(&spawn_options, &config, &client_state.chain_id())
+        .map_err(|e| {
+            format!(
+                "could not spawn the chain runtime for {}",
+                client_state.chain_id()
+            )
+        })?;
+
+    let client =
+        ForeignClient::restore_client(chain.clone(), counterparty_chain.clone(), client_id);
+
+    let misbehaviour_detection_result = client
+        .detect_misbehaviour_and_send_evidence(update)
+        .map_err(|e| format!("could not run misbehaviour detection for {}", client_id))?;
+
+    if let Some(evidence_submission_result) = misbehaviour_detection_result {
+        error!(
+            "\nEvidence submission result {:?}",
+            evidence_submission_result
+        );
     }
 
     Ok(())

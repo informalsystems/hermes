@@ -8,11 +8,10 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
-use crate::events::IbcEventType;
 use crate::ics02_client::client_header::AnyHeader;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
-use crate::ics24_host::identifier::{ChainId, ClientId};
+use crate::ics24_host::identifier::ChainId;
 use crate::Height;
 
 /// Tendermint consensus header
@@ -90,14 +89,6 @@ impl From<Header> for RawHeader {
             trusted_validators: Some(value.trusted_validator_set.into()),
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct QueryHeaderRequest {
-    pub event_id: IbcEventType,
-    pub client_id: ClientId,
-    pub consensus_height: Height,
-    pub height: Height,
 }
 
 #[cfg(test)]

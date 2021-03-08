@@ -7,6 +7,7 @@ use tendermint_proto::Protobuf;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics07_tendermint::client_state::ClientState as TmClientState;
+use crate::ics24_host::identifier::ChainId;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
 use crate::Height;
@@ -34,6 +35,17 @@ impl AnyClientState {
             Self::Mock(mock_state) => mock_state.latest_height(),
         }
     }
+    pub fn chain_id(&self) -> ChainId {
+        match self {
+            Self::Tendermint(state) => state.chain_id(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(_state) => {
+                unimplemented!()
+            }
+        }
+    }
+
     pub fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(state) => state.client_type(),
@@ -86,8 +98,8 @@ impl From<AnyClientState> for Any {
 }
 
 impl ClientState for AnyClientState {
-    fn chain_id(&self) -> String {
-        todo!()
+    fn chain_id(&self) -> ChainId {
+        self.chain_id()
     }
 
     fn client_type(&self) -> ClientType {
@@ -115,7 +127,7 @@ impl ClientState for AnyClientState {
 #[dyn_clonable::clonable]
 pub trait ClientState: Clone + std::fmt::Debug + Send + Sync {
     /// Client ID of this state
-    fn chain_id(&self) -> String;
+    fn chain_id(&self) -> ChainId;
 
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;

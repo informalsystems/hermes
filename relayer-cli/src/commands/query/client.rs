@@ -5,7 +5,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::info;
 
 use ibc::events::IbcEventType;
-use ibc::ics07_tendermint::header::QueryHeaderRequest;
+use ibc::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::query::QueryTxRequest;
@@ -111,7 +111,7 @@ impl Runnable for QueryClientConsensusCmd {
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
         if height == ibc::Height::zero() {
-            let res = chain.query_client_consensus_states(QueryConsensusStatesRequest {
+            let res = chain.query_consensus_states(QueryConsensusStatesRequest {
                 client_id: self.client_id.to_string(),
                 pagination: None,
             });
@@ -172,11 +172,11 @@ impl Runnable for QueryClientHeaderCmd {
         let consensus_height = ibc::Height::new(self.consensus_version, self.consensus_height);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
-        let res = chain.query_txs(QueryTxRequest::Header(QueryHeaderRequest {
+        let res = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {
+            height,
             event_id: IbcEventType::UpdateClient,
             client_id: self.client_id.clone(),
             consensus_height,
-            height,
         }));
 
         match res {

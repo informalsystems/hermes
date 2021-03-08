@@ -1,5 +1,7 @@
 use crate::chain::Chain;
 use crate::error;
+use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::events::UpdateClient;
 
 pub mod tendermint;
 
@@ -29,4 +31,10 @@ pub trait LightClient<C: Chain>: Send + Sync {
         latest_client_state_height: ibc::Height,
         target_height: ibc::Height,
     ) -> Result<Vec<ibc::Height>, error::Error>;
+
+    fn build_misbehaviour(
+        &self,
+        update: UpdateClient,
+        trusted_height: ibc::Height,
+    ) -> Result<Option<AnyMisbehaviour>, error::Error>;
 }

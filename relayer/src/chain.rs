@@ -132,7 +132,7 @@ pub trait Chain: Sized {
         height: ICSHeight,
     ) -> Result<Self::ClientState, Error>;
 
-    fn query_client_consensus_states(
+    fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;

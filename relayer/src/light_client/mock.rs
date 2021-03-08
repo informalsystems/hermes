@@ -1,6 +1,8 @@
 use crate::chain::mock::MockChain;
 use crate::chain::Chain;
 use crate::error::Error;
+use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::events::UpdateClient;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::mock::host::HostBlock;
 use ibc::Height;
@@ -42,6 +44,14 @@ impl super::LightClient<MockChain> for LightClient {
         latest_client_state_height: Height,
         target_height: Height,
     ) -> Result<Vec<Height>, Error> {
+        unimplemented!()
+    }
+
+    fn build_misbehaviour(
+        &self,
+        update: UpdateClient,
+        trusted_height: Height,
+    ) -> Result<Option<AnyMisbehaviour>, Error> {
         unimplemented!()
     }
 }

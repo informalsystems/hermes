@@ -1,21 +1,29 @@
 use std::convert::TryFrom;
 
+use ibc::downcast;
 use tendermint_light_client::{
     builder::LightClientBuilder, builder::SupervisorBuilder, light_client, store, supervisor,
     supervisor::Handle, supervisor::Supervisor, types::Height as TMHeight, types::LightBlock,
 };
 use tendermint_rpc as rpc;
 
+use ibc::ics02_client::client_header::AnyHeader;
+use ibc::ics02_client::client_misbehaviour::{AnyMisbehaviour, Misbehaviour};
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics07_tendermint::header::Header as TmHeader;
+use ibc::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
+use ibc::ics24_host::identifier::ChainId;
+
+use crate::error::Kind;
 use crate::{
     chain::CosmosSdkChain,
     config::{ChainConfig, LightClientConfig, StoreConfig},
     error,
 };
-use ibc::ics24_host::identifier::ChainId;
 
 pub struct LightClient {
     handle: Box<dyn Handle>,
-    chain_id: ChainId,
+    pub chain_id: ChainId,
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
@@ -36,6 +44,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     }
 
     fn verify_to_target(&self, height: ibc::Height) -> Result<LightBlock, error::Error> {
+        crate::time!("verify_to_target for consensus {:?}", height);
+
         let height = TMHeight::try_from(height.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
@@ -52,6 +62,50 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         _target_height: ibc::Height,
     ) -> Result<Vec<ibc::Height>, error::Error> {
         todo!()
+    }
+
+    fn build_misbehaviour(
+        &self,
+        update: UpdateClient,
+        trusted_height: ibc::Height,
+    ) -> Result<Option<AnyMisbehaviour>, error::Error> {
+        crate::time!("light client build_misbehaviour");
+
+        let tm_local_header = {
+            let trusted_light_block = self.verify_to_target(trusted_height)?;
+            let target_light_block = self.verify_to_target(*update.consensus_height())?;
+
+            TmHeader {
+                trusted_height,
+                signed_header: target_light_block.signed_header.clone(),
+                validator_set: target_light_block.validators,
+                trusted_validator_set: trusted_light_block.validators,
+            }
+        };
+
+        let update_header = update.header.clone().unwrap();
+        let tm_chain_header =
+            downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
+                Kind::Misbehaviour(format!(
+                    "header type incompatible for chain {}",
+                    self.chain_id
+                ))
+            })?;
+
+        let misbehaviour = if tm_chain_header == tm_local_header {
+            Some(
+                AnyMisbehaviour::Tendermint(TmMisbehaviour {
+                    client_id: update.client_id().clone(),
+                    header1: tm_chain_header,
+                    header2: tm_local_header,
+                })
+                .wrap_any(),
+            )
+        } else {
+            None
+        };
+
+        Ok(misbehaviour)
     }
 }
 

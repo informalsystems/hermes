@@ -4,7 +4,7 @@ use crossbeam_channel as channel;
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_header::AnyHeader;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -34,6 +34,9 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
+use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::events::UpdateClient;
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -107,6 +110,10 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
     }
 
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+        self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })
+    }
+
     fn query_client_state(
         &self,
         client_id: &ClientId,
@@ -117,6 +124,13 @@ impl ChainHandle for ProdChainHandle {
             height,
             reply_to,
         })
+    }
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConsensusStates { request, reply_to })
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -216,6 +230,18 @@ impl ChainHandle for ProdChainHandle {
 
     fn build_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
         self.send(|reply_to| ChainRequest::BuildConsensusState { height, reply_to })
+    }
+
+    fn build_misbehaviour(
+        &self,
+        update_event: UpdateClient,
+        trusted_height: Height,
+    ) -> Result<Option<AnyMisbehaviour>, Error> {
+        self.send(|reply_to| ChainRequest::BuildMisbehaviour {
+            update_event,
+            trusted_height,
+            reply_to,
+        })
     }
 
     fn build_connection_proofs_and_client_state(

@@ -7,7 +7,7 @@ use serde::{Serialize, Serializer};
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_header::AnyHeader;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -26,12 +26,17 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
+
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
 
 use crate::connection::ConnectionMsgType;
 use crate::keyring::store::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
+use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::events::UpdateClient;
 
 mod prod;
 
@@ -99,6 +104,12 @@ pub enum ChainRequest {
         reply_to: ReplyTo<AnyConsensusState>,
     },
 
+    BuildMisbehaviour {
+        update_event: UpdateClient,
+        trusted_height: Height,
+        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+    },
+
     BuildConnectionProofsAndClientState {
         message_type: ConnectionMsgType,
         connection_id: ConnectionId,
@@ -107,10 +118,20 @@ pub enum ChainRequest {
         reply_to: ReplyTo<(Option<AnyClientState>, Proofs)>,
     },
 
+    QueryClients {
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<ClientId>>,
+    },
+
     QueryClientState {
         client_id: ClientId,
         height: Height,
         reply_to: ReplyTo<AnyClientState>,
+    },
+
+    QueryConsensusStates {
+        request: QueryConsensusStatesRequest,
+        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
     },
 
     QueryCommitmentPrefix {
@@ -221,11 +242,18 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+
     fn query_client_state(
         &self,
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error>;
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
@@ -279,6 +307,12 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     /// Constructs a consensus state at the given height
     fn build_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+
+    fn build_misbehaviour(
+        &self,
+        update: UpdateClient,
+        trusted_height: Height,
+    ) -> Result<Option<AnyMisbehaviour>, Error>;
 
     fn build_connection_proofs_and_client_state(
         &self,

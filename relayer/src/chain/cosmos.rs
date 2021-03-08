@@ -23,14 +23,15 @@ use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::client_type::ClientType;
+use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
-use ibc::ics07_tendermint::header::{Header as TMHeader, QueryHeaderRequest};
+use ibc::ics07_tendermint::header::Header as TmHeader;
+
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -64,8 +65,7 @@ use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
-use ibc::ics02_client::client_header::AnyHeader;
-use ibc::ics02_client::events::{Attributes, UpdateClient};
+use ibc::ics02_client::client_consensus::QueryClientEventRequest;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -134,17 +134,6 @@ impl CosmosSdkChain {
     fn block_on<F: Future>(&self, f: F) -> F::Output {
         crate::time!("block_on");
         self.rt.block_on(f)
-    }
-
-    #[allow(clippy::unnecessary_wraps)]
-    /// WIP
-    fn decode_tx(&self, tx_bytes: &[u8]) -> Result<Vec<Any>, Error> {
-        crate::time!("send_tx");
-
-        let tx_raw: TxRaw = prost::Message::decode(&*tx_bytes).unwrap();
-        // A protobuf serialization of a TxBody
-        let msgs: TxBody = prost::Message::decode(&*tx_raw.body_bytes).unwrap();
-        Ok(msgs.messages)
     }
 
     fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
@@ -281,7 +270,7 @@ impl CosmosSdkChain {
 
 impl Chain for CosmosSdkChain {
     type LightBlock = TMLightBlock;
-    type Header = TMHeader;
+    type Header = TmHeader;
     type ConsensusState = TMConsensusState;
     type ClientState = ClientState;
 
@@ -488,7 +477,7 @@ impl Chain for CosmosSdkChain {
     }
 
     /// Performs a query to retrieve the identifiers of all connections.
-    fn query_client_consensus_states(
+    fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
@@ -821,6 +810,8 @@ impl Chain for CosmosSdkChain {
     /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
     /// for all packets could be performed but it would return all packets ever sent.
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+        crate::time!("query_txs");
+
         match request {
             QueryTxRequest::Packet(request) => {
                 crate::time!("query_txs");
@@ -848,7 +839,7 @@ impl Chain for CosmosSdkChain {
             }
 
             // TODO - to be replaced with query for update client event
-            QueryTxRequest::Header(request) => {
+            QueryTxRequest::Client(request) => {
                 let response = self
                     .block_on(self.rpc_client.tx_search(
                         header_query(&request),
@@ -864,29 +855,9 @@ impl Chain for CosmosSdkChain {
                 }
                 assert!(response.txs.len() == 1);
 
-                let tx_bytes = response.txs[0].tx.clone();
-                let res = self.decode_tx(tx_bytes.as_bytes()).unwrap();
-
-                let update_raw = res
-                    .iter()
-                    .find(|m| m.type_url == ibc::ics02_client::msgs::update_client::TYPE_URL)
-                    .unwrap();
-
-                let raw_update_client: ibc_proto::ibc::core::client::v1::MsgUpdateClient =
-                    prost::Message::decode(update_raw.value.as_ref()).unwrap();
-                let header_bytes = raw_update_client.header.unwrap().value;
-                let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
-                let event = UpdateClient {
-                    common: Attributes {
-                        height: request.height,
-                        client_id: request.client_id,
-                        client_type: ClientType::Tendermint,
-                        consensus_height: request.consensus_height,
-                    },
-                    header: Some(header),
-                };
-
-                Ok(vec![IbcEvent::UpdateClient(event)])
+                let events = update_client_from_tx_search_response(self.id(), &request, response)
+                    .map_or(vec![], |v| vec![v]);
+                Ok(events)
             }
         }
     }
@@ -1047,7 +1018,7 @@ impl Chain for CosmosSdkChain {
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
         Ok(ibc::ics07_tendermint::client_state::ClientState::new(
-            self.id().to_string(),
+            self.id().clone(),
             self.config.trust_threshold,
             self.config.trusting_period,
             self.unbonding_period()?,
@@ -1080,7 +1051,7 @@ impl Chain for CosmosSdkChain {
         let trusted_height =
             ICSHeight::new(self.id().version(), trusted_light_block.height().into());
 
-        Ok(TMHeader {
+        Ok(TmHeader {
             trusted_height,
             signed_header: target_light_block.signed_header.clone(),
             validator_set: target_light_block.validators,
@@ -1112,7 +1083,7 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query 
     )
 }
 
-fn header_query(request: &QueryHeaderRequest) -> Query {
+fn header_query(request: &QueryClientEventRequest) -> Query {
     tendermint_rpc::query::Query::eq(
         format!("{}.client_id", request.event_id.as_str()),
         request.client_id.to_string(),
@@ -1187,6 +1158,66 @@ fn packet_from_tx_search_response(
             matching.len(),
             1,
             "packet_from_tx_search_response: unexpected number of matching packets"
+        );
+        matching.pop()
+    } else {
+        None
+    }
+}
+
+// Extract the update client event from the query_txs RPC response.
+fn update_client_from_tx_search_response(
+    chain_id: &ChainId,
+    request: &QueryClientEventRequest,
+    mut response: tendermint_rpc::endpoint::tx_search::Response,
+) -> Option<IbcEvent> {
+    crate::time!("update_client_from_tx_search_response");
+
+    assert!(
+        response.txs.len() <= 1,
+        "update_client_from_tx_search_response: unexpected number of txs"
+    );
+    if let Some(r) = response.txs.pop() {
+        let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
+        if request.height != ICSHeight::zero() && height > request.height {
+            return None;
+        }
+
+        let mut matching = Vec::new();
+
+        for e in r.tx_result.events {
+            if e.type_str != request.event_id.as_str() {
+                continue;
+            }
+
+            let res = ClientEvents::try_from_tx(&e);
+            if res.is_none() {
+                continue;
+            }
+            let event = res.unwrap();
+            let update = match &event {
+                IbcEvent::UpdateClient(update) => Some(update),
+                _ => None,
+            };
+
+            if update.is_none() {
+                continue;
+            }
+
+            let update = update.unwrap();
+            if update.common.client_id != request.client_id
+                || update.common.consensus_height != request.consensus_height
+            {
+                continue;
+            }
+
+            matching.push(event);
+        }
+
+        assert_eq!(
+            matching.len(),
+            1,
+            "update_client_from_tx_search_response: unexpected number of matching packets"
         );
         matching.pop()
     } else {

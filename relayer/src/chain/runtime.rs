@@ -44,6 +44,10 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
 };
+use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
+use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::events::UpdateClient;
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 
 pub struct Threads {
     pub light_client: Option<thread::JoinHandle<()>>,
@@ -202,6 +206,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.build_consensus_state(height, reply_to)?
                         }
 
+                       Ok(ChainRequest::BuildMisbehaviour { update_event, trusted_height, reply_to }) => {
+                            self.build_misbehaviour(update_event, trusted_height, reply_to)?
+                        }
+
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
                             self.build_connection_proofs_and_client_state(message_type, connection_id, client_id, height, reply_to)?
                         },
@@ -214,8 +222,16 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_latest_height(reply_to)?
                         }
 
+                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
+                            self.query_clients(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
+                            self.query_consensus_states(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryCommitmentPrefix { reply_to }) => {
@@ -424,6 +440,24 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    /// Constructs AnyMisbehaviour for the update event
+    fn build_misbehaviour(
+        &self,
+        update_event: UpdateClient,
+        trusted_height: Height,
+        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+    ) -> Result<(), Error> {
+        let misbehaviour = self
+            .light_client
+            .build_misbehaviour(update_event, trusted_height)?;
+
+        reply_to
+            .send(Ok(misbehaviour))
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
@@ -462,6 +496,34 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(client_state)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<ClientId>>,
+    ) -> Result<(), Error> {
+        let clients = self.chain.query_clients(request);
+
+        reply_to
+            .send(clients)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
+    ) -> Result<(), Error> {
+        let consensus_states = self.chain.query_consensus_states(request);
+
+        reply_to
+            .send(consensus_states)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
