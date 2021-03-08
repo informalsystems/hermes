@@ -1,6 +1,7 @@
-use crate::ics24_host::error::ValidationError;
 use prost_types::Any;
 use tendermint::account::Id as AccountId;
+
+use crate::ics24_host::error::ValidationError;
 
 pub trait Msg: Clone {
     type ValidationError: std::error::Error;

@@ -123,7 +123,6 @@ pub struct TxUpgradeClientCmd {
     client_id: ClientId,
 }
 
-
 impl Runnable for TxUpgradeClientCmd {
     fn run(&self) {
         let config = app_config();
@@ -139,34 +138,16 @@ impl Runnable for TxUpgradeClientCmd {
 
         info!("Started the chain runtimes");
 
-        // Fetch the latest height of the source chain.
-        let src_height = chains
-            .src
-            .query_latest_height()
+        // Instantiate the client hosted on the destination chain, which is targeting headers for
+        // the source chain.
+        let client = ForeignClient::find(chains.src, chains.dst, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        info!("Height: {}", src_height);
+        let outcome = client.upgrade();
 
-        // Query the source chain for the upgraded client state, consensus state & their proofs.
-        let (client_state, proof_client_state) = chains
-            .src
-            .query_upgraded_client_state(src_height)
-            .map_err(|e| Kind::Tx.context(e))
-            .unwrap_or_else(exit_with_unrecoverable_error);
-
-        info!("Client state {:?} & proof {:?}", client_state, proof_client_state);
-
-        let (consensus_state, proof_consensus_state) = chains
-            .src
-            .query_upgraded_consensus_state(src_height)
-            .map_err(|e| Kind::Tx.context(e))
-            .unwrap_or_else(exit_with_unrecoverable_error);
-
-        info!("Client consensus state {:?} & proof {:?}", consensus_state, proof_consensus_state);
-
-        // match res {
-        //     Ok(receipt) => Output::success(receipt).exit(),
-        //     Err(e) => Output::error(format!("{}", e)).exit(),
-        // }
+        match outcome {
+            Ok(receipt) => Output::success(format!("")).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        }
     }
 }

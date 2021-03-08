@@ -265,7 +265,7 @@ impl CosmosSdkChain {
         Ok(response)
     }
 
-    // Perform an ABCI query against the client upgrade sub-store.
+    // Perform an ABCI query against the client upgrade sub-store to fetch a proof.
     fn query_client_upgrade_proof(
         &self,
         data: ClientUpgradePath,

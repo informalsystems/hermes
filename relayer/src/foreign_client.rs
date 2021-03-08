@@ -8,6 +8,7 @@ use ibc::events::IbcEvent;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::ics02_client::state::ClientState;
 use ibc::ics02_client::state::ConsensusState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
@@ -15,6 +16,7 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
 use crate::chain::handle::ChainHandle;
 
@@ -31,6 +33,9 @@ pub enum ForeignClientError {
 
     #[error("failed while finding client {0}: expected chain_id in client state: {1}; actual chain_id: {2}")]
     ClientFind(ClientId, ChainId, ChainId),
+
+    #[error("failed while trying to upgrade client id {0} with error: {1}")]
+    ClientUpgrade(ClientId, String),
 }
 
 #[derive(Clone, Debug)]
@@ -109,6 +114,80 @@ impl ForeignClient {
                 format!("{}", e),
             )),
         }
+    }
+
+    pub fn upgrade(&self) -> Result<(), ForeignClientError> {
+        // Fetch the latest height of the source chain.
+        let src_height = self.src_chain.query_latest_height().map_err(|e| {
+            ForeignClientError::ClientUpgrade(
+                self.id.clone(),
+                format!(
+                    "failed while querying src chain ({}) for latest height: {}",
+                    self.src_chain.id(),
+                    e
+                ),
+            )
+        })?;
+
+        info!("Height: {}", src_height);
+
+        // Query the host chain for the upgraded client state, consensus state & their proofs.
+        let (client_state, proof_upgrade_client) = self
+            .src_chain
+            .query_upgraded_client_state(src_height)
+            .map_err(|e| {
+                ForeignClientError::ClientUpgrade(
+                    self.id.clone(),
+                    format!(
+                        "failed while fetching from chain {} the upgraded client state: {}",
+                        self.src_chain.id(),
+                        e
+                    ),
+                )
+            })?;
+
+        info!(
+            "Upgraded client state {:?} & proof {:?}",
+            client_state, proof_upgrade_client
+        );
+
+        let (consensus_state, proof_upgrade_consensus_state) = self
+            .src_chain
+            .query_upgraded_consensus_state(src_height)
+            .map_err(|e| ForeignClientError::ClientUpgrade(self.id.clone(), format!(
+                "failed while fetching from chain {} the upgraded client consensus state: {}", self.src_chain.id(), e)))
+            ?;
+
+        info!(
+            "Upgraded client consensus state {:?} & proof {:?}",
+            consensus_state, proof_upgrade_consensus_state
+        );
+
+        let m = MsgUpgradeAnyClient {
+            client_id: self.id.clone(),
+            client_state,
+            consensus_state,
+            proof_upgrade_client,
+            proof_upgrade_consensus_state,
+        };
+
+        let res = self
+            .dst_chain
+            .send_msgs(vec![m.to_any::<RawMsgUpgradeClient>()])
+            .map_err(|e| {
+                ForeignClientError::ClientUpgrade(
+                    self.id.clone(),
+                    format!(
+                        "failed while sending message to destination chain {} with err: {}",
+                        self.dst_chain.id(),
+                        e
+                    ),
+                )
+            })?;
+
+        info!("Res: {:?}", res);
+
+        Ok(())
     }
 
     /// Returns a handle to the chain hosting this client.
