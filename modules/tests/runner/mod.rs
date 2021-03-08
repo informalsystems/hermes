@@ -1,4 +1,3 @@
-pub mod modelator;
 pub mod step;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
@@ -35,13 +34,13 @@ use std::fmt::{Debug, Display};
 use step::{Action, ActionOutcome, Chain, Step};
 use tendermint::account::Id as AccountId;
 
-#[derive(Debug)]
-pub struct IBCTestExecutor {
+#[derive(Debug, Clone)]
+pub struct IBCTestRunner {
     // mapping from chain identifier to its context
     contexts: HashMap<ChainId, MockContext>,
 }
 
-impl IBCTestExecutor {
+impl IBCTestRunner {
     pub fn new() -> Self {
         Self {
             contexts: Default::default(),
@@ -402,7 +401,7 @@ impl IBCTestExecutor {
     }
 }
 
-impl modelator::TestExecutor<Step> for IBCTestExecutor {
+impl modelator::runner::TestRunner<Step> for IBCTestRunner {
     fn initial_step(&mut self, step: Step) -> bool {
         assert_eq!(step.action, Action::None, "unexpected action type");
         assert_eq!(

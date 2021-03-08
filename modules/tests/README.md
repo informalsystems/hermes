@@ -59,3 +59,8 @@ The model-based tests can be run with the following command:
 cd modules/
 cargo test --features mocks -- mbt
 ```
+
+To debug possible issues with modelator, run instead:
+```bash
+RUST_LOG=modelator=trace cargo test --features mocks -- mbt --nocapture
+```
