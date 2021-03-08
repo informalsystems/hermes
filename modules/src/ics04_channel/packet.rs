@@ -8,7 +8,9 @@ use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
 
-/// Enumeration of proof carrying ICS3 message, helper for relayer.
+use super::handler::send_packet::SendPacketResult;
+
+/// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PacketMsgType {
     Recv,
@@ -16,6 +18,11 @@ pub enum PacketMsgType {
     TimeoutUnordered,
     TimeoutOrdered,
     TimeoutOnClose,
+}
+
+#[derive(Clone, Debug)]
+pub enum PacketResult {
+    Send(SendPacketResult),
 }
 
 impl std::fmt::Display for PacketMsgType {
@@ -34,6 +41,15 @@ impl std::fmt::Display for PacketMsgType {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Sequence(u64);
 
+impl Sequence {
+    pub fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+
+    pub fn increment(&self) -> Sequence {
+        Sequence(self.0 + 1)
+    }
+}
 impl From<u64> for Sequence {
     fn from(seq: u64) -> Self {
         Sequence(seq)
@@ -52,7 +68,7 @@ impl std::fmt::Display for Sequence {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, PartialEq, Deserialize, Serialize, Hash, Clone)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
@@ -94,6 +110,22 @@ impl TryFrom<RawPacket> for Packet {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_pkt: RawPacket) -> Result<Self, Self::Error> {
+        if Sequence::from(raw_pkt.sequence).is_zero() {
+            return Err(Kind::ZeroPacketSequence.into());
+        }
+        let packet_timeout_height: Height = raw_pkt
+            .timeout_height
+            .ok_or(Kind::MissingHeight)?
+            .try_into()
+            .map_err(|e| Kind::InvalidTimeoutHeight.context(e))?;
+
+        if packet_timeout_height.is_zero() && raw_pkt.timeout_timestamp == 0 {
+            return Err(Kind::ZeroPacketTimeout.into());
+        }
+        if raw_pkt.data.is_empty() {
+            return Err(Kind::ZeroPacketData.into());
+        }
+
         Ok(Packet {
             sequence: Sequence::from(raw_pkt.sequence),
             source_port: raw_pkt
@@ -113,11 +145,7 @@ impl TryFrom<RawPacket> for Packet {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             data: raw_pkt.data,
-            timeout_height: raw_pkt
-                .timeout_height
-                .ok_or(Kind::MissingHeight)?
-                .try_into()
-                .map_err(|e| Kind::InvalidTimeoutHeight.context(e))?,
+            timeout_height: packet_timeout_height,
             timeout_timestamp: raw_pkt.timeout_timestamp,
         })
     }
@@ -140,23 +168,24 @@ impl From<Packet> for RawPacket {
 
 #[cfg(test)]
 pub mod test_utils {
+    use crate::ics24_host::identifier::{ChannelId, PortId};
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     /// Returns a dummy `RawPacket`, for testing only!
-    pub fn get_dummy_raw_packet(timeout_height: u64) -> RawPacket {
+    pub fn get_dummy_raw_packet(timeout_height: u64, timeout_timestamp: u64) -> RawPacket {
         RawPacket {
-            sequence: 0,
-            source_port: "sourceportid".to_string(),
-            source_channel: "srchannelid".to_string(),
-            destination_port: "destinationport".to_string(),
-            destination_channel: "dstchannelid".to_string(),
-            data: vec![],
+            sequence: 1,
+            source_port: PortId::default().to_string(),
+            source_channel: ChannelId::default().to_string(),
+            destination_port: PortId::default().to_string(),
+            destination_channel: ChannelId::default().to_string(),
+            data: vec![0],
             timeout_height: Some(RawHeight {
                 revision_number: 0,
                 revision_height: timeout_height,
             }),
-            timeout_timestamp: 0,
+            timeout_timestamp,
         }
     }
 }
@@ -179,7 +208,7 @@ mod tests {
         }
 
         let proof_height = 10;
-        let default_raw_msg = get_dummy_raw_packet(proof_height);
+        let default_raw_msg = get_dummy_raw_packet(proof_height, 0);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -309,7 +338,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_raw_packet(15);
+        let raw = get_dummy_raw_packet(15, 0);
         let msg = Packet::try_from(raw.clone()).unwrap();
         let raw_back = RawPacket::from(msg.clone());
         let msg_back = Packet::try_from(raw_back.clone()).unwrap();

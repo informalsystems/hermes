@@ -14,6 +14,7 @@ pub mod chan_open_ack;
 pub mod chan_open_confirm;
 pub mod chan_open_init;
 pub mod chan_open_try;
+pub mod send_packet;
 
 mod verify;
 
@@ -37,8 +38,8 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
-/// General entry point for processing any type of message related to the ICS4 channel open
-/// handshake protocol.
+/// General entry point for processing any type of message related to the ICS4 channel open and
+/// channel close handshake protocols.
 pub fn dispatch<Ctx>(ctx: &Ctx, msg: ChannelMsg) -> Result<HandlerOutput<ChannelResult>, Error>
 where
     Ctx: ChannelReader,

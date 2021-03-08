@@ -38,7 +38,7 @@ impl Runnable for StartCmd {
                 match channel_relay(
                     chains.src,
                     chains.dst,
-                    &LinkParameters {
+                    LinkParameters {
                         src_port_id: src_port_id.clone(),
                         src_channel_id: src_channel_id.clone(),
                     },

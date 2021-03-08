@@ -1,5 +1,6 @@
-use std::convert::{TryFrom, TryInto};
+//! This is the definition of a transfer messages that an application submits to a chain.
 
+use std::convert::{TryFrom, TryInto};
 use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 

@@ -1,4 +1,4 @@
-//! Protocol logic specific to ICS4 messages of type `MsgChannelCloseInit`.
+//! Protocol logic specific to ICS4 messages of type `MsgChannelCloseConfirm`.
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
@@ -23,7 +23,7 @@ pub(crate) fn process(
 
     // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {
-        return Err(Kind::ChannelAlreadyClosed(msg.channel_id().clone()).into());
+        return Err(Kind::ChannelClosed(msg.channel_id().clone()).into());
     }
 
     // Channel capabilities
