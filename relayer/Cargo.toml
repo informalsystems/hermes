@@ -25,7 +25,7 @@ subtle-encoding = "0.5"
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"
-serde = "1.0.97"
+serde = "1.0.124"
 serde_cbor = "0.11.1"
 serde_derive = "1.0"
 sled = { version = "0.34.4", features = ["no_metrics", "no_logs"] }
