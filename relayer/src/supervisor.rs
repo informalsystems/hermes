@@ -1,13 +1,14 @@
-use std::{collections::HashMap, sync::Arc, thread::JoinHandle, time::Duration};
+use std::{collections::HashMap, thread::JoinHandle, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
-use itertools::Itertools;
 
 use ibc::{
     events::IbcEvent,
+    ics02_client::events::NewBlock,
     ics04_channel::events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
     ics24_host::identifier::{ChainId, ChannelId, PortId},
+    Height,
 };
 
 use crate::{
@@ -16,14 +17,14 @@ use crate::{
     link::{Link, LinkParameters},
 };
 
-pub struct WorkerCmd {
-    pub batch: Arc<EventBatch>,
-}
-
-impl WorkerCmd {
-    pub fn new(batch: Arc<EventBatch>) -> Self {
-        Self { batch }
-    }
+pub enum WorkerCmd {
+    PacketEvents {
+        batch: EventBatch,
+    },
+    NewBlocks {
+        height: Height,
+        new_blocks: Vec<NewBlock>,
+    },
 }
 
 pub struct WorkerHandle {
@@ -32,8 +33,17 @@ pub struct WorkerHandle {
 }
 
 impl WorkerHandle {
-    pub fn handle_packet_events(&self, batch: EventBatch) -> Result<(), BoxError> {
-        self.tx.send(WorkerCmd::new(Arc::new(batch)))?;
+    pub fn send_packet_events(&self, batch: EventBatch) -> Result<(), BoxError> {
+        self.tx.send(WorkerCmd::PacketEvents { batch })?;
+        Ok(())
+    }
+
+    pub fn send_new_blocks(
+        &self,
+        height: Height,
+        new_blocks: Vec<NewBlock>,
+    ) -> Result<(), BoxError> {
+        self.tx.send(WorkerCmd::NewBlocks { height, new_blocks })?;
         Ok(())
     }
 }
@@ -80,37 +90,44 @@ impl Supervisor {
 
         loop {
             for batch in subscription_a.try_iter() {
-                self.process_batch(batch)?;
+                self.process_batch(batch.unwrap_or_clone())?;
             }
 
             for batch in subscription_b.try_iter() {
-                self.process_batch(batch)?;
+                self.process_batch(batch.unwrap_or_clone())?;
             }
 
             std::thread::sleep(Duration::from_millis(600));
         }
     }
 
-    fn process_batch(&mut self, batch: Arc<EventBatch>) -> Result<(), BoxError> {
-        // TODO(romac): Need to send NewBlock events to all workers
+    fn process_batch(&mut self, batch: EventBatch) -> Result<(), BoxError> {
+        let height = batch.height;
+        let chain_id = batch.chain_id.clone();
+        let is_dest = chain_id == self.chains.b.id();
 
-        let events = collect_events(&batch.events, batch.chain_id.clone());
-        let events_per_object = events.into_iter().into_group_map();
+        let collected = collect_events(batch);
 
-        for (object, events) in events_per_object.into_iter() {
+        if collected.has_new_blocks() {
+            for worker in self.workers.values() {
+                worker.send_new_blocks(height, collected.new_blocks.clone())?;
+            }
+        }
+
+        for (object, events) in collected.per_object.into_iter() {
             if events.is_empty() {
-                return Ok(());
+                continue;
             }
 
             let worker_batch = EventBatch {
-                height: batch.height,
-                chain_id: batch.chain_id.clone(),
+                height,
                 events,
+                chain_id: chain_id.clone(),
             };
 
-            let is_dest = batch.chain_id == self.chains.b.id();
             let worker = self.worker_for_object(object, is_dest);
-            worker.handle_packet_events(worker_batch)?;
+
+            worker.send_packet_events(worker_batch)?;
         }
 
         Ok(())
@@ -170,7 +187,13 @@ impl Worker {
         )?;
 
         while let Ok(cmd) = self.rx.recv() {
-            link.a_to_b.relay_from_events(cmd.batch)?;
+            match cmd {
+                WorkerCmd::PacketEvents { batch } => link.a_to_b.relay_from_events(batch)?,
+                WorkerCmd::NewBlocks {
+                    height,
+                    new_blocks: _,
+                } => link.a_to_b.clear_packets(height)?,
+            }
         }
 
         Ok(())
@@ -233,21 +256,46 @@ impl Object {
     }
 }
 
-fn collect_events(events: &[IbcEvent], chain_id: ChainId) -> Vec<(Object, IbcEvent)> {
-    events
-        .iter()
-        .filter_map(|e| match e {
-            IbcEvent::SendPacket(p) => Some((Object::for_send_packet(p, &chain_id), e.clone())),
-            IbcEvent::TimeoutPacket(p) => {
-                Some((Object::for_timeout_packet(p, &chain_id), e.clone()))
+#[derive(Clone, Debug, Default)]
+pub struct CollectedEvents {
+    pub new_blocks: Vec<NewBlock>,
+    pub per_object: HashMap<Object, Vec<IbcEvent>>,
+}
+
+impl CollectedEvents {
+    pub fn has_new_blocks(&self) -> bool {
+        !self.new_blocks.is_empty()
+    }
+}
+
+fn collect_events(batch: EventBatch) -> CollectedEvents {
+    let chain_id = &batch.chain_id;
+
+    let mut collected = CollectedEvents::default();
+    for event in batch.events {
+        match event {
+            IbcEvent::NewBlock(inner) => {
+                collected.new_blocks.push(inner);
             }
-            IbcEvent::WriteAcknowledgement(p) => {
-                Some((Object::for_write_ack(p, &chain_id), e.clone()))
+            IbcEvent::SendPacket(ref inner) => {
+                let object = Object::for_send_packet(inner, chain_id);
+                collected.per_object.entry(object).or_default().push(event);
             }
-            IbcEvent::CloseInitChannel(p) => {
-                Some((Object::for_close_init_channel(p, &chain_id), e.clone()))
+            IbcEvent::TimeoutPacket(ref inner) => {
+                let object = Object::for_timeout_packet(inner, chain_id);
+                collected.per_object.entry(object).or_default().push(event);
             }
-            _ => None,
-        })
-        .collect()
+            IbcEvent::WriteAcknowledgement(ref inner) => {
+                let object = Object::for_write_ack(inner, chain_id);
+                collected.per_object.entry(object).or_default().push(event);
+            }
+            IbcEvent::CloseInitChannel(ref inner) => {
+                let object = Object::for_close_init_channel(inner, chain_id);
+                collected.per_object.entry(object).or_default().push(event);
+            }
+            _ => (),
+        }
+    }
+
+    collected
 }

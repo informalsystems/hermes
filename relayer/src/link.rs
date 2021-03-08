@@ -1,5 +1,5 @@
+use std::thread;
 use std::time::Duration;
-use std::{sync::Arc, thread};
 
 use prost_types::Any;
 use tendermint::account::Id;
@@ -411,18 +411,23 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    /// Iterate through the IBC Events, build the message for each and collect all at same height.
-    /// Send a multi message transaction with these, prepending the client update
-    pub fn relay_from_events(&mut self, batch: Arc<EventBatch>) -> Result<(), LinkError> {
+    pub fn clear_packets(&mut self, height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
-            self.src_height = batch
-                .height
+            self.src_height = height
                 .decrement()
                 .map_err(|e| LinkError::Failed(e.to_string()))?;
 
             self.relay_pending_packets()?;
             self.clear_packets = false;
         }
+
+        Ok(())
+    }
+
+    /// Iterate through the IBC Events, build the message for each and collect all at same height.
+    /// Send a multi message transaction with these, prepending the client update
+    pub fn relay_from_events(&mut self, batch: EventBatch) -> Result<(), LinkError> {
+        self.clear_packets(batch.height)?;
 
         // collect relevant events in self.all_events
         self.collect_events(&batch.events);
@@ -901,12 +906,12 @@ impl Link {
                 return Ok(());
             }
 
-            if let Ok(events) = events_a.try_recv() {
-                self.a_to_b.relay_from_events(events)?;
+            if let Ok(batch) = events_a.try_recv() {
+                self.a_to_b.relay_from_events(batch.unwrap_or_clone())?;
             }
 
-            if let Ok(events) = events_b.try_recv() {
-                self.b_to_a.relay_from_events(events)?;
+            if let Ok(batch) = events_b.try_recv() {
+                self.b_to_a.relay_from_events(batch.unwrap_or_clone())?;
             }
 
             // TODO - select over the two subscriptions
