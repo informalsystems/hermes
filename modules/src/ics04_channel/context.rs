@@ -37,6 +37,10 @@ pub trait ChannelReader {
 
     fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence>;
 
+    fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence>;
+
+    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
+
     /// A hashing function for packet commitments  
     fn hash(&self, value: String) -> String;
 
@@ -107,6 +111,12 @@ pub trait ChannelKeeper {
         timestamp: u64,
         heigh: Height,
         data: Vec<u8>,
+    ) -> Result<(), Error>;
+
+    fn store_packet_receipt(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        receipt: String,
     ) -> Result<(), Error>;
 
     fn store_connection_channels(

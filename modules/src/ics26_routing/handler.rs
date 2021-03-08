@@ -11,13 +11,15 @@ use crate::ics03_connection::msgs::{
     conn_open_ack, conn_open_confirm, conn_open_init, conn_open_try, ConnectionMsg,
 };
 use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
+use crate::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
+
 use crate::ics04_channel::msgs::{
     chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm, chan_open_init,
     chan_open_try, ChannelMsg,
 };
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::error::{Error, Kind};
-use crate::ics26_routing::msgs::Ics26Envelope::{self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4Msg};
+use crate::ics26_routing::msgs::Ics26Envelope::{self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4Msg, Ics4PacketMsg};
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
@@ -194,6 +196,20 @@ where
                 .with_events(handler_output.events)
                 .with_result(())
         }
+
+        Ics4PacketMsg(msg) => {
+            let handler_output = ics04_packet_msg_dispatcher(ctx, msg)
+                .map_err(|e| Kind::HandlerRaisedError.context(e))?;
+
+            // Apply any results to the host chain store.
+            ctx.store_packet_result(handler_output.result)
+                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+
+            HandlerOutput::builder()
+                .with_log(handler_output.log)
+                .with_events(handler_output.events)
+                .with_result(())
+        }
         _ => todo!(),
     };
 
@@ -224,7 +240,10 @@ mod tests {
         chan_open_init::{test_util::get_dummy_raw_msg_chan_open_init, MsgChannelOpenInit},
         chan_open_try::{test_util::get_dummy_raw_msg_chan_open_try, MsgChannelOpenTry},
         ChannelMsg,
+        recv_packet::{test_util::get_dummy_raw_msg_recv_packet, MsgRecvPacket},
     };
+    use crate::application::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer;
+
     use crate::ics24_host::identifier::ConnectionId;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::Ics26Envelope;
@@ -307,6 +326,10 @@ mod tests {
         let msg_chan_close_confirm =
             MsgChannelCloseConfirm::try_from(get_dummy_raw_msg_chan_close_confirm(client_height))
                 .unwrap();
+
+        let msg_transfer = get_dummy_msg_transfer(34);
+
+        let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(34)).unwrap();
 
         // First, create a client..
         let res = dispatch(
@@ -406,6 +429,18 @@ mod tests {
                 msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenAck(msg_chan_ack)),
                 want_pass: true,
             },
+            //ICS20-04-packet
+            Test {
+                name: "Packet send".to_string(),
+                msg: Ics26Envelope::Ics20Msg(msg_transfer),
+                want_pass: true,
+            },
+            Test {
+                name: "Receive packet".to_string(),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
+                want_pass: true,
+            },
+            //ICS04-close channel 
             Test {
                 name: "Channel close init succeeds".to_string(),
                 msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelCloseInit(msg_chan_close_init)),

@@ -8,6 +8,8 @@ use crate::ics04_channel::msgs::ChannelMsg;
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
+use super::{msgs::PacketMsg, packet::PacketResult};
+
 pub mod chan_close_confirm;
 pub mod chan_close_init;
 pub mod chan_open_ack;
@@ -53,4 +55,14 @@ where
         ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
         ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process(ctx, msg),
     }
+}
+
+pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: PacketMsg) -> Result<HandlerOutput<PacketResult>, Error>
+where
+Ctx: ChannelReader,
+{
+match msg {
+PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
+_ => todo!(),
+}
 }
