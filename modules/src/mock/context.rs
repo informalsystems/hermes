@@ -6,30 +6,36 @@ use std::error::Error;
 use std::str::FromStr;
 
 use prost_types::Any;
+use sha2::Digest;
 use tendermint::account::Id;
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
-use crate::ics02_client::error::Error as ICS2Error;
+use crate::ics02_client::error::Error as Ics2Error;
+use crate::{
+    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+    ics04_channel::packet::Sequence,
+};
+use crate::{
+    ics02_client::client_type::ClientType, ics23_commitment::commitment::CommitmentPrefix,
+};
 
 use crate::ics05_port::capabilities::Capability;
 use crate::ics05_port::context::PortReader;
 
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
-use crate::ics03_connection::error::Error as ICS3Error;
+use crate::ics03_connection::error::Error as Ics3Error;
 
 use crate::events::IbcEvent;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
-use crate::ics04_channel::error::Error as ICS4Error;
-use crate::ics04_channel::error::Kind as ICS4Kind;
+use crate::ics04_channel::error::Error as Ics4Error;
+use crate::ics04_channel::error::Kind as Ics4Kind;
 
+use crate::application::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::Ics18Context;
-use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
-use crate::ics23_commitment::commitment::CommitmentPrefix;
+use crate::ics18_relayer::error::{Error as Ics18Error, Kind as Ics18ErrorKind};
 use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::handler::{deliver, dispatch};
@@ -84,16 +90,19 @@ pub struct MockContext {
     channels: HashMap<(PortId, ChannelId), ChannelEnd>,
 
     /// Tracks the sequence number for the next packet to be sent.
-    next_sequence_send: HashMap<(PortId, ChannelId), u64>,
+    next_sequence_send: HashMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be received.
-    next_sequence_recv: HashMap<(PortId, ChannelId), u64>,
+    next_sequence_recv: HashMap<(PortId, ChannelId), Sequence>,
 
     /// Tracks the sequence number for the next packet to be acknowledged.
-    next_sequence_ack: HashMap<(PortId, ChannelId), u64>,
+    next_sequence_ack: HashMap<(PortId, ChannelId), Sequence>,
 
     /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
+
+    /// Constant-size commitments to packets data fields
+    packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -111,7 +120,7 @@ impl Default for MockContext {
 }
 
 /// Implementation of internal interface for use in testing. The methods in this interface should
-/// _not_ be accessible to any ICS handler.
+/// _not_ be accessible to any Ics handler.
 impl MockContext {
     /// Creates a mock context. Parameter `max_history_size` determines how many blocks will
     /// the chain maintain in its history, which also determines the pruning window. Parameter
@@ -162,6 +171,7 @@ impl MockContext {
             next_sequence_recv: Default::default(),
             next_sequence_ack: Default::default(),
             port_capabilities: Default::default(),
+            packet_commitment: Default::default(),
             connection_ids_counter: 0,
             channel_ids_counter: 0,
         }
@@ -193,8 +203,8 @@ impl MockContext {
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => (
-                Some(MockClientState(MockHeader(client_state_height)).into()),
-                MockConsensusState(MockHeader(cs_height)).into(),
+                Some(MockClientState(MockHeader::new(client_state_height)).into()),
+                MockConsensusState(MockHeader::new(cs_height)).into(),
             ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {
@@ -248,6 +258,20 @@ impl MockContext {
         Self { channels, ..self }
     }
 
+    pub fn with_send_sequence(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq_number: Sequence,
+    ) -> Self {
+        let mut next_sequence_send = self.next_sequence_send.clone();
+        next_sequence_send.insert((port_id, chan_id), seq_number);
+        Self {
+            next_sequence_send,
+            ..self
+        }
+    }
+
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -283,10 +307,10 @@ impl MockContext {
     }
 
     /// A datagram passes from the relayer to the IBC module (on host chain).
-    /// Alternative method to `ICS18Context::send` that does not exercise any serialization.
-    /// Used in testing the ICS18 algorithms, hence this may return a ICS18Error.
-    pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), ICS18Error> {
-        dispatch(self, msg).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
+    /// Alternative method to `Ics18Context::send` that does not exercise any serialization.
+    /// Used in testing the Ics18 algorithms, hence this may return a Ics18Error.
+    pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), Ics18Error> {
+        dispatch(self, msg).map_err(|e| Ics18ErrorKind::TransactionFailed.context(e))?;
         // Create a new block.
         self.advance_host_chain_height();
         Ok(())
@@ -327,6 +351,8 @@ impl MockContext {
 
 impl Ics26Context for MockContext {}
 
+impl Ics20Context for MockContext {}
+
 impl PortReader for MockContext {
     fn lookup_module_by_port(&self, port_id: &PortId) -> Option<Capability> {
         self.port_capabilities.get(port_id).cloned()
@@ -362,18 +388,27 @@ impl ChannelReader for MockContext {
         ClientReader::consensus_state(self, client_id, height)
     }
 
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS4Error> {
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics4Error> {
         let cap = PortReader::lookup_module_by_port(self, port_id);
         match cap {
             Some(key) => {
                 if !PortReader::authenticate(self, &key, port_id) {
-                    Err(ICS4Error::from(ICS4Kind::InvalidPortCapability))
+                    Err(Ics4Kind::InvalidPortCapability.into())
                 } else {
                     Ok(key)
                 }
             }
-            None => Err(ICS4Error::from(ICS4Kind::NoPortCapability(port_id.clone()))),
+            None => Err(Ics4Kind::NoPortCapability(port_id.clone()).into()),
         }
+    }
+
+    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+        self.next_sequence_send.get(port_channel_id).cloned()
+    }
+
+    fn hash(&self, input: String) -> String {
+        let r = sha2::Sha256::digest(input.as_bytes());
+        format!("{:x}", r)
     }
 
     fn channel_counter(&self) -> u64 {
@@ -384,11 +419,11 @@ impl ChannelReader for MockContext {
 impl ChannelKeeper for MockContext {
     fn store_connection_channels(
         &mut self,
-        cid: &ConnectionId,
+        cid: ConnectionId,
         port_channel_id: &(PortId, ChannelId),
-    ) -> Result<(), ICS4Error> {
+    ) -> Result<(), Ics4Error> {
         self.connection_channels
-            .entry(cid.clone())
+            .entry(cid)
             .or_insert_with(Vec::new)
             .push(port_channel_id.clone());
         Ok(())
@@ -396,43 +431,55 @@ impl ChannelKeeper for MockContext {
 
     fn store_channel(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: (PortId, ChannelId),
         channel_end: &ChannelEnd,
-    ) -> Result<(), ICS4Error> {
-        self.channels
-            .insert(port_channel_id.clone(), channel_end.clone());
+    ) -> Result<(), Ics4Error> {
+        self.channels.insert(port_channel_id, channel_end.clone());
         Ok(())
     }
 
     fn store_next_sequence_send(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
-        seq: u64,
-    ) -> Result<(), ICS4Error> {
-        self.next_sequence_send.insert(port_channel_id.clone(), seq);
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
+    ) -> Result<(), Ics4Error> {
+        self.next_sequence_send.insert(port_channel_id, seq);
         Ok(())
     }
 
     fn store_next_sequence_recv(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
-        seq: u64,
-    ) -> Result<(), ICS4Error> {
-        self.next_sequence_recv.insert(port_channel_id.clone(), seq);
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
+    ) -> Result<(), Ics4Error> {
+        self.next_sequence_recv.insert(port_channel_id, seq);
         Ok(())
     }
 
     fn store_next_sequence_ack(
         &mut self,
-        port_channel_id: &(PortId, ChannelId),
-        seq: u64,
-    ) -> Result<(), ICS4Error> {
-        self.next_sequence_ack.insert(port_channel_id.clone(), seq);
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
+    ) -> Result<(), Ics4Error> {
+        self.next_sequence_ack.insert(port_channel_id, seq);
         Ok(())
     }
 
     fn increase_channel_counter(&mut self) {
         self.channel_ids_counter += 1;
+    }
+
+    fn store_packet_commitment(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        timeout_timestamp: u64,
+        timeout_height: Height,
+        data: Vec<u8>,
+    ) -> Result<(), Ics4Error> {
+        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
+        self.packet_commitment
+            .insert(key, ChannelReader::hash(self, input));
+        Ok(())
     }
 }
 
@@ -442,7 +489,7 @@ impl ConnectionReader for MockContext {
     }
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        // Forward method call to the ICS2 Client-specific method.
+        // Forward method call to the Ics2 Client-specific method.
         ClientReader::client_state(self, client_id)
     }
 
@@ -464,7 +511,7 @@ impl ConnectionReader for MockContext {
         client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState> {
-        // Forward method call to the ICS2Client-specific method.
+        // Forward method call to the Ics2Client-specific method.
         self.consensus_state(client_id, height)
     }
 
@@ -481,21 +528,21 @@ impl ConnectionReader for MockContext {
 impl ConnectionKeeper for MockContext {
     fn store_connection(
         &mut self,
-        connection_id: &ConnectionId,
+        connection_id: ConnectionId,
         connection_end: &ConnectionEnd,
-    ) -> Result<(), ICS3Error> {
+    ) -> Result<(), Ics3Error> {
         self.connections
-            .insert(connection_id.clone(), connection_end.clone());
+            .insert(connection_id, connection_end.clone());
         Ok(())
     }
 
     fn store_connection_to_client(
         &mut self,
-        connection_id: &ConnectionId,
+        connection_id: ConnectionId,
         client_id: &ClientId,
-    ) -> Result<(), ICS3Error> {
+    ) -> Result<(), Ics3Error> {
         self.client_connections
-            .insert(client_id.clone(), connection_id.clone());
+            .insert(client_id.clone(), connection_id);
         Ok(())
     }
 
@@ -539,7 +586,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         client_type: ClientType,
-    ) -> Result<(), ICS2Error> {
+    ) -> Result<(), Ics2Error> {
         let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type,
             consensus_states: Default::default(),
@@ -554,7 +601,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         client_state: AnyClientState,
-    ) -> Result<(), ICS2Error> {
+    ) -> Result<(), Ics2Error> {
         let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type: client_state.client_type(),
             consensus_states: Default::default(),
@@ -570,7 +617,7 @@ impl ClientKeeper for MockContext {
         client_id: ClientId,
         height: Height,
         consensus_state: AnyConsensusState,
-    ) -> Result<(), ICS2Error> {
+    ) -> Result<(), Ics2Error> {
         let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type: ClientType::Mock,
             consensus_states: Default::default(),
@@ -594,7 +641,7 @@ impl Ics18Context for MockContext {
     }
 
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        // Forward call to ICS2.
+        // Forward call to Ics2.
         ClientReader::client_state(self, client_id)
     }
 
@@ -603,10 +650,10 @@ impl Ics18Context for MockContext {
         block_ref.cloned().map(Into::into)
     }
 
-    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, ICS18Error> {
-        // Forward call to ICS26 delivery method.
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {
+        // Forward call to Ics26 delivery method.
         let events =
-            deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
+            deliver(self, msgs).map_err(|e| Ics18ErrorKind::TransactionFailed.context(e))?;
 
         self.advance_host_chain_height(); // Advance chain height
         Ok(events)

@@ -14,7 +14,7 @@ use crate::config::Config;
 
 use self::{
     create::CreateCmds, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
-    start::StartCmd, tx::TxCmd, version::VersionCmd,
+    start::StartCmd, start_multi::StartMultiCmd, tx::TxCmd, version::VersionCmd,
 };
 
 mod channel;
@@ -26,6 +26,7 @@ mod light;
 mod listen;
 mod query;
 mod start;
+mod start_multi;
 mod tx;
 mod version;
 
@@ -61,6 +62,10 @@ pub enum CliCmd {
     /// The `start` subcommand
     #[options(help = "Start the relayer")]
     Start(StartCmd),
+
+    /// The `start-multi` subcommand
+    #[options(help = "Start the relayer in multi-channel mode")]
+    StartMulti(StartMultiCmd),
 
     /// The `channel` subcommand
     #[options(help = "Channel functionality for managing channels")]

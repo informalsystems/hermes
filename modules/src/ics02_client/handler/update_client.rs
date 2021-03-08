@@ -95,10 +95,9 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
-
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader(Height::new(0, 46)).into(),
+            header: MockHeader::new(Height::new(0, 46)).into(),
             signer,
         };
 
@@ -122,7 +121,9 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(MockHeader(msg.header.height())))
+                            AnyClientState::Mock(MockClientState(MockHeader::new(
+                                msg.header.height()
+                            )))
                         )
                     }
                     Create(_) => panic!("update handler result has type CreateResult"),
@@ -143,7 +144,7 @@ mod tests {
 
         let msg = MsgUpdateAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
-            header: MockHeader(Height::new(0, 46)).into(),
+            header: MockHeader::new(Height::new(0, 46)).into(),
             signer,
         };
 
@@ -179,7 +180,7 @@ mod tests {
         for cid in &client_ids {
             let msg = MsgUpdateAnyClient {
                 client_id: cid.clone(),
-                header: MockHeader(update_height).into(),
+                header: MockHeader::new(update_height).into(),
                 signer,
             };
 
