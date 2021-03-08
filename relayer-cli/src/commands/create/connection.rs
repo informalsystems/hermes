@@ -1,6 +1,5 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::ics02_client::state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::Height;
 use ibc_relayer::config::StoreConfig;

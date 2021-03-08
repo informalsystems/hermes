@@ -43,7 +43,7 @@ pub fn monitor_misbehaviour(
 ) -> Result<(), BoxError> {
     let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
 
-    let chain = spawn_chain_runtime(&spawn_options, &config, chain_id)
+    let chain = spawn_chain_runtime(spawn_options, &config, chain_id)
         .map_err(|e| format!("could not spawn the chain runtime for {}", chain_id))?;
 
     let subscription = chain.subscribe()?;
@@ -104,7 +104,7 @@ fn misbehaviour_handling(
             client_id
         ))));
     }
-    let counterparty_chain = spawn_chain_runtime(&spawn_options, &config, &client_state.chain_id())
+    let counterparty_chain = spawn_chain_runtime(spawn_options, &config, &client_state.chain_id())
         .map_err(|e| {
             format!(
                 "could not spawn the chain runtime for {}",
