@@ -135,6 +135,7 @@ impl TryFrom<RawClientState> for ClientState {
     fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
         let trust_level = raw
             .trust_level
+            .clone()
             .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?;
 
         Ok(Self {
@@ -205,6 +206,7 @@ mod tests {
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics24_host::identifier::ChainId;
     use crate::test::test_serialization_roundtrip;
     use crate::Height;
 
@@ -227,7 +229,7 @@ mod tests {
     fn client_state_new() {
         #[derive(Clone, Debug, PartialEq)]
         struct ClientStateParams {
-            id: String,
+            id: ChainId,
             trust_level: TrustThreshold,
             trusting_period: Duration,
             unbonding_period: Duration,
@@ -241,7 +243,7 @@ mod tests {
 
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
-            id: "thisisthechainid".to_string(),
+            id: ChainId::default(),
             trust_level: TrustThreshold {
                 numerator: 1,
                 denominator: 3,
@@ -309,7 +311,7 @@ mod tests {
             let p = test.params.clone();
 
             let cs_result = ClientState::new(
-                p.id.parse().unwrap(),
+                p.id,
                 p.trust_level,
                 p.trusting_period,
                 p.unbonding_period,

@@ -6,7 +6,7 @@ use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics07_tendermint::client_state::ClientState as TmClientState;
+use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics24_host::identifier::ChainId;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
@@ -20,7 +20,7 @@ pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum AnyClientState {
-    Tendermint(TmClientState),
+    Tendermint(TendermintClientState),
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClientState),
@@ -63,10 +63,10 @@ impl TryFrom<Any> for AnyClientState {
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            "" => Err(Kind::EmptyClientState.into()),
+            "" => Err(Kind::EmptyClientStateResponse.into()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                TmClientState::decode_vec(&raw.value)
+                TendermintClientState::decode_vec(&raw.value)
                     .map_err(|e| Kind::InvalidRawClientState.context(e))?,
             )),
 

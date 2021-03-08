@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
+use chrono::{DateTime, Utc};
 use prost_types::Any;
 use serde_derive::Serialize;
 use tendermint_proto::Protobuf;
@@ -10,7 +11,7 @@ use crate::events::IbcEventType;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::height::Height;
-use crate::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
+use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
 #[cfg(any(test, feature = "mocks"))]
@@ -40,13 +41,27 @@ pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum AnyConsensusState {
-    Tendermint(TmConsensusState),
+    Tendermint(TendermintConsensusState),
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockConsensusState),
 }
 
 impl AnyConsensusState {
+    pub fn timestamp(&self) -> Result<u64, Kind> {
+        match self {
+            Self::Tendermint(cs_state) => {
+                let date: DateTime<Utc> = cs_state.timestamp.into();
+                let value = date.timestamp();
+                u64::try_from(value)
+                    .map_err(|_| Kind::NegativeConsensusStateTimestamp(value.to_string()))
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(mock_state) => Ok(mock_state.timestamp()),
+        }
+    }
+
     pub fn client_type(&self) -> ClientType {
         match self {
             AnyConsensusState::Tendermint(_cs) => ClientType::Tendermint,
@@ -64,10 +79,10 @@ impl TryFrom<Any> for AnyConsensusState {
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
-            "" => Err(Kind::EmptyConsensusState.into()),
+            "" => Err(Kind::EmptyConsensusStateResponse.into()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                TmConsensusState::decode_vec(&value.value)
+                TendermintConsensusState::decode_vec(&value.value)
                     .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
             )),
 
@@ -115,7 +130,7 @@ impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
             .map(AnyConsensusState::try_from)
             .transpose()
             .map_err(|e| Kind::InvalidRawConsensusState.context(e))?
-            .ok_or(Kind::EmptyConsensusState)?;
+            .ok_or(Kind::EmptyConsensusStateResponse)?;
 
         Ok(AnyConsensusStateWithHeight {
             height: value.height.ok_or(Kind::InvalidHeightResult)?.try_into()?,

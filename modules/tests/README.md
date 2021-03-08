@@ -5,9 +5,11 @@
 This directory contains the model-based tests for the IBC modules. They are "model-based" because they are generated from a `TLA+` model of the IBC modules (see [IBC.tla](support/model_based/IBC.tla)).
 
 To instantiate the model, we define in [IBC.cfg](support/model_based/IBC.cfg) the following model constants:
-    - `ChainIds = {"chain-A", "chain-B"}`, indicating that two chains, `chain-A` and `chain-B`, will be created
-    - `MaxClientsPerChain = 1`, indicating that at most 1 client per chain will be created
-    - `MaxClientHeight = 2`, indicating that clients will reach at most height 2
+
+- `ChainIds = {"chain-A", "chain-B"}`, indicating that two chains, `chain-A` and `chain-B`, will be created
+- `MaxChainHeight = 4`, indicating that each chain will reach at most height 4
+- `MaxClientsPerChain = 1`, indicating that at most 1 client per chain will be created
+- `MaxConnectionsPerChain = 1`, indicating that at most 1 connection per chain will be created
 
 The [IBC.cfg](support/model_based/IBC.cfg) file also defines two simple invariants:
 ```tla
@@ -16,12 +18,12 @@ INVARIANTS
     ModelNeverErrors
 ```
 
-Then, we can ask [`Apalache`](https://apalache.informal.systems), a model checker for `TLA+`, to check that these invariants hold:
-```bash
-apalache-mc check --inv=ICS02UpdateOKTestNeg IBC.tla
-```
+Then, we can ask [`TLC`](https://github.com/tlaplus/tlaplus), a model checker for `TLA+`, to check that these invariants hold:
 
-The above command automatically reads what we have defined in [IBC.cfg](support/model_based/IBC.cfg).
+```bash
+wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
+java -cp tla2tools.jar tlc2.TLC IBC.tla -tool -modelcheck -config IBC.cfg -workers auto
+```
 
 ### The tests
 
@@ -39,25 +41,21 @@ To generate a test from the `ICS02UpdateOKTest` assertion, we first define an in
 ICS02UpdateOKTestNeg == ~ICS02UpdateOKTest
 ```
 
-Then, we ask `Apalache`, to prove it:
+Then, we ask `TLC`, to prove it. Because the invariant is wrong, `TLC` will find a counterexample showing that it is indeed possible that a client is sucessfully updated to a new height. This counterexample is our test.
+
+The [`gen_tests.py`](support/model_based/gen_tests.py) script can be used to generate the tests. This script assumes the existence of [`tlc-json`](https://github.com/vitorenesduarte/tlc-json), which can be installed with the following commands:
 
 ```bash
-apalache-mc check --inv=ICS02UpdateOKTestNeg IBCTests.tla
+git clone https://github.com/vitorenesduarte/tlc-json
+cd tlc-json/
+cargo install --path .
 ```
-
-(Again, the above command automatically reads what we have defined in [IBCTests.cfg](support/model_based/IBCTests.cfg).)
-
-Because the invariant is wrong, `Apalache` will find a counterexample showing that it is indeed possible that a client is sucessfully updated to a new height. This counterexample is our test.
-
-### Current limitations
-
-The counterexamples currently produced by `Apalache` are not easy to parse and have traditionally required tools like [`jsonatr`](https://github.com/informalsystems/jsonatr). Fortunately, [that will change soon](https://github.com/informalsystems/apalache/issues/530), and `Apalache` will be able to produce counterexamples like those in [support/model_based/tests/](support/model_based/tests/).
-These are currently generated manually, but can be easily mapped to Rust (see [step.rs](step.rs)).
 
 ### Running the model-based tests
 
 The model-based tests can be run with the following command:
  
 ```bash
+cd modules/
 cargo test --features mocks -- mbt
 ```

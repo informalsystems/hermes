@@ -5,7 +5,7 @@ use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics07_tendermint::header::Header as TmHeader;
+use crate::ics07_tendermint::header::Header as TendermintHeader;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
 use crate::Height;
@@ -32,7 +32,7 @@ pub trait Header: Clone + std::fmt::Debug + Send + Sync {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)] // TODO: Add Eq bound once possible
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
-    Tendermint(TmHeader),
+    Tendermint(TendermintHeader),
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockHeader),
@@ -70,7 +70,8 @@ impl TryFrom<Any> for AnyHeader {
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             TENDERMINT_HEADER_TYPE_URL => Ok(AnyHeader::Tendermint(
-                TmHeader::decode_vec(&raw.value).map_err(|e| Kind::InvalidRawHeader.context(e))?,
+                TendermintHeader::decode_vec(&raw.value)
+                    .map_err(|e| Kind::InvalidRawHeader.context(e))?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]

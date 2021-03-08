@@ -29,7 +29,6 @@ impl ClientDef for MockClient {
                 "received header height is lower than (or equal to) client latest height".into(),
             );
         }
-
         Ok((MockClientState(header), MockConsensusState(header)))
     }
 

@@ -87,8 +87,8 @@ impl NewBlock {
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
     }
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
 }
 
@@ -125,8 +125,8 @@ impl CreateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -173,8 +173,8 @@ impl UpdateClient {
         self.common.client_type
     }
 
-    pub fn height(&self) -> &Height {
-        &self.common.height
+    pub fn height(&self) -> Height {
+        self.common.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.common.height = height;
@@ -228,8 +228,8 @@ impl ClientMisbehaviour {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;

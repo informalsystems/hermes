@@ -53,6 +53,8 @@
 //! Output::success(h).with_result(end).exit();
 //! ```
 
+use std::fmt::Display;
+
 use serde::Serialize;
 use tracing::error;
 
@@ -70,6 +72,30 @@ pub fn exit_with(out: Output) {
     } else {
         std::process::exit(0);
     }
+}
+
+/// Exits the program. Useful when a type produces an error which can no longer be propagated, and
+/// the program must exit instead.
+///
+/// ## Example of use
+/// - Without this function:
+/// ```ignore
+/// let res = ForeignClient::new(chains.src.clone(), chains.dst.clone());
+/// let client = match res {
+///     Ok(client) => client,
+///     Err(e) => return Output::error(format!("{}", e)).exit(),
+/// };
+/// ```
+/// - With support from `exit_with_unrecoverable_error`:
+/// ```ignore
+/// let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
+///     .unwrap_or_else(exit_with_unrecoverable_error);
+/// ```
+pub fn exit_with_unrecoverable_error<T, E: Display>(err: E) -> T {
+    // TODO(@romac): Once never (!) stabilizes, adapt `Output::exit` to return !
+    //  https://github.com/informalsystems/ibc-rs/pull/688#discussion_r583758439
+    Output::error(format!("{}", err)).exit();
+    unreachable!()
 }
 
 /// A CLI output with support for JSON serialization. The only mandatory field is the `status`,

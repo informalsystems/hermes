@@ -181,8 +181,8 @@ impl OpenInit {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -225,8 +225,8 @@ impl OpenTry {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -269,8 +269,8 @@ impl OpenAck {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -313,8 +313,8 @@ impl OpenConfirm {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -357,11 +357,21 @@ impl CloseInit {
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> &ChannelId {
+        // FIXME(romac): Rework encoding of IbcEvents which use `Attributes`
+        self.0
+            .channel_id
+            .as_ref()
+            .expect("CloseInit should always have a channel_id")
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn counterparty_port_id(&self) -> &PortId {
+        &self.0.counterparty_port_id
+    }
+    pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
+        self.0.counterparty_channel_id.as_ref()
+    }
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -416,8 +426,8 @@ impl CloseConfirm {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -486,8 +496,8 @@ pub struct SendPacket {
 }
 
 impl SendPacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
@@ -524,8 +534,8 @@ pub struct ReceivePacket {
 }
 
 impl ReceivePacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
@@ -564,8 +574,8 @@ pub struct WriteAcknowledgement {
 }
 
 impl WriteAcknowledgement {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
@@ -607,8 +617,8 @@ pub struct AcknowledgePacket {
 }
 
 impl AcknowledgePacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
@@ -643,8 +653,8 @@ pub struct TimeoutPacket {
 }
 
 impl TimeoutPacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height
@@ -686,8 +696,8 @@ pub struct TimeoutOnClosePacket {
 }
 
 impl TimeoutOnClosePacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
