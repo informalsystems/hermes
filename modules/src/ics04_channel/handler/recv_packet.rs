@@ -42,6 +42,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
             Kind::InvalidChannelState(packet.source_channel, dest_channel_end.state).into(),
         );
     }
+
     let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
 
     let counterparty = Counterparty::new(
@@ -73,14 +74,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     // prevent accidental sends with clients that cannot be updated
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient(client_id.clone()).into());
+        return Err(Kind::FrozenClient(client_id).into());
     }
 
     // check if packet height is newer than the height of the latest client state on the receiving chain
     let latest_height = client_state.latest_height();
-    let packet_height = packet.timeout_height;
 
-    if !packet.timeout_height.is_zero() && packet_height <= latest_height {
+    if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
@@ -142,7 +142,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     output.log("success: packet receive ");
 
     output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-        height: packet_height,
+        height: Default::default(),
         packet,
     }));
 

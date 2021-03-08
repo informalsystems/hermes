@@ -128,7 +128,7 @@ mod tests {
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
     use crate::ics04_channel::handler::send_packet::send_packet;
     use crate::ics04_channel::packet::test_utils::get_dummy_raw_packet;
-    use crate::ics04_channel::packet::{Packet, Sequence};
+    use crate::ics04_channel::packet::Packet;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
 
@@ -144,7 +144,7 @@ mod tests {
         let context = MockContext::default();
 
         let mut packet: Packet = get_dummy_raw_packet(1, 6).try_into().unwrap();
-        packet.sequence = Sequence::from(1);
+        packet.sequence = 1.into();
         packet.data = vec![0];
 
         let channel_end = ChannelEnd::new(

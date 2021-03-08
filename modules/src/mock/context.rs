@@ -98,6 +98,8 @@ pub struct MockContext {
     /// Tracks the sequence number for the next packet to be acknowledged.
     next_sequence_ack: HashMap<(PortId, ChannelId), Sequence>,
 
+    packet_acknowledgement: HashMap<(PortId, ChannelId, Sequence), String>,
+
     /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
 
@@ -176,6 +178,7 @@ impl MockContext {
             port_capabilities: Default::default(),
             packet_commitment: Default::default(),
             packet_receipt: Default::default(),
+            packet_acknowledgement: Default::default(),
             connection_ids_counter: 0,
             channel_ids_counter: 0,
         }
@@ -418,6 +421,10 @@ impl ChannelReader for MockContext {
         self.packet_receipt.get(key).cloned()
     }
 
+    fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+        self.packet_acknowledgement.get(key).cloned()
+    }
+
     fn hash(&self, input: String) -> String {
         let r = sha2::Sha256::digest(input.as_bytes());
         format!("{:x}", r)
@@ -490,6 +497,17 @@ impl ChannelKeeper for MockContext {
     ) -> Result<(), Ics4Error> {
         let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
         self.packet_commitment
+            .insert(key, ChannelReader::hash(self, input));
+        Ok(())
+    }
+
+    fn store_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        ack: Vec<u8>,
+    ) -> Result<(), Ics4Error> {
+        let input = format!("{:?}", ack);
+        self.packet_acknowledgement
             .insert(key, ChannelReader::hash(self, input));
         Ok(())
     }

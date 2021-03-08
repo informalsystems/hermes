@@ -41,6 +41,8 @@ pub trait ChannelReader {
 
     fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
 
+    fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
+
     /// A hashing function for packet commitments  
     fn hash(&self, value: String) -> String;
 
@@ -117,6 +119,12 @@ pub trait ChannelKeeper {
                     )?;
                 }
             }
+            PacketResult::WriteAck(res) => {
+                self.store_packet_acknowledgement(
+                    (res.port_id.clone(), res.channel_id.clone(), res.seq),
+                    res.ack,
+                )?;
+            }
         }
         Ok(())
     }
@@ -133,6 +141,12 @@ pub trait ChannelKeeper {
         &mut self,
         key: (PortId, ChannelId, Sequence),
         receipt: String,
+    ) -> Result<(), Error>;
+
+    fn store_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        ack: Vec<u8>,
     ) -> Result<(), Error>;
 
     fn store_connection_channels(

@@ -18,8 +18,8 @@ pub mod chan_open_init;
 pub mod chan_open_try;
 pub mod recv_packet;
 pub mod send_packet;
-
 mod verify;
+pub mod write_acknowledgement;
 
 /// Defines the possible states of a channel identifier in a `ChannelResult`.
 #[derive(Clone, Debug)]

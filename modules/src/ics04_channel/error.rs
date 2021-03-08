@@ -104,6 +104,12 @@ pub enum Kind {
     #[error("Verification fails for the packet with the sequence number {0}")]
     PacketVerificationFailed(Sequence),
 
+    #[error("Acknowledgment cannot be empty")]
+    InvalidAcknowledgement,
+
+    #[error("Packet acknowledgement exists for the packet with the sequence {0}")]
+    AcknowledgementExists(Sequence),
+
     #[error("No client state associated with client id {0}")]
     MissingClientState(ClientId),
 

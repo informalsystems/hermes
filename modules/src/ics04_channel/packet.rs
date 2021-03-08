@@ -8,7 +8,10 @@ use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
 
-use super::handler::{recv_packet::RecvPacketResult, send_packet::SendPacketResult};
+use super::handler::{
+    recv_packet::RecvPacketResult, send_packet::SendPacketResult,
+    write_acknowledgement::WriteAckPacketResult,
+};
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -24,6 +27,7 @@ pub enum PacketMsgType {
 pub enum PacketResult {
     Send(SendPacketResult),
     Recv(RecvPacketResult),
+    WriteAck(WriteAckPacketResult),
 }
 
 impl std::fmt::Display for PacketMsgType {
