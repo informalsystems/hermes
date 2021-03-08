@@ -1,4 +1,5 @@
 use abscissa_core::{Command, Options, Runnable};
+use tracing::info;
 
 use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
@@ -122,6 +123,7 @@ pub struct TxUpgradeClientCmd {
     client_id: ClientId,
 }
 
+
 impl Runnable for TxUpgradeClientCmd {
     fn run(&self) {
         let config = app_config();
@@ -135,11 +137,15 @@ impl Runnable for TxUpgradeClientCmd {
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
 
+        info!("Started the chain runtimes");
+
         // Fetch the latest height of the source chain.
         let src_height = chains
             .src
             .query_latest_height()
             .unwrap_or_else(exit_with_unrecoverable_error);
+
+        info!("Height: {}", src_height);
 
         // Query the source chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_client_state) = chains
@@ -148,11 +154,15 @@ impl Runnable for TxUpgradeClientCmd {
             .map_err(|e| Kind::Tx.context(e))
             .unwrap_or_else(exit_with_unrecoverable_error);
 
+        info!("Client state {:?} & proof {:?}", client_state, proof_client_state);
+
         let (consensus_state, proof_consensus_state) = chains
             .src
             .query_upgraded_consensus_state(src_height)
             .map_err(|e| Kind::Tx.context(e))
             .unwrap_or_else(exit_with_unrecoverable_error);
+
+        info!("Client consensus state {:?} & proof {:?}", consensus_state, proof_consensus_state);
 
         // match res {
         //     Ok(receipt) => Output::success(receipt).exit(),
