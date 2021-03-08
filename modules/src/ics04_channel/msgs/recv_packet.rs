@@ -18,7 +18,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgRecvPacket {
     pub packet: Packet,
-    proofs: Proofs,
+    pub proofs: Proofs,
     signer: AccountId,
 }
 
@@ -94,7 +94,7 @@ impl From<MsgRecvPacket> for RawMsgRecvPacket {
 }
 
 #[cfg(test)]
-mod test_util {
+pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 

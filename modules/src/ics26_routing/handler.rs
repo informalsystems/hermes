@@ -3,8 +3,7 @@ use tendermint_proto::Protobuf;
 
 use crate::application::ics20_fungible_token_transfer::msgs::transfer;
 use crate::application::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
-use crate::events::IbcEvent;
-use crate::handler::HandlerOutput;
+use crate::{events::IbcEvent, handler::HandlerOutput};
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::{create_client, update_client, ClientMsg};
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
