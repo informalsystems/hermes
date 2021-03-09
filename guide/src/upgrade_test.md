@@ -19,10 +19,12 @@ commit: a279d091c6f66f8a91c87943139ebaecdd84f689
 cd ~/go/src/github.com/cosmos/relayer/
 ```
 
-This pathing step is necessary to short-circuit the upgrading of a chain.
+This patching step is necessary to short-circuit the upgrading of a chain.
 With the changes below, a chain will be able to undergo an upgrade within
 ~200 seconds of the upgrade proposal (instead of the default of 2 days).
 With this patch, we can test the upgrade functionality in a matter of minutes.
+
+Note this only works for MacOS ("Darwin" platform), not tests on Linux.
 
 ```diff
 diff --git a/scripts/one-chain b/scripts/one-chain
@@ -39,7 +41,7 @@ index d0995fe..3702a88 100755
    sed -i '' 's#"localhost:6060"#"localhost:'"$P2PPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
 ```
 
-2. Start two gaia instances using the patched developer environment:
+2. Start two gaia instances using the patched developer environment in the Go relayer codebase:
 
 ```shell
 ./scripts/two-chainz
@@ -116,7 +118,7 @@ we submitted at step 5.
 gaiad tx gov vote 1 yes --home data/ibc-0/data/ --keyring-backend test --keyring-dir data/ibc-0/ --chain-id ibc-0 --from validator
 ```
 
-Once ibc-0 reaches height 800, it should stop executing.
+Once ibc-0 reaches height 800 (the upgrade height specified in the plan at step 4), the chain should stop executing.
 
 
 7. Initialize and test Hermes
