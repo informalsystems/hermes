@@ -389,15 +389,22 @@ impl ForeignClient {
         &self,
         mut update_event: UpdateClient,
     ) -> Result<Option<AnyMisbehaviour>, ForeignClientError> {
+        // get the list of consensus state heights in reverse order
+        // Note: If chain does not prune consensus states then the last consensus state is
+        // the one installed by the `CreateClient` which does not include a header.
+        // For chains that do support pruning, it is possible that the last consensus state
+        // was installed by an `UpdateClient` and an event and header will be found.
         let consensus_state_heights = self.consensus_state_heights()?;
 
-        let mut first_misbehaviour = None;
-
+        // there must exists at least two consensus states on-chain
+        assert!(consensus_state_heights.len() > 1);
         info!("consensus state heights {:?}", consensus_state_heights);
 
-        for (i, _consensus_height) in consensus_state_heights.iter().enumerate() {
-            crate::time!("handle_misbehaviour");
-
+        // check all states for misbehaviour starting with the highest one
+        // and up to the penultimate one. Stop either at the first height where misbehaviour is not
+        // present, or at the last consensus state which is the "trusted" one and does not need to be verified.
+        let mut first_misbehaviour = None;
+        for i in 0..consensus_state_heights.len() - 1 {
             let trusted_height = consensus_state_heights[i + 1];
             let misbehavior = self
                 .src_chain
@@ -409,8 +416,11 @@ impl ForeignClient {
             if misbehavior.is_none() {
                 break;
             }
+
+            // misbehaviour detected for header height at index `i`.
             first_misbehaviour = misbehavior;
 
+            // get the previous update client event
             if let Some(new_update) = self.update_client_event(trusted_height)? {
                 update_event = new_update;
                 continue;
@@ -418,9 +428,6 @@ impl ForeignClient {
             break;
         }
 
-        if first_misbehaviour.is_some() {
-            error!("\n MISBEHAVIOUR detected {:?}", first_misbehaviour);
-        }
         Ok(first_misbehaviour)
     }
 
@@ -448,12 +455,11 @@ impl ForeignClient {
         if update.is_none() {
             return Ok(None);
         }
-        let misbehaviour = self.handle_misbehaviour(update.unwrap())?;
 
-        match misbehaviour {
+        match self.handle_misbehaviour(update.unwrap())? {
             None => Ok(None),
             Some(misbehaviour) => {
-                error!("\nmisbehaviour detected {:?}", misbehaviour);
+                error!("MISBEHAVIOUR detected {:?}, sending evidence", misbehaviour);
 
                 let signer = self.dst_chain().get_signer().map_err(|e| {
                     ForeignClientError::Misbehaviour(format!(
