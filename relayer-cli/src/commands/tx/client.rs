@@ -146,7 +146,7 @@ impl Runnable for TxUpgradeClientCmd {
         let outcome = client.upgrade();
 
         match outcome {
-            Ok(receipt) => Output::success(format!("")).exit(),
+            Ok(receipt) => Output::success(receipt).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
