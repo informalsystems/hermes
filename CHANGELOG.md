@@ -20,6 +20,7 @@
 - [ibc-relayer-cli]
   - Added `create connection` CLI ([#630])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
+  - Added `client-upgrade` CLI ([#357])
 
 ### IMPROVEMENTS
 
@@ -56,6 +57,7 @@
   - [nothing yet]
 
 [#352]: https://github.com/informalsystems/ibc-rs/issues/352
+[#357]: https://github.com/informalsystems/ibc-rs/issues/357
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630

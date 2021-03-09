@@ -1,5 +1,28 @@
-1. Patch the `one-chain` script of rrly:
+## Prerequisites
 
+- gaiad
+```
+$ gaiad version --long | head -n4
+name: gaia
+server_name: gaiad
+version: 4.0.0
+commit: a279d091c6f66f8a91c87943139ebaecdd84f689
+```
+
+- Go relayer
+
+## Testing procedure
+
+1. Patch the `one-chain` script of the Go relayer.
+
+```shell
+cd ~/go/src/github.com/cosmos/relayer/
+```
+
+This pathing step is necessary to short-circuit the upgrading of a chain.
+With the changes below, a chain will be able to undergo an upgrade within
+~200 seconds of the upgrade proposal (instead of the default of 2 days).
+With this patch, we can test the upgrade functionality in a matter of minutes.
 
 ```diff
 diff --git a/scripts/one-chain b/scripts/one-chain
@@ -16,9 +39,7 @@ index d0995fe..3702a88 100755
    sed -i '' 's#"localhost:6060"#"localhost:'"$P2PPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
 ```
 
-
 2. Start two gaia instances using the patched developer environment:
-
 
 ```shell
 ./scripts/two-chainz
@@ -100,7 +121,12 @@ Once ibc-0 reaches height 800, it should stop executing.
 
 7. Initialize and test Hermes
 
-Patch the hardcoded gaia directory to direct Hermes to the correct gaia dir:
+```shell
+cd ~/rust/ibc-rs
+```
+
+
+Patch the developer env of Hermes, to redirect to the correct Gaia directory:
 ```diff
 diff --git a/scripts/init-clients b/scripts/init-clients
 index 6cf1a674..bfff9721 100755
@@ -111,11 +137,13 @@ index 6cf1a674..bfff9721 100755
  fi
 
 -GAIA_DATA="$(pwd)/data"
-+GAIA_DATA="/Users/adi/go/src/github.com/cosmos/relayer/data"
++GAIA_DATA="~/go/src/github.com/cosmos/relayer/data"
 
  CHAIN_0_RPC_PORT=26657
  CHAIN_0_RPC_ADDR="localhost:$CHAIN_0_RPC_PORT"
 ```
+
+No setup the clients for Hermes to use:
 
 ```shell
 $ ./scripts/init-clients ~/.hermes/config.toml ibc-0 ibc-1
@@ -127,8 +155,12 @@ $ ./scripts/init-clients ~/.hermes/config.toml ibc-0 ibc-1
     Done!
 ```
 
-The following command should output the upgraded client and consensus states
-with their proofs:
+8. Test the `upgrade-client` CLI
+
+The following command will perform the upgrade for client `07-tendermint-0`. It
+will output two events, one for the updated client state, and another for the
+upgraded state.
+
 ```shell
 hermes tx raw upgrade-client ibc-1 ibc-0 07-tendermint-0
 ```
