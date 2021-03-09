@@ -92,7 +92,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 ))
             })?;
 
-        let misbehaviour = if tm_chain_header == tm_local_header {
+        let misbehaviour = if tm_chain_header != tm_local_header {
             Some(
                 AnyMisbehaviour::Tendermint(TmMisbehaviour {
                     client_id: update.client_id().clone(),

@@ -12,14 +12,11 @@
 - [ibc-relayer]
   - Support for relayer restart ([#561])
   - Add support for ordered channels ([#599])
-  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
-
-- [ibc-relayer]
-  - [nothing yet]
+  - Misbehaviour detection and evidence submission ([#632])
 
 - [ibc-relayer-cli]
-  - Added `create connection` CLI ([#630])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
+  - Added `create connection` CLI ([#630])
 
 ### IMPROVEMENTS
 
@@ -27,7 +24,7 @@
   - Follow Rust guidelines naming conventions ([#689])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer-cli]
   - [nothing yet]
@@ -59,6 +56,7 @@
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
+[#632]: https://github.com/informalsystems/ibc-rs/issues/632
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
