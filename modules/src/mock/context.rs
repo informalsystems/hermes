@@ -60,8 +60,8 @@ pub struct MockContext {
     /// Highest height (i.e., most recent) of the blocks in the history.
     latest_height: Height,
 
-    /// Highest timestamp (i.e., most recent) of the blocks in the history.
-    latest_timestamp: u64,
+    /// Highest timestamp, i.e., of the most recent block in the history.
+    timestamp: u64,
 
     /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
     /// blocks, ascending order by their height (latest block is on the last position).
@@ -159,6 +159,7 @@ impl MockContext {
             host_chain_id: host_id.clone(),
             max_history_size,
             latest_height,
+            timestamp: Default::default(),
             history: (0..n)
                 .rev()
                 .map(|i| {
@@ -282,6 +283,16 @@ impl MockContext {
         }
     }
 
+    pub fn with_timestamp(self, timestamp: u64) -> Self {
+        Self { timestamp, ..self }
+    }
+
+    pub fn with_height(self, latest_height: Height) -> Self {
+        Self {
+            latest_height,
+            ..self
+        }
+    }
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -428,12 +439,12 @@ impl ChannelReader for MockContext {
         self.packet_acknowledgement.get(key).cloned()
     }
 
-    fn host_current_height(&self) -> Height {
+    fn host_height(&self) -> Height {
         self.latest_height
     }
 
-    fn host_current_timestamp(&self) -> Height {
-        self.latest_timestamp
+    fn host_timestamp(&self) -> u64 {
+        self.timestamp
     }
 
     fn hash(&self, input: String) -> String {

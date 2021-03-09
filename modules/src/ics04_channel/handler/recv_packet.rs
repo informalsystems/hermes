@@ -5,7 +5,6 @@ use crate::{
 };
 
 use super::verify::verify_packet_proofs;
-use crate::ics02_client::state::ClientState;
 use crate::ics03_connection::connection::State as ConnectionState;
 
 use crate::ics04_channel::channel::{Counterparty, Order, State};
@@ -77,25 +76,17 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     //     return Err(Kind::FrozenClient(client_id).into());
     // }
 
-    // // check if packet height is newer than the height of the latest client state on the receiving chain
-    let latest_height = ctx.host_current_height();
-
+    // check if packet height is newer than the height of the local host chain
+    let latest_height = ctx.host_height();
     if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
-    // //check if packet timestamp is newer than the timestamp of the latest consensus state of the receiving chain
-    // let consensus_state = ctx
-    //     .client_consensus_state(&client_id, latest_height)
-    //     .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
-
-    // let latest_timestamp = consensus_state
-    //     .timestamp()
-    //     .map_err(Kind::ErrorInvalidConsensusState)?;
-
-    // if !packet.timeout_timestamp == 0 && packet.timeout_timestamp <= latest_timestamp {
-    //     return Err(Kind::LowPacketTimestamp.into());
-    // }
+    //check if packet timestamp is newer than the local host timestamp chain
+    let latest_timestamp = ctx.host_timestamp();
+    if packet.timeout_timestamp != 0 && packet.timeout_timestamp <= latest_timestamp {
+        return Err(Kind::LowPacketTimestamp.into());
+    }
 
     verify_packet_proofs(ctx, &packet, client_id, &msg.proofs)?;
 
@@ -151,8 +142,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 #[cfg(test)]
 mod tests {
 
-    use std::convert::TryFrom;
-
     use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -164,40 +153,44 @@ mod tests {
     use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
-    use crate::{
-        events::IbcEvent,
-        ics04_channel::packet::{Packet, Sequence},
-    };
+    use crate::test_utils::get_dummy_account_id;
+    use crate::{events::IbcEvent, ics04_channel::packet::Packet};
+    use std::convert::TryFrom;
 
     #[test]
     fn recv_packet_processing() {
         struct Test {
             name: String,
             ctx: MockContext,
-            packet: Packet,
+            msg: MsgRecvPacket,
             want_pass: bool,
         }
 
         let context = MockContext::default();
 
-        let height = Height::default().revision_height + 1;
+        let height = Height::default().revision_height + 2;
 
-        let h = Height::new(0, Height::default().revision_height+1);
+        let host_height = Height::new(0, Height::default().revision_height + 1);
+
+        let client_height = Height::new(0, Height::default().revision_height + 2);
 
         let msg = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(height)).unwrap();
 
         let packet = msg.packet.clone();
 
-        let packet_untimed = Packet {
-            sequence: <Sequence as From<u64>>::from(1),
+        let packet_old = Packet {
+            sequence: 1.into(),
             source_port: PortId::default(),
             source_channel: ChannelId::default(),
             destination_port: PortId::default(),
             destination_channel: ChannelId::default(),
             data: vec![],
-            timeout_height: Height::default(),
-            timeout_timestamp: 0,
+            timeout_height: client_height,
+            timeout_timestamp: 1,
         };
+
+        let msg_packet_old =
+            MsgRecvPacket::new(packet_old, msg.proofs.clone(), get_dummy_account_id()).unwrap();
 
         let dest_channel_end = ChannelEnd::new(
             State::Open,
@@ -226,7 +219,7 @@ mod tests {
             Test {
                 name: "Processing fails because no channel exists in the context".to_string(),
                 ctx: context.clone(),
-                packet: packet.clone(),
+                msg: msg.clone(),
                 want_pass: false,
             },
             Test {
@@ -237,14 +230,14 @@ mod tests {
                     ChannelId::default(),
                     dest_channel_end.clone(),
                 ),
-                packet: packet.clone(),
+                msg: msg.clone(),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&ClientId::default(), h)
+                    .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
@@ -254,21 +247,25 @@ mod tests {
                     )
                     .with_send_sequence(
                         packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        packet.destination_channel,
                         1.into(),
-                    ),
-                packet,
+                    )
+                    .with_height(host_height)
+                    .with_timestamp(1),
+                msg,
                 want_pass: true,
             },
             Test {
-                name: "Zero timeout".to_string(),
+                name: "Packet timeout expired".to_string(),
                 ctx: context
-                    .with_client(&ClientId::default(), Height::default())
+                    .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end)
-                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
-                packet: packet_untimed,
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into())
+                    .with_height(host_height)
+                    .with_timestamp(3),
+                msg: msg_packet_old,
                 want_pass: false,
             },
         ]
@@ -276,7 +273,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, msg.clone());
+            let res = process(&test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
@@ -285,7 +282,7 @@ mod tests {
                         true,
                         "recv_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
-                        test.packet.clone(),
+                        test.msg.clone(),
                         test.ctx.clone()
                     );
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
@@ -299,7 +296,7 @@ mod tests {
                         false,
                         "recv_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
-                        test.packet.clone(),
+                        test.msg.clone(),
                         test.ctx.clone(),
                         e,
                     );

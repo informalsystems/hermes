@@ -47,7 +47,10 @@ pub trait ChannelReader {
     fn hash(&self, value: String) -> String;
 
     /// Returns the current height of the local chain.
-    fn host_current_height(&self) -> Height;
+    fn host_height(&self) -> Height;
+
+    /// Returns the current timestamp of the local chain.
+    fn host_timestamp(&self) -> u64;
 
     /// Returns a counter on the number of channel ids have been created thus far.
     /// The value of this counter should increase only via method

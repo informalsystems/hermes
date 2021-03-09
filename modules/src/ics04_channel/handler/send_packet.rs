@@ -82,7 +82,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .map_err(Kind::ErrorInvalidConsensusState)?;
 
     let packet_timestamp = packet.timeout_timestamp;
-    if !packet.timeout_timestamp == 0 && packet_timestamp <= latest_timestamp {
+    if packet.timeout_timestamp != 0 && packet_timestamp <= latest_timestamp {
         return Err(Kind::LowPacketTimestamp.into());
     }
 
@@ -167,6 +167,12 @@ mod tests {
             0,
         );
 
+        let mut packet_old: Packet = get_dummy_raw_packet(1, 1).try_into().unwrap();
+        packet_old.sequence = 1.into();
+        packet_old.data = vec![0];
+
+        let client_height = Height::new(0, Height::default().revision_height + 1);
+
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails because no channel exists in the context".to_string(),
@@ -188,13 +194,25 @@ mod tests {
             Test {
                 name: "Good parameters".to_string(),
                 ctx: context
+                    .clone()
                     .with_client(&ClientId::default(), Height::default())
+                    .with_connection(ConnectionId::default(), connection_end.clone())
+                    .with_port_capability(PortId::default())
+                    .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
+                packet,
+                want_pass: true,
+            },
+            Test {
+                name: "Packet timeout".to_string(),
+                ctx: context
+                    .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
-                packet,
-                want_pass: true,
+                packet: packet_old,
+                want_pass: false,
             },
         ]
         .into_iter()
