@@ -68,35 +68,34 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     let client_id = connection_end.client_id().clone();
 
-    let client_state = ctx
-        .client_state(&client_id)
-        .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
+    // let client_state = ctx
+    //     .client_state(&client_id)
+    //     .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
 
-    // prevent accidental sends with clients that cannot be updated
-    if client_state.is_frozen() {
-        return Err(Kind::FrozenClient(client_id).into());
-    }
+    // // prevent accidental sends with clients that cannot be updated
+    // if client_state.is_frozen() {
+    //     return Err(Kind::FrozenClient(client_id).into());
+    // }
 
-    // check if packet height is newer than the height of the latest client state on the receiving chain
-    let latest_height = client_state.latest_height();
+    // // check if packet height is newer than the height of the latest client state on the receiving chain
+    let latest_height = ctx.host_current_height();
 
     if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
-    //check if packet timestamp is newer than the timestamp of the latest consensus state of the receiving chain
-    let consensus_state = ctx
-        .client_consensus_state(&client_id, latest_height)
-        .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
+    // //check if packet timestamp is newer than the timestamp of the latest consensus state of the receiving chain
+    // let consensus_state = ctx
+    //     .client_consensus_state(&client_id, latest_height)
+    //     .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
 
-    let latest_timestamp = consensus_state
-        .timestamp()
-        .map_err(Kind::ErrorInvalidConsensusState)?;
+    // let latest_timestamp = consensus_state
+    //     .timestamp()
+    //     .map_err(Kind::ErrorInvalidConsensusState)?;
 
-    let packet_timestamp = packet.timeout_timestamp;
-    if !packet.timeout_timestamp == 0 && packet_timestamp <= latest_timestamp {
-        return Err(Kind::LowPacketTimestamp.into());
-    }
+    // if !packet.timeout_timestamp == 0 && packet.timeout_timestamp <= latest_timestamp {
+    //     return Err(Kind::LowPacketTimestamp.into());
+    // }
 
     verify_packet_proofs(ctx, &packet, client_id, &msg.proofs)?;
 
@@ -183,7 +182,7 @@ mod tests {
 
         let height = Height::default().revision_height + 1;
 
-        let h = Height::new(0, Height::default().revision_height + 1);
+        let h = Height::new(0, Height::default().revision_height+1);
 
         let msg = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(height)).unwrap();
 
@@ -298,7 +297,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "send_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
+                        "recv_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.packet.clone(),
                         test.ctx.clone(),

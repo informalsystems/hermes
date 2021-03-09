@@ -60,6 +60,9 @@ pub struct MockContext {
     /// Highest height (i.e., most recent) of the blocks in the history.
     latest_height: Height,
 
+    /// Highest timestamp (i.e., most recent) of the blocks in the history.
+    latest_timestamp: u64,
+
     /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
     /// blocks, ascending order by their height (latest block is on the last position).
     history: Vec<HostBlock>,
@@ -423,6 +426,14 @@ impl ChannelReader for MockContext {
 
     fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
         self.packet_acknowledgement.get(key).cloned()
+    }
+
+    fn host_current_height(&self) -> Height {
+        self.latest_height
+    }
+
+    fn host_current_timestamp(&self) -> Height {
+        self.latest_timestamp
     }
 
     fn hash(&self, input: String) -> String {
