@@ -321,7 +321,10 @@ impl Chain for MockChain {
         })
     }
 
-    fn query_upgraded_consensus_state(&self, _height: Height) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+    fn query_upgraded_consensus_state(
+        &self,
+        _height: Height,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
 }

@@ -5,6 +5,7 @@ use tendermint::account::Id as AccountId;
 use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
+use crate::address::account_to_string;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ClientId;
@@ -20,6 +21,7 @@ pub struct MsgUpgradeAnyClient {
     pub consensus_state: AnyConsensusState,
     pub proof_upgrade_client: MerkleProof,
     pub proof_upgrade_consensus_state: MerkleProof,
+    pub signer: AccountId,
 }
 
 impl Msg for MsgUpgradeAnyClient {
@@ -49,7 +51,7 @@ impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
             consensus_state: Some(dm_msg.consensus_state.into()),
             proof_upgrade_client: c_bytes.into(),
             proof_upgrade_consensus_state: cs_bytes.into(),
-            signer: "".into(),
+            signer: account_to_string(dm_msg.signer).unwrap(),
         }
     }
 }

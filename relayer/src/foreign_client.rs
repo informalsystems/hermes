@@ -163,17 +163,36 @@ impl ForeignClient {
             consensus_state, proof_upgrade_consensus_state
         );
 
-        let m = MsgUpgradeAnyClient {
+        // Get signer
+        let signer = self.dst_chain.get_signer().map_err(|e| {
+            ForeignClientError::ClientUpgrade(
+                self.id.clone(),
+                format!(
+                    "failed while fetching the destination chain ({}) signer: {}",
+                    self.dst_chain.id(),
+                    e
+                ),
+            )
+        })?;
+
+        info!(
+            "Using signer for chain id ({}): {}",
+            self.dst_chain.id(),
+            signer.to_string()
+        );
+
+        let msg_upgrade = MsgUpgradeAnyClient {
             client_id: self.id.clone(),
             client_state,
             consensus_state,
             proof_upgrade_client,
             proof_upgrade_consensus_state,
+            signer,
         };
 
         let res = self
             .dst_chain
-            .send_msgs(vec![m.to_any::<RawMsgUpgradeClient>()])
+            .send_msgs(vec![msg_upgrade.to_any::<RawMsgUpgradeClient>()])
             .map_err(|e| {
                 ForeignClientError::ClientUpgrade(
                     self.id.clone(),

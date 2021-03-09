@@ -26,7 +26,7 @@ index d0995fe..3702a88 100755
 
 3. Setup the Go relayer for these chains:
 ```shell
-rly tx link demo -d -o 3s
+$ rly tx link demo -d -o 3s
 ```
 
 Check that everything went fine so far:
@@ -56,7 +56,14 @@ echo '{
 }' > ./upgrade-plan.json
 ```
 
-5. Query for the upgrade plan, check that it was submitted correctly
+
+5. Submit the upgrade plan 
+
+```shell
+rly tx upgrade-chain demo ibc-0 400h 10000000stake ./upgrade-plan.json
+```
+
+Query for the upgrade plan, check that it was submitted correctly:
 
 ```shell
 $ gaiad query gov proposal 1 --home data/ibc-0/
@@ -93,9 +100,25 @@ Once ibc-0 reaches height 800, it should stop executing.
 
 7. Initialize and test Hermes
 
+Patch the hardcoded gaia directory to direct Hermes to the correct gaia dir:
+```diff
+diff --git a/scripts/init-clients b/scripts/init-clients
+index 6cf1a674..bfff9721 100755
+--- a/scripts/init-clients
++++ b/scripts/init-clients
+@@ -49,7 +49,7 @@ if ! grep -q -s "$CHAIN_1_ID" "$CONFIG_FILE"; then
+   usage
+ fi
+
+-GAIA_DATA="$(pwd)/data"
++GAIA_DATA="/Users/adi/go/src/github.com/cosmos/relayer/data"
+
+ CHAIN_0_RPC_PORT=26657
+ CHAIN_0_RPC_ADDR="localhost:$CHAIN_0_RPC_PORT"
+```
 
 ```shell
-./scripts/init-clients ~/.hermes/config.toml ibc-0 ibc-1
+$ ./scripts/init-clients ~/.hermes/config.toml ibc-0 ibc-1
     Building the Rust relayer...
     Removing light client peers from configuration...
     Adding primary peers to light client configuration...
