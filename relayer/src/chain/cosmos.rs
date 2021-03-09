@@ -508,6 +508,8 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
 
+        println!("Query upgraded client state @ {}", height);
+
         let grpc_address =
             Uri::from_str(&self.config.grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
 
