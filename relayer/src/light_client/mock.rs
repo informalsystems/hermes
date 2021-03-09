@@ -51,6 +51,7 @@ impl super::LightClient<MockChain> for LightClient {
         &self,
         update: UpdateClient,
         trusted_height: Height,
+        chain_height: Height,
     ) -> Result<Option<AnyMisbehaviour>, Error> {
         unimplemented!()
     }

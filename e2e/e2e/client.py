@@ -34,6 +34,7 @@ class ClientUpdated:
     client_type: ClientType
     consensus_height: Height
     height: BlockHeight
+    header: Header
 
 
 @dataclass
@@ -47,6 +48,7 @@ class TxUpdateClient(Cmd[ClientUpdated]):
         return [self.dst_chain_id, self.src_chain_id, self.dst_client_id]
 
     def process(self, result: Any) -> ClientUpdated:
+        l.info(f'result: {result}')
         return from_dict(ClientUpdated, result['UpdateClient'])
 
 

@@ -404,21 +404,30 @@ impl ForeignClient {
         // and up to the penultimate one. Stop either at the first height where misbehaviour is not
         // present, or at the last consensus state which is the "trusted" one and does not need to be verified.
         let mut first_misbehaviour = None;
+        let chain_height = self.src_chain.query_latest_height().map_err(|e| {
+            ForeignClientError::Misbehaviour(format!("failed to get latest height {}", e))
+        })?;
+
         for i in 0..consensus_state_heights.len() - 1 {
             let trusted_height = consensus_state_heights[i + 1];
-            let misbehavior = self
-                .src_chain
-                .build_misbehaviour(update_event.clone(), trusted_height)
-                .map_err(|e| {
-                    ForeignClientError::Misbehaviour(format!("failed to build misbehaviour {}", e))
-                })?;
+            if trusted_height < chain_height {
+                let misbehavior = self
+                    .src_chain
+                    .build_misbehaviour(update_event.clone(), trusted_height, chain_height)
+                    .map_err(|e| {
+                        ForeignClientError::Misbehaviour(format!(
+                            "failed to build misbehaviour {}",
+                            e
+                        ))
+                    })?;
 
-            if misbehavior.is_none() {
-                break;
+                if misbehavior.is_none() {
+                    break;
+                }
+
+                // misbehaviour detected for header height at index `i`.
+                first_misbehaviour = misbehavior;
             }
-
-            // misbehaviour detected for header height at index `i`.
-            first_misbehaviour = misbehavior;
 
             // get the previous update client event
             if let Some(new_update) = self.update_client_event(trusted_height)? {
@@ -426,6 +435,10 @@ impl ForeignClient {
                 continue;
             }
             break;
+        }
+
+        if first_misbehaviour.is_some() {
+            // TODO - invoke light client fork accountability
         }
 
         Ok(first_misbehaviour)

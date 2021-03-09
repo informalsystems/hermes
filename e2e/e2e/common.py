@@ -38,7 +38,7 @@ Sequence = NewType('Sequence', str)
 Timestamp = NewType('Timestamp', int)
 ClientType = NewType('ClientType', str)
 BlockHeight = NewType('BlockHeight', str)
-
+Header = NewType('Header', str)
 
 def split():
     sleep(0.5)

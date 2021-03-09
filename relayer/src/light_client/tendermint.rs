@@ -10,7 +10,7 @@ use tendermint_rpc as rpc;
 use ibc::ics02_client::client_header::AnyHeader;
 use ibc::ics02_client::client_misbehaviour::{AnyMisbehaviour, Misbehaviour};
 use ibc::ics02_client::events::UpdateClient;
-use ibc::ics07_tendermint::header::Header as TmHeader;
+use ibc::ics07_tendermint::header::{Header as TmHeader, Header};
 use ibc::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 use ibc::ics24_host::identifier::ChainId;
 
@@ -20,6 +20,7 @@ use crate::{
     config::{ChainConfig, LightClientConfig, StoreConfig},
     error,
 };
+use bitcoin::hashes::core::cmp::Ordering;
 
 pub struct LightClient {
     handle: Box<dyn Handle>,
@@ -68,12 +69,22 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         &self,
         update: UpdateClient,
         trusted_height: ibc::Height,
+        chain_height: ibc::Height,
     ) -> Result<Option<AnyMisbehaviour>, error::Error> {
         crate::time!("light client build_misbehaviour");
 
+        // if the consensus height is higher than the chain height then
+        // the target height is set to the chain height
+        let target_height = if *update.consensus_height() > chain_height {
+            chain_height
+        } else {
+            *update.consensus_height()
+        };
+
         let tm_local_header = {
+            assert!(trusted_height < chain_height);
             let trusted_light_block = self.verify_to_target(trusted_height)?;
-            let target_light_block = self.verify_to_target(*update.consensus_height())?;
+            let target_light_block = self.verify_to_target(target_height)?;
 
             TmHeader {
                 trusted_height,
@@ -92,7 +103,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 ))
             })?;
 
-        let misbehaviour = if tm_chain_header != tm_local_header {
+        let misbehaviour = if LightClient::incompatible_headers(&tm_chain_header, &tm_local_header) {
             Some(
                 AnyMisbehaviour::Tendermint(TmMisbehaviour {
                     client_id: update.client_id().clone(),
@@ -125,6 +136,20 @@ impl LightClient {
         let handle = supervisor.handle();
 
         Ok((Self::new(handle, chain_config.id.clone()), supervisor))
+    }
+
+    /// TODO - move to light client supervisor/ library
+    pub fn incompatible_headers(chain_header: &Header, local_header: &Header) -> bool {
+        let chain_height = chain_header.signed_header.header.height;
+        let local_height = local_header.signed_header.header.height;
+
+        match chain_height.cmp(&&local_height) {
+            Ordering::Equal => chain_header != local_header,
+            Ordering::Greater => {
+                chain_header.signed_header.header.time <= local_header.signed_header.header.time
+            }
+            Ordering::Less => false,
+        }
     }
 }
 
