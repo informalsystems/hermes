@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use prost_types::Any;
 use thiserror::Error;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use ibc::events::IbcEvent;
 use ibc::ics02_client::header::Header;
@@ -116,7 +116,7 @@ impl ForeignClient {
         }
     }
 
-    pub fn upgrade(&self) -> Result<(), ForeignClientError> {
+    pub fn upgrade(&self) -> Result<Vec<IbcEvent>, ForeignClientError> {
         // Fetch the latest height of the source chain.
         let src_height = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::ClientUpgrade(
@@ -129,7 +129,9 @@ impl ForeignClient {
             )
         })?;
 
-        info!("Height: {}", src_height);
+        info!("Upgrade Height: {}", src_height);
+
+        let mut msgs = self.build_update_client(src_height)?;
 
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
@@ -146,10 +148,7 @@ impl ForeignClient {
                 )
             })?;
 
-        info!(
-            "Upgraded client state {:?} & proof {:?}",
-            client_state, proof_upgrade_client
-        );
+        debug!("Upgraded client state {:?}", client_state);
 
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
@@ -158,10 +157,7 @@ impl ForeignClient {
                 "failed while fetching from chain {} the upgraded client consensus state: {}", self.src_chain.id(), e)))
             ?;
 
-        info!(
-            "Upgraded client consensus state {:?} & proof {:?}",
-            consensus_state, proof_upgrade_consensus_state
-        );
+        debug!("Upgraded client consensus state {:?}", consensus_state);
 
         // Get signer
         let signer = self.dst_chain.get_signer().map_err(|e| {
@@ -175,12 +171,6 @@ impl ForeignClient {
             )
         })?;
 
-        info!(
-            "Using signer for chain id ({}): {}",
-            self.dst_chain.id(),
-            signer.to_string()
-        );
-
         let msg_upgrade = MsgUpgradeAnyClient {
             client_id: self.id.clone(),
             client_state,
@@ -188,25 +178,23 @@ impl ForeignClient {
             proof_upgrade_client,
             proof_upgrade_consensus_state,
             signer,
-        };
+        }
+        .to_any::<RawMsgUpgradeClient>();
 
-        let res = self
-            .dst_chain
-            .send_msgs(vec![msg_upgrade.to_any::<RawMsgUpgradeClient>()])
-            .map_err(|e| {
-                ForeignClientError::ClientUpgrade(
-                    self.id.clone(),
-                    format!(
-                        "failed while sending message to destination chain {} with err: {}",
-                        self.dst_chain.id(),
-                        e
-                    ),
-                )
-            })?;
+        msgs.push(msg_upgrade);
 
-        info!("Res: {:?}", res);
+        let res = self.dst_chain.send_msgs(msgs).map_err(|e| {
+            ForeignClientError::ClientUpgrade(
+                self.id.clone(),
+                format!(
+                    "failed while sending message to destination chain {} with err: {}",
+                    self.dst_chain.id(),
+                    e
+                ),
+            )
+        })?;
 
-        Ok(())
+        Ok(res)
     }
 
     /// Returns a handle to the chain hosting this client.
