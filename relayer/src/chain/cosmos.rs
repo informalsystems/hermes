@@ -581,7 +581,8 @@ impl Chain for CosmosSdkChain {
             .into_inner()
             .upgraded_consensus_state
             .ok_or(Kind::EmptyResponseValue)?;
-        // TODO: More explicit error kinds (should not reuse Grpc all over the place.
+
+        // TODO: More explicit error kinds (should not reuse Grpc all over the place)
         let consensus_state = AnyConsensusState::try_from(upgraded_consensus_state_raw)
             .map_err(|e| Kind::Grpc.context(e))?;
 
