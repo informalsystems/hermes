@@ -68,6 +68,9 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
         "update_client" => Ok(IbcEvent::from(ClientEvents::UpdateClient::try_from(
             object,
         )?)),
+        "submit_misbehaviour" => Ok(IbcEvent::from(ClientEvents::ClientMisbehaviour::try_from(
+            object,
+        )?)),
 
         // Connection events
         "connection_open_init" => Ok(IbcEvent::from(ConnectionEvents::OpenInit::try_from(

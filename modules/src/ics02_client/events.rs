@@ -16,6 +16,7 @@ use tendermint_proto::Protobuf;
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
 const UPDATE_EVENT_TYPE: &str = "update_client";
+const MISBEHAVIOUR_EVENT_TYPE: &str = "client_misbehaviour";
 
 /// The content of the `key` field for the attribute containing the client identifier.
 const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
@@ -38,6 +39,9 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
             common: extract_attributes_from_tx(event),
             header: extract_header_from_tx(event), // TODO fix
         })),
+        MISBEHAVIOUR_EVENT_TYPE => Some(IbcEvent::ClientMisbehaviour(ClientMisbehaviour(
+            extract_attributes_from_tx(event),
+        ))),
         _ => None,
     }
 }

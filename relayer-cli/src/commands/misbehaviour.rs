@@ -6,7 +6,6 @@ use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::StoreConfig;
-use ibc_relayer::error::Kind;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::CliApp;
@@ -48,23 +47,19 @@ pub fn monitor_misbehaviour(
 
     let subscription = chain.subscribe()?;
 
-    let mut restart = true;
+    // check the current states for all clients on chain
+    let clients = chain
+        .query_clients(QueryClientStatesRequest { pagination: None })
+        .map_err(|e| format!("could not query clients for {}", chain.id()))?;
+
+    for client_id in clients.iter() {
+        misbehaviour_handling(chain.clone(), config, client_id, None)?;
+    }
+
+    // process update client events
     while let Ok(event_batch) = subscription.recv() {
         for event in event_batch.events.iter() {
             match event {
-                IbcEvent::NewBlock(_bl) => {
-                    if !restart {
-                        continue;
-                    }
-                    let clients = chain
-                        .query_clients(QueryClientStatesRequest { pagination: None })
-                        .map_err(|e| format!("could not query clients for {}", chain.id()))?;
-
-                    for client_id in clients.iter() {
-                        misbehaviour_handling(chain.clone(), config, client_id, None)?;
-                    }
-                    restart = false;
-                }
                 IbcEvent::UpdateClient(update) => {
                     dbg!(update);
                     misbehaviour_handling(
@@ -99,10 +94,8 @@ fn misbehaviour_handling(
         .map_err(|e| format!("could not query client state for {}", client_id))?;
 
     if client_state.is_frozen() {
-        return Err(Box::new(Kind::Misbehaviour(format!(
-            "client {} is forzen",
-            client_id
-        ))));
+        // nothing to do
+        return Ok(());
     }
     let counterparty_chain = spawn_chain_runtime(spawn_options, &config, &client_state.chain_id())
         .map_err(|e| {
@@ -120,7 +113,7 @@ fn misbehaviour_handling(
         .map_err(|e| format!("could not run misbehaviour detection for {}", client_id))?;
 
     if let Some(evidence_submission_result) = misbehaviour_detection_result {
-        error!(
+        info!(
             "\nEvidence submission result {:?}",
             evidence_submission_result
         );

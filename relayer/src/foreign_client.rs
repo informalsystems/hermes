@@ -385,6 +385,45 @@ impl ForeignClient {
         Ok(consensus_state_heights)
     }
 
+    /// Check for misbehaviour and submit evidence.
+    /// The check starts with and `update_event` emitted by chain B (`dst_chain`) for a client update
+    /// with a header from chain A (`src_chain`). The algorithm goes backwards through the headers
+    /// until it gets to the first misbehaviour.
+    ///
+    /// The following cases are covered:
+    /// 1 - forks, double signing, assumes at least one consensus state from the fork point exists
+    ///
+    /// Assuming existing consensus states on chain B are: [Sn,.., Sf, Sf-1, S0] with `Sf-1` being
+    /// the most recent state before fork.
+    /// Chain A is queried for a header `Hf` at `Sf.height` and if it is different than the `Hf'`
+    /// in the event for the client update (the one that has generated `Sf` on chain), then the two
+    /// headers are included in the evidence and submitted.
+    /// Note that in this case the headers are different but have the same height.
+    ///
+    /// 2 - time travelling lunatic attack: some header with a height that is higher than the latest
+    /// height on A has been accepted and a consensus state was created on B. Note that this implies
+    /// that the timestamp of this header must be within the `clock_drift` of the client.
+    ///
+    /// Assuming the client on B has been updated with `h2`(not present on/ produced by chain A)
+    /// and it has a timestamp of `t2` that is at most `clock_drift` in the future.
+    /// The misbehavior detector (`MD`) gets the latest header from A, let it be `h1` with a
+    /// timestamp of `t1`. If `t1 >= t2` then evidence of misbehavior is submitted to A.
+    ///
+    /// The following case is not covered:
+    /// 2' - same as 2 but `t1 < t2`.
+    /// Problem: If `h2` has a high height then no other client updates can be installed on `B`
+    /// for a long time. There is currently no other opportunity to check `h2` except a process
+    /// restart. In the future the `update_client` event should be rechecked for every new block
+    /// on `A` or after `clock_drift` time so it falls back into case 2 above. In other words,
+    /// given enough time the misbehavior detector will find a header `h1'` on A with `t1' >= t2`
+    ///
+    /// Other notes:
+    /// - the algorithm builds misbehavior at each consensus height, starting with the
+    /// highest height assuming the previous one is trusted. It stops at the highest height with
+    /// no misbehaviour and submits the last constructed evidence (the one with the lowest height)
+    /// - a lot of the logic here is derived from the behavior of the only implemented client
+    /// (ics07-tendermint) and might not be general enough.
+    ///
     pub fn handle_misbehaviour(
         &self,
         mut update_event: UpdateClient,
@@ -396,24 +435,35 @@ impl ForeignClient {
         // was installed by an `UpdateClient` and an event and header will be found.
         let consensus_state_heights = self.consensus_state_heights()?;
 
-        // there must exists at least two consensus states on-chain
-        assert!(consensus_state_heights.len() > 1);
-        info!("consensus state heights {:?}", consensus_state_heights);
+        // there must exists at least two consensus states on-chain for evidence handling to work
+        if consensus_state_heights.len() <= 1 {
+            return Ok(None);
+        }
 
-        // check all states for misbehaviour starting with the highest one
-        // and up to the penultimate one. Stop either at the first height where misbehaviour is not
-        // present, or at the last consensus state which is the "trusted" one and does not need to be verified.
+        info!(
+            "checking misbehaviour for consensus state heights {:?}",
+            consensus_state_heights
+        );
+
         let mut first_misbehaviour = None;
-        let chain_height = self.src_chain.query_latest_height().map_err(|e| {
+        let latest_chain_height = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::Misbehaviour(format!("failed to get latest height {}", e))
         })?;
 
+        assert_eq!(*update_event.consensus_height(), consensus_state_heights[0]);
+
+        // check all states for misbehaviour starting with the highest one
+        // and up to the penultimate one. Stop either at the first height where misbehaviour is not
+        // present, or at the last consensus state which is the "trusted" one and does not need
+        // to be checked
         for i in 0..consensus_state_heights.len() - 1 {
             let trusted_height = consensus_state_heights[i + 1];
-            if trusted_height < chain_height {
+
+            // skip over consensus states for trusted heights that are in the "future"
+            if trusted_height < latest_chain_height {
                 let misbehavior = self
                     .src_chain
-                    .build_misbehaviour(update_event.clone(), trusted_height, chain_height)
+                    .build_misbehaviour(update_event.clone(), trusted_height, latest_chain_height)
                     .map_err(|e| {
                         ForeignClientError::Misbehaviour(format!(
                             "failed to build misbehaviour {}",
@@ -425,7 +475,7 @@ impl ForeignClient {
                     break;
                 }
 
-                // misbehaviour detected for header height at index `i`.
+                // misbehaviour detected for state at index `i`.
                 first_misbehaviour = misbehavior;
             }
 
@@ -435,10 +485,6 @@ impl ForeignClient {
                 continue;
             }
             break;
-        }
-
-        if first_misbehaviour.is_some() {
-            // TODO - invoke light client fork accountability
         }
 
         Ok(first_misbehaviour)
@@ -497,6 +543,8 @@ impl ForeignClient {
                         e
                     ))
                 })?;
+
+                // TODO - invoke light client fork accountability
 
                 Ok(Some(events[0].clone()))
             }

@@ -69,20 +69,22 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         &self,
         update: UpdateClient,
         trusted_height: ibc::Height,
-        chain_height: ibc::Height,
+        latest_chain_height: ibc::Height,
     ) -> Result<Option<AnyMisbehaviour>, error::Error> {
         crate::time!("light client build_misbehaviour");
 
-        // if the consensus height is higher than the chain height then
-        // the target height is set to the chain height
-        let target_height = if *update.consensus_height() > chain_height {
-            chain_height
-        } else {
-            *update.consensus_height()
-        };
+        let update_header = update.header.clone().ok_or_else(|| {
+            Kind::Misbehaviour(format!(
+                "missing header in update client event {}",
+                self.chain_id
+            ))
+        })?;
 
-        let tm_local_header = {
-            assert!(trusted_height < chain_height);
+        // set the target height to the minimum between the update height and latest chain height
+        let target_height = std::cmp::min(*update.consensus_height(), latest_chain_height);
+
+        let tm_chain_header = {
+            assert!(trusted_height < latest_chain_height);
             let trusted_light_block = self.verify_to_target(trusted_height)?;
             let target_light_block = self.verify_to_target(target_height)?;
 
@@ -94,8 +96,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             }
         };
 
-        let update_header = update.header.clone().unwrap();
-        let tm_chain_header =
+        let tm_ibc_client_header =
             downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
                 Kind::Misbehaviour(format!(
                     "header type incompatible for chain {}",
@@ -103,19 +104,19 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 ))
             })?;
 
-        let misbehaviour = if LightClient::incompatible_headers(&tm_chain_header, &tm_local_header)
-        {
-            Some(
-                AnyMisbehaviour::Tendermint(TmMisbehaviour {
-                    client_id: update.client_id().clone(),
-                    header1: tm_chain_header,
-                    header2: tm_local_header,
-                })
-                .wrap_any(),
-            )
-        } else {
-            None
-        };
+        let misbehaviour =
+            if LightClient::incompatible_headers(&tm_ibc_client_header, &tm_chain_header) {
+                Some(
+                    AnyMisbehaviour::Tendermint(TmMisbehaviour {
+                        client_id: update.client_id().clone(),
+                        header1: tm_ibc_client_header,
+                        header2: tm_chain_header,
+                    })
+                    .wrap_any(),
+                )
+            } else {
+                None
+            };
 
         Ok(misbehaviour)
     }
@@ -140,14 +141,15 @@ impl LightClient {
     }
 
     /// TODO - move to light client supervisor/ library
-    pub fn incompatible_headers(chain_header: &Header, local_header: &Header) -> bool {
-        let chain_height = chain_header.signed_header.header.height;
-        let local_height = local_header.signed_header.header.height;
+    pub fn incompatible_headers(ibc_client_header: &Header, chain_header: &Header) -> bool {
+        let ibc_client_height = ibc_client_header.signed_header.header.height;
+        let chain_header_height = chain_header.signed_header.header.height;
 
-        match chain_height.cmp(&&local_height) {
-            Ordering::Equal => chain_header != local_header,
+        match ibc_client_height.cmp(&&chain_header_height) {
+            Ordering::Equal => ibc_client_header == chain_header,
             Ordering::Greater => {
-                chain_header.signed_header.header.time <= local_header.signed_header.header.time
+                ibc_client_header.signed_header.header.time
+                    <= chain_header.signed_header.header.time
             }
             Ordering::Less => false,
         }
