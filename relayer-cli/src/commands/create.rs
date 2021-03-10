@@ -1,6 +1,7 @@
 //! `create` subcommand
 use abscissa_core::{Command, Help, Options, Runnable};
 
+use crate::commands::create::channel::CreateChannelCommand;
 use crate::commands::create::connection::CreateConnectionCommand;
 
 mod channel;
@@ -16,7 +17,8 @@ pub enum CreateCmds {
     /// Subcommand for creating a `connection`
     #[options(help = "Create a new connection between two chains")]
     Connection(CreateConnectionCommand),
-    // /// Subcommand for creating a `channel` with various
-    // #[options(help = "create a new channel between two chains")]
-    // Channel(CreateChannelCommand),
+
+    /// Subcommand for creating a `channel`
+    #[options(help = "Create a new channel between two chains")]
+    Channel(CreateChannelCommand),
 }
