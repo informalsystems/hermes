@@ -18,7 +18,7 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - Added `create connection` CLI ([#630])
+  - Added `create connection` and `create channel` CLIs ([#630], [#715])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
 
 ### IMPROVEMENTS
@@ -65,6 +65,7 @@
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
+[#715]: https://github.com/informalsystems/ibc-rs/issues/715
 
 ## v0.1.1
 *February 17, 2021*
