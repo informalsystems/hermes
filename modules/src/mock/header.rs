@@ -5,15 +5,20 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 
-use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
+use crate::ics02_client::client_def::AnyConsensusState;
+use crate::ics02_client::client_def::AnyHeader;
+
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
 use crate::Height;
 
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize)]
-pub struct MockHeader(pub Height);
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct MockHeader {
+    pub height: Height,
+    pub timestamp: u64,
+}
 
 impl Protobuf<RawMockHeader> for MockHeader {}
 
@@ -21,12 +26,14 @@ impl TryFrom<RawMockHeader> for MockHeader {
     type Error = Error;
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
-        Ok(MockHeader(
-            raw.height
+        Ok(MockHeader {
+            height: raw
+                .height
                 .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
                 .try_into()
                 .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
-        ))
+            timestamp: raw.timestamp,
+        })
     }
 }
 
@@ -38,7 +45,13 @@ impl From<MockHeader> for RawMockHeader {
 
 impl MockHeader {
     pub fn height(&self) -> Height {
-        self.0
+        self.height
+    }
+    pub fn new(height: Height) -> Self {
+        Self {
+            height,
+            timestamp: Default::default(),
+        }
     }
 }
 

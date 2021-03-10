@@ -3,9 +3,10 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
+use super::packet::Sequence;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::Height;
+use crate::{ics02_client, Height};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
@@ -21,6 +22,9 @@ pub enum Kind {
     #[error("invalid connection hops length: expected {0}; actual {1}")]
     InvalidConnectionHopsLength(usize, usize),
 
+    #[error("packet destination port/channel doesn't match the counterparty's port/channel")]
+    InvalidPacketCounterparty(PortId, ChannelId),
+
     #[error("invalid version")]
     InvalidVersion,
 
@@ -33,6 +37,15 @@ pub enum Kind {
     #[error("invalid proof: missing height")]
     MissingHeight,
 
+    #[error("packet sequence cannot be 0")]
+    ZeroPacketSequence,
+
+    #[error("packet data bytes cannot be empty")]
+    ZeroPacketData,
+
+    #[error("packet timeout height and packet timeout timestamp cannot both be 0")]
+    ZeroPacketTimeout,
+
     #[error("invalid timeout height for the packet")]
     InvalidTimeoutHeight,
 
@@ -42,12 +55,8 @@ pub enum Kind {
     #[error("there is no packet in this message")]
     MissingPacket,
 
-    #[error("acknowledgement too long")]
-    AcknowledgementTooLong,
-
     #[error("missing counterparty")]
     MissingCounterparty,
-
     #[error("no commong version")]
     NoCommonVersion,
 
@@ -89,6 +98,21 @@ pub enum Kind {
     #[error("No client state associated with client id {0}")]
     MissingClientState(ClientId),
 
+    #[error("Missing sequence number for send packets")]
+    MissingNextSendSeq,
+
+    #[error("Invalid packet sequence {0} ≠ next send sequence {1}")]
+    InvalidPacketSequence(Sequence, Sequence),
+
+    #[error("Receiving chain block height {0} >= packet timeout height {1}")]
+    LowPacketHeight(Height, Height),
+
+    #[error("Receiving chain block timestamp >= packet timeout timestamp")]
+    LowPacketTimestamp,
+
+    #[error("Invalid timestamp in consensus state; timestamp must be a positive value")]
+    ErrorInvalidConsensusState(ics02_client::error::Kind),
+
     #[error("Client with id {0} is frozen")]
     FrozenClient(ClientId),
 
@@ -104,8 +128,8 @@ pub enum Kind {
     #[error("Channel {0} should not be state {1}")]
     InvalidChannelState(ChannelId, State),
 
-    #[error("Channel is in state {0}")]
-    ChannelAlreadyClosed(ChannelId),
+    #[error("Channel {0} is Closed")]
+    ChannelClosed(ChannelId),
 
     #[error("Handshake proof verification fails at ChannelOpenAck")]
     ChanOpenAckProofVerification,
