@@ -159,6 +159,28 @@ impl ConnectionEnd {
     }
 }
 
+pub struct IdentifiedConnectionEnd {
+    connection_id: ConnectionId,
+    connection_end: ConnectionEnd,
+}
+
+impl IdentifiedConnectionEnd {
+    pub fn new(connection_id: ConnectionId, connection_end: ConnectionEnd) -> Self {
+        IdentifiedConnectionEnd {
+            connection_id,
+            connection_end,
+        }
+    }
+
+    pub fn id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    pub fn end(&self) -> &ConnectionEnd {
+        &self.connection_end
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Counterparty {
     client_id: ClientId,
