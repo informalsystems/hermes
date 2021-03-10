@@ -210,11 +210,34 @@ impl IBCTestRunner {
 
             // check that clients match
             let clients_match = chain.clients.into_iter().all(|(client_id, client)| {
-                client.heights.into_iter().all(|height| {
-                    // check that each consensus state from the model exists
+                // compute the highest consensus state in the model and check
+                // that it matches the client state
+                let client_state = ClientReader::client_state(ctx, &Self::client_id(client_id));
+                let client_state_matches = match client.heights.iter().max() {
+                    Some(max_height) => {
+                        // if the model has consensus states (encoded simply as
+                        // heights in the model), then the highest one should
+                        // match the height in the client state
+                        client_state.is_some()
+                            && client_state.unwrap().latest_height() == Self::height(*max_height)
+                    }
+                    None => {
+                        // if the model doesn't have any consensus states
+                        // (heights), then the client state should not exist
+                        client_state.is_none()
+                    }
+                };
+
+                // check that each consensus state from the model exists
+                // TODO: check that no other consensus state exists (i.e. the
+                //       only existing consensus states are those in that also
+                //       exist in the model)
+                let consensus_states_match = client.heights.into_iter().all(|height| {
                     ctx.consensus_state(&Self::client_id(client_id), Self::height(height))
                         .is_some()
-                })
+                });
+
+                client_state_matches && consensus_states_match
             });
 
             // check that connections match
