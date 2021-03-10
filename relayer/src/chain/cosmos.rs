@@ -545,7 +545,7 @@ impl Chain for CosmosSdkChain {
     ) -> Result<ConnectionEnd, Error> {
         let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
         Ok(ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("connection".into()).context(e))?)
+            .map_err(|e| Kind::Query(format!("connection {}", connection_id)).context(e))?)
     }
 
     fn query_connection_channels(

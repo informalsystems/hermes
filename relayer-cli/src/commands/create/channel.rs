@@ -93,15 +93,17 @@ impl CreateChannelCommand {
         let chan_res = Channel::new(con, self.order, self.port_a.clone(), self.port_b.clone());
     }
 
+    // Creates a new channel, reusing an already existing connection and its clients.
     fn run_reusing_connection(&self) {
         let config = app_config();
 
         let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+
         // Validate & spawn runtime for side a.
         let chain_a = spawn_chain_runtime(spawn_options.clone(), &config, &self.chain_a_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // Unwrap the identifier of the connection on chain_a.
+        // Unwrap the identifier of the connection on side a.
         let connection_a_id =
             match &self.connection_a {
                 Some(c) => c,

@@ -126,9 +126,9 @@ impl Connection {
                 conn_end_a.end().counterparty().client_id(), b_client.id()
             )));
         }
-        if conn_end_a.end().state_matches(&State::Open) {
+        if !conn_end_a.end().state_matches(&State::Open) {
             return Err(ConnectionError::ConstructorFailed(format!(
-                "the connection end is expected to be in state open; found state: {:?}",
+                "the connection end is expected to be in state 'Open'; found state: {:?}",
                 conn_end_a.end().state()
             )));
         }
