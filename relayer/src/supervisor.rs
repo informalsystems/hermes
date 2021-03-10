@@ -350,7 +350,7 @@ impl CollectedEvents {
 
 /// Collect the events we are interested in from an [`EventBatch`],
 /// and maps each [`IbcEvent`] to their corresponding [`Object`].
-fn collect_events(batch: EventBatch) -> CollectedEvents {
+pub fn collect_events(batch: EventBatch) -> CollectedEvents {
     let mut collected = CollectedEvents::new(batch.height, batch.chain_id);
     for event in batch.events {
         match event {
