@@ -110,4 +110,17 @@ impl ClientDef for MockClient {
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
+
+    fn verify_packet_acknowledgement(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+        _data: Vec<u8>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
 }

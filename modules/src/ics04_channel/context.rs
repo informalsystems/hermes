@@ -39,6 +39,10 @@ pub trait ChannelReader {
 
     fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence>;
 
+    fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence>;
+
+    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
+
     fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
 
     fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
@@ -131,6 +135,23 @@ pub trait ChannelKeeper {
                     res.ack,
                 )?;
             }
+
+            PacketResult::Ack(res) => {
+                match res.seq_number {
+                    Some(s) => {
+                        //Ordered Channel
+                        self.store_next_sequence_ack((res.port_id.clone(), res.channel_id), s)?;
+                    }
+                    None => {
+                        //Unorderded Channel
+                        self.delete_packet_acknowledgement((
+                            res.port_id.clone(),
+                            res.channel_id.clone(),
+                            res.seq,
+                        ))?;
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -153,6 +174,11 @@ pub trait ChannelKeeper {
         &mut self,
         key: (PortId, ChannelId, Sequence),
         ack: Vec<u8>,
+    ) -> Result<(), Error>;
+
+    fn delete_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
     ) -> Result<(), Error>;
 
     fn store_connection_channels(

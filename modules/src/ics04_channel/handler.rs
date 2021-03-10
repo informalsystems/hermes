@@ -10,6 +10,7 @@ use crate::ics24_host::identifier::{ChannelId, PortId};
 
 use super::{msgs::PacketMsg, packet::PacketResult};
 
+pub mod acknowledgement;
 pub mod chan_close_confirm;
 pub mod chan_close_init;
 pub mod chan_open_ack;

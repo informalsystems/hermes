@@ -9,7 +9,7 @@ use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
 
 use super::handler::{
-    recv_packet::RecvPacketResult, send_packet::SendPacketResult,
+    acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
     write_acknowledgement::WriteAckPacketResult,
 };
 
@@ -28,6 +28,7 @@ pub enum PacketResult {
     Send(SendPacketResult),
     Recv(RecvPacketResult),
     WriteAck(WriteAckPacketResult),
+    Ack(AckPacketResult),
 }
 
 impl std::fmt::Display for PacketMsgType {

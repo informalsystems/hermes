@@ -276,7 +276,7 @@ mod tests {
         let client_height = 5;
         let start_client_height = Height::new(0, client_height);
         let update_client_height = Height::new(0, 34);
-        let update_client_height2 = Height::new(0, 35);
+        let update_client_height_after_send = Height::new(0, 35);
 
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
@@ -447,7 +447,7 @@ mod tests {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id,
-                    header: MockHeader::new(update_client_height2).into(),
+                    header: MockHeader::new(update_client_height_after_send).into(),
                     signer: default_signer,
                 })),
                 want_pass: true,

@@ -149,8 +149,17 @@ pub enum Kind {
     #[error("Handshake proof verification fails at ChannelOpenAck")]
     ChanOpenAckProofVerification,
 
+    #[error("Commitment for the packet {0} not found")]
+    PacketCommitmentNotFound(Sequence),
+
     #[error("Handshake proof verification fails at ChannelOpenConfirm")]
     ChanOpenConfirmProofVerification,
+
+    #[error("The stored commitment of the packet {0} is incorrect")]
+    IncorrectPacketCommitment(Sequence),
+
+    #[error("Missing sequence number for ack packets")]
+    MissingNextAckSeq,
 }
 
 impl Kind {

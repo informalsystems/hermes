@@ -67,15 +67,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     let client_id = connection_end.client_id().clone();
 
-    // let client_state = ctx
-    //     .client_state(&client_id)
-    //     .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
-
-    // // prevent accidental sends with clients that cannot be updated
-    // if client_state.is_frozen() {
-    //     return Err(Kind::FrozenClient(client_id).into());
-    // }
-
     // check if packet height is newer than the height of the local host chain
     let latest_height = ctx.host_height();
     if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
@@ -247,11 +238,17 @@ mod tests {
                     )
                     .with_send_sequence(
                         packet.destination_port.clone(),
-                        packet.destination_channel,
+                        packet.destination_channel.clone(),
                         1.into(),
                     )
                     .with_height(host_height)
-                    .with_timestamp(1),
+                    .with_timestamp(1)
+                    //with_recv_sequnce required for ordered channels
+                    .with_recv_sequence(
+                        packet.destination_port.clone(),
+                        packet.destination_channel,
+                        packet.sequence,
+                    ),
                 msg,
                 want_pass: true,
             },

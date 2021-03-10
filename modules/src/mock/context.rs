@@ -283,6 +283,34 @@ impl MockContext {
         }
     }
 
+    pub fn with_recv_sequence(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq_number: Sequence,
+    ) -> Self {
+        let mut next_sequence_recv = self.next_sequence_recv.clone();
+        next_sequence_recv.insert((port_id, chan_id), seq_number);
+        Self {
+            next_sequence_recv,
+            ..self
+        }
+    }
+
+    pub fn with_ack_sequence(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq_number: Sequence,
+    ) -> Self {
+        let mut next_sequence_ack = self.next_sequence_send.clone();
+        next_sequence_ack.insert((port_id, chan_id), seq_number);
+        Self {
+            next_sequence_ack,
+            ..self
+        }
+    }
+
     pub fn with_timestamp(self, timestamp: u64) -> Self {
         Self { timestamp, ..self }
     }
@@ -293,6 +321,22 @@ impl MockContext {
             ..self
         }
     }
+
+    pub fn with_packet_commitment(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+        data: String,
+    ) -> Self {
+        let mut packet_commitment = self.packet_commitment.clone();
+        packet_commitment.insert((port_id, chan_id, seq), data);
+        Self {
+            packet_commitment,
+            ..self
+        }
+    }
+
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -431,6 +475,14 @@ impl ChannelReader for MockContext {
         self.next_sequence_recv.get(port_channel_id).cloned()
     }
 
+    fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+        self.next_sequence_ack.get(port_channel_id).cloned()
+    }
+
+    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+        self.packet_commitment.get(key).cloned()
+    }
+
     fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
         self.packet_receipt.get(key).cloned()
     }
@@ -531,6 +583,14 @@ impl ChannelKeeper for MockContext {
         let input = format!("{:?}", ack);
         self.packet_acknowledgement
             .insert(key, ChannelReader::hash(self, input));
+        Ok(())
+    }
+
+    fn delete_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+    ) -> Result<(), Ics4Error> {
+        self.packet_acknowledgement.remove(&key);
         Ok(())
     }
 

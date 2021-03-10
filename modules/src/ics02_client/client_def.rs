@@ -116,6 +116,19 @@ pub trait ClientDef: Clone {
         seq: &Sequence,
         commitment: String,
     ) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// Verify a `proof` that a packet has been commited.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_acknowledgement(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        seq: &Sequence,
+        ack: Vec<u8>,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
@@ -674,6 +687,54 @@ impl ClientDef for AnyClient {
                     channel_id,
                     seq,
                     commitment,
+                )
+            }
+        }
+    }
+
+    fn verify_packet_acknowledgement(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        seq: &Sequence,
+        ack: Vec<u8>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            Self::Tendermint(client) => {
+                let client_state = downcast!(
+                    client_state => AnyClientState::Tendermint
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                client.verify_packet_acknowledgement(
+                    client_state,
+                    height,
+                    proof,
+                    port_id,
+                    channel_id,
+                    seq,
+                    ack,
+                )
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(client) => {
+                let client_state = downcast!(
+                    client_state => AnyClientState::Mock
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+
+                client.verify_packet_acknowledgement(
+                    client_state,
+                    height,
+                    proof,
+                    port_id,
+                    channel_id,
+                    seq,
+                    ack,
                 )
             }
         }

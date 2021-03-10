@@ -97,3 +97,36 @@ pub fn verify_packet_proofs(
         )
         .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
 }
+
+/// Entry point for verifying all proofs bundled in any ICS4 message.
+pub fn verify_packet_acknowledgement_proofs(
+    ctx: &dyn ChannelReader,
+    packet: &Packet,
+    acknowledgement: Vec<u8>,
+    client_id: ClientId,
+    proofs: &Proofs,
+) -> Result<(), Error> {
+    let client_state = ctx
+        .client_state(&client_id)
+        .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
+
+    // The client must not be frozen.
+    if client_state.is_frozen() {
+        return Err(Kind::FrozenClient(client_id).into());
+    }
+
+    let client_def = AnyClient::from_client_type(client_state.client_type());
+
+    // Verify the proof for the packet against the chain store.
+    Ok(client_def
+        .verify_packet_acknowledgement(
+            &client_state,
+            proofs.height(),
+            proofs.object_proof(),
+            &packet.source_port,
+            &packet.source_channel,
+            &packet.sequence,
+            acknowledgement,
+        )
+        .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
+}
