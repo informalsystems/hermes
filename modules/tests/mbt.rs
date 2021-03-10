@@ -1,15 +1,15 @@
 mod runner;
 
-#[tokio::test]
-async fn mbt() {
+#[test]
+fn mbt() {
     // we should be able to just return the `Result` once the following
     // issue is fixed: https://github.com/rust-lang/rust/issues/43301
-    if let Err(e) = all_tests().await {
+    if let Err(e) = all_tests() {
         panic!("{}", e);
     }
 }
 
-async fn all_tests() -> Result<(), Box<dyn std::error::Error>> {
+fn all_tests() -> Result<(), Box<dyn std::error::Error>> {
     // init tracing subscriber
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
@@ -46,7 +46,7 @@ async fn all_tests() -> Result<(), Box<dyn std::error::Error>> {
 
         // run the test
         let runner = runner::IBCTestRunner::new();
-        modelator::run(options, runner).await?;
+        modelator::run(options, runner)?;
     }
 
     Ok(())
