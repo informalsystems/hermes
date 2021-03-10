@@ -11,6 +11,14 @@ commit: a279d091c6f66f8a91c87943139ebaecdd84f689
 
 - Go relayer
 
+```shell
+$ rly version
+version: 0.8.2
+commit: 489607fa6de093d90fd2f8ac8eb52be3ccf3f145
+cosmos-sdk: v0.41.3
+go: go1.15.6 darwin/amd64
+```
+
 ## Testing procedure
 
 1. Patch the `one-chain` script of the Go relayer.
