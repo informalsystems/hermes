@@ -33,7 +33,7 @@ services:
       context: ../
       dockerfile: ci/relayer.Dockerfile
       args:
-        RELEASE: v4.0.0
+        RELEASE: v4.1.0
     environment:
       - CHAIN_A=ibc-0
       - CHAIN_A_HOME=/data/ibc-0
@@ -43,7 +43,7 @@ services:
       - CHAIN_B_PORT=26657
       - CONFIG=simple_config.toml
       - RELAYER_DIR=/relayer
-      - RELEASE=v4.0.0
+      - RELEASE=v4.1.0
     networks:
       relaynet:
         ipv4_address: 172.25.0.12
