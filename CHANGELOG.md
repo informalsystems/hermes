@@ -31,7 +31,7 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Clarified success path for updating a client that is already up-to-date ([#734])
 
 ### BUG FIXES
 
@@ -67,6 +67,7 @@
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
+[#734]: https://github.com/informalsystems/ibc-rs/issues/734
 
 ## v0.1.1
 *February 17, 2021*

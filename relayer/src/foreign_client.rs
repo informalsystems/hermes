@@ -297,6 +297,8 @@ impl ForeignClient {
         Ok(())
     }
 
+    /// Returns a vector with a message for updating the client to height `target_height`.
+    /// If the client already stores consensus states for this height, returns an empty vector.
     pub fn build_update_client(
         &self,
         target_height: Height,
@@ -367,6 +369,7 @@ impl ForeignClient {
                 e
             ))
         })?;
+
         let new_msgs = self.build_update_client(h)?;
         if new_msgs.is_empty() {
             return Err(ForeignClientError::ClientUpdate(format!(
