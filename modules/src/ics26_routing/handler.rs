@@ -443,6 +443,7 @@ mod tests {
                 msg: Ics26Envelope::Ics20Msg(msg_transfer),
                 want_pass: true,
             },
+            //the client update is required in this test, because the proof associated with msg_recv_packet has the same height as the packet TO height (see get_dummy_raw_msg_recv_packet)
             Test {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {

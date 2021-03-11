@@ -5,8 +5,8 @@
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
-use crate::ics04_channel::error::Error;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
+use crate::ics04_channel::{error::Error, packet::Receipt};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
@@ -43,7 +43,7 @@ pub trait ChannelReader {
 
     fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
 
-    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
+    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<Receipt>;
 
     fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
 
@@ -114,19 +114,21 @@ pub trait ChannelKeeper {
                 )?;
             }
             PacketResult::Recv(res) => {
-                if res.receipt.is_none() {
-                    //Ordered cchannel
-                    self.store_next_sequence_recv(
-                        (res.port_id.clone(), res.channel_id.clone()),
-                        res.seq_number,
-                    )?;
-                } else {
-                    //Unorderd channel: store a receipt that does not contain any data, since the packet has not yet been processed,
-                    // it's just a single store key set to an empty string to indicate that the packet has been received
-                    self.store_packet_receipt(
-                        (res.port_id.clone(), res.channel_id.clone(), res.seq),
-                        "".to_string(),
-                    )?;
+                match res.receipt {
+                    None => {
+                        //Ordered cchannel
+                        self.store_next_sequence_recv(
+                            (res.port_id.clone(), res.channel_id.clone()),
+                            res.seq_number,
+                        )?
+                    }
+                    Some(r) => {
+                        //Unorderd channel
+                        self.store_packet_receipt(
+                            (res.port_id.clone(), res.channel_id.clone(), res.seq),
+                            r,
+                        )?
+                    }
                 }
             }
             PacketResult::WriteAck(res) => {
@@ -167,7 +169,7 @@ pub trait ChannelKeeper {
     fn store_packet_receipt(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        receipt: String,
+        receipt: Receipt,
     ) -> Result<(), Error>;
 
     fn store_packet_acknowledgement(

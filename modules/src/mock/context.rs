@@ -13,7 +13,7 @@ use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as Ics2Error;
 use crate::{
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-    ics04_channel::packet::Sequence,
+    ics04_channel::packet::{Receipt, Sequence},
 };
 use crate::{
     ics02_client::client_type::ClientType, ics23_commitment::commitment::CommitmentPrefix,
@@ -110,7 +110,7 @@ pub struct MockContext {
     packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
 
     //Used by unorded channel
-    packet_receipt: HashMap<(PortId, ChannelId, Sequence), String>,
+    packet_receipt: HashMap<(PortId, ChannelId, Sequence), Receipt>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -483,7 +483,7 @@ impl ChannelReader for MockContext {
         self.packet_commitment.get(key).cloned()
     }
 
-    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<Receipt> {
         self.packet_receipt.get(key).cloned()
     }
 
@@ -597,7 +597,7 @@ impl ChannelKeeper for MockContext {
     fn store_packet_receipt(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        receipt: String,
+        receipt: Receipt,
     ) -> Result<(), Ics4Error> {
         self.packet_receipt.insert(key, receipt);
         Ok(())

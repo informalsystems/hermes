@@ -9,15 +9,16 @@ use crate::ics03_connection::connection::State as ConnectionState;
 
 use crate::ics04_channel::channel::{Counterparty, Order, State};
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use crate::ics04_channel::packet::{PacketResult, Sequence};
+use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
+
 #[derive(Clone, Debug)]
 pub struct RecvPacketResult {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub seq: Sequence,
     pub seq_number: Sequence,
-    pub receipt: Option<String>,
+    pub receipt: Option<Receipt>,
 }
 
 pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
@@ -109,12 +110,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         match packet_rec {
             Some(_r) => return Err(Kind::PacketAlreadyReceived(packet.sequence).into()),
             None => {
+                //store a receipt that does not contain any data
                 result = PacketResult::Recv(RecvPacketResult {
                     port_id: packet.source_port.clone(),
                     channel_id: packet.source_channel.clone(),
                     seq: packet.sequence,
                     seq_number: 1.into(),
-                    receipt: Some("1".to_string()),
+                    receipt: Some(Receipt::Ok),
                 });
             }
         }

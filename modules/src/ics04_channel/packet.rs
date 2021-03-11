@@ -31,6 +31,11 @@ pub enum PacketResult {
     Ack(AckPacketResult),
 }
 
+#[derive(Clone, Debug)]
+pub enum Receipt {
+    Ok,
+}
+
 impl std::fmt::Display for PacketMsgType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
