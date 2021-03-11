@@ -156,6 +156,12 @@ pub enum Kind {
 
     #[error("the input header is not recognized as a header for this chain")]
     InvalidInputHeader,
+
+    #[error("invalid key address: {0}")]
+    InvalidKeyAddress(String),
+
+    #[error("bech32 encoding failed")]
+    Bech32Encoding(#[from] bech32::Error),
 }
 
 impl Kind {

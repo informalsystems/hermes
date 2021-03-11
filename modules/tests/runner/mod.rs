@@ -1,5 +1,9 @@
 pub mod step;
 
+use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::{Debug, Display};
+
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::context::ClientReader;
@@ -27,12 +31,10 @@ use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::proofs::{ConsensusProof, Proofs};
+use ibc::signer::Signer;
 use ibc::Height;
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::{Debug, Display};
+
 use step::{Action, ActionOutcome, Chain, Step};
-use tendermint::account::Id as AccountId;
 
 #[derive(Debug, Clone)]
 pub struct IBCTestRunner {
@@ -150,8 +152,8 @@ impl IBCTestRunner {
         AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)))
     }
 
-    pub fn signer() -> AccountId {
-        AccountId::new([0; 20])
+    fn signer() -> Signer {
+        Signer::new("")
     }
 
     pub fn counterparty(client_id: u64, connection_id: Option<u64>) -> Counterparty {

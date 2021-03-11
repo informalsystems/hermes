@@ -35,7 +35,6 @@ prost-types = "0.7"
 bytes = "1.0.0"
 dyn-clonable = "0.9.0"
 regex = "1"
-bech32 = "0.8.0"
 subtle-encoding = "0.5"
 sha2 = { version = "0.9.3", optional = true }
 

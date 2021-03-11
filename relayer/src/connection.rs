@@ -2,11 +2,6 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, warn};
 
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-
 use ibc::events::IbcEvent;
 use ibc::ics02_client::height::Height;
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
@@ -370,7 +365,7 @@ impl Connection {
             signer,
         };
 
-        Ok(vec![new_msg.to_any::<RawMsgConnectionOpenInit>()])
+        Ok(vec![new_msg.to_any()])
     }
 
     pub fn build_conn_init_and_send(&self) -> Result<IbcEvent, ConnectionError> {
@@ -494,7 +489,7 @@ impl Connection {
             signer,
         };
 
-        msgs.push(new_msg.to_any::<RawMsgConnectionOpenTry>());
+        msgs.push(new_msg.to_any());
         Ok(msgs)
     }
 
@@ -590,7 +585,7 @@ impl Connection {
             signer,
         };
 
-        msgs.push(new_msg.to_any::<RawMsgConnectionOpenAck>());
+        msgs.push(new_msg.to_any());
         Ok(msgs)
     }
 
@@ -677,7 +672,7 @@ impl Connection {
             signer,
         };
 
-        msgs.push(new_msg.to_any::<RawMsgConnectionOpenConfirm>());
+        msgs.push(new_msg.to_any());
         Ok(msgs)
     }
 
