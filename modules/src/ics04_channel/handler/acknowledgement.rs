@@ -70,7 +70,7 @@ pub fn process(
             packet.source_channel.clone(),
             packet.sequence,
         ))
-        .ok_or_else(|| Kind::PacketCommitmentNotFound(packet.sequence))?;
+        .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
 
     let input = format!(
         "{:?},{:?},{:?}",
