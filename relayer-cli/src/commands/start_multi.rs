@@ -1,11 +1,15 @@
+use std::collections::HashMap;
+
 use abscissa_core::{config, Command, Options, Runnable};
 
 use ibc::ics24_host::identifier::ChainId;
-use ibc_relayer::supervisor::Supervisor;
+use ibc_relayer::{chain::handle::ChainHandle, supervisor::Supervisor};
 
 use crate::conclude::Output;
 use crate::prelude::*;
 use crate::{application::CliApp, commands::cli_utils::ChainHandlePair};
+
+use super::cli_utils::spawn_chain_runtime;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct StartMultiCmd {
@@ -60,7 +64,7 @@ fn start_specified(
     chain_a: &ChainId,
     chain_b: &ChainId,
 ) -> Result<Output, BoxError> {
-    eprintln!("spawning supervisor for chains {} and {}", chain_a, chain_b);
+    info!("spawning supervisor for chains {} and {}", chain_a, chain_b);
 
     let chains = ChainHandlePair::spawn(config, chain_a, chain_b)?;
     let supervisor = Supervisor::spawn(chains.src, chains.dst)?;
@@ -76,16 +80,28 @@ fn start_all_connections(config: &config::Reader<CliApp>) -> Result<Output, BoxE
         .filter(|conns| !conns.is_empty())
         .ok_or("no connections configured")?;
 
+    let mut handles = HashMap::new();
+    let mut get_handle = |id: &ChainId| -> Result<Box<dyn ChainHandle>, BoxError> {
+        if !handles.contains_key(id) {
+            let handle = spawn_chain_runtime(Default::default(), config, id)?;
+            handles.insert(id.clone(), handle);
+        }
+
+        let handle = handles.get(id).unwrap();
+        Ok(handle.clone())
+    };
+
     for conn in connections {
-        eprintln!(
+        info!(
             "spawning supervisor for chains {} and {}",
             conn.a_chain, conn.b_chain
         );
 
-        let chains = ChainHandlePair::spawn(config, &conn.a_chain, &conn.b_chain)?;
+        let chain_a = get_handle(&conn.a_chain)?;
+        let chain_b = get_handle(&conn.b_chain)?;
 
         std::thread::spawn(|| {
-            let supervisor = Supervisor::spawn(chains.src, chains.dst)?;
+            let supervisor = Supervisor::spawn(chain_a, chain_b)?;
             supervisor.run()
         });
     }
