@@ -17,7 +17,6 @@ use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use ripemd160::Ripemd160;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use tendermint::account::Id as AccountId;
 
 use crate::config::ChainConfig;
 use crate::keyring::errors::{Error, Kind};
@@ -102,7 +101,6 @@ impl KeyRingOperations for KeyRing {
         let key_json: Value =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
-        let _signer: AccountId;
         let key: KeyEntry;
 
         let _mnemonic: String = "".to_string();

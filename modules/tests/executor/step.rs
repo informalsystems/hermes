@@ -1,3 +1,4 @@
+use ibc::ics03_connection::connection::State as ConnectionState;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -53,7 +54,7 @@ pub enum Action {
         chain_id: String,
 
         #[serde(alias = "previousConnectionId")]
-        #[serde(default, deserialize_with = "deserialize_connection_id")]
+        #[serde(default, deserialize_with = "deserialize_id")]
         previous_connection_id: Option<u64>,
 
         #[serde(alias = "clientId")]
@@ -105,21 +106,6 @@ pub enum Action {
     },
 }
 
-/// On the model, a non-existing `connection_id` is represented with -1.
-/// For this reason, this function maps a `Some(-1)` to a `None`.
-fn deserialize_connection_id<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let connection_id: Option<i64> = Deserialize::deserialize(deserializer)?;
-    let connection_id = if connection_id == Some(-1) {
-        None
-    } else {
-        connection_id.map(|connection_id| connection_id as u64)
-    };
-    Ok(connection_id)
-}
-
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionOutcome {
     None,
@@ -143,4 +129,50 @@ pub enum ActionOutcome {
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Chain {
     pub height: u64,
+
+    pub clients: HashMap<u64, Client>,
+
+    pub connections: HashMap<u64, Connection>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Client {
+    pub heights: Vec<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Connection {
+    #[serde(alias = "clientId")]
+    #[serde(default, deserialize_with = "deserialize_id")]
+    pub client_id: Option<u64>,
+
+    #[serde(alias = "connectionId")]
+    #[serde(default, deserialize_with = "deserialize_id")]
+    pub connection_id: Option<u64>,
+
+    #[serde(alias = "counterpartyClientId")]
+    #[serde(default, deserialize_with = "deserialize_id")]
+    pub counterparty_client_id: Option<u64>,
+
+    #[serde(alias = "counterpartyConnectionId")]
+    #[serde(default, deserialize_with = "deserialize_id")]
+    pub counterparty_connection_id: Option<u64>,
+
+    pub state: ConnectionState,
+}
+
+/// On the model, a non-existing `client_id` and a `connection_id` is
+/// represented with -1.
+/// For this reason, this function maps a `Some(-1)` to a `None`.
+fn deserialize_id<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let id: Option<i64> = Deserialize::deserialize(deserializer)?;
+    let id = if id == Some(-1) {
+        None
+    } else {
+        id.map(|id| id as u64)
+    };
+    Ok(id)
 }

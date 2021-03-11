@@ -1,11 +1,11 @@
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::channel::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
@@ -20,12 +20,30 @@ pub struct MsgChannelOpenAck {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub counterparty_channel_id: ChannelId,
-    pub counterparty_version: String,
+    pub counterparty_version: String, // FIXME(romac): Introduce newtype for versions
     pub proofs: Proofs,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
 impl MsgChannelOpenAck {
+    pub fn new(
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_channel_id: ChannelId,
+        counterparty_version: String,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            port_id,
+            channel_id,
+            counterparty_channel_id,
+            counterparty_version,
+            proofs,
+            signer,
+        }
+    }
+
     /// Getter: borrow the `port_id` from this message.
     pub fn port_id(&self) -> &PortId {
         &self.port_id
@@ -37,6 +55,7 @@ impl MsgChannelOpenAck {
     pub fn counterparty_channel_id(&self) -> &ChannelId {
         &self.counterparty_channel_id
     }
+
     pub fn counterparty_version(&self) -> &String {
         &self.counterparty_version
     }
@@ -48,6 +67,7 @@ impl MsgChannelOpenAck {
 
 impl Msg for MsgChannelOpenAck {
     type ValidationError = Error;
+    type Raw = RawMsgChannelOpenAck;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -55,10 +75,6 @@ impl Msg for MsgChannelOpenAck {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -68,9 +84,6 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_try.into(),
             None,
@@ -99,7 +112,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
-            signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -113,7 +126,7 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
             counterparty_version: domain_msg.counterparty_version.to_string(),
             proof_try: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
