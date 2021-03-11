@@ -1,6 +1,7 @@
 use std::fs::remove_dir_all;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
+use std::process;
 
 use git2::Repository;
 use tempdir::TempDir;
@@ -29,8 +30,9 @@ impl CompileCmd {
         let tmp = TempDir::new("ibc-proto").unwrap();
 
         Self::output_version(&self.sdk, tmp.as_ref(), "COSMOS_SDK_COMMIT");
-        // Self::output_version(&self.ibc, tmp.as_ref(), "COSMOS_IBC_COMMIT"); // TODO Make this the default when ibc-go ready
-        Self::compile_protos(&self.sdk, &self.ibc, tmp.as_ref());
+        Self::output_version(&self.ibc, tmp.as_ref(), "COSMOS_IBC_COMMIT");
+        Self::compile_sdk_protos(&self.sdk, tmp.as_ref());
+        Self::compile_ibc_protos(&self.ibc, tmp.as_ref());
         Self::copy_generated_files(tmp.as_ref(), &self.out);
     }
 
@@ -43,39 +45,29 @@ impl CompileCmd {
         std::fs::write(path, rev).unwrap();
     }
 
-    fn compile_protos(sdk_dir: &Path, _ibc_dir: &Path, out_dir: &Path) {
+    fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path) {
         println!(
             "[info ] Compiling .proto files to Rust into '{}'...",
             out_dir.display()
         );
 
-        let root = env!("CARGO_MANIFEST_DIR");
-
         // Paths
         let proto_paths = [
-            // mock proto
-            format!("{}/../proto/definitions/mock", root),
             // ibc-go proto files
-            //format!("{}/proto/ibc", ibc_dir.display()), // TODO Make this the default when ibc-go ready
-            // cosmos-sdk proto files
-            format!("{}/proto/ibc", sdk_dir.display()),
-            format!("{}/proto/cosmos/auth", sdk_dir.display()),
-            format!("{}/proto/cosmos/tx", sdk_dir.display()),
-            format!("{}/proto/cosmos/base", sdk_dir.display()),
-            format!("{}/proto/cosmos/staking", sdk_dir.display()),
+            // format!("{}/proto/ibc", ibc_dir.display()), // TODO Make this the default when ibc-go ready
+            format!("{}/proto/ibc", ibc_dir.display()), // TODO Make this the default when ibc-go ready
+                                                        //format!("{}/proto/ibc/lightclients/tendermint/v1", ibc_dir.display()), // TODO Make this the default when ibc-go ready
         ];
 
         let proto_includes_paths = [
-            format!("{}/../proto", root),
-            // format!("{}/proto/ibc", ibc_dir.display()), // TODO Make this the default when ibc-go ready
-            // format!("{}/proto/cosmos", sdk_dir.display()), // TODO Make this the default when ibc-go ready
-            format!("{}/proto", sdk_dir.display()),
-            format!("{}/third_party/proto", sdk_dir.display()),
+            format!("{}/proto", ibc_dir.display()), // TODO Make this the default when ibc-go ready
+            format!("{}/third_party/proto", ibc_dir.display()),
         ];
 
         // List available proto files
         let mut protos: Vec<PathBuf> = vec![];
         for proto_path in &proto_paths {
+            println!("Looking for proto files in {:?}", proto_path);
             protos.append(
                 &mut WalkDir::new(proto_path)
                     .into_iter()
@@ -90,17 +82,101 @@ impl CompileCmd {
             );
         }
 
+        println!("Found the following protos:");
+        // Show which protos will be compiled
+        for proto in &protos {
+            println!("\t-> {:?}", proto);
+        }
+
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
-        tonic_build::configure()
+        let compilation = tonic_build::configure()
             .build_client(true)
             .build_server(false)
             .format(false)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
-            .compile(&protos, &includes)
-            .unwrap();
+            .compile(&protos, &includes);
+
+        match compilation {
+            Ok(_) => {
+                println!("Successfully compiled proto files");
+            }
+            Err(e) => {
+                println!("Failed to compile:{:?}", e.to_string());
+                process::exit(1);
+            }
+        }
+    }
+
+    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path) {
+        println!(
+            "[info ] Compiling .proto files to Rust into '{}'...",
+            out_dir.display()
+        );
+
+        let root = env!("CARGO_MANIFEST_DIR");
+
+        // Paths
+        let proto_paths = [
+            format!("{}/../proto/definitions/mock", root),
+            format!("{}/proto/cosmos/auth", sdk_dir.display()),
+            format!("{}/proto/cosmos/tx", sdk_dir.display()),
+            format!("{}/proto/cosmos/base", sdk_dir.display()),
+            format!("{}/proto/cosmos/staking", sdk_dir.display()),
+        ];
+
+        let proto_includes_paths = [
+            format!("{}/../proto", root),
+            format!("{}/proto", sdk_dir.display()),
+            format!("{}/third_party/proto", sdk_dir.display()),
+        ];
+
+        // List available proto files
+        let mut protos: Vec<PathBuf> = vec![];
+        for proto_path in &proto_paths {
+            println!("Looking for proto files in {:?}", proto_path);
+            protos.append(
+                &mut WalkDir::new(proto_path)
+                    .into_iter()
+                    .filter_map(|e| e.ok())
+                    .filter(|e| {
+                        e.file_type().is_file()
+                            && e.path().extension().is_some()
+                            && e.path().extension().unwrap() == "proto"
+                    })
+                    .map(|e| e.into_path())
+                    .collect(),
+            );
+        }
+
+        println!("Found the following protos:");
+        // Show which protos will be compiled
+        for proto in &protos {
+            println!("\t-> {:?}", proto);
+        }
+
+        // List available paths for dependencies
+        let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
+
+        let compilation = tonic_build::configure()
+            .build_client(true)
+            .build_server(false)
+            .format(false)
+            .out_dir(out_dir)
+            .extern_path(".tendermint", "::tendermint_proto")
+            .compile(&protos, &includes);
+
+        match compilation {
+            Ok(_) => {
+                println!("Successfully compiled proto files");
+            }
+            Err(e) => {
+                println!("Failed to compile:{:?}", e.to_string());
+                process::exit(1);
+            }
+        }
     }
 
     fn copy_generated_files(from_dir: &Path, to_dir: &Path) {
