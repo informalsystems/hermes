@@ -7,7 +7,7 @@ use ibc_relayer::config::{RelayPath, StoreConfig};
 use ibc_relayer::relay::connect_with_new_channel;
 
 use crate::application::app_config;
-use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
+use crate::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;
 
 /// `channel` subcommand

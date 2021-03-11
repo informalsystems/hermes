@@ -18,7 +18,6 @@ use self::{
 };
 
 mod channel;
-mod cli_utils;
 mod config;
 mod create;
 mod keys;

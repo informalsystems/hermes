@@ -6,7 +6,7 @@ use ibc_relayer::config::StoreConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
-use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
+use crate::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 
