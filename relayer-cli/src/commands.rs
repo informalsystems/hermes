@@ -54,7 +54,9 @@ pub enum CliCmd {
     Light(LightCmd),
 
     /// The `create` subcommand
-    #[options(help = "Create objects on chains (by performing connection or channel open handshakes)")]
+    #[options(
+        help = "Create objects on chains (by performing connection or channel open handshakes)"
+    )]
     Create(CreateCmds),
 
     /// The `start` subcommand
