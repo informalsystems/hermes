@@ -3,39 +3,29 @@
 use std::cmp::min;
 use std::collections::HashMap;
 use std::error::Error;
-use std::str::FromStr;
 
 use prost_types::Any;
 use sha2::Digest;
-use tendermint::account::Id;
 
+use crate::application::ics20_fungible_token_transfer::context::Ics20Context;
+use crate::events::IbcEvent;
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
-use crate::ics02_client::error::Error as Ics2Error;
-use crate::{
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-    ics04_channel::packet::Sequence,
-};
-use crate::{
-    ics02_client::client_type::ClientType, ics23_commitment::commitment::CommitmentPrefix,
-};
-
-use crate::ics05_port::capabilities::Capability;
-use crate::ics05_port::context::PortReader;
-
+use crate::ics02_client::error::Error as Ics02Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as Ics3Error;
-
-use crate::events::IbcEvent;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
-use crate::ics04_channel::error::Error as Ics4Error;
-use crate::ics04_channel::error::Kind as Ics4Kind;
-
-use crate::application::ics20_fungible_token_transfer::context::Ics20Context;
+use crate::ics04_channel::error::{Error as Ics4Error, Kind as Ics4Kind};
+use crate::ics04_channel::packet::Sequence;
+use crate::ics05_port::capabilities::Capability;
+use crate::ics05_port::context::PortReader;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::Ics18Context;
 use crate::ics18_relayer::error::{Error as Ics18Error, Kind as Ics18ErrorKind};
+use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::handler::{deliver, dispatch};
@@ -43,6 +33,7 @@ use crate::ics26_routing::msgs::Ics26Envelope;
 use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
 use crate::mock::host::{HostBlock, HostType};
+use crate::signer::Signer;
 use crate::Height;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
@@ -586,7 +577,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         client_type: ClientType,
-    ) -> Result<(), Ics2Error> {
+    ) -> Result<(), Ics02Error> {
         let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type,
             consensus_states: Default::default(),
@@ -601,7 +592,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         client_state: AnyClientState,
-    ) -> Result<(), Ics2Error> {
+    ) -> Result<(), Ics02Error> {
         let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type: client_state.client_type(),
             consensus_states: Default::default(),
@@ -617,7 +608,7 @@ impl ClientKeeper for MockContext {
         client_id: ClientId,
         height: Height,
         consensus_state: AnyConsensusState,
-    ) -> Result<(), Ics2Error> {
+    ) -> Result<(), Ics02Error> {
         let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type: ClientType::Mock,
             consensus_states: Default::default(),
@@ -659,8 +650,8 @@ impl Ics18Context for MockContext {
         Ok(events)
     }
 
-    fn signer(&self) -> Id {
-        Id::from_str("0CDA3F47EF3C4906693B170EF650EB968C5F4B2C").unwrap()
+    fn signer(&self) -> Signer {
+        "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".parse().unwrap()
     }
 }
 

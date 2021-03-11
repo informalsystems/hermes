@@ -3,13 +3,11 @@ use std::convert::{TryFrom, TryInto};
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
-
-use crate::address::{account_to_string, string_to_account};
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::Version;
 use crate::ics24_host::identifier::ClientId;
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
@@ -23,7 +21,7 @@ pub struct MsgConnectionOpenInit {
     pub counterparty: Counterparty,
     pub version: Version,
     pub delay_period: u64,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
 impl MsgConnectionOpenInit {
@@ -40,6 +38,7 @@ impl MsgConnectionOpenInit {
 
 impl Msg for MsgConnectionOpenInit {
     type ValidationError = Error;
+    type Raw = RawMsgConnectionOpenInit;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -47,10 +46,6 @@ impl Msg for MsgConnectionOpenInit {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -60,8 +55,6 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
-        let signer = string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
-
         Ok(Self {
             client_id: msg
                 .client_id
@@ -77,7 +70,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .try_into()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
             delay_period: msg.delay_period,
-            signer,
+            signer: msg.signer.into(),
         })
     }
 }
@@ -89,7 +82,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             counterparty: Some(ics_msg.counterparty.into()),
             version: Some(ics_msg.version.into()),
             delay_period: ics_msg.delay_period,
-            signer: account_to_string(ics_msg.signer).unwrap(),
+            signer: ics_msg.signer.to_string(),
         }
     }
 }

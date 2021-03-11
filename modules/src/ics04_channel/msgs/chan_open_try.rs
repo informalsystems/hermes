@@ -1,15 +1,13 @@
 use crate::ics04_channel::channel::{validate_version, ChannelEnd};
 use crate::ics04_channel::error::{Error, Kind};
+use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{
-    address::{account_to_string, string_to_account},
-    ics24_host::error::ValidationError,
-};
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
@@ -25,12 +23,30 @@ pub struct MsgChannelOpenTry {
     pub port_id: PortId,
     pub previous_channel_id: Option<ChannelId>,
     pub channel: ChannelEnd,
-    pub counterparty_version: String,
+    pub counterparty_version: String, // TODO(romac): newtype this
     pub proofs: Proofs,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
 impl MsgChannelOpenTry {
+    pub fn new(
+        port_id: PortId,
+        previous_channel_id: Option<ChannelId>,
+        channel: ChannelEnd,
+        counterparty_version: String,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            port_id,
+            previous_channel_id,
+            channel,
+            counterparty_version,
+            proofs,
+            signer,
+        }
+    }
+
     /// Getter: borrow the `port_id` from this message.
     pub fn port_id(&self) -> &PortId {
         &self.port_id
@@ -50,6 +66,7 @@ impl MsgChannelOpenTry {
 }
 impl Msg for MsgChannelOpenTry {
     type ValidationError = Error;
+    type Raw = RawMsgChannelOpenTry;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -57,10 +74,6 @@ impl Msg for MsgChannelOpenTry {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 
     fn validate_basic(&self) -> Result<(), ValidationError> {
@@ -77,9 +90,6 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelOpenTry) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_init.into(),
             None,
@@ -108,7 +118,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
-            signer,
+            signer: raw_msg.signer.into(),
         };
 
         match msg.validate_basic() {
@@ -129,7 +139,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
             counterparty_version: domain_msg.counterparty_version,
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }

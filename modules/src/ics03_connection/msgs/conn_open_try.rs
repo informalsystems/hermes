@@ -1,12 +1,10 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
@@ -14,6 +12,7 @@ use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 use crate::Height;
 
@@ -30,8 +29,8 @@ pub struct MsgConnectionOpenTry {
     pub counterparty: Counterparty,
     pub counterparty_versions: Vec<Version>,
     pub proofs: Proofs,
-    pub delay_period: u64,
-    pub signer: AccountId,
+    pub delay_period: u64, // FIXME(romac): Introduce newtype for `delay_period`
+    pub signer: Signer,
 }
 
 impl MsgConnectionOpenTry {
@@ -77,6 +76,7 @@ impl MsgConnectionOpenTry {
 
 impl Msg for MsgConnectionOpenTry {
     type ValidationError = Error;
+    type Raw = RawMsgConnectionOpenTry;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -84,10 +84,6 @@ impl Msg for MsgConnectionOpenTry {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -160,7 +156,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
             delay_period: msg.delay_period,
-            signer: string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?,
+            signer: msg.signer.into(),
         })
     }
 }
@@ -197,7 +193,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .proofs
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
-            signer: account_to_string(ics_msg.signer).unwrap(),
+            signer: ics_msg.signer.to_string(),
         }
     }
 }

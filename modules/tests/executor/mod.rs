@@ -1,6 +1,10 @@
 pub mod modelator;
 pub mod step;
 
+use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::{Debug, Display};
+
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::error::Kind as ICS02ErrorKind;
@@ -26,12 +30,10 @@ use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::proofs::{ConsensusProof, Proofs};
+use ibc::signer::Signer;
 use ibc::Height;
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::{Debug, Display};
+
 use step::{Action, ActionOutcome, Chain, Step};
-use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
 pub struct IBCTestExecutor {
@@ -149,13 +151,13 @@ impl IBCTestExecutor {
         AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)))
     }
 
-    pub fn signer() -> AccountId {
-        AccountId::new([0; 20])
+    fn signer() -> Signer {
+        Signer::new("")
     }
 
     pub fn counterparty(client_id: u64, connection_id: Option<u64>) -> Counterparty {
         let client_id = Self::client_id(client_id);
-        let connection_id = connection_id.map(|connection_id| Self::connection_id(connection_id));
+        let connection_id = connection_id.map(Self::connection_id);
         let prefix = Self::commitment_prefix();
         Counterparty::new(client_id, connection_id, prefix)
     }

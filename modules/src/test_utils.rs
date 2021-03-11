@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use std::str::FromStr;
-use tendermint::account::Id as AccountId;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
+
+use crate::signer::Signer;
 
 // Needed in mocks.
 pub fn default_consensus_params() -> consensus::Params {
@@ -29,14 +29,10 @@ pub fn get_dummy_proof() -> Vec<u8> {
         .to_vec()
 }
 
-fn get_dummy_raw_account_id() -> String {
-    "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
+pub fn get_dummy_account_id() -> Signer {
+    "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".parse().unwrap()
 }
 
 pub fn get_dummy_bech32_account() -> String {
     "cosmos1wxeyh7zgn4tctjzs0vtqpc6p5cxq5t2muzl7ng".to_string()
-}
-
-pub fn get_dummy_account_id() -> AccountId {
-    AccountId::from_str(&get_dummy_raw_account_id()).unwrap()
 }
