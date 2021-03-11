@@ -2,15 +2,14 @@
 
 use std::convert::TryFrom;
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::error;
 use crate::ics02_client::error::{Error, Kind};
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
@@ -20,14 +19,14 @@ pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 pub struct MsgCreateAnyClient {
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
 impl MsgCreateAnyClient {
     pub fn new(
         client_state: AnyClientState,
         consensus_state: AnyConsensusState,
-        signer: AccountId,
+        signer: Signer,
     ) -> Result<Self, Error> {
         if client_state.client_type() != consensus_state.client_type() {
             return Err(error::Kind::RawClientAndConsensusStateTypesMismatch {
@@ -42,9 +41,11 @@ impl MsgCreateAnyClient {
             signer,
         })
     }
+
     pub fn client_state(&self) -> AnyClientState {
         self.client_state.clone()
     }
+
     pub fn consensus_state(&self) -> AnyConsensusState {
         self.consensus_state.clone()
     }
@@ -52,6 +53,7 @@ impl MsgCreateAnyClient {
 
 impl Msg for MsgCreateAnyClient {
     type ValidationError = crate::ics24_host::error::ValidationError;
+    type Raw = RawMsgCreateClient;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -59,10 +61,6 @@ impl Msg for MsgCreateAnyClient {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -80,14 +78,12 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
             .consensus_state
             .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing consensus state"))?;
 
-        let signer = string_to_account(raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
-
         MsgCreateAnyClient::new(
             AnyClientState::try_from(raw_client_state)
                 .map_err(|e| Kind::InvalidRawClientState.context(e))?,
             AnyConsensusState::try_from(raw_consensus_state)
                 .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
-            signer,
+            raw.signer.into(),
         )
     }
 }
@@ -97,7 +93,7 @@ impl From<MsgCreateAnyClient> for RawMsgCreateClient {
         RawMsgCreateClient {
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: Some(ics_msg.consensus_state.into()),
-            signer: account_to_string(ics_msg.signer).unwrap(),
+            signer: ics_msg.signer.to_string(),
         }
     }
 }

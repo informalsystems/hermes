@@ -4,10 +4,14 @@ use std::{
 };
 
 use anomaly::fail;
+use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
+use tokio::runtime::Runtime as TokioRuntime;
+use tonic::codegen::http::Uri;
+
 use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
@@ -16,8 +20,6 @@ use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
-use tokio::runtime::Runtime as TokioRuntime;
-use tonic::codegen::http::Uri;
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -35,6 +37,7 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
+use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
@@ -394,7 +397,7 @@ impl Chain for CosmosSdkChain {
     }
 
     /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<AccountId, Error> {
+    fn get_signer(&mut self) -> Result<Signer, Error> {
         crate::time!("get_signer");
 
         // Get the key from key seed file
@@ -403,10 +406,8 @@ impl Chain for CosmosSdkChain {
             .get_key()
             .map_err(|e| Kind::KeyBase.context(e))?;
 
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(signer)
+        let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
+        Ok(Signer::new(bech32))
     }
 
     /// Get the signing key
@@ -1329,4 +1330,14 @@ pub fn tx_result_to_event(
         }
     }
     Ok(result)
+}
+
+fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
+    let account =
+        AccountId::from_str(address).map_err(|_| Kind::InvalidKeyAddress(address.to_string()))?;
+
+    let encoded = bech32::encode(account_prefix, account.to_base32(), Variant::Bech32)
+        .map_err(Kind::Bech32Encoding)?;
+
+    Ok(encoded)
 }

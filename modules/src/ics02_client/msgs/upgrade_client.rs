@@ -1,14 +1,12 @@
 //! Definition of domain type msg `MsgUpgradeAnyClient`.
 
-use tendermint::account::Id as AccountId;
-
 use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-use crate::address::account_to_string;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ClientId;
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
@@ -21,11 +19,12 @@ pub struct MsgUpgradeAnyClient {
     pub consensus_state: AnyConsensusState,
     pub proof_upgrade_client: MerkleProof,
     pub proof_upgrade_consensus_state: MerkleProof,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
 impl Msg for MsgUpgradeAnyClient {
     type ValidationError = crate::ics24_host::error::ValidationError;
+    type Raw = RawMsgUpgradeClient;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -33,10 +32,6 @@ impl Msg for MsgUpgradeAnyClient {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        unimplemented!()
     }
 }
 
@@ -51,7 +46,7 @@ impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
             consensus_state: Some(dm_msg.consensus_state.into()),
             proof_upgrade_client: c_bytes.into(),
             proof_upgrade_consensus_state: cs_bytes.into(),
-            signer: account_to_string(dm_msg.signer).unwrap(),
+            signer: dm_msg.signer.to_string(),
         }
     }
 }

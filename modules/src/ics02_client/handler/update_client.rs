@@ -181,7 +181,7 @@ mod tests {
             let msg = MsgUpdateAnyClient {
                 client_id: cid.clone(),
                 header: MockHeader::new(update_height).into(),
-                signer,
+                signer: signer.clone(),
             };
 
             let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));

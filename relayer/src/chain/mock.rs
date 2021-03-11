@@ -5,7 +5,6 @@ use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-use tendermint::account::Id;
 use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
@@ -23,7 +22,7 @@ use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::test_utils::get_dummy_account_id;
+use ibc::signer::Signer;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
@@ -42,6 +41,7 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+use ibc::test_utils::get_dummy_account_id;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -111,7 +111,7 @@ impl Chain for MockChain {
         Ok(events)
     }
 
-    fn get_signer(&mut self) -> Result<Id, Error> {
+    fn get_signer(&mut self) -> Result<Signer, Error> {
         Ok(get_dummy_account_id())
     }
 
