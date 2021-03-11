@@ -1,14 +1,14 @@
 use std::convert::{TryFrom, TryInto};
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 
@@ -18,22 +18,23 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgRecvPacket {
     pub packet: Packet,
-    proofs: Proofs,
-    signer: AccountId,
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgRecvPacket {
-    pub fn new(packet: Packet, proofs: Proofs, signer: AccountId) -> Result<MsgRecvPacket, Error> {
-        Ok(Self {
+    pub fn new(packet: Packet, proofs: Proofs, signer: Signer) -> MsgRecvPacket {
+        Self {
             packet,
             proofs,
             signer,
-        })
+        }
     }
 }
 
 impl Msg for MsgRecvPacket {
     type ValidationError = Error;
+    type Raw = RawMsgRecvPacket;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -41,10 +42,6 @@ impl Msg for MsgRecvPacket {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -54,9 +51,6 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgRecvPacket) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_commitment.into(),
             None,
@@ -77,7 +71,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             proofs,
-            signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -88,7 +82,7 @@ impl From<MsgRecvPacket> for RawMsgRecvPacket {
             packet: Some(domain_msg.packet.into()),
             proof_commitment: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
@@ -159,12 +153,12 @@ mod test {
                 want_pass: false,
             },
             Test {
-                name: "Missing signer".to_string(),
+                name: "Empty signer".to_string(),
                 raw: RawMsgRecvPacket {
                     signer: "".to_string(),
                     ..default_raw_msg
                 },
-                want_pass: false,
+                want_pass: true,
             },
         ];
 

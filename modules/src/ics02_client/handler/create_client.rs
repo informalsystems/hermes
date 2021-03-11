@@ -139,7 +139,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                signer,
+                signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(
@@ -153,7 +153,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                signer,
+                signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(

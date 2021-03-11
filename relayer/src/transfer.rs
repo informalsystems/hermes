@@ -1,17 +1,15 @@
-use crate::chain::{Chain, CosmosSdkChain};
 use thiserror::Error;
 use tracing::error;
 
-use crate::config::ChainConfig;
-use crate::error::Error;
+use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::events::IbcEvent;
+use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::tx_msg::Msg;
-use ibc::{
-    application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer,
-    ics24_host::identifier::ChainId,
-};
-use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
+
+use crate::chain::{Chain, CosmosSdkChain};
+use crate::config::ChainConfig;
+use crate::error::Error;
 
 #[derive(Debug, Error)]
 pub enum PacketError {
@@ -69,7 +67,7 @@ pub fn build_and_send_transfer_messages(
         timeout_timestamp: 0,
     };
 
-    let raw_msg = msg.to_any::<RawMsgTransfer>();
+    let raw_msg = msg.to_any();
     let msgs = vec![raw_msg; opts.number_msgs];
 
     let events = packet_src_chain
