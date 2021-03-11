@@ -64,7 +64,8 @@ pub enum CliCmd {
     Start(StartCmd),
 
     /// The `start-multi` subcommand
-    #[options(help = "Start the relayer in multi-channel mode")]
+    #[options(help = "Start the relayer in multi-channel mode. \
+                      Omit the options to pick up connections from the configuration.")]
     StartMulti(StartMultiCmd),
 
     /// The `channel` subcommand
