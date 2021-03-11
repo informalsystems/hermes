@@ -64,6 +64,7 @@ where
 {
     match msg {
         PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
+        PacketMsg::AckPacket(msg) => acknowledgement::process(ctx, msg),
         _ => todo!(),
     }
 }

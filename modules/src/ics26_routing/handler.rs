@@ -14,8 +14,8 @@ use crate::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatche
 use crate::{events::IbcEvent, handler::HandlerOutput};
 
 use crate::ics04_channel::msgs::{
-    chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm, chan_open_init,
-    chan_open_try, recv_packet, ChannelMsg, PacketMsg,
+    acknowledgement, chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm,
+    chan_open_init, chan_open_try, recv_packet, ChannelMsg, PacketMsg,
 };
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::error::{Error, Kind};
@@ -125,6 +125,11 @@ where
                 let domain_msg = recv_packet::MsgRecvPacket::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4PacketMsg(PacketMsg::RecvPacket(domain_msg)))
+            }
+            acknowledgement::TYPE_URL => {
+                let domain_msg = acknowledgement::MsgAcknowledgement::decode_vec(&any_msg.value)
+                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                Ok(Ics4PacketMsg(PacketMsg::AckPacket(domain_msg)))
             }
 
             _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)),

@@ -109,7 +109,7 @@ pub struct MockContext {
     /// Constant-size commitments to packets data fields
     packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
 
-    //Used by unorded channel
+    //Used by unordered channel
     packet_receipt: HashMap<(PortId, ChannelId, Sequence), Receipt>,
 }
 
