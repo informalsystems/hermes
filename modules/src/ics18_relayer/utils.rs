@@ -1,5 +1,4 @@
-use crate::ics02_client::client_def::AnyHeader;
-use crate::ics02_client::header::Header;
+use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics02_client::msgs::ClientMsg;
 use crate::ics18_relayer::context::Ics18Context;

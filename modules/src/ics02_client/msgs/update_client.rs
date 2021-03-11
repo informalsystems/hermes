@@ -10,8 +10,8 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
-use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::header::AnyHeader;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -81,7 +81,7 @@ mod tests {
 
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient;
 
-    use crate::ics02_client::client_def::AnyHeader;
+    use crate::ics02_client::header::AnyHeader;
     use crate::ics02_client::msgs::MsgUpdateAnyClient;
     use crate::ics24_host::identifier::ClientId;
 

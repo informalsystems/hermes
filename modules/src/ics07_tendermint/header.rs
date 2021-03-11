@@ -6,7 +6,8 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
-use crate::ics02_client::{client_def::AnyHeader, client_type::ClientType};
+use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::header::AnyHeader;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
@@ -82,8 +83,8 @@ impl From<Header> for RawHeader {
 #[cfg(test)]
 pub mod test_util {
     use std::convert::TryInto;
-    use subtle_encoding::hex;
 
+    use subtle_encoding::hex;
     use tendermint::block::signed_header::SignedHeader;
     use tendermint::validator::Info as ValidatorInfo;
     use tendermint::validator::Set as ValidatorSet;

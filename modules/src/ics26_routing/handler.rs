@@ -206,7 +206,8 @@ mod tests {
     use std::convert::TryFrom;
 
     use crate::events::IbcEvent;
-    use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+    use crate::ics02_client::client_consensus::AnyConsensusState;
+    use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::msgs::{
         create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient, ClientMsg,
     };
