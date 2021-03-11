@@ -14,6 +14,11 @@ pub struct CompileCmd {
     #[argh(option, short = 's')]
     /// path to the Cosmos SDK
     sdk: PathBuf,
+
+    #[argh(option, short = 'i')]
+    /// path to the Cosmos IBC proto files
+    ibc: PathBuf,
+
     #[argh(option, short = 'o')]
     /// path to output the generated Rust sources into
     out: PathBuf,
@@ -23,21 +28,22 @@ impl CompileCmd {
     pub fn run(&self) {
         let tmp = TempDir::new("ibc-proto").unwrap();
 
-        Self::output_sdk_version(&self.sdk, tmp.as_ref());
-        Self::compile_protos(&self.sdk, tmp.as_ref());
+        Self::output_version(&self.sdk, tmp.as_ref(), "COSMOS_SDK_COMMIT");
+        // Self::output_version(&self.ibc, tmp.as_ref(), "COSMOS_IBC_COMMIT"); // TODO Make this the default when ibc-go ready
+        Self::compile_protos(&self.sdk, &self.ibc, tmp.as_ref());
         Self::copy_generated_files(tmp.as_ref(), &self.out);
     }
 
-    fn output_sdk_version(sdk_dir: &Path, out_dir: &Path) {
-        let repo = Repository::open(sdk_dir).unwrap();
+    fn output_version(dir: &Path, out_dir: &Path, commit_file: &str) {
+        let repo = Repository::open(dir).unwrap();
         let commit = repo.head().unwrap();
         let rev = commit.shorthand().unwrap();
-        let path = out_dir.join("COSMOS_SDK_COMMIT");
+        let path = out_dir.join(commit_file);
 
         std::fs::write(path, rev).unwrap();
     }
 
-    fn compile_protos(sdk_dir: &Path, out_dir: &Path) {
+    fn compile_protos(sdk_dir: &Path, _ibc_dir: &Path, out_dir: &Path) {
         println!(
             "[info ] Compiling .proto files to Rust into '{}'...",
             out_dir.display()
@@ -47,7 +53,11 @@ impl CompileCmd {
 
         // Paths
         let proto_paths = [
+            // mock proto
             format!("{}/../proto/definitions/mock", root),
+            // ibc-go proto files
+            //format!("{}/proto/ibc", ibc_dir.display()), // TODO Make this the default when ibc-go ready
+            // cosmos-sdk proto files
             format!("{}/proto/ibc", sdk_dir.display()),
             format!("{}/proto/cosmos/auth", sdk_dir.display()),
             format!("{}/proto/cosmos/tx", sdk_dir.display()),
@@ -57,6 +67,8 @@ impl CompileCmd {
 
         let proto_includes_paths = [
             format!("{}/../proto", root),
+            // format!("{}/proto/ibc", ibc_dir.display()), // TODO Make this the default when ibc-go ready
+            // format!("{}/proto/cosmos", sdk_dir.display()), // TODO Make this the default when ibc-go ready
             format!("{}/proto", sdk_dir.display()),
             format!("{}/third_party/proto", sdk_dir.display()),
         ];

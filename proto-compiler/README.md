@@ -6,11 +6,16 @@ The `ibc-proto-compiler` is a simple command-line tool to automate the compilati
 
 ### Clone the Cosmos SDK
 
-From within the `proto-compiler` directory, run the following command to clone
-the Cosmos SDK and the IBC-Go repositories, and check out a specific commit:
+Move into the the `proto-compiler` directory:
 
 ```bash
-$ cargo run -- clone --out /tmp/cosmos --sdk-commit 21814558eaa47b018018711e5fe16e0b16811fce --ibc-commit cb363330897cc4ad467d9f1aa801e4e2d152fb0d
+$ cd proto-compiler
+```
+
+Run the following command to clone the Cosmos SDK and the IBC-Go repositories, and check out a specific commit:
+
+```bash
+$ cargo run -- clone --out /tmp/cosmos --sdk-commit 21814558eaa47b018018711e5fe16e0b16811fce --ibc-go-commit 97f8985e485ea067d187a0813ca880d771b56abc
 ```
 
 Note: the full commit hash must be specified.
@@ -18,7 +23,7 @@ Note: the full commit hash must be specified.
 Alternatively, one can check out a tag for the Cosmos SDK with the `--sdk-tag` option:
 
 ```bash
-$ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-commit cb363330897cc4ad467d9f1aa801e4e2d152fb0d
+$ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-commit 97f8985e485ea067d187a0813ca880d771b56abc
 ```
 
 ### Generate Rust sources from Protobuf definitions
@@ -26,7 +31,7 @@ $ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-commit cb36333089
 To generate the Rust sources from the Protobuf definitions, and copy them to the `src/prost` folder `ibc-proto` crate within the `ibc-rs` project:
 
 ```bash
-$ cargo run -- compile --sdk /tmp/cosmos --out ../proto/src/prost
+$ cargo run -- compile --sdk /tmp/cosmos/sdk --ibc /tmp/cosmos/ibc --out ../proto/src/prost
 ```
 
 Additionally, this command will output the commit hash at which the Cosmos SDK is checked out into `$out/COSMOS_SDK_COMMIT`.
