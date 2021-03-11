@@ -9,7 +9,6 @@ use std::path::PathBuf;
 
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
 
-use crate::commands::channel::ChannelCmds;
 use crate::config::Config;
 
 use self::{
@@ -17,7 +16,6 @@ use self::{
     start::StartCmd, start_multi::StartMultiCmd, tx::TxCmd, version::VersionCmd,
 };
 
-mod channel;
 mod cli_utils;
 mod config;
 mod create;
@@ -56,7 +54,7 @@ pub enum CliCmd {
     Light(LightCmd),
 
     /// The `create` subcommand
-    #[options(help = "Create objects on chains")]
+    #[options(help = "Create objects on chains (by performing connection or channel open handshakes)")]
     Create(CreateCmds),
 
     /// The `start` subcommand
@@ -66,10 +64,6 @@ pub enum CliCmd {
     /// The `start-multi` subcommand
     #[options(help = "Start the relayer in multi-channel mode")]
     StartMulti(StartMultiCmd),
-
-    /// The `channel` subcommand
-    #[options(help = "Channel functionality for managing channels")]
-    Channel(ChannelCmds),
 
     /// The `query` subcommand
     #[options(help = "Query objects from the chain")]
