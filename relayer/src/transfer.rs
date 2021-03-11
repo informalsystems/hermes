@@ -11,7 +11,7 @@ use ibc::{
     application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer,
     ics24_host::identifier::ChainId,
 };
-use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
+use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 #[derive(Debug, Error)]
 pub enum PacketError {

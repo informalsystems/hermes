@@ -32,7 +32,7 @@ impl CompileCmd {
         Self::output_version(&self.sdk, tmp.as_ref(), "COSMOS_SDK_COMMIT");
         Self::output_version(&self.ibc, tmp.as_ref(), "COSMOS_IBC_COMMIT");
         Self::compile_sdk_protos(&self.sdk, tmp.as_ref());
-        Self::compile_ibc_protos(&self.ibc, tmp.as_ref());
+        Self::compile_ibc_protos(&self.ibc, &self.sdk, tmp.as_ref());
         Self::copy_generated_files(tmp.as_ref(), &self.out);
     }
 
@@ -45,7 +45,7 @@ impl CompileCmd {
         std::fs::write(path, rev).unwrap();
     }
 
-    fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path) {
+    fn compile_ibc_protos(ibc_dir: &Path, sdk_dir: &Path, out_dir: &Path) {
         println!(
             "[info ] Compiling .proto files to Rust into '{}'...",
             out_dir.display()
@@ -54,13 +54,12 @@ impl CompileCmd {
         // Paths
         let proto_paths = [
             // ibc-go proto files
-            // format!("{}/proto/ibc", ibc_dir.display()), // TODO Make this the default when ibc-go ready
-            format!("{}/proto/ibc", ibc_dir.display()), // TODO Make this the default when ibc-go ready
-                                                        //format!("{}/proto/ibc/lightclients/tendermint/v1", ibc_dir.display()), // TODO Make this the default when ibc-go ready
+            format!("{}/proto/ibc", ibc_dir.display()),
         ];
 
         let proto_includes_paths = [
-            format!("{}/proto", ibc_dir.display()), // TODO Make this the default when ibc-go ready
+            format!("{}/proto", ibc_dir.display()),
+            format!("{}/proto/cosmos", sdk_dir.display()),
             format!("{}/third_party/proto", ibc_dir.display()),
         ];
 

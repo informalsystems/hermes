@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
+use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 use crate::address::{account_to_string, string_to_account};
 use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
