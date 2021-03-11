@@ -1,14 +1,14 @@
 use std::convert::{TryFrom, TryInto};
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::{Packet, Sequence};
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 
@@ -18,9 +18,9 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgTimeout {
     pub packet: Packet,
-    next_sequence_recv: Sequence,
-    proofs: Proofs,
-    signer: AccountId,
+    pub next_sequence_recv: Sequence,
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgTimeout {
@@ -28,7 +28,7 @@ impl MsgTimeout {
         packet: Packet,
         next_sequence_recv: Sequence,
         proofs: Proofs,
-        signer: AccountId,
+        signer: Signer,
     ) -> MsgTimeout {
         Self {
             packet,
@@ -41,6 +41,7 @@ impl MsgTimeout {
 
 impl Msg for MsgTimeout {
     type ValidationError = Error;
+    type Raw = RawMsgTimeout;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -48,10 +49,6 @@ impl Msg for MsgTimeout {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -61,9 +58,6 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgTimeout) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_unreceived.into(),
             None,
@@ -86,7 +80,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),
-            signer,
+            signer: raw_msg.signer.into(),
             proofs,
         })
     }
@@ -99,7 +93,7 @@ impl From<MsgTimeout> for RawMsgTimeout {
             proof_unreceived: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             next_sequence_recv: domain_msg.next_sequence_recv.into(),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
@@ -180,12 +174,12 @@ mod test {
                 want_pass: false,
             },
             Test {
-                name: "Missing signer".to_string(),
+                name: "Empty signer".to_string(),
                 raw: RawMsgTimeout {
                     signer: "".to_string(),
                     ..default_raw_msg
                 },
-                want_pass: false,
+                want_pass: true,
             },
         ];
 

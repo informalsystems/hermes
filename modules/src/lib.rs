@@ -23,10 +23,16 @@
 //! - ICS 26: Routing
 //! - Applications:
 //!    - ICS 20: Fungible Token Transfer
-pub mod address;
+
 pub mod application;
 pub mod events;
 pub mod handler;
+pub mod keys;
+pub mod macros;
+pub mod proofs;
+pub mod signer;
+pub mod tx_msg;
+
 pub mod ics02_client;
 pub mod ics03_connection;
 pub mod ics04_channel;
@@ -36,10 +42,6 @@ pub mod ics18_relayer;
 pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod ics26_routing;
-pub mod keys;
-pub mod macros;
-pub mod proofs;
-pub mod tx_msg;
 
 mod serializers;
 
