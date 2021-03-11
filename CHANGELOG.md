@@ -66,7 +66,7 @@
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
-[#699]: https://github.com/informalsystems/ibc-rs/issues/702
+[#702]: https://github.com/informalsystems/ibc-rs/issues/702
 
 ## v0.1.1
 *February 17, 2021*
