@@ -50,7 +50,7 @@ version = "=0.18.1"
 optional = true
 
 [dev-dependencies]
-modelator = { git = "https://github.com/informalsystems/modelator", rev = "ecd857c4eaaf0eb2a82fa3a2c43ce76837cf65b3" }
+modelator = { git = "https://github.com/informalsystems/modelator", rev = "23cd2c6773a97ca864fc50d72deabd26467956e7" }
 tendermint-rpc = { version = "=0.18.1", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.18.1" } # Needed for generating (synthetic) light blocks.
 tracing-subscriber = "0.2.16"

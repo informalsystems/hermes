@@ -1440,7 +1440,7 @@ dependencies = [
 [[package]]
 name = "modelator"
 version = "0.1.0"
-source = "git+https://github.com/informalsystems/modelator?rev=ecd857c4eaaf0eb2a82fa3a2c43ce76837cf65b3#ecd857c4eaaf0eb2a82fa3a2c43ce76837cf65b3"
+source = "git+https://github.com/informalsystems/modelator?rev=23cd2c6773a97ca864fc50d72deabd26467956e7#23cd2c6773a97ca864fc50d72deabd26467956e7"
 dependencies = [
  "clap",
  "nom",
