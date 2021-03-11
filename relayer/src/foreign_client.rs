@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use prost_types::Any;
 use thiserror::Error;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use ibc::events::IbcEvent;
 use ibc::ics02_client::header::Header;
@@ -324,6 +324,14 @@ impl ForeignClient {
             })?
             .latest_height();
 
+        if trusted_height >= target_height {
+            warn!(
+                "Client height ({}) >= chain target height ({}). Cannot build update message.",
+                trusted_height, target_height
+            );
+            return Ok(vec![]);
+        }
+
         let header = self
             .src_chain()
             .build_header(trusted_height, target_height)
@@ -360,6 +368,14 @@ impl ForeignClient {
             ))
         })?;
         let new_msgs = self.build_update_client(h)?;
+        if new_msgs.is_empty() {
+            return Err(ForeignClientError::ClientUpdate(format!(
+                "Client {} is already up-to-date with chain {}@{}",
+                self.id,
+                self.src_chain.id(),
+                h
+            )));
+        }
 
         let mut events = self.dst_chain().send_msgs(new_msgs).map_err(|e| {
             ForeignClientError::ClientUpdate(format!(
