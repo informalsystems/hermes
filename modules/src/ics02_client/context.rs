@@ -2,7 +2,8 @@
 //! that any host chain must implement to be able to process any `ClientMsg`. See
 //! "ADR 003: IBC protocol implementation" for more details.
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::handler::ClientResult::{self, Create, Update};

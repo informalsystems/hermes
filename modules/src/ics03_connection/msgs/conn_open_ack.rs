@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-use crate::ics02_client::client_def::AnyClientState;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;

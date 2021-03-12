@@ -1,6 +1,7 @@
 use prost_types::Any;
 
-use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
+use crate::ics02_client::client_state::AnyClientState;
+use crate::ics02_client::header::AnyHeader;
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
