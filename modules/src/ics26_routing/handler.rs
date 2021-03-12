@@ -289,7 +289,7 @@ mod tests {
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState(MockHeader::new(start_client_height))),
             AnyConsensusState::from(MockConsensusState(MockHeader::new(start_client_height))),
-            default_signer,
+            default_signer.clone(),
         )
         .unwrap();
 
@@ -379,7 +379,7 @@ mod tests {
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height).into(),
-                    signer: default_signer,
+                    signer: default_signer.clone(),
                 })),
                 want_pass: true,
             },
@@ -388,7 +388,7 @@ mod tests {
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height).into(),
-                    signer: default_signer,
+                    signer: default_signer.clone(),
                 })),
                 want_pass: false,
             },

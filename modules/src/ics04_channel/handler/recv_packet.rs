@@ -184,7 +184,7 @@ mod tests {
         };
 
         let msg_packet_old =
-            MsgRecvPacket::new(packet_old, msg.proofs.clone(), get_dummy_account_id()).unwrap();
+            MsgRecvPacket::new(packet_old, msg.proofs.clone(), get_dummy_account_id());
 
         let dest_channel_end = ChannelEnd::new(
             State::Open,

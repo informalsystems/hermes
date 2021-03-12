@@ -1,11 +1,10 @@
 use prost_types::Any;
-use tendermint::account::Id as AccountId;
 
-use crate::events::IbcEvent;
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
+use crate::{events::IbcEvent, signer::Signer};
 
 /// Trait capturing all dependencies (i.e., the context) which algorithms in ICS18 require to
 /// relay packets between chains. This trait comprises the dependencies towards a single chain.
@@ -28,5 +27,5 @@ pub trait Ics18Context {
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 
     /// Temporary solution. Similar to `CosmosSDKChain::key_and_signer()` but simpler.
-    fn signer(&self) -> AccountId;
+    fn signer(&self) -> Signer;
 }

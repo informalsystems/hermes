@@ -1,11 +1,10 @@
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::PortId;
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
@@ -19,10 +18,18 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenInit";
 pub struct MsgChannelOpenInit {
     pub port_id: PortId,
     pub channel: ChannelEnd,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
 impl MsgChannelOpenInit {
+    pub fn new(port_id: PortId, channel: ChannelEnd, signer: Signer) -> Self {
+        Self {
+            port_id,
+            channel,
+            signer,
+        }
+    }
+
     /// Getter: borrow the `port_id` from this message.
     pub fn port_id(&self) -> &PortId {
         &self.port_id
@@ -36,6 +43,7 @@ impl MsgChannelOpenInit {
 
 impl Msg for MsgChannelOpenInit {
     type ValidationError = Error;
+    type Raw = RawMsgChannelOpenInit;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -43,10 +51,6 @@ impl Msg for MsgChannelOpenInit {
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -56,16 +60,13 @@ impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelOpenInit) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         Ok(MsgChannelOpenInit {
             port_id: raw_msg
                 .port_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
-            signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -75,7 +76,7 @@ impl From<MsgChannelOpenInit> for RawMsgChannelOpenInit {
         RawMsgChannelOpenInit {
             port_id: domain_msg.port_id.to_string(),
             channel: Some(domain_msg.channel.into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
