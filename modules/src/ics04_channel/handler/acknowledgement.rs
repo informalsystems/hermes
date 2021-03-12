@@ -23,16 +23,18 @@ pub fn process(
     msg: MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
-    let packet = msg.packet.clone();
+
+    let packet = &msg.packet;
+
     let source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or_else(|| {
             Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
-                .context(packet.source_channel.clone().to_string())
+                .context(packet.source_channel.to_string())
         })?;
 
     if !source_channel_end.state_matches(&State::Open) {
-        return Err(Kind::ChannelClosed(packet.source_channel).into());
+        return Err(Kind::ChannelClosed(packet.source_channel.clone()).into());
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
@@ -46,7 +48,7 @@ pub fn process(
     if !source_channel_end.counterparty_matches(&counterparty) {
         return Err(Kind::InvalidPacketCounterparty(
             packet.destination_port.clone(),
-            packet.destination_channel,
+            packet.destination_channel.clone(),
         )
         .into());
     }
@@ -74,12 +76,10 @@ pub fn process(
 
     let input = format!(
         "{:?},{:?},{:?}",
-        packet.timeout_timestamp,
-        packet.timeout_height.clone(),
-        packet.data.clone()
+        packet.timeout_timestamp, packet.timeout_height, packet.data,
     );
 
-    if !packet_commitment.eq(&ChannelReader::hash(ctx, input)) {
+    if packet_commitment != ChannelReader::hash(ctx, input) {
         return Err(Kind::IncorrectPacketCommitment(packet.sequence).into());
     }
 
@@ -89,14 +89,15 @@ pub fn process(
         &packet,
         msg.acknowledgement().clone(),
         client_id,
-        &msg.proofs().clone(),
+        msg.proofs(),
     )?;
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
         let next_seq_ack = ctx
             .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))
             .ok_or(Kind::MissingNextAckSeq)?;
-        if !packet.sequence.eq(&next_seq_ack) {
+
+        if packet.sequence != next_seq_ack {
             return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_ack).into());
         }
 
@@ -117,7 +118,7 @@ pub fn process(
 
     output.emit(IbcEvent::AcknowledgePacket(AcknowledgePacket {
         height: Default::default(),
-        packet,
+        packet: packet.clone(),
     }));
 
     Ok(output.with_result(result))
@@ -221,13 +222,13 @@ mod tests {
                         source_channel_end,
                     )
                     .with_packet_commitment(
-                        packet.source_port.clone(),
-                        packet.source_channel.clone(),
+                        packet.source_port,
+                        packet.source_channel,
                         packet.sequence,
                         data,
                     ) //with_ack_sequence required for ordered channels
                     .with_ack_sequence(
-                        packet.destination_port.clone(),
+                        packet.destination_port,
                         packet.destination_channel,
                         1.into(),
                     ),

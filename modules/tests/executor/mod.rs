@@ -155,7 +155,7 @@ impl IBCTestExecutor {
 
     pub fn counterparty(client_id: u64, connection_id: Option<u64>) -> Counterparty {
         let client_id = Self::client_id(client_id);
-        let connection_id = connection_id.map(|connection_id| Self::connection_id(connection_id));
+        let connection_id = connection_id.map(Self::connection_id);
         let prefix = Self::commitment_prefix();
         Counterparty::new(client_id, connection_id, prefix)
     }
