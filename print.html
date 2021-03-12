@@ -911,7 +911,7 @@ We will create a second client on <code>ibc-1</code> with identifier <code>07-te
 <p><code>connection-&lt;n&gt;</code> for connections</p>
 <ul>
 <li>For example <code>connection-0</code> is assigned to the first connection created on <code>ibc-1</code>:
-<pre><code class="language-shell">tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 | jq
+<pre><code class="language-shell">hermes tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 | jq
 </code></pre>
 <pre><code class="language-json">{
  &quot;status&quot;: &quot;success&quot;,
