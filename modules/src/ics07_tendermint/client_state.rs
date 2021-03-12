@@ -7,7 +7,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
 
-use crate::ics02_client::client_def::AnyClientState;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
@@ -105,7 +105,7 @@ impl ClientState {
     }
 }
 
-impl crate::ics02_client::state::ClientState for ClientState {
+impl crate::ics02_client::client_state::ClientState for ClientState {
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -346,7 +346,7 @@ pub mod test_util {
 
     use tendermint::block::Header;
 
-    use crate::ics02_client::client_def::AnyClientState;
+    use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::height::Height;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics24_host::identifier::ChainId;

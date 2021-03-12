@@ -10,7 +10,7 @@ use tokio::runtime::Runtime;
 
 use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_def::AnyClientState;
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};

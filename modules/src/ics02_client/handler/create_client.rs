@@ -2,7 +2,8 @@
 
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
@@ -58,11 +59,13 @@ pub fn process(
 mod tests {
     use std::convert::TryInto;
     use std::time::Duration;
+
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+    use crate::ics02_client::client_consensus::AnyConsensusState;
+    use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::handler::{dispatch, ClientResult};
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
