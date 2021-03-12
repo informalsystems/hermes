@@ -1,16 +1,16 @@
-use crate::{events::IbcEvent, ics04_channel::events::ReceivePacket};
-use crate::{
-    handler::{HandlerOutput, HandlerResult},
-    ics24_host::identifier::{ChannelId, PortId},
-};
-
 use super::verify::verify_packet_proofs;
-use crate::ics03_connection::connection::State as ConnectionState;
 
+use crate::events::IbcEvent;
+use crate::handler::{HandlerOutput, HandlerResult};
+use crate::ics02_client::height::Height;
+use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::{Counterparty, Order, State};
+use crate::ics04_channel::context::ChannelReader;
+use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::events::ReceivePacket;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
-use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
+use crate::ics24_host::identifier::{ChannelId, PortId};
 
 #[derive(Clone, Debug)]
 pub struct RecvPacketResult {
@@ -24,7 +24,8 @@ pub struct RecvPacketResult {
 pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let packet = msg.packet.clone();
+    let packet = &msg.packet;
+
     let dest_channel_end = ctx
         .channel_end(&(
             packet.destination_port.clone(),
@@ -38,9 +39,11 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         })?;
 
     if !dest_channel_end.state_matches(&State::Open) {
-        return Err(
-            Kind::InvalidChannelState(packet.source_channel, dest_channel_end.state).into(),
-        );
+        return Err(Kind::InvalidChannelState(
+            packet.source_channel.clone(),
+            dest_channel_end.state,
+        )
+        .into());
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
@@ -53,7 +56,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     if !dest_channel_end.counterparty_matches(&counterparty) {
         return Err(Kind::InvalidPacketCounterparty(
             packet.source_port.clone(),
-            packet.source_channel,
+            packet.source_channel.clone(),
         )
         .into());
     }
@@ -82,9 +85,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     verify_packet_proofs(ctx, &packet, client_id, &msg.proofs)?;
 
-    let result;
-
-    if dest_channel_end.order_matches(&Order::Ordered) {
+    let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
             .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))
             .ok_or(Kind::MissingNextRecvSeq)?;
@@ -93,13 +94,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
             return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_recv).into());
         }
 
-        result = PacketResult::Recv(RecvPacketResult {
+        PacketResult::Recv(RecvPacketResult {
             port_id: packet.source_port.clone(),
             channel_id: packet.source_channel.clone(),
             seq: packet.sequence,
             seq_number: next_seq_recv.increment(),
             receipt: None,
-        });
+        })
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
             packet.source_port.clone(),
@@ -108,25 +109,25 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
 
         match packet_rec {
-            Some(_r) => return Err(Kind::PacketAlreadyReceived(packet.sequence).into()),
+            Some(_receipt) => return Err(Kind::PacketAlreadyReceived(packet.sequence).into()),
             None => {
-                //store a receipt that does not contain any data
-                result = PacketResult::Recv(RecvPacketResult {
+                // store a receipt that does not contain any data
+                PacketResult::Recv(RecvPacketResult {
                     port_id: packet.source_port.clone(),
                     channel_id: packet.source_channel.clone(),
                     seq: packet.sequence,
                     seq_number: 1.into(),
                     receipt: Some(Receipt::Ok),
-                });
+                })
             }
         }
-    }
+    };
 
-    output.log("success: packet receive ");
+    output.log("success: packet receive");
 
     output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-        height: Default::default(),
-        packet,
+        height: Height::zero(),
+        packet: msg.packet,
     }));
 
     Ok(output.with_result(result))

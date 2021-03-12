@@ -1,5 +1,6 @@
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
+use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::channel::{Counterparty, Order};
@@ -117,7 +118,7 @@ pub fn process(
     };
 
     output.emit(IbcEvent::AcknowledgePacket(AcknowledgePacket {
-        height: Default::default(),
+        height: Height::zero(),
         packet: packet.clone(),
     }));
 
