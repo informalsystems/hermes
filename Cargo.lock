@@ -1125,7 +1125,6 @@ dependencies = [
  "tendermint-testgen",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.2.16",
 ]
 
 [[package]]
@@ -1439,18 +1438,17 @@ dependencies = [
 [[package]]
 name = "modelator"
 version = "0.1.0"
-source = "git+https://github.com/informalsystems/modelator?rev=1136669af485f89f252b4c53c0ae919401fd5edc#1136669af485f89f252b4c53c0ae919401fd5edc"
+source = "git+https://github.com/informalsystems/modelator?rev=281711d73c429d234eec3bdcfa533636d2ee5cd3#281711d73c429d234eec3bdcfa533636d2ee5cd3"
 dependencies = [
  "clap",
  "nom",
- "paste",
  "rand 0.8.3",
  "reqwest",
- "seq-macro",
  "serde",
  "serde_json",
  "thiserror",
  "tracing",
+ "tracing-subscriber 0.2.16",
 ]
 
 [[package]]
@@ -1626,12 +1624,6 @@ dependencies = [
  "smallvec 1.6.1",
  "winapi",
 ]
-
-[[package]]
-name = "paste"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5d65c4d95931acda4498f675e332fcbdc9a06705cd07086c510e9b6009cd1c1"
 
 [[package]]
 name = "pbkdf2"
@@ -2100,12 +2092,6 @@ name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
-
-[[package]]
-name = "seq-macro"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5b3bd665f328d73d7079123bfbd14a6edd74187667b5c6f340adfc65ea9d25a"
 
 [[package]]
 name = "serde"

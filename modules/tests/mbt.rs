@@ -10,11 +10,6 @@ fn mbt() {
 }
 
 fn run_tests() -> Result<(), Box<dyn std::error::Error>> {
-    // init tracing subscriber
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .init();
-
     // run the test
     let tla_tests_file = "tests/support/model_based/IBCTests.tla";
     let tla_config_file = "tests/support/model_based/IBCTests.cfg";
