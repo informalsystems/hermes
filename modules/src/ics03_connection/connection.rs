@@ -14,7 +14,7 @@ use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
@@ -163,6 +163,7 @@ impl ConnectionEnd {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct IdentifiedConnectionEnd {
     connection_id: ConnectionId,
     connection_end: ConnectionEnd,
@@ -185,7 +186,7 @@ impl IdentifiedConnectionEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
@@ -274,7 +275,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,

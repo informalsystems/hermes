@@ -114,7 +114,7 @@ impl Connection {
             .end()
             .counterparty()
             .client_id()
-            .ne(b_client.id())
+            != b_client.id()
         {
             return Err(ConnectionError::ConstructorFailed(format!(
                 "the counterparty client id in the connection end ({}) does not match the foreign client id ({})",
@@ -161,7 +161,7 @@ impl Connection {
         a_client: &ForeignClient,
         b_client: &ForeignClient,
     ) -> Result<(), ConnectionError> {
-        if a_client.src_chain().id().ne(&b_client.dst_chain().id()) {
+        if a_client.src_chain().id() != b_client.dst_chain().id() {
             return Err(ConnectionError::ConstructorFailed(format!(
                 "the source chain of client a ({}) does not not match the destination chain of client b ({})",
                 a_client.src_chain().id(),
@@ -169,7 +169,7 @@ impl Connection {
             )));
         }
 
-        if a_client.dst_chain().id().ne(&b_client.src_chain().id()) {
+        if a_client.dst_chain().id() != b_client.src_chain().id() {
             return Err(ConnectionError::ConstructorFailed(format!(
                 "the destination chain of client a ({}) does not not match the source chain of client b ({})",
                 a_client.dst_chain().id(),
