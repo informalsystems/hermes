@@ -11,8 +11,6 @@ use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
-use ibc::ics02_client::state::ClientState;
-use ibc::ics02_client::state::ConsensusState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::tx_msg::Msg;
 use ibc::Height;

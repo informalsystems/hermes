@@ -1,12 +1,13 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
 use crate::handler::HandlerResult;
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_state::AnyClientState;
+use crate::ics02_client::client_state::ClientState;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
-use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
 /// The result following the successful processing of a `MsgUpgradeAnyClient` message.
