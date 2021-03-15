@@ -3,15 +3,15 @@ use std::convert::{TryFrom, TryInto};
 
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
+use subtle_encoding::hex;
+use tendermint_proto::Protobuf;
 
 use crate::attribute;
 use crate::events::{IbcEvent, RawObject};
-use crate::ics02_client::client_header::AnyHeader;
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
-use subtle_encoding::hex;
-use tendermint_proto::Protobuf;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";

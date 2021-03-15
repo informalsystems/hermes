@@ -7,9 +7,9 @@ use tendermint_light_client::{
 };
 use tendermint_rpc as rpc;
 
-use ibc::ics02_client::client_header::AnyHeader;
 use ibc::ics02_client::client_misbehaviour::{AnyMisbehaviour, Misbehaviour};
 use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::header::AnyHeader;
 use ibc::ics07_tendermint::header::{Header as TmHeader, Header};
 use ibc::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 use ibc::ics24_host::identifier::ChainId;

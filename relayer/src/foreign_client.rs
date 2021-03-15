@@ -7,10 +7,10 @@ use tracing::{error, info};
 use ibc::downcast;
 use ibc::events::{IbcEvent, IbcEventType};
 use ibc::ics02_client::client_consensus::{ConsensusState, QueryClientEventRequest};
-use ibc::ics02_client::client_header::Header;
 use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -18,10 +18,7 @@ use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::query::QueryTxRequest;
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::client::v1::{
-    MsgCreateClient as RawMsgCreateClient, MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour,
-    MsgUpdateClient as RawMsgUpdateClient, QueryConsensusStatesRequest,
-};
+use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 
 use crate::chain::handle::ChainHandle;
 
@@ -184,6 +181,7 @@ impl ForeignClient {
             .map_err(|e| ForeignClientError::ClientCreate(format!("failed while building client consensus state from src chain ({}) with error: {}", self.src_chain.id(), e)))?
             .wrap_any();
 
+        //TODO Get acct_prefix
         let msg = MsgCreateAnyClient::new(client_state, consensus_state, signer).map_err(|e| {
             ForeignClientError::ClientCreate(format!(
                 "failed while building the create client message: {}",
@@ -200,7 +198,7 @@ impl ForeignClient {
 
         let res = self
             .dst_chain
-            .send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])
+            .send_msgs(vec![new_msg.to_any()])
             .map_err(|e| {
                 ForeignClientError::ClientCreate(format!(
                     "failed sending message to dst chain ({}) with err: {}",
@@ -284,7 +282,7 @@ impl ForeignClient {
             signer,
         };
 
-        Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
+        Ok(vec![new_msg.to_any()])
     }
 
     pub fn build_update_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {
@@ -534,15 +532,16 @@ impl ForeignClient {
                     signer,
                 };
 
-                let msg = msg.to_any::<RawMsgSubmitMisbehaviour>();
-
-                let events = self.dst_chain().send_msgs(vec![msg]).map_err(|e| {
-                    ForeignClientError::Misbehaviour(format!(
-                        "failed sending evidence to dst chain ({}) with err: {}",
-                        self.dst_chain.id(),
-                        e
-                    ))
-                })?;
+                let events = self
+                    .dst_chain()
+                    .send_msgs(vec![msg.to_any()])
+                    .map_err(|e| {
+                        ForeignClientError::Misbehaviour(format!(
+                            "failed sending evidence to dst chain ({}) with err: {}",
+                            self.dst_chain.id(),
+                            e
+                        ))
+                    })?;
 
                 // TODO - invoke light client fork accountability
 

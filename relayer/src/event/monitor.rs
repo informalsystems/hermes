@@ -24,6 +24,12 @@ pub struct EventBatch {
     pub events: Vec<IbcEvent>,
 }
 
+impl EventBatch {
+    pub fn unwrap_or_clone(self: Arc<Self>) -> Self {
+        Arc::try_unwrap(self).unwrap_or_else(|batch| batch.as_ref().clone())
+    }
+}
+
 type SubscriptionResult = Result<tendermint_rpc::event::Event, tendermint_rpc::Error>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 

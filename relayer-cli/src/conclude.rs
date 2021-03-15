@@ -35,7 +35,9 @@
 //! #[derive(Debug, Error)]
 //! pub enum Kind {
 //!     #[error("failed with underlying causes: {0}, {1}")]
-//!     Query(String, String),  // ...
+//!     Query(String, String),
+//!     // ...
+//! }
 //! ```
 //!
 //! - Exit from a query/tx with success:

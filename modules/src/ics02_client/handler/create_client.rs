@@ -59,6 +59,7 @@ pub fn process(
 mod tests {
     use std::convert::TryInto;
     use std::time::Duration;
+
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
     use crate::events::IbcEvent;
@@ -141,7 +142,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                signer,
+                signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(
@@ -155,7 +156,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                signer,
+                signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(

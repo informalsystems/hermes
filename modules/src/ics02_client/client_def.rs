@@ -1,10 +1,9 @@
 use crate::downcast;
 use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
-use crate::ics02_client::client_header::AnyHeader;
-use crate::ics02_client::client_header::Header;
 use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Kind;
+use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics07_tendermint::client_def::TendermintClient;
@@ -329,25 +328,5 @@ impl ClientDef for AnyClient {
                 )
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::convert::TryFrom;
-
-    use prost_types::Any;
-
-    use crate::ics02_client::client_state::AnyClientState;
-    use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-
-    #[test]
-    fn any_client_state_serialization() {
-        let tm_client_state = get_dummy_tendermint_client_state(get_dummy_tendermint_header());
-
-        let raw: Any = tm_client_state.clone().into();
-        let tm_client_state_back = AnyClientState::try_from(raw).unwrap();
-        assert_eq!(tm_client_state, tm_client_state_back);
     }
 }

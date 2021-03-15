@@ -77,11 +77,11 @@ mod tests {
 
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::ics02_client::client_header::Header;
     use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::error::Kind;
     use crate::ics02_client::handler::dispatch;
     use crate::ics02_client::handler::ClientResult::{Create, Update};
+    use crate::ics02_client::header::Header;
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
     use crate::ics24_host::identifier::ClientId;
@@ -183,7 +183,7 @@ mod tests {
             let msg = MsgUpdateAnyClient {
                 client_id: cid.clone(),
                 header: MockHeader::new(update_height).into(),
-                signer,
+                signer: signer.clone(),
             };
 
             let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));

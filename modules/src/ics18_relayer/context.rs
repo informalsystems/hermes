@@ -1,11 +1,12 @@
 use prost_types::Any;
-use tendermint::account::Id as AccountId;
 
 use crate::events::IbcEvent;
-use crate::ics02_client::client_header::AnyHeader;
 use crate::ics02_client::client_state::AnyClientState;
+use crate::ics02_client::header::AnyHeader;
+
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
+use crate::signer::Signer;
 use crate::Height;
 
 /// Trait capturing all dependencies (i.e., the context) which algorithms in ICS18 require to
@@ -28,6 +29,6 @@ pub trait Ics18Context {
     /// One can think of this as wrapping around the `/broadcast_tx_commit` ABCI endpoint.
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 
-    /// Temporary solution. Similar to `CosmosSdkChain::key_and_signer()` but simpler.
-    fn signer(&self) -> AccountId;
+    /// Temporary solution. Similar to `CosmosSDKChain::key_and_signer()` but simpler.
+    fn signer(&self) -> Signer;
 }

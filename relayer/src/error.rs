@@ -159,6 +159,12 @@ pub enum Kind {
 
     #[error("error raised while submitting the misbehaviour evidence: {0}")]
     Misbehaviour(String),
+
+    #[error("invalid key address: {0}")]
+    InvalidKeyAddress(String),
+
+    #[error("bech32 encoding failed")]
+    Bech32Encoding(#[from] bech32::Error),
 }
 
 impl Kind {

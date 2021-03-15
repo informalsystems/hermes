@@ -4,6 +4,7 @@ use std::{
 };
 
 use anomaly::fail;
+use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use crossbeam_channel as channel;
 use prost::Message;
@@ -21,7 +22,9 @@ use tonic::codegen::http::Uri;
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::ics02_client::client_consensus::{
+    AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
+};
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::ConnectionEnd;
@@ -31,7 +34,6 @@ use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TmHeader;
-
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -39,6 +41,7 @@ use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 use ibc::query::QueryTxRequest;
+use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
@@ -65,7 +68,6 @@ use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
-use ibc::ics02_client::client_consensus::QueryClientEventRequest;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -368,7 +370,7 @@ impl Chain for CosmosSdkChain {
     }
 
     /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<AccountId, Error> {
+    fn get_signer(&mut self) -> Result<Signer, Error> {
         crate::time!("get_signer");
 
         // Get the key from key seed file
@@ -377,10 +379,8 @@ impl Chain for CosmosSdkChain {
             .get_key()
             .map_err(|e| Kind::KeyBase.context(e))?;
 
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(signer)
+        let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
+        Ok(Signer::new(bech32))
     }
 
     /// Get the signing key
@@ -1336,4 +1336,14 @@ pub fn tx_result_to_event(
         }
     }
     Ok(result)
+}
+
+fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
+    let account =
+        AccountId::from_str(address).map_err(|_| Kind::InvalidKeyAddress(address.to_string()))?;
+
+    let encoded = bech32::encode(account_prefix, account.to_base32(), Variant::Bech32)
+        .map_err(Kind::Bech32Encoding)?;
+
+    Ok(encoded)
 }

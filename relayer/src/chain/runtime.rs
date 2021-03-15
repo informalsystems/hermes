@@ -1,35 +1,37 @@
 use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
+use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::events::UpdateClient;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
         client_consensus::{AnyConsensusState, ConsensusState},
-        client_header::AnyHeader,
-        client_header::Header,
         client_state::{AnyClientState, ClientState},
+        header::{AnyHeader, Header},
     },
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
     ics04_channel::channel::ChannelEnd,
     ics04_channel::packet::{PacketMsgType, Sequence},
     ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::ChannelId,
-    ics24_host::identifier::PortId,
-    ics24_host::identifier::{ClientId, ConnectionId},
+    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
     query::QueryTxRequest,
+    signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::{
+    channel::v1::{
+        PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    },
+    commitment::v1::MerkleProof,
 };
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::{
     config::ChainConfig,
@@ -44,10 +46,6 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
 };
-use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
-use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
-use ibc::ics02_client::events::UpdateClient;
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 
 pub struct Threads {
     pub light_client: Option<thread::JoinHandle<()>>,
@@ -342,7 +340,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         todo!()
     }
 
-    fn get_signer(&mut self, reply_to: ReplyTo<AccountId>) -> Result<(), Error> {
+    fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
 
         reply_to

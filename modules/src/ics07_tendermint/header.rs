@@ -8,8 +8,8 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
-use crate::ics02_client::client_header::AnyHeader;
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::header::AnyHeader;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
@@ -35,7 +35,7 @@ impl Header {
     }
 }
 
-impl crate::ics02_client::client_header::Header for Header {
+impl crate::ics02_client::header::Header for Header {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }

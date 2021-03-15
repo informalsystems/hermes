@@ -1,8 +1,9 @@
+use core::marker::{Send, Sync};
 use std::convert::{TryFrom, TryInto};
 
 use chrono::{DateTime, Utc};
 use prost_types::Any;
-use serde_derive::Serialize;
+use serde::Serialize;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
@@ -11,17 +12,16 @@ use crate::events::IbcEventType;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::height::Height;
-use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
 
-#[cfg(any(test, feature = "mocks"))]
-pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
-
 pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
     "/ibc.lightclients.tendermint.v1.ConsensusState";
+
+pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
 #[dyn_clonable::clonable]
 pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
@@ -41,7 +41,7 @@ pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum AnyConsensusState {
-    Tendermint(TendermintConsensusState),
+    Tendermint(consensus_state::ConsensusState),
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockConsensusState),
@@ -82,7 +82,7 @@ impl TryFrom<Any> for AnyConsensusState {
             "" => Err(Kind::EmptyConsensusStateResponse.into()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                TendermintConsensusState::decode_vec(&value.value)
+                consensus_state::ConsensusState::decode_vec(&value.value)
                     .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
             )),
 

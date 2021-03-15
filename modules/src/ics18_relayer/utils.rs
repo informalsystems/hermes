@@ -1,4 +1,4 @@
-use crate::ics02_client::client_header::{AnyHeader, Header};
+use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics02_client::msgs::ClientMsg;
 use crate::ics18_relayer::context::Ics18Context;
@@ -51,8 +51,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::client_header::Header;
     use crate::ics02_client::client_type::ClientType;
+    use crate::ics02_client::header::Header;
     use crate::ics18_relayer::context::Ics18Context;
     use crate::ics18_relayer::utils::build_client_update_datagram;
     use crate::ics24_host::identifier::{ChainId, ClientId};

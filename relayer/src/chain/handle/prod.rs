@@ -1,16 +1,16 @@
 use std::fmt::Debug;
 
 use crossbeam_channel as channel;
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_header::AnyHeader;
+use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
 use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::events::UpdateClient;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
 use ibc::{
     events::IbcEvent,
+    ics02_client::header::AnyHeader,
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
     ics04_channel::channel::ChannelEnd,
@@ -19,12 +19,14 @@ use ibc::{
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::{ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    signer::Signer,
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::{
@@ -34,9 +36,6 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
-use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
-use ibc::ics02_client::events::UpdateClient;
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -91,7 +90,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::GetMinimalSet { from, to, reply_to })
     }
 
-    fn get_signer(&self) -> Result<AccountId, Error> {
+    fn get_signer(&self) -> Result<Signer, Error> {
         self.send(|reply_to| ChainRequest::Signer { reply_to })
     }
 

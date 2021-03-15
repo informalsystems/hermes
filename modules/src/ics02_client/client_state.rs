@@ -1,12 +1,14 @@
+use core::marker::{Send, Sync};
 use std::convert::TryFrom;
 
 use prost_types::Any;
-use serde_derive::Serialize;
+use serde::Serialize;
 use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
+
+use crate::ics07_tendermint::client_state;
 use crate::ics24_host::identifier::ChainId;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
@@ -14,13 +16,31 @@ use crate::Height;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 
-#[cfg(any(test, feature = "mocks"))]
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
+
+#[dyn_clonable::clonable]
+pub trait ClientState: Clone + std::fmt::Debug + Send + Sync {
+    /// Return the chain identifier which this client is serving (i.e., the client is verifying
+    /// consensus states from this chain).
+    fn chain_id(&self) -> ChainId;
+
+    /// Type of client associated with this state (eg. Tendermint)
+    fn client_type(&self) -> ClientType;
+
+    /// Latest height of consensus state
+    fn latest_height(&self) -> Height;
+
+    /// Freeze status of the client
+    fn is_frozen(&self) -> bool;
+
+    /// Wrap into an `AnyClientState`
+    fn wrap_any(self) -> AnyClientState;
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum AnyClientState {
-    Tendermint(TendermintClientState),
+    Tendermint(client_state::ClientState),
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClientState),
@@ -33,16 +53,6 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.latest_height(),
-        }
-    }
-    pub fn chain_id(&self) -> ChainId {
-        match self {
-            Self::Tendermint(state) => state.chain_id(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(_state) => {
-                unimplemented!()
-            }
         }
     }
 
@@ -66,7 +76,7 @@ impl TryFrom<Any> for AnyClientState {
             "" => Err(Kind::EmptyClientStateResponse.into()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                TendermintClientState::decode_vec(&raw.value)
+                client_state::ClientState::decode_vec(&raw.value)
                     .map_err(|e| Kind::InvalidRawClientState.context(e))?,
             )),
 
@@ -99,7 +109,12 @@ impl From<AnyClientState> for Any {
 
 impl ClientState for AnyClientState {
     fn chain_id(&self) -> ChainId {
-        self.chain_id()
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.chain_id(),
+        }
     }
 
     fn client_type(&self) -> ClientType {
@@ -124,20 +139,22 @@ impl ClientState for AnyClientState {
     }
 }
 
-#[dyn_clonable::clonable]
-pub trait ClientState: Clone + std::fmt::Debug + Send + Sync {
-    /// Client ID of this state
-    fn chain_id(&self) -> ChainId;
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
 
-    /// Type of client associated with this state (eg. Tendermint)
-    fn client_type(&self) -> ClientType;
+    use prost_types::Any;
 
-    /// Latest height of consensus state
-    fn latest_height(&self) -> Height;
+    use crate::ics02_client::client_state::AnyClientState;
+    use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
+    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
 
-    /// Freeze status of the client
-    fn is_frozen(&self) -> bool;
+    #[test]
+    fn any_client_state_serialization() {
+        let tm_client_state = get_dummy_tendermint_client_state(get_dummy_tendermint_header());
 
-    /// Wrap into an `AnyClientState`
-    fn wrap_any(self) -> AnyClientState;
+        let raw: Any = tm_client_state.clone().into();
+        let tm_client_state_back = AnyClientState::try_from(raw).unwrap();
+        assert_eq!(tm_client_state, tm_client_state_back);
+    }
 }

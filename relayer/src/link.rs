@@ -1,36 +1,32 @@
+use std::thread;
 use std::time::Duration;
-use std::{sync::Arc, thread};
 
 use prost_types::Any;
-use tendermint::account::Id;
 use thiserror::Error;
 use tracing::{error, info};
 
-use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use ibc::query::QueryTxRequest;
 use ibc::{
     downcast,
     events::{IbcEvent, IbcEventType},
     ics03_connection::connection::State as ConnectionState,
-    ics04_channel::channel::{
-        ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState,
+    ics04_channel::{
+        channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
+        events::{SendPacket, WriteAcknowledgement},
+        msgs::{
+            acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+            recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
+        },
+        packet::{Packet, PacketMsgType, Sequence},
     },
-    ics04_channel::events::{SendPacket, WriteAcknowledgement},
-    ics04_channel::msgs::acknowledgement::MsgAcknowledgement,
-    ics04_channel::msgs::recv_packet::MsgRecvPacket,
-    ics04_channel::msgs::timeout::MsgTimeout,
-    ics04_channel::packet::{Packet, PacketMsgType, Sequence},
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    signer::Signer,
     tx_msg::Msg,
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    MsgAcknowledgement as RawMsgAck, MsgChannelCloseConfirm as RawMsgChannelCloseConfirm,
-    MsgRecvPacket as RawMsgRecvPacket, MsgTimeout as RawMsgTimeout,
-    MsgTimeoutOnClose as RawMsgTimeoutOnClose, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
 use crate::chain::handle::ChainHandle;
@@ -160,7 +156,7 @@ impl RelayPath {
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
     }
 
-    fn src_signer(&self) -> Result<Id, LinkError> {
+    fn src_signer(&self) -> Result<Signer, LinkError> {
         self.src_chain.get_signer().map_err(|e| {
             LinkError::Failed(format!(
                 "could not retrieve signer from src chain {} with error: {}",
@@ -170,7 +166,7 @@ impl RelayPath {
         })
     }
 
-    fn dst_signer(&self) -> Result<Id, LinkError> {
+    fn dst_signer(&self) -> Result<Signer, LinkError> {
         self.dst_chain.get_signer().map_err(|e| {
             LinkError::Failed(format!(
                 "could not retrieve signer from dst chain {} with error: {}",
@@ -278,7 +274,7 @@ impl RelayPath {
             signer: self.dst_signer()?,
         };
 
-        Ok(new_msg.to_any::<RawMsgChannelCloseConfirm>())
+        Ok(new_msg.to_any())
     }
 
     fn handle_packet_event(&mut self, event: &IbcEvent) -> Result<(), LinkError> {
@@ -415,18 +411,23 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    /// Iterate through the IBC Events, build the message for each and collect all at same height.
-    /// Send a multi message transaction with these, prepending the client update
-    pub fn relay_from_events(&mut self, batch: Arc<EventBatch>) -> Result<(), LinkError> {
+    pub fn clear_packets(&mut self, height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
-            self.src_height = batch
-                .height
+            self.src_height = height
                 .decrement()
                 .map_err(|e| LinkError::Failed(e.to_string()))?;
 
             self.relay_pending_packets()?;
             self.clear_packets = false;
         }
+
+        Ok(())
+    }
+
+    /// Iterate through the IBC Events, build the message for each and collect all at same height.
+    /// Send a multi message transaction with these, prepending the client update
+    pub fn relay_from_events(&mut self, batch: EventBatch) -> Result<(), LinkError> {
+        self.clear_packets(batch.height)?;
 
         // collect relevant events in self.all_events
         self.collect_events(&batch.events);
@@ -722,15 +723,7 @@ impl RelayPath {
             )
             .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain.id(), e))?;
 
-        let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?).map_err(
-            |e| {
-                LinkError::Failed(format!(
-                    "error while building the recv packet for src channel {} due to error {}",
-                    packet.source_channel.clone(),
-                    e
-                ))
-            },
-        )?;
+        let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?);
 
         info!(
             "built recv_packet msg {}, proofs at height {:?}",
@@ -738,7 +731,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any::<RawMsgRecvPacket>())
+        Ok(msg.to_any())
     }
 
     fn build_ack_from_recv_event(&self, event: &WriteAcknowledgement) -> Result<Any, LinkError> {
@@ -767,7 +760,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any::<RawMsgAck>())
+        Ok(msg.to_any())
     }
 
     fn build_timeout_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
@@ -808,7 +801,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any::<RawMsgTimeout>())
+        Ok(msg.to_any())
     }
 
     fn build_timeout_on_close_packet(
@@ -840,7 +833,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any::<RawMsgTimeoutOnClose>())
+        Ok(msg.to_any())
     }
 
     fn build_recv_or_timeout_from_send_packet_event(
@@ -907,12 +900,12 @@ impl Link {
                 return Ok(());
             }
 
-            if let Ok(events) = events_a.try_recv() {
-                self.a_to_b.relay_from_events(events)?;
+            if let Ok(batch) = events_a.try_recv() {
+                self.a_to_b.relay_from_events(batch.unwrap_or_clone())?;
             }
 
-            if let Ok(events) = events_b.try_recv() {
-                self.b_to_a.relay_from_events(events)?;
+            if let Ok(batch) = events_b.try_recv() {
+                self.b_to_a.relay_from_events(batch.unwrap_or_clone())?;
             }
 
             // TODO - select over the two subscriptions

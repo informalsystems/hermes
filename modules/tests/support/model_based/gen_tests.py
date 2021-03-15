@@ -40,4 +40,4 @@ for test in tests:
     # run tlc-json
     print("> generating " + test)
     os.system("tlc-json IBCTests.tla")
-    os.system("mv counterexample.json tests/" + test + ".json")
+    os.system("mv counterexample0.json tests/" + test + ".json")

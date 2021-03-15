@@ -2,16 +2,14 @@ use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-// TODO - tendermint deps should not be here
-use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
-use ibc::ics02_client::client_header::Header;
 use ibc::ics02_client::client_state::ClientState;
+use ibc::ics02_client::header::Header;
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::ChannelEnd;
@@ -20,6 +18,7 @@ use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::query::QueryTxRequest;
+use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
@@ -107,7 +106,7 @@ pub trait Chain: Sized {
     /// Sends one or more transactions with `msgs` to chain.
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 
-    fn get_signer(&mut self) -> Result<AccountId, Error>;
+    fn get_signer(&mut self) -> Result<Signer, Error>;
 
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
