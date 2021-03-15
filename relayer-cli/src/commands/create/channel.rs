@@ -90,7 +90,10 @@ impl CreateChannelCommand {
             Connection::new(client_a, client_b, 0).unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally create the channel.
-        let chan_res = Channel::new(con, self.order, self.port_a.clone(), self.port_b.clone());
+        let channel = Channel::new(con, self.order, self.port_a.clone(), self.port_b.clone())
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        Output::success(channel).exit();
     }
 
     // Creates a new channel, reusing an already existing connection and its clients.
@@ -146,6 +149,9 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
-        );
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
+
+        Output::success(channel).exit();
     }
 }
