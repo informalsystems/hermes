@@ -19,39 +19,39 @@ pub struct CreateChannelCommand {
     #[options(
         free,
         required,
-        help = "Identifier of the side `a` chain for the new channel"
+        help = "identifier of the side `a` chain for the new channel"
     )]
     chain_a_id: ChainId,
 
     #[options(
         free,
-        help = "Identifier of the side `b` chain for the new channel (optional)"
+        help = "identifier of the side `b` chain for the new channel (optional)"
     )]
     chain_b_id: Option<ChainId>,
 
     #[options(
-        help = "Identifier of the connection on chain `a` to use in creating the new channel"
+        help = "identifier of the connection on chain `a` to use in creating the new channel"
     )]
     connection_a: Option<ConnectionId>,
 
     #[options(
         no_short,
         required,
-        help = "Identifier of the side `a` port for the new channel"
+        help = "identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
     #[options(
         no_short,
         required,
-        help = "Identifier of the side `b` port for the new channel"
+        help = "identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
-    #[options(help = "The order for parametrizing the new channel")]
+    #[options(help = "the order for parametrizing the new channel")]
     order: Order,
 
-    #[options(help = "The version for parametrizing the new channel")]
+    #[options(help = "the version for parametrizing the new channel")]
     version: String,
 }
 
