@@ -204,8 +204,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.build_consensus_state(height, reply_to)?
                         }
 
-                       Ok(ChainRequest::BuildMisbehaviour { update_event, trusted_height, latest_chain_height, reply_to }) => {
-                            self.build_misbehaviour(update_event, trusted_height, latest_chain_height, reply_to)?
+                       Ok(ChainRequest::BuildMisbehaviour { update_event, latest_chain_height, reply_to }) => {
+                            self.build_misbehaviour(update_event, latest_chain_height, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
@@ -442,15 +442,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn build_misbehaviour(
         &self,
         update_event: UpdateClient,
-        trusted_height: Height,
         latest_chain_height: Height,
         reply_to: ReplyTo<Option<AnyMisbehaviour>>,
     ) -> Result<(), Error> {
-        let misbehaviour = self.light_client.build_misbehaviour(
-            update_event,
-            trusted_height,
-            latest_chain_height,
-        )?;
+        let misbehaviour = self
+            .light_client
+            .build_misbehaviour(update_event, latest_chain_height)?;
 
         reply_to
             .send(Ok(misbehaviour))

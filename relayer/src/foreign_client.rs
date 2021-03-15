@@ -389,11 +389,11 @@ impl ForeignClient {
     /// until it gets to the first misbehaviour.
     ///
     /// The following cases are covered:
-    /// 1 - forks, double signing, assumes at least one consensus state from the fork point exists
+    /// 1 - forks, double signing, assumes at least one consensus state before the fork point exists
     ///
     /// Assuming existing consensus states on chain B are: [Sn,.., Sf, Sf-1, S0] with `Sf-1` being
     /// the most recent state before fork.
-    /// Chain A is queried for a header `Hf` at `Sf.height` and if it is different than the `Hf'`
+    /// Chain A is queried for a header `Hf'` at `Sf.height` and if it is different than the `Hf`
     /// in the event for the client update (the one that has generated `Sf` on chain), then the two
     /// headers are included in the evidence and submitted.
     /// Note that in this case the headers are different but have the same height.
@@ -417,8 +417,8 @@ impl ForeignClient {
     ///
     /// Other notes:
     /// - the algorithm builds misbehavior at each consensus height, starting with the
-    /// highest height assuming the previous one is trusted. It stops at the highest height with
-    /// no misbehaviour and submits the last constructed evidence (the one with the lowest height)
+    /// highest height assuming the previous one is trusted. It submits the last constructed
+    /// evidence (the one with the lowest height)
     /// - a lot of the logic here is derived from the behavior of the only implemented client
     /// (ics07-tendermint) and might not be general enough.
     ///
@@ -426,6 +426,8 @@ impl ForeignClient {
         &self,
         mut update_event: UpdateClient,
     ) -> Result<Option<AnyMisbehaviour>, ForeignClientError> {
+        thread::sleep(Duration::from_millis(100));
+
         // get the list of consensus state heights in reverse order
         // Note: If chain does not prune consensus states then the last consensus state is
         // the one installed by the `CreateClient` which does not include a header.
@@ -439,8 +441,8 @@ impl ForeignClient {
         }
 
         info!(
-            "checking misbehaviour for consensus state heights {:?}",
-            consensus_state_heights
+            "checking misbehaviour starting from {:?}, for consensus state heights {:?}",
+            update_event.common.consensus_height, consensus_state_heights,
         );
 
         let mut first_misbehaviour = None;
@@ -448,37 +450,24 @@ impl ForeignClient {
             ForeignClientError::Misbehaviour(format!("failed to get latest height {}", e))
         })?;
 
-        assert_eq!(*update_event.consensus_height(), consensus_state_heights[0]);
+        for (i, h) in consensus_state_heights.iter().enumerate() {
+            if h > &update_event.common.consensus_height {
+                continue;
+            }
 
-        // check all states for misbehaviour starting with the highest one
-        // and up to the penultimate one. Stop either at the first height where misbehaviour is not
-        // present, or at the last consensus state which is the "trusted" one and does not need
-        // to be checked
-        for i in 0..consensus_state_heights.len() - 1 {
-            let trusted_height = consensus_state_heights[i + 1];
+            let misbehavior = self
+                .src_chain
+                .build_misbehaviour(update_event.clone(), latest_chain_height)
+                .map_err(|e| {
+                    ForeignClientError::Misbehaviour(format!("failed to build misbehaviour {}", e))
+                })?;
 
-            // skip over consensus states for trusted heights that are in the "future"
-            if trusted_height < latest_chain_height {
-                let misbehavior = self
-                    .src_chain
-                    .build_misbehaviour(update_event.clone(), trusted_height, latest_chain_height)
-                    .map_err(|e| {
-                        ForeignClientError::Misbehaviour(format!(
-                            "failed to build misbehaviour {}",
-                            e
-                        ))
-                    })?;
-
-                if misbehavior.is_none() {
-                    break;
-                }
-
-                // misbehaviour detected for state at index `i`.
+            if misbehavior.is_some() {
                 first_misbehaviour = misbehavior;
             }
 
             // get the previous update client event
-            if let Some(new_update) = self.update_client_event(trusted_height)? {
+            if let Some(new_update) = self.update_client_event(consensus_state_heights[i + 1])? {
                 update_event = new_update;
                 continue;
             }

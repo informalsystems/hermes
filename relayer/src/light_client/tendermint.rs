@@ -68,7 +68,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     fn build_misbehaviour(
         &self,
         update: UpdateClient,
-        trusted_height: ibc::Height,
         latest_chain_height: ibc::Height,
     ) -> Result<Option<AnyMisbehaviour>, error::Error> {
         crate::time!("light client build_misbehaviour");
@@ -79,9 +78,17 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 self.chain_id
             ))
         })?;
+        let tm_ibc_client_header =
+            downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
+                Kind::Misbehaviour(format!(
+                    "header type incompatible for chain {}",
+                    self.chain_id
+                ))
+            })?;
 
         // set the target height to the minimum between the update height and latest chain height
         let target_height = std::cmp::min(*update.consensus_height(), latest_chain_height);
+        let trusted_height = tm_ibc_client_header.trusted_height;
 
         let tm_chain_header = {
             assert!(trusted_height < latest_chain_height);
@@ -95,14 +102,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 trusted_validator_set: trusted_light_block.validators,
             }
         };
-
-        let tm_ibc_client_header =
-            downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
-                Kind::Misbehaviour(format!(
-                    "header type incompatible for chain {}",
-                    self.chain_id
-                ))
-            })?;
 
         let misbehaviour =
             if LightClient::incompatible_headers(&tm_ibc_client_header, &tm_chain_header) {

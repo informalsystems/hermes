@@ -35,7 +35,6 @@ pub trait LightClient<C: Chain>: Send + Sync {
     fn build_misbehaviour(
         &self,
         update: UpdateClient,
-        trusted_height: ibc::Height,
         latest_chain_height: ibc::Height,
     ) -> Result<Option<AnyMisbehaviour>, error::Error>;
 }
