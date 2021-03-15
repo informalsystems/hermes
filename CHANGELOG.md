@@ -20,6 +20,7 @@
 - [ibc-relayer-cli]
   - Added `create connection` CLI ([#630])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
+  - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
 
 ### IMPROVEMENTS
 
@@ -66,6 +67,7 @@
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
+[#702]: https://github.com/informalsystems/ibc-rs/issues/702
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
 
 ## v0.1.1

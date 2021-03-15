@@ -5,16 +5,20 @@ use git2::{Oid, Repository};
 use argh::FromArgs;
 
 #[derive(Debug, FromArgs)]
-#[argh(subcommand, name = "clone-sdk")]
+#[argh(subcommand, name = "clone")]
 /// Clone
 pub struct CloneCmd {
-    /// commit to checkout
+    /// commit to checkout for the SDK repo
     #[argh(option, short = 'c')]
-    commit: Option<String>,
+    sdk_commit: Option<String>,
 
-    /// tag to checkout
+    /// tag to checkout for the IBC-go repo
     #[argh(option, short = 't')]
-    tag: Option<String>,
+    sdk_tag: Option<String>,
+
+    /// commit to checkout
+    #[argh(option, short = 'i')]
+    ibc_go_commit: String,
 
     /// where to checkout the repository
     #[argh(option, short = 'o')]
@@ -23,18 +27,30 @@ pub struct CloneCmd {
 
 impl CloneCmd {
     pub fn validate(&self) {
-        if self.commit.is_some() && self.tag.is_some() {
-            println!("[error] The --commit and --tag options are mutually exclusive.");
+        if self.sdk_commit.is_some() && self.sdk_tag.is_some() {
+            println!("[error] The --sdk-commit and --sdk-tag options are mutually exclusive.");
             process::exit(1);
         }
+    }
+
+    pub fn sdk_subdir(&self) -> PathBuf {
+        let mut sdk_path = self.out.clone();
+        sdk_path.push("sdk/");
+        sdk_path
+    }
+
+    pub fn ibc_subdir(&self) -> PathBuf {
+        let mut ibc_path = self.out.clone();
+        ibc_path.push("ibc/");
+        ibc_path
     }
 
     pub fn run(&self) {
         self.validate();
 
-        let repo = if self.out.exists() {
+        let sdk_repo = if self.out.exists() {
             println!(
-                "[info ] Found Cosmos SDK source at '{}'",
+                "[info ] Found Cosmos SDK or IBC proto source at '{}'",
                 self.out.display()
             );
 
@@ -47,27 +63,45 @@ impl CloneCmd {
 
             let url = "https://github.com/cosmos/cosmos-sdk";
 
-            let repo = Repository::clone(url, &self.out).unwrap_or_else(|e| {
-                println!("[error] Failed to clone the repository: {}", e);
+            let repo = Repository::clone(url, &self.sdk_subdir()).unwrap_or_else(|e| {
+                println!("[error] Failed to clone the SDK repository: {}", e);
                 process::exit(1)
             });
 
-            println!("[info ] Cloned at '{}'", self.out.display());
+            println!("[info ] Cloned at '{}'", self.sdk_subdir().display());
 
             repo
         };
 
-        if let Some(ref rev) = self.commit {
-            checkout_commit(&repo, rev).unwrap_or_else(|e| {
-                println!("[error] Failed to checkout commit {}: {}", rev, e);
+        if let Some(ref rev) = self.sdk_commit {
+            checkout_commit(&sdk_repo, rev).unwrap_or_else(|e| {
+                println!("[error] Failed to checkout SDK commit {}: {}", rev, e);
                 process::exit(1)
             });
-        } else if let Some(ref tag) = self.tag {
-            checkout_tag(&repo, tag).unwrap_or_else(|e| {
-                println!("[error] Failed to checkout tag {}: {}", tag, e);
+        } else if let Some(ref tag) = self.sdk_tag {
+            checkout_tag(&sdk_repo, tag).unwrap_or_else(|e| {
+                println!("[error] Failed to checkout SDK tag {}: {}", tag, e);
                 process::exit(1)
             });
         }
+
+        println!("[info ] Cloning cosmos/ibc-go repository...");
+
+        let ibc_url = "https://github.com/cosmos/ibc-go";
+
+        let ibc_repo = Repository::clone(ibc_url, &self.ibc_subdir()).unwrap_or_else(|e| {
+            println!("[error] Failed to clone the IBC repository: {}", e);
+            process::exit(1)
+        });
+
+        println!("[info ] Cloned at '{}'", self.ibc_subdir().display());
+        checkout_commit(&ibc_repo, &self.ibc_go_commit).unwrap_or_else(|e| {
+            println!(
+                "[error] Failed to checkout IBC commit {}: {}",
+                self.ibc_go_commit, e
+            );
+            process::exit(1)
+        });
     }
 }
 
