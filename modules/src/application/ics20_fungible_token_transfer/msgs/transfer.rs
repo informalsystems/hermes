@@ -2,7 +2,7 @@
 
 use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
+use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
 
 use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};

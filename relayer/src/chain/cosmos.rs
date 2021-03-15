@@ -23,7 +23,6 @@ use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClien
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
@@ -64,6 +63,8 @@ use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_state::AnyClientState;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;

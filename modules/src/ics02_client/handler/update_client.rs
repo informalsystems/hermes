@@ -2,7 +2,9 @@
 
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_def::{AnyClient, ClientDef};
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::events::Attributes;
@@ -75,7 +77,7 @@ mod tests {
 
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::ics02_client::client_def::AnyClientState;
+    use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::error::Kind;
     use crate::ics02_client::handler::dispatch;
     use crate::ics02_client::handler::ClientResult::{Create, Update};

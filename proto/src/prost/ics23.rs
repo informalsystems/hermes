@@ -20,14 +20,14 @@
 ///length-prefix the data before hashing it.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExistenceProof {
-    #[prost(bytes, tag="1")]
-    pub key: std::vec::Vec<u8>,
-    #[prost(bytes, tag="2")]
-    pub value: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag="3")]
-    pub leaf: ::std::option::Option<LeafOp>,
+    pub leaf: ::core::option::Option<LeafOp>,
     #[prost(message, repeated, tag="4")]
-    pub path: ::std::vec::Vec<InnerOp>,
+    pub path: ::prost::alloc::vec::Vec<InnerOp>,
 }
 ///
 ///NonExistenceProof takes a proof of two neighbors, one left of the desired key,
@@ -36,20 +36,21 @@ pub struct ExistenceProof {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NonExistenceProof {
     /// TODO: remove this as unnecessary??? we prove a range
-    #[prost(bytes, tag="1")]
-    pub key: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
-    pub left: ::std::option::Option<ExistenceProof>,
+    pub left: ::core::option::Option<ExistenceProof>,
     #[prost(message, optional, tag="3")]
-    pub right: ::std::option::Option<ExistenceProof>,
+    pub right: ::core::option::Option<ExistenceProof>,
 }
 ///
 ///CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommitmentProof {
     #[prost(oneof="commitment_proof::Proof", tags="1, 2, 3, 4")]
-    pub proof: ::std::option::Option<commitment_proof::Proof>,
+    pub proof: ::core::option::Option<commitment_proof::Proof>,
 }
+/// Nested message and enum types in `CommitmentProof`.
 pub mod commitment_proof {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Proof {
@@ -90,8 +91,8 @@ pub struct LeafOp {
     pub length: i32,
     /// prefix is a fixed bytes that may optionally be included at the beginning to differentiate
     /// a leaf node from an inner node.
-    #[prost(bytes, tag="5")]
-    pub prefix: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="5")]
+    pub prefix: ::prost::alloc::vec::Vec<u8>,
 }
 ///*
 ///InnerOp represents a merkle-proof step that is not a leaf.
@@ -113,10 +114,10 @@ pub struct LeafOp {
 pub struct InnerOp {
     #[prost(enumeration="HashOp", tag="1")]
     pub hash: i32,
-    #[prost(bytes, tag="2")]
-    pub prefix: std::vec::Vec<u8>,
-    #[prost(bytes, tag="3")]
-    pub suffix: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="2")]
+    pub prefix: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="3")]
+    pub suffix: ::prost::alloc::vec::Vec<u8>,
 }
 ///*
 ///ProofSpec defines what the expected parameters are for a given proof type.
@@ -134,9 +135,9 @@ pub struct ProofSpec {
     /// any field in the ExistenceProof must be the same as in this spec.
     /// except Prefix, which is just the first bytes of prefix (spec can be longer) 
     #[prost(message, optional, tag="1")]
-    pub leaf_spec: ::std::option::Option<LeafOp>,
+    pub leaf_spec: ::core::option::Option<LeafOp>,
     #[prost(message, optional, tag="2")]
-    pub inner_spec: ::std::option::Option<InnerSpec>,
+    pub inner_spec: ::core::option::Option<InnerSpec>,
     /// max_depth (if > 0) is the maximum number of InnerOps allowed (mainly for fixed-depth tries)
     #[prost(int32, tag="3")]
     pub max_depth: i32,
@@ -159,7 +160,7 @@ pub struct InnerSpec {
     /// iavl tree is [0, 1] (left then right)
     /// merk is [0, 2, 1] (left, right, here)
     #[prost(int32, repeated, tag="1")]
-    pub child_order: ::std::vec::Vec<i32>,
+    pub child_order: ::prost::alloc::vec::Vec<i32>,
     #[prost(int32, tag="2")]
     pub child_size: i32,
     #[prost(int32, tag="3")]
@@ -167,8 +168,8 @@ pub struct InnerSpec {
     #[prost(int32, tag="4")]
     pub max_prefix_length: i32,
     /// empty child is the prehash image that is used when one child is nil (eg. 20 bytes of 0)
-    #[prost(bytes, tag="5")]
-    pub empty_child: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="5")]
+    pub empty_child: ::prost::alloc::vec::Vec<u8>,
     /// hash is the algorithm that must be used for each InnerOp
     #[prost(enumeration="HashOp", tag="6")]
     pub hash: i32,
@@ -178,14 +179,15 @@ pub struct InnerSpec {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchProof {
     #[prost(message, repeated, tag="1")]
-    pub entries: ::std::vec::Vec<BatchEntry>,
+    pub entries: ::prost::alloc::vec::Vec<BatchEntry>,
 }
 /// Use BatchEntry not CommitmentProof, to avoid recursion
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchEntry {
     #[prost(oneof="batch_entry::Proof", tags="1, 2")]
-    pub proof: ::std::option::Option<batch_entry::Proof>,
+    pub proof: ::core::option::Option<batch_entry::Proof>,
 }
+/// Nested message and enum types in `BatchEntry`.
 pub mod batch_entry {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Proof {
@@ -200,16 +202,17 @@ pub mod batch_entry {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompressedBatchProof {
     #[prost(message, repeated, tag="1")]
-    pub entries: ::std::vec::Vec<CompressedBatchEntry>,
+    pub entries: ::prost::alloc::vec::Vec<CompressedBatchEntry>,
     #[prost(message, repeated, tag="2")]
-    pub lookup_inners: ::std::vec::Vec<InnerOp>,
+    pub lookup_inners: ::prost::alloc::vec::Vec<InnerOp>,
 }
 /// Use BatchEntry not CommitmentProof, to avoid recursion
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompressedBatchEntry {
     #[prost(oneof="compressed_batch_entry::Proof", tags="1, 2")]
-    pub proof: ::std::option::Option<compressed_batch_entry::Proof>,
+    pub proof: ::core::option::Option<compressed_batch_entry::Proof>,
 }
+/// Nested message and enum types in `CompressedBatchEntry`.
 pub mod compressed_batch_entry {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Proof {
@@ -221,25 +224,25 @@ pub mod compressed_batch_entry {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompressedExistenceProof {
-    #[prost(bytes, tag="1")]
-    pub key: std::vec::Vec<u8>,
-    #[prost(bytes, tag="2")]
-    pub value: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag="3")]
-    pub leaf: ::std::option::Option<LeafOp>,
+    pub leaf: ::core::option::Option<LeafOp>,
     /// these are indexes into the lookup_inners table in CompressedBatchProof
     #[prost(int32, repeated, tag="4")]
-    pub path: ::std::vec::Vec<i32>,
+    pub path: ::prost::alloc::vec::Vec<i32>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompressedNonExistenceProof {
     /// TODO: remove this as unnecessary??? we prove a range
-    #[prost(bytes, tag="1")]
-    pub key: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
-    pub left: ::std::option::Option<CompressedExistenceProof>,
+    pub left: ::core::option::Option<CompressedExistenceProof>,
     #[prost(message, optional, tag="3")]
-    pub right: ::std::option::Option<CompressedExistenceProof>,
+    pub right: ::core::option::Option<CompressedExistenceProof>,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
