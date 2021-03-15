@@ -7,8 +7,9 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
 use ibc::events::IbcEvent;
+use ibc::ics02_client::client_consensus::ConsensusState;
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::header::Header;
-use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
@@ -18,7 +19,6 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,

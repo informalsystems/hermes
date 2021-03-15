@@ -10,8 +10,8 @@ pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
     /// querying the next page most efficiently. Only one of offset or key
     /// should be set.
-    #[prost(bytes, tag="1")]
-    pub key: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
     /// offset is a numeric offset that can be used when key is unavailable.
     /// It is less efficient than using key. Only one of offset or key should
     /// be set.
@@ -39,8 +39,8 @@ pub struct PageRequest {
 pub struct PageResponse {
     /// next_key is the key to be passed to PageRequest.key to
     /// query the next page most efficiently
-    #[prost(bytes, tag="1")]
-    pub next_key: std::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="1")]
+    pub next_key: ::prost::alloc::vec::Vec<u8>,
     /// total is total number of results available if PageRequest.count_total
     /// was set, its value is undefined otherwise
     #[prost(uint64, tag="2")]

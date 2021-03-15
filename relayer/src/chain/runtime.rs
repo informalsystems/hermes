@@ -6,9 +6,8 @@ use tokio::runtime::Runtime as TokioRuntime;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
-        client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+        client_consensus::ConsensusState, client_state::ClientState, header::AnyHeader,
         header::Header,
-        state::{ClientState, ConsensusState},
     },
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
@@ -21,7 +20,6 @@ use ibc::{
     signer::Signer,
     Height,
 };
-
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
@@ -43,6 +41,8 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
 };
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_state::AnyClientState;
 
 pub struct Threads {
     pub light_client: Option<thread::JoinHandle<()>>,

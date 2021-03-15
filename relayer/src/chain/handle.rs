@@ -7,7 +7,7 @@ use serde::{Serialize, Serializer};
 
 use ibc::{
     events::IbcEvent,
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+    ics02_client::header::AnyHeader,
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
         channel::{ChannelEnd, QueryPacketEventDataRequest},
@@ -32,6 +32,8 @@ use crate::keyring::store::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
 
 mod prod;
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_state::AnyClientState;
 pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;

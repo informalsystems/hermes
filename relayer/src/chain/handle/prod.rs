@@ -5,7 +5,7 @@ use crossbeam_channel as channel;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
     events::IbcEvent,
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+    ics02_client::header::AnyHeader,
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
     ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
@@ -30,6 +30,8 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_state::AnyClientState;
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {

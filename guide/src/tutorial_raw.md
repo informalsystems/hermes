@@ -33,7 +33,7 @@ Currently, cosmos-SDK implementation uses:
  - `connection-<n>` for connections
      - For example `connection-0` is assigned to the first connection created on `ibc-1`:
          ```shell
-         tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 | jq
+         hermes tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 | jq
          ```
          ```json
         {

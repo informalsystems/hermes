@@ -5,6 +5,8 @@ use thiserror::Error;
 use tracing::{debug, error, info, warn};
 
 use ibc::events::IbcEvent;
+use ibc::ics02_client::client_consensus::ConsensusState;
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;

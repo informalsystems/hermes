@@ -125,15 +125,13 @@ else
 fi
 
 # Start gaia
-$BINARY --home $CHAIN_DIR/$CHAIN_ID start --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
-
-# Start gaia with trace
-# $BINARY --home $CHAIN_DIR/$CHAIN_ID start --trace --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
+echo "Start gaia on grpc port: $GRPC_PORT..."
+$BINARY --home $CHAIN_DIR/$CHAIN_ID start --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" --log_level error > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
 
 # Show validator's and user's balance
 sleep 3
 RPC_ADDR="tcp://localhost:$RPC_PORT"
 echo "Balances for validator '$VALIDATOR' @ '$RPC_ADDR'"
-$BINARY --node $RPC_ADDR query bank balances $VALIDATOR
+$BINARY --node "$RPC_ADDR" query bank balances $VALIDATOR --log_level error
 echo "Balances for user '$USER' @ '$RPC_ADDR'"
-$BINARY --node $RPC_ADDR query bank balances $USER
+$BINARY --node "$RPC_ADDR" query bank balances $USER --log_level error

@@ -21,12 +21,14 @@
   - Added `create connection` CLI ([#630])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
   - Added `client-upgrade` CLI ([#357])
+  - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
 
 ### IMPROVEMENTS
 
 - [ibc]
   - Follow Rust guidelines naming conventions ([#689])
-
+  - Per client structure modules ([#740])
+  
 - [ibc-relayer]
   - [nothing yet]
 
@@ -68,6 +70,8 @@
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
 [#734]: https://github.com/informalsystems/ibc-rs/issues/734
+[#702]: https://github.com/informalsystems/ibc-rs/issues/702
+[#740]: https://github.com/informalsystems/ibc-rs/issues/740
 
 ## v0.1.1
 *February 17, 2021*

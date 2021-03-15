@@ -48,7 +48,7 @@ if ! [ -x "$(which gaiad)" ]; then
 fi
 
 # Display software version
-echo "GAIA VERSION INFO: $(gaiad version)"
+echo "GAIA VERSION INFO: $(gaiad version --log_level info)"
 
 # Delete data from old runs
 rm -rf "$GAIA_DATA" &> /dev/null

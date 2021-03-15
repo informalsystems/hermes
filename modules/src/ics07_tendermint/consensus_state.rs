@@ -7,7 +7,8 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
-use crate::ics02_client::{client_def::AnyConsensusState, client_type::ClientType};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::CommitmentRoot;
@@ -29,7 +30,7 @@ impl ConsensusState {
     }
 }
 
-impl crate::ics02_client::state::ConsensusState for ConsensusState {
+impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
