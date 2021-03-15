@@ -81,7 +81,7 @@ impl From<NewBlock> for IbcEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub height: Height,
     pub client_id: ClientId,
