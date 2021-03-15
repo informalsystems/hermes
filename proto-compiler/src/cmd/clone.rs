@@ -39,7 +39,6 @@ impl CloneCmd {
         sdk_path
     }
 
-
     pub fn ibc_subdir(&self) -> PathBuf {
         let mut ibc_path = self.out.clone();
         ibc_path.push("ibc/");
@@ -97,10 +96,12 @@ impl CloneCmd {
 
         println!("[info ] Cloned at '{}'", self.ibc_subdir().display());
         checkout_commit(&ibc_repo, &self.ibc_go_commit).unwrap_or_else(|e| {
-            println!("[error] Failed to checkout IBC commit {}: {}", self.ibc_go_commit, e);
+            println!(
+                "[error] Failed to checkout IBC commit {}: {}",
+                self.ibc_go_commit, e
+            );
             process::exit(1)
         });
-
     }
 }
 
