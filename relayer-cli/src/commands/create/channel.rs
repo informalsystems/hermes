@@ -1,16 +1,16 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::Height;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ConnectionId, PortId};
+use ibc::Height;
 use ibc_relayer::channel::Channel;
 use ibc_relayer::config::StoreConfig;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::commands::cli_utils::{ChainHandlePair, spawn_chain_runtime, SpawnOptions};
+use crate::commands::cli_utils::{spawn_chain_runtime, ChainHandlePair, SpawnOptions};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 

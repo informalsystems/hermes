@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::fmt;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 

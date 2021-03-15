@@ -110,12 +110,7 @@ impl Connection {
                 conn_end_a.end().client_id(), a_client.id()
             )));
         }
-        if conn_end_a
-            .end()
-            .counterparty()
-            .client_id()
-            != b_client.id()
-        {
+        if conn_end_a.end().counterparty().client_id() != b_client.id() {
             return Err(ConnectionError::ConstructorFailed(format!(
                 "the counterparty client id in the connection end ({}) does not match the foreign client id ({})",
                 conn_end_a.end().counterparty().client_id(), b_client.id()
