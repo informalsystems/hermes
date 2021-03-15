@@ -47,7 +47,7 @@ impl CompileCmd {
 
     fn compile_ibc_protos(ibc_dir: &Path, sdk_dir: &Path, out_dir: &Path) {
         println!(
-            "[info ] Compiling .proto files to Rust into '{}'...",
+            "[info ] Compiling IBC .proto files to Rust into '{}'...",
             out_dir.display()
         );
 
@@ -86,6 +86,7 @@ impl CompileCmd {
         for proto in &protos {
             println!("\t-> {:?}", proto);
         }
+        println!("[info ] Compiling..");
 
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
@@ -111,7 +112,7 @@ impl CompileCmd {
 
     fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path) {
         println!(
-            "[info ] Compiling .proto files to Rust into '{}'...",
+            "[info ] Compiling Cosmos-SDK .proto files to Rust into '{}'...",
             out_dir.display()
         );
 
@@ -155,6 +156,7 @@ impl CompileCmd {
         for proto in &protos {
             println!("\t-> {:?}", proto);
         }
+        println!("[info ] Compiling..");
 
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();

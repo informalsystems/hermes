@@ -15,7 +15,7 @@ $ cd proto-compiler
 Run the following command to clone the Cosmos SDK and the IBC-Go repositories, and check out a specific commit:
 
 ```bash
-$ cargo run -- clone --out /tmp/cosmos --sdk-commit 21814558eaa47b018018711e5fe16e0b16811fce --ibc-go-commit 97f8985e485ea067d187a0813ca880d771b56abc
+$ cargo run -- clone --out /tmp/cosmos --sdk-commit 21814558eaa47b018018711e5fe16e0b16811fce --ibc-go-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
 ```
 
 Note: the full commit hash must be specified.
@@ -23,7 +23,7 @@ Note: the full commit hash must be specified.
 Alternatively, one can check out a tag for the Cosmos SDK with the `--sdk-tag` option:
 
 ```bash
-$ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-commit 97f8985e485ea067d187a0813ca880d771b56abc
+$ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
 ```
 
 ### Generate Rust sources from Protobuf definitions
