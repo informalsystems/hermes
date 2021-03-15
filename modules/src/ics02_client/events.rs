@@ -220,7 +220,7 @@ impl From<ClientMisbehavior> for IbcEvent {
 }
 
 /// Signals a recent upgrade of an on-chain client (IBC Client).
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 pub struct UpgradeClient(Attributes);
 
 impl UpgradeClient {

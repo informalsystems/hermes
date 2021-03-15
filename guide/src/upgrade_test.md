@@ -153,7 +153,7 @@ index 6cf1a674..bfff9721 100755
  CHAIN_0_RPC_ADDR="localhost:$CHAIN_0_RPC_PORT"
 ```
 
-No setup the clients for Hermes to use:
+Now setup the clients for Hermes to use:
 
 ```shell
 $ ./scripts/init-clients ~/.hermes/config.toml ibc-0 ibc-1
