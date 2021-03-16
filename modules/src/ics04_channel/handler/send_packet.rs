@@ -1,6 +1,6 @@
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::state::ClientState;
+use crate::ics02_client::client_state::ClientState;
 use crate::ics04_channel::channel::Counterparty;
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;

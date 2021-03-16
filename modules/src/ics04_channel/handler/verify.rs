@@ -1,13 +1,12 @@
+use crate::ics02_client::client_state::ClientState;
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::packet::Packet;
+use crate::ics24_host::identifier::ClientId;
 use crate::proofs::Proofs;
-use crate::{
-    ics02_client::state::ClientState, ics04_channel::packet::Packet,
-    ics24_host::identifier::ClientId,
-};
 
 /// Entry point for verifying all proofs bundled in any ICS4 message.
 pub fn verify_proofs(

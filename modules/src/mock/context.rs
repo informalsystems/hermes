@@ -9,10 +9,12 @@ use sha2::Digest;
 
 use crate::application::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::events::IbcEvent;
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as Ics02Error;
+use crate::ics02_client::header::AnyHeader;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as Ics3Error;

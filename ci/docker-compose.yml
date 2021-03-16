@@ -4,7 +4,7 @@ services:
 
   ibc-0:
     container_name: ibc-0
-    image: "informaldev/ibc-0:v4.0.0"
+    image: "informaldev/ibc-0:v4.1.0"
     stdin_open: true
     tty: true
     entrypoint: "gaiad start --home=/chain/gaia --grpc.address=ibc-0:9090  --pruning=nothing"
@@ -14,7 +14,7 @@ services:
 
   ibc-1:
     container_name: ibc-1
-    image: "informaldev/ibc-1:v4.0.0"
+    image: "informaldev/ibc-1:v4.1.0"
     stdin_open: true
     tty: true
     entrypoint: "gaiad start --home=/chain/gaia --grpc.address=ibc-1:9090 --pruning=nothing"
@@ -33,7 +33,7 @@ services:
       context: ../
       dockerfile: ci/relayer.Dockerfile
       args:
-        RELEASE: v4.0.0
+        RELEASE: v4.1.0
     environment:
       - CHAIN_A=ibc-0
       - CHAIN_A_HOME=/data/ibc-0
@@ -43,7 +43,7 @@ services:
       - CHAIN_B_PORT=26657
       - CONFIG=simple_config.toml
       - RELAYER_DIR=/relayer
-      - RELEASE=v4.0.0
+      - RELEASE=v4.1.0
     networks:
       relaynet:
         ipv4_address: 172.25.0.12

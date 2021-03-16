@@ -234,7 +234,8 @@ mod tests {
 
     use crate::application::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer;
     use crate::events::IbcEvent;
-    use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+    use crate::ics02_client::client_consensus::AnyConsensusState;
+    use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::msgs::{
         create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient, ClientMsg,
     };

@@ -1,6 +1,10 @@
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_def::ClientDef;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::header::Header as ICS2Header;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
+use crate::ics04_channel::packet::Sequence;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::header::Header;
@@ -8,10 +12,6 @@ use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes
 use crate::ics24_host::identifier::ConnectionId;
 use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::Height;
-use crate::{
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef},
-    ics04_channel::packet::Sequence,
-};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TendermintClient;

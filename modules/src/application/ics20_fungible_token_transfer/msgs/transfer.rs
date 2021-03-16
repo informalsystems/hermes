@@ -2,8 +2,9 @@
 
 use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
 use crate::ics02_client::height::Height;
@@ -83,15 +84,16 @@ impl From<MsgTransfer> for RawMsgTransfer {
 
 #[cfg(test)]
 pub mod test_util {
+    use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
-    use super::MsgTransfer;
     use crate::{
         ics24_host::identifier::{ChannelId, PortId},
         test_utils::get_dummy_account_id,
         Height,
     };
-    use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
-    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+
+    use super::MsgTransfer;
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
