@@ -5,10 +5,9 @@ use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::msgs::ChannelMsg;
+use crate::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-
-use super::{msgs::PacketMsg, packet::PacketResult};
 
 pub mod acknowledgement;
 pub mod chan_close_confirm;

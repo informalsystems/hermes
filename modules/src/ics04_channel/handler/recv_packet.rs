@@ -1,5 +1,3 @@
-use super::verify::verify_packet_proofs;
-
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::height::Height;
@@ -8,6 +6,7 @@ use crate::ics04_channel::channel::{Counterparty, Order, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::ReceivePacket;
+use crate::ics04_channel::handler::verify::verify_packet_proofs;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::ics24_host::identifier::{ChannelId, PortId};
@@ -90,7 +89,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
             .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))
             .ok_or(Kind::MissingNextRecvSeq)?;
 
-        if !packet.sequence.eq(&next_seq_recv) {
+        if packet.sequence != next_seq_recv {
             return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_recv).into());
         }
 
@@ -135,6 +134,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
 
     use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
@@ -149,7 +149,6 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::test_utils::get_dummy_account_id;
     use crate::{events::IbcEvent, ics04_channel::packet::Packet};
-    use std::convert::TryFrom;
 
     #[test]
     fn recv_packet_processing() {

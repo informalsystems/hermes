@@ -52,7 +52,7 @@ pub fn verify_proofs(
         .map_err(|_| Kind::InvalidProof)?)
 }
 
-/// Entry point for verifying all proofs bundled in any ICS4 message.
+/// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
 pub fn verify_packet_proofs(
     ctx: &dyn ChannelReader,
     packet: &Packet,

@@ -37,7 +37,7 @@ pub enum Kind {
     #[error("invalid proof: missing height")]
     MissingHeight,
 
-    #[error("Missing sequence number for receving packets")]
+    #[error("Missing sequence number for receiving packets")]
     MissingNextRecvSeq,
 
     #[error("packet sequence cannot be 0")]
