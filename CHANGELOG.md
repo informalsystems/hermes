@@ -7,7 +7,7 @@
 ### FEATURES
 
 - [ibc]
-  - Added handler(s) for sending packets ([#695])
+  - Added handler(s) for sending packets ([#695]) and for recv. and ack. packets ([#736])
 
 - [ibc-relayer]
   - Support for relayer restart ([#561])
@@ -68,6 +68,7 @@
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
 [#702]: https://github.com/informalsystems/ibc-rs/issues/702
+[#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
 
 ## v0.1.1
