@@ -78,20 +78,28 @@ fn start_all_connections(config: &Config) -> Result<Output, BoxError> {
 
     let mut registry = Registry::new(config);
 
-    for conn in connections {
-        info!(
-            "spawning supervisor for chains {} and {}",
-            conn.a_chain, conn.b_chain
-        );
+    let result = crossbeam_utils::thread::scope(|s| {
+        for conn in connections {
+            info!(
+                "spawning supervisor for chains {} and {}",
+                conn.a_chain, conn.b_chain
+            );
 
-        let chain_a = registry.get_or_spawn(&conn.a_chain)?;
-        let chain_b = registry.get_or_spawn(&conn.b_chain)?;
+            let chain_a = registry.get_or_spawn(&conn.a_chain)?;
+            let chain_b = registry.get_or_spawn(&conn.b_chain)?;
 
-        std::thread::spawn(|| {
-            let supervisor = Supervisor::spawn(chain_a, chain_b)?;
-            supervisor.run()
-        });
+            s.spawn(|_| {
+                let supervisor = Supervisor::spawn(chain_a, chain_b).unwrap();
+                supervisor.run()
+            });
+        }
+
+        Ok(())
+    });
+
+    match result {
+        Ok(Ok(())) => Ok(Output::success("ok")),
+        Ok(Err(e)) => Err(e),
+        Err(e) => std::panic::resume_unwind(e),
     }
-
-    Ok(Output::success("ok"))
 }
