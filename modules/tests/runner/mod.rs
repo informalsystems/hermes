@@ -1,6 +1,6 @@
 pub mod step;
 
-use std::collections::HashMap;
+use std::{any::Any, collections::HashMap};
 use std::error::Error;
 use std::fmt::{Debug, Display};
 
@@ -35,18 +35,75 @@ use ibc::signer::Signer;
 use ibc::Height;
 
 use step::{Action, ActionOutcome, Chain, Step};
+use modelator::Converter;
 
-#[derive(Debug, Clone)]
+
+
+
+
+
+#[derive(Debug)]
 pub struct IBCTestRunner {
     // mapping from chain identifier to its context
     contexts: HashMap<ChainId, MockContext>,
+    converter: Converter,
 }
 
 impl IBCTestRunner {
     pub fn new() -> Self {
         Self {
             contexts: Default::default(),
+            converter: Self::make_converter()
         }
+    }
+
+    pub fn make_converter() -> Converter {
+        let mut c = Converter::new();
+        c.add(|c, chain_id: String| ChainId::new(chain_id, c.default_as("revision")));
+        c.def_as("revision",|_| 0);
+        c.def(|_| Version::default());
+        c.def::<Vec<Version>>(|c| vec![c.default()]);
+        c.add(|_, client_id: u64| 
+            ClientId::new(ClientType::Mock, client_id)
+                .expect("it should be possible to create the client identifier")
+        );
+        c.add(|_, connection_id: u64| ConnectionId::new(connection_id));
+    
+        c.add(|_, height: u64| Height::new(0, height));
+        c.add(|c, height: u64| MockHeader::new(c.convert(height)));
+        c.add(|c, height: u64| AnyHeader::Mock(c.convert(height)));
+        c.add(|c, height: u64| AnyClientState::Mock(MockClientState(c.convert(height))));
+        c.add(|c, height: u64| AnyConsensusState::Mock(MockConsensusState(c.convert(height))));
+        c.def(|_| Signer::new(""));
+        c.add(|c, (client_id, connection_id): (u64, Option<u64>)| { 
+            Counterparty::new(
+                c.convert(client_id), 
+                connection_id.map(|id| c.convert(id)), 
+                c.default())
+        });
+        c.def_as("delay_period", |_| 0);
+        c.def::<CommitmentPrefix>(|_| vec![0].into());
+        c.def::<CommitmentProofBytes>(|_| vec![0].into());
+        c.add(|c, height: u64|
+            ConsensusProof::new(c.default(),c.convert(height))
+               .expect("it should be possible to create the consensus proof")
+        );
+        c.add(|c, height: u64|
+            Proofs::new(
+                        c.default(),
+                        None,
+                        Some(c.convert(height)),
+                        None,
+                        c.convert(height),
+                    )
+                    .expect("it should be possible to create the proofs")
+        );
+        c
+    }
+
+
+    pub fn convert<From: Sized + Any, To: Sized + Any>(&self, from: From) -> To {
+        self.converter.convert(from)
     }
 
     /// Create a `MockContext` for a given `chain_id`.
@@ -491,4 +548,66 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
         // also check the state of chains
         outcome_matches && self.validate_chains() && self.check_chain_states(step.chains)
     }
+}
+
+
+
+
+trait Component: Debug + Sized + Any {
+    type Storage: Storage<Self>;
+}
+
+trait Storage<T: Debug>: Debug + Any {
+    fn new() -> Self
+    where
+        Self: Sized;
+
+    fn insert(&mut self, value: T);
+}
+
+
+#[derive(Debug)]
+struct VecStorage<T: Debug + 'static> {
+    internal: Vec<T>,
+}
+impl<T: Debug> Storage<T> for VecStorage<T> {
+    fn new() -> Self {
+        Self {
+            internal: Vec::new(),
+        }
+    }
+
+    fn insert(&mut self, value: T) {
+        self.internal.push(value);
+    }
+}
+
+
+#[derive(Debug)]
+struct Concrete {
+    name: String,
+    id: u64
+}
+
+struct Abstract {
+    id: u32
+}
+
+
+#[test]
+fn test() {
+    let mut c = Converter::new();
+
+    //mgr.get_storage_mut::<Pos>().insert(Pos(1.2, 3.4));
+    c.add(|_, x: u64| x +1);
+    c.add(|c, x: Abstract| {
+        Concrete { name: "x".to_string(), id: c.convert(x.id as u64) }
+    });
+
+    //mgr.add(&|(x, y): (u64, u64)| Concrete { name: "x".to_string(), id: x.id as u64 });
+
+
+    println!("{:?}", c.convert::<u64, u64>(2));
+
+    println!("{:?}", c.convert::<Abstract, Concrete>(Abstract {id: 1}));
 }
