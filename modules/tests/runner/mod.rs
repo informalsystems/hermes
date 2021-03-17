@@ -379,11 +379,12 @@ impl IBCTestRunner {
                 ctx.deliver(msg)
             }
             Action::ConnectionAction(ConnectionAction::None) => panic!("unexpected action type"),
-            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenInit {
+            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenInit(
+                step::ICS03ConnectionOpenInit {
                 client_id,
                 counterparty_chain_id: _,
                 counterparty_client_id,
-            }) => {
+            })) => {
                 // get chain's context
                 let ctx = self.chain_context_mut(&step.chain_id);
 
@@ -399,14 +400,15 @@ impl IBCTestRunner {
                 ));
                 ctx.deliver(msg)
             }
-            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenTry {
+            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenTry(
+                step::ICS03ConnectionOpenTry {
                 previous_connection_id,
                 client_id,
                 client_state,
                 counterparty_chain_id: _,
                 counterparty_client_id,
                 counterparty_connection_id,
-            }) => {
+            })) => {
                 // get chain's context
                 let ctx = self.chain_context_mut(&step.chain_id);
 
@@ -429,12 +431,14 @@ impl IBCTestRunner {
                 )));
                 ctx.deliver(msg)
             }
-            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenAck {
-                connection_id,
-                client_state,
-                counterparty_chain_id: _,
-                counterparty_connection_id,
-            }) => {
+            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenAck(
+                step::ICS03ConnectionOpenAck
+                {
+                    connection_id,
+                    client_state,
+                    counterparty_chain_id: _,
+                    counterparty_connection_id,
+                })) => {
                 // get chain's context
                 let ctx = self.chain_context_mut(&step.chain_id);
 
@@ -452,12 +456,13 @@ impl IBCTestRunner {
                 )));
                 ctx.deliver(msg)
             }
-            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenConfirm {
+            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenConfirm(
+                step::ICS03ConnectionOpenConfirm {
                 connection_id,
                 client_state,
                 counterparty_chain_id: _,
                 counterparty_connection_id: _,
-            }) => {
+            })) => {
                 // get chain's context
                 let ctx = self.chain_context_mut(&step.chain_id);
 
