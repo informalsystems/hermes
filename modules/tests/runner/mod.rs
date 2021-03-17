@@ -98,8 +98,23 @@ impl IBCTestRunner {
                     )
                     .expect("it should be possible to create the proofs")
         );
+        c.add(|c, action: ICS02CreateClient|
+            Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
+                client_state: c.convert(action.client_state),
+                consensus_state: c.convert(action.consensus_state),
+                signer: c.default(),
+            }))
+        );
+        c.add(|c, action: ICS02UpdateClient|
+            Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                client_id: c.convert(action.client_id),
+                header: c.convert(action.header),
+                signer: c.default(),
+            }))
+        );
         c
     }
+
 
     pub fn convert<From: Sized + Any, To: Sized + Any>(&self, from: From) -> To {
         self.converter.convert(from)
@@ -186,22 +201,6 @@ impl IBCTestRunner {
 
     pub fn height(height: u64) -> Height {
         Height::new(Self::revision(), height)
-    }
-
-    fn mock_header(height: u64) -> MockHeader {
-        MockHeader::new(Self::height(height))
-    }
-
-    pub fn header(height: u64) -> AnyHeader {
-        AnyHeader::Mock(Self::mock_header(height))
-    }
-
-    pub fn client_state(height: u64) -> AnyClientState {
-        AnyClientState::Mock(MockClientState(Self::mock_header(height)))
-    }
-
-    pub fn consensus_state(height: u64) -> AnyConsensusState {
-        AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)))
     }
 
     fn signer() -> Signer {
@@ -346,36 +345,14 @@ impl IBCTestRunner {
     pub fn apply(&mut self, step: &Step) -> Result<(), ICS18Error> {
         match &step.action {
             Action::ClientAction(ClientAction::None) => panic!("unexpected action type"),
-            &Action::ClientAction(ClientAction::ICS02CreateClient (
-                ICS02CreateClient {
-                client_state,
-                consensus_state,
-            })) => {
-                // get chain's context
+            Action::ClientAction(ClientAction::ICS02CreateClient (a)) => {
+                let msg = self.convert(a.clone());
                 let ctx = self.chain_context_mut(&step.chain_id);
-
-                // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
-                    client_state: Self::client_state(client_state),
-                    consensus_state: Self::consensus_state(consensus_state),
-                    signer: Self::signer(),
-                }));
                 ctx.deliver(msg)
             }
-            &Action::ClientAction(ClientAction::ICS02UpdateClient (
-                ICS02UpdateClient {
-                client_id,
-                header,
-            })) => {
-                // get chain's context
+            Action::ClientAction(ClientAction::ICS02UpdateClient (a)) => {
+                let msg = self.convert(a.clone());
                 let ctx = self.chain_context_mut(&step.chain_id);
-
-                // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
-                    client_id: Self::client_id(client_id),
-                    header: Self::header(header),
-                    signer: Self::signer(),
-                }));
                 ctx.deliver(msg)
             }
             Action::ConnectionAction(ConnectionAction::None) => panic!("unexpected action type"),
