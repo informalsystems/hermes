@@ -29,7 +29,7 @@ pub fn relay_on_new_link(
 }
 
 /// Relays packets over a specified channel
-/// Used by the `hermes start ibc-0 ibc-1 transfer channel-0`
+/// Used by the `hermes start ibc-0 ibc-1 --src-port-id transfer --src-channel-id channel-0`
 pub fn channel_relay(
     a_chain: Box<dyn ChainHandle>,
     b_chain: Box<dyn ChainHandle>,
