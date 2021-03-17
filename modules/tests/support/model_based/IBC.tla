@@ -20,7 +20,9 @@ VARIABLE chains
 VARIABLE action
 \* string with the outcome of the last operation
 VARIABLE actionOutcome
-vars == <<chains, action, actionOutcome>>
+\* chain where the last action performed
+VARIABLE actionChainId
+vars == <<chains, action, actionChainId, actionOutcome>>
 
 \* set of possible chain heights
 Heights == 1..MaxChainHeight
@@ -43,7 +45,6 @@ NoneActions == [
 
 CreateClientActions == [
     type: {"ICS02CreateClient"},
-    chainId: ChainIds,
     \* `clientState` contains simply a height
     clientState: Heights,
     \* `consensusState` contains simply a height
@@ -51,7 +52,6 @@ CreateClientActions == [
 ] <: {ActionType}
 UpdateClientActions == [
     type: {"ICS02UpdateClient"},
-    chainId: ChainIds,
     clientId: ClientIds,
     \* `header` contains simply a height
     header: Heights
@@ -62,14 +62,12 @@ ClientActions ==
 
 ConnectionOpenInitActions == [
     type: {"ICS03ConnectionOpenInit"},
-    chainId: ChainIds,
     clientId: ClientIds,
     counterpartyChainId: ChainIds,
     counterpartyClientId: ClientIds
 ] <: {ActionType}
 ConnectionOpenTryActions == [
     type: {"ICS03ConnectionOpenTry"},
-    chainId: ChainIds,
     clientId: ClientIds,
     \* `previousConnectionId` can be none
     previousConnectionId: ConnectionIds \union {ConnectionIdNone},
@@ -81,7 +79,6 @@ ConnectionOpenTryActions == [
 ] <: {ActionType}
 ConnectionOpenAckActions == [
     type: {"ICS03ConnectionOpenAck"},
-    chainId: ChainIds,
     connectionId: ConnectionIds,
     \* `clientState` contains simply a height
     clientState: Heights,
@@ -90,7 +87,6 @@ ConnectionOpenAckActions == [
 ] <: {ActionType}
 ConnectionOpenConfirmActions == [
     type: {"ICS03ConnectionOpenConfirm"},
-    chainId: ChainIds,
     connectionId: ConnectionIds,
     \* `clientState` contains simply a height
     clientState: Heights,
@@ -205,6 +201,7 @@ CreateClient(chainId, height) ==
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
+    /\ actionChainId' = chainId
     /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
@@ -218,6 +215,7 @@ UpdateClient(chainId, clientId, height) ==
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
+    /\ actionChainId' = chainId
     /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
@@ -250,6 +248,7 @@ ConnectionOpenInit(
     /\ chains' = [chains EXCEPT
         ![chainId] = updatedChain,
         ![counterpartyChainId] = updatedCounterpartyChain]
+    /\ actionChainId' = chainId
     /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
@@ -288,6 +287,7 @@ ConnectionOpenTry(
     /\ chains' = [chains EXCEPT
         ![chainId] = updatedChain,
         ![counterpartyChainId] = updatedCounterpartyChain]
+    /\ actionChainId' = chainId
     /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
@@ -321,6 +321,7 @@ ConnectionOpenAck(
     /\ chains' = [chains EXCEPT
         ![chainId] = updatedChain,
         ![counterpartyChainId] = updatedCounterpartyChain]
+    /\ actionChainId' = chainId
     /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
@@ -349,6 +350,7 @@ ConnectionOpenConfirm(
     \* connection open handlers)
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
+    /\ actionChainId' = chainId
     /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
@@ -489,6 +491,7 @@ Init ==
     /\ chains = [chainId \in ChainIds |-> emptyChain]
     /\ action = AsAction([type |-> "None"])
     /\ actionOutcome = "None"
+    /\ actionChainId = "None"
 
 Next ==
     \* select a chain id
@@ -510,6 +513,7 @@ Next ==
 
 TypeOK ==
     /\ chains \in Chains
+    /\ actionChainId \in ChainIds
     /\ action \in Actions
     /\ actionOutcome \in ActionOutcomes
 

@@ -17,7 +17,6 @@ ICS02_SetClient(clients, clientId, client) ==
 ICS02_CreateClient(chain, chainId, height) ==
     LET action == AsAction([
         type |-> "ICS02CreateClient",
-        chainId |-> chainId,
         clientState |-> height,
         consensusState |-> height
     ]) IN
@@ -29,6 +28,7 @@ ICS02_CreateClient(chain, chainId, height) ==
             clients |-> chain.clients,
             clientIdCounter |-> chain.clientIdCounter,
             action |-> action,
+            chainId |-> chainId,
             outcome |-> "ModelError"
         ]
     ELSE
@@ -45,13 +45,13 @@ ICS02_CreateClient(chain, chainId, height) ==
             ),
             clientIdCounter |-> chain.clientIdCounter + 1,
             action |-> action,
+            chainId |-> chainId,
             outcome |-> "ICS02CreateOK"
         ]
 
 ICS02_UpdateClient(chain, chainId, clientId, height) ==
     LET action == AsAction([
         type |-> "ICS02UpdateClient",
-        chainId |-> chainId,
         clientId |-> clientId,
         header |-> height
     ]) IN
@@ -89,6 +89,7 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
                     updatedClient
                 ),
                 action |-> action,
+                chainId |-> chainId,
                 outcome |-> "ICS02UpdateOK"
             ]
 

@@ -23,7 +23,6 @@ ICS03_ConnectionOpenInit(
 ) ==
     LET action == AsAction([
         type |-> "ICS03ConnectionOpenInit",
-        chainId |-> chainId,
         clientId |-> clientId,
         counterpartyChainId |-> counterpartyChainId,
         counterpartyClientId |-> counterpartyClientId
@@ -70,6 +69,7 @@ ICS03_ConnectionOpenInit(
                 ),
                 connectionIdCounter |-> chain.connectionIdCounter + 1,
                 action |-> action,
+                chainId |-> chainId,
                 outcome |-> "ICS03ConnectionOpenInitOK"
             ]
 
@@ -85,7 +85,6 @@ ICS03_ConnectionOpenTry(
 ) ==
     LET action == AsAction([
         type |-> "ICS03ConnectionOpenTry",
-        chainId |-> chainId,
         clientId |-> clientId,
         previousConnectionId |-> previousConnectionId,
         clientState |-> height,
@@ -228,6 +227,7 @@ ICS03_ConnectionOpenTry(
                             \* created, here we update the `connectionIdCounter`
                             connectionIdCounter |-> chain.connectionIdCounter + 1,
                             action |-> action,
+                            chainId |-> chainId,
                             outcome |-> "ICS03ConnectionOpenTryOK"
                         ]
 
@@ -241,7 +241,6 @@ ICS03_ConnectionOpenAck(
 ) ==
     LET action == AsAction([
         type |-> "ICS03ConnectionOpenAck",
-        chainId |-> chainId,
         connectionId |-> connectionId,
         clientState |-> height,
         counterpartyChainId |-> counterpartyChainId,
@@ -334,6 +333,7 @@ ICS03_ConnectionOpenAck(
                                 updatedConnection
                             ),
                             action |-> action,
+                            chainId |-> chainId,
                             outcome |-> "ICS03ConnectionOpenAckOK"
                         ]
 
@@ -347,7 +347,6 @@ ICS03_ConnectionOpenConfirm(
 ) ==
     LET action == AsAction([
         type |-> "ICS03ConnectionOpenConfirm",
-        chainId |-> chainId,
         connectionId |-> connectionId,
         clientState |-> height,
         counterpartyChainId |-> counterpartyChainId,
@@ -424,6 +423,7 @@ ICS03_ConnectionOpenConfirm(
                             updatedConnection
                         ),
                         action |-> action,
+                        chainId |-> chainId,
                         outcome |-> "ICS03ConnectionOpenConfirmOK"
                     ]
 

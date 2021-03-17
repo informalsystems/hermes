@@ -34,7 +34,7 @@ use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
 use ibc::Height;
 
-use step::{Action, ActionOutcome, Chain, Step};
+use step::{Action, ActionOutcome, Chain, ClientAction, ConnectionAction, ICS02CreateClient, ICS02UpdateClient, Step};
 use modelator::Converter;
 
 
@@ -130,9 +130,9 @@ impl IBCTestRunner {
 
     /// Returns a mutable reference to the `MockContext` of a given `chain_id`.
     /// Panic if the context for `chain_id` is not found.
-    pub fn chain_context_mut(&mut self, chain_id: String) -> &mut MockContext {
+    pub fn chain_context_mut(&mut self, chain_id: &str) -> &mut MockContext {
         self.contexts
-            .get_mut(&self.convert(chain_id))
+            .get_mut(&self.convert(chain_id.to_string()))
             .expect("chain context should have been initialized")
     }
 
@@ -343,16 +343,16 @@ impl IBCTestRunner {
         })
     }
 
-    pub fn apply(&mut self, action: Action) -> Result<(), ICS18Error> {
-        match action {
-            Action::None => panic!("unexpected action type"),
-            Action::ICS02CreateClient {
-                chain_id,
+    pub fn apply(&mut self, step: &Step) -> Result<(), ICS18Error> {
+        match &step.action {
+            Action::ClientAction(ClientAction::None) => panic!("unexpected action type"),
+            &Action::ClientAction(ClientAction::ICS02CreateClient (
+                ICS02CreateClient {
                 client_state,
                 consensus_state,
-            } => {
+            })) => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id);
+                let ctx = self.chain_context_mut(&step.chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
@@ -362,13 +362,13 @@ impl IBCTestRunner {
                 }));
                 ctx.deliver(msg)
             }
-            Action::ICS02UpdateClient {
-                chain_id,
+            &Action::ClientAction(ClientAction::ICS02UpdateClient (
+                ICS02UpdateClient {
                 client_id,
                 header,
-            } => {
+            })) => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id);
+                let ctx = self.chain_context_mut(&step.chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
@@ -378,14 +378,14 @@ impl IBCTestRunner {
                 }));
                 ctx.deliver(msg)
             }
-            Action::ICS03ConnectionOpenInit {
-                chain_id,
+            Action::ConnectionAction(ConnectionAction::None) => panic!("unexpected action type"),
+            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenInit {
                 client_id,
                 counterparty_chain_id: _,
                 counterparty_client_id,
-            } => {
+            }) => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id);
+                let ctx = self.chain_context_mut(&step.chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenInit(
@@ -399,17 +399,16 @@ impl IBCTestRunner {
                 ));
                 ctx.deliver(msg)
             }
-            Action::ICS03ConnectionOpenTry {
-                chain_id,
+            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenTry {
                 previous_connection_id,
                 client_id,
                 client_state,
                 counterparty_chain_id: _,
                 counterparty_client_id,
                 counterparty_connection_id,
-            } => {
+            }) => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id);
+                let ctx = self.chain_context_mut(&step.chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
@@ -430,15 +429,14 @@ impl IBCTestRunner {
                 )));
                 ctx.deliver(msg)
             }
-            Action::ICS03ConnectionOpenAck {
-                chain_id,
+            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenAck {
                 connection_id,
                 client_state,
                 counterparty_chain_id: _,
                 counterparty_connection_id,
-            } => {
+            }) => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id);
+                let ctx = self.chain_context_mut(&step.chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
@@ -454,15 +452,14 @@ impl IBCTestRunner {
                 )));
                 ctx.deliver(msg)
             }
-            Action::ICS03ConnectionOpenConfirm {
-                chain_id,
+            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenConfirm {
                 connection_id,
                 client_state,
                 counterparty_chain_id: _,
                 counterparty_connection_id: _,
-            } => {
+            }) => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id);
+                let ctx = self.chain_context_mut(&step.chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(
@@ -480,7 +477,7 @@ impl IBCTestRunner {
 
 impl modelator::runner::TestRunner<Step> for IBCTestRunner {
     fn initial_step(&mut self, step: Step) -> bool {
-        assert_eq!(step.action, Action::None, "unexpected action type");
+        assert_eq!(step.action, Action::ClientAction(ClientAction::None), "unexpected action type");
         assert_eq!(
             step.action_outcome,
             ActionOutcome::None,
@@ -495,7 +492,7 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> bool {
-        let result = self.apply(step.action);
+        let result = self.apply(&step);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::ICS02CreateOK => result.is_ok(),

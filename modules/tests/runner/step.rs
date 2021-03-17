@@ -5,6 +5,9 @@ use std::fmt::Debug;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Step {
+    #[serde(alias = "actionChainId")]
+    pub chain_id: String,
+
     pub action: Action,
 
     #[serde(alias = "actionOutcome")]
@@ -13,33 +16,46 @@ pub struct Step {
     pub chains: HashMap<String, Chain>,
 }
 
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(untagged)]
+pub enum Action {
+    ClientAction(ClientAction),
+    ConnectionAction(ConnectionAction),
+}
+
+
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "type")]
-pub enum Action {
+pub enum ClientAction {
     None,
-    ICS02CreateClient {
-        #[serde(alias = "chainId")]
-        chain_id: String,
+    ICS02CreateClient(ICS02CreateClient),
+    ICS02UpdateClient(ICS02UpdateClient)
+}
 
-        #[serde(alias = "clientState")]
-        client_state: u64,
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ICS02CreateClient {
+    #[serde(alias = "clientState")]
+    pub client_state: u64,
 
-        #[serde(alias = "consensusState")]
-        consensus_state: u64,
-    },
-    ICS02UpdateClient {
-        #[serde(alias = "chainId")]
-        chain_id: String,
+    #[serde(alias = "consensusState")]
+    pub consensus_state: u64,
+}
 
-        #[serde(alias = "clientId")]
-        client_id: u64,
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ICS02UpdateClient {
+    #[serde(alias = "clientId")]
+    pub client_id: u64,
 
-        header: u64,
-    },
+    pub header: u64,
+}
+
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(tag = "type")]
+pub enum ConnectionAction {
+    None,
     ICS03ConnectionOpenInit {
-        #[serde(alias = "chainId")]
-        chain_id: String,
-
         #[serde(alias = "clientId")]
         client_id: u64,
 
@@ -50,9 +66,6 @@ pub enum Action {
         counterparty_client_id: u64,
     },
     ICS03ConnectionOpenTry {
-        #[serde(alias = "chainId")]
-        chain_id: String,
-
         #[serde(alias = "previousConnectionId")]
         #[serde(default, deserialize_with = "deserialize_id")]
         previous_connection_id: Option<u64>,
@@ -73,9 +86,6 @@ pub enum Action {
         counterparty_connection_id: u64,
     },
     ICS03ConnectionOpenAck {
-        #[serde(alias = "chainId")]
-        chain_id: String,
-
         #[serde(alias = "connectionId")]
         connection_id: u64,
 
@@ -89,9 +99,6 @@ pub enum Action {
         counterparty_connection_id: u64,
     },
     ICS03ConnectionOpenConfirm {
-        #[serde(alias = "chainId")]
-        chain_id: String,
-
         #[serde(alias = "connectionId")]
         connection_id: u64,
 
@@ -105,6 +112,9 @@ pub enum Action {
         counterparty_connection_id: u64,
     },
 }
+
+
+
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionOutcome {
