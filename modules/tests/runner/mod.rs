@@ -60,7 +60,7 @@ impl IBCTestRunner {
     pub fn make_converter() -> Converter {
         let mut c = Converter::new();
         c.add(|c, chain_id: String| ChainId::new(chain_id, c.default_as("revision")));
-        c.def_as("revision",|_| 0);
+        c.def_as("revision",|_| 0u64);
         c.def(|_| Version::default());
         c.def::<Vec<Version>>(|c| vec![c.default()]);
         c.add(|_, client_id: u64| 
@@ -101,7 +101,6 @@ impl IBCTestRunner {
         c
     }
 
-
     pub fn convert<From: Sized + Any, To: Sized + Any>(&self, from: From) -> To {
         self.converter.convert(from)
     }
@@ -125,7 +124,7 @@ impl IBCTestRunner {
     /// Panic if the context for `chain_id` is not found.
     pub fn chain_context(&self, chain_id: String) -> &MockContext {
         self.contexts
-            .get(self.convert(chain_id))
+            .get(&self.convert(chain_id))
             .expect("chain context should have been initialized")
     }
 
@@ -133,7 +132,7 @@ impl IBCTestRunner {
     /// Panic if the context for `chain_id` is not found.
     pub fn chain_context_mut(&mut self, chain_id: String) -> &mut MockContext {
         self.contexts
-            .get_mut(self.convert(chain_id))
+            .get_mut(&self.convert(chain_id))
             .expect("chain context should have been initialized")
     }
 
@@ -488,6 +487,7 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
             "unexpected action outcome"
         );
         // initiliaze all chains
+        self.contexts.clear();
         for (chain_id, chain) in step.chains {
             self.init_chain_context(chain_id, chain.height);
         }
