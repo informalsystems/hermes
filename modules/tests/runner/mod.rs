@@ -109,7 +109,7 @@ impl IBCTestRunner {
     /// Create a `MockContext` for a given `chain_id`.
     /// Panic if a context for `chain_id` already exists.
     pub fn init_chain_context(&mut self, chain_id: String, initial_height: u64) {
-        let chain_id = Self::chain_id(chain_id);
+        let chain_id: ChainId = self.convert(chain_id);
         // never GC blocks
         let max_history_size = usize::MAX;
         let ctx = MockContext::new(
@@ -125,7 +125,7 @@ impl IBCTestRunner {
     /// Panic if the context for `chain_id` is not found.
     pub fn chain_context(&self, chain_id: String) -> &MockContext {
         self.contexts
-            .get(&Self::chain_id(chain_id))
+            .get(self.convert(chain_id))
             .expect("chain context should have been initialized")
     }
 
@@ -133,7 +133,7 @@ impl IBCTestRunner {
     /// Panic if the context for `chain_id` is not found.
     pub fn chain_context_mut(&mut self, chain_id: String) -> &mut MockContext {
         self.contexts
-            .get_mut(&Self::chain_id(chain_id))
+            .get_mut(self.convert(chain_id))
             .expect("chain context should have been initialized")
     }
 
@@ -162,10 +162,6 @@ impl IBCTestRunner {
             .expect("ICS26 source should be an handler error")
             .kind()
             .clone()
-    }
-
-    pub fn chain_id(chain_id: String) -> ChainId {
-        ChainId::new(chain_id, Self::revision())
     }
 
     pub fn revision() -> u64 {
@@ -550,64 +546,3 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
     }
 }
 
-
-
-
-trait Component: Debug + Sized + Any {
-    type Storage: Storage<Self>;
-}
-
-trait Storage<T: Debug>: Debug + Any {
-    fn new() -> Self
-    where
-        Self: Sized;
-
-    fn insert(&mut self, value: T);
-}
-
-
-#[derive(Debug)]
-struct VecStorage<T: Debug + 'static> {
-    internal: Vec<T>,
-}
-impl<T: Debug> Storage<T> for VecStorage<T> {
-    fn new() -> Self {
-        Self {
-            internal: Vec::new(),
-        }
-    }
-
-    fn insert(&mut self, value: T) {
-        self.internal.push(value);
-    }
-}
-
-
-#[derive(Debug)]
-struct Concrete {
-    name: String,
-    id: u64
-}
-
-struct Abstract {
-    id: u32
-}
-
-
-#[test]
-fn test() {
-    let mut c = Converter::new();
-
-    //mgr.get_storage_mut::<Pos>().insert(Pos(1.2, 3.4));
-    c.add(|_, x: u64| x +1);
-    c.add(|c, x: Abstract| {
-        Concrete { name: "x".to_string(), id: c.convert(x.id as u64) }
-    });
-
-    //mgr.add(&|(x, y): (u64, u64)| Concrete { name: "x".to_string(), id: x.id as u64 });
-
-
-    println!("{:?}", c.convert::<u64, u64>(2));
-
-    println!("{:?}", c.convert::<Abstract, Concrete>(Abstract {id: 1}));
-}
