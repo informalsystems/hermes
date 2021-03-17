@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
 usage() {
-  echo "Usage: $0 [CONFIG_FILE] [CHAIN_0_ID] [CHAIN_1_ID]"
-  echo "Example: $0 ./config.toml ibc-0 ibc-1"
+  echo "Usage: $0 [CONFIG_FILE] [CHAIN_0_ID] [CHAIN_1_ID] [CHAIN_2_ID]"
+  echo "Example: $0 ./config.toml ibc-0 ibc-1 ibc-2"
   exit 1
 }
 
@@ -23,7 +23,11 @@ if [ -z "$3" ]; then
   missing "CHAIN_1_ID"
 fi
 
-if [ "$#" -gt 3 ]; then
+if [ -z "$4" ]; then
+  missing "CHAIN_2_ID"
+fi
+
+if [ "$#" -gt 4 ]; then
   echo "Incorrect number of parameters."
   usage
 fi
@@ -31,9 +35,10 @@ fi
 CONFIG_FILE="$1"
 CHAIN_0_ID="$2"
 CHAIN_1_ID="$3"
+CHAIN_2_ID="$4"
 
 SETUP_CHAINS="$(dirname "$0")/setup-chains"
 INIT_CLIENTS="$(dirname "$0")/init-clients"
 
-"$SETUP_CHAINS" "$CHAIN_0_ID" "$CHAIN_1_ID"
-"$INIT_CLIENTS" "$CONFIG_FILE" "$CHAIN_0_ID" "$CHAIN_1_ID"
+"$SETUP_CHAINS" "$CHAIN_0_ID" "$CHAIN_1_ID" "$CHAIN_2_ID"
+"$INIT_CLIENTS" "$CONFIG_FILE" "$CHAIN_0_ID" "$CHAIN_1_ID" "$CHAIN_2_ID"
