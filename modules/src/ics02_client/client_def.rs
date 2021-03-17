@@ -108,6 +108,30 @@ pub trait ClientDef: Clone {
         seq: &Sequence,
         ack: Vec<u8>,
     ) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// Verify a `proof` that of the next_seq_received.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_next_sequence_recv(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>>;
+
+   /// Verify a `proof` that a packet has not been received.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_receipt_absence(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
