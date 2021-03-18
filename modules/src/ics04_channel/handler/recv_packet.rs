@@ -6,7 +6,7 @@ use crate::ics04_channel::channel::{Counterparty, Order, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::ReceivePacket;
-use crate::ics04_channel::handler::verify::verify_packet_proofs;
+use crate::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::ics24_host::identifier::{ChannelId, PortId};
@@ -70,19 +70,19 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     let client_id = connection_end.client_id().clone();
 
-    // check if packet height is newer than the height of the local host chain
+    // Check if packet height is newer than the height of the local host chain
     let latest_height = ctx.host_height();
-    if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
+    if (!packet.timeout_height.is_zero()) && (packet.timeout_height <= latest_height) {
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
-    //check if packet timestamp is newer than the local host timestamp chain
+    // Check if packet timestamp is newer than the local host chain timestamp
     let latest_timestamp = ctx.host_timestamp();
-    if packet.timeout_timestamp != 0 && packet.timeout_timestamp <= latest_timestamp {
+    if (packet.timeout_timestamp != 0) && (packet.timeout_timestamp <= latest_timestamp) {
         return Err(Kind::LowPacketTimestamp.into());
     }
 
-    verify_packet_proofs(ctx, &packet, client_id, &msg.proofs)?;
+    verify_packet_recv_proofs(ctx, &packet, client_id, &msg.proofs)?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
@@ -161,13 +161,13 @@ mod tests {
 
         let context = MockContext::default();
 
-        let height = Height::default().revision_height + 2;
-
         let host_height = Height::new(0, Height::default().revision_height + 1);
 
         let client_height = Height::new(0, Height::default().revision_height + 2);
 
-        let msg = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(height)).unwrap();
+        let msg =
+            MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(client_height.revision_height))
+                .unwrap();
 
         let packet = msg.packet.clone();
 
@@ -245,7 +245,7 @@ mod tests {
                     )
                     .with_height(host_height)
                     .with_timestamp(1)
-                    //with_recv_sequnce required for ordered channels
+                    // This `with_recv_sequence` is required for ordered channels
                     .with_recv_sequence(
                         packet.destination_port.clone(),
                         packet.destination_channel,

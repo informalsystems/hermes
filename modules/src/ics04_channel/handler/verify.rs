@@ -8,8 +8,8 @@ use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::ClientId;
 use crate::proofs::Proofs;
 
-/// Entry point for verifying all proofs bundled in any ICS4 message.
-pub fn verify_proofs(
+/// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
+pub fn verify_channel_proofs(
     ctx: &dyn ChannelReader,
     channel_end: &ChannelEnd,
     connection_end: &ConnectionEnd,
@@ -53,7 +53,7 @@ pub fn verify_proofs(
 }
 
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
-pub fn verify_packet_proofs(
+pub fn verify_packet_recv_proofs(
     ctx: &dyn ChannelReader,
     packet: &Packet,
     client_id: ClientId,
@@ -97,7 +97,7 @@ pub fn verify_packet_proofs(
         .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
 }
 
-/// Entry point for verifying all proofs bundled in any ICS4 message.
+/// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
 pub fn verify_packet_acknowledgement_proofs(
     ctx: &dyn ChannelReader,
     packet: &Packet,

@@ -102,7 +102,7 @@ pub struct MockContext {
     /// Constant-size commitments to packets data fields
     packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
 
-    //Used by unordered channel
+    // Used by unordered channel
     packet_receipt: HashMap<(PortId, ChannelId, Sequence), Receipt>,
 }
 
@@ -250,7 +250,7 @@ impl MockContext {
         self
     }
 
-    /// Associates a channel (in an arbtirary state) to this context.
+    /// Associates a channel (in an arbitrary state) to this context.
     pub fn with_channel(
         self,
         port_id: PortId,

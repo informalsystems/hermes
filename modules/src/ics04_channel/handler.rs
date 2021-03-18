@@ -43,7 +43,10 @@ pub struct ChannelResult {
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
 /// channel close handshake protocols.
-pub fn dispatch<Ctx>(ctx: &Ctx, msg: ChannelMsg) -> Result<HandlerOutput<ChannelResult>, Error>
+pub fn channel_dispatch<Ctx>(
+    ctx: &Ctx,
+    msg: ChannelMsg,
+) -> Result<HandlerOutput<ChannelResult>, Error>
 where
     Ctx: ChannelReader,
 {
@@ -57,6 +60,7 @@ where
     }
 }
 
+/// Dispatcher for processing any type of message related to the ICS4 packet protocols.
 pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: PacketMsg) -> Result<HandlerOutput<PacketResult>, Error>
 where
     Ctx: ChannelReader,

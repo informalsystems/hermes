@@ -1,15 +1,13 @@
+use crate::ics04_channel::channel::State;
+use crate::ics04_channel::events::WriteAcknowledgement;
+use crate::ics04_channel::packet::{Packet, PacketResult, Sequence};
+use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
+use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::{
     events::IbcEvent,
-    ics04_channel::{events::WriteAcknowledgement, packet::Packet},
-};
-use crate::{
     handler::{HandlerOutput, HandlerResult},
-    ics24_host::identifier::{ChannelId, PortId},
 };
 
-use crate::ics04_channel::channel::State;
-use crate::ics04_channel::packet::{PacketResult, Sequence};
-use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
 #[derive(Clone, Debug)]
 pub struct WriteAckPacketResult {
     pub port_id: PortId,
@@ -80,9 +78,9 @@ pub fn process(
 
     Ok(output.with_result(result))
 }
+
 #[cfg(test)]
 mod tests {
-
     use std::convert::TryInto;
 
     use crate::ics02_client::height::Height;
@@ -109,7 +107,7 @@ mod tests {
 
         let context = MockContext::default();
 
-        let h = Height::new(0, Height::default().revision_height + 1);
+        let client_height = Height::new(0, 1);
 
         let mut packet: Packet = get_dummy_raw_packet(1, 6).try_into().unwrap();
         packet.sequence = 1.into();
@@ -165,7 +163,7 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&ClientId::default(), h)
+                    .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
@@ -200,7 +198,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "recv_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "write_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.packet.clone(),
                         test.ctx.clone()
@@ -214,7 +212,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "send_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
+                        "write_ack: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.packet.clone(),
                         test.ctx.clone(),
