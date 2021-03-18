@@ -63,7 +63,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             sender: raw_msg.sender.into(),
             receiver: raw_msg.receiver.into(),
             timeout_height: raw_msg.timeout_height.unwrap().try_into().unwrap(),
-            timeout_timestamp: 0,
+            timeout_timestamp: raw_msg.timeout_timestamp,
         })
     }
 }
@@ -77,7 +77,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
             timeout_height: Some(domain_msg.timeout_height.try_into().unwrap()),
-            timeout_timestamp: 0,
+            timeout_timestamp: domain_msg.timeout_timestamp,
         }
     }
 }
