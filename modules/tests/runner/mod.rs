@@ -34,12 +34,8 @@ use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
 use ibc::Height;
 
-use step::{Action, ActionOutcome, Chain, ClientAction, ConnectionAction, ICS02CreateClient, ICS02UpdateClient, ICS03ConnectionOpenInit, ICS03ConnectionOpenTry, Step};
+use step::{Action, ActionOutcome, Chain, ClientAction, ConnectionAction, ICS02CreateClient, ICS02UpdateClient, ICS03ConnectionOpenAck, ICS03ConnectionOpenConfirm, ICS03ConnectionOpenInit, ICS03ConnectionOpenTry, Step};
 use modelator::Converter;
-
-
-
-
 
 
 #[derive(Debug)]
@@ -145,9 +141,39 @@ impl IBCTestRunner {
                 }
             )))
         );
+        c.add(|c, action: ICS03ConnectionOpenAck|
+            Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
+                MsgConnectionOpenAck {
+                    connection_id: c.convert(action.connection_id),
+                    counterparty_connection_id: c.convert(action.counterparty_connection_id),
+                    // TODO: is this ever needed?
+                    client_state: None,
+                    proofs: c.convert(action.client_state),
+                    version: c.default(),
+                    signer: c.default(),
+                }
+            )))
+        );
+        c.add(|c, action: ICS03ConnectionOpenConfirm|
+            Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(
+            MsgConnectionOpenConfirm {
+                connection_id: c.convert(action.connection_id),
+                proofs: c.convert(action.client_state),
+                signer: c.default(),
+            },
+        ))
+        );
+        c.add(|c, action: ConnectionAction|
+            Ics26Envelope::Ics3Msg( match action {
+                ConnectionAction::None => panic!("unexpected action type"),
+                ConnectionAction::ICS03ConnectionOpenInit(a) => c.convert(a),
+                ConnectionAction::ICS03ConnectionOpenTry(a) => c.convert(a),
+                ConnectionAction::ICS03ConnectionOpenAck(a) => c.convert(a),
+                ConnectionAction::ICS03ConnectionOpenConfirm(a) => c.convert(a)
+            })
+        );
         c
     }
-
 
     pub fn convert<From: Sized + Any, To: Sized + Any>(&self, from: From) -> To {
         self.converter.convert(from)
@@ -215,10 +241,6 @@ impl IBCTestRunner {
         0
     }
 
-    pub fn version() -> Version {
-        Version::default()
-    }
-
     pub fn client_id(client_id: u64) -> ClientId {
         ClientId::new(ClientType::Mock, client_id)
             .expect("it should be possible to create the client identifier")
@@ -230,37 +252,6 @@ impl IBCTestRunner {
 
     pub fn height(height: u64) -> Height {
         Height::new(Self::revision(), height)
-    }
-
-    fn signer() -> Signer {
-        Signer::new("")
-    }
-
-    pub fn commitment_proof_bytes() -> CommitmentProofBytes {
-        vec![0].into()
-    }
-
-    pub fn consensus_proof(height: u64) -> ConsensusProof {
-        let consensus_proof = Self::commitment_proof_bytes();
-        let consensus_height = Self::height(height);
-        ConsensusProof::new(consensus_proof, consensus_height)
-            .expect("it should be possible to create the consensus proof")
-    }
-
-    pub fn proofs(height: u64) -> Proofs {
-        let object_proof = Self::commitment_proof_bytes();
-        let client_proof = None;
-        let consensus_proof = Some(Self::consensus_proof(height));
-        let other_proof = None;
-        let height = Self::height(height);
-        Proofs::new(
-            object_proof,
-            client_proof,
-            consensus_proof,
-            other_proof,
-            height,
-        )
-        .expect("it should be possible to create the proofs")
     }
 
     /// Check that chain heights match the ones in the model.
@@ -355,72 +346,6 @@ impl IBCTestRunner {
             heights_match && clients_match && connections_match
         })
     }
-
-    pub fn apply(&mut self, step: &Step) -> Result<(), ICS18Error> {
-        match &step.action {
-            Action::ClientAction(action) => {
-                let msg = self.convert(action.clone());
-                let ctx = self.chain_context_mut(&step.chain_id);
-                ctx.deliver(msg)
-            }
-            Action::ConnectionAction(ConnectionAction::None) => panic!("unexpected action type"),
-            Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenInit(action)) => {
-                let msg = self.convert(action.clone());
-                let ctx = self.chain_context_mut(&step.chain_id);
-                ctx.deliver(msg)
-            }
-            Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenTry(action)) => {
-                let msg = self.convert(action.clone());
-                let ctx = self.chain_context_mut(&step.chain_id);
-                ctx.deliver(msg)
-            },
-            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenAck(
-                step::ICS03ConnectionOpenAck
-                {
-                    connection_id,
-                    client_state,
-                    counterparty_chain_id: _,
-                    counterparty_connection_id,
-                })) => {
-                // get chain's context
-                let ctx = self.chain_context_mut(&step.chain_id);
-
-                // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
-                    MsgConnectionOpenAck {
-                        connection_id: Self::connection_id(connection_id),
-                        counterparty_connection_id: Self::connection_id(counterparty_connection_id),
-                        // TODO: is this ever needed?
-                        client_state: None,
-                        proofs: Self::proofs(client_state),
-                        version: Self::version(),
-                        signer: Self::signer(),
-                    },
-                )));
-                ctx.deliver(msg)
-            }
-            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenConfirm(
-                step::ICS03ConnectionOpenConfirm {
-                connection_id,
-                client_state,
-                counterparty_chain_id: _,
-                counterparty_connection_id: _,
-            })) => {
-                // get chain's context
-                let ctx = self.chain_context_mut(&step.chain_id);
-
-                // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(
-                    MsgConnectionOpenConfirm {
-                        connection_id: Self::connection_id(connection_id),
-                        proofs: Self::proofs(client_state),
-                        signer: Self::signer(),
-                    },
-                ));
-                ctx.deliver(msg)
-            }
-        }
-    }
 }
 
 impl modelator::runner::TestRunner<Step> for IBCTestRunner {
@@ -440,7 +365,12 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> bool {
-        let result = self.apply(&step);
+        let msg = match &step.action {
+            Action::ClientAction(action) => self.convert(action.clone()),
+            Action::ConnectionAction(action) => self.convert(action.clone()),
+        };
+        let ctx = self.chain_context_mut(&step.chain_id);
+        let result = ctx.deliver(msg);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::ICS02CreateOK => result.is_ok(),
