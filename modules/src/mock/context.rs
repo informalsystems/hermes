@@ -308,10 +308,23 @@ impl MockContext {
         Self { timestamp, ..self }
     }
 
-    pub fn with_height(self, latest_height: Height) -> Self {
-        Self {
-            latest_height,
-            ..self
+    pub fn with_height(self, target_height: Height) -> Self {
+        if target_height.revision_number > self.latest_height.revision_number {
+            unimplemented!()
+        } else if target_height.revision_number < self.latest_height.revision_number {
+            panic!("Cannot rewind history of the chain to a smaller revision number!")
+        } else if target_height.revision_height < self.latest_height.revision_height {
+            panic!("Cannot rewind history of the chain to a smaller revision height!")
+        } else if target_height.revision_height > self.latest_height.revision_height {
+            // Repeatedly advance the host chain height till we hit the desired height
+            let mut ctx = MockContext { ..self };
+            while ctx.latest_height.revision_height < target_height.revision_height {
+                ctx.advance_host_chain_height()
+            }
+            ctx
+        } else {
+            // Both the revision number and height match
+            self
         }
     }
 
@@ -484,6 +497,11 @@ impl ChannelReader for MockContext {
         self.packet_acknowledgement.get(key).cloned()
     }
 
+    fn hash(&self, input: String) -> String {
+        let r = sha2::Sha256::digest(input.as_bytes());
+        format!("{:x}", r)
+    }
+
     fn host_height(&self) -> Height {
         self.latest_height
     }
@@ -492,17 +510,53 @@ impl ChannelReader for MockContext {
         self.timestamp
     }
 
-    fn hash(&self, input: String) -> String {
-        let r = sha2::Sha256::digest(input.as_bytes());
-        format!("{:x}", r)
-    }
-
     fn channel_counter(&self) -> u64 {
         self.channel_ids_counter
     }
 }
 
 impl ChannelKeeper for MockContext {
+    fn store_packet_commitment(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        timeout_timestamp: u64,
+        timeout_height: Height,
+        data: Vec<u8>,
+    ) -> Result<(), Ics4Error> {
+        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
+        self.packet_commitment
+            .insert(key, ChannelReader::hash(self, input));
+        Ok(())
+    }
+
+    fn store_packet_receipt(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        receipt: Receipt,
+    ) -> Result<(), Ics4Error> {
+        self.packet_receipt.insert(key, receipt);
+        Ok(())
+    }
+
+    fn store_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        ack: Vec<u8>,
+    ) -> Result<(), Ics4Error> {
+        let input = format!("{:?}", ack);
+        self.packet_acknowledgement
+            .insert(key, ChannelReader::hash(self, input));
+        Ok(())
+    }
+
+    fn delete_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+    ) -> Result<(), Ics4Error> {
+        self.packet_acknowledgement.remove(&key);
+        Ok(())
+    }
+
     fn store_connection_channels(
         &mut self,
         cid: ConnectionId,
@@ -553,47 +607,6 @@ impl ChannelKeeper for MockContext {
 
     fn increase_channel_counter(&mut self) {
         self.channel_ids_counter += 1;
-    }
-
-    fn store_packet_commitment(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-        timeout_timestamp: u64,
-        timeout_height: Height,
-        data: Vec<u8>,
-    ) -> Result<(), Ics4Error> {
-        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
-        self.packet_commitment
-            .insert(key, ChannelReader::hash(self, input));
-        Ok(())
-    }
-
-    fn store_packet_acknowledgement(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-        ack: Vec<u8>,
-    ) -> Result<(), Ics4Error> {
-        let input = format!("{:?}", ack);
-        self.packet_acknowledgement
-            .insert(key, ChannelReader::hash(self, input));
-        Ok(())
-    }
-
-    fn delete_packet_acknowledgement(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-    ) -> Result<(), Ics4Error> {
-        self.packet_acknowledgement.remove(&key);
-        Ok(())
-    }
-
-    fn store_packet_receipt(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-        receipt: Receipt,
-    ) -> Result<(), Ics4Error> {
-        self.packet_receipt.insert(key, receipt);
-        Ok(())
     }
 }
 

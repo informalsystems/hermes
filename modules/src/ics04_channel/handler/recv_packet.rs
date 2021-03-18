@@ -136,7 +136,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 mod tests {
     use std::convert::TryFrom;
 
-    use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::ics03_connection::connection::State as ConnectionState;
@@ -145,6 +144,7 @@ mod tests {
     use crate::ics04_channel::handler::recv_packet::process;
     use crate::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+    use crate::ics18_relayer::context::Ics18Context;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::test_utils::get_dummy_account_id;
@@ -161,9 +161,9 @@ mod tests {
 
         let context = MockContext::default();
 
-        let host_height = Height::new(0, Height::default().revision_height + 1);
+        let host_height = context.query_latest_height().increment();
 
-        let client_height = Height::new(0, Height::default().revision_height + 2);
+        let client_height = host_height.increment();
 
         let msg =
             MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(client_height.revision_height))
@@ -279,7 +279,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "recv_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "recv_packet: test passed but was supposed to fail for test: {}, \nparams \n msg={:?}\nctx:{:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -293,7 +293,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "recv_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
+                        "recv_packet: did not pass test: {}, \nparams \nmsg={:?}\nctx={:?}\nerror={:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone(),
