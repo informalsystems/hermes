@@ -34,7 +34,7 @@ use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
 use ibc::Height;
 
-use step::{Action, ActionOutcome, Chain, ClientAction, ConnectionAction, ICS02CreateClient, ICS02UpdateClient, Step};
+use step::{Action, ActionOutcome, Chain, ClientAction, ConnectionAction, ICS02CreateClient, ICS02UpdateClient, ICS03ConnectionOpenInit, ICS03ConnectionOpenTry, Step};
 use modelator::Converter;
 
 
@@ -81,7 +81,7 @@ impl IBCTestRunner {
                 connection_id.map(|id| c.convert(id)), 
                 c.default())
         });
-        c.def_as("delay_period", |_| 0);
+        c.def_as("delay_period", |_| 0u64);
         c.def::<CommitmentPrefix>(|_| vec![0].into());
         c.def::<CommitmentProofBytes>(|_| vec![0].into());
         c.add(|c, height: u64|
@@ -99,18 +99,51 @@ impl IBCTestRunner {
                     .expect("it should be possible to create the proofs")
         );
         c.add(|c, action: ICS02CreateClient|
-            Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
+            ClientMsg::CreateClient(MsgCreateAnyClient {
                 client_state: c.convert(action.client_state),
                 consensus_state: c.convert(action.consensus_state),
                 signer: c.default(),
-            }))
+            })
         );
         c.add(|c, action: ICS02UpdateClient|
-            Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+            ClientMsg::UpdateClient(MsgUpdateAnyClient {
                 client_id: c.convert(action.client_id),
                 header: c.convert(action.header),
                 signer: c.default(),
-            }))
+            })
+        );
+        c.add(|c, action: ClientAction|
+            Ics26Envelope::Ics2Msg( match action {
+                ClientAction::None => panic!("unexpected action type"),
+                ClientAction::ICS02CreateClient(a) => c.convert(a),
+                ClientAction::ICS02UpdateClient(a) => c.convert(a)
+            })
+        );
+        c.add(|c, action: ICS03ConnectionOpenInit|
+            Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenInit(
+                MsgConnectionOpenInit {
+                    client_id: c.convert(action.client_id),
+                    counterparty: c.convert((action.counterparty_client_id, None as Option<u64>)),
+                    version: c.default(),
+                    delay_period: c.default_as("delay_period"),
+                    signer: c.default(),
+                },
+            ))
+        );
+        c.add(|c, action: ICS03ConnectionOpenTry|
+            Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                MsgConnectionOpenTry {
+                    previous_connection_id: action.previous_connection_id.map(|x| c.convert(x)),
+                    client_id: c.convert(action.client_id),
+                    // TODO: is this ever needed?
+                    client_state: None,
+                    counterparty: c.convert((action.counterparty_client_id, Some(action.counterparty_connection_id))),
+                    counterparty_versions: c.default(),
+                    proofs: c.convert(action.client_state),
+                    delay_period: c.default_as("delay_period"),
+                    signer: c.default(),
+                }
+            )))
         );
         c
     }
@@ -186,10 +219,6 @@ impl IBCTestRunner {
         Version::default()
     }
 
-    pub fn versions() -> Vec<Version> {
-        vec![Self::version()]
-    }
-
     pub fn client_id(client_id: u64) -> ClientId {
         ClientId::new(ClientType::Mock, client_id)
             .expect("it should be possible to create the client identifier")
@@ -205,21 +234,6 @@ impl IBCTestRunner {
 
     fn signer() -> Signer {
         Signer::new("")
-    }
-
-    pub fn counterparty(client_id: u64, connection_id: Option<u64>) -> Counterparty {
-        let client_id = Self::client_id(client_id);
-        let connection_id = connection_id.map(Self::connection_id);
-        let prefix = Self::commitment_prefix();
-        Counterparty::new(client_id, connection_id, prefix)
-    }
-
-    pub fn delay_period() -> u64 {
-        0
-    }
-
-    pub fn commitment_prefix() -> CommitmentPrefix {
-        vec![0].into()
     }
 
     pub fn commitment_proof_bytes() -> CommitmentProofBytes {
@@ -344,70 +358,22 @@ impl IBCTestRunner {
 
     pub fn apply(&mut self, step: &Step) -> Result<(), ICS18Error> {
         match &step.action {
-            Action::ClientAction(ClientAction::None) => panic!("unexpected action type"),
-            Action::ClientAction(ClientAction::ICS02CreateClient (a)) => {
-                let msg = self.convert(a.clone());
-                let ctx = self.chain_context_mut(&step.chain_id);
-                ctx.deliver(msg)
-            }
-            Action::ClientAction(ClientAction::ICS02UpdateClient (a)) => {
-                let msg = self.convert(a.clone());
+            Action::ClientAction(action) => {
+                let msg = self.convert(action.clone());
                 let ctx = self.chain_context_mut(&step.chain_id);
                 ctx.deliver(msg)
             }
             Action::ConnectionAction(ConnectionAction::None) => panic!("unexpected action type"),
-            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenInit(
-                step::ICS03ConnectionOpenInit {
-                client_id,
-                counterparty_chain_id: _,
-                counterparty_client_id,
-            })) => {
-                // get chain's context
+            Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenInit(action)) => {
+                let msg = self.convert(action.clone());
                 let ctx = self.chain_context_mut(&step.chain_id);
-
-                // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenInit(
-                    MsgConnectionOpenInit {
-                        client_id: Self::client_id(client_id),
-                        counterparty: Self::counterparty(counterparty_client_id, None),
-                        version: Self::version(),
-                        delay_period: Self::delay_period(),
-                        signer: Self::signer(),
-                    },
-                ));
                 ctx.deliver(msg)
             }
-            &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenTry(
-                step::ICS03ConnectionOpenTry {
-                previous_connection_id,
-                client_id,
-                client_state,
-                counterparty_chain_id: _,
-                counterparty_client_id,
-                counterparty_connection_id,
-            })) => {
-                // get chain's context
+            Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenTry(action)) => {
+                let msg = self.convert(action.clone());
                 let ctx = self.chain_context_mut(&step.chain_id);
-
-                // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
-                    MsgConnectionOpenTry {
-                        previous_connection_id: previous_connection_id.map(Self::connection_id),
-                        client_id: Self::client_id(client_id),
-                        // TODO: is this ever needed?
-                        client_state: None,
-                        counterparty: Self::counterparty(
-                            counterparty_client_id,
-                            Some(counterparty_connection_id),
-                        ),
-                        counterparty_versions: Self::versions(),
-                        proofs: Self::proofs(client_state),
-                        delay_period: Self::delay_period(),
-                        signer: Self::signer(),
-                    },
-                )));
                 ctx.deliver(msg)
-            }
+            },
             &Action::ConnectionAction(ConnectionAction::ICS03ConnectionOpenAck(
                 step::ICS03ConnectionOpenAck
                 {
