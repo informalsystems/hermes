@@ -117,14 +117,14 @@ pub trait ChannelKeeper {
             PacketResult::Recv(res) => {
                 match res.receipt {
                     None => {
-                        //Ordered cchannel
+                        // Ordered channel
                         self.store_next_sequence_recv(
                             (res.port_id.clone(), res.channel_id.clone()),
                             res.seq_number,
                         )?
                     }
                     Some(r) => {
-                        //Unorderd channel
+                        // Unordered channel
                         self.store_packet_receipt(
                             (res.port_id.clone(), res.channel_id.clone(), res.seq),
                             r,
@@ -138,7 +138,6 @@ pub trait ChannelKeeper {
                     res.ack,
                 )?;
             }
-
             PacketResult::Ack(res) => {
                 match res.seq_number {
                     Some(s) => {
