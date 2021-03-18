@@ -48,7 +48,7 @@ pub(crate) fn process(
             ctx.commitment_prefix(),          // Local commitment prefix.
         ),
         new_conn_end.versions(),
-        new_conn_end.delay_period,
+        new_conn_end.delay_period(),
     );
 
     // 2. Pass the details to the verification function.

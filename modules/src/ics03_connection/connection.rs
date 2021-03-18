@@ -20,7 +20,7 @@ pub struct ConnectionEnd {
     client_id: ClientId,
     counterparty: Counterparty,
     versions: Vec<Version>,
-    pub(crate) delay_period: u64,
+    delay_period: u64,
 }
 
 impl Default for ConnectionEnd {
