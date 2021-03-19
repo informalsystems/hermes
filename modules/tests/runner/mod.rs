@@ -177,10 +177,43 @@ impl IBCTestRunner {
                 ConnectionAction::ICS03ConnectionOpenConfirm(a) => c.convert(a),
             })
         });
+        c.add(|_, error: ICS02ErrorKind|
+            match error {
+                ICS02ErrorKind::ClientNotFound(_) => ActionOutcome::ICS02ClientNotFound,
+                ICS02ErrorKind::HeaderVerificationFailure => ActionOutcome::ICS02HeaderVerificationFailure,
+                _ => panic!("unexpected ICS02ErrorKind"),
+            }
+        );        
+        c.add(|_, error: ICS03ErrorKind|
+            match error {
+                ICS03ErrorKind::MissingClient(_) => ActionOutcome::ICS03MissingClient,
+                ICS03ErrorKind::InvalidConsensusHeight(_,_) => ActionOutcome::ICS03InvalidConsensusHeight,
+                ICS03ErrorKind::ConnectionNotFound(_) => ActionOutcome::ICS03ConnectionNotFound,
+                ICS03ErrorKind::ConnectionMismatch(_) => ActionOutcome::ICS03ConnectionMismatch,
+                ICS03ErrorKind::MissingClientConsensusState(_,_) => ActionOutcome::ICS03MissingClientConsensusState,
+                ICS03ErrorKind::InvalidProof => ActionOutcome::ICS03InvalidProof,
+                ICS03ErrorKind::UninitializedConnection(_) => ActionOutcome::ICS03UninitializedConnection,
+                _ => panic!("unexpected ICS03ErrorKind"),
+            }
+        );        
+        c.add(|c, ics18_result: Result<(), ICS18Error>|
+            if ics18_result.is_ok() {
+                ActionOutcome::OK
+            }
+            else if let Some(kind) = Self::extract_handler_error::<ICS02ErrorKind>(&ics18_result) {
+                c.convert(kind)
+            }
+            else if let Some(kind) = Self::extract_handler_error::<ICS03ErrorKind>(&ics18_result) {
+                c.convert(kind)
+            }
+            else {
+                panic!("unexpected error")
+            }
+        );        
         c
     }
 
-    pub fn convert<From: Sized + Any, To: Sized + Any>(&self, from: From) -> To {
+     pub fn convert<From: Sized + Any, To: Sized + Any>(&self, from: From) -> To {
         self.converter.convert(from)
     }
 
@@ -215,11 +248,11 @@ impl IBCTestRunner {
             .expect("chain context should have been initialized")
     }
 
-    pub fn extract_handler_error_kind<K>(ics18_result: Result<(), ICS18Error>) -> K
+    pub fn extract_handler_error<K>(ics18_result: &Result<(), ICS18Error>) -> Option<K>
     where
         K: Clone + Debug + Display + Into<anomaly::BoxError> + 'static,
     {
-        let ics18_error = ics18_result.expect_err("ICS18 error expected");
+        let ics18_error = ics18_result.as_ref().expect_err("ICS18 error expected");
         assert!(matches!(
             ics18_error.kind(),
             ICS18ErrorKind::TransactionFailed
@@ -237,10 +270,8 @@ impl IBCTestRunner {
             .source()
             .expect("expected source in ICS26 error")
             .downcast_ref::<anomaly::Error<K>>()
-            .expect("ICS26 source should be an handler error")
-            .kind()
-            .clone()
-    }
+            .map(|e| e.kind().clone())
+    } 
 
     pub fn revision() -> u64 {
         0
@@ -380,46 +411,9 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
         };
         let ctx = self.chain_context_mut(&step.chain_id);
         let result = ctx.deliver(msg);
-        let outcome_matches = match step.action_outcome {
-            ActionOutcome::None => panic!("unexpected action outcome"),
-            ActionOutcome::OK => result.is_ok(),
-            ActionOutcome::ICS02ClientNotFound => matches!(
-                Self::extract_handler_error_kind::<ICS02ErrorKind>(result),
-                ICS02ErrorKind::ClientNotFound(_)
-            ),
-            ActionOutcome::ICS02HeaderVerificationFailure => matches!(
-                Self::extract_handler_error_kind::<ICS02ErrorKind>(result),
-                ICS02ErrorKind::HeaderVerificationFailure
-            ),
-            ActionOutcome::ICS03MissingClient => matches!(
-                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
-                ICS03ErrorKind::MissingClient(_)
-            ),
-            ActionOutcome::ICS03InvalidConsensusHeight => matches!(
-                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
-                ICS03ErrorKind::InvalidConsensusHeight(_, _)
-            ),
-            ActionOutcome::ICS03ConnectionNotFound => matches!(
-                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
-                ICS03ErrorKind::ConnectionNotFound(_)
-            ),
-            ActionOutcome::ICS03ConnectionMismatch => matches!(
-                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
-                ICS03ErrorKind::ConnectionMismatch(_)
-            ),
-            ActionOutcome::ICS03MissingClientConsensusState => matches!(
-                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
-                ICS03ErrorKind::MissingClientConsensusState(_, _)
-            ),
-            ActionOutcome::ICS03InvalidProof => matches!(
-                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
-                ICS03ErrorKind::InvalidProof
-            ),
-            ActionOutcome::ICS03UninitializedConnection => matches!(
-                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
-                ICS03ErrorKind::UninitializedConnection(_)
-            ),
-        };
+        let outcome: ActionOutcome = self.convert(result);
+        let outcome_matches = outcome == step.action_outcome;
+  
         // also check the state of chains
         outcome_matches && self.validate_chains() && self.check_chain_states(step.chains)
     }
