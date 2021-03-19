@@ -70,7 +70,7 @@ ICS03_ConnectionOpenInit(
                 connectionIdCounter |-> chain.connectionIdCounter + 1,
                 action |-> action,
                 chainId |-> chainId,
-                outcome |-> "ICS03ConnectionOpenInitOK"
+                outcome |-> "OK"
             ]
 
 ICS03_ConnectionOpenTry(
@@ -158,7 +158,7 @@ ICS03_ConnectionOpenTry(
                         \* `connectionIdCounter`
                         connectionIdCounter |-> chain.connectionIdCounter,
                         action |-> action,
-                        outcome |-> "ICS03ConnectionOpenTryOK"
+                        outcome |-> "OK"
                     ]
         ELSE
             \* in this case, `previousConnectionId` was not set; check if the
@@ -228,7 +228,7 @@ ICS03_ConnectionOpenTry(
                             connectionIdCounter |-> chain.connectionIdCounter + 1,
                             action |-> action,
                             chainId |-> chainId,
-                            outcome |-> "ICS03ConnectionOpenTryOK"
+                            outcome |-> "OK"
                         ]
 
 ICS03_ConnectionOpenAck(
@@ -334,7 +334,7 @@ ICS03_ConnectionOpenAck(
                             ),
                             action |-> action,
                             chainId |-> chainId,
-                            outcome |-> "ICS03ConnectionOpenAckOK"
+                            outcome |-> "OK"
                         ]
 
 ICS03_ConnectionOpenConfirm(
@@ -424,7 +424,7 @@ ICS03_ConnectionOpenConfirm(
                         ),
                         action |-> action,
                         chainId |-> chainId,
-                        outcome |-> "ICS03ConnectionOpenConfirmOK"
+                        outcome |-> "OK"
                     ]
 
 ===============================================================================

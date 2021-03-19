@@ -108,27 +108,22 @@ Actions ==
 ActionOutcomes == {
     "None",
     "ModelError",
-    \* ICS02_CreateClient outcomes:
-    "ICS02CreateOK",
-    \* ICS02_UpdateClient outcomes:
-    "ICS02UpdateOK",
+    "OK",
+    \* ICS02_CreateClient errors:
+    \* ICS02_UpdateClient errors:
     "ICS02ClientNotFound",
     "ICS02HeaderVerificationFailure",
-    \* ICS03_ConnectionOpenInit outcomes:
-    "ICS03ConnectionOpenInitOK",
+    \* ICS03_ConnectionOpenInit errors:
     "ICS03MissingClient",
-    \* ICS03_ConnectionOpenTry outcomes:
-    "ICS03ConnectionOpenTryOK",
+    \* ICS03_ConnectionOpenTry errors:
     "ICS03InvalidConsensusHeight",
     "ICS03ConnectionNotFound",
     "ICS03ConnectionMismatch",
     "ICS03MissingClientConsensusState",
     "ICS03InvalidProof",
-    \* ICS03_ConnectionOpenAck outcomes:
-    "ICS03ConnectionOpenAckOK",
-    "ICS03UninitializedConnection",
-    \* ICS03_ConnectionOpenConfirm outcomes:
-    "ICS03ConnectionOpenConfirmOK"
+    \* ICS03_ConnectionOpenAck errors:
+    "ICS03UninitializedConnection"
+    \* ICS03_ConnectionOpenConfirm errors:
 }
 \* TODO: the current generation of tests cannot distinguish between a
 \*       "ICS03ConnectionMismatch" generated in conn open try, one generated
@@ -177,15 +172,15 @@ Chains == [
 (***************************** Specification *********************************)
 
 \* update chain height if outcome was ok
-UpdateChainHeight(height, result, okOutcome) ==
-    IF result.outcome = okOutcome THEN
+UpdateChainHeight(height, result) ==
+    IF result.outcome = "OK" THEN
         height + 1
     ELSE
         height
 
 \* update connection proofs if outcome was ok
-UpdateConnectionProofs(connectionProofs, result, okOutcome) ==
-    IF result.outcome = okOutcome THEN
+UpdateConnectionProofs(connectionProofs, result) ==
+    IF result.outcome = "OK" THEN
         connectionProofs \union {result.action}
     ELSE
         connectionProofs
@@ -195,7 +190,7 @@ CreateClient(chainId, height) ==
     LET result == ICS02_CreateClient(chain, chainId, height) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "ICS02CreateOK"),
+        !.height = UpdateChainHeight(@, result),
         !.clients = result.clients,
         !.clientIdCounter = result.clientIdCounter
     ] IN
@@ -210,7 +205,7 @@ UpdateClient(chainId, clientId, height) ==
     LET result == ICS02_UpdateClient(chain, chainId, clientId, height) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "ICS02UpdateOK"),
+        !.height = UpdateChainHeight(@, result),
         !.clients = result.clients
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
@@ -235,14 +230,14 @@ ConnectionOpenInit(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "ICS03ConnectionOpenInitOK"),
+        !.height = UpdateChainHeight(@, result),
         !.connections = result.connections,
         !.connectionIdCounter = result.connectionIdCounter
     ] IN
     \* update the counterparty chain with a proof
     LET counterpartyChain == chains[counterpartyChainId] IN
     LET updatedCounterpartyChain == [counterpartyChain EXCEPT
-        !.connectionProofs = UpdateConnectionProofs(@, result, "ICS03ConnectionOpenInitOK")
+        !.connectionProofs = UpdateConnectionProofs(@, result)
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT
@@ -274,14 +269,14 @@ ConnectionOpenTry(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "ICS03ConnectionOpenTryOK"),
+        !.height = UpdateChainHeight(@, result),
         !.connections = result.connections,
         !.connectionIdCounter = result.connectionIdCounter
     ] IN
     \* update the counterparty chain with a proof
     LET counterpartyChain == chains[counterpartyChainId] IN
     LET updatedCounterpartyChain == [counterpartyChain EXCEPT
-        !.connectionProofs = UpdateConnectionProofs(@, result, "ICS03ConnectionOpenTryOK")
+        !.connectionProofs = UpdateConnectionProofs(@, result)
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT
@@ -309,13 +304,13 @@ ConnectionOpenAck(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "ICS03ConnectionOpenAckOK"),
+        !.height = UpdateChainHeight(@, result),
         !.connections = result.connections
     ] IN
     \* update the counterparty chain with a proof
     LET counterpartyChain == chains[counterpartyChainId] IN
     LET updatedCounterpartyChain == [counterpartyChain EXCEPT
-        !.connectionProofs = UpdateConnectionProofs(@, result, "ICS03ConnectionOpenAckOK")
+        !.connectionProofs = UpdateConnectionProofs(@, result)
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT
@@ -343,7 +338,7 @@ ConnectionOpenConfirm(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "ICS03ConnectionOpenConfirmOK"),
+        !.height = UpdateChainHeight(@, result),
         !.connections = result.connections
     ] IN
     \* no need to update the counterparty chain with a proof (as in the other

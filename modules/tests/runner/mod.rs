@@ -1,8 +1,8 @@
 pub mod step;
 
-use std::{any::Any, collections::HashMap};
 use std::error::Error;
 use std::fmt::{Debug, Display};
+use std::{any::Any, collections::HashMap};
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
@@ -34,9 +34,12 @@ use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
 use ibc::Height;
 
-use step::{Action, ActionOutcome, Chain, ClientAction, ConnectionAction, ICS02CreateClient, ICS02UpdateClient, ICS03ConnectionOpenAck, ICS03ConnectionOpenConfirm, ICS03ConnectionOpenInit, ICS03ConnectionOpenTry, Step};
 use modelator::Converter;
-
+use step::{
+    Action, ActionOutcome, Chain, ClientAction, ConnectionAction, ICS02CreateClient,
+    ICS02UpdateClient, ICS03ConnectionOpenAck, ICS03ConnectionOpenConfirm, ICS03ConnectionOpenInit,
+    ICS03ConnectionOpenTry, Step,
+};
 
 #[derive(Debug)]
 pub struct IBCTestRunner {
@@ -49,100 +52,102 @@ impl IBCTestRunner {
     pub fn new() -> Self {
         Self {
             contexts: Default::default(),
-            converter: Self::make_converter()
+            converter: Self::make_converter(),
         }
     }
 
     pub fn make_converter() -> Converter {
         let mut c = Converter::new();
         c.add(|c, chain_id: String| ChainId::new(chain_id, c.default_as("revision")));
-        c.def_as("revision",|_| 0u64);
+        c.def_as("revision", |_| 0u64);
         c.def(|_| Version::default());
         c.def::<Vec<Version>>(|c| vec![c.default()]);
-        c.add(|_, client_id: u64| 
+        c.add(|_, client_id: u64| {
             ClientId::new(ClientType::Mock, client_id)
                 .expect("it should be possible to create the client identifier")
-        );
+        });
         c.add(|_, connection_id: u64| ConnectionId::new(connection_id));
-    
+
         c.add(|_, height: u64| Height::new(0, height));
         c.add(|c, height: u64| MockHeader::new(c.convert(height)));
         c.add(|c, height: u64| AnyHeader::Mock(c.convert(height)));
         c.add(|c, height: u64| AnyClientState::Mock(MockClientState(c.convert(height))));
         c.add(|c, height: u64| AnyConsensusState::Mock(MockConsensusState(c.convert(height))));
         c.def(|_| Signer::new(""));
-        c.add(|c, (client_id, connection_id): (u64, Option<u64>)| { 
+        c.add(|c, (client_id, connection_id): (u64, Option<u64>)| {
             Counterparty::new(
-                c.convert(client_id), 
-                connection_id.map(|id| c.convert(id)), 
-                c.default())
+                c.convert(client_id),
+                connection_id.map(|id| c.convert(id)),
+                c.default(),
+            )
         });
         c.def_as("delay_period", |_| 0u64);
         c.def::<CommitmentPrefix>(|_| vec![0].into());
         c.def::<CommitmentProofBytes>(|_| vec![0].into());
-        c.add(|c, height: u64|
-            ConsensusProof::new(c.default(),c.convert(height))
-               .expect("it should be possible to create the consensus proof")
-        );
-        c.add(|c, height: u64|
+        c.add(|c, height: u64| {
+            ConsensusProof::new(c.default(), c.convert(height))
+                .expect("it should be possible to create the consensus proof")
+        });
+        c.add(|c, height: u64| {
             Proofs::new(
-                        c.default(),
-                        None,
-                        Some(c.convert(height)),
-                        None,
-                        c.convert(height),
-                    )
-                    .expect("it should be possible to create the proofs")
-        );
-        c.add(|c, action: ICS02CreateClient|
+                c.default(),
+                None,
+                Some(c.convert(height)),
+                None,
+                c.convert(height),
+            )
+            .expect("it should be possible to create the proofs")
+        });
+        c.add(|c, action: ICS02CreateClient| {
             ClientMsg::CreateClient(MsgCreateAnyClient {
                 client_state: c.convert(action.client_state),
                 consensus_state: c.convert(action.consensus_state),
                 signer: c.default(),
             })
-        );
-        c.add(|c, action: ICS02UpdateClient|
+        });
+        c.add(|c, action: ICS02UpdateClient| {
             ClientMsg::UpdateClient(MsgUpdateAnyClient {
                 client_id: c.convert(action.client_id),
                 header: c.convert(action.header),
                 signer: c.default(),
             })
-        );
-        c.add(|c, action: ClientAction|
-            Ics26Envelope::Ics2Msg( match action {
+        });
+        c.add(|c, action: ClientAction| {
+            Ics26Envelope::Ics2Msg(match action {
                 ClientAction::None => panic!("unexpected action type"),
                 ClientAction::ICS02CreateClient(a) => c.convert(a),
-                ClientAction::ICS02UpdateClient(a) => c.convert(a)
+                ClientAction::ICS02UpdateClient(a) => c.convert(a),
             })
-        );
-        c.add(|c, action: ICS03ConnectionOpenInit|
-            Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenInit(
-                MsgConnectionOpenInit {
-                    client_id: c.convert(action.client_id),
-                    counterparty: c.convert((action.counterparty_client_id, None as Option<u64>)),
-                    version: c.default(),
-                    delay_period: c.default_as("delay_period"),
-                    signer: c.default(),
-                },
-            ))
-        );
-        c.add(|c, action: ICS03ConnectionOpenTry|
-            Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+        });
+        c.add(|c, action: ICS03ConnectionOpenInit| {
+            ConnectionMsg::ConnectionOpenInit(MsgConnectionOpenInit {
+                client_id: c.convert(action.client_id),
+                counterparty: c.convert((action.counterparty_client_id, None as Option<u64>)),
+                version: c.default(),
+                delay_period: c.default_as("delay_period"),
+                signer: c.default(),
+            })
+        });
+        c.add(|c, action: ICS03ConnectionOpenTry| {
+            ConnectionMsg::ConnectionOpenTry(Box::new(
                 MsgConnectionOpenTry {
                     previous_connection_id: action.previous_connection_id.map(|x| c.convert(x)),
                     client_id: c.convert(action.client_id),
                     // TODO: is this ever needed?
                     client_state: None,
-                    counterparty: c.convert((action.counterparty_client_id, Some(action.counterparty_connection_id))),
+                    counterparty: c.convert((
+                        action.counterparty_client_id,
+                        Some(action.counterparty_connection_id),
+                    )),
                     counterparty_versions: c.default(),
                     proofs: c.convert(action.client_state),
                     delay_period: c.default_as("delay_period"),
                     signer: c.default(),
-                }
-            )))
-        );
-        c.add(|c, action: ICS03ConnectionOpenAck|
-            Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
+                },
+            ))
+        });
+        c.add(|c, action: ICS03ConnectionOpenAck| {
+            ConnectionMsg::ConnectionOpenAck(Box::new(
                 MsgConnectionOpenAck {
                     connection_id: c.convert(action.connection_id),
                     counterparty_connection_id: c.convert(action.counterparty_connection_id),
@@ -151,27 +156,27 @@ impl IBCTestRunner {
                     proofs: c.convert(action.client_state),
                     version: c.default(),
                     signer: c.default(),
-                }
-            )))
-        );
-        c.add(|c, action: ICS03ConnectionOpenConfirm|
-            Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(
-            MsgConnectionOpenConfirm {
-                connection_id: c.convert(action.connection_id),
-                proofs: c.convert(action.client_state),
-                signer: c.default(),
-            },
-        ))
-        );
-        c.add(|c, action: ConnectionAction|
-            Ics26Envelope::Ics3Msg( match action {
+                },
+            ))
+        });
+        c.add(|c, action: ICS03ConnectionOpenConfirm| {
+            ConnectionMsg::ConnectionOpenConfirm(
+                MsgConnectionOpenConfirm {
+                    connection_id: c.convert(action.connection_id),
+                    proofs: c.convert(action.client_state),
+                    signer: c.default(),
+                },
+            )
+        });
+        c.add(|c, action: ConnectionAction| {
+            Ics26Envelope::Ics3Msg(match action {
                 ConnectionAction::None => panic!("unexpected action type"),
                 ConnectionAction::ICS03ConnectionOpenInit(a) => c.convert(a),
                 ConnectionAction::ICS03ConnectionOpenTry(a) => c.convert(a),
                 ConnectionAction::ICS03ConnectionOpenAck(a) => c.convert(a),
-                ConnectionAction::ICS03ConnectionOpenConfirm(a) => c.convert(a)
+                ConnectionAction::ICS03ConnectionOpenConfirm(a) => c.convert(a),
             })
-        );
+        });
         c
     }
 
@@ -350,7 +355,11 @@ impl IBCTestRunner {
 
 impl modelator::runner::TestRunner<Step> for IBCTestRunner {
     fn initial_step(&mut self, step: Step) -> bool {
-        assert_eq!(step.action, Action::ClientAction(ClientAction::None), "unexpected action type");
+        assert_eq!(
+            step.action,
+            Action::ClientAction(ClientAction::None),
+            "unexpected action type"
+        );
         assert_eq!(
             step.action_outcome,
             ActionOutcome::None,
@@ -373,8 +382,7 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
         let result = ctx.deliver(msg);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
-            ActionOutcome::ICS02CreateOK => result.is_ok(),
-            ActionOutcome::ICS02UpdateOK => result.is_ok(),
+            ActionOutcome::OK => result.is_ok(),
             ActionOutcome::ICS02ClientNotFound => matches!(
                 Self::extract_handler_error_kind::<ICS02ErrorKind>(result),
                 ICS02ErrorKind::ClientNotFound(_)
@@ -383,12 +391,10 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
                 Self::extract_handler_error_kind::<ICS02ErrorKind>(result),
                 ICS02ErrorKind::HeaderVerificationFailure
             ),
-            ActionOutcome::ICS03ConnectionOpenInitOK => result.is_ok(),
             ActionOutcome::ICS03MissingClient => matches!(
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::MissingClient(_)
             ),
-            ActionOutcome::ICS03ConnectionOpenTryOK => result.is_ok(),
             ActionOutcome::ICS03InvalidConsensusHeight => matches!(
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::InvalidConsensusHeight(_, _)
@@ -409,15 +415,12 @@ impl modelator::runner::TestRunner<Step> for IBCTestRunner {
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::InvalidProof
             ),
-            ActionOutcome::ICS03ConnectionOpenAckOK => result.is_ok(),
             ActionOutcome::ICS03UninitializedConnection => matches!(
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::UninitializedConnection(_)
             ),
-            ActionOutcome::ICS03ConnectionOpenConfirmOK => result.is_ok(),
         };
         // also check the state of chains
         outcome_matches && self.validate_chains() && self.check_chain_states(step.chains)
     }
 }
-

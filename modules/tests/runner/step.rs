@@ -16,7 +16,6 @@ pub struct Step {
     pub chains: HashMap<String, Chain>,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(untagged)]
 pub enum Action {
@@ -24,13 +23,12 @@ pub enum Action {
     ConnectionAction(ConnectionAction),
 }
 
-
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "type")]
 pub enum ClientAction {
     None,
     ICS02CreateClient(ICS02CreateClient),
-    ICS02UpdateClient(ICS02UpdateClient)
+    ICS02UpdateClient(ICS02UpdateClient),
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -56,7 +54,6 @@ pub struct ICS02UpdateClient {
     pub client_id: u64,
     pub header: u64,
 }
-
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -96,25 +93,19 @@ pub struct ICS03ConnectionOpenConfirm {
     pub counterparty_connection_id: u64,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionOutcome {
     None,
-    ICS02CreateOK,
-    ICS02UpdateOK,
+    OK,
     ICS02ClientNotFound,
     ICS02HeaderVerificationFailure,
-    ICS03ConnectionOpenInitOK,
     ICS03MissingClient,
-    ICS03ConnectionOpenTryOK,
     ICS03InvalidConsensusHeight,
     ICS03ConnectionNotFound,
     ICS03ConnectionMismatch,
     ICS03MissingClientConsensusState,
     ICS03InvalidProof,
-    ICS03ConnectionOpenAckOK,
     ICS03UninitializedConnection,
-    ICS03ConnectionOpenConfirmOK,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -132,20 +123,17 @@ pub struct Client {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Connection {
-    #[serde(alias = "clientId")]
     #[serde(default, deserialize_with = "deserialize_id")]
     pub client_id: Option<u64>,
 
-    #[serde(alias = "connectionId")]
     #[serde(default, deserialize_with = "deserialize_id")]
     pub connection_id: Option<u64>,
 
-    #[serde(alias = "counterpartyClientId")]
     #[serde(default, deserialize_with = "deserialize_id")]
     pub counterparty_client_id: Option<u64>,
 
-    #[serde(alias = "counterpartyConnectionId")]
     #[serde(default, deserialize_with = "deserialize_id")]
     pub counterparty_connection_id: Option<u64>,
 

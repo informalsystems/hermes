@@ -46,7 +46,7 @@ ICS02_CreateClient(chain, chainId, height) ==
             clientIdCounter |-> chain.clientIdCounter + 1,
             action |-> action,
             chainId |-> chainId,
-            outcome |-> "ICS02CreateOK"
+            outcome |-> "OK"
         ]
 
 ICS02_UpdateClient(chain, chainId, clientId, height) ==
@@ -90,7 +90,7 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
                 ),
                 action |-> action,
                 chainId |-> chainId,
-                outcome |-> "ICS02UpdateOK"
+                outcome |-> "OK"
             ]
 
 ===============================================================================
