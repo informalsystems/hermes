@@ -227,7 +227,7 @@ impl IBCTestRunner {
             chain_id.clone(),
             HostType::Mock,
             max_history_size,
-            Height::new(Self::revision(), initial_height),
+             self.convert(initial_height),
         );
         assert!(self.contexts.insert(chain_id, ctx).is_none());
     }
@@ -273,23 +273,6 @@ impl IBCTestRunner {
             .map(|e| e.kind().clone())
     } 
 
-    pub fn revision() -> u64 {
-        0
-    }
-
-    pub fn client_id(client_id: u64) -> ClientId {
-        ClientId::new(ClientType::Mock, client_id)
-            .expect("it should be possible to create the client identifier")
-    }
-
-    pub fn connection_id(connection_id: u64) -> ConnectionId {
-        ConnectionId::new(connection_id)
-    }
-
-    pub fn height(height: u64) -> Height {
-        Height::new(Self::revision(), height)
-    }
-
     /// Check that chain heights match the ones in the model.
     pub fn validate_chains(&self) -> bool {
         self.contexts.values().all(|ctx| ctx.validate().is_ok())
@@ -300,20 +283,20 @@ impl IBCTestRunner {
         chains.into_iter().all(|(chain_id, chain)| {
             let ctx = self.chain_context(chain_id);
             // check that heights match
-            let heights_match = ctx.query_latest_height() == Self::height(chain.height);
+            let heights_match = ctx.query_latest_height() == self.convert(chain.height);
 
             // check that clients match
             let clients_match = chain.clients.into_iter().all(|(client_id, client)| {
                 // compute the highest consensus state in the model and check
                 // that it matches the client state
-                let client_state = ClientReader::client_state(ctx, &Self::client_id(client_id));
+                let client_state = ClientReader::client_state(ctx, &self.convert(client_id));
                 let client_state_matches = match client.heights.iter().max() {
                     Some(max_height) => {
                         // if the model has consensus states (encoded simply as
                         // heights in the model), then the highest one should
                         // match the height in the client state
                         client_state.is_some()
-                            && client_state.unwrap().latest_height() == Self::height(*max_height)
+                            && client_state.unwrap().latest_height() == self.convert(*max_height)
                     }
                     None => {
                         // if the model doesn't have any consensus states
@@ -327,7 +310,7 @@ impl IBCTestRunner {
                 //       only existing consensus states are those in that also
                 //       exist in the model)
                 let consensus_states_match = client.heights.into_iter().all(|height| {
-                    ctx.consensus_state(&Self::client_id(client_id), Self::height(height))
+                    ctx.consensus_state(&self.convert(client_id), self.convert(height))
                         .is_some()
                 });
 
@@ -345,26 +328,26 @@ impl IBCTestRunner {
                             // there's nothing to check
                             true
                         } else if let Some(connection_end) =
-                            ctx.connection_end(&Self::connection_id(connection_id))
+                            ctx.connection_end(&self.convert(connection_id))
                         {
                             // states must match
                             let states_match = *connection_end.state() == connection.state;
 
                             // client ids must match
                             let client_ids = *connection_end.client_id()
-                                == Self::client_id(connection.client_id.unwrap());
+                                == self.convert::<u64, ClientId>(connection.client_id.unwrap());
 
                             // counterparty client ids must match
                             let counterparty_client_ids =
                                 *connection_end.counterparty().client_id()
-                                    == Self::client_id(connection.counterparty_client_id.unwrap());
+                                    == self.convert::<u64, ClientId>(connection.counterparty_client_id.unwrap());
 
                             // counterparty connection ids must match
                             let counterparty_connection_ids =
                                 connection_end.counterparty().connection_id()
                                     == connection
                                         .counterparty_connection_id
-                                        .map(Self::connection_id)
+                                        .map(|id| self.convert(id))
                                         .as_ref();
 
                             states_match
