@@ -18,8 +18,8 @@ pub mod chan_open_init;
 pub mod chan_open_try;
 pub mod recv_packet;
 pub mod send_packet;
-pub mod timeout_packet; 
-
+pub mod timeout; 
+pub mod timeout_on_close; 
 mod verify;
 pub mod write_acknowledgement;
 
@@ -66,6 +66,7 @@ where
     match msg {
         PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
         PacketMsg::AckPacket(msg) => acknowledgement::process(ctx, msg),
-        _ => todo!(),
+        PacketMsg::ToPacket(msg) => timeout::process(ctx, msg),
+        PacketMsg::ToClosePacket(msg) =>timeout_on_close::process(ctx, msg),
     }
 }

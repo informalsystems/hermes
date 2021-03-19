@@ -330,6 +330,21 @@ impl MockContext {
         }
     }
 
+    pub fn with_packet_receipt(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+        data: Receipt,
+    ) -> Self {
+        let mut packet_receipt = self.packet_receipt.clone();
+        packet_receipt.insert((port_id, chan_id, seq), data);
+        Self {
+            packet_receipt,
+            ..self
+        }
+    }
+
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -586,6 +601,16 @@ impl ChannelKeeper for MockContext {
         self.packet_acknowledgement.remove(&key);
         Ok(())
     }
+
+
+    fn delete_packet_commitment(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+    ) -> Result<(), Ics4Error>{
+        self.packet_commitment.remove(&key);
+        Ok(())
+    }
+
 
     fn store_packet_receipt(
         &mut self,

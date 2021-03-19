@@ -476,4 +476,93 @@ impl ClientDef for AnyClient {
             }
         }
     }
+
+     fn verify_next_sequence_recv(
+         &self,
+         client_state: &Self::ClientState,
+         height: Height,
+         proof: &CommitmentProofBytes,
+         port_id: &PortId,
+         channel_id: &ChannelId,
+         seq: &Sequence,
+     ) -> Result<(), Box<dyn std::error::Error>>{
+        match self {
+            Self::Tendermint(client) => {
+                let client_state = downcast!(
+                    client_state => AnyClientState::Tendermint
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                client.verify_next_sequence_recv(
+                    client_state,
+                    height,
+                    proof,
+                    port_id,
+                    channel_id,
+                    seq
+                )
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(client) => {
+                let client_state = downcast!(
+                    client_state => AnyClientState::Mock
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+
+                client.verify_next_sequence_recv(
+                    client_state,
+                    height,
+                    proof,
+                    port_id,
+                    channel_id,
+                    seq
+                )
+            }
+        }
+     }
+      fn verify_packet_receipt_absence(
+         &self,
+         client_state: &Self::ClientState,
+         height: Height,
+         proof: &CommitmentProofBytes,
+         port_id: &PortId,
+         channel_id: &ChannelId,
+         seq: &Sequence,
+     ) -> Result<(), Box<dyn std::error::Error>>{
+        match self {
+            Self::Tendermint(client) => {
+                let client_state = downcast!(
+                    client_state => AnyClientState::Tendermint
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                client.verify_packet_receipt_absence(
+                    client_state,
+                    height,
+                    proof,
+                    port_id,
+                    channel_id,
+                    seq
+                )
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(client) => {
+                let client_state = downcast!(
+                    client_state => AnyClientState::Mock
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+
+                client.verify_packet_receipt_absence(
+                    client_state,
+                    height,
+                    proof,
+                    port_id,
+                    channel_id,
+                    seq
+                )
+            }
+        }
+     }
 }

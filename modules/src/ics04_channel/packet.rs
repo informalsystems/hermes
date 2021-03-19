@@ -10,7 +10,7 @@ use crate::Height;
 
 use super::handler::{
     acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
-    write_acknowledgement::WriteAckPacketResult, timeout_packet::TimeoutPacketResult, 
+    write_acknowledgement::WriteAckPacketResult, timeout::TimeoutPacketResult, timeout_on_close::TimeoutOnClosePacketResult, 
 };
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
@@ -29,7 +29,8 @@ pub enum PacketResult {
     Recv(RecvPacketResult),
     WriteAck(WriteAckPacketResult),
     Ack(AckPacketResult),
-    Timeout(TimeoutPacketResult)
+    Timeout(TimeoutPacketResult),
+    TimeoutOnClose(TimeoutOnClosePacketResult)
 }
 
 #[derive(Clone, Debug)]
@@ -50,7 +51,7 @@ impl std::fmt::Display for PacketMsgType {
 }
 
 /// The sequence number of a packet enforces ordering among packets from the same source.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Hash, Deserialize, Serialize)]
 pub struct Sequence(u64);
 
 impl Sequence {
@@ -62,6 +63,8 @@ impl Sequence {
         Sequence(self.0 + 1)
     }
 }
+
+
 impl From<u64> for Sequence {
     fn from(seq: u64) -> Self {
         Sequence(seq)

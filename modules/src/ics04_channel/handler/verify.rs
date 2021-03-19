@@ -4,7 +4,7 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics04_channel::packet::Packet;
+use crate::ics04_channel::packet::{Packet,Sequence};
 use crate::ics24_host::identifier::ClientId;
 use crate::proofs::Proofs;
 
@@ -158,7 +158,7 @@ pub fn verify_next_sequence_recv(
             proofs.object_proof(),
             &packet.destination_port,
             &packet.destination_channel,
-            seq,
+            &seq,
         )
         .map_err(|_| Kind::PacketVerificationFailed(seq))?)
 }
