@@ -42,6 +42,8 @@
 
 - [ibc-relayer]
   - Replaced `rust-crypto` & `bitcoin-wallet` deprecated dependencies ([#352])
+  - Fix for hard-coded account number ([#752])
+  - Fix for chains that don't have `cosmos` account prefix ([#416])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -58,6 +60,7 @@
   - [nothing yet]
 
 [#352]: https://github.com/informalsystems/ibc-rs/issues/352
+[#416]: https://github.com/informalsystems/ibc-rs/issues/416
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
@@ -69,6 +72,7 @@
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
 [#702]: https://github.com/informalsystems/ibc-rs/issues/702
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
+[#752]: https://github.com/informalsystems/ibc-rs/issues/752
 
 ## v0.1.1
 *February 17, 2021*
