@@ -3,7 +3,7 @@
 pub struct SignatureDescriptors {
     /// signatures are the signature descriptors
     #[prost(message, repeated, tag="1")]
-    pub signatures: ::std::vec::Vec<SignatureDescriptor>,
+    pub signatures: ::prost::alloc::vec::Vec<SignatureDescriptor>,
 }
 /// SignatureDescriptor is a convenience type which represents the full data for
 /// a signature including the public key of the signer, signing modes and the
@@ -13,23 +13,25 @@ pub struct SignatureDescriptors {
 pub struct SignatureDescriptor {
     /// public_key is the public key of the signer
     #[prost(message, optional, tag="1")]
-    pub public_key: ::std::option::Option<::prost_types::Any>,
+    pub public_key: ::core::option::Option<::prost_types::Any>,
     #[prost(message, optional, tag="2")]
-    pub data: ::std::option::Option<signature_descriptor::Data>,
+    pub data: ::core::option::Option<signature_descriptor::Data>,
     /// sequence is the sequence of the account, which describes the
     /// number of committed transactions signed by a given address. It is used to prevent
     /// replay attacks.
     #[prost(uint64, tag="3")]
     pub sequence: u64,
 }
+/// Nested message and enum types in `SignatureDescriptor`.
 pub mod signature_descriptor {
     /// Data represents signature data
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Data {
         /// sum is the oneof that specifies whether this represents single or multi-signature data
         #[prost(oneof="data::Sum", tags="1, 2")]
-        pub sum: ::std::option::Option<data::Sum>,
+        pub sum: ::core::option::Option<data::Sum>,
     }
+    /// Nested message and enum types in `Data`.
     pub mod data {
         /// Single is the signature data for a single signer
         #[derive(Clone, PartialEq, ::prost::Message)]
@@ -38,18 +40,18 @@ pub mod signature_descriptor {
             #[prost(enumeration="super::super::SignMode", tag="1")]
             pub mode: i32,
             /// signature is the raw signature bytes
-            #[prost(bytes, tag="2")]
-            pub signature: std::vec::Vec<u8>,
+            #[prost(bytes="vec", tag="2")]
+            pub signature: ::prost::alloc::vec::Vec<u8>,
         }
         /// Multi is the signature data for a multisig public key
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct Multi {
             /// bitarray specifies which keys within the multisig are signing
             #[prost(message, optional, tag="1")]
-            pub bitarray: ::std::option::Option<super::super::super::super::super::crypto::multisig::v1beta1::CompactBitArray>,
+            pub bitarray: ::core::option::Option<super::super::super::super::super::crypto::multisig::v1beta1::CompactBitArray>,
             /// signatures is the signatures of the multi-signature
             #[prost(message, repeated, tag="2")]
-            pub signatures: ::std::vec::Vec<super::Data>,
+            pub signatures: ::prost::alloc::vec::Vec<super::Data>,
         }
         /// sum is the oneof that specifies whether this represents single or multi-signature data
         #[derive(Clone, PartialEq, ::prost::Oneof)]

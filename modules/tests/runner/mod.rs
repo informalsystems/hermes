@@ -4,10 +4,12 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
 
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::context::ClientReader;
 use ibc::ics02_client::error::Kind as ICS02ErrorKind;
+use ibc::ics02_client::header::AnyHeader;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
@@ -33,7 +35,6 @@ use ibc::mock::host::HostType;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
 use ibc::Height;
-
 use step::{Action, ActionOutcome, Chain, Step};
 
 #[derive(Debug, Clone)]

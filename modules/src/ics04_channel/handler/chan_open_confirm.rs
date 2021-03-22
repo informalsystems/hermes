@@ -6,7 +6,7 @@ use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
-use crate::ics04_channel::handler::verify::verify_proofs;
+use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 
@@ -65,7 +65,7 @@ pub(crate) fn process(
         channel_end.version(),
     );
     //2. Verify proofs
-    verify_proofs(
+    verify_channel_proofs(
         ctx,
         &channel_end,
         &conn,
@@ -109,7 +109,7 @@ mod tests {
     use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
-    use crate::ics04_channel::handler::{dispatch, ChannelResult};
+    use crate::ics04_channel::handler::{channel_dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
     use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
     use crate::ics04_channel::msgs::ChannelMsg;
@@ -174,7 +174,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = dispatch(&test.ctx, test.msg.clone());
+            let res = channel_dispatch(&test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

@@ -7,7 +7,7 @@
 ### FEATURES
 
 - [ibc]
-  - Added handler(s) for sending packets ([#695])
+  - Added handler(s) for sending packets ([#695]) and for recv. and ack. packets ([#736])
 
 - [ibc-relayer]
   - Support for relayer restart ([#561])
@@ -20,12 +20,14 @@
 - [ibc-relayer-cli]
   - Added `create connection` CLI ([#630])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
+  - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
 
 ### IMPROVEMENTS
 
 - [ibc]
   - Follow Rust guidelines naming conventions ([#689])
-
+  - Per client structure modules ([#740])
+  
 - [ibc-relayer]
   - [nothing yet]
 
@@ -65,6 +67,9 @@
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
+[#702]: https://github.com/informalsystems/ibc-rs/issues/702
+[#736]: https://github.com/informalsystems/ibc-rs/issues/736
+[#740]: https://github.com/informalsystems/ibc-rs/issues/740
 
 ## v0.1.1
 *February 17, 2021*
