@@ -76,10 +76,10 @@ impl<T: Clone> Clone for List<T> {
     }
 }
 
-pub struct ChannelId(String);
+pub struct ChannelId(u64);
 impl ChannelId {
     pub fn new(counter: u64) -> Self {
-        ChannelId(format!("channel-{}", counter))
+        ChannelId(counter)
     }
 }
 impl Default for ChannelId {
@@ -89,7 +89,7 @@ impl Default for ChannelId {
 }
 impl Clone for ChannelId {
     fn clone(&self) -> Self {
-        ChannelId(self.0.clone())
+        ChannelId(self.0)
     }
 }
 
@@ -105,10 +105,10 @@ impl Default for PortId {
     }
 }
 
-pub struct ConnectionId(String);
+pub struct ConnectionId(u64);
 impl ConnectionId {
     pub fn new(counter: u64) -> Self {
-        ConnectionId(format!("connection-{}", counter))
+        ConnectionId(counter)
     }
 }
 impl Default for ConnectionId {
@@ -118,7 +118,7 @@ impl Default for ConnectionId {
 }
 impl Clone for ConnectionId {
     fn clone(&self) -> Self {
-        ConnectionId(self.0.clone())
+        ConnectionId(self.0)
     }
 }
 
@@ -173,7 +173,6 @@ pub enum ChannelIdState {
     Reused,
 }
 
-#[derive(Clone)]
 pub enum Order {
     None = 0,
     Unordered,
@@ -187,6 +186,16 @@ impl Order {
             Self::None => "UNINITIALIZED",
             Self::Unordered => "ORDER_UNORDERED",
             Self::Ordered => "ORDER_ORDERED",
+        }
+    }
+}
+
+impl Clone for Order {
+    fn clone(&self) -> Self {
+        match self {
+            Order::None => Order::None,
+            Order::Unordered => Order::Unordered,
+            Order::Ordered => Order::Ordered,
         }
     }
 }
