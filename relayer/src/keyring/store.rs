@@ -45,8 +45,16 @@ pub enum StoreBackend {
 
 pub trait KeyRingOperations: Sized {
     fn init(backend: StoreBackend, chain_config: ChainConfig) -> Result<KeyRing, Error>;
-    fn key_from_seed_file(&self, key_file_content: &str) -> Result<KeyEntry, Error>;
-    fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
+    fn key_from_seed_file(
+        &self,
+        key_file_content: &str,
+        chain_config: &ChainConfig,
+    ) -> Result<KeyEntry, Error>;
+    fn key_from_mnemonic(
+        &self,
+        mnemonic_words: &str,
+        chain_config: &ChainConfig,
+    ) -> Result<KeyEntry, Error>;
     fn get_key(&self) -> Result<KeyEntry, Error>;
     fn add_key(&self, key_contents: &str) -> Result<(), Error>;
     fn sign_msg(&self, msg: Vec<u8>) -> Vec<u8>;
@@ -97,7 +105,11 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Get key from seed file
-    fn key_from_seed_file(&self, key_file_content: &str) -> Result<KeyEntry, Error> {
+    fn key_from_seed_file(
+        &self,
+        key_file_content: &str,
+        chain_config: &ChainConfig,
+    ) -> Result<KeyEntry, Error> {
         let key_json: Value =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
@@ -111,7 +123,7 @@ impl KeyRingOperations for KeyRing {
                 match mnemonic {
                     Some(v) => {
                         key = self
-                            .key_from_mnemonic(v)
+                            .key_from_mnemonic(v, chain_config)
                             .map_err(|e| Kind::InvalidMnemonic.context(e))?;
                         Ok(key)
                     }
@@ -127,7 +139,11 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Add a key entry in the store using a mnemonic.
-    fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
+    fn key_from_mnemonic(
+        &self,
+        mnemonic_words: &str,
+        chain_config: &ChainConfig,
+    ) -> Result<KeyEntry, Error> {
         let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
             .map_err(|e| Kind::InvalidMnemonic.context(e))?;
         let seed = Seed::new(&mnemonic, "");
@@ -145,8 +161,12 @@ impl KeyRingOperations for KeyRing {
         let address = get_address(public_key);
 
         // Get Bech32 account
-        let account = bech32::encode("cosmos", address.to_base32(), Variant::Bech32)
-            .map_err(|e| Kind::Bech32Account.context(e))?;
+        let account = bech32::encode(
+            chain_config.account_prefix.as_str(),
+            address.to_base32(),
+            Variant::Bech32,
+        )
+        .map_err(|e| Kind::Bech32Account.context(e))?;
 
         let key = KeyEntry {
             public_key,
@@ -171,9 +191,10 @@ impl KeyRingOperations for KeyRing {
                     let key_content = store.get(chain_config.key_name.as_str());
                     match key_content {
                         Some(k) => {
-                            let key_entry = self.key_from_seed_file(k).map_err(|_| {
-                                Kind::KeyStoreOperation.context("failed to get key entry")
-                            })?;
+                            let key_entry =
+                                self.key_from_seed_file(k, chain_config).map_err(|_| {
+                                    Kind::KeyStoreOperation.context("failed to get key entry")
+                                })?;
                             Ok(key_entry)
                         }
                         None => Err(Kind::InvalidKey.into()),
@@ -200,11 +221,11 @@ impl KeyRingOperations for KeyRing {
                     let mut file_contents = String::new();
                     file.read_to_string(&mut file_contents)
                         .map_err(|_| Kind::KeyStoreOperation.context("cannot ready key file"))?;
-                    let key_entry =
-                        self.key_from_seed_file(file_contents.as_str())
-                            .map_err(|_| {
-                                Kind::KeyStoreOperation.context("error getting key from file")
-                            })?;
+                    let key_entry = self
+                        .key_from_seed_file(file_contents.as_str(), chain_config)
+                        .map_err(|_| {
+                            Kind::KeyStoreOperation.context("error getting key from file")
+                        })?;
                     Ok(key_entry)
                 } else {
                     Err(Kind::KeyStoreOperation
