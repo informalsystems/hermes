@@ -37,6 +37,14 @@ impl MsgAcknowledgement {
             signer,
         }
     }
+
+    pub fn acknowledgement(&self) -> &Vec<u8> {
+        &self.acknowledgement
+    }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
 }
 
 impl Msg for MsgAcknowledgement {
@@ -97,7 +105,7 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
 }
 
 #[cfg(test)]
-mod test_util {
+pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 

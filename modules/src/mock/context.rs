@@ -21,7 +21,7 @@ use crate::ics03_connection::error::Error as Ics3Error;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::ics04_channel::error::{Error as Ics4Error, Kind as Ics4Kind};
-use crate::ics04_channel::packet::Sequence;
+use crate::ics04_channel::packet::{Receipt, Sequence};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics05_port::context::PortReader;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
@@ -52,6 +52,9 @@ pub struct MockContext {
 
     /// Highest height (i.e., most recent) of the blocks in the history.
     latest_height: Height,
+
+    /// Highest timestamp, i.e., of the most recent block in the history.
+    timestamp: u64,
 
     /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
     /// blocks, ascending order by their height (latest block is on the last position).
@@ -91,11 +94,16 @@ pub struct MockContext {
     /// Tracks the sequence number for the next packet to be acknowledged.
     next_sequence_ack: HashMap<(PortId, ChannelId), Sequence>,
 
+    packet_acknowledgement: HashMap<(PortId, ChannelId, Sequence), String>,
+
     /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
 
     /// Constant-size commitments to packets data fields
     packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
+
+    // Used by unordered channel
+    packet_receipt: HashMap<(PortId, ChannelId, Sequence), Receipt>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -144,6 +152,7 @@ impl MockContext {
             host_chain_id: host_id.clone(),
             max_history_size,
             latest_height,
+            timestamp: Default::default(),
             history: (0..n)
                 .rev()
                 .map(|i| {
@@ -165,6 +174,8 @@ impl MockContext {
             next_sequence_ack: Default::default(),
             port_capabilities: Default::default(),
             packet_commitment: Default::default(),
+            packet_receipt: Default::default(),
+            packet_acknowledgement: Default::default(),
             connection_ids_counter: 0,
             channel_ids_counter: 0,
         }
@@ -239,7 +250,7 @@ impl MockContext {
         self
     }
 
-    /// Associates a channel (in an arbtirary state) to this context.
+    /// Associates a channel (in an arbitrary state) to this context.
     pub fn with_channel(
         self,
         port_id: PortId,
@@ -261,6 +272,73 @@ impl MockContext {
         next_sequence_send.insert((port_id, chan_id), seq_number);
         Self {
             next_sequence_send,
+            ..self
+        }
+    }
+
+    pub fn with_recv_sequence(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq_number: Sequence,
+    ) -> Self {
+        let mut next_sequence_recv = self.next_sequence_recv.clone();
+        next_sequence_recv.insert((port_id, chan_id), seq_number);
+        Self {
+            next_sequence_recv,
+            ..self
+        }
+    }
+
+    pub fn with_ack_sequence(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq_number: Sequence,
+    ) -> Self {
+        let mut next_sequence_ack = self.next_sequence_send.clone();
+        next_sequence_ack.insert((port_id, chan_id), seq_number);
+        Self {
+            next_sequence_ack,
+            ..self
+        }
+    }
+
+    pub fn with_timestamp(self, timestamp: u64) -> Self {
+        Self { timestamp, ..self }
+    }
+
+    pub fn with_height(self, target_height: Height) -> Self {
+        if target_height.revision_number > self.latest_height.revision_number {
+            unimplemented!()
+        } else if target_height.revision_number < self.latest_height.revision_number {
+            panic!("Cannot rewind history of the chain to a smaller revision number!")
+        } else if target_height.revision_height < self.latest_height.revision_height {
+            panic!("Cannot rewind history of the chain to a smaller revision height!")
+        } else if target_height.revision_height > self.latest_height.revision_height {
+            // Repeatedly advance the host chain height till we hit the desired height
+            let mut ctx = MockContext { ..self };
+            while ctx.latest_height.revision_height < target_height.revision_height {
+                ctx.advance_host_chain_height()
+            }
+            ctx
+        } else {
+            // Both the revision number and height match
+            self
+        }
+    }
+
+    pub fn with_packet_commitment(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+        data: String,
+    ) -> Self {
+        let mut packet_commitment = self.packet_commitment.clone();
+        packet_commitment.insert((port_id, chan_id, seq), data);
+        Self {
+            packet_commitment,
             ..self
         }
     }
@@ -399,9 +477,37 @@ impl ChannelReader for MockContext {
         self.next_sequence_send.get(port_channel_id).cloned()
     }
 
+    fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+        self.next_sequence_recv.get(port_channel_id).cloned()
+    }
+
+    fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+        self.next_sequence_ack.get(port_channel_id).cloned()
+    }
+
+    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+        self.packet_commitment.get(key).cloned()
+    }
+
+    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<Receipt> {
+        self.packet_receipt.get(key).cloned()
+    }
+
+    fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+        self.packet_acknowledgement.get(key).cloned()
+    }
+
     fn hash(&self, input: String) -> String {
         let r = sha2::Sha256::digest(input.as_bytes());
         format!("{:x}", r)
+    }
+
+    fn host_height(&self) -> Height {
+        self.latest_height
+    }
+
+    fn host_timestamp(&self) -> u64 {
+        self.timestamp
     }
 
     fn channel_counter(&self) -> u64 {
@@ -410,6 +516,47 @@ impl ChannelReader for MockContext {
 }
 
 impl ChannelKeeper for MockContext {
+    fn store_packet_commitment(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        timeout_timestamp: u64,
+        timeout_height: Height,
+        data: Vec<u8>,
+    ) -> Result<(), Ics4Error> {
+        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
+        self.packet_commitment
+            .insert(key, ChannelReader::hash(self, input));
+        Ok(())
+    }
+
+    fn store_packet_receipt(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        receipt: Receipt,
+    ) -> Result<(), Ics4Error> {
+        self.packet_receipt.insert(key, receipt);
+        Ok(())
+    }
+
+    fn store_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        ack: Vec<u8>,
+    ) -> Result<(), Ics4Error> {
+        let input = format!("{:?}", ack);
+        self.packet_acknowledgement
+            .insert(key, ChannelReader::hash(self, input));
+        Ok(())
+    }
+
+    fn delete_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+    ) -> Result<(), Ics4Error> {
+        self.packet_acknowledgement.remove(&key);
+        Ok(())
+    }
+
     fn store_connection_channels(
         &mut self,
         cid: ConnectionId,
@@ -460,19 +607,6 @@ impl ChannelKeeper for MockContext {
 
     fn increase_channel_counter(&mut self) {
         self.channel_ids_counter += 1;
-    }
-
-    fn store_packet_commitment(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-        timeout_timestamp: u64,
-        timeout_height: Height,
-        data: Vec<u8>,
-    ) -> Result<(), Ics4Error> {
-        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
-        self.packet_commitment
-            .insert(key, ChannelReader::hash(self, input));
-        Ok(())
     }
 }
 

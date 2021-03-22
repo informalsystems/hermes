@@ -8,7 +8,7 @@ use crate::{ics03_connection::msgs::ConnectionMsg, ics04_channel::msgs::PacketMs
 pub enum Ics26Envelope {
     Ics2Msg(ClientMsg),
     Ics3Msg(ConnectionMsg),
-    Ics4Msg(ChannelMsg),
+    Ics4ChannelMsg(ChannelMsg),
     Ics4PacketMsg(PacketMsg),
     Ics20Msg(MsgTransfer),
 }
