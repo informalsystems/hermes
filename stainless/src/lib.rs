@@ -9,6 +9,20 @@ trait Clone {
 trait Default {
     fn default() -> Self;
 }
+pub trait Equals {
+    fn eq(&self, other: &Self) -> bool;
+}
+
+impl Equals for String {
+    fn eq(&self, other: &Self) -> bool {
+        *self == *other
+    }
+}
+impl Clone for String {
+    fn clone(&self) -> Self {
+        std::clone::Clone::clone(self)
+    }
+}
 
 pub enum Option<T> {
     Some(T),
@@ -58,10 +72,10 @@ impl<T> List<T> {
     }
 }
 
-impl<T: PartialEq> List<T> {
+impl<T: Equals> List<T> {
     fn contains(&self, x: &T) -> bool {
         match self {
-            List::Cons(y, tail) => x == y || tail.contains(x),
+            List::Cons(y, tail) => x.eq(y) || tail.contains(x),
             _ => false,
         }
     }
@@ -96,12 +110,17 @@ impl Clone for ChannelId {
 pub struct PortId(String);
 impl Clone for PortId {
     fn clone(&self) -> Self {
-        PortId(self.0.clone())
+        PortId(Clone::clone(&self.0))
     }
 }
 impl Default for PortId {
     fn default() -> Self {
         PortId("defaultPort".to_string())
+    }
+}
+impl Equals for PortId {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
     }
 }
 
@@ -119,6 +138,11 @@ impl Default for ConnectionId {
 impl Clone for ConnectionId {
     fn clone(&self) -> Self {
         ConnectionId(self.0)
+    }
+}
+impl Equals for ConnectionId {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
     }
 }
 
@@ -189,13 +213,22 @@ impl Order {
         }
     }
 }
-
 impl Clone for Order {
     fn clone(&self) -> Self {
         match self {
             Order::None => Order::None,
             Order::Unordered => Order::Unordered,
             Order::Ordered => Order::Ordered,
+        }
+    }
+}
+impl Equals for Order {
+    fn eq(&self, other: &Order) -> bool {
+        match (self, other) {
+            (Order::None, Order::None) => true,
+            (Order::Unordered, Order::Unordered) => true,
+            (Order::Ordered, Order::Ordered) => true,
+            _ => false,
         }
     }
 }
@@ -233,7 +266,7 @@ impl ChannelEnd {
         &self.remote
     }
     pub fn version(&self) -> String {
-        self.version.clone()
+        Clone::clone(&self.version)
     }
 }
 
@@ -251,6 +284,14 @@ impl Version {
     }
 }
 
+impl Clone for Version {
+    fn clone(&self) -> Self {
+        Version {
+            features: self.features.clone(),
+        }
+    }
+}
+
 pub struct ConnectionEnd {
     // state: State,
     // client_id: ClientId,
@@ -262,6 +303,13 @@ pub struct ConnectionEnd {
 impl ConnectionEnd {
     pub fn versions(&self) -> &List<Version> {
         &self.versions
+    }
+}
+impl Clone for ConnectionEnd {
+    fn clone(&self) -> Self {
+        ConnectionEnd {
+            versions: self.versions.clone(),
+        }
     }
 }
 
@@ -333,11 +381,17 @@ pub enum ErrorKind {
     InvalidVersionLengthConnection,
     ChannelFeatureNotSuportedByConnection,
     InvalidVersion,
+    NoPortCapability(PortId),
 }
 
 #[allow(dead_code)]
 pub struct Capability {
     index: u64,
+}
+impl Clone for Capability {
+    fn clone(&self) -> Self {
+        Capability { index: self.index }
+    }
 }
 
 pub trait ChannelReader {
@@ -346,6 +400,35 @@ pub trait ChannelReader {
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ErrorKind>;
 
     fn channel_counter(&self) -> u64;
+}
+
+pub struct MockChannelReader {
+    connection_id: ConnectionId,
+    connection_end: ConnectionEnd,
+    port_id: PortId,
+    cap: Capability,
+}
+
+impl ChannelReader for MockChannelReader {
+    fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
+        if connection_id.eq(&self.connection_id) {
+            Option::Some(self.connection_end.clone())
+        } else {
+            Option::None
+        }
+    }
+
+    fn channel_counter(&self) -> u64 {
+        1
+    }
+
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ErrorKind> {
+        if port_id.eq(&self.port_id) {
+            Ok(self.cap.clone())
+        } else {
+            Err(ErrorKind::NoPortCapability(port_id.clone()))
+        }
+    }
 }
 
 pub struct Signer(String);
@@ -377,7 +460,7 @@ pub struct ChannelResult {
 }
 
 pub fn process(
-    ctx: &dyn ChannelReader,
+    ctx: MockChannelReader,
     msg: MsgChannelOpenInit,
 ) -> Result<HandlerOutput<ChannelResult>, ErrorKind> {
     let output = HandlerOutput::builder();
