@@ -355,13 +355,13 @@ mod tests {
 
         let msg_transfer = get_dummy_msg_transfer(35);
 
-        let msg_transfer_to = get_dummy_msg_transfer(36);
+        let msg_transfer_two = get_dummy_msg_transfer(36);
 
         let mut msg_to_on_close =
             MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
         msg_to_on_close.packet.sequence = 2.into();
-        msg_to_on_close.packet.timeout_height = msg_transfer_to.timeout_height.clone();
-        msg_to_on_close.packet.timeout_timestamp = msg_transfer_to.timeout_timestamp;
+        msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height.clone();
+        msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
 
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 
@@ -476,27 +476,6 @@ mod tests {
             Test {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
-                    client_id,
-                    header: MockHeader::new(update_client_height_after_send).into(),
-                    signer: default_signer,
-                })),
-                want_pass: true,
-            },
-            Test {
-                name: "Receive packet".to_string(),
-                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet.clone())),
-                want_pass: true,
-            },
-            //ICS20-04-packet
-            Test {
-                name: "Packet send".to_string(),
-                msg: Ics26Envelope::Ics20Msg(msg_transfer),
-                want_pass: true,
-            },
-            //the client update is required in this test, because the proof associated with msg_recv_packet has the same height as the packet TO height (see get_dummy_raw_msg_recv_packet)
-            Test {
-                name: "Client update successful".to_string(),
-                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height_after_send).into(),
                     signer: default_signer.clone(),
@@ -515,10 +494,9 @@ mod tests {
             },
             Test {
                 name: "Packet send".to_string(),
-                msg: Ics26Envelope::Ics20Msg(msg_transfer_to),
+                msg: Ics26Envelope::Ics20Msg(msg_transfer_two),
                 want_pass: true,
             },
-            //the client update is required in this test, because the proof associated with msg_recv_packet has the same height as the packet TO height (see get_dummy_raw_msg_recv_packet)
             Test {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
@@ -527,12 +505,6 @@ mod tests {
                     signer: default_signer,
                 })),
                 want_pass: true,
-            },
-            //ICS04-close channel
-            Test {
-                name: "Re-Receive packet".to_string(),
-                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
-                want_pass: false,
             },
             //ICS04-close channel
             Test {

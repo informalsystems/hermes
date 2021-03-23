@@ -1,9 +1,11 @@
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics04_channel::channel::State;
-use crate::ics04_channel::channel::{Counterparty, Order, ChannelEnd};
+use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::ics04_channel::events::TimeoutPacket;
-use crate::ics04_channel::handler::verify::{verify_packet_receipt_absence,verify_next_sequence_recv};
+use crate::ics04_channel::handler::verify::{
+    verify_next_sequence_recv, verify_packet_receipt_absence,
+};
 use crate::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
@@ -14,13 +16,10 @@ pub struct TimeoutPacketResult {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub seq: Sequence,
-    pub channel: Option<ChannelEnd>
+    pub channel: Option<ChannelEnd>,
 }
 
-pub fn process(
-    ctx: &dyn ChannelReader,
-    msg: MsgTimeout,
-) -> HandlerResult<PacketResult, Error> {
+pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
@@ -37,7 +36,6 @@ pub fn process(
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
-    
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
@@ -58,15 +56,14 @@ pub fn process(
 
     let client_id = connection_end.client_id().clone();
 
-
     // check that timeout height or timeout timestamp has passed on the other end
-    let proof_height = msg.proofs.height().clone();
+    let proof_height = msg.proofs.height();
     let packet_height = packet.timeout_height;
 
-    if (!packet.timeout_height.is_zero()) && packet_height > proof_height{
-        return Err(Kind::PacketTOHeightNotReached(packet.timeout_height,proof_height).into());
+    if (!packet.timeout_height.is_zero()) && packet_height > proof_height {
+        return Err(Kind::PacketTOHeightNotReached(packet.timeout_height, proof_height).into());
     }
-    
+
     let consensus_state = ctx
         .client_consensus_state(&client_id, proof_height)
         .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), proof_height))?;
@@ -77,7 +74,7 @@ pub fn process(
 
     let packet_timestamp = packet.timeout_timestamp;
     if packet.timeout_timestamp != 0 && packet_timestamp > proof_timestamp {
-        return Err(Kind::PacketTOTimestampNotReached(packet_timestamp,proof_timestamp).into());
+        return Err(Kind::PacketTOTimestampNotReached(packet_timestamp, proof_timestamp).into());
     }
 
     //verify packet commitment
@@ -98,19 +95,26 @@ pub fn process(
         return Err(Kind::IncorrectPacketCommitment(packet.sequence).into());
     }
 
-    let result =  if source_channel_end.order_matches(&Order::Ordered) {
+    let result = if source_channel_end.order_matches(&Order::Ordered) {
         if packet.sequence != msg.next_sequence_recv {
-            return Err(Kind::InvalidPacketSequence(packet.sequence, msg.next_sequence_recv).into());
+            return Err(
+                Kind::InvalidPacketSequence(packet.sequence, msg.next_sequence_recv).into(),
+            );
         }
-        verify_next_sequence_recv(ctx, client_id, packet.clone(),msg.next_sequence_recv, &msg.proofs.clone())?;
+        verify_next_sequence_recv(
+            ctx,
+            client_id,
+            packet.clone(),
+            msg.next_sequence_recv,
+            &msg.proofs.clone(),
+        )?;
 
-       PacketResult::Timeout(TimeoutPacketResult {
+        PacketResult::Timeout(TimeoutPacketResult {
             port_id: packet.source_port.clone(),
             channel_id: packet.source_channel.clone(),
             seq: packet.sequence,
             channel: Some(source_channel_end),
         })
-
     } else {
         verify_packet_receipt_absence(ctx, client_id, packet.clone(), &msg.proofs.clone())?;
 
@@ -121,10 +125,8 @@ pub fn process(
             channel: None,
         })
     };
-    
+
     output.log("success: packet timeout ");
-
-
 
     output.emit(IbcEvent::TimeoutPacket(TimeoutPacket {
         height: Default::default(),
@@ -170,10 +172,11 @@ mod tests {
 
         let client_height = Height::new(0, Height::default().revision_height + 2);
 
-        let msg = MsgTimeout::try_from(get_dummy_raw_msg_timeout(height,timeout_timestamp)).unwrap();
+        let msg =
+            MsgTimeout::try_from(get_dummy_raw_msg_timeout(height, timeout_timestamp)).unwrap();
         let packet = msg.packet.clone();
 
-        let mut msg_ok = msg.clone(); 
+        let mut msg_ok = msg.clone();
         msg_ok.packet.timeout_timestamp = Default::default();
 
         let input = format!(
@@ -182,11 +185,11 @@ mod tests {
             msg_ok.packet.timeout_height.clone(),
             msg_ok.packet.data.clone()
         );
-       let data = ChannelReader::hash(&context, input);
+        let data = ChannelReader::hash(&context, input);
 
         let source_channel_end = ChannelEnd::new(
             State::Open,
-           Order::default(),
+            Order::default(),
             Counterparty::new(
                 packet.destination_port.clone(),
                 Some(packet.destination_channel.clone()),

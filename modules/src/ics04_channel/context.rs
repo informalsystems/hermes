@@ -159,7 +159,7 @@ pub trait ChannelKeeper {
                 match res.channel {
                     Some(c) => {
                         //Ordered Channel
-                        let mut channel = c.clone();
+                        let mut channel = c;
                         channel.state = State::Closed;
                         self.store_channel(
                             (res.port_id.clone(), res.channel_id.clone()),
@@ -191,7 +191,7 @@ pub trait ChannelKeeper {
                 ))?;
                 let mut channel = res.channel.clone();
                 channel.state = State::Closed;
-                self.store_channel((res.port_id.clone(), res.channel_id.clone()), &channel)?;
+                self.store_channel((res.port_id.clone(), res.channel_id), &channel)?;
             }
         }
         Ok(())

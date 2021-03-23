@@ -529,15 +529,6 @@ impl ChannelKeeper for MockContext {
         Ok(())
     }
 
-    fn store_packet_receipt(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-        receipt: Receipt,
-    ) -> Result<(), Ics4Error> {
-        self.packet_receipt.insert(key, receipt);
-        Ok(())
-    }
-
     fn store_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
@@ -607,38 +598,6 @@ impl ChannelKeeper for MockContext {
 
     fn increase_channel_counter(&mut self) {
         self.channel_ids_counter += 1;
-    }
-
-    fn store_packet_commitment(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-        timeout_timestamp: u64,
-        timeout_height: Height,
-        data: Vec<u8>,
-    ) -> Result<(), Ics4Error> {
-        let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
-        self.packet_commitment
-            .insert(key, ChannelReader::hash(self, input));
-        Ok(())
-    }
-
-    fn store_packet_acknowledgement(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-        ack: Vec<u8>,
-    ) -> Result<(), Ics4Error> {
-        let input = format!("{:?}", ack);
-        self.packet_acknowledgement
-            .insert(key, ChannelReader::hash(self, input));
-        Ok(())
-    }
-
-    fn delete_packet_acknowledgement(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-    ) -> Result<(), Ics4Error> {
-        self.packet_acknowledgement.remove(&key);
-        Ok(())
     }
 
     fn delete_packet_commitment(

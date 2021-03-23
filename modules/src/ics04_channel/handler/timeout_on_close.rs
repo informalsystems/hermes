@@ -1,20 +1,26 @@
-use crate::{events::IbcEvent, ics04_channel::packet::Sequence, ics24_host::identifier::{ChannelId, PortId}};
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics04_channel::channel::State;
-use crate::ics04_channel::channel::{Counterparty, Order, ChannelEnd};
+use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::ics04_channel::events::TimeoutOnClosePacket;
+use crate::ics04_channel::handler::verify::verify_channel_proofs;
+use crate::ics04_channel::handler::verify::{
+    verify_next_sequence_recv, verify_packet_receipt_absence,
+};
 use crate::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use crate::ics04_channel::packet::PacketResult;
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
-use crate::ics04_channel::handler::verify::{verify_packet_receipt_absence,verify_next_sequence_recv};
-use crate::ics04_channel::handler::verify::verify_proofs;
+use crate::{
+    events::IbcEvent,
+    ics04_channel::packet::Sequence,
+    ics24_host::identifier::{ChannelId, PortId},
+};
 
 #[derive(Clone, Debug)]
 pub struct TimeoutOnClosePacketResult {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub seq: Sequence,
-    pub channel:ChannelEnd
+    pub channel: ChannelEnd,
 }
 
 pub fn process(
@@ -33,7 +39,6 @@ pub fn process(
         })?;
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
-    
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
@@ -72,9 +77,10 @@ pub fn process(
         return Err(Kind::IncorrectPacketCommitment(packet.sequence).into());
     }
 
-    let expected_counterparty =
-        Counterparty::new(packet.source_port.clone(),
-        Some(packet.source_channel.clone()));
+    let expected_counterparty = Counterparty::new(
+        packet.source_port.clone(),
+        Some(packet.source_channel.clone()),
+    );
 
     let counterparty = connection_end.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
@@ -82,7 +88,6 @@ pub fn process(
     })?;
 
     let expected_connection_hops = vec![ccid.clone()];
-
 
     let expected_channel_end = ChannelEnd::new(
         State::Closed,
@@ -92,7 +97,7 @@ pub fn process(
         source_channel_end.version(),
     );
 
-    verify_proofs(
+    verify_channel_proofs(
         ctx,
         &source_channel_end,
         &connection_end,
@@ -100,27 +105,31 @@ pub fn process(
         &msg.proofs.clone(),
     )?;
 
-
-  if source_channel_end.order_matches(&Order::Ordered) {
-        if  msg.next_sequence_recv > packet.sequence {
-            return Err(Kind::InvalidPacketSequence(packet.sequence, msg.next_sequence_recv).into());
+    if source_channel_end.order_matches(&Order::Ordered) {
+        if msg.next_sequence_recv > packet.sequence {
+            return Err(
+                Kind::InvalidPacketSequence(packet.sequence, msg.next_sequence_recv).into(),
+            );
         }
-        verify_next_sequence_recv(ctx, client_id.clone(), packet.clone(),msg.next_sequence_recv, &msg.proofs.clone())?;
-
+        verify_next_sequence_recv(
+            ctx,
+            client_id,
+            packet.clone(),
+            msg.next_sequence_recv,
+            &msg.proofs.clone(),
+        )?;
     } else {
-        verify_packet_receipt_absence(ctx, client_id.clone(), packet.clone(), &msg.proofs.clone())?;
+        verify_packet_receipt_absence(ctx, client_id, packet.clone(), &msg.proofs.clone())?;
     };
 
-    let result =  PacketResult::TimeoutOnClose(TimeoutOnClosePacketResult {
+    let result = PacketResult::TimeoutOnClose(TimeoutOnClosePacketResult {
         port_id: packet.source_port.clone(),
         channel_id: packet.source_channel.clone(),
         seq: packet.sequence,
         channel: source_channel_end.clone(),
     });
-    
+
     output.log("success: packet timeout ");
-
-
 
     output.emit(IbcEvent::TimeoutOnClosePacket(TimeoutOnClosePacket {
         height: Default::default(),
@@ -129,8 +138,6 @@ pub fn process(
 
     Ok(output.with_result(result))
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -168,7 +175,11 @@ mod tests {
 
         let client_height = Height::new(0, Height::default().revision_height + 2);
 
-        let msg = MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(height,timeout_timestamp)).unwrap();
+        let msg = MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(
+            height,
+            timeout_timestamp,
+        ))
+        .unwrap();
         let packet = msg.packet.clone();
 
         let input = format!(
@@ -177,13 +188,12 @@ mod tests {
             msg.packet.timeout_height.clone(),
             msg.packet.data.clone()
         );
-       let data = ChannelReader::hash(&context, input);
-
+        let data = ChannelReader::hash(&context, input);
 
         let source_channel_end = ChannelEnd::new(
             State::Open,
             Order::Ordered,
-           //Order::default(),
+            //Order::default(),
             Counterparty::new(
                 packet.destination_port.clone(),
                 Some(packet.destination_channel.clone()),
@@ -212,19 +222,19 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails no packet commitment is found"
-                    .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    source_channel_end.clone(),
-                )
-                .with_port_capability(packet.destination_port.clone())
-                .with_connection(ConnectionId::default(), connection_end.clone()),
+                name: "Processing fails no packet commitment is found".to_string(),
+                ctx: context
+                    .clone()
+                    .with_channel(
+                        PortId::default(),
+                        ChannelId::default(),
+                        source_channel_end.clone(),
+                    )
+                    .with_port_capability(packet.destination_port.clone())
+                    .with_connection(ConnectionId::default(), connection_end.clone()),
                 msg: msg.clone(),
                 want_pass: false,
             },
-            
             Test {
                 name: "Good parameters".to_string(),
                 ctx: context
@@ -242,7 +252,7 @@ mod tests {
                         msg.packet.sequence,
                         data,
                     ),
-                msg: msg,
+                msg,
                 want_pass: true,
             },
         ]

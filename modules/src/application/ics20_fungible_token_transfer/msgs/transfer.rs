@@ -110,32 +110,3 @@ pub mod test_util {
         }
     }
 }
-
-#[cfg(test)]
-pub mod test_util {
-    use crate::{
-        ics24_host::identifier::{ChannelId, PortId},
-        test_utils::get_dummy_account_id,
-        Height,
-    };
-
-    use super::MsgTransfer;
-
-    // Returns a dummy `RawMsgTransfer`, for testing only!
-    pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
-        let id = get_dummy_account_id();
-
-        MsgTransfer {
-            source_port: PortId::default(),
-            source_channel: ChannelId::default(),
-            token: None,
-            sender: id.clone(),
-            receiver: id,
-            timeout_timestamp: 1,
-            timeout_height: Height {
-                revision_number: 0,
-                revision_height: height,
-            },
-        }
-    }
-}

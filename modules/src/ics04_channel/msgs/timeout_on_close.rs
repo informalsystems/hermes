@@ -113,7 +113,10 @@ pub mod test_util {
 
     /// Returns a dummy `RawMsgTimeout`, for testing only!
     /// The `height` parametrizes both the proof height as well as the timeout height.
-    pub fn get_dummy_raw_msg_timeout_on_close(height: u64, timeout_timestamp: u64) -> RawMsgTimeoutOnClose {
+    pub fn get_dummy_raw_msg_timeout_on_close(
+        height: u64,
+        timeout_timestamp: u64,
+    ) -> RawMsgTimeoutOnClose {
         RawMsgTimeoutOnClose {
             packet: Some(get_dummy_raw_packet(height, timeout_timestamp)),
             proof_unreceived: get_dummy_proof(),

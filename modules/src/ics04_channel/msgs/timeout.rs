@@ -142,7 +142,7 @@ mod test {
 
         let height = 50;
         let timeout_timestamp = 0;
-        let default_raw_msg = get_dummy_raw_msg_timeout(height,timeout_timestamp);
+        let default_raw_msg = get_dummy_raw_msg_timeout(height, timeout_timestamp);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -200,7 +200,7 @@ mod test {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_raw_msg_timeout(15,0);
+        let raw = get_dummy_raw_msg_timeout(15, 0);
         let msg = MsgTimeout::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgTimeout::from(msg.clone());
         let msg_back = MsgTimeout::try_from(raw_back.clone()).unwrap();
