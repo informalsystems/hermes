@@ -121,7 +121,7 @@ pub trait ClientDef: Clone {
         seq: &Sequence,
     ) -> Result<(), Box<dyn std::error::Error>>;
 
-   /// Verify a `proof` that a packet has not been received.
+    /// Verify a `proof` that a packet has not been received.
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
@@ -477,15 +477,15 @@ impl ClientDef for AnyClient {
         }
     }
 
-     fn verify_next_sequence_recv(
-         &self,
-         client_state: &Self::ClientState,
-         height: Height,
-         proof: &CommitmentProofBytes,
-         port_id: &PortId,
-         channel_id: &ChannelId,
-         seq: &Sequence,
-     ) -> Result<(), Box<dyn std::error::Error>>{
+    fn verify_next_sequence_recv(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -499,7 +499,7 @@ impl ClientDef for AnyClient {
                     proof,
                     port_id,
                     channel_id,
-                    seq
+                    seq,
                 )
             }
 
@@ -516,20 +516,20 @@ impl ClientDef for AnyClient {
                     proof,
                     port_id,
                     channel_id,
-                    seq
+                    seq,
                 )
             }
         }
-     }
-      fn verify_packet_receipt_absence(
-         &self,
-         client_state: &Self::ClientState,
-         height: Height,
-         proof: &CommitmentProofBytes,
-         port_id: &PortId,
-         channel_id: &ChannelId,
-         seq: &Sequence,
-     ) -> Result<(), Box<dyn std::error::Error>>{
+    }
+    fn verify_packet_receipt_absence(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -543,7 +543,7 @@ impl ClientDef for AnyClient {
                     proof,
                     port_id,
                     channel_id,
-                    seq
+                    seq,
                 )
             }
 
@@ -560,9 +560,9 @@ impl ClientDef for AnyClient {
                     proof,
                     port_id,
                     channel_id,
-                    seq
+                    seq,
                 )
             }
         }
-     }
+    }
 }

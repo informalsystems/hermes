@@ -6,7 +6,7 @@ use crate::ics04_channel::channel::{Counterparty, Order, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::ReceivePacket;
-use crate::ics04_channel::handler::verify::verify_packet_proofs;
+use crate::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::ics24_host::identifier::{ChannelId, PortId};
@@ -70,19 +70,19 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     let client_id = connection_end.client_id().clone();
 
-    // check if packet height is newer than the height of the local host chain
+    // Check if packet height is newer than the height of the local host chain
     let latest_height = ctx.host_height();
-    if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
+    if (!packet.timeout_height.is_zero()) && (packet.timeout_height <= latest_height) {
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
-    //check if packet timestamp is newer than the local host timestamp chain
+    // Check if packet timestamp is newer than the local host chain timestamp
     let latest_timestamp = ctx.host_timestamp();
-    if packet.timeout_timestamp != 0 && packet.timeout_timestamp <= latest_timestamp {
+    if (packet.timeout_timestamp != 0) && (packet.timeout_timestamp <= latest_timestamp) {
         return Err(Kind::LowPacketTimestamp.into());
     }
 
-    verify_packet_proofs(ctx, &packet, client_id, &msg.proofs)?;
+    verify_packet_recv_proofs(ctx, &packet, client_id, &msg.proofs)?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
@@ -136,7 +136,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 mod tests {
     use std::convert::TryFrom;
 
-    use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::ics03_connection::connection::State as ConnectionState;
@@ -145,6 +144,7 @@ mod tests {
     use crate::ics04_channel::handler::recv_packet::process;
     use crate::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+    use crate::ics18_relayer::context::Ics18Context;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::test_utils::get_dummy_account_id;
@@ -161,13 +161,13 @@ mod tests {
 
         let context = MockContext::default();
 
-        let height = Height::default().revision_height + 2;
+        let host_height = context.query_latest_height().increment();
 
-        let host_height = Height::new(0, Height::default().revision_height + 1);
+        let client_height = host_height.increment();
 
-        let client_height = Height::new(0, Height::default().revision_height + 2);
-
-        let msg = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(height)).unwrap();
+        let msg =
+            MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(client_height.revision_height))
+                .unwrap();
 
         let packet = msg.packet.clone();
 
@@ -245,7 +245,7 @@ mod tests {
                     )
                     .with_height(host_height)
                     .with_timestamp(1)
-                    //with_recv_sequnce required for ordered channels
+                    // This `with_recv_sequence` is required for ordered channels
                     .with_recv_sequence(
                         packet.destination_port.clone(),
                         packet.destination_channel,
@@ -277,13 +277,13 @@ mod tests {
             match res {
                 Ok(proto_output) => {
                     assert_eq!(
-                        test.want_pass,
-                        true,
-                        "recv_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
-                        test.name,
-                        test.msg.clone(),
-                        test.ctx.clone()
-                    );
+                            test.want_pass,
+                            true,
+                            "recv_packet: test passed but was supposed to fail for test: {}, \nparams \n msg={:?}\nctx:{:?}",
+                            test.name,
+                            test.msg.clone(),
+                            test.ctx.clone()
+                        );
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::ReceivePacket(_)));
@@ -291,14 +291,14 @@ mod tests {
                 }
                 Err(e) => {
                     assert_eq!(
-                        test.want_pass,
-                        false,
-                        "recv_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
-                        test.name,
-                        test.msg.clone(),
-                        test.ctx.clone(),
-                        e,
-                    );
+                            test.want_pass,
+                            false,
+                            "recv_packet: did not pass test: {}, \nparams \nmsg={:?}\nctx={:?}\nerror={:?}",
+                            test.name,
+                            test.msg.clone(),
+                            test.ctx.clone(),
+                            e,
+                        );
                 }
             }
         }

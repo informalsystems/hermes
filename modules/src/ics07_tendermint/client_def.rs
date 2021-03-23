@@ -126,10 +126,10 @@ impl ClientDef for TendermintClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>>{
+    ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }
-    
+
     fn verify_packet_receipt_absence(
         &self,
         _client_state: &Self::ClientState,
@@ -138,7 +138,7 @@ impl ClientDef for TendermintClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>>{
+    ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }
 }

@@ -4,12 +4,12 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics04_channel::packet::{Packet,Sequence};
+use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::ics24_host::identifier::ClientId;
 use crate::proofs::Proofs;
 
-/// Entry point for verifying all proofs bundled in any ICS4 message.
-pub fn verify_proofs(
+/// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
+pub fn verify_channel_proofs(
     ctx: &dyn ChannelReader,
     channel_end: &ChannelEnd,
     connection_end: &ConnectionEnd,
@@ -53,7 +53,7 @@ pub fn verify_proofs(
 }
 
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
-pub fn verify_packet_proofs(
+pub fn verify_packet_recv_proofs(
     ctx: &dyn ChannelReader,
     packet: &Packet,
     client_id: ClientId,
@@ -97,7 +97,7 @@ pub fn verify_packet_proofs(
         .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
 }
 
-/// Entry point for verifying all proofs bundled in any ICS4 message.
+/// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
 pub fn verify_packet_acknowledgement_proofs(
     ctx: &dyn ChannelReader,
     packet: &Packet,
@@ -129,7 +129,6 @@ pub fn verify_packet_acknowledgement_proofs(
         )
         .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
 }
-
 
 /// Entry point for verifying all timeout proofs.
 pub fn verify_next_sequence_recv(
@@ -188,9 +187,7 @@ pub fn verify_packet_receipt_absence(
             proofs.object_proof(),
             &packet.destination_port,
             &packet.destination_channel,
-            &packet.sequence
+            &packet.sequence,
         )
         .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
 }
-
-

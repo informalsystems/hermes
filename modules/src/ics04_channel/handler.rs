@@ -18,8 +18,8 @@ pub mod chan_open_init;
 pub mod chan_open_try;
 pub mod recv_packet;
 pub mod send_packet;
-pub mod timeout; 
-pub mod timeout_on_close; 
+pub mod timeout;
+pub mod timeout_on_close;
 mod verify;
 pub mod write_acknowledgement;
 
@@ -45,7 +45,10 @@ pub struct ChannelResult {
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
 /// channel close handshake protocols.
-pub fn dispatch<Ctx>(ctx: &Ctx, msg: ChannelMsg) -> Result<HandlerOutput<ChannelResult>, Error>
+pub fn channel_dispatch<Ctx>(
+    ctx: &Ctx,
+    msg: ChannelMsg,
+) -> Result<HandlerOutput<ChannelResult>, Error>
 where
     Ctx: ChannelReader,
 {
@@ -59,6 +62,7 @@ where
     }
 }
 
+/// Dispatcher for processing any type of message related to the ICS4 packet protocols.
 pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: PacketMsg) -> Result<HandlerOutput<PacketResult>, Error>
 where
     Ctx: ChannelReader,
@@ -67,6 +71,6 @@ where
         PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
         PacketMsg::AckPacket(msg) => acknowledgement::process(ctx, msg),
         PacketMsg::ToPacket(msg) => timeout::process(ctx, msg),
-        PacketMsg::ToClosePacket(msg) =>timeout_on_close::process(ctx, msg),
+        PacketMsg::ToClosePacket(msg) => timeout_on_close::process(ctx, msg),
     }
 }

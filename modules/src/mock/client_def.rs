@@ -132,7 +132,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>>{
+    ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
 
@@ -144,7 +144,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>>{
+    ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
 }

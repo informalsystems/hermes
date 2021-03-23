@@ -5,7 +5,7 @@
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics04_channel::channel::{State, ChannelEnd};
+use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::{error::Error, packet::Receipt};
 use crate::ics05_port::capabilities::Capability;
@@ -117,14 +117,14 @@ pub trait ChannelKeeper {
             PacketResult::Recv(res) => {
                 match res.receipt {
                     None => {
-                        //Ordered cchannel
+                        // Ordered channel
                         self.store_next_sequence_recv(
                             (res.port_id.clone(), res.channel_id.clone()),
                             res.seq_number,
                         )?
                     }
                     Some(r) => {
-                        //Unorderd channel
+                        // Unordered channel
                         self.store_packet_receipt(
                             (res.port_id.clone(), res.channel_id.clone(), res.seq),
                             r,
@@ -138,7 +138,6 @@ pub trait ChannelKeeper {
                     res.ack,
                 )?;
             }
-
             PacketResult::Ack(res) => {
                 match res.seq_number {
                     Some(s) => {
@@ -157,45 +156,42 @@ pub trait ChannelKeeper {
             }
 
             PacketResult::Timeout(res) => {
-               match res.channel {
-                   Some(c) => {
+                match res.channel {
+                    Some(c) => {
                         //Ordered Channel
                         let mut channel = c.clone();
-                        channel.state = State::Closed; 
+                        channel.state = State::Closed;
                         self.store_channel(
                             (res.port_id.clone(), res.channel_id.clone()),
                             &channel,
                         )?;
 
-                        self.delete_packet_commitment(
-                            (res.port_id.clone(),
+                        self.delete_packet_commitment((
+                            res.port_id.clone(),
                             res.channel_id.clone(),
-                            res.seq)
-                        )?;
+                            res.seq,
+                        ))?;
                     }
-                None =>  {
+                    None => {
                         //Unorderded Channel
-                        self.delete_packet_commitment(
-                            (res.port_id.clone(),
+                        self.delete_packet_commitment((
+                            res.port_id.clone(),
                             res.channel_id.clone(),
-                            res.seq)
-                        )?;
+                            res.seq,
+                        ))?;
                     }
                 }
             }
 
-            PacketResult::TimeoutOnClose(res)=>{
-                self.delete_packet_commitment(
-                    (res.port_id.clone(),
+            PacketResult::TimeoutOnClose(res) => {
+                self.delete_packet_commitment((
+                    res.port_id.clone(),
                     res.channel_id.clone(),
-                    res.seq)
-                )?;
+                    res.seq,
+                ))?;
                 let mut channel = res.channel.clone();
-                channel.state = State::Closed; 
-                self.store_channel(
-                            (res.port_id.clone(), res.channel_id.clone()),
-                            &channel,
-                    )?;
+                channel.state = State::Closed;
+                self.store_channel((res.port_id.clone(), res.channel_id.clone()), &channel)?;
             }
         }
         Ok(())
@@ -209,10 +205,8 @@ pub trait ChannelKeeper {
         data: Vec<u8>,
     ) -> Result<(), Error>;
 
-    fn delete_packet_commitment(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-    ) -> Result<(), Error>;
+    fn delete_packet_commitment(&mut self, key: (PortId, ChannelId, Sequence))
+        -> Result<(), Error>;
 
     fn store_packet_receipt(
         &mut self,

@@ -39,7 +39,6 @@ pub fn process(
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
-    output.log("success: packet send ");
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
@@ -66,7 +65,7 @@ pub fn process(
 
     let client_id = connection_end.client_id().clone();
 
-    //verify packet commitment
+    // Verify packet commitment
     let packet_commitment = ctx
         .get_packet_commitment(&(
             packet.source_port.clone(),
@@ -80,11 +79,11 @@ pub fn process(
         packet.timeout_timestamp, packet.timeout_height, packet.data,
     );
 
-    if packet_commitment != ChannelReader::hash(ctx, input) {
+    if packet_commitment != ctx.hash(input) {
         return Err(Kind::IncorrectPacketCommitment(packet.sequence).into());
     }
 
-    //verify write acknowledgement proof
+    // Verify the acknowledgement proof
     verify_packet_acknowledgement_proofs(
         ctx,
         &packet,
@@ -116,6 +115,8 @@ pub fn process(
             seq_number: None,
         })
     };
+
+    output.log("success: packet ack");
 
     output.emit(IbcEvent::AcknowledgePacket(AcknowledgePacket {
         height: Height::zero(),
@@ -155,11 +156,12 @@ mod tests {
 
         let context = MockContext::default();
 
-        let height = Height::default().revision_height + 2;
-
         let client_height = Height::new(0, Height::default().revision_height + 2);
 
-        let msg = MsgAcknowledgement::try_from(get_dummy_raw_msg_acknowledgement(height)).unwrap();
+        let msg = MsgAcknowledgement::try_from(get_dummy_raw_msg_acknowledgement(
+            client_height.revision_height,
+        ))
+        .unwrap();
         let packet = msg.packet.clone();
 
         let input = format!(
@@ -262,7 +264,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "recv_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
+                        "ack_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone(),
