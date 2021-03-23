@@ -117,6 +117,20 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
+    fn query_upgraded_client_state(
+        &self,
+        height: Height,
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
+        self.send(|reply_to| ChainRequest::QueryUpgradedClientState { height, reply_to })
+    }
+
+    fn query_upgraded_consensus_state(
+        &self,
+        height: Height,
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
+        self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState { height, reply_to })
+    }
+
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         self.send(|reply_to| ChainRequest::QueryCommitmentPrefix { reply_to })
     }

@@ -1,16 +1,29 @@
-use crate::ics04_channel::packet::Sequence;
 /// Path-space as listed in ICS-024
 /// https://github.com/cosmos/ics/tree/master/spec/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
-use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use std::fmt::{Display, Formatter, Result};
 
-/// IBC Query Path is hard-coded
+use crate::ics04_channel::packet::Sequence;
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+
+/// ABCI Query path for the IBC sub-store
 pub const IBC_QUERY_PATH: &str = "store/ibc/key";
 
+/// ABCI Query path for the upgrade sub-store
+/// ## Note: This is SDK/Tendermint specific!
+pub const SDK_UPGRADE_QUERY_PATH: &str = "store/upgrade/key";
+
+/// ABCI client upgrade keys
+/// - The key identifying the upgraded IBC state within the upgrade sub-store
+const UPGRADED_IBC_STATE: &str = "upgradedIBCState";
+///- The key identifying the upgraded client state
+const UPGRADED_CLIENT_STATE: &str = "upgradedClient";
+/// - The key identifying the upgraded consensus state
+const UPGRADED_CLIENT_CONSENSUS_STATE: &str = "upgradedConsState";
+
 /// The Path enum abstracts out the different sub-paths
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Path {
     ClientType(ClientId),
     ClientState(ClientId),
@@ -41,6 +54,14 @@ pub enum Path {
         channel_id: ChannelId,
         sequence: Sequence,
     },
+    Upgrade(ClientUpgradePath),
+}
+
+/// Paths that are specific for client upgrades.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ClientUpgradePath {
+    UpgradedClientState(u64),
+    UpgradedClientConsensusState(u64),
 }
 
 impl Path {
@@ -118,6 +139,16 @@ impl Display for Path {
                 f,
                 "receipts/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
+            ),
+            Path::Upgrade(ClientUpgradePath::UpgradedClientState(height)) => write!(
+                f,
+                "{}/{}/{}",
+                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_STATE
+            ),
+            Path::Upgrade(ClientUpgradePath::UpgradedClientConsensusState(height)) => write!(
+                f,
+                "{}/{}/{}",
+                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_CONSENSUS_STATE
             ),
         }
     }

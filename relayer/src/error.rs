@@ -48,6 +48,10 @@ pub enum Kind {
     #[error("Bad Notification")]
     Event,
 
+    /// Missing ClientState in the upgrade CurrentPlan
+    #[error("The upgrade plan specifies no upgraded client state")]
+    EmptyUpgradedClientState,
+
     /// Response does not contain data
     #[error("Empty response value")]
     EmptyResponseValue,
