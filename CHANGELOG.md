@@ -7,7 +7,7 @@
 ### FEATURES
 
 - [ibc]
-  - Added handler(s) for sending packets ([#695])
+  - Added handler(s) for sending packets ([#695]) and for recv. and ack. packets ([#736])
 
 - [ibc-relayer]
   - Support for relayer restart ([#561])
@@ -28,6 +28,7 @@
 - [ibc]
   - Follow Rust guidelines naming conventions ([#689])
   - Per client structure modules ([#740])
+  - MBT: use modelator crate ([#761])
   
 - [ibc-relayer]
   - [nothing yet]
@@ -43,6 +44,8 @@
 
 - [ibc-relayer]
   - Replaced `rust-crypto` & `bitcoin-wallet` deprecated dependencies ([#352])
+  - Fix for hard-coded account number ([#752])
+  - Fix for chains that don't have `cosmos` account prefix ([#416])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -60,6 +63,7 @@
 
 [#352]: https://github.com/informalsystems/ibc-rs/issues/352
 [#357]: https://github.com/informalsystems/ibc-rs/issues/357
+[#416]: https://github.com/informalsystems/ibc-rs/issues/416
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
@@ -69,9 +73,12 @@
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
-[#734]: https://github.com/informalsystems/ibc-rs/issues/734
 [#702]: https://github.com/informalsystems/ibc-rs/issues/702
+[#734]: https://github.com/informalsystems/ibc-rs/issues/734
+[#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
+[#752]: https://github.com/informalsystems/ibc-rs/issues/752
+[#761]: https://github.com/informalsystems/ibc-rs/issues/761
 
 ## v0.1.1
 *February 17, 2021*

@@ -1,3 +1,5 @@
+pub mod step;
+
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
@@ -35,16 +37,13 @@ use ibc::signer::Signer;
 use ibc::Height;
 use step::{Action, ActionOutcome, Chain, Step};
 
-pub mod modelator;
-pub mod step;
-
-#[derive(Debug)]
-pub struct IBCTestExecutor {
+#[derive(Debug, Clone)]
+pub struct IBCTestRunner {
     // mapping from chain identifier to its context
     contexts: HashMap<ChainId, MockContext>,
 }
 
-impl IBCTestExecutor {
+impl IBCTestRunner {
     pub fn new() -> Self {
         Self {
             contexts: Default::default(),
@@ -428,7 +427,7 @@ impl IBCTestExecutor {
     }
 }
 
-impl modelator::TestExecutor<Step> for IBCTestExecutor {
+impl modelator::runner::TestRunner<Step> for IBCTestRunner {
     fn initial_step(&mut self, step: Step) -> bool {
         assert_eq!(step.action, Action::None, "unexpected action type");
         assert_eq!(

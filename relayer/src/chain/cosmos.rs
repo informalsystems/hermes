@@ -162,6 +162,8 @@ impl CosmosSdkChain {
         let mut pk_buf = Vec::new();
         prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
 
+        crate::time!("PK {:?}", hex::encode(key.public_key.public_key.to_bytes()));
+
         // Create a MsgSend proto Any message
         let pk_any = Any {
             type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
@@ -184,7 +186,7 @@ impl CosmosSdkChain {
         // Gas Fee
         let coin = Coin {
             denom: "stake".to_string(),
-            amount: "1000".to_string(),
+            amount: "10000".to_string(),
         };
 
         let fee = Some(Fee {
@@ -207,7 +209,7 @@ impl CosmosSdkChain {
             body_bytes: body_buf.clone(),
             auth_info_bytes: auth_buf.clone(),
             chain_id: self.config.clone().id.to_string(),
-            account_number: 0,
+            account_number: acct_response.account_number,
         };
 
         // A protobuf serialization of a SignDoc
@@ -225,6 +227,8 @@ impl CosmosSdkChain {
 
         let mut txraw_buf = Vec::new();
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
+
+        crate::time!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
 
         let response = self
             .block_on(broadcast_tx_commit(self, txraw_buf))

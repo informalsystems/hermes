@@ -5,18 +5,21 @@ use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::msgs::ChannelMsg;
+use crate::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
+pub mod acknowledgement;
 pub mod chan_close_confirm;
 pub mod chan_close_init;
 pub mod chan_open_ack;
 pub mod chan_open_confirm;
 pub mod chan_open_init;
 pub mod chan_open_try;
+pub mod recv_packet;
 pub mod send_packet;
-
 mod verify;
+pub mod write_acknowledgement;
 
 /// Defines the possible states of a channel identifier in a `ChannelResult`.
 #[derive(Clone, Debug)]
@@ -40,7 +43,10 @@ pub struct ChannelResult {
 
 /// General entry point for processing any type of message related to the ICS4 channel open and
 /// channel close handshake protocols.
-pub fn dispatch<Ctx>(ctx: &Ctx, msg: ChannelMsg) -> Result<HandlerOutput<ChannelResult>, Error>
+pub fn channel_dispatch<Ctx>(
+    ctx: &Ctx,
+    msg: ChannelMsg,
+) -> Result<HandlerOutput<ChannelResult>, Error>
 where
     Ctx: ChannelReader,
 {
@@ -51,5 +57,17 @@ where
         ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg),
         ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
         ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process(ctx, msg),
+    }
+}
+
+/// Dispatcher for processing any type of message related to the ICS4 packet protocols.
+pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: PacketMsg) -> Result<HandlerOutput<PacketResult>, Error>
+where
+    Ctx: ChannelReader,
+{
+    match msg {
+        PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),
+        PacketMsg::AckPacket(msg) => acknowledgement::process(ctx, msg),
+        _ => todo!(),
     }
 }
