@@ -466,6 +466,9 @@ impl RelayPath {
         let mut src_tx_events = vec![];
         let mut dst_tx_events = vec![];
 
+        // Clear this field. We use it to re-collect the src and dst input events if Tx-es fail
+        self.all_events = vec![];
+
         if !self.packet_msgs.is_empty() {
             info!(
                 "sending {} messages to {}",
