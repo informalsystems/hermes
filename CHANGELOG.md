@@ -21,6 +21,7 @@
   - Added `create connection` CLI ([#630])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
+  - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
 
 ### IMPROVEMENTS
 
@@ -74,6 +75,7 @@
 [#702]: https://github.com/informalsystems/ibc-rs/issues/702
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
+[#748]: https://github.com/informalsystems/ibc-rs/issues/748
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
 
