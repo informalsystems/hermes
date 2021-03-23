@@ -2,7 +2,7 @@
 # Copied from https://github.com/cosmos/relayer/tree/master/scripts
 
 usage() {
-  echo "Usage: $0 [BINARY] [CHAIN_ID] [CHAIN_DIR] [RPC_PORT] [P2P_PORT] [PROFILING_PORT] [GRPC_PORT] [SAMOLEANS]"
+  echo "Usage: $0 BINARY CHAIN_ID CHAIN_DIR RPC_PORT P2P_PORT PROFILING_PORT GRPC_PORT SAMOLEANS"
   echo "Example: $0 gaiad ibc-0 ./data 26657 26656 6060 9090 100"
   exit 1
 }
