@@ -54,7 +54,7 @@ pub fn build_and_send_upgrade_chain_message(
 
     let mut upgraded_client_state = ClientState::zero_custom_fields(client_state);
     upgraded_client_state.latest_height = upgrade_height.increment();
-    upgraded_client_state.unbonding_period = Duration::from_secs(400 * 3600); // TODO add to options
+    upgraded_client_state.unbonding_period = Duration::from_secs(400 * 3600);
 
     let raw_client_state = AnyClientState::Tendermint(upgraded_client_state);
     let plan = Plan {
