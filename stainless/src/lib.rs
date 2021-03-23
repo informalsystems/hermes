@@ -57,10 +57,10 @@ impl<T> List<T> {
         }
     }
 
-    fn first(&self) -> &T {
+    fn first(&self) -> Option<&T> {
         match self {
-            List::Cons(v, _) => &v,
-            _ => panic!("Empty list"),
+            List::Cons(v, _) => Option::Some(&v),
+            _ => Option::None,
         }
     }
 
@@ -465,24 +465,23 @@ pub fn process(
         Err(e) => return Err(e),
     };
 
-    if msg.channel().connection_hops().len() != 1 {
-        return Err(ErrorKind::InvalidConnectionHopsLength(
-            1,
-            msg.channel().connection_hops().len(),
-        )
-        .into());
-    }
+    let hop = match msg.channel().connection_hops() {
+        List::Cons(hop, tail) if tail.len() == 0 => hop,
+        _ => {
+            return Err(ErrorKind::InvalidConnectionHopsLength(
+                1,
+                msg.channel().connection_hops().len(),
+            )
+            .into())
+        }
+    };
 
     // An IBC connection running on the local (host) chain should exist.
-    let connection_end = ctx.connection_end(msg.channel().connection_hops().first());
+    let connection_end = ctx.connection_end(hop);
 
     let conn = match connection_end {
         Option::Some(v) => v,
-        _ => {
-            return Result::Err(ErrorKind::MissingConnection(
-                msg.channel().connection_hops().first().clone(),
-            ))
-        }
+        _ => return Result::Err(ErrorKind::MissingConnection(hop.clone())),
     };
 
     let version = match conn.versions() {
