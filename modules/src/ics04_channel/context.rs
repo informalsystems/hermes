@@ -182,17 +182,6 @@ pub trait ChannelKeeper {
                     }
                 }
             }
-
-            PacketResult::TimeoutOnClose(res) => {
-                self.delete_packet_commitment((
-                    res.port_id.clone(),
-                    res.channel_id.clone(),
-                    res.seq,
-                ))?;
-                let mut channel = res.channel.clone();
-                channel.state = State::Closed;
-                self.store_channel((res.port_id.clone(), res.channel_id), &channel)?;
-            }
         }
         Ok(())
     }

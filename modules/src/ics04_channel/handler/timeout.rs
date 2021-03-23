@@ -96,7 +96,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
     }
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
-        if packet.sequence != msg.next_sequence_recv {
+        if packet.sequence < msg.next_sequence_recv {
             return Err(
                 Kind::InvalidPacketSequence(packet.sequence, msg.next_sequence_recv).into(),
             );
@@ -281,7 +281,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "ack_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "TO_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()

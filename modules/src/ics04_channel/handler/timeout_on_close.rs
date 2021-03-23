@@ -1,3 +1,4 @@
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
@@ -8,20 +9,9 @@ use crate::ics04_channel::handler::verify::{
 };
 use crate::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use crate::ics04_channel::packet::PacketResult;
-use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
-use crate::{
-    events::IbcEvent,
-    ics04_channel::packet::Sequence,
-    ics24_host::identifier::{ChannelId, PortId},
+use crate::ics04_channel::{
+    context::ChannelReader, error::Error, error::Kind, handler::timeout::TimeoutPacketResult,
 };
-
-#[derive(Clone, Debug)]
-pub struct TimeoutOnClosePacketResult {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub seq: Sequence,
-    pub channel: ChannelEnd,
-}
 
 pub fn process(
     ctx: &dyn ChannelReader,
@@ -105,8 +95,8 @@ pub fn process(
         &msg.proofs.clone(),
     )?;
 
-    if source_channel_end.order_matches(&Order::Ordered) {
-        if msg.next_sequence_recv > packet.sequence {
+    let result = if source_channel_end.order_matches(&Order::Ordered) {
+        if packet.sequence < msg.next_sequence_recv {
             return Err(
                 Kind::InvalidPacketSequence(packet.sequence, msg.next_sequence_recv).into(),
             );
@@ -118,16 +108,23 @@ pub fn process(
             msg.next_sequence_recv,
             &msg.proofs.clone(),
         )?;
+
+        PacketResult::Timeout(TimeoutPacketResult {
+            port_id: packet.source_port.clone(),
+            channel_id: packet.source_channel.clone(),
+            seq: packet.sequence,
+            channel: Some(source_channel_end),
+        })
     } else {
         verify_packet_receipt_absence(ctx, client_id, packet.clone(), &msg.proofs.clone())?;
-    };
 
-    let result = PacketResult::TimeoutOnClose(TimeoutOnClosePacketResult {
-        port_id: packet.source_port.clone(),
-        channel_id: packet.source_channel.clone(),
-        seq: packet.sequence,
-        channel: source_channel_end.clone(),
-    });
+        PacketResult::Timeout(TimeoutPacketResult {
+            port_id: packet.source_port.clone(),
+            channel_id: packet.source_channel.clone(),
+            seq: packet.sequence,
+            channel: None,
+        })
+    };
 
     output.log("success: packet timeout ");
 
@@ -267,7 +264,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "ack_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "TO_on_close_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
