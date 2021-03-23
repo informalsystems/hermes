@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use prost_types::Any;
 use tracing::info;
 
@@ -30,6 +32,18 @@ use crate::foreign_client::ForeignClient;
 use crate::link::error::LinkError;
 use crate::relay::MAX_ITER;
 
+// TODO(Adi): Should be individually set per each relay path.
+const DELAY: Duration = Duration::from_secs(3);
+
+/// A batch of events that are scheduled for later processing.
+pub struct ScheduledBatch {
+    /// Stores the time when the clients on src and dest chains have been updated.
+    update_time: Instant,
+
+    /// The outstanding batch of events.
+    events: Vec<IbcEvent>,
+}
+
 pub struct RelayPath {
     src_chain: Box<dyn ChainHandle>,
     dst_chain: Box<dyn ChainHandle>,
@@ -40,6 +54,7 @@ pub struct RelayPath {
     src_msgs_input_events: Vec<IbcEvent>,
     packet_msgs: Vec<Any>,
     timeout_msgs: Vec<Any>,
+    scheduled: Vec<ScheduledBatch>,
 }
 
 impl RelayPath {
@@ -58,6 +73,7 @@ impl RelayPath {
             src_msgs_input_events: vec![],
             packet_msgs: vec![],
             timeout_msgs: vec![],
+            scheduled: vec![],
         }
     }
 
@@ -153,6 +169,7 @@ impl RelayPath {
         self.channel.ordering == Order::Ordered
     }
 
+    // TODO(Adi): This needs refactoring!
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = ForeignClient {
             id: self.dst_client_id().clone(),
@@ -375,6 +392,7 @@ impl RelayPath {
     /// Should not execute more than once per execution.
     pub fn clear_packets(&mut self, _height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
+            // TODO(Adi): Removing this is probably causing a bug!
             // self.src_height = height
             //     .decrement()
             //     .map_err(|e| LinkError::Failed(e.to_string()))?;
@@ -391,46 +409,44 @@ impl RelayPath {
     pub fn relay_from_events(&mut self, batch: EventBatch) -> Result<(), LinkError> {
         self.clear_packets(batch.height)?;
 
-        // collect relevant events in self.all_events
+        // Collect relevant events in self.all_events
         self.collect_events(&batch.events);
         self.adjust_events_height()?;
 
-        // TODO(Adi): Should skip this `if` call if there's `next_event_batch`.
-        if self.all_events.is_empty() {
-            return Ok(());
+        // If there are some new events, update src. and dest. clients. and schedule the relaying of
+        // packets from this events.
+        if !self.all_events.is_empty() {
+            let events = self.update_clients(
+                self.all_events[0].height().increment(),
+                self.dst_latest_height()?,
+            )?;
+            // Schedule a timer and loop over them.
+            self.schedule_event_batch(events);
         }
 
-        // TODO(ADI): Candidate for splitting update/packets here.
-        // Update src. and dest. clients here.
-        // let events = self.send_update_clients();
-        // Then schedule a timer and loop over them.
+        while let Some(events_batch) = self.next_scheduled_batch() {
+            self.all_events = events_batch;
 
-        // self.scheduled_events.insert({ current_time + delay_period; self.all_events });
+            for _i in 0..MAX_ITER {
+                self.reset_buffers();
 
-        // while let next_event_batch = self.get_by_timestamp() {
-        for _i in 0..MAX_ITER {
-            self.reset_buffers();
+                // Collect the messages for all events
+                for event in self.all_events.clone() {
+                    println!("{} => {:?}", self.src_chain.id(), event);
+                    self.handle_packet_event(&event)?;
+                }
 
-            // TODO: Make this dependency explicit. What is its purpose?
-            // self.dst_height = self.dst_latest_height()?;
+                // Send client update and messages
+                let res = self.send_msgs();
+                println!("\nresult {:?}", res);
 
-            // Collect the messages for all events
-            for event in self.all_events.clone() {
-                println!("{} => {:?}", self.src_chain.id(), event);
-                self.handle_packet_event(&event)?;
+                if self.all_events.is_empty() {
+                    break;
+                }
+
+                println!("retrying");
             }
-
-            // Send client update and messages
-            let res = self.send_update_client_and_msgs();
-            println!("\nresult {:?}", res);
-
-            if self.all_events.is_empty() {
-                break;
-            }
-
-            println!("retrying");
         }
-        // }
 
         // TODO - add error
         self.all_events = vec![];
@@ -438,11 +454,122 @@ impl RelayPath {
         Ok(())
     }
 
-    /// This method sends ClientUpdate transactions
-    pub fn send_update_client() -> Result<(), LinkError> {
-        Ok(())
+    pub fn send_msgs(&mut self) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), LinkError> {
+        let mut src_tx_events = vec![];
+        let mut dst_tx_events = vec![];
+
+        if !self.packet_msgs.is_empty() {
+            info!(
+                "sending {} messages to {}",
+                self.packet_msgs.len(),
+                self.dst_chain.id()
+            );
+
+            dst_tx_events = self.dst_chain.send_msgs(self.packet_msgs.clone())?;
+            info!("result {:?}\n", dst_tx_events);
+
+            let ev = dst_tx_events
+                .clone()
+                .into_iter()
+                .find(|event| matches!(event, IbcEvent::ChainError(_)));
+
+            // Recycle the original events that produced these messages, we'll retry based on them
+            if ev.is_some() {
+                self.all_events
+                    .append(&mut self.dst_msgs_input_events.clone());
+            }
+        }
+
+        if !self.timeout_msgs.is_empty() {
+            info!(
+                "sending {:?} messages to {}",
+                self.timeout_msgs.len(),
+                self.src_chain.id(),
+            );
+
+            src_tx_events = self.src_chain.send_msgs(self.timeout_msgs.clone())?;
+            info!("result {:?}\n", src_tx_events);
+
+            let ev = src_tx_events
+                .clone()
+                .into_iter()
+                .find(|event| matches!(event, IbcEvent::ChainError(_)));
+
+            // Recycle
+            if ev.is_some() {
+                self.all_events
+                    .append(&mut self.src_msgs_input_events.clone());
+            }
+        }
+
+        Ok((dst_tx_events, src_tx_events))
     }
 
+    /// Sends ClientUpdate transactions ahead of a scheduled batch.
+    pub fn update_clients(
+        &self,
+        src_height: Height,
+        dst_height: Height,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
+        let mut ret_events = vec![];
+
+        //
+        // Handle the update on the destination chain
+        //
+        // Check if a consensus state at update_height exists on destination chain already
+        if self
+            .dst_chain()
+            .proven_client_consensus(self.dst_client_id(), src_height, Height::zero())
+            .is_err()
+        {
+            let dst_update = self.build_update_client_on_dst(src_height)?;
+            info!("sending update client at height {:?}", src_height);
+
+            let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
+            info!("result {:?}\n", dst_tx_events);
+
+            let dst_err_ev = dst_tx_events
+                .into_iter()
+                .find(|event| matches!(event, IbcEvent::ChainError(_)));
+
+            // If there was an error, accumulate the original events to return them to caller
+            if dst_err_ev.is_some() {
+                ret_events.append(&mut self.dst_msgs_input_events.clone());
+            }
+        }
+
+        //
+        // Handle the update on the source chain
+        //
+        if self
+            .src_chain()
+            .proven_client_consensus(self.src_client_id(), dst_height, Height::zero())
+            .is_err()
+        {
+            let src_update = self.build_update_client_on_src(dst_height)?;
+            info!(
+                "sending {:?} messages to {}, update client at height {:?}",
+                src_update.len(),
+                self.src_chain.id(),
+                dst_height,
+            );
+
+            let src_tx_events = self.src_chain.send_msgs(src_update)?;
+            info!("result {:?}\n", src_tx_events);
+
+            let src_err_ev = src_tx_events
+                .into_iter()
+                .find(|event| matches!(event, IbcEvent::ChainError(_)));
+
+            if src_err_ev.is_some() {
+                ret_events.append(&mut self.src_msgs_input_events.clone());
+            }
+        }
+
+        Ok(ret_events)
+    }
+
+    // TODO(Adi): Candidate for removal.
     pub fn send_update_client_and_msgs(
         &mut self,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), LinkError> {
@@ -456,21 +583,16 @@ impl RelayPath {
         self.all_events = vec![];
 
         if !self.packet_msgs.is_empty() {
-            // Remark: src_update_height is set during [`collect_events`].
-            let update_height = src_update_height;
             let mut msgs_to_send = vec![];
-
-            // We should probably not re-send another client update here, which may provoke the
-            // rejection of the packet messages.
 
             // Check if a consensus state at update_height exists on destination chain already
             if self
                 .dst_chain()
-                .proven_client_consensus(self.dst_client_id(), update_height, Height::zero())
+                .proven_client_consensus(self.dst_client_id(), src_update_height, Height::zero())
                 .is_err()
             {
-                msgs_to_send = self.build_update_client_on_dst(update_height)?;
-                info!("sending update client at height {:?}", update_height);
+                msgs_to_send = self.build_update_client_on_dst(src_update_height)?;
+                info!("sending update client at height {:?}", src_update_height);
             }
 
             msgs_to_send.append(&mut self.packet_msgs);
@@ -496,14 +618,13 @@ impl RelayPath {
         }
 
         if !self.timeout_msgs.is_empty() {
-            let update_height = dst_update_height;
-            let mut msgs_to_send = self.build_update_client_on_src(update_height)?;
+            let mut msgs_to_send = self.build_update_client_on_src(dst_update_height)?;
             msgs_to_send.append(&mut self.timeout_msgs);
             info!(
                 "sending {:?} messages to {}, update client at height {:?}",
                 msgs_to_send.len(),
                 self.src_chain.id(),
-                update_height,
+                dst_update_height,
             );
 
             src_tx_events = self.src_chain.send_msgs(msgs_to_send)?;
@@ -843,5 +964,31 @@ impl RelayPath {
                 None,
             ))
         }
+    }
+
+    /// Registers a new batch of events to be processed later. The batch can be retrieved once a
+    /// predefined delay period elapses, via method `next_scheduled_batch`.
+    fn schedule_event_batch(&mut self, events: Vec<IbcEvent>) {
+        if events.is_empty() {
+            panic!("Cannot schedule an empty event batch")
+        }
+        let sc_event = ScheduledBatch {
+            update_time: Instant::now(),
+            events,
+        };
+        self.scheduled.push(sc_event);
+    }
+
+    /// Pulls out the next batch of events that have fulfilled the predefined delay period and can
+    /// now be processed.
+    fn next_scheduled_batch(&mut self) -> Option<Vec<IbcEvent>> {
+        // The head of the scheduled vector contains the oldest scheduled batch.
+        if let Some(batch) = self.scheduled.first() {
+            if batch.update_time.elapsed() > DELAY {
+                let events_batch = self.scheduled.remove(0);
+                return Some(events_batch.events);
+            }
+        }
+        None
     }
 }
