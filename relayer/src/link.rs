@@ -179,6 +179,8 @@ impl Link {
                 a_channel.counterparty().port_id.clone(),
                 b_channel_id,
             ),
+            // TODO(Adi): Is this indeed in seconds format?
+            connection_delay: Duration::from_secs(a_connection.delay_period()),
         };
 
         Ok(Link::new(channel))

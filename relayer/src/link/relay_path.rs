@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use prost_types::Any;
 use tracing::info;
@@ -31,9 +31,6 @@ use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::LinkError;
 use crate::relay::MAX_ITER;
-
-// TODO(Adi): Should be individually set per each relay path.
-const DELAY: Duration = Duration::from_secs(3);
 
 /// A batch of events that are scheduled for later processing.
 pub struct ScheduledBatch {
@@ -1001,7 +998,7 @@ impl RelayPath {
     fn next_scheduled_batch(&mut self) -> Option<Vec<IbcEvent>> {
         // The head of the scheduled vector contains the oldest scheduled batch.
         if let Some(batch) = self.scheduled.first() {
-            if batch.update_time.elapsed() > DELAY {
+            if batch.update_time.elapsed() > self.channel.connection_delay {
                 let events_batch = self.scheduled.remove(0);
                 info!(
                     "Found a scheduled batch with {} events",

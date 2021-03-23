@@ -20,6 +20,7 @@ use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
+use std::time::Duration;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
@@ -90,6 +91,7 @@ pub struct Channel {
     pub ordering: Order,
     pub a_side: ChannelSide,
     pub b_side: ChannelSide,
+    pub connection_delay: Duration,
 }
 
 impl Channel {
@@ -117,6 +119,8 @@ impl Channel {
                 b_port,
                 Default::default(),
             ),
+            // TODO(Adi): Is this indeed in seconds format?
+            connection_delay: Duration::from_secs(connection.delay_period),
         };
         channel.handshake()?;
         Ok(channel)
@@ -167,6 +171,7 @@ impl Channel {
             ordering: self.ordering,
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
+            connection_delay: self.connection_delay,
         }
     }
 
