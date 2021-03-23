@@ -3,10 +3,10 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::error;
 
-use ibc::events::IbcEvent;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::{events::IbcEvent, ics07_tendermint::client_state::ClientState};
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
 
@@ -50,7 +50,7 @@ pub fn build_and_send_upgrade_chain_message(
     let client_state = src_chain
         .query_client_state(&opts.src_client_id, Height::zero())
         .unwrap();
-    let mut upgraded_client_state = client_state.zero_custom_fields();
+    let mut upgraded_client_state = ClientState::zero_custom_fields(client_state);
     upgraded_client_state.latest_height = upgrade_height.increment();
     upgraded_client_state.unbonding_period = Duration::from_secs(400 * 3600); // TODO add to options
 
