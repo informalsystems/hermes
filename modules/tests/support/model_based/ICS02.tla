@@ -15,7 +15,9 @@ ICS02_SetClient(clients, clientId, client) ==
     [clients EXCEPT ![clientId] = client]
 
 ICS02_CreateClient(chain, chainId, height) ==
-    LET action == AsAction([
+    \* TODO: rename `action_` to `action` once the following issue is fixed:
+    \*        https://github.com/informalsystems/apalache/issues/593
+    LET action_ == AsAction([
         type |-> "ICS02CreateClient",
         chainId |-> chainId,
         clientState |-> height,
@@ -28,7 +30,7 @@ ICS02_CreateClient(chain, chainId, height) ==
         [
             clients |-> chain.clients,
             clientIdCounter |-> chain.clientIdCounter,
-            action |-> action,
+            action |-> action_,
             outcome |-> "ModelError"
         ]
     ELSE
@@ -44,12 +46,12 @@ ICS02_CreateClient(chain, chainId, height) ==
                 client
             ),
             clientIdCounter |-> chain.clientIdCounter + 1,
-            action |-> action,
+            action |-> action_,
             outcome |-> "ICS02CreateOK"
         ]
 
 ICS02_UpdateClient(chain, chainId, clientId, height) ==
-    LET action == AsAction([
+    LET action_ == AsAction([
         type |-> "ICS02UpdateClient",
         chainId |-> chainId,
         clientId |-> clientId,
@@ -60,7 +62,7 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
         \* if the client does not exist, then set an error outcome
         [
             clients |-> chain.clients,
-            action |-> action,
+            action |-> action_,
             outcome |-> "ICS02ClientNotFound"
         ]
     ELSE
@@ -72,7 +74,7 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
             \* height, then set an error outcome
             [
                 clients |-> chain.clients,
-                action |-> action,
+                action |-> action_,
                 outcome |-> "ICS02HeaderVerificationFailure"
             ]
         ELSE
@@ -88,7 +90,7 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
                     clientId,
                     updatedClient
                 ),
-                action |-> action,
+                action |-> action_,
                 outcome |-> "ICS02UpdateOK"
             ]
 
