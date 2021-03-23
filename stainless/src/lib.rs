@@ -466,7 +466,10 @@ pub fn process(
     let output = HandlerOutput::builder();
 
     // Channel capabilities
-    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
+    let channel_cap = match ctx.authenticated_capability(&msg.port_id().clone()) {
+        Ok(c) => c,
+        Err(e) => return Err(e),
+    };
 
     if msg.channel().connection_hops().len() != 1 {
         return Err(ErrorKind::InvalidConnectionHopsLength(
