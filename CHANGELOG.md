@@ -27,6 +27,7 @@
 - [ibc]
   - Follow Rust guidelines naming conventions ([#689])
   - Per client structure modules ([#740])
+  - MBT: use modelator crate ([#761])
   
 - [ibc-relayer]
   - [nothing yet]
@@ -70,6 +71,7 @@
 [#702]: https://github.com/informalsystems/ibc-rs/issues/702
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
+[#761]: https://github.com/informalsystems/ibc-rs/issues/761
 
 ## v0.1.1
 *February 17, 2021*
