@@ -28,13 +28,11 @@ pub enum Option<T> {
     Some(T),
     None,
 }
-
 impl<T> Default for Option<T> {
     fn default() -> Option<T> {
         Option::None
     }
 }
-
 impl<T: Clone> Clone for Option<T> {
     fn clone(&self) -> Self {
         match self {
@@ -190,6 +188,18 @@ pub enum State {
     TryOpen = 2,
     Open = 3,
     Closed = 4,
+}
+impl Equals for State {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (State::Uninitialized, State::Uninitialized) => true,
+            (State::Init, State::Init) => true,
+            (State::TryOpen, State::TryOpen) => true,
+            (State::Open, State::Open) => true,
+            (State::Closed, State::Closed) => true,
+            _ => false,
+        }
+    }
 }
 
 pub enum ChannelIdState {
@@ -389,7 +399,7 @@ impl Clone for Capability {
 }
 
 pub trait ChannelReader {
-    fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd>;
+    fn connection_end(&self, connection_id: &ConnectionId) -> Option<&ConnectionEnd>;
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ErrorKind>;
 
@@ -404,9 +414,9 @@ pub struct MockChannelReader {
 }
 
 impl ChannelReader for MockChannelReader {
-    fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
+    fn connection_end(&self, connection_id: &ConnectionId) -> Option<&ConnectionEnd> {
         if connection_id.eq(&self.connection_id) {
-            Option::Some(self.connection_end.clone())
+            Option::Some(&self.connection_end)
         } else {
             Option::None
         }
@@ -453,6 +463,36 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
+#[pre(
+  msg.channel().connection_hops().len() == 1 &&
+  matches!(
+    msg.channel().connection_hops().first(),
+    Option::Some(f) if f.eq(&ctx.connection_id)
+  ) &&
+  msg.port_id().eq(&ctx.port_id) &&
+  ctx.connection_end.versions.len() == 1 &&
+  matches!(
+    ctx.connection_end.versions.first(),
+    Option::Some(v) if v.is_supported_feature(
+        msg.channel().ordering().as_string().to_string()
+    )
+  ) &&
+  !msg.channel().version.is_empty()
+)]
+#[post(
+  match ret {
+    Ok(output) => {
+      output.result.channel_end.state.eq(&State::Init)
+        && matches!(
+          (output.result.channel_end.connection_hops().first(),
+            msg.channel().connection_hops().first()),
+          (Option::Some(o), Option::Some(m)) //if o.eq(m)
+        )
+    }
+    _ => false,
+  }
+)]
+
 pub fn process(
     ctx: MockChannelReader,
     msg: MsgChannelOpenInit,
@@ -460,7 +500,7 @@ pub fn process(
     let output = HandlerOutput::builder();
 
     // Channel capabilities
-    let channel_cap = match ctx.authenticated_capability(&msg.port_id().clone()) {
+    let channel_cap = match ctx.authenticated_capability(&msg.port_id()) {
         Ok(c) => c,
         Err(e) => return Err(e),
     };
@@ -477,9 +517,7 @@ pub fn process(
     };
 
     // An IBC connection running on the local (host) chain should exist.
-    let connection_end = ctx.connection_end(hop);
-
-    let conn = match connection_end {
+    let conn = match ctx.connection_end(hop) {
         Option::Some(v) => v,
         _ => return Result::Err(ErrorKind::MissingConnection(hop.clone())),
     };
