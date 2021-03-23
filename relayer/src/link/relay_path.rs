@@ -449,7 +449,7 @@ impl RelayPath {
         let mut src_tx_events = vec![];
         let mut dst_tx_events = vec![];
 
-        let src_update_height = self.all_events[0].height();
+        let src_update_height = self.all_events[0].height().increment();
         let dst_update_height = self.dst_latest_height()?;
 
         // Clear all_events and collect the src and dst input events if Tx-es fail
