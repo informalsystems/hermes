@@ -36,8 +36,6 @@ pub struct RelayPath {
     channel: Channel,
     clear_packets: bool,
     all_events: Vec<IbcEvent>,
-    src_height: Height,
-    dst_height: Height,
     dst_msgs_input_events: Vec<IbcEvent>,
     src_msgs_input_events: Vec<IbcEvent>,
     packet_msgs: Vec<Any>,
@@ -56,8 +54,6 @@ impl RelayPath {
             channel,
             clear_packets: true,
             all_events: vec![],
-            src_height: Height::zero(),
-            dst_height: Height::zero(),
             dst_msgs_input_events: vec![],
             src_msgs_input_events: vec![],
             packet_msgs: vec![],
@@ -109,17 +105,17 @@ impl RelayPath {
         &self.channel
     }
 
-    fn src_channel(&self) -> Result<ChannelEnd, LinkError> {
+    fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         Ok(self
             .src_chain()
-            .query_channel(self.src_port_id(), self.src_channel_id(), self.src_height)
+            .query_channel(self.src_port_id(), self.src_channel_id(), height)
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
     }
 
-    fn dst_channel(&self) -> Result<ChannelEnd, LinkError> {
+    fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         Ok(self
             .dst_chain()
-            .query_channel(self.dst_port_id(), self.dst_channel_id(), self.dst_height)
+            .query_channel(self.dst_port_id(), self.dst_channel_id(), height)
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
     }
 
@@ -143,7 +139,7 @@ impl RelayPath {
         })
     }
 
-    fn dst_latest_height(&self) -> Result<Height, LinkError> {
+    pub fn dst_latest_height(&self) -> Result<Height, LinkError> {
         self.dst_chain
             .query_latest_height()
             .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))
@@ -200,7 +196,9 @@ impl RelayPath {
                 // Here we check it the channel is closed on src and send a channel close confirm
                 // to the counterparty.
                 if self.ordered_channel()
-                    && self.src_channel()?.state_matches(&ChannelState::Closed)
+                    && self
+                        .src_channel(timeout_ev.height)?
+                        .state_matches(&ChannelState::Closed)
                 {
                     info!(
                         "{} => event {} closes the channel",
@@ -244,6 +242,8 @@ impl RelayPath {
         Ok(new_msg.to_any())
     }
 
+    // TODO(Adi): This method is a good candidate for removal/refactor. We can handle updating the
+    //     internal buffers (`packet_msgs` and others) directly inside `build_msg_from_event`.
     fn handle_packet_event(&mut self, event: &IbcEvent) -> Result<(), LinkError> {
         let (dst_msg, timeout) = self.build_msg_from_event(event)?;
 
@@ -300,11 +300,6 @@ impl RelayPath {
                 _ => {}
             }
         }
-
-        if !self.all_events.is_empty() {
-            // All events are at the same height
-            self.src_height = self.all_events[0].height();
-        }
     }
 
     // May adjust the height of events in self.all_events.
@@ -316,7 +311,7 @@ impl RelayPath {
             return Ok(());
         }
 
-        let event_height = self.src_height;
+        let event_height = self.all_events[0].height();
 
         // Check if a consensus state at event_height + 1 exists on destination chain already
         // and update src_height
@@ -346,7 +341,6 @@ impl RelayPath {
             let new_height = trusted_height
                 .decrement()
                 .map_err(|e| LinkError::Failed(e.to_string()))?;
-            self.src_height = new_height;
             self.all_events
                 .iter_mut()
                 .for_each(|ev| ev.set_height(new_height));
@@ -378,11 +372,12 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    pub fn clear_packets(&mut self, height: Height) -> Result<(), LinkError> {
+    /// Should not execute more than once per execution.
+    pub fn clear_packets(&mut self, _height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
-            self.src_height = height
-                .decrement()
-                .map_err(|e| LinkError::Failed(e.to_string()))?;
+            // self.src_height = height
+            //     .decrement()
+            //     .map_err(|e| LinkError::Failed(e.to_string()))?;
 
             self.relay_pending_packets()?;
             self.clear_packets = false;
@@ -400,14 +395,24 @@ impl RelayPath {
         self.collect_events(&batch.events);
         self.adjust_events_height()?;
 
+        // TODO(Adi): Should skip this `if` call if there's `next_event_batch`.
         if self.all_events.is_empty() {
             return Ok(());
         }
 
+        // TODO(ADI): Candidate for splitting update/packets here.
+        // Update src. and dest. clients here.
+        // let events = self.send_update_clients();
+        // Then schedule a timer and loop over them.
+
+        // self.scheduled_events.insert({ current_time + delay_period; self.all_events });
+
+        // while let next_event_batch = self.get_by_timestamp() {
         for _i in 0..MAX_ITER {
             self.reset_buffers();
 
-            self.dst_height = self.dst_latest_height()?;
+            // TODO: Make this dependency explicit. What is its purpose?
+            // self.dst_height = self.dst_latest_height()?;
 
             // Collect the messages for all events
             for event in self.all_events.clone() {
@@ -425,10 +430,16 @@ impl RelayPath {
 
             println!("retrying");
         }
+        // }
 
         // TODO - add error
         self.all_events = vec![];
 
+        Ok(())
+    }
+
+    /// This method sends ClientUpdate transactions
+    pub fn send_update_client() -> Result<(), LinkError> {
         Ok(())
     }
 
@@ -438,12 +449,19 @@ impl RelayPath {
         let mut src_tx_events = vec![];
         let mut dst_tx_events = vec![];
 
+        let src_update_height = self.all_events[0].height();
+        let dst_update_height = self.dst_latest_height()?;
+
         // Clear all_events and collect the src and dst input events if Tx-es fail
         self.all_events = vec![];
 
         if !self.packet_msgs.is_empty() {
-            let update_height = self.src_height.increment();
+            // Remark: src_update_height is set during [`collect_events`].
+            let update_height = src_update_height;
             let mut msgs_to_send = vec![];
+
+            // We should probably not re-send another client update here, which may provoke the
+            // rejection of the packet messages.
 
             // Check if a consensus state at update_height exists on destination chain already
             if self
@@ -452,7 +470,7 @@ impl RelayPath {
                 .is_err()
             {
                 msgs_to_send = self.build_update_client_on_dst(update_height)?;
-                info!("sending update client at height {:?}", update_height,);
+                info!("sending update client at height {:?}", update_height);
             }
 
             msgs_to_send.append(&mut self.packet_msgs);
@@ -478,7 +496,7 @@ impl RelayPath {
         }
 
         if !self.timeout_msgs.is_empty() {
-            let update_height = self.dst_height.increment();
+            let update_height = dst_update_height;
             let mut msgs_to_send = self.build_update_client_on_src(update_height)?;
             msgs_to_send.append(&mut self.timeout_msgs);
             info!(
@@ -505,7 +523,8 @@ impl RelayPath {
         Ok((dst_tx_events, src_tx_events))
     }
 
-    fn target_height_and_send_packet_events(&mut self) -> Result<(), LinkError> {
+    /// Returns the height (of the source chain) where the chain has outstanding packets.
+    fn target_height_and_send_packet_events(&mut self) -> Result<Height, LinkError> {
         // Query packet commitments on source chain that have not been acknowledged
         let pc_request = QueryPacketCommitmentsRequest {
             port_id: self.src_port_id().to_string(),
@@ -515,10 +534,7 @@ impl RelayPath {
         let (packet_commitments, query_height) =
             self.src_chain.query_packet_commitments(pc_request)?;
         if packet_commitments.is_empty() {
-            return Ok(());
-        }
-        if self.src_height == Height::zero() {
-            self.src_height = query_height;
+            return Ok(query_height);
         }
         let commit_sequences = packet_commitments.iter().map(|p| p.sequence).collect();
         info!(
@@ -549,7 +565,7 @@ impl RelayPath {
         );
 
         if sequences.is_empty() {
-            return Ok(());
+            return Ok(query_height);
         }
 
         self.all_events = self.src_chain.query_txs(QueryPacketEventDataRequest {
@@ -559,7 +575,7 @@ impl RelayPath {
             destination_port_id: self.dst_port_id().clone(),
             destination_channel_id: self.dst_channel_id().clone(),
             sequences,
-            height: self.src_height,
+            height: query_height,
         })?;
 
         let mut packet_sequences = vec![];
@@ -570,10 +586,10 @@ impl RelayPath {
         }
         info!("received from query_txs {:?}", packet_sequences);
 
-        Ok(())
+        Ok(query_height)
     }
 
-    fn target_height_and_write_ack_events(&mut self) -> Result<(), LinkError> {
+    fn target_height_and_write_ack_events(&mut self) -> Result<Height, LinkError> {
         // Get the sequences of packets that have been acknowledged on source
         let pc_request = QueryPacketAcknowledgementsRequest {
             port_id: self.src_port_id().to_string(),
@@ -586,11 +602,7 @@ impl RelayPath {
             .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
         if acks_on_source.is_empty() {
-            return Ok(());
-        }
-
-        if self.src_height == Height::zero() {
-            self.src_height = query_height;
+            return Ok(query_height);
         }
 
         let acked_sequences = acks_on_source.iter().map(|p| p.sequence).collect();
@@ -621,7 +633,7 @@ impl RelayPath {
         );
 
         if sequences.is_empty() {
-            return Ok(());
+            return Ok(query_height);
         }
 
         self.all_events = self
@@ -633,7 +645,7 @@ impl RelayPath {
                 destination_port_id: self.src_port_id().clone(),
                 destination_channel_id: self.src_channel_id().clone(),
                 sequences,
-                height: self.src_height,
+                height: query_height,
             })
             .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
@@ -644,17 +656,17 @@ impl RelayPath {
             packet_sequences.push(write_ack_event.packet.sequence);
         }
         info!("received from query_txs {:?}", packet_sequences);
-        Ok(())
+
+        Ok(query_height)
     }
 
     pub fn build_recv_packet_and_timeout_msgs(&mut self) -> Result<(), LinkError> {
         // Get the events for the send packets on source chain that have not been received on
         // destination chain (i.e. ack was not seen on source chain)
-        self.target_height_and_send_packet_events()?;
-        self.dst_height = self.dst_latest_height()?;
+        let src_height = self.target_height_and_send_packet_events()?;
 
         for event in self.all_events.iter_mut() {
-            event.set_height(self.src_height);
+            event.set_height(src_height);
         }
 
         for event in self.all_events.clone() {
@@ -666,11 +678,10 @@ impl RelayPath {
     pub fn build_packet_ack_msgs(&mut self) -> Result<(), LinkError> {
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
-        self.target_height_and_write_ack_events()?;
-        self.dst_height = self.dst_latest_height()?;
+        let src_height = self.target_height_and_write_ack_events()?;
 
         for event in self.all_events.iter_mut() {
-            event.set_height(self.src_height);
+            event.set_height(src_height);
         }
         for event in self.all_events.clone() {
             self.handle_packet_event(&event)?;
@@ -809,17 +820,20 @@ impl RelayPath {
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let packet = event.packet.clone();
 
-        if self.dst_channel()?.state_matches(&ChannelState::Closed) {
-            Ok((
-                None,
-                Some(self.build_timeout_on_close_packet(&event.packet, self.dst_height)?),
-            ))
-        } else if packet.timeout_height != Height::zero()
-            && packet.timeout_height < self.dst_latest_height()?
+        let dst_height = self.dst_latest_height()?;
+
+        if self
+            .dst_channel(dst_height)?
+            .state_matches(&ChannelState::Closed)
         {
             Ok((
                 None,
-                Some(self.build_timeout_packet(&event.packet, self.dst_height)?),
+                Some(self.build_timeout_on_close_packet(&event.packet, dst_height)?),
+            ))
+        } else if packet.timeout_height != Height::zero() && packet.timeout_height < dst_height {
+            Ok((
+                None,
+                Some(self.build_timeout_packet(&event.packet, dst_height)?),
             ))
             // } else if packet.timeout_timestamp != 0 && packet.timeout_timestamp < dst_chain.query_time() {
             //     TODO - add query to get the current chain time
