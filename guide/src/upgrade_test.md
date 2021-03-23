@@ -1,176 +1,166 @@
 ## Prerequisites
 
-- gaiad
-```
+- gaiad `(v4.1.*)`, for example:
+
+```shell
 $ gaiad version --long | head -n4
 name: gaia
 server_name: gaiad
-version: 4.0.0
-commit: a279d091c6f66f8a91c87943139ebaecdd84f689
-```
-
-- Go relayer
-
-```shell
-$ rly version
-version: 0.8.2
-commit: 489607fa6de093d90fd2f8ac8eb52be3ccf3f145
-cosmos-sdk: v0.41.3
-go: go1.15.6 darwin/amd64
+version: 4.1.2
+commit: 95b07e641d1f69ee12dd911e92b1679f2c64d385
 ```
 
 ## Testing procedure
 
-1. Patch the `one-chain` script of the Go relayer.
+1. Start two gaia instances and initialize hermes:
 
-```shell
-cd ~/go/src/github.com/cosmos/relayer/
-```
+    ```shell
+    $ ./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
+    ```
+    The `one-chain` script is invoked for each chain and modifies the `genesis.json` file to use a short window for governance proposals (`200s` for `max_deposit_period` and `voting_period`). Therefore, an upgrade proposal can be submitted, voted on and accepted within a short time.
 
-This patching step is necessary to short-circuit the upgrading of a chain.
-With the changes below, a chain will be able to undergo an upgrade within
-~200 seconds of the upgrade proposal (instead of the default of 2 days).
-With this patch, we can test the upgrade functionality in a matter of minutes.
+2. Create one client on `ibc-1` for `ibc-0`:
 
-Note this only works for MacOS ("Darwin" platform), not tests on Linux.
+    ```shell
+    $ hermes tx raw create-client ibc-1 ibc-0
+    ```
 
-```diff
-diff --git a/scripts/one-chain b/scripts/one-chain
-index d0995fe..3702a88 100755
---- a/scripts/one-chain
-+++ b/scripts/one-chain
-@@ -99,6 +99,7 @@ if [ $platform = 'linux' ]; then
-   sed -i 's/index_all_keys = false/index_all_keys = true/g' $CHAINDIR/$CHAINID/config/config.toml
-   # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAINDIR/$CHAINID/config/app.toml
- else
-+  sed -i '' 's#"172800s"#"200s"#g' $CHAINDIR/$CHAINID/config/genesis.json
-   sed -i '' 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPCPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
-   sed -i '' 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2PPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
-   sed -i '' 's#"localhost:6060"#"localhost:'"$P2PPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
-```
+3. Create and submit an upgrade plan for chain `ibc-0`:
 
-2. Start two gaia instances using the patched developer environment in the Go relayer codebase:
+    Use the hermes test command to make an upgrade proposal. In the example below a software upgrade proposal is made for `ibc-0`, for the height `300` blocks from latest height. `10000000stake` is deposited.
+    The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step. In addition, the `unbonding_period` of the client is set to some new value (`400h`)
 
-```shell
-./scripts/two-chainz
-```
+    ```shell
+    $ hermes tx raw upgrade-chain ibc-0 ibc-1 07-tendermint-0 10000000 300
+    ```
 
-3. Setup the Go relayer for these chains:
-```shell
-$ rly tx link demo -d -o 3s
-```
+    Note that the height offset should be picked such that the proposal plan height is reached after the `200s` voting period.
 
-Check that everything went fine so far:
+ 4. Verify that the proposal was accepted:
 
-```shell
-$ rly paths list
- 0: demo                 -> chns(✔) clnts(✔) conn(✔) chan(✔) (ibc-0:transfer<>ibc-1:transfer)
-```
+    Query the upgrade plan to check that it was submitted correctly. Note the `height` at which the proposal will take effect (chain halts). Also `status: PROPOSAL_STATUS_VOTING_PERIOD`.
 
-4. Create the upgrade plan for chain ibc-0:
+    ```shell
+    $ gaiad query gov proposal 1 --home data/ibc-0/
 
-It's important that we parametrize the upgrade plan with a height parameter that
-is at least 300 heights ahead of the current height of chain ibc-0.
+    content:
+      '@type': /cosmos.upgrade.v1beta1.SoftwareUpgradeProposal
+      description: upgrade the chain software and unbonding period
+      plan:
+        height: "382"
+        info: upgrade the chain software and unbonding period
+        name: test
+        time: "0001-01-01T00:00:00Z"
+        upgraded_client_state:
+          '@type': /ibc.lightclients.tendermint.v1.ClientState
+          allow_update_after_expiry: false
+          allow_update_after_misbehaviour: false
+          chain_id: ibc-0
+          frozen_height:
+            revision_height: "0"
+            revision_number: "0"
+          latest_height:
+            revision_height: "383"
+            revision_number: "0"
+          max_clock_drift: 0s
+          proof_specs:
+    ...
+          trust_level:
+            denominator: "0"
+            numerator: "0"
+          trusting_period: 0s
+          unbonding_period: 1440000s
+          upgrade_path:
+          - upgrade
+          - upgradedIBCState
+      title: upgrade_ibc_clients
+    deposit_end_time: "2021-03-23T17:25:42.543572Z"
+    final_tally_result:
+      abstain: "0"
+      "no": "0"
+      no_with_veto: "0"
+      "yes": "0"
+    proposal_id: "1"
+    status: PROPOSAL_STATUS_VOTING_PERIOD
+    submit_time: "2021-03-23T17:22:22.543572Z"
+    total_deposit:
+    - amount: "10000000"
+      denom: stake
+    voting_end_time: "2021-03-23T17:25:42.543572Z"
+    voting_start_time: "2021-03-23T17:22:22.543572Z"
+    ```
 
-First, obtain the current height:
-```shell
-gaiad query block | jq | grep height
-      "height": "470",
-```
+ 5. Vote on the proposal
 
-Now create the upgrade plan for height 800:
-```shell
-echo '{
-  "Name": "test",
-  "Height": 800,
-  "Info": ""
-}' > ./upgrade-plan.json
-```
+    The parameter `1` should match the `proposal_id:` from the upgrade proposal submitted at step 3. This command must be issued while the proposal status is `PROPOSAL_STATUS_VOTING_PERIOD`.
 
+    ```shell
+    gaiad tx gov vote 1 yes --home data/ibc-0/data/ --keyring-backend test --keyring-dir data/ibc-0/ --chain-id ibc-0 --from validator
+    ```
 
-5. Submit the upgrade plan 
+    Wait approximately 200 seconds until the proposal changes status to `PROPOSAL_STATUS_PASSED`. Note the `final tally_result` that includes the vote submitted in previous step.
 
-```shell
-rly tx upgrade-chain demo ibc-0 400h 10000000stake ./upgrade-plan.json
-```
+    ```shell
+    $ gaiad query gov proposal 1 --home data/ibc-0/
 
-Query for the upgrade plan, check that it was submitted correctly:
+    content:
+      '@type': /cosmos.upgrade.v1beta1.SoftwareUpgradeProposal
+      description: upgrade the chain software and unbonding period
+      plan:
+    ...
+    final_tally_result:
+      abstain: "0"
+      "no": "0"
+      no_with_veto: "0"
+      "yes": "100000000000"
+    proposal_id: "1"
+    status: PROPOSAL_STATUS_PASSED
+    submit_time: "2021-03-23T17:22:22.543572Z"
+    total_deposit:
+    - amount: "10000000"
+      denom: stake
+    voting_end_time: "2021-03-23T17:25:42.543572Z"
+    voting_start_time: "2021-03-23T17:22:22.543572Z"
+    ```
 
-```shell
-$ gaiad query gov proposal 1 --home data/ibc-0/
+6. Test the `upgrade-client` CLI
 
-content:
-  '@type': /cosmos.upgrade.v1beta1.SoftwareUpgradeProposal
-  description: upgrade the chain's software and unbonding period
-  plan:
-    height: "800"
-    info: ""
-    name: test
-....
-proposal_id: "1"
-status: PROPOSAL_STATUS_VOTING_PERIOD
-submit_time: "2021-03-08T13:07:01.417163Z"
-total_deposit:
-- amount: "10000000"
-  denom: stake
-voting_end_time: "2021-03-08T13:10:21.417163Z"
-voting_start_time: "2021-03-08T13:07:01.417163Z"
-```
+    The following command performs the upgrade for client `07-tendermint-0`. It outputs two events, one for the updated client state, and another for the upgraded state.
 
-6. Vote on the proposal
+    ```shell
+    $ hermes tx raw upgrade-client ibc-1 ibc-0 07-tendermint-0
 
-The parameter "1" should match the "proposal_id:" from the upgrade proposal
-we submitted at step 5.
-
-```shell
-gaiad tx gov vote 1 yes --home data/ibc-0/data/ --keyring-backend test --keyring-dir data/ibc-0/ --chain-id ibc-0 --from validator
-```
-
-Once ibc-0 reaches height 800 (the upgrade height specified in the plan at step 4), the chain should stop executing.
-
-
-7. Initialize and test Hermes
-
-```shell
-cd ~/rust/ibc-rs
-```
-
-
-Patch the developer env of Hermes, to redirect to the correct Gaia directory:
-```diff
-diff --git a/scripts/init-clients b/scripts/init-clients
-index 6cf1a674..bfff9721 100755
---- a/scripts/init-clients
-+++ b/scripts/init-clients
-@@ -49,7 +49,7 @@ if ! grep -q -s "$CHAIN_1_ID" "$CONFIG_FILE"; then
-   usage
- fi
-
--GAIA_DATA="$(pwd)/data"
-+GAIA_DATA="~/go/src/github.com/cosmos/relayer/data"
-
- CHAIN_0_RPC_PORT=26657
- CHAIN_0_RPC_ADDR="localhost:$CHAIN_0_RPC_PORT"
-```
-
-Now setup the clients for Hermes to use:
-
-```shell
-$ ./scripts/init-clients ~/.hermes/config.toml ibc-0 ibc-1
-    Building the Rust relayer...
-    Removing light client peers from configuration...
-    Adding primary peers to light client configuration...
-    Adding secondary peers to light client configuration...
-    Importing keys...
-    Done!
-```
-
-8. Test the `upgrade-client` CLI
-
-The following command will perform the upgrade for client `07-tendermint-0`. It
-will output two events, one for the updated client state, and another for the
-upgraded state.
-
-```shell
-hermes tx raw upgrade-client ibc-1 ibc-0 07-tendermint-0
-```
+    {
+      "status": "success",
+      "result": [
+        {
+          "UpdateClient": {
+            "client_id": "07-tendermint-0",
+            "client_type": "Tendermint",
+            "consensus_height": {
+              "revision_height": 332,
+              "revision_number": 0
+            },
+            "height": {
+              "revision_height": 404,
+              "revision_number": 1
+            }
+          }
+        },
+        {
+          "UpgradeClient": {
+            "client_id": "07-tendermint-0",
+            "client_type": "Tendermint",
+            "consensus_height": {
+              "revision_height": 333,
+              "revision_number": 0
+            },
+            "height": {
+              "revision_height": 404,
+              "revision_number": 1
+            }
+          }
+        }
+      ]
+    }
+    ```

@@ -120,7 +120,7 @@ pub struct TxUpgradeClientCmd {
         required,
         help = "identifier of the client to be upgraded on destination chain"
     )]
-    client_id: ClientId,
+    dst_client_id: ClientId,
 }
 
 impl Runnable for TxUpgradeClientCmd {
@@ -140,7 +140,7 @@ impl Runnable for TxUpgradeClientCmd {
 
         // Instantiate the client hosted on the destination chain, which is targeting headers for
         // the source chain.
-        let client = ForeignClient::find(chains.src, chains.dst, &self.client_id)
+        let client = ForeignClient::find(chains.src, chains.dst, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let outcome = client.upgrade();

@@ -8,6 +8,7 @@ mod client;
 mod connection;
 mod packet;
 mod transfer;
+mod upgrade;
 
 /// `tx` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -90,4 +91,8 @@ pub enum TxRawCommands {
     /// The `tx raw packet-ack` subcommand
     #[options(help = "Relay acknowledgment packets")]
     PacketAck(packet::TxRawPacketAckCmd),
+
+    /// The `tx raw upgrade-chain` subcommand
+    #[options(help = "Send an upgrade plan")]
+    UpgradeChain(upgrade::TxUpgradeChainCmd),
 }
