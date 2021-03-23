@@ -47,9 +47,11 @@ pub fn build_and_send_upgrade_chain_message(
         .query_latest_height()
         .unwrap()
         .add(opts.height_offset);
+
     let client_state = src_chain
         .query_client_state(&opts.src_client_id, Height::zero())
         .unwrap();
+
     let mut upgraded_client_state = ClientState::zero_custom_fields(client_state);
     upgraded_client_state.latest_height = upgrade_height.increment();
     upgraded_client_state.unbonding_period = Duration::from_secs(400 * 3600); // TODO add to options
@@ -69,8 +71,10 @@ pub fn build_and_send_upgrade_chain_message(
         description: "upgrade the chain software and unbonding period".to_string(),
         plan: Some(plan),
     };
+
     let mut buf_proposal = Vec::new();
     prost::Message::encode(&proposal, &mut buf_proposal).unwrap();
+
     let any_proposal = Any {
         type_url: "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal".to_string(),
         value: buf_proposal,
@@ -104,21 +108,13 @@ pub fn build_and_send_upgrade_chain_message(
         .map_err(|e| UpgradeChainError::SubmitError(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction
-    let result = events
-        .iter()
-        .find(|event| matches!(event, IbcEvent::ChainError(_)));
+    let result = events.iter().find_map(|event| match event {
+        IbcEvent::ChainError(reason) => Some(reason.clone()),
+        _ => None,
+    });
 
     match result {
         None => Ok(events),
-        Some(err) => {
-            if let IbcEvent::ChainError(err) = err {
-                Err(UpgradeChainError::Failed(err.to_string()))
-            } else {
-                panic!(
-                    "internal error, expected IBCEvent::ChainError, got {:?}",
-                    err
-                )
-            }
-        }
+        Some(reason) => Err(UpgradeChainError::Failed(reason)),
     }
 }
