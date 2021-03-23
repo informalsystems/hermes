@@ -25,3 +25,4 @@ __pycache__/
 .stainless-cache
 *.inoxser
 stainless.log
+stainless-stack-trace.txt

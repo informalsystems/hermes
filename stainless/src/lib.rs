@@ -319,12 +319,6 @@ pub enum IbcEvent {
     OpenInitChannel(OpenInit),
 }
 
-impl From<Attributes> for OpenInit {
-    fn from(attrs: Attributes) -> Self {
-        OpenInit(attrs)
-    }
-}
-
 pub struct HandlerOutput<T> {
     pub result: T,
     pub log: List<String>,
@@ -352,9 +346,9 @@ impl<T> HandlerOutputBuilder<T> {
         }
     }
 
-    pub fn log(self, log: impl Into<String>) -> Self {
+    pub fn log(self, log: String) -> Self {
         HandlerOutputBuilder {
-            log: self.log.push(log.into()),
+            log: self.log.push(log),
             ..self
         }
     }
@@ -510,7 +504,7 @@ pub fn process(
     let id_counter = ctx.channel_counter();
     let chan_id = ChannelId::new(id_counter);
 
-    let output = output.log("success: generated new channel identifier: {}");
+    let output = output.log("success: generated new channel identifier: {}".to_string());
 
     let new_channel_end = ChannelEnd {
         state: State::Init,
@@ -520,7 +514,7 @@ pub fn process(
         version: msg.channel().version(),
     };
 
-    let output = output.log("success: no channel found");
+    let output = output.log("success: no channel found".to_string());
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
@@ -534,7 +528,7 @@ pub fn process(
         channel_id: Option::Some(chan_id),
         ..Default::default()
     };
-    let output = output.emit(IbcEvent::OpenInitChannel(event_attributes.into()));
+    let output = output.emit(IbcEvent::OpenInitChannel(OpenInit(event_attributes)));
 
     Ok(output.with_result(result))
 }
