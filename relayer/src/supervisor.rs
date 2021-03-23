@@ -150,15 +150,9 @@ impl Supervisor {
             Direction::BtoA
         };
 
-        let collected = collect_events(src_chain.as_ref(), batch);
+        let mut collected = collect_events(src_chain.as_ref(), batch);
 
-        if collected.has_new_blocks() {
-            for worker in self.workers.values() {
-                worker.send_new_blocks(height, collected.new_blocks.clone())?;
-            }
-        }
-
-        for (object, events) in collected.per_object.into_iter() {
+        for (object, events) in collected.per_object.drain() {
             if events.is_empty() {
                 continue;
             }
@@ -167,6 +161,12 @@ impl Supervisor {
 
             if let Some(worker) = self.worker_for_object(object, direction) {
                 worker.send_packet_events(height, events, chain_id.clone())?;
+            }
+        }
+
+        if collected.has_new_blocks() {
+            for worker in self.workers.values() {
+                worker.send_new_blocks(height, collected.new_blocks.clone())?;
             }
         }
 
