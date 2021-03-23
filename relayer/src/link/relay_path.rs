@@ -28,7 +28,7 @@ use ibc_proto::ibc::core::channel::v1::{
 use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelError};
 use crate::event::monitor::EventBatch;
-use crate::foreign_client::ForeignClient;
+use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::LinkError;
 use crate::relay::MAX_ITER;
 
@@ -389,7 +389,7 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    /// Should not execute more than once per execution.
+    /// Should not run more than once per execution.
     pub fn clear_packets(&mut self, _height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
             // TODO(Adi): Removing this is probably causing a bug!
@@ -416,12 +416,20 @@ impl RelayPath {
         // If there are some new events, update src. and dest. clients. and schedule the relaying of
         // packets from this events.
         if !self.all_events.is_empty() {
-            let events = self.update_clients(
+            // TODO(Adi): Add a retry inside update clients.
+            let update_events = self.update_clients(
                 self.all_events[0].height().increment(),
                 self.dst_latest_height()?,
             )?;
-            // Schedule a timer and loop over them.
-            self.schedule_event_batch(events);
+
+            if !update_events.is_empty() {
+                return Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
+                    format!("Failed to update clients with err: {:?}", update_events),
+                )));
+            }
+
+            // Schedule the event batch, and let it sit for a while
+            self.schedule_event_batch(self.all_events.clone());
         }
 
         while let Some(events_batch) = self.next_scheduled_batch() {
@@ -575,6 +583,10 @@ impl RelayPath {
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), LinkError> {
         let mut src_tx_events = vec![];
         let mut dst_tx_events = vec![];
+
+        if self.all_events.is_empty() {
+            return Ok((dst_tx_events, src_tx_events));
+        }
 
         let src_update_height = self.all_events[0].height().increment();
         let dst_update_height = self.dst_latest_height()?;
@@ -972,6 +984,8 @@ impl RelayPath {
         if events.is_empty() {
             panic!("Cannot schedule an empty event batch")
         }
+        info!("Scheduling batch with {} events", events.len());
+
         let sc_event = ScheduledBatch {
             update_time: Instant::now(),
             events,
@@ -986,6 +1000,10 @@ impl RelayPath {
         if let Some(batch) = self.scheduled.first() {
             if batch.update_time.elapsed() > DELAY {
                 let events_batch = self.scheduled.remove(0);
+                info!(
+                    "Found a scheduled batch with {} events",
+                    events_batch.events.len()
+                );
                 return Some(events_batch.events);
             }
         }
