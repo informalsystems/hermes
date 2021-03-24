@@ -413,17 +413,10 @@ impl RelayPath {
         // If there are some new events, update src. and dest. clients. and schedule the relaying of
         // packets from this events.
         if !self.all_events.is_empty() {
-            // TODO(Adi): Add a retry inside update clients.
-            let update_events = self.update_clients(
+            self.update_clients(
                 self.all_events[0].height().increment(),
                 self.dst_latest_height()?,
             )?;
-
-            if !update_events.is_empty() {
-                return Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
-                    format!("Failed to update clients with err: {:?}", update_events),
-                )));
-            }
 
             // Schedule the event batch, and let it sit for a while
             self.schedule_event_batch(self.all_events.clone());
@@ -514,70 +507,85 @@ impl RelayPath {
     }
 
     /// Sends ClientUpdate transactions ahead of a scheduled batch.
-    pub fn update_clients(
-        &self,
-        src_height: Height,
-        dst_height: Height,
-    ) -> Result<Vec<IbcEvent>, LinkError> {
-        let mut ret_events = vec![];
-
-        //
+    /// Includes basic retrying and returns failure only after all retries are exhausted.
+    pub fn update_clients(&self, src_height: Height, dst_height: Height) -> Result<(), LinkError> {
         // Handle the update on the destination chain
-        //
         // Check if a consensus state at update_height exists on destination chain already
-        if self
-            .dst_chain()
-            .proven_client_consensus(self.dst_client_id(), src_height, Height::zero())
-            .is_err()
-        {
-            let dst_update = self.build_update_client_on_dst(src_height)?;
-            info!("sending update client at height {:?}", src_height);
+        for i in 0..MAX_ITER {
+            if self
+                .dst_chain()
+                .proven_client_consensus(self.dst_client_id(), src_height, Height::zero())
+                .is_err()
+            {
+                let dst_update = self.build_update_client_on_dst(src_height)?;
+                info!("sending update client at height {:?}", src_height);
 
-            let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
-            info!("result {:?}\n", dst_tx_events);
+                let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
+                info!("result {:?}\n", dst_tx_events);
 
-            let dst_err_ev = dst_tx_events
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
+                let dst_err_ev = dst_tx_events
+                    .into_iter()
+                    .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
-            // If there was an error, accumulate the original events to return them to caller
-            if dst_err_ev.is_some() {
-                ret_events.append(&mut self.dst_msgs_input_events.clone());
+                if let Some(err_ev) = dst_err_ev {
+                    // If there was an error and this was the last retry
+                    if i == (MAX_ITER - 1) {
+                        return Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
+                            format!(
+                                "Failed to update client on destination {} with err: {:?}",
+                                self.dst_chain.id(),
+                                err_ev
+                            ),
+                        )));
+                    } // Else: retry the update
+                } else {
+                    break; // Update succeeded
+                }
             }
         }
 
-        //
         // Handle the update on the source chain
-        //
-        if self
-            .src_chain()
-            .proven_client_consensus(self.src_client_id(), dst_height, Height::zero())
-            .is_err()
-        {
-            let src_update = self.build_update_client_on_src(dst_height)?;
-            info!(
-                "sending {:?} messages to {}, update client at height {:?}",
-                src_update.len(),
-                self.src_chain.id(),
-                dst_height,
-            );
+        for i in 0..MAX_ITER {
+            if self
+                .src_chain()
+                .proven_client_consensus(self.src_client_id(), dst_height, Height::zero())
+                .is_err()
+            {
+                let src_update = self.build_update_client_on_src(dst_height)?;
+                info!(
+                    "sending {:?} messages to {}, update client at height {:?}",
+                    src_update.len(),
+                    self.src_chain.id(),
+                    dst_height,
+                );
 
-            let src_tx_events = self.src_chain.send_msgs(src_update)?;
-            info!("result {:?}\n", src_tx_events);
+                let src_tx_events = self.src_chain.send_msgs(src_update)?;
+                info!("result {:?}\n", src_tx_events);
 
-            let src_err_ev = src_tx_events
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
+                let src_err_ev = src_tx_events
+                    .into_iter()
+                    .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
-            if src_err_ev.is_some() {
-                ret_events.append(&mut self.src_msgs_input_events.clone());
+                if let Some(err_ev) = src_err_ev {
+                    if i == (MAX_ITER - 1) {
+                        return Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
+                            format!(
+                                "Failed to update client on source {} with err: {:?}",
+                                self.src_chain.id(),
+                                err_ev
+                            ),
+                        )));
+                    } // Else: retry the update
+                } else {
+                    break; // Update succeeded
+                }
             }
         }
 
-        Ok(ret_events)
+        Ok(())
     }
 
-    // TODO(Adi): Candidate for removal.
+    // TODO(Adi): Candidate for removal. Blocked by `clear_packets`
     pub fn send_update_client_and_msgs(
         &mut self,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), LinkError> {
@@ -795,7 +803,8 @@ impl RelayPath {
 
     pub fn build_recv_packet_and_timeout_msgs(&mut self) -> Result<(), LinkError> {
         // Get the events for the send packets on source chain that have not been received on
-        // destination chain (i.e. ack was not seen on source chain)
+        // destination chain (i.e. ack was not seen on source chain).
+        // Note: This call populates `self.all_events`.
         let src_height = self.target_height_and_send_packet_events()?;
 
         for event in self.all_events.iter_mut() {
