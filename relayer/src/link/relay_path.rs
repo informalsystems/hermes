@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use prost_types::Any;
 use tracing::info;
@@ -31,6 +31,7 @@ use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::LinkError;
 use crate::relay::MAX_ITER;
+use std::thread;
 
 /// A batch of events that are scheduled for later processing.
 pub struct ScheduledBatch {
@@ -373,10 +374,8 @@ impl RelayPath {
     fn relay_pending_packets(&mut self) -> Result<(), LinkError> {
         println!("clearing old packets on {:#?}", self.channel);
         for _i in 0..MAX_ITER {
-            if self.build_recv_packet_and_timeout_msgs().is_ok()
-                && self.send_update_client_and_msgs().is_ok()
+            if self.relay_recv_packet_and_timeout_msgs().is_ok()
                 && self.build_packet_ack_msgs().is_ok()
-                && self.send_update_client_and_msgs().is_ok()
             {
                 return Ok(());
             }
@@ -418,11 +417,13 @@ impl RelayPath {
                 self.dst_latest_height()?,
             )?;
 
-            // Schedule the event batch, and let it sit for a while
-            self.schedule_event_batch(self.all_events.clone());
+            // Schedule the event batch, and let it sit for a while until the delay period passes
+            self.schedule_batch(self.all_events.clone());
         }
 
-        while let Some(events_batch) = self.next_scheduled_batch() {
+        // Iterate through all the outstanding event batches that have fulfilled their delay period,
+        // and send the packet messages corresponding to these events
+        while let Some(events_batch) = self.try_fetch_scheduled_batch() {
             self.all_events = events_batch;
 
             for _i in 0..MAX_ITER {
@@ -434,8 +435,8 @@ impl RelayPath {
                     self.handle_packet_event(&event)?;
                 }
 
-                // Send client update and messages
-                let res = self.send_msgs();
+                // Send messages
+                let res = self.send_msgs()?;
                 println!("\nresult {:?}", res);
 
                 if self.all_events.is_empty() {
@@ -452,6 +453,8 @@ impl RelayPath {
         Ok(())
     }
 
+    /// Picks up all messages that sit in `self.packet_msgs` and `self.timeout_msgs` and sends them
+    /// to the destination and source chain, respectively.
     pub fn send_msgs(&mut self) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), LinkError> {
         let mut src_tx_events = vec![];
         let mut dst_tx_events = vec![];
@@ -801,20 +804,36 @@ impl RelayPath {
         Ok(query_height)
     }
 
-    pub fn build_recv_packet_and_timeout_msgs(&mut self) -> Result<(), LinkError> {
+    /// Handles the relaying of RecvPacket and Timeout messages.
+    pub fn relay_recv_packet_and_timeout_msgs(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
         // Get the events for the send packets on source chain that have not been received on
         // destination chain (i.e. ack was not seen on source chain).
-        // Note: This call populates `self.all_events`.
+        // Note: This method call populates `self.all_events`.
         let src_height = self.target_height_and_send_packet_events()?;
 
         for event in self.all_events.iter_mut() {
             event.set_height(src_height);
         }
 
-        for event in self.all_events.clone() {
-            self.handle_packet_event(&event)?;
+        // Update clients & schedule the original events
+        self.update_clients(src_height, self.dst_latest_height()?)?;
+        self.schedule_batch(self.all_events.clone());
+
+        // Block waiting for the delay to pass
+        let events = self.fetch_scheduled_batch()?;
+
+        self.reset_buffers();
+
+        for e in events {
+            self.handle_packet_event(&e)?;
         }
-        Ok(())
+
+        // Send messages
+        let mut res = self.send_msgs()?;
+        println!("\nresult {:?}", res);
+
+        res.0.append(&mut res.1);
+        Ok(res.0)
     }
 
     pub fn build_packet_ack_msgs(&mut self) -> Result<(), LinkError> {
@@ -989,7 +1008,7 @@ impl RelayPath {
 
     /// Registers a new batch of events to be processed later. The batch can be retrieved once a
     /// predefined delay period elapses, via method `next_scheduled_batch`.
-    fn schedule_event_batch(&mut self, events: Vec<IbcEvent>) {
+    fn schedule_batch(&mut self, events: Vec<IbcEvent>) {
         if events.is_empty() {
             panic!("Cannot schedule an empty event batch")
         }
@@ -1003,8 +1022,32 @@ impl RelayPath {
     }
 
     /// Pulls out the next batch of events that have fulfilled the predefined delay period and can
-    /// now be processed.
-    fn next_scheduled_batch(&mut self) -> Option<Vec<IbcEvent>> {
+    /// now be processed. Blocking call: waits until the delay period for the oldest event batch
+    /// is fulfilled. If no batch is currently scheduled, returns immediately with error.
+    pub fn fetch_scheduled_batch(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
+        if let Some(batch) = self.scheduled.first() {
+            info!(
+                "Found a scheduled batch with {} events. Waiting for delay period of {:#?}. Elapsed: {:#?}.",
+                batch.events.len(), self.channel.connection_delay, batch.update_time.elapsed()
+            );
+            // Wait until the delay period passes
+            while batch.update_time.elapsed() <= self.channel.connection_delay {
+                thread::sleep(Duration::from_millis(100))
+            }
+
+            let events_batch = self.scheduled.remove(0);
+            Ok(events_batch.events)
+        } else {
+            Err(LinkError::Failed(
+                "There is no scheduled batch of events!".into(),
+            ))
+        }
+    }
+
+    /// Pulls out the next batch of events that have fulfilled the predefined delay period and can
+    /// now be processed. Does not block: if no batch fulfilled the delay period (or no batch is
+    /// scheduled), return immediately with `None`.
+    fn try_fetch_scheduled_batch(&mut self) -> Option<Vec<IbcEvent>> {
         // The head of the scheduled vector contains the oldest scheduled batch.
         if let Some(batch) = self.scheduled.first() {
             if batch.update_time.elapsed() > self.channel.connection_delay {

@@ -187,10 +187,7 @@ impl Link {
     }
 
     pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
-        self.a_to_b.build_recv_packet_and_timeout_msgs()?;
-        let (mut dst_res, mut src_res) = self.a_to_b.send_update_client_and_msgs()?;
-        dst_res.append(&mut src_res);
-        Ok(dst_res)
+        self.a_to_b.relay_recv_packet_and_timeout_msgs()
     }
 
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
