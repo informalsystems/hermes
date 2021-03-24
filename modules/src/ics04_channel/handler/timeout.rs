@@ -241,7 +241,7 @@ mod tests {
                 .with_client(&ClientId::default(), client_height)
                 .with_port_capability(packet.destination_port.clone())
                 .with_connection(ConnectionId::default(), connection_end.clone()),
-                msg: msg.clone(),
+                msg,
                 want_pass: false,
             },
             Test {
@@ -252,7 +252,7 @@ mod tests {
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
                         packet.source_port.clone(),
-                        packet.source_channel.clone(),
+                        packet.source_channel,
                         source_channel_end,
                     )
                     .with_packet_commitment(

@@ -360,7 +360,7 @@ mod tests {
         let mut msg_to_on_close =
             MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
         msg_to_on_close.packet.sequence = 2.into();
-        msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height.clone();
+        msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
         msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
 
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
