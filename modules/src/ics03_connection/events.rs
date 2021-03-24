@@ -60,7 +60,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
     attr
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub height: Height,
     pub connection_id: Option<ConnectionId>,

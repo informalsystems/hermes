@@ -151,7 +151,7 @@ fn extract_packet_and_write_ack_from_tx(
     (packet, write_ack)
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub height: Height,
     pub port_id: PortId,

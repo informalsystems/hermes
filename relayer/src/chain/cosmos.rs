@@ -35,7 +35,7 @@ use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
-use ibc::ics24_host::{Path, IBC_QUERY_PATH};
+use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 // Support for GRPC
@@ -43,6 +43,9 @@ use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::cosmos::upgrade::v1beta1::{
+    QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
+};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
@@ -269,6 +272,34 @@ impl CosmosSdkChain {
 
         Ok(response)
     }
+
+    // Perform an ABCI query against the client upgrade sub-store to fetch a proof.
+    fn query_client_upgrade_proof(
+        &self,
+        data: ClientUpgradePath,
+        height: Height,
+    ) -> Result<(MerkleProof, ICSHeight), Error> {
+        let prev_height =
+            Height::try_from(height.value() - 1).map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).unwrap();
+        let response = self.block_on(abci_query(
+            &self,
+            path,
+            Path::Upgrade(data).to_string(),
+            prev_height,
+            true,
+        ))?;
+
+        let proof = response.proof.ok_or(Kind::EmptyResponseProof)?;
+
+        let height = ICSHeight::new(
+            self.config.id.version(),
+            response.height.increment().value(),
+        );
+
+        Ok((proof, height))
+    }
 }
 
 impl Chain for CosmosSdkChain {
@@ -475,6 +506,105 @@ impl Chain for CosmosSdkChain {
                 Kind::Query("client state".into()).context("unexpected client state type")
             })?;
         Ok(client_state)
+    }
+
+    fn query_upgraded_client_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        crate::time!("query_upgraded_client_state");
+
+        let grpc_address =
+            Uri::from_str(&self.config.grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+
+        let mut client = self
+            .block_on(
+                ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
+                    grpc_address,
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let req = tonic::Request::new(QueryCurrentPlanRequest {});
+        let response = self
+            .block_on(client.current_plan(req))
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let upgraded_client_state_raw = response
+            .into_inner()
+            .plan
+            .ok_or(Kind::EmptyResponseValue)?
+            .upgraded_client_state
+            .ok_or(Kind::EmptyUpgradedClientState)?;
+        let client_state = AnyClientState::try_from(upgraded_client_state_raw)
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        // TODO: Better error kinds here.
+        let tm_client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::Query("upgraded client state".into()).context("unexpected client state type")
+            })?;
+
+        // Query for the proof.
+        let tm_height =
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+        let (proof, _proof_height) = self.query_client_upgrade_proof(
+            ClientUpgradePath::UpgradedClientState(height.revision_height),
+            tm_height,
+        )?;
+
+        Ok((tm_client_state, proof))
+    }
+
+    fn query_upgraded_consensus_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        crate::time!("query_upgraded_consensus_state");
+
+        let tm_height =
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        let grpc_address =
+            Uri::from_str(&self.config.grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+
+        let mut client = self
+            .block_on(
+                ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
+                    grpc_address,
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let req = tonic::Request::new(QueryUpgradedConsensusStateRequest {
+            last_height: tm_height.into(),
+        });
+        let response = self
+            .block_on(client.upgraded_consensus_state(req))
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let upgraded_consensus_state_raw = response
+            .into_inner()
+            .upgraded_consensus_state
+            .ok_or(Kind::EmptyResponseValue)?;
+
+        // TODO: More explicit error kinds (should not reuse Grpc all over the place)
+        let consensus_state = AnyConsensusState::try_from(upgraded_consensus_state_raw)
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
+            .ok_or_else(|| {
+                Kind::Query("upgraded consensus state".into())
+                    .context("unexpected consensus state type")
+            })?;
+
+        // Fetch the proof.
+        let (proof, _proof_height) = self.query_client_upgrade_proof(
+            ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
+            tm_height,
+        )?;
+
+        Ok((tm_consensus_state, proof))
     }
 
     /// Performs a query to retrieve the identifiers of all connections.

@@ -34,6 +34,7 @@ pub enum IbcEvent {
 
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
+    UpgradeClient(ClientEvents::UpgradeClient),
     ClientMisbehavior(ClientEvents::ClientMisbehavior),
 
     OpenInitConnection(ConnectionEvents::OpenInit),
@@ -111,6 +112,7 @@ impl IbcEvent {
             IbcEvent::NewBlock(ev) => ev.set_height(height),
             IbcEvent::CreateClient(ev) => ev.set_height(height),
             IbcEvent::UpdateClient(ev) => ev.set_height(height),
+            IbcEvent::UpgradeClient(ev) => ev.set_height(height),
             IbcEvent::ClientMisbehavior(ev) => ev.set_height(height),
             IbcEvent::OpenInitConnection(ev) => ev.set_height(height),
             IbcEvent::OpenTryConnection(ev) => ev.set_height(height),
