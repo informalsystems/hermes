@@ -811,6 +811,11 @@ impl RelayPath {
         // Note: This method call populates `self.all_events`.
         let src_height = self.target_height_and_send_packet_events()?;
 
+        // Skip: no relevant events found.
+        if self.all_events.is_empty() {
+            return Ok(vec![]);
+        }
+
         for event in self.all_events.iter_mut() {
             event.set_height(src_height);
         }
