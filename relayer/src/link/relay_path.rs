@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use prost_types::Any;
-use tracing::info;
+use tracing::{debug, info};
 
 use ibc::{
     downcast,
@@ -392,7 +392,11 @@ impl RelayPath {
     }
 
     fn relay_pending_packets(&mut self) -> Result<(), LinkError> {
-        println!("clearing old packets on {:#?}", self.channel);
+        info!(
+            "clearing old packets on path {} -> {}",
+            self.src_chain.id(),
+            self.dst_chain.id()
+        );
         for _i in 0..MAX_ITER {
             if self.relay_recv_packet_and_timeout_msgs().is_ok()
                 && self.relay_packet_ack_msgs().is_ok()
@@ -437,7 +441,8 @@ impl RelayPath {
         //  of packets corresponding to these events.
         if !self.all_events.is_empty() {
             let dst_update_height = self.dst_latest_height()?;
-            self.update_clients(self.all_events[0].height().increment(), dst_update_height)?;
+            let src_update_height = self.all_events[0].height().increment();
+            self.update_clients(src_update_height, dst_update_height)?;
 
             // Schedule the event batch, and let it sit for a while until the delay period passes
             self.schedule_batch(self.all_events.clone(), dst_update_height);
@@ -453,19 +458,19 @@ impl RelayPath {
 
                 // Collect the messages for all events
                 for event in self.all_events.clone() {
-                    println!("{} => {:?}", self.src_chain.id(), event);
+                    debug!("{} => {:?}", self.src_chain.id(), event);
                     self.handle_packet_event(&event, batch.dst_height)?;
                 }
 
                 // Send messages
                 let res = self.send_msgs()?;
-                println!("\nresult {:?}", res);
+                debug!("\nresult {:?}", res);
 
                 if self.all_events.is_empty() {
                     break;
                 }
 
-                println!("retrying");
+                debug!("retrying");
             }
         }
 
@@ -580,7 +585,11 @@ impl RelayPath {
                 .is_err()
             {
                 let dst_update = self.build_update_client_on_dst(src_chain_height)?;
-                info!("sending update client at height {:?}", src_chain_height);
+                info!(
+                    "sending updateClient to client hosted on dest. chain {} for height {:?}",
+                    self.dst_chain().id(),
+                    src_chain_height
+                );
 
                 let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
                 info!("result {:?}\n", dst_tx_events);
@@ -615,8 +624,7 @@ impl RelayPath {
             {
                 let src_update = self.build_update_client_on_src(dst_chain_height)?;
                 info!(
-                    "sending {:?} messages to {}, update client at height {:?}",
-                    src_update.len(),
+                    "sending updateClient to client hosted on src. chain {} for height {:?}",
                     self.src_chain.id(),
                     dst_chain_height,
                 );
@@ -877,12 +885,14 @@ impl RelayPath {
         for event in self.all_events.iter_mut() {
             event.set_height(src_height);
         }
-        let dst_height = self.dst_latest_height()?;
+
+        let src_update_height = src_height.increment();
+        let dst_update_height = self.dst_latest_height()?;
 
         let (mut dst_res, mut src_res) = if self.channel.connection_delay.as_nanos() > 0 {
             // Update clients & schedule the original events
-            self.update_clients(src_height, dst_height)?;
-            self.schedule_batch(self.all_events.clone(), dst_height);
+            self.update_clients(src_update_height, dst_update_height)?;
+            self.schedule_batch(self.all_events.clone(), dst_update_height);
 
             // Block waiting for the delay to pass
             let batch = self.fetch_scheduled_batch()?;
@@ -890,6 +900,7 @@ impl RelayPath {
             self.reset_buffers();
 
             for e in batch.events {
+                info!("Handling event @ height {}", e.height());
                 self.handle_packet_event(&e, batch.dst_height)?;
             }
 
@@ -898,9 +909,9 @@ impl RelayPath {
         } else {
             // Send a multi message transaction with both client update and the packet messages
             for event in self.all_events.clone() {
-                self.handle_packet_event(&event, dst_height)?;
+                self.handle_packet_event(&event, dst_update_height)?;
             }
-            self.send_update_client_and_msgs(dst_height)?
+            self.send_update_client_and_msgs(dst_update_height)?
         };
 
         dst_res.append(&mut src_res);
@@ -920,12 +931,14 @@ impl RelayPath {
         for event in self.all_events.iter_mut() {
             event.set_height(src_height);
         }
-        let dst_height = self.dst_latest_height()?;
+
+        let dst_update_height = self.dst_latest_height()?;
+        let src_update_height = src_height.increment();
 
         let (mut dst_res, mut src_res) = if self.channel.connection_delay.as_nanos() > 0 {
             // Update clients & schedule the original events
-            self.update_clients(src_height, dst_height)?;
-            self.schedule_batch(self.all_events.clone(), dst_height);
+            self.update_clients(src_update_height, dst_update_height)?;
+            self.schedule_batch(self.all_events.clone(), dst_update_height);
 
             // Block waiting for the delay to pass
             let batch = self.fetch_scheduled_batch()?;
@@ -941,9 +954,9 @@ impl RelayPath {
         } else {
             // Send a multi message transaction with both client update and the ACK messages
             for event in self.all_events.clone() {
-                self.handle_packet_event(&event, dst_height)?;
+                self.handle_packet_event(&event, dst_update_height)?;
             }
-            self.send_update_client_and_msgs(dst_height)?
+            self.send_update_client_and_msgs(dst_update_height)?
         };
 
         dst_res.append(&mut src_res);
@@ -1155,8 +1168,9 @@ impl RelayPath {
             if batch.update_time.elapsed() > self.channel.connection_delay {
                 let events_batch = self.scheduled.remove(0);
                 info!(
-                    "Found a scheduled batch with {} events",
-                    events_batch.events.len()
+                    "Found a scheduled batch with {} events (delayed by: {:#?})",
+                    events_batch.events.len(),
+                    events_batch.update_time.elapsed()
                 );
                 return Some(events_batch);
             }

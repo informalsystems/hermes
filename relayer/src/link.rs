@@ -1,6 +1,8 @@
 use std::thread;
 use std::time::Duration;
 
+use tracing::info;
+
 use ibc::{
     events::IbcEvent,
     ics03_connection::connection::State as ConnectionState,
@@ -41,7 +43,11 @@ impl Link {
     }
 
     pub fn relay(&mut self) -> Result<(), LinkError> {
-        println!("relaying packets on {:#?}", self.a_to_b.channel());
+        info!(
+            "relaying packets on path {} <-> {}",
+            self.a_to_b.src_chain().id(),
+            self.a_to_b.dst_chain().id()
+        );
 
         let events_a = self.a_to_b.src_chain().subscribe()?;
         let events_b = self.b_to_a.src_chain().subscribe()?;
