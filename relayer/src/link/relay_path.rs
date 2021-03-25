@@ -40,6 +40,10 @@ pub struct ScheduledBatch {
 
     /// The outstanding batch of events.
     events: Vec<IbcEvent>,
+
+    /// The height which the destination chain has when the batch is scheduled.
+    /// The client on source chain was updated with a header corresponding to this height.
+    dst_height: Height,
 }
 
 pub struct RelayPath {
@@ -195,6 +199,7 @@ impl RelayPath {
     fn build_msg_from_event(
         &self,
         event: &IbcEvent,
+        dst_chain_height: Height,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         match event {
             IbcEvent::CloseInitChannel(close_init_ev) => {
@@ -208,7 +213,7 @@ impl RelayPath {
                 // When a timeout packet for an ordered channel is processed on-chain (src here)
                 // the chain closes the channel but no close init event is emitted, instead
                 // we get a timeout packet event (this happens for both unordered and ordered channels)
-                // Here we check it the channel is closed on src and send a channel close confirm
+                // Here we check that the channel is closed on src and send a channel close confirm
                 // to the counterparty.
                 if self.ordered_channel()
                     && self
@@ -230,7 +235,10 @@ impl RelayPath {
             }
             IbcEvent::SendPacket(send_packet_ev) => {
                 info!("{} => event {}", self.src_chain.id(), send_packet_ev);
-                Ok(self.build_recv_or_timeout_from_send_packet_event(&send_packet_ev)?)
+                Ok(self.build_recv_or_timeout_from_send_packet_event(
+                    &send_packet_ev,
+                    dst_chain_height,
+                )?)
             }
             IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                 info!("{} => event {}", self.src_chain.id(), write_ack_ev);
@@ -257,16 +265,28 @@ impl RelayPath {
         Ok(new_msg.to_any())
     }
 
-    // TODO(Adi): This method is a good candidate for removal/refactor. We can handle updating the
-    //     internal buffers (`packet_msgs` and others) directly inside `build_msg_from_event`.
-    fn handle_packet_event(&mut self, event: &IbcEvent) -> Result<(), LinkError> {
-        let (dst_msg, timeout) = self.build_msg_from_event(event)?;
+    /// Builds a message out of an `event`.
+    /// Handles building both ordinary `RecvPacket` messages,
+    /// as well as channel close handshake (`ChanCloseConfirm`), `WriteAck` messages,
+    /// and timeouts messages (`MsgTimeoutOnClose` or `MsgTimeout`).
+    ///
+    /// The parameter `dst_chain_height` represents the height which the proofs for timeout
+    /// messages should target. It is necessary that the client hosted on the source chain
+    /// has a consensus state installed corresponding for this height.
+    fn handle_packet_event(
+        &mut self,
+        event: &IbcEvent,
+        dst_chain_height: Height,
+    ) -> Result<(), LinkError> {
+        let (dst_msg, timeout) = self.build_msg_from_event(event, dst_chain_height)?;
 
+        // Collect messages to be sent to the destination chain
         if let Some(msg) = dst_msg {
             self.packet_msgs.push(msg);
             self.dst_msgs_input_events.push(event.clone());
         }
 
+        // Collect timeout messages, to be sent to the source chain
         if let Some(msg) = timeout {
             // For Ordered channels a single timeout event should be sent as this closes the channel.
             // Otherwise a multi message transaction will fail.
@@ -375,7 +395,7 @@ impl RelayPath {
         println!("clearing old packets on {:#?}", self.channel);
         for _i in 0..MAX_ITER {
             if self.relay_recv_packet_and_timeout_msgs().is_ok()
-                && self.build_packet_ack_msgs().is_ok()
+                && self.relay_packet_ack_msgs().is_ok()
             {
                 return Ok(());
             }
@@ -401,30 +421,37 @@ impl RelayPath {
     }
 
     /// Iterate through the IBC Events, build the message for each and collect all at same height.
-    /// Send a multi message transaction with these, prepending the client update
     pub fn relay_from_events(&mut self, batch: EventBatch) -> Result<(), LinkError> {
         self.clear_packets(batch.height)?;
 
-        // Collect relevant events in self.all_events
+        // Collect relevant events in `self.all_events`.
         self.collect_events(&batch.events);
         self.adjust_events_height()?;
 
-        // If there are some new events, update src. and dest. clients. and schedule the relaying of
-        // packets from this events.
+        if self.channel.connection_delay.as_nanos() > 0 {
+            self.relay_with_delay()
+        } else {
+            self.relay_multi_msg()
+        }
+    }
+
+    /// Sends the client update in a separate transaction from packet messages, allowing for the
+    /// delay period to pass between the client update and packet messages.
+    fn relay_with_delay(&mut self) -> Result<(), LinkError> {
+        // If there are some new events, update src. and dest. clients, then schedule the relaying
+        //  of packets corresponding to these events.
         if !self.all_events.is_empty() {
-            self.update_clients(
-                self.all_events[0].height().increment(),
-                self.dst_latest_height()?,
-            )?;
+            let dst_update_height = self.dst_latest_height()?;
+            self.update_clients(self.all_events[0].height().increment(), dst_update_height)?;
 
             // Schedule the event batch, and let it sit for a while until the delay period passes
-            self.schedule_batch(self.all_events.clone());
+            self.schedule_batch(self.all_events.clone(), dst_update_height);
         }
 
         // Iterate through all the outstanding event batches that have fulfilled their delay period,
         // and send the packet messages corresponding to these events
-        while let Some(events_batch) = self.try_fetch_scheduled_batch() {
-            self.all_events = events_batch;
+        while let Some(batch) = self.try_fetch_scheduled_batch() {
+            self.all_events = batch.events;
 
             for _i in 0..MAX_ITER {
                 self.reset_buffers();
@@ -432,7 +459,7 @@ impl RelayPath {
                 // Collect the messages for all events
                 for event in self.all_events.clone() {
                     println!("{} => {:?}", self.src_chain.id(), event);
-                    self.handle_packet_event(&event)?;
+                    self.handle_packet_event(&event, batch.dst_height)?;
                 }
 
                 // Send messages
@@ -445,6 +472,39 @@ impl RelayPath {
 
                 println!("retrying");
             }
+        }
+
+        self.all_events = vec![];
+        Ok(())
+    }
+
+    /// Send a multi message transaction with packet messages, prepending the client update.
+    /// Ignores any delay period for packets.
+    fn relay_multi_msg(&mut self) -> Result<(), LinkError> {
+        if self.all_events.is_empty() {
+            return Ok(());
+        }
+
+        let dst_update_height = self.dst_latest_height()?;
+
+        for _i in 0..MAX_ITER {
+            self.reset_buffers();
+
+            // Collect the messages for all events
+            for event in self.all_events.clone() {
+                println!("{} => {:?}", self.src_chain.id(), event);
+                self.handle_packet_event(&event, dst_update_height)?;
+            }
+
+            // Send client update and messages
+            let res = self.send_update_client_and_msgs(dst_update_height);
+            println!("\nresult {:?}", res);
+
+            if self.all_events.is_empty() {
+                break;
+            }
+
+            println!("retrying");
         }
 
         // TODO - add error
@@ -511,17 +571,21 @@ impl RelayPath {
 
     /// Sends ClientUpdate transactions ahead of a scheduled batch.
     /// Includes basic retrying and returns failure only after all retries are exhausted.
-    pub fn update_clients(&self, src_height: Height, dst_height: Height) -> Result<(), LinkError> {
+    pub fn update_clients(
+        &self,
+        src_chain_height: Height,
+        dst_chain_height: Height,
+    ) -> Result<(), LinkError> {
         // Handle the update on the destination chain
         // Check if a consensus state at update_height exists on destination chain already
         for i in 0..MAX_ITER {
             if self
                 .dst_chain()
-                .proven_client_consensus(self.dst_client_id(), src_height, Height::zero())
+                .proven_client_consensus(self.dst_client_id(), src_chain_height, Height::zero())
                 .is_err()
             {
-                let dst_update = self.build_update_client_on_dst(src_height)?;
-                info!("sending update client at height {:?}", src_height);
+                let dst_update = self.build_update_client_on_dst(src_chain_height)?;
+                info!("sending update client at height {:?}", src_chain_height);
 
                 let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
                 info!("result {:?}\n", dst_tx_events);
@@ -551,15 +615,15 @@ impl RelayPath {
         for i in 0..MAX_ITER {
             if self
                 .src_chain()
-                .proven_client_consensus(self.src_client_id(), dst_height, Height::zero())
+                .proven_client_consensus(self.src_client_id(), dst_chain_height, Height::zero())
                 .is_err()
             {
-                let src_update = self.build_update_client_on_src(dst_height)?;
+                let src_update = self.build_update_client_on_src(dst_chain_height)?;
                 info!(
                     "sending {:?} messages to {}, update client at height {:?}",
                     src_update.len(),
                     self.src_chain.id(),
-                    dst_height,
+                    dst_chain_height,
                 );
 
                 let src_tx_events = self.src_chain.send_msgs(src_update)?;
@@ -591,6 +655,7 @@ impl RelayPath {
     // TODO(Adi): Candidate for removal. Blocked by `clear_packets`
     pub fn send_update_client_and_msgs(
         &mut self,
+        dst_update_height: Height,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), LinkError> {
         let mut src_tx_events = vec![];
         let mut dst_tx_events = vec![];
@@ -600,7 +665,6 @@ impl RelayPath {
         }
 
         let src_update_height = self.all_events[0].height().increment();
-        let dst_update_height = self.dst_latest_height()?;
 
         // Clear all_events and collect the src and dst input events if Tx-es fail
         self.all_events = vec![];
@@ -819,40 +883,85 @@ impl RelayPath {
         for event in self.all_events.iter_mut() {
             event.set_height(src_height);
         }
+        let dst_height = self.dst_latest_height()?;
 
-        // Update clients & schedule the original events
-        self.update_clients(src_height, self.dst_latest_height()?)?;
-        self.schedule_batch(self.all_events.clone());
+        if self.channel.connection_delay.as_nanos() > 0 {
+            // Update clients & schedule the original events
+            self.update_clients(src_height, dst_height)?;
+            self.schedule_batch(self.all_events.clone(), dst_height);
 
-        // Block waiting for the delay to pass
-        let events = self.fetch_scheduled_batch()?;
+            // Block waiting for the delay to pass
+            let batch = self.fetch_scheduled_batch()?;
 
-        self.reset_buffers();
+            self.reset_buffers();
 
-        for e in events {
-            self.handle_packet_event(&e)?;
+            for e in batch.events {
+                self.handle_packet_event(&e, batch.dst_height)?;
+            }
+
+            // Send messages
+            let mut res = self.send_msgs()?;
+            println!("\nresult {:?}", res);
+
+            // TODO(Adi): Make this nicer.
+            res.0.append(&mut res.1);
+            Ok(res.0)
+        } else {
+            // Send a multi message transaction with both client update and the packet messages
+            for event in self.all_events.clone() {
+                self.handle_packet_event(&event, dst_height)?;
+            }
+            let (mut dst_res, mut src_res) = self.send_update_client_and_msgs(dst_height)?;
+            dst_res.append(&mut src_res);
+            Ok(dst_res)
         }
-
-        // Send messages
-        let mut res = self.send_msgs()?;
-        println!("\nresult {:?}", res);
-
-        res.0.append(&mut res.1);
-        Ok(res.0)
     }
 
-    pub fn build_packet_ack_msgs(&mut self) -> Result<(), LinkError> {
+    pub fn relay_packet_ack_msgs(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
         let src_height = self.target_height_and_write_ack_events()?;
 
+        // Skip: no relevant events found.
+        if self.all_events.is_empty() {
+            return Ok(vec![]);
+        }
+
         for event in self.all_events.iter_mut() {
             event.set_height(src_height);
         }
-        for event in self.all_events.clone() {
-            self.handle_packet_event(&event)?;
+        let dst_height = self.dst_latest_height()?;
+
+        if self.channel.connection_delay.as_nanos() > 0 {
+            // Update clients & schedule the original events
+            self.update_clients(src_height, dst_height)?;
+            self.schedule_batch(self.all_events.clone(), dst_height);
+
+            // Block waiting for the delay to pass
+            let batch = self.fetch_scheduled_batch()?;
+
+            self.reset_buffers();
+
+            for e in batch.events {
+                self.handle_packet_event(&e, batch.dst_height)?;
+            }
+
+            // Send messages
+            let mut res = self.send_msgs()?;
+            println!("\nresult {:?}", res);
+
+            // TODO(Adi): Make this nicer.
+            res.0.append(&mut res.1);
+            Ok(res.0)
+        } else {
+            // Send a multi message transaction with both client update and the ACK messages
+            for event in self.all_events.clone() {
+                self.handle_packet_event(&event, dst_height)?;
+            }
+            let (mut dst_res, mut src_res) = self.send_update_client_and_msgs(dst_height)?;
+            dst_res.append(&mut src_res);
+            Ok(dst_res)
         }
-        Ok(())
     }
 
     fn build_recv_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
@@ -983,23 +1092,24 @@ impl RelayPath {
     fn build_recv_or_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
+        dst_chain_height: Height,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let packet = event.packet.clone();
 
-        let dst_height = self.dst_latest_height()?;
-
         if self
-            .dst_channel(dst_height)?
+            .dst_channel(dst_chain_height)?
             .state_matches(&ChannelState::Closed)
         {
             Ok((
                 None,
-                Some(self.build_timeout_on_close_packet(&event.packet, dst_height)?),
+                Some(self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?),
             ))
-        } else if packet.timeout_height != Height::zero() && packet.timeout_height < dst_height {
+        } else if packet.timeout_height != Height::zero()
+            && packet.timeout_height < dst_chain_height
+        {
             Ok((
                 None,
-                Some(self.build_timeout_packet(&event.packet, dst_height)?),
+                Some(self.build_timeout_packet(&event.packet, dst_chain_height)?),
             ))
             // } else if packet.timeout_timestamp != 0 && packet.timeout_timestamp < dst_chain.query_time() {
             //     TODO - add query to get the current chain time
@@ -1013,7 +1123,7 @@ impl RelayPath {
 
     /// Registers a new batch of events to be processed later. The batch can be retrieved once a
     /// predefined delay period elapses, via method `next_scheduled_batch`.
-    fn schedule_batch(&mut self, events: Vec<IbcEvent>) {
+    fn schedule_batch(&mut self, events: Vec<IbcEvent>, dst_height: Height) {
         if events.is_empty() {
             panic!("Cannot schedule an empty event batch")
         }
@@ -1022,6 +1132,7 @@ impl RelayPath {
         let sc_event = ScheduledBatch {
             update_time: Instant::now(),
             events,
+            dst_height,
         };
         self.scheduled.push(sc_event);
     }
@@ -1029,7 +1140,7 @@ impl RelayPath {
     /// Pulls out the next batch of events that have fulfilled the predefined delay period and can
     /// now be processed. Blocking call: waits until the delay period for the oldest event batch
     /// is fulfilled. If no batch is currently scheduled, returns immediately with error.
-    pub fn fetch_scheduled_batch(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
+    pub fn fetch_scheduled_batch(&mut self) -> Result<ScheduledBatch, LinkError> {
         if let Some(batch) = self.scheduled.first() {
             info!(
                 "Found a scheduled batch with {} events. Waiting for delay period of {:#?}. Elapsed: {:#?}.",
@@ -1041,7 +1152,7 @@ impl RelayPath {
             }
 
             let events_batch = self.scheduled.remove(0);
-            Ok(events_batch.events)
+            Ok(events_batch)
         } else {
             Err(LinkError::Failed(
                 "There is no scheduled batch of events!".into(),
@@ -1052,7 +1163,7 @@ impl RelayPath {
     /// Pulls out the next batch of events that have fulfilled the predefined delay period and can
     /// now be processed. Does not block: if no batch fulfilled the delay period (or no batch is
     /// scheduled), return immediately with `None`.
-    fn try_fetch_scheduled_batch(&mut self) -> Option<Vec<IbcEvent>> {
+    fn try_fetch_scheduled_batch(&mut self) -> Option<ScheduledBatch> {
         // The head of the scheduled vector contains the oldest scheduled batch.
         if let Some(batch) = self.scheduled.first() {
             if batch.update_time.elapsed() > self.channel.connection_delay {
@@ -1061,7 +1172,7 @@ impl RelayPath {
                     "Found a scheduled batch with {} events",
                     events_batch.events.len()
                 );
-                return Some(events_batch.events);
+                return Some(events_batch);
             }
         }
         None

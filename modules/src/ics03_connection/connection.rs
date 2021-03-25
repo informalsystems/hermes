@@ -148,7 +148,8 @@ impl ConnectionEnd {
         self.counterparty.clone()
     }
 
-    /// Getter for the delay_period field.
+    /// Getter for the delay_period field. This represents the amount of nanoseconds, at minimum,
+    /// to delay the sending of a packet after the client update for that packet has been submitted.
     pub fn delay_period(&self) -> u64 {
         self.delay_period
     }

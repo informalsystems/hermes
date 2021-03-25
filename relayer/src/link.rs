@@ -179,8 +179,8 @@ impl Link {
                 a_channel.counterparty().port_id.clone(),
                 b_channel_id,
             ),
-            // TODO(Adi): Is this indeed in seconds format?
-            connection_delay: Duration::from_secs(a_connection.delay_period()),
+            // TODO(Adi): Clarify throughout the codebase that this is to be interpreted as nanos
+            connection_delay: Duration::from_nanos(a_connection.delay_period()),
         };
 
         Ok(Link::new(channel))
@@ -191,9 +191,6 @@ impl Link {
     }
 
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
-        self.a_to_b.build_packet_ack_msgs()?;
-        let (mut dst_res, mut src_res) = self.a_to_b.send_update_client_and_msgs()?;
-        dst_res.append(&mut src_res);
-        Ok(dst_res)
+        self.a_to_b.relay_packet_ack_msgs()
     }
 }
