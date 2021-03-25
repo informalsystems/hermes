@@ -137,12 +137,12 @@ impl Connection {
         let c = Connection {
             delay_period: 0, // TODO: Unclear if we should add mechanism to check the delay period
             a_side: ConnectionSide {
-                chain: a_client.src_chain.clone(),
+                chain: a_client.dst_chain.clone(),
                 client_id: a_client.id.clone(),
                 connection_id: conn_end_a.id().clone(),
             },
             b_side: ConnectionSide {
-                chain: b_client.src_chain.clone(),
+                chain: b_client.dst_chain.clone(),
                 client_id: b_client.id.clone(),
                 connection_id: b_conn_id,
             },
