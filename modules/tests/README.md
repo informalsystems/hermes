@@ -22,7 +22,7 @@ Then, we can ask [`TLC`](https://github.com/tlaplus/tlaplus), a model checker fo
 
 ```bash
 wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
-java -cp tla2tools.jar tlc2.TLC IBC.tla -tool -modelcheck -config IBC.cfg -workers auto
+java -cp tla2tools.jar tlc2.TLC IBC.tla -modelcheck -config IBC.cfg -workers auto
 ```
 
 ### The tests
@@ -43,14 +43,6 @@ ICS02UpdateOKTestNeg == ~ICS02UpdateOKTest
 
 Then, we ask `TLC`, to prove it. Because the invariant is wrong, `TLC` will find a counterexample showing that it is indeed possible that a client is sucessfully updated to a new height. This counterexample is our test.
 
-The [`gen_tests.py`](support/model_based/gen_tests.py) script can be used to generate the tests. This script assumes the existence of [`tlc-json`](https://github.com/vitorenesduarte/tlc-json), which can be installed with the following commands:
-
-```bash
-git clone https://github.com/vitorenesduarte/tlc-json
-cd tlc-json/
-cargo install --path .
-```
-
 ### Running the model-based tests
 
 The model-based tests can be run with the following command:
@@ -58,4 +50,12 @@ The model-based tests can be run with the following command:
 ```bash
 cd modules/
 cargo test --features mocks -- mbt
+```
+
+The above uses [`modelator`](https://github.com/informalsystems/modelator), a model-based testing tool.
+One of the steps automated by `modelator` is the negation of TLA+ tests assertions mentioned earlier.
+
+To debug possible issues with `modelator`, run instead:
+```bash
+RUST_LOG=modelator=trace cargo test --features mocks -- mbt
 ```

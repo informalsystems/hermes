@@ -66,8 +66,8 @@ cargo run --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_1_ID" --all -y &
 
 # set the primary peers for clients on each chain
 echo "Adding primary peers to light client configuration..."
-cargo run --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -f -p -s "$GAIA_DATA/$CHAIN_0_ID/data" -y &>/dev/null
-cargo run --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -f -p -s "$GAIA_DATA/$CHAIN_1_ID/data" -y &>/dev/null
+cargo run --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -f -p -s "$GAIA_DATA/$CHAIN_0_ID/data" -y &>/dev/null || printf "\tError adding primary peer to %s\n" "$CHAIN_0_RPC_ADDR"
+cargo run --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -f -p -s "$GAIA_DATA/$CHAIN_1_ID/data" -y &>/dev/null || printf "\tError adding primary peer to %s\n" "$CHAIN_1_RPC_ADDR"
 
 # set the secondary peers for clients on each chain
 echo "Adding secondary peers to light client configuration..."

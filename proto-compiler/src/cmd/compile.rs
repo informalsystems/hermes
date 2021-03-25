@@ -122,9 +122,11 @@ impl CompileCmd {
         let proto_paths = [
             format!("{}/../proto/definitions/mock", root),
             format!("{}/proto/cosmos/auth", sdk_dir.display()),
+            format!("{}/proto/cosmos/gov", sdk_dir.display()),
             format!("{}/proto/cosmos/tx", sdk_dir.display()),
             format!("{}/proto/cosmos/base", sdk_dir.display()),
             format!("{}/proto/cosmos/staking", sdk_dir.display()),
+            format!("{}/proto/cosmos/upgrade", sdk_dir.display()),
         ];
 
         let proto_includes_paths = [

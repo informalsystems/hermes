@@ -2,7 +2,9 @@ use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use serde::Serialize;
-use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
+use tendermint::trust_threshold::{
+    TrustThresholdFraction as TrustThreshold, TrustThresholdFraction,
+};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
@@ -102,6 +104,21 @@ impl ClientState {
                 .with_revision_height(u64::from(h.signed_header.header.height)),
             ..self
         }
+    }
+
+    /// Helper function to verify the upgrade client procedure.
+    /// Resets all fields except the blockchain-specific ones.
+    pub fn zero_custom_fields(mut client_state: Self) -> Self {
+        client_state.trusting_period = Duration::from_secs(0);
+        client_state.trust_level = TrustThresholdFraction {
+            numerator: 0,
+            denominator: 0,
+        };
+        client_state.allow_update_after_expiry = false;
+        client_state.allow_update_after_misbehaviour = false;
+        client_state.frozen_height = Height::zero();
+        client_state.max_clock_drift = Duration::from_secs(0);
+        client_state
     }
 }
 

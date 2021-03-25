@@ -3,22 +3,25 @@ use tendermint_proto::Protobuf;
 
 use crate::application::ics20_fungible_token_transfer::msgs::transfer;
 use crate::application::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
-use crate::events::IbcEvent;
-use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::{create_client, update_client, ClientMsg};
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics03_connection::msgs::{
     conn_open_ack, conn_open_confirm, conn_open_init, conn_open_try, ConnectionMsg,
 };
-use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
+use crate::ics04_channel::handler::channel_dispatch as ics4_msg_dispatcher;
+use crate::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
+use crate::{events::IbcEvent, handler::HandlerOutput};
+
 use crate::ics04_channel::msgs::{
-    chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm, chan_open_init,
-    chan_open_try, ChannelMsg,
+    acknowledgement, chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm,
+    chan_open_init, chan_open_try, recv_packet, ChannelMsg, PacketMsg,
 };
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::error::{Error, Kind};
-use crate::ics26_routing::msgs::Ics26Envelope::{self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4Msg};
+use crate::ics26_routing::msgs::Ics26Envelope::{
+    self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
+};
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
@@ -50,7 +53,7 @@ where
                 Ok(Ics2Msg(ClientMsg::UpdateClient(domain_msg)))
             }
 
-            //ICS03
+            // ICS03
             conn_open_init::TYPE_URL => {
                 let domain_msg = conn_open_init::MsgConnectionOpenInit::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
@@ -77,45 +80,55 @@ where
                 Ok(Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(domain_msg)))
             }
 
-            //ICS04
+            // ICS04 channel messages
             chan_open_init::TYPE_URL => {
                 let domain_msg = chan_open_init::MsgChannelOpenInit::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4Msg(ChannelMsg::ChannelOpenInit(domain_msg)))
+                Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(domain_msg)))
             }
             chan_open_try::TYPE_URL => {
                 let domain_msg = chan_open_try::MsgChannelOpenTry::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4Msg(ChannelMsg::ChannelOpenTry(domain_msg)))
+                Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenTry(domain_msg)))
             }
             chan_open_ack::TYPE_URL => {
                 let domain_msg = chan_open_ack::MsgChannelOpenAck::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4Msg(ChannelMsg::ChannelOpenAck(domain_msg)))
+                Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenAck(domain_msg)))
             }
             chan_open_confirm::TYPE_URL => {
                 let domain_msg =
                     chan_open_confirm::MsgChannelOpenConfirm::decode_vec(&any_msg.value)
                         .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4Msg(ChannelMsg::ChannelOpenConfirm(domain_msg)))
+                Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenConfirm(domain_msg)))
             }
             chan_close_init::TYPE_URL => {
                 let domain_msg = chan_close_init::MsgChannelCloseInit::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4Msg(ChannelMsg::ChannelCloseInit(domain_msg)))
+                Ok(Ics4ChannelMsg(ChannelMsg::ChannelCloseInit(domain_msg)))
             }
             chan_close_confirm::TYPE_URL => {
                 let domain_msg =
                     chan_close_confirm::MsgChannelCloseConfirm::decode_vec(&any_msg.value)
                         .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4Msg(ChannelMsg::ChannelCloseConfirm(domain_msg)))
+                Ok(Ics4ChannelMsg(ChannelMsg::ChannelCloseConfirm(domain_msg)))
             }
-            //ICS20
+            // ICS20 - 04 - Send packet
             transfer::TYPE_URL => {
-                // Pop out the message and then wrap it in the corresponding type.
                 let domain_msg = transfer::MsgTransfer::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics20Msg(domain_msg))
+            }
+            // ICS04 packet messages
+            recv_packet::TYPE_URL => {
+                let domain_msg = recv_packet::MsgRecvPacket::decode_vec(&any_msg.value)
+                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                Ok(Ics4PacketMsg(PacketMsg::RecvPacket(domain_msg)))
+            }
+            acknowledgement::TYPE_URL => {
+                let domain_msg = acknowledgement::MsgAcknowledgement::decode_vec(&any_msg.value)
+                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                Ok(Ics4PacketMsg(PacketMsg::AckPacket(domain_msg)))
             }
 
             _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)),
@@ -168,7 +181,7 @@ where
                 .with_result(())
         }
 
-        Ics4Msg(msg) => {
+        Ics4ChannelMsg(msg) => {
             let handler_output =
                 ics4_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
@@ -195,7 +208,20 @@ where
                 .with_events(handler_output.events)
                 .with_result(())
         }
-        _ => todo!(),
+
+        Ics4PacketMsg(msg) => {
+            let handler_output = ics04_packet_msg_dispatcher(ctx, msg)
+                .map_err(|e| Kind::HandlerRaisedError.context(e))?;
+
+            // Apply any results to the host chain store.
+            ctx.store_packet_result(handler_output.result)
+                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+
+            HandlerOutput::builder()
+                .with_log(handler_output.log)
+                .with_events(handler_output.events)
+                .with_result(())
+        }
     };
 
     Ok(output)
@@ -205,6 +231,7 @@ where
 mod tests {
     use std::convert::TryFrom;
 
+    use crate::application::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer;
     use crate::events::IbcEvent;
     use crate::ics02_client::client_consensus::AnyConsensusState;
     use crate::ics02_client::client_state::AnyClientState;
@@ -225,8 +252,10 @@ mod tests {
         chan_open_ack::{test_util::get_dummy_raw_msg_chan_open_ack, MsgChannelOpenAck},
         chan_open_init::{test_util::get_dummy_raw_msg_chan_open_init, MsgChannelOpenInit},
         chan_open_try::{test_util::get_dummy_raw_msg_chan_open_try, MsgChannelOpenTry},
-        ChannelMsg,
+        recv_packet::{test_util::get_dummy_raw_msg_recv_packet, MsgRecvPacket},
+        ChannelMsg, PacketMsg,
     };
+
     use crate::ics24_host::identifier::ConnectionId;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::Ics26Envelope;
@@ -252,6 +281,7 @@ mod tests {
         let client_height = 5;
         let start_client_height = Height::new(0, client_height);
         let update_client_height = Height::new(0, 34);
+        let update_client_height_after_send = Height::new(0, 35);
 
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
@@ -310,6 +340,10 @@ mod tests {
             MsgChannelCloseConfirm::try_from(get_dummy_raw_msg_chan_close_confirm(client_height))
                 .unwrap();
 
+        let msg_transfer = get_dummy_msg_transfer(35);
+
+        let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
+
         // First, create a client..
         let res = dispatch(
             &mut ctx,
@@ -354,7 +388,7 @@ mod tests {
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height).into(),
-                    signer: default_signer,
+                    signer: default_signer.clone(),
                 })),
                 want_pass: false,
             },
@@ -376,7 +410,7 @@ mod tests {
             Test {
                 name: "Connection open try succeeds".to_string(),
                 msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
-                    correct_msg_conn_try.with_client_id(client_id),
+                    correct_msg_conn_try.with_client_id(client_id.clone()),
                 ))),
                 want_pass: true,
             },
@@ -390,32 +424,64 @@ mod tests {
             // ICS04
             Test {
                 name: "Channel open init succeeds".to_string(),
-                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenInit(msg_chan_init)),
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(msg_chan_init)),
                 want_pass: true,
             },
             Test {
                 name: "Channel open init fail due to missing connection".to_string(),
-                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenInit(incorrect_msg_chan_init)),
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(
+                    incorrect_msg_chan_init,
+                )),
                 want_pass: false,
             },
             Test {
                 name: "Channel open try succeeds".to_string(),
-                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenTry(msg_chan_try)),
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenTry(msg_chan_try)),
                 want_pass: true,
             },
             Test {
                 name: "Channel open ack succeeds".to_string(),
-                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenAck(msg_chan_ack)),
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenAck(msg_chan_ack)),
+                want_pass: true,
+            },
+            //ICS20-04-packet
+            Test {
+                name: "Packet send".to_string(),
+                msg: Ics26Envelope::Ics20Msg(msg_transfer),
+                want_pass: true,
+            },
+            // The client update is required in this test, because the proof associated with
+            // msg_recv_packet has the same height as the packet TO height (see get_dummy_raw_msg_recv_packet)
+            Test {
+                name: "Client update successful".to_string(),
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                    client_id,
+                    header: MockHeader::new(update_client_height_after_send).into(),
+                    signer: default_signer,
+                })),
                 want_pass: true,
             },
             Test {
+                name: "Receive packet".to_string(),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet.clone())),
+                want_pass: true,
+            },
+            Test {
+                name: "Re-Receive packet".to_string(),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
+                want_pass: false,
+            },
+            //ICS04-close channel
+            Test {
                 name: "Channel close init succeeds".to_string(),
-                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelCloseInit(msg_chan_close_init)),
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelCloseInit(
+                    msg_chan_close_init,
+                )),
                 want_pass: true,
             },
             Test {
                 name: "Channel close confirm fails cause channel is already closed".to_string(),
-                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelCloseConfirm(
+                msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelCloseConfirm(
                     msg_chan_close_confirm,
                 )),
                 want_pass: false,

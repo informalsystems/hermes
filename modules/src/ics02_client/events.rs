@@ -12,6 +12,7 @@ use std::convert::{TryFrom, TryInto};
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
 const UPDATE_EVENT_TYPE: &str = "update_client";
+const UPGRADE_EVENT_TYPE: &str = "upgrade_client";
 
 /// The content of the `key` field for the attribute containing the client identifier.
 const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
@@ -28,6 +29,9 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
             extract_attributes_from_tx(event),
         ))),
         UPDATE_EVENT_TYPE => Some(IbcEvent::UpdateClient(UpdateClient(
+            extract_attributes_from_tx(event),
+        ))),
+        UPGRADE_EVENT_TYPE => Some(IbcEvent::UpgradeClient(UpgradeClient(
             extract_attributes_from_tx(event),
         ))),
         _ => None,
@@ -77,7 +81,7 @@ impl From<NewBlock> for IbcEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub height: Height,
     pub client_id: ClientId,
@@ -212,5 +216,21 @@ impl TryFrom<RawObject> for ClientMisbehavior {
 impl From<ClientMisbehavior> for IbcEvent {
     fn from(v: ClientMisbehavior) -> Self {
         IbcEvent::ClientMisbehavior(v)
+    }
+}
+
+/// Signals a recent upgrade of an on-chain client (IBC Client).
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
+pub struct UpgradeClient(Attributes);
+
+impl UpgradeClient {
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
+}
+
+impl From<Attributes> for UpgradeClient {
+    fn from(attrs: Attributes) -> Self {
+        UpgradeClient(attrs)
     }
 }

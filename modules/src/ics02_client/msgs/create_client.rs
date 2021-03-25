@@ -1,8 +1,4 @@
-//! These are definitions of messages that a relayer submits to a chain. Specific implementations of
-//! these messages can be found, for instance, in ICS 07 for Tendermint-specific chains. A chain
-//! handles these messages in two layers: first with the general ICS 02 client handler, which
-//! subsequently calls into the chain-specific (e.g., ICS 07) client handler. See:
-//! https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
+//! Definition of domain type message `MsgCreateAnyClient`.
 
 use std::convert::TryFrom;
 
@@ -17,7 +13,7 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
+pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
