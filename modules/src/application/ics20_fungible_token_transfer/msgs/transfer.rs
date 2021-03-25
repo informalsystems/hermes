@@ -2,8 +2,9 @@
 
 use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
 use crate::ics02_client::height::Height;
@@ -62,7 +63,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             sender: raw_msg.sender.into(),
             receiver: raw_msg.receiver.into(),
             timeout_height: raw_msg.timeout_height.unwrap().try_into().unwrap(),
-            timeout_timestamp: 0,
+            timeout_timestamp: raw_msg.timeout_timestamp,
         })
     }
 }
@@ -76,7 +77,36 @@ impl From<MsgTransfer> for RawMsgTransfer {
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
             timeout_height: Some(domain_msg.timeout_height.try_into().unwrap()),
-            timeout_timestamp: 0,
+            timeout_timestamp: domain_msg.timeout_timestamp,
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod test_util {
+    use crate::{
+        ics24_host::identifier::{ChannelId, PortId},
+        test_utils::get_dummy_account_id,
+        Height,
+    };
+
+    use super::MsgTransfer;
+
+    // Returns a dummy `RawMsgTransfer`, for testing only!
+    pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
+        let id = get_dummy_account_id();
+
+        MsgTransfer {
+            source_port: PortId::default(),
+            source_channel: ChannelId::default(),
+            token: None,
+            sender: id.clone(),
+            receiver: id,
+            timeout_timestamp: 1,
+            timeout_height: Height {
+                revision_number: 0,
+                revision_height: height,
+            },
         }
     }
 }

@@ -21,7 +21,7 @@ ICS03_ConnectionOpenInit(
     counterpartyChainId,
     counterpartyClientId
 ) ==
-    LET action == AsAction([
+    LET action_ == AsAction([
         type |-> "ICS03ConnectionOpenInit",
         chainId |-> chainId,
         clientId |-> clientId,
@@ -34,7 +34,7 @@ ICS03_ConnectionOpenInit(
         [
             connections |-> chain.connections,
             connectionIdCounter |-> chain.connectionIdCounter,
-            action |-> action,
+            action |-> action_,
             outcome |-> "ICS03MissingClient"
         ]
     ELSE
@@ -46,7 +46,7 @@ ICS03_ConnectionOpenInit(
             [
                 connections |-> chain.connections,
                 connectionIdCounter |-> chain.connectionIdCounter,
-                action |-> action,
+                action |-> action_,
                 outcome |-> "ModelError"
             ]
         ELSE
@@ -69,7 +69,7 @@ ICS03_ConnectionOpenInit(
                     connection
                 ),
                 connectionIdCounter |-> chain.connectionIdCounter + 1,
-                action |-> action,
+                action |-> action_,
                 outcome |-> "ICS03ConnectionOpenInitOK"
             ]
 
@@ -83,7 +83,7 @@ ICS03_ConnectionOpenTry(
     counterpartyClientId,
     counterpartyConnectionId
 ) ==
-    LET action == AsAction([
+    LET action_ == AsAction([
         type |-> "ICS03ConnectionOpenTry",
         chainId |-> chainId,
         clientId |-> clientId,
@@ -99,7 +99,7 @@ ICS03_ConnectionOpenTry(
         [
             connections |-> chain.connections,
             connectionIdCounter |-> chain.connectionIdCounter,
-            action |-> action,
+            action |-> action_,
             outcome |-> "ICS03InvalidConsensusHeight"
         ]
         \* TODO: add `chain_max_history_size` to the model to be able to also
@@ -117,7 +117,7 @@ ICS03_ConnectionOpenTry(
                 [
                     connections |-> chain.connections,
                     connectionIdCounter |-> chain.connectionIdCounter,
-                    action |-> action,
+                    action |-> action_,
                     outcome |-> "ICS03ConnectionNotFound"
                 ]
             ELSE
@@ -138,7 +138,7 @@ ICS03_ConnectionOpenTry(
                     [
                         connections |-> chain.connections,
                         connectionIdCounter |-> chain.connectionIdCounter,
-                        action |-> action,
+                        action |-> action_,
                         outcome |-> "ICS03ConnectionMismatch"
                     ]
                 ELSE
@@ -158,7 +158,7 @@ ICS03_ConnectionOpenTry(
                         \* created, here we do not update the
                         \* `connectionIdCounter`
                         connectionIdCounter |-> chain.connectionIdCounter,
-                        action |-> action,
+                        action |-> action_,
                         outcome |-> "ICS03ConnectionOpenTryOK"
                     ]
         ELSE
@@ -169,7 +169,7 @@ ICS03_ConnectionOpenTry(
                 [
                     connections |-> chain.connections,
                     connectionIdCounter |-> chain.connectionIdCounter,
-                    action |-> action,
+                    action |-> action_,
                     outcome |-> "ICS03MissingClient"
                 ]
             ELSE
@@ -182,7 +182,7 @@ ICS03_ConnectionOpenTry(
                     [
                         connections |-> chain.connections,
                         connectionIdCounter |-> chain.connectionIdCounter,
-                        action |-> action,
+                        action |-> action_,
                         outcome |-> "ICS03MissingClientConsensusState"
                     ]
                 ELSE
@@ -202,7 +202,7 @@ ICS03_ConnectionOpenTry(
                         [
                             connections |-> chain.connections,
                             connectionIdCounter |-> chain.connectionIdCounter,
-                            action |-> action,
+                            action |-> action_,
                             outcome |-> "ICS03InvalidProof"
                         ]
                     ELSE
@@ -227,7 +227,7 @@ ICS03_ConnectionOpenTry(
                             \* since a new connection identifier has been
                             \* created, here we update the `connectionIdCounter`
                             connectionIdCounter |-> chain.connectionIdCounter + 1,
-                            action |-> action,
+                            action |-> action_,
                             outcome |-> "ICS03ConnectionOpenTryOK"
                         ]
 
@@ -239,7 +239,7 @@ ICS03_ConnectionOpenAck(
     counterpartyChainId,
     counterpartyConnectionId
 ) ==
-    LET action == AsAction([
+    LET action_ == AsAction([
         type |-> "ICS03ConnectionOpenAck",
         chainId |-> chainId,
         connectionId |-> connectionId,
@@ -255,7 +255,7 @@ ICS03_ConnectionOpenAck(
         \* if client's height is too advanced, then set an error outcome
         [
             connections |-> connections,
-            action |-> action,
+            action |-> action_,
             outcome |-> "ICS03InvalidConsensusHeight"
         ]
         \* TODO: add `chain_max_history_size` to the model to be able to also
@@ -268,7 +268,7 @@ ICS03_ConnectionOpenAck(
             \* from conn open try?
             [
                 connections |-> connections,
-                action |-> action,
+                action |-> action_,
                 outcome |-> "ICS03UninitializedConnection"
             ]
         ELSE
@@ -285,7 +285,7 @@ ICS03_ConnectionOpenAck(
                 \* error outcome
                 [
                     connections |-> connections,
-                    action |-> action,
+                    action |-> action_,
                     outcome |-> "ICS03ConnectionMismatch"
                 ]
             ELSE
@@ -297,7 +297,7 @@ ICS03_ConnectionOpenAck(
                     \* height, then set an error outcome
                     [
                         connections |-> connections,
-                        action |-> action,
+                        action |-> action_,
                         outcome |-> "ICS03MissingClientConsensusState"
                     ]
                 ELSE
@@ -317,7 +317,7 @@ ICS03_ConnectionOpenAck(
                         \* then set an error outcome
                         [
                             connections |-> chain.connections,
-                            action |-> action,
+                            action |-> action_,
                             outcome |-> "ICS03InvalidProof"
                         ]
                     ELSE
@@ -333,7 +333,7 @@ ICS03_ConnectionOpenAck(
                                 connectionId,
                                 updatedConnection
                             ),
-                            action |-> action,
+                            action |-> action_,
                             outcome |-> "ICS03ConnectionOpenAckOK"
                         ]
 
@@ -345,7 +345,7 @@ ICS03_ConnectionOpenConfirm(
     counterpartyChainId,
     counterpartyConnectionId
 ) ==
-    LET action == AsAction([
+    LET action_ == AsAction([
         type |-> "ICS03ConnectionOpenConfirm",
         chainId |-> chainId,
         connectionId |-> connectionId,
@@ -363,7 +363,7 @@ ICS03_ConnectionOpenConfirm(
         \* from conn open try?
         [
             connections |-> connections,
-            action |-> action,
+            action |-> action_,
             outcome |-> "ICS03UninitializedConnection"
         ]
     ELSE
@@ -376,7 +376,7 @@ ICS03_ConnectionOpenConfirm(
             \* error outcome
             [
                 connections |-> connections,
-                action |-> action,
+                action |-> action_,
                 outcome |-> "ICS03ConnectionMismatch"
             ]
         ELSE
@@ -388,7 +388,7 @@ ICS03_ConnectionOpenConfirm(
                 \* height, then set an error outcome
                 [
                     connections |-> connections,
-                    action |-> action,
+                    action |-> action_,
                     outcome |-> "ICS03MissingClientConsensusState"
                 ]
             ELSE
@@ -407,7 +407,7 @@ ICS03_ConnectionOpenConfirm(
                     \* then set an error outcome
                     [
                         connections |-> chain.connections,
-                        action |-> action,
+                        action |-> action_,
                         outcome |-> "ICS03InvalidProof"
                     ]
                 ELSE
@@ -423,7 +423,7 @@ ICS03_ConnectionOpenConfirm(
                             connectionId,
                             updatedConnection
                         ),
-                        action |-> action,
+                        action |-> action_,
                         outcome |-> "ICS03ConnectionOpenConfirmOK"
                     ]
 
