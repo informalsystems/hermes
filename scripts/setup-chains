@@ -21,10 +21,6 @@ if [ -z "$2" ]; then
   missing "CHAIN_1_ID"
 fi
 
-# the 3rd chain can be omitted, won't be launched
-# if [ -z "$3" ]; then
-#   missing "CHAIN_2_ID"
-# fi
 
 if [ "$#" -gt 3 ]; then
   echo "Incorrect number of parameters."
@@ -89,4 +85,3 @@ fi
 if [ -n "$CHAIN_2_ID" ]; then
   [ -f "$GAIA_DATA/$CHAIN_2_ID.log" ] && echo "$CHAIN_2_ID initialized. Watch file $GAIA_DATA/$CHAIN_2_ID.log to see its execution."
 fi
-

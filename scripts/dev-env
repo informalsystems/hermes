@@ -23,10 +23,6 @@ if [ -z "$3" ]; then
   missing "CHAIN_1_ID"
 fi
 
-# the 3rd chain can be omitted, won't be launched and configured
-# if [ -z "$4" ]; then
-#   missing "CHAIN_2_ID"
-# fi
 
 if [ "$#" -gt 4 ]; then
   echo "Incorrect number of parameters."
