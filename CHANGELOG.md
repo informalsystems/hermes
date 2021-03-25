@@ -18,7 +18,7 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - Added `create connection` CLI ([#630])
+  - Added `create connection` and `create channel` CLIs ([#630], [#715])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
   - Added `client-upgrade` CLI ([#357])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
@@ -29,7 +29,7 @@
   - Follow Rust guidelines naming conventions ([#689])
   - Per client structure modules ([#740])
   - MBT: use modelator crate ([#761])
-  
+
 - [ibc-relayer]
   - [nothing yet]
 
@@ -73,6 +73,7 @@
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
+[#715]: https://github.com/informalsystems/ibc-rs/issues/715
 [#702]: https://github.com/informalsystems/ibc-rs/issues/702
 [#734]: https://github.com/informalsystems/ibc-rs/issues/734
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
