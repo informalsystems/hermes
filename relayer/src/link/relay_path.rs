@@ -408,11 +408,6 @@ impl RelayPath {
     /// Should not run more than once per execution.
     pub fn clear_packets(&mut self, _height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
-            // TODO(Adi): Removing this is probably causing a bug!
-            // self.src_height = height
-            //     .decrement()
-            //     .map_err(|e| LinkError::Failed(e.to_string()))?;
-
             self.relay_pending_packets()?;
             self.clear_packets = false;
         }
