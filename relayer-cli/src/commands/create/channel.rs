@@ -69,6 +69,14 @@ impl CreateChannelCommand {
     fn run_using_new_connection(&self, chain_b_id: &ChainId) {
         let config = app_config();
 
+        // Bail with an explicit error. The user might be expecting to use this connection.
+        if self.connection_a.is_some() {
+            return Output::error(
+                "Option `<connection-a>` is incompatible with `<chain-b-id>`".to_string(),
+            )
+            .exit();
+        }
+
         let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
 
         let chains =
@@ -85,7 +93,6 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.
-        // TODO: pass the `delay` parameter here.
         let con =
             Connection::new(client_a, client_b, 0).unwrap_or_else(exit_with_unrecoverable_error);
 

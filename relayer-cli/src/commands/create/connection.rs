@@ -34,17 +34,16 @@ pub struct CreateConnectionCommand {
         no_short
     )]
     client_b: Option<ClientId>,
-    // TODO: Packet delay feature is not implemented, so we disallow specifying this option.
-    //  https://github.com/informalsystems/ibc-rs/issues/640
-    // #[options(
-    //     help = "delay period parameter for the new connection; default: `0`.",
-    //     no_short
-    // )]
-    // delay: Option<u64>,
+
+    #[options(
+        help = "delay period parameter for the new connection (nanos); default: `0`",
+        no_short
+    )]
+    delay: Option<u64>,
 }
 
 // cargo run --bin hermes -- create connection ibc-0 ibc-1
-// cargo run --bin hermes -- create connection ibc-0 ibc-1
+// cargo run --bin hermes -- create connection ibc-0 ibc-1 --delay 100
 // cargo run --bin hermes -- create connection ibc-0 --client-a-id 07-tendermint-0 --client-b-id 07-tendermint-0
 impl Runnable for CreateConnectionCommand {
     fn run(&self) {
@@ -91,8 +90,8 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally, execute the connection handshake.
-        // TODO: pass the `delay` parameter here.
-        let c = Connection::new(client_a, client_b, 0);
+        let delay = self.delay.unwrap_or(0);
+        let c = Connection::new(client_a, client_b, delay);
     }
 
     /// Create a connection reusing pre-existing clients on both chains.
@@ -159,7 +158,7 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // All verification passed. Create the Connection object & do the handshake.
-        // TODO: pass the `delay` parameter here.
-        let c = Connection::new(client_a, client_b, 0);
+        let delay = self.delay.unwrap_or(0);
+        let c = Connection::new(client_a, client_b, delay);
     }
 }
