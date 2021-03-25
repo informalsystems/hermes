@@ -135,7 +135,7 @@ impl Connection {
             })?;
 
         let c = Connection {
-            delay_period: 0, // TODO: Unclear if we should add mechanism to check the delay period
+            delay_period: conn_end_a.end().delay_period(),
             a_side: ConnectionSide {
                 chain: a_client.dst_chain.clone(),
                 client_id: a_client.id.clone(),
