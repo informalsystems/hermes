@@ -652,7 +652,6 @@ impl RelayPath {
         Ok(())
     }
 
-    // TODO(Adi): Candidate for removal. Blocked by `clear_packets`
     pub fn send_update_client_and_msgs(
         &mut self,
         dst_update_height: Height,
@@ -885,7 +884,7 @@ impl RelayPath {
         }
         let dst_height = self.dst_latest_height()?;
 
-        if self.channel.connection_delay.as_nanos() > 0 {
+        let (mut dst_res, mut src_res) = if self.channel.connection_delay.as_nanos() > 0 {
             // Update clients & schedule the original events
             self.update_clients(src_height, dst_height)?;
             self.schedule_batch(self.all_events.clone(), dst_height);
@@ -900,21 +899,17 @@ impl RelayPath {
             }
 
             // Send messages
-            let mut res = self.send_msgs()?;
-            println!("\nresult {:?}", res);
-
-            // TODO(Adi): Make this nicer.
-            res.0.append(&mut res.1);
-            Ok(res.0)
+            self.send_msgs()?
         } else {
             // Send a multi message transaction with both client update and the packet messages
             for event in self.all_events.clone() {
                 self.handle_packet_event(&event, dst_height)?;
             }
-            let (mut dst_res, mut src_res) = self.send_update_client_and_msgs(dst_height)?;
-            dst_res.append(&mut src_res);
-            Ok(dst_res)
-        }
+            self.send_update_client_and_msgs(dst_height)?
+        };
+
+        dst_res.append(&mut src_res);
+        Ok(dst_res)
     }
 
     pub fn relay_packet_ack_msgs(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
@@ -932,7 +927,7 @@ impl RelayPath {
         }
         let dst_height = self.dst_latest_height()?;
 
-        if self.channel.connection_delay.as_nanos() > 0 {
+        let (mut dst_res, mut src_res) = if self.channel.connection_delay.as_nanos() > 0 {
             // Update clients & schedule the original events
             self.update_clients(src_height, dst_height)?;
             self.schedule_batch(self.all_events.clone(), dst_height);
@@ -947,21 +942,17 @@ impl RelayPath {
             }
 
             // Send messages
-            let mut res = self.send_msgs()?;
-            println!("\nresult {:?}", res);
-
-            // TODO(Adi): Make this nicer.
-            res.0.append(&mut res.1);
-            Ok(res.0)
+            self.send_msgs()?
         } else {
             // Send a multi message transaction with both client update and the ACK messages
             for event in self.all_events.clone() {
                 self.handle_packet_event(&event, dst_height)?;
             }
-            let (mut dst_res, mut src_res) = self.send_update_client_and_msgs(dst_height)?;
-            dst_res.append(&mut src_res);
-            Ok(dst_res)
-        }
+            self.send_update_client_and_msgs(dst_height)?
+        };
+
+        dst_res.append(&mut src_res);
+        Ok(dst_res)
     }
 
     fn build_recv_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
