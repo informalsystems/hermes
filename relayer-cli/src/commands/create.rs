@@ -3,11 +3,10 @@ use abscissa_core::{Command, Help, Options, Runnable};
 
 use crate::commands::create::channel::CreateChannelCommand;
 use crate::commands::create::connection::CreateConnectionCommand;
-use crate::commands::create::client::CreateClientCommand;
+use crate::commands::tx::client::TxCreateClientCmd;
 
 mod channel;
 mod connection;
-mod client;
 
 /// `create` subcommands
 #[derive(Command, Debug, Options, Runnable)]
@@ -18,7 +17,7 @@ pub enum CreateCmds {
 
     /// Subcommand for creating a `client`
     #[options(help = "Create a new IBC client")]
-    Client(CreateClientCommand),
+    Client(TxCreateClientCmd),
 
     /// Subcommand for creating a `connection`
     #[options(help = "Create a new connection between two chains")]

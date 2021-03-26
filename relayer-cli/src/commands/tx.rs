@@ -4,7 +4,7 @@ use abscissa_core::{Command, Help, Options, Runnable};
 use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd, TxUpgradeClientCmd};
 
 mod channel;
-mod client;
+pub(crate) mod client;
 mod connection;
 mod packet;
 mod transfer;
