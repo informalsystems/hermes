@@ -1116,19 +1116,17 @@ impl Chain for CosmosSdkChain {
 
     fn build_header(
         &self,
+        trusted_height: ICSHeight,
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
         crate::time!("build_header");
 
-        let trusted_height =
-            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
-
         Ok(TMHeader {
             trusted_height,
             signed_header: target_light_block.signed_header.clone(),
             validator_set: target_light_block.validators,
-            trusted_validator_set: trusted_light_block.next_validators,
+            trusted_validator_set: trusted_light_block.validators,
         })
     }
 }
