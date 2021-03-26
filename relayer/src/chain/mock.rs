@@ -307,16 +307,14 @@ impl Chain for MockChain {
 
     fn build_header(
         &self,
+        trusted_height: Height,
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
         Ok(Self::Header {
             signed_header: target_light_block.signed_header.clone(),
             validator_set: target_light_block.validators,
-            trusted_height: Height::new(
-                self.id().version(),
-                u64::from(trusted_light_block.signed_header.header.height),
-            ),
+            trusted_height,
             trusted_validator_set: trusted_light_block.validators,
         })
     }
