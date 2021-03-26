@@ -55,7 +55,7 @@ pub enum CliCmd {
 
     /// The `create` subcommand
     #[options(
-        help = "Create objects on chains (by performing connection or channel open handshakes)"
+        help = "Create objects (client, connection, or channel) on chains"
     )]
     Create(CreateCmds),
 
