@@ -244,7 +244,8 @@ impl CosmosSdkChain {
             .clone()
             .fee_amount
             .unwrap_or(DEFAULT_GAS_FEE_AMOUNT);
-        return Coin {
+
+        Coin {
             denom: self.config.clone().fee_denom,
             amount: (amount).to_string(),
         };
