@@ -247,7 +247,7 @@ impl CosmosSdkChain {
 
         Coin {
             denom: self.config.fee_denom.clone(),
-            amount: (amount).to_string(),
+            amount: amount.to_string(),
         };
     }
 
