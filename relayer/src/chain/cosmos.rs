@@ -1128,7 +1128,7 @@ impl Chain for CosmosSdkChain {
             trusted_height,
             signed_header: target_light_block.signed_header.clone(),
             validator_set: target_light_block.validators,
-            trusted_validator_set: trusted_light_block.validators,
+            trusted_validator_set: trusted_light_block.next_validators,
         })
     }
 }
