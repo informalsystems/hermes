@@ -1116,13 +1116,11 @@ impl Chain for CosmosSdkChain {
 
     fn build_header(
         &self,
+        trusted_height: ICSHeight,
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
         crate::time!("build_header");
-
-        let trusted_height =
-            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
 
         Ok(TMHeader {
             trusted_height,
