@@ -35,6 +35,7 @@
 
 - [ibc-relayer-cli]
   - Clarified success path for updating a client that is already up-to-date ([#734])
+  - Added `create` and `update` wrappers for client raw commands ([#772])
 
 ### BUG FIXES
 
@@ -81,7 +82,9 @@
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
+[#772]: https://github.com/informalsystems/ibc-rs/issues/772
 [#770]: https://github.com/informalsystems/ibc-rs/issues/770
+
 
 ## v0.1.1
 *February 17, 2021*
