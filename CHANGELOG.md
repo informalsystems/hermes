@@ -22,6 +22,7 @@
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
   - Added `client-upgrade` CLI ([#357])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
+  - Added delay feature for packet relaying ([#640])
 
 ### IMPROVEMENTS
 
@@ -67,6 +68,7 @@
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
+[#640]: https://github.com/informalsystems/ibc-rs/issues/640
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
