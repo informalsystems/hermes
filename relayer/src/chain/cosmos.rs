@@ -244,10 +244,11 @@ impl CosmosSdkChain {
             .clone()
             .fee_amount
             .unwrap_or(DEFAULT_GAS_FEE_AMOUNT);
-        return Coin {
-            denom: self.config.clone().fee_denom,
-            amount: (amount).to_string(),
-        };
+
+        Coin {
+            denom: self.config.fee_denom.clone(),
+            amount: amount.to_string(),
+        }
     }
 
     fn max_msg_num(&self) -> usize {
