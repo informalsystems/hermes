@@ -185,7 +185,6 @@ impl Link {
                 a_channel.counterparty().port_id.clone(),
                 b_channel_id,
             ),
-            // TODO(Adi): Clarify throughout the codebase that this is to be interpreted as nanos
             connection_delay: Duration::from_nanos(a_connection.delay_period()),
         };
 
@@ -193,10 +192,10 @@ impl Link {
     }
 
     pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
-        self.a_to_b.relay_recv_packet_and_timeout_msgs()
+        self.a_to_b.relay_recv_packet_and_timeout_msgs(None)
     }
 
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
-        self.a_to_b.relay_packet_ack_msgs()
+        self.a_to_b.relay_packet_ack_msgs(None)
     }
 }

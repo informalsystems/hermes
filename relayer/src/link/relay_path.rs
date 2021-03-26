@@ -391,15 +391,17 @@ impl RelayPath {
         self.timeout_msgs = vec![];
     }
 
-    fn relay_pending_packets(&mut self) -> Result<(), LinkError> {
+    fn relay_pending_packets(&mut self, height: Height) -> Result<(), LinkError> {
         info!(
             "clearing old packets on path {} -> {}",
             self.src_chain.id(),
             self.dst_chain.id()
         );
         for _i in 0..MAX_ITER {
-            if self.relay_recv_packet_and_timeout_msgs().is_ok()
-                && self.relay_packet_ack_msgs().is_ok()
+            if self
+                .relay_recv_packet_and_timeout_msgs(Some(height))
+                .is_ok()
+                && self.relay_packet_ack_msgs(Some(height)).is_ok()
             {
                 return Ok(());
             }
@@ -410,9 +412,9 @@ impl RelayPath {
     }
 
     /// Should not run more than once per execution.
-    pub fn clear_packets(&mut self, _height: Height) -> Result<(), LinkError> {
+    pub fn clear_packets(&mut self, height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
-            self.relay_pending_packets()?;
+            self.relay_pending_packets(height)?;
             self.clear_packets = false;
         }
 
@@ -438,7 +440,7 @@ impl RelayPath {
     /// delay period to pass between the client update and packet messages.
     fn relay_with_delay(&mut self) -> Result<(), LinkError> {
         // If there are some new events, update src. and dest. clients, then schedule the relaying
-        //  of packets corresponding to these events.
+        // of packets corresponding to these events.
         if !self.all_events.is_empty() {
             let dst_update_height = self.dst_latest_height()?;
             let src_update_height = self.all_events[0].height().increment();
@@ -733,18 +735,22 @@ impl RelayPath {
         Ok((dst_tx_events, src_tx_events))
     }
 
-    /// Returns the height (of the source chain) where the chain has outstanding packets.
-    fn target_height_and_send_packet_events(&mut self) -> Result<Height, LinkError> {
+    /// Populates the `self.all_events` field with relevant packet events for building RecvPacket
+    /// and timeout messages. Returns the height (on source chain) corresponding to these events.
+    fn target_height_and_send_packet_events(
+        &mut self,
+        opt_query_height: Option<Height>,
+    ) -> Result<Height, LinkError> {
         // Query packet commitments on source chain that have not been acknowledged
         let pc_request = QueryPacketCommitmentsRequest {
             port_id: self.src_port_id().to_string(),
             channel_id: self.src_channel_id().to_string(),
             pagination: None,
         };
-        let (packet_commitments, query_height) =
+        let (packet_commitments, src_response_height) =
             self.src_chain.query_packet_commitments(pc_request)?;
         if packet_commitments.is_empty() {
-            return Ok(query_height);
+            return Ok(src_response_height);
         }
         let commit_sequences = packet_commitments.iter().map(|p| p.sequence).collect();
         info!(
@@ -752,6 +758,8 @@ impl RelayPath {
             self.src_chain.id(),
             commit_sequences
         );
+
+        let query_height = opt_query_height.unwrap_or(src_response_height);
 
         // Get the packets that have not been received on destination chain
         let request = QueryUnreceivedPacketsRequest {
@@ -799,21 +807,28 @@ impl RelayPath {
         Ok(query_height)
     }
 
-    fn target_height_and_write_ack_events(&mut self) -> Result<Height, LinkError> {
+    /// Populates the `self.all_events` field with relevant packet events for building ack
+    /// messages. Returns the height (on source chain) corresponding to these events.
+    fn target_height_and_write_ack_events(
+        &mut self,
+        opt_query_height: Option<Height>,
+    ) -> Result<Height, LinkError> {
         // Get the sequences of packets that have been acknowledged on source
         let pc_request = QueryPacketAcknowledgementsRequest {
             port_id: self.src_port_id().to_string(),
             channel_id: self.src_channel_id().to_string(),
             pagination: None,
         };
-        let (acks_on_source, query_height) = self
+        let (acks_on_source, src_response_height) = self
             .src_chain
             .query_packet_acknowledgements(pc_request)
             .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
         if acks_on_source.is_empty() {
-            return Ok(query_height);
+            return Ok(src_response_height);
         }
+
+        let query_height = opt_query_height.unwrap_or(src_response_height);
 
         let acked_sequences = acks_on_source.iter().map(|p| p.sequence).collect();
         info!(
@@ -871,11 +886,17 @@ impl RelayPath {
     }
 
     /// Handles the relaying of RecvPacket and Timeout messages.
-    pub fn relay_recv_packet_and_timeout_msgs(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
+    /// The `opt_query_height` parameter allows to optionally use a specific height on the source
+    /// chain where to query for packet data. If `None`, the latest available height on the source
+    /// chain is used.
+    pub fn relay_recv_packet_and_timeout_msgs(
+        &mut self,
+        opt_query_height: Option<Height>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
         // Get the events for the send packets on source chain that have not been received on
         // destination chain (i.e. ack was not seen on source chain).
         // Note: This method call populates `self.all_events`.
-        let src_height = self.target_height_and_send_packet_events()?;
+        let src_height = self.target_height_and_send_packet_events(opt_query_height)?;
 
         // Skip: no relevant events found.
         if self.all_events.is_empty() {
@@ -886,11 +907,11 @@ impl RelayPath {
             event.set_height(src_height);
         }
 
-        let src_update_height = src_height.increment();
         let dst_update_height = self.dst_latest_height()?;
 
         let (mut dst_res, mut src_res) = if self.channel.connection_delay.as_nanos() > 0 {
             // Update clients & schedule the original events
+            let src_update_height = src_height.increment();
             self.update_clients(src_update_height, dst_update_height)?;
             self.schedule_batch(self.all_events.clone(), dst_update_height);
 
@@ -918,10 +939,17 @@ impl RelayPath {
         Ok(dst_res)
     }
 
-    pub fn relay_packet_ack_msgs(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
+    /// Handles the relaying of packet acknowledgment messages.
+    /// The `opt_query_height` parameter allows to optionally use a specific height on the source
+    /// chain where to query for packet data. If `None`, the latest available height on the source
+    /// chain is used.
+    pub fn relay_packet_ack_msgs(
+        &mut self,
+        opt_query_height: Option<Height>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
-        let src_height = self.target_height_and_write_ack_events()?;
+        let src_height = self.target_height_and_write_ack_events(opt_query_height)?;
 
         // Skip: no relevant events found.
         if self.all_events.is_empty() {
@@ -933,10 +961,10 @@ impl RelayPath {
         }
 
         let dst_update_height = self.dst_latest_height()?;
-        let src_update_height = src_height.increment();
 
         let (mut dst_res, mut src_res) = if self.channel.connection_delay.as_nanos() > 0 {
             // Update clients & schedule the original events
+            let src_update_height = src_height.increment();
             self.update_clients(src_update_height, dst_update_height)?;
             self.schedule_batch(self.all_events.clone(), dst_update_height);
 
@@ -1142,8 +1170,9 @@ impl RelayPath {
     pub fn fetch_scheduled_batch(&mut self) -> Result<ScheduledBatch, LinkError> {
         if let Some(batch) = self.scheduled.first() {
             info!(
-                "Found a scheduled batch with {} events. Waiting for delay period of {:#?}. Elapsed: {:#?}.",
-                batch.events.len(), self.channel.connection_delay, batch.update_time.elapsed()
+                "Found a scheduled batch with {} events. Waiting for delay period ({:#?}) to pass",
+                batch.events.len(),
+                self.channel.connection_delay
             );
             // Wait until the delay period passes
             while batch.update_time.elapsed() <= self.channel.connection_delay {

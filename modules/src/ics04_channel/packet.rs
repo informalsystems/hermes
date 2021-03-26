@@ -107,7 +107,7 @@ impl std::fmt::Debug for Packet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
-            "{}: ({} {}) -> ({} {}) timeout=({}@{})",
+            "{}: ({} {}) -> ({} {}) timeout=({} / {})",
             self.sequence,
             self.source_port,
             self.source_channel,
