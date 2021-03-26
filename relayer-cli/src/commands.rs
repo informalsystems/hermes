@@ -8,6 +8,7 @@
 use std::path::PathBuf;
 
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
+use tracing::info;
 
 use crate::config::Config;
 
@@ -32,6 +33,7 @@ mod version;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
+    info!("Using default configuration from: '.hermes/config.toml'");
     dirs_next::home_dir().map(|home| home.join(".hermes/config.toml"))
 }
 

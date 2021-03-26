@@ -94,6 +94,9 @@ pub struct GlobalConfig {
     /// All valid log levels, as defined in tracing:
     /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
     pub log_level: String,
+
+    /// Flag to enable/disable json. Default: false
+    pub log_json: bool,
 }
 
 impl Default for GlobalConfig {
@@ -102,6 +105,7 @@ impl Default for GlobalConfig {
             timeout: default::timeout(),
             strategy: Strategy::default(),
             log_level: "info".to_string(),
+            log_json: false,
         }
     }
 }

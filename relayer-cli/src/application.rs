@@ -116,14 +116,8 @@ impl Application for CliApp {
             .transpose()?
             .unwrap_or_default();
 
-        // For `start` cmd exclusively we disable JSON; otherwise output is JSON-only
-        let json_on = if let Some(c) = &command.command {
-            !matches!(c, CliCmd::Start(..))
-        } else {
-            true
-        };
-
-        if json_on {
+        if config.global.log_json {
+            // Enable JSON by using the crate-level [`Tracing`]
             let tracing = Tracing::new(config.global)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
