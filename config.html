@@ -225,6 +225,12 @@ log_level = 'info'
 <p><strong>gas</strong>: Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is <code>300000</code></p>
 </li>
 <li>
+<p><strong>fee_amount</strong>: Specify the amount value to be used in the fee for a transaction. Default value is <code>1000</code></p>
+</li>
+<li>
+<p><strong>fee_denom</strong>: Specify the denom to be used in the fee for a transaction.</p>
+</li>
+<li>
 <p><strong>clock_drift</strong>: Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is <code>5s</code></p>
 </li>
 <li>
@@ -262,6 +268,8 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
+fee_amount = 10
+fee_denom = 'stake'
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -302,6 +310,8 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
+fee_amount = 10
+fee_denom = 'stake'
 clock_drift = '5s'
 trusting_period = '14days'
 
