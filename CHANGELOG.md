@@ -51,6 +51,7 @@
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
+  - Make fee denom and amount configurable ([#754])
 
 ### BREAKING CHANGES
 
@@ -81,6 +82,7 @@
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
+[#754]: https://github.com/informalsystems/ibc-rs/issues/754
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
 [#772]: https://github.com/informalsystems/ibc-rs/issues/772
 [#770]: https://github.com/informalsystems/ibc-rs/issues/770
