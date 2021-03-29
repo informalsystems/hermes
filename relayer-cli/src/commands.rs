@@ -17,7 +17,6 @@ use self::{
     version::VersionCmd,
 };
 
-mod cli_utils;
 mod config;
 mod create;
 mod keys;
