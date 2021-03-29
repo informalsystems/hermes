@@ -1163,7 +1163,7 @@ impl RelayPath {
                 Some(self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?),
             ))
         } else if packet.timeout_height != Height::zero()
-            && packet.timeout_height < dst_chain_height
+            && packet.timeout_height < self.dst_latest_height()?
         {
             Ok((
                 None,
