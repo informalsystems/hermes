@@ -316,61 +316,70 @@ impl Object {
     }
 
     /// Build the object associated with the given [`SendPacket`] event.
-    pub fn for_send_packet(e: &SendPacket, src_chain: &dyn ChainHandle) -> Self {
+    pub fn for_send_packet(e: &SendPacket, src_chain: &dyn ChainHandle) -> Result<Self, BoxError> {
         let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)
-                .unwrap();
+            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)?;
 
-        UnidirectionalChannelPath {
+        Ok(UnidirectionalChannelPath {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.packet.source_channel.clone(),
             src_port_id: e.packet.source_port.clone(),
         }
-        .into()
+        .into())
     }
 
     /// Build the object associated with the given [`WriteAcknowledgement`] event.
-    pub fn for_write_ack(e: &WriteAcknowledgement, src_chain: &dyn ChainHandle) -> Self {
-        let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)
-                .unwrap();
+    pub fn for_write_ack(
+        e: &WriteAcknowledgement,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let dst_chain_id = get_counterparty_chain(
+            src_chain,
+            &e.packet.destination_channel,
+            &e.packet.destination_port,
+        )?;
 
-        UnidirectionalChannelPath {
+        Ok(UnidirectionalChannelPath {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.packet.destination_channel.clone(),
             src_port_id: e.packet.destination_port.clone(),
         }
-        .into()
+        .into())
     }
 
     /// Build the object associated with the given [`TimeoutPacket`] event.
-    pub fn for_timeout_packet(e: &TimeoutPacket, src_chain: &dyn ChainHandle) -> Self {
+    pub fn for_timeout_packet(
+        e: &TimeoutPacket,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
         let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)
-                .unwrap();
+            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)?;
 
-        UnidirectionalChannelPath {
+        Ok(UnidirectionalChannelPath {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.src_channel_id().clone(),
             src_port_id: e.src_port_id().clone(),
         }
-        .into()
+        .into())
     }
 
     /// Build the object associated with the given [`CloseInit`] event.
-    pub fn for_close_init_channel(e: &CloseInit, src_chain: &dyn ChainHandle) -> Self {
-        let dst_chain_id = get_counterparty_chain(src_chain, e.channel_id(), &e.port_id()).unwrap();
+    pub fn for_close_init_channel(
+        e: &CloseInit,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let dst_chain_id = get_counterparty_chain(src_chain, e.channel_id(), &e.port_id())?;
 
-        UnidirectionalChannelPath {
+        Ok(UnidirectionalChannelPath {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone(),
             src_port_id: e.port_id().clone(),
         }
-        .into()
+        .into())
     }
 }
 
@@ -414,20 +423,24 @@ pub fn collect_events(src_chain: &dyn ChainHandle, batch: EventBatch) -> Collect
                 collected.new_blocks.push(inner);
             }
             IbcEvent::SendPacket(ref packet) => {
-                let object = Object::for_send_packet(packet, src_chain);
-                collected.per_object.entry(object).or_default().push(event);
+                if let Ok(object) = Object::for_send_packet(packet, src_chain) {
+                    collected.per_object.entry(object).or_default().push(event);
+                }
             }
             IbcEvent::TimeoutPacket(ref packet) => {
-                let object = Object::for_timeout_packet(packet, src_chain);
-                collected.per_object.entry(object).or_default().push(event);
+                if let Ok(object) = Object::for_timeout_packet(packet, src_chain) {
+                    collected.per_object.entry(object).or_default().push(event);
+                }
             }
             IbcEvent::WriteAcknowledgement(ref packet) => {
-                let object = Object::for_write_ack(packet, src_chain);
-                collected.per_object.entry(object).or_default().push(event);
+                if let Ok(object) = Object::for_write_ack(packet, src_chain) {
+                    collected.per_object.entry(object).or_default().push(event);
+                }
             }
             IbcEvent::CloseInitChannel(ref packet) => {
-                let object = Object::for_close_init_channel(packet, src_chain);
-                collected.per_object.entry(object).or_default().push(event);
+                if let Ok(object) = Object::for_close_init_channel(packet, src_chain) {
+                    collected.per_object.entry(object).or_default().push(event);
+                }
             }
             _ => (),
         }
@@ -453,16 +466,12 @@ fn get_counterparty_chain(
 
     let src_channel = src_chain.query_channel(src_port_id, src_channel_id, Height::zero())?;
 
-    // TODO: Check channel state?
-
     let src_connection_id = src_channel
         .connection_hops()
         .first()
         .ok_or_else(|| format!("no connection hops for channel '{}'", src_channel_id))?;
 
     let src_connection = src_chain.query_connection(&src_connection_id, Height::zero())?;
-
-    // TODO: Check connection state?
 
     let client_id = src_connection.client_id();
     let client_state = src_chain.query_client_state(client_id, Height::zero())?;
