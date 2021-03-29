@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{convert::TryFrom, str::FromStr, time::Duration};
+use std::convert::TryFrom;
 
 use tendermint_rpc as rpc;
 
@@ -11,7 +11,7 @@ use tendermint_light_client::{
     state::State as ClientState,
     store::{memory::MemoryStore, LightStore},
     types::Height as TMHeight,
-    types::{LightBlock, PeerId, Status},
+    types::{LightBlock, Status},
 };
 
 use ibc::ics24_host::identifier::ChainId;
@@ -70,17 +70,18 @@ impl LightClient {
         let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| error::Kind::LightClient(config.rpc_addr.to_string()).context(e))?;
 
-        let peer_id = PeerId::from_str(config.id.as_str()).unwrap();
-        let timeout = Duration::from_secs(10);
+        let peer = config.primary().ok_or_else(|| {
+            error::Kind::LightClient(config.rpc_addr.to_string()).context("no primary peer")
+        })?;
 
-        let io = components::io::ProdIo::new(peer_id, rpc_client, Some(timeout));
+        let io = components::io::ProdIo::new(peer.peer_id, rpc_client, Some(peer.timeout));
         let hasher = operations::hasher::ProdHasher;
         let clock = components::clock::SystemClock;
         let verifier = components::verifier::ProdVerifier::default();
         let scheduler = components::scheduler::basic_bisecting_schedule;
 
         let client = TMLightClient::new(
-            peer_id,
+            peer.peer_id,
             options,
             clock,
             scheduler,
