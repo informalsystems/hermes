@@ -17,7 +17,7 @@ pub struct Step {
 #[serde(tag = "type")]
 pub enum Action {
     None,
-    ICS02CreateClient {
+    Ics02CreateClient {
         #[serde(alias = "chainId")]
         chain_id: String,
 
@@ -27,7 +27,7 @@ pub enum Action {
         #[serde(alias = "consensusState")]
         consensus_state: u64,
     },
-    ICS02UpdateClient {
+    Ics02UpdateClient {
         #[serde(alias = "chainId")]
         chain_id: String,
 
@@ -36,7 +36,7 @@ pub enum Action {
 
         header: u64,
     },
-    ICS03ConnectionOpenInit {
+    Ics03ConnectionOpenInit {
         #[serde(alias = "chainId")]
         chain_id: String,
 
@@ -49,7 +49,7 @@ pub enum Action {
         #[serde(alias = "counterpartyClientId")]
         counterparty_client_id: u64,
     },
-    ICS03ConnectionOpenTry {
+    Ics03ConnectionOpenTry {
         #[serde(alias = "chainId")]
         chain_id: String,
 
@@ -72,7 +72,7 @@ pub enum Action {
         #[serde(alias = "counterpartyConnectionId")]
         counterparty_connection_id: u64,
     },
-    ICS03ConnectionOpenAck {
+    Ics03ConnectionOpenAck {
         #[serde(alias = "chainId")]
         chain_id: String,
 
@@ -88,7 +88,7 @@ pub enum Action {
         #[serde(alias = "counterpartyConnectionId")]
         counterparty_connection_id: u64,
     },
-    ICS03ConnectionOpenConfirm {
+    Ics03ConnectionOpenConfirm {
         #[serde(alias = "chainId")]
         chain_id: String,
 
@@ -109,21 +109,21 @@ pub enum Action {
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionOutcome {
     None,
-    ICS02CreateOK,
-    ICS02UpdateOK,
-    ICS02ClientNotFound,
-    ICS02HeaderVerificationFailure,
-    ICS03ConnectionOpenInitOK,
-    ICS03MissingClient,
-    ICS03ConnectionOpenTryOK,
-    ICS03InvalidConsensusHeight,
-    ICS03ConnectionNotFound,
-    ICS03ConnectionMismatch,
-    ICS03MissingClientConsensusState,
-    ICS03InvalidProof,
-    ICS03ConnectionOpenAckOK,
-    ICS03UninitializedConnection,
-    ICS03ConnectionOpenConfirmOK,
+    Ics02CreateOk,
+    Ics02UpdateOk,
+    Ics02ClientNotFound,
+    Ics02HeaderVerificationFailure,
+    Ics03ConnectionOpenInitOk,
+    Ics03MissingClient,
+    Ics03ConnectionOpenTryOk,
+    Ics03InvalidConsensusHeight,
+    Ics03ConnectionNotFound,
+    Ics03ConnectionMismatch,
+    Ics03MissingClientConsensusState,
+    Ics03InvalidProof,
+    Ics03ConnectionOpenAckOk,
+    Ics03UninitializedConnection,
+    Ics03ConnectionOpenConfirmOk,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

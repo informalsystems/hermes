@@ -18,7 +18,7 @@ ICS02_CreateClient(chain, chainId, height) ==
     \* TODO: rename `action_` to `action` once the following issue is fixed:
     \*        https://github.com/informalsystems/apalache/issues/593
     LET action_ == AsAction([
-        type |-> "ICS02CreateClient",
+        type |-> "Ics02CreateClient",
         chainId |-> chainId,
         clientState |-> height,
         consensusState |-> height
@@ -47,12 +47,12 @@ ICS02_CreateClient(chain, chainId, height) ==
             ),
             clientIdCounter |-> chain.clientIdCounter + 1,
             action |-> action_,
-            outcome |-> "ICS02CreateOK"
+            outcome |-> "Ics02CreateOk"
         ]
 
 ICS02_UpdateClient(chain, chainId, clientId, height) ==
     LET action_ == AsAction([
-        type |-> "ICS02UpdateClient",
+        type |-> "Ics02UpdateClient",
         chainId |-> chainId,
         clientId |-> clientId,
         header |-> height
@@ -63,7 +63,7 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
         [
             clients |-> chain.clients,
             action |-> action_,
-            outcome |-> "ICS02ClientNotFound"
+            outcome |-> "Ics02ClientNotFound"
         ]
     ELSE
         \* if the client exists, check its height
@@ -75,7 +75,7 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
             [
                 clients |-> chain.clients,
                 action |-> action_,
-                outcome |-> "ICS02HeaderVerificationFailure"
+                outcome |-> "Ics02HeaderVerificationFailure"
             ]
         ELSE
             \* if the client's new height is higher than the highest client
@@ -91,7 +91,7 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
                     updatedClient
                 ),
                 action |-> action_,
-                outcome |-> "ICS02UpdateOK"
+                outcome |-> "Ics02UpdateOk"
             ]
 
 ===============================================================================
