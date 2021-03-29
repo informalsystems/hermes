@@ -10,7 +10,11 @@ use crossbeam_channel::{Receiver, Sender};
 use ibc::{
     events::IbcEvent,
     ics02_client::events::NewBlock,
-    ics04_channel::events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
+    ics03_connection::connection::State as ConnectionState,
+    ics04_channel::{
+        channel::State as ChannelState,
+        events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
+    },
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
@@ -465,6 +469,9 @@ fn get_counterparty_chain(
     use ibc::ics02_client::client_state::ClientState;
 
     let src_channel = src_chain.query_channel(src_port_id, src_channel_id, Height::zero())?;
+    if src_channel.state_matches(&ChannelState::Uninitialized) {
+        return Err(format!("missing channel '{}' on source chain", src_channel_id).into());
+    }
 
     let src_connection_id = src_channel
         .connection_hops()
@@ -472,6 +479,9 @@ fn get_counterparty_chain(
         .ok_or_else(|| format!("no connection hops for channel '{}'", src_channel_id))?;
 
     let src_connection = src_chain.query_connection(&src_connection_id, Height::zero())?;
+    if src_connection.state_matches(&ConnectionState::Uninitialized) {
+        return Err(format!("missing connection '{}' on source chain", src_connection_id).into());
+    }
 
     let client_id = src_connection.client_id();
     let client_state = src_chain.query_client_state(client_id, Height::zero())?;
