@@ -29,13 +29,16 @@ pub enum Kind {
     #[error("identifier error")]
     IdentifierError,
 
+    #[error("ConnectionEnd domain object could not be constructed out of empty proto object")]
+    EmptyProtoConnectionEnd,
+
     #[error("invalid version")]
     InvalidVersion,
 
     #[error("empty supported versions")]
     EmptyVersions,
 
-    #[error("no commong version")]
+    #[error("no common version")]
     NoCommonVersion,
 
     #[error("invalid address")]

@@ -96,7 +96,7 @@ mod tests {
     fn parse_invalid_port_id_min() {
         // invalid min port id
         let id = validate_port_identifier("p");
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
@@ -105,14 +105,14 @@ mod tests {
         let id = validate_port_identifier(
             "9anxkcme6je544d5lnj46zqiiiygfqzf8w4bjecbnyj4lj6s7zlpst67yln64tixp",
         );
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
     fn parse_invalid_connection_id_min() {
         // invalid min connection id
         let id = validate_connection_identifier("connect01");
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
@@ -121,14 +121,14 @@ mod tests {
         let id = validate_connection_identifier(
             "ihhankr30iy4nna65hjl2wjod7182io1t2s7u3ip3wqtbbn1sl0rgcntqc540r36r",
         );
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
     fn parse_invalid_client_id_min() {
         // invalid min client id
         let id = validate_client_identifier("client");
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
@@ -137,14 +137,14 @@ mod tests {
         let id = validate_client_identifier(
             "f0isrs5enif9e4td3r2jcbxoevhz6u1fthn4aforq7ams52jn5m48eiesfht9ckpn",
         );
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
     fn parse_invalid_channel_id_min() {
         // invalid min channel id
         let id = validate_channel_identifier("channel");
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
@@ -153,27 +153,27 @@ mod tests {
         let id = validate_channel_identifier(
             "hlkbzrbmrh0rjrh8f8a8d9lmtjuhww7a9ev3blskc58amhwfq07zwp1xevxz1p098",
         );
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
     fn parse_invalid_id_chars() {
         // invalid id chars
         let id = validate_identifier("channel@01", 1, 10);
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
     fn parse_invalid_id_empty() {
         // invalid id empty
         let id = validate_identifier("", 1, 10);
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 
     #[test]
     fn parse_invalid_id_path_separator() {
         // invalid id with path separator
         let id = validate_identifier("id/1", 1, 10);
-        assert!(id.is_err(), true)
+        assert!(id.is_err())
     }
 }

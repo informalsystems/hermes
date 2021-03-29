@@ -73,6 +73,7 @@ use ibc::ics02_client::client_state::AnyClientState;
 const DEFAULT_MAX_GAS: u64 = 300000;
 const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
+const DEFAULT_GAS_FEE_AMOUNT: u64 = 1000;
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
@@ -183,14 +184,8 @@ impl CosmosSdkChain {
             sequence: acct_response.sequence,
         };
 
-        // Gas Fee
-        let coin = Coin {
-            denom: "stake".to_string(),
-            amount: "10000".to_string(),
-        };
-
         let fee = Some(Fee {
-            amount: vec![coin],
+            amount: vec![self.fee()],
             gas_limit: self.gas(),
             payer: "".to_string(),
             granter: "".to_string(),
@@ -241,6 +236,19 @@ impl CosmosSdkChain {
 
     fn gas(&self) -> u64 {
         self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
+    }
+
+    fn fee(&self) -> Coin {
+        let amount = self
+            .config
+            .clone()
+            .fee_amount
+            .unwrap_or(DEFAULT_GAS_FEE_AMOUNT);
+
+        Coin {
+            denom: self.config.fee_denom.clone(),
+            amount: amount.to_string(),
+        }
     }
 
     fn max_msg_num(&self) -> usize {
@@ -681,7 +689,7 @@ impl Chain for CosmosSdkChain {
     ) -> Result<ConnectionEnd, Error> {
         let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
         Ok(ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("connection".into()).context(e))?)
+            .map_err(|e| Kind::Query(format!("connection {}", connection_id)).context(e))?)
     }
 
     fn query_connection_channels(
@@ -1116,13 +1124,11 @@ impl Chain for CosmosSdkChain {
 
     fn build_header(
         &self,
+        trusted_height: ICSHeight,
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
         crate::time!("build_header");
-
-        let trusted_height =
-            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
 
         Ok(TMHeader {
             trusted_height,
