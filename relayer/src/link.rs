@@ -463,7 +463,7 @@ impl RelayPath {
         if self.channel.connection_delay.as_nanos() > 0 {
             self.relay_with_delay()
         } else {
-            self.relay_multi_msg()
+            self.relay_immediately()
         }
     }
 
@@ -513,7 +513,7 @@ impl RelayPath {
 
     /// Send a multi message transaction with packet messages, prepending the client update.
     /// Ignores any delay period for packets.
-    fn relay_multi_msg(&mut self) -> Result<(), LinkError> {
+    fn relay_immediately(&mut self) -> Result<(), LinkError> {
         if self.all_events.is_empty() {
             return Ok(());
         }
