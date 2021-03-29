@@ -23,25 +23,19 @@ impl LightClient {
     }
 }
 
-#[allow(unused_variables)]
 impl super::LightClient<MockChain> for LightClient {
-    fn latest_trusted(&self) -> Result<Option<<MockChain as Chain>::LightBlock>, Error> {
+    fn verify_to_latest(
+        &mut self,
+        _trusted: Height,
+    ) -> Result<<MockChain as Chain>::LightBlock, Error> {
         unimplemented!()
     }
 
-    fn verify_to_latest(&self) -> Result<<MockChain as Chain>::LightBlock, Error> {
-        unimplemented!()
-    }
-
-    fn verify_to_target(&self, height: Height) -> Result<<MockChain as Chain>::LightBlock, Error> {
-        Ok(self.light_block(height))
-    }
-
-    fn get_minimal_set(
-        &self,
-        latest_client_state_height: Height,
-        target_height: Height,
-    ) -> Result<Vec<Height>, Error> {
-        unimplemented!()
+    fn verify_to_target(
+        &mut self,
+        _trusted: Height,
+        target: Height,
+    ) -> Result<<MockChain as Chain>::LightBlock, Error> {
+        Ok(self.light_block(target))
     }
 }

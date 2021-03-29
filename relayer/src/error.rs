@@ -4,7 +4,7 @@ use anomaly::{BoxError, Context};
 use tendermint::net;
 use thiserror::Error;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
+use ibc::ics24_host::identifier::{ChannelId, ConnectionId};
 
 /// An error that can be raised by the relayer.
 pub type Error = anomaly::Error<Kind>;
@@ -32,13 +32,9 @@ pub enum Kind {
     #[error("GRPC error")]
     Grpc,
 
-    /// Light client supervisor error
-    #[error("Light client supervisor error for chain id {0}")]
-    LightClientSupervisor(ChainId),
-
     /// Light client instance error, typically raised by a `Client`
-    #[error("Light client instance error for rpc address {0}")]
-    LightClientInstance(String),
+    #[error("Light client error for RPC address {0}")]
+    LightClient(String),
 
     /// Trusted store error, raised by instances of `Store`
     #[error("Store error")]

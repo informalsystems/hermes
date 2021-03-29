@@ -241,7 +241,7 @@ impl ForeignClient {
             .wrap_any();
 
         let consensus_state = self.src_chain
-            .build_consensus_state(latest_height)
+            .build_consensus_state(client_state.latest_height(),  latest_height)
             .map_err(|e| ForeignClientError::ClientCreate(format!("failed while building client consensus state from src chain ({}) with error: {}", self.src_chain.id(), e)))?
             .wrap_any();
 

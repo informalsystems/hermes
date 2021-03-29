@@ -61,12 +61,6 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 
-    GetMinimalSet {
-        from: Height,
-        to: Height,
-        reply_to: ReplyTo<Vec<AnyHeader>>,
-    },
-
     Signer {
         reply_to: ReplyTo<Signer>,
     },
@@ -96,7 +90,8 @@ pub enum ChainRequest {
     },
 
     BuildConsensusState {
-        height: Height,
+        trusted: Height,
+        target: Height,
         reply_to: ReplyTo<AnyConsensusState>,
     },
 
@@ -222,8 +217,6 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
     /// Send a transaction with `msgs` to chain.
     fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error>;
 
-    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
-
     fn get_signer(&self) -> Result<Signer, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
@@ -299,7 +292,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error>;
 
     /// Constructs a consensus state at the given height
-    fn build_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn build_consensus_state(
+        &self,
+        trusted: Height,
+        target: Height,
+    ) -> Result<AnyConsensusState, Error>;
 
     fn build_connection_proofs_and_client_state(
         &self,

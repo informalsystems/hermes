@@ -332,18 +332,11 @@ impl Chain for CosmosSdkChain {
         })
     }
 
-    // TODO use a simpler approach to create the light client
-    #[allow(clippy::type_complexity)]
-    fn init_light_client(
-        &self,
-    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
+    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
         crate::time!("init_light_client");
 
-        let (lc, supervisor) = TMLightClient::from_config(&self.config, true)?;
-
-        let supervisor_thread = thread::spawn(move || supervisor.run().unwrap());
-
-        Ok((Box::new(lc), Some(supervisor_thread)))
+        let light_client = TMLightClient::from_config(&self.config)?;
+        Ok(Box::new(light_client))
     }
 
     fn init_event_monitor(
@@ -455,7 +448,7 @@ impl Chain for CosmosSdkChain {
 
         if status.sync_info.catching_up {
             fail!(
-                Kind::LightClientSupervisor(self.config.id.clone()),
+                Kind::LightClient(self.config.rpc_addr.to_string()),
                 "node at {} running chain {} not caught up",
                 self.config().rpc_addr,
                 self.config().id,

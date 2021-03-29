@@ -82,10 +82,6 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {
-        self.send(|reply_to| ChainRequest::GetMinimalSet { from, to, reply_to })
-    }
-
     fn get_signer(&self) -> Result<Signer, Error> {
         self.send(|reply_to| ChainRequest::Signer { reply_to })
     }
@@ -226,8 +222,16 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::BuildClientState { height, reply_to })
     }
 
-    fn build_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| ChainRequest::BuildConsensusState { height, reply_to })
+    fn build_consensus_state(
+        &self,
+        trusted: Height,
+        target: Height,
+    ) -> Result<AnyConsensusState, Error> {
+        self.send(|reply_to| ChainRequest::BuildConsensusState {
+            trusted,
+            target,
+            reply_to,
+        })
     }
 
     fn build_connection_proofs_and_client_state(

@@ -70,13 +70,8 @@ impl Chain for MockChain {
         })
     }
 
-    #[allow(clippy::type_complexity)]
-    fn init_light_client(
-        &self,
-    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
-        let light_client = MockLightClient::new(self);
-
-        Ok((Box::new(light_client), None))
+    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
+        Ok(Box::new(MockLightClient::new(self)))
     }
 
     fn init_event_monitor(

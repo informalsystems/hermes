@@ -1,149 +1,118 @@
-use std::convert::TryFrom;
+#![allow(dead_code)]
+
+use std::{convert::TryFrom, str::FromStr, time::Duration};
+
+use tendermint_rpc as rpc;
 
 use tendermint_light_client::{
-    builder::LightClientBuilder, builder::SupervisorBuilder, light_client, store, supervisor,
-    supervisor::Handle, supervisor::Supervisor, types::Height as TMHeight, types::LightBlock,
+    components::{self, io::AtHeight},
+    light_client::{LightClient as TMLightClient, Options as TMOptions},
+    operations,
+    state::State as ClientState,
+    store::{memory::MemoryStore, LightStore},
+    types::Height as TMHeight,
+    types::{LightBlock, PeerId, Status},
 };
-use tendermint_rpc as rpc;
+
+use ibc::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::CosmosSdkChain,
-    config::{ChainConfig, LightClientConfig, StoreConfig},
-    error,
+    config::ChainConfig,
+    error::{self, Error},
 };
-use ibc::ics24_host::identifier::ChainId;
 
 pub struct LightClient {
-    handle: Box<dyn Handle>,
     chain_id: ChainId,
+    client: TMLightClient,
+    io: Box<dyn components::io::Io>,
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, error::Error> {
-        self.handle.latest_trusted().map_err(|e| {
-            error::Kind::LightClientSupervisor(self.chain_id.clone())
-                .context(e)
-                .into()
-        })
+    fn verify_to_latest(&mut self, trusted: ibc::Height) -> Result<LightBlock, Error> {
+        let mut state = self.prepare_state(trusted)?;
+
+        let light_block = self
+            .client
+            .verify_to_highest(&mut state)
+            .map_err(|e| error::Kind::LightClient(self.chain_id.to_string()).context(e))?;
+
+        Ok(light_block)
     }
 
-    fn verify_to_latest(&self) -> Result<LightBlock, error::Error> {
-        self.handle.verify_to_highest().map_err(|e| {
-            error::Kind::LightClientSupervisor(self.chain_id.clone())
-                .context(e)
-                .into()
-        })
-    }
-
-    fn verify_to_target(&self, height: ibc::Height) -> Result<LightBlock, error::Error> {
-        let height = TMHeight::try_from(height.revision_height)
+    fn verify_to_target(
+        &mut self,
+        trusted: ibc::Height,
+        target: ibc::Height,
+    ) -> Result<LightBlock, Error> {
+        let target_height = TMHeight::try_from(target.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
-        self.handle.verify_to_target(height).map_err(|e| {
-            error::Kind::LightClientSupervisor(self.chain_id.clone())
-                .context(e)
-                .into()
-        })
-    }
+        let mut state = self.prepare_state(trusted)?;
 
-    fn get_minimal_set(
-        &self,
-        _latest_client_state_height: ibc::Height,
-        _target_height: ibc::Height,
-    ) -> Result<Vec<ibc::Height>, error::Error> {
-        todo!()
+        let light_block = self
+            .client
+            .verify_to_target(target_height, &mut state)
+            .map_err(|e| error::Kind::LightClient(self.chain_id.to_string()).context(e))?;
+
+        Ok(light_block)
     }
 }
 
 impl LightClient {
-    fn new(handle: impl Handle + 'static, chain_id: ChainId) -> Self {
-        Self {
-            handle: Box::new(handle),
-            chain_id,
-        }
+    pub fn from_config(config: &ChainConfig) -> Result<Self, Error> {
+        let options = TMOptions {
+            trust_threshold: config.trust_threshold,
+            trusting_period: config.trusting_period,
+            clock_drift: config.clock_drift,
+        };
+
+        let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
+            .map_err(|e| error::Kind::LightClient(config.rpc_addr.to_string()).context(e))?;
+
+        let peer_id = PeerId::from_str(config.id.as_str()).unwrap();
+        let timeout = Duration::from_secs(10);
+
+        let io = components::io::ProdIo::new(peer_id, rpc_client, Some(timeout));
+        let hasher = operations::hasher::ProdHasher;
+        let clock = components::clock::SystemClock;
+        let verifier = components::verifier::ProdVerifier::default();
+        let scheduler = components::scheduler::basic_bisecting_schedule;
+
+        let client = TMLightClient::new(
+            peer_id,
+            options,
+            clock,
+            scheduler,
+            verifier,
+            hasher,
+            io.clone(),
+        );
+
+        Ok(Self {
+            chain_id: config.id.clone(),
+            client,
+            io: Box::new(io),
+        })
     }
 
-    pub fn from_config(
-        chain_config: &ChainConfig,
-        reset: bool,
-    ) -> Result<(Self, Supervisor), error::Error> {
-        let supervisor = build_supervisor(&chain_config, reset)?;
-        let handle = supervisor.handle();
+    fn prepare_state(&self, trusted: ibc::Height) -> Result<ClientState, Error> {
+        let trusted_height = TMHeight::try_from(trusted.revision_height)
+            .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
-        Ok((Self::new(handle, chain_config.id.clone()), supervisor))
-    }
-}
+        let trusted_block = self.fetch_light_block(AtHeight::At(trusted_height))?;
 
-fn build_instance(
-    config: &LightClientConfig,
-    options: light_client::Options,
-    reset: bool,
-) -> Result<supervisor::Instance, error::Error> {
-    let rpc_client = rpc::HttpClient::new(config.address.clone())
-        .map_err(|e| error::Kind::LightClientInstance(config.address.to_string()).context(e))?;
+        let mut store = MemoryStore::new();
+        store.insert(trusted_block, Status::Trusted);
 
-    let store: Box<dyn store::LightStore> = match &config.store {
-        StoreConfig::Disk { path } => {
-            let db = sled::open(path).map_err(|e| {
-                error::Kind::LightClientInstance(config.address.to_string()).context(e)
-            })?;
-            Box::new(store::sled::SledStore::new(db))
-        }
-        StoreConfig::Memory { .. } => Box::new(store::memory::MemoryStore::new()),
-    };
-
-    let builder = LightClientBuilder::prod(
-        config.peer_id,
-        rpc_client,
-        store,
-        options,
-        Some(config.timeout),
-    );
-
-    let builder = if reset {
-        builder.trust_primary_at(config.trusted_height, config.trusted_header_hash)
-    } else {
-        builder.trust_from_store()
-    }
-    .map_err(|e| error::Kind::LightClientInstance(config.address.to_string()).context(e))?;
-
-    Ok(builder.build())
-}
-
-fn build_supervisor(config: &ChainConfig, reset: bool) -> Result<Supervisor, error::Error> {
-    let options = light_client::Options {
-        trust_threshold: config.trust_threshold,
-        trusting_period: config.trusting_period,
-        clock_drift: config.clock_drift,
-    };
-
-    let primary_config = config.primary().ok_or_else(|| {
-        error::Kind::LightClientSupervisor(config.id.clone())
-            .context("missing light client primary peer config")
-    })?;
-
-    let witnesses_configs = config.witnesses().ok_or_else(|| {
-        error::Kind::LightClientSupervisor(config.id.clone())
-            .context("missing light client witnesses peer config")
-    })?;
-
-    let primary = build_instance(primary_config, options, reset)?;
-
-    let mut witnesses = Vec::with_capacity(witnesses_configs.len());
-    for conf in witnesses_configs {
-        let instance = build_instance(conf, options, reset)?;
-        witnesses.push((conf.peer_id, conf.address.clone(), instance));
+        Ok(ClientState::new(store))
     }
 
-    let supervisor = SupervisorBuilder::new()
-        .primary(
-            primary_config.peer_id,
-            primary_config.address.clone(),
-            primary,
-        )
-        .witnesses(witnesses)
-        .map_err(|e| error::Kind::LightClientSupervisor(config.id.clone()).context(e))?
-        .build_prod();
-
-    Ok(supervisor)
+    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, Error> {
+        self.io.fetch_light_block(height).map_err(|e| {
+            error::Kind::LightClient(self.chain_id.to_string())
+                .context(e)
+                .into()
+        })
+    }
 }
