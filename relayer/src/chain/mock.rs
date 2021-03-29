@@ -149,6 +149,13 @@ impl Chain for MockChain {
         Ok(client_state)
     }
 
+    fn query_upgraded_client_state(
+        &self,
+        _height: Height,
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        unimplemented!()
+    }
+
     fn query_connection(
         &self,
         _connection_id: &ConnectionId,
@@ -302,16 +309,14 @@ impl Chain for MockChain {
 
     fn build_header(
         &self,
+        trusted_height: Height,
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
         Ok(Self::Header {
             signed_header: target_light_block.signed_header.clone(),
             validator_set: target_light_block.validators,
-            trusted_height: Height::new(
-                self.id().version(),
-                u64::from(trusted_light_block.signed_header.header.height),
-            ),
+            trusted_height,
             trusted_validator_set: trusted_light_block.validators,
         })
     }
@@ -320,6 +325,13 @@ impl Chain for MockChain {
         &self,
         _request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
+        unimplemented!()
+    }
+
+    fn query_upgraded_consensus_state(
+        &self,
+        _height: Height,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
 }
@@ -344,6 +356,8 @@ pub mod test_utils {
             key_name: "".to_string(),
             store_prefix: "".to_string(),
             gas: None,
+            fee_amount: Some(1000),
+            fee_denom: "stake".to_string(),
             max_msg_num: None,
             max_tx_size: None,
             clock_drift: Duration::from_secs(5),

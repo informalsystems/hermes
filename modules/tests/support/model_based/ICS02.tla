@@ -15,8 +15,10 @@ ICS02_SetClient(clients, clientId, client) ==
     [clients EXCEPT ![clientId] = client]
 
 ICS02_CreateClient(chain, chainId, height) ==
-    LET action == AsAction([
-        type |-> "ICS02CreateClient",
+    \* TODO: rename `action_` to `action` once the following issue is fixed:
+    \*        https://github.com/informalsystems/apalache/issues/593
+    LET action_ == AsAction([
+        type |-> "Ics02CreateClient",
         chainId |-> chainId,
         clientState |-> height,
         consensusState |-> height
@@ -28,7 +30,7 @@ ICS02_CreateClient(chain, chainId, height) ==
         [
             clients |-> chain.clients,
             clientIdCounter |-> chain.clientIdCounter,
-            action |-> action,
+            action |-> action_,
             outcome |-> "ModelError"
         ]
     ELSE
@@ -44,13 +46,13 @@ ICS02_CreateClient(chain, chainId, height) ==
                 client
             ),
             clientIdCounter |-> chain.clientIdCounter + 1,
-            action |-> action,
-            outcome |-> "ICS02CreateOK"
+            action |-> action_,
+            outcome |-> "Ics02CreateOk"
         ]
 
 ICS02_UpdateClient(chain, chainId, clientId, height) ==
-    LET action == AsAction([
-        type |-> "ICS02UpdateClient",
+    LET action_ == AsAction([
+        type |-> "Ics02UpdateClient",
         chainId |-> chainId,
         clientId |-> clientId,
         header |-> height
@@ -60,8 +62,8 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
         \* if the client does not exist, then set an error outcome
         [
             clients |-> chain.clients,
-            action |-> action,
-            outcome |-> "ICS02ClientNotFound"
+            action |-> action_,
+            outcome |-> "Ics02ClientNotFound"
         ]
     ELSE
         \* if the client exists, check its height
@@ -72,8 +74,8 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
             \* height, then set an error outcome
             [
                 clients |-> chain.clients,
-                action |-> action,
-                outcome |-> "ICS02HeaderVerificationFailure"
+                action |-> action_,
+                outcome |-> "Ics02HeaderVerificationFailure"
             ]
         ELSE
             \* if the client's new height is higher than the highest client
@@ -88,8 +90,8 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
                     clientId,
                     updatedClient
                 ),
-                action |-> action,
-                outcome |-> "ICS02UpdateOK"
+                action |-> action_,
+                outcome |-> "Ics02UpdateOk"
             ]
 
 ===============================================================================

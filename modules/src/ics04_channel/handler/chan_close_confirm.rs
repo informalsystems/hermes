@@ -6,7 +6,7 @@ use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
-use crate::ics04_channel::handler::verify::verify_proofs;
+use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 
@@ -63,7 +63,7 @@ pub(crate) fn process(
         channel_end.version(),
     );
 
-    verify_proofs(
+    verify_channel_proofs(
         ctx,
         &channel_end,
         &conn,

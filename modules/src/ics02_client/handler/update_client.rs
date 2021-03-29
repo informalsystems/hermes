@@ -80,7 +80,7 @@ mod tests {
     use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::error::Kind;
     use crate::ics02_client::handler::dispatch;
-    use crate::ics02_client::handler::ClientResult::{Create, Update};
+    use crate::ics02_client::handler::ClientResult::Update;
     use crate::ics02_client::header::Header;
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
@@ -128,7 +128,7 @@ mod tests {
                             )))
                         )
                     }
-                    Create(_) => panic!("update handler result has type CreateResult"),
+                    _ => panic!("update handler result has incorrect type"),
                 }
             }
             Err(err) => {

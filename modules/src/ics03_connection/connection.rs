@@ -14,7 +14,7 @@ use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
@@ -40,6 +40,10 @@ impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
+        if value.client_id.is_empty() {
+            return Err(Kind::EmptyProtoConnectionEnd.into());
+        }
+
         let state = value.state.try_into()?;
         if state == State::Uninitialized {
             return Ok(ConnectionEnd::default());
@@ -159,7 +163,30 @@ impl ConnectionEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct IdentifiedConnectionEnd {
+    connection_id: ConnectionId,
+    connection_end: ConnectionEnd,
+}
+
+impl IdentifiedConnectionEnd {
+    pub fn new(connection_id: ConnectionId, connection_end: ConnectionEnd) -> Self {
+        IdentifiedConnectionEnd {
+            connection_id,
+            connection_end,
+        }
+    }
+
+    pub fn id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    pub fn end(&self) -> &ConnectionEnd {
+        &self.connection_end
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
@@ -248,7 +275,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,

@@ -136,6 +136,16 @@ pub trait Chain: Sized {
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
+    fn query_upgraded_client_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ClientState, MerkleProof), Error>;
+
+    fn query_upgraded_consensus_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
+
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_connections(
         &self,
@@ -252,6 +262,7 @@ pub trait Chain: Sized {
 
     fn build_header(
         &self,
+        trusted_height: ICSHeight,
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error>;

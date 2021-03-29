@@ -94,7 +94,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::channel::State;
-    use crate::ics04_channel::handler::{dispatch, ChannelResult};
+    use crate::ics04_channel::handler::{channel_dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
@@ -162,7 +162,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = dispatch(&test.ctx, test.msg.clone());
+            let res = channel_dispatch(&test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

@@ -3,6 +3,7 @@ use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
+use crate::ics04_channel::packet::Sequence;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::header::Header;
@@ -88,5 +89,31 @@ impl ClientDef for TendermintClient {
         _expected_client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()
+    }
+
+    fn verify_packet_data(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+        _data: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_packet_acknowledgement(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+        _data: Vec<u8>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
     }
 }
