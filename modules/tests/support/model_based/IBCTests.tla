@@ -4,55 +4,55 @@ EXTENDS IBC
 
 \* ICS02CreateClient tests
 ICS02CreateOKTest ==
-    /\ actionOutcome = "ICS02CreateOK"
+    /\ actionOutcome = "Ics02CreateOk"
 
 \* ICS02UpdateClient tests
 ICS02UpdateOKTest ==
-    /\ actionOutcome = "ICS02UpdateOK"
+    /\ actionOutcome = "Ics02UpdateOk"
 
 ICS02ClientNotFoundTest ==
-    /\ actionOutcome = "ICS02ClientNotFound"
+    /\ actionOutcome = "Ics02ClientNotFound"
 
 ICS02HeaderVerificationFailureTest ==
-    /\ actionOutcome = "ICS02HeaderVerificationFailure"
+    /\ actionOutcome = "Ics02HeaderVerificationFailure"
 
 \* ICS03ConnectionOpenInit tests
 ICS03ConnectionOpenInitOKTest ==
-    /\ actionOutcome = "ICS03ConnectionOpenInitOK"
+    /\ actionOutcome = "Ics03ConnectionOpenInitOk"
 
 ICS03MissingClientTest ==
-    /\ actionOutcome = "ICS03MissingClient"
+    /\ actionOutcome = "Ics03MissingClient"
 
 \* ICS03ConnectionOpenTry tests
 ICS03ConnectionOpenTryOKTest ==
-    /\ actionOutcome = "ICS03ConnectionOpenTryOK"
+    /\ actionOutcome = "Ics03ConnectionOpenTryOk"
 
 ICS03InvalidConsensusHeightTest ==
-    /\ actionOutcome = "ICS03InvalidConsensusHeight"
+    /\ actionOutcome = "Ics03InvalidConsensusHeight"
 
 ICS03ConnectionNotFoundTest ==
-    /\ actionOutcome = "ICS03ConnectionNotFound"
+    /\ actionOutcome = "Ics03ConnectionNotFound"
 
 ICS03ConnectionMismatchTest ==
-    /\ actionOutcome = "ICS03ConnectionMismatch"
+    /\ actionOutcome = "Ics03ConnectionMismatch"
 
 ICS03MissingClientConsensusStateTest ==
-    /\ actionOutcome = "ICS03MissingClientConsensusState"
+    /\ actionOutcome = "Ics03MissingClientConsensusState"
 
 \* TODO: the following test should fail but doesn't because proofs are not yet
 \*       verified in the implementation
 \* ICS03InvalidProofTest ==
-\*     /\ actionOutcome = "ICS03InvalidProof"
+\*     /\ actionOutcome = "Ics03InvalidProof"
 
 \* ICS03ConnectionOpenAck tests
 ICS03ConnectionOpenAckOKTest ==
-    /\ actionOutcome = "ICS03ConnectionOpenAckOK"
+    /\ actionOutcome = "Ics03ConnectionOpenAckOk"
 
 ICS03UninitializedConnectionTest ==
-    /\ actionOutcome = "ICS03UninitializedConnection"
+    /\ actionOutcome = "Ics03UninitializedConnection"
 
 \* ICS03ConnectionOpenConfirm tests
 ICS03ConnectionOpenConfirmOKTest ==
-    /\ actionOutcome = "ICS03ConnectionOpenConfirmOK"
+    /\ actionOutcome = "Ics03ConnectionOpenConfirmOk"
 
 ===============================================================================
