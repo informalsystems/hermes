@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use prost_types::Any;
 use thiserror::Error;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc::{
@@ -432,6 +432,10 @@ impl RelayPath {
         } else if packet.timeout_height != Height::zero()
             && packet.timeout_height < dst_chain_height
         {
+            warn!(
+                "Building timeout packet with proofs for height {}",
+                dst_chain_height
+            );
             // Handle timeouts
             // The packet timed-out relative to the "old" destination chain height. The "old" height
             // is the height which the dst. chain had when this batch of events was scheduled.
@@ -443,20 +447,20 @@ impl RelayPath {
         } else if packet.timeout_height != Height::zero()
             && packet.timeout_height < latest_dst_chain_height
         {
+            warn!(
+                "Prepping timeout packet with proofs for height {}",
+                latest_dst_chain_height
+            );
             // The packet timed-out relative to the latest destination chain height.
             // We build an updateClient message for the client hosted on the source chain, and
             // schedule this event in a separate batch for later processing.
             self.schedule_batch(
                 vec![IbcEvent::SendPacket(event.clone())],
-                latest_dst_chain_height,
+                latest_dst_chain_height.decrement().unwrap(),
             );
             Ok((
                 None,
-                Some(
-                    self.build_update_client_on_src(dst_chain_height)?
-                        .pop()
-                        .unwrap(),
-                ),
+                self.build_update_client_on_src(dst_chain_height)?.pop(),
             ))
         // } else if packet.timeout_timestamp != 0 && packet.timeout_timestamp < dst_chain.query_time() {
         //     TODO - add query to get the current chain time
@@ -584,6 +588,7 @@ impl RelayPath {
     pub fn clear_packets(&mut self, height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
             self.relay_pending_packets(height)?;
+            info!("Finished clearing pending packets");
             self.clear_packets = false;
         }
 
@@ -616,7 +621,9 @@ impl RelayPath {
             self.update_clients(src_update_height, dst_update_height)?;
 
             // Schedule the event batch, and let it sit for a while until the delay period passes
-            self.schedule_batch(self.all_events.clone(), dst_update_height);
+            // TODO(Adi) How to handle possible corner-case of Height(revision: 1)?
+            let proof_height = dst_update_height.decrement().unwrap();
+            self.schedule_batch(self.all_events.clone(), proof_height);
         }
 
         // Iterate through all the outstanding event batches that have fulfilled their delay period,
@@ -629,7 +636,7 @@ impl RelayPath {
 
                 // Collect the messages for all events
                 for event in self.all_events.clone() {
-                    debug!("{} => {:?}", self.src_chain.id(), event);
+                    info!("{} => {:?}", self.src_chain.id(), event);
                     self.handle_delayed_packet_event(&event, batch.dst_height)?;
                 }
 
@@ -945,7 +952,7 @@ impl RelayPath {
             .collect();
 
         info!(
-            "recv packets to send out to {} of the ones with commitments on source{}: {:?}",
+            "recv packets to send out to {} of the ones with commitments on source {}: {:?}",
             self.dst_chain.id(),
             self.src_chain.id(),
             sequences
@@ -1082,7 +1089,10 @@ impl RelayPath {
             // Update clients & schedule the original events
             let src_update_height = src_height.increment();
             self.update_clients(src_update_height, dst_update_height)?;
-            self.schedule_batch(self.all_events.clone(), dst_update_height);
+            self.schedule_batch(
+                self.all_events.clone(),
+                dst_update_height.decrement().unwrap(),
+            );
 
             // Block waiting for the delay to pass
             let batch = self.fetch_scheduled_batch()?;
@@ -1116,6 +1126,7 @@ impl RelayPath {
         &mut self,
         opt_query_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
+        self.all_events = vec![];
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
         let src_height = self.target_height_and_write_ack_events(opt_query_height)?;
@@ -1323,7 +1334,11 @@ impl RelayPath {
         if events.is_empty() {
             panic!("Cannot schedule an empty event batch")
         }
-        info!("Scheduling batch with {} events", events.len());
+        info!(
+            "Scheduling batch with {} events for dst height: {}",
+            events.len(),
+            dst_height
+        );
 
         let sc_event = ScheduledBatch {
             update_time: Instant::now(),
