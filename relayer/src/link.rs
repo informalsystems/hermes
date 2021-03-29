@@ -330,6 +330,144 @@ impl RelayPath {
         Ok(())
     }
 
+    /// Equivalent to `handle_packet_event` but for the case when packets have non-zero delay.
+    fn handle_delayed_packet_event(
+        &mut self,
+        event: &IbcEvent,
+        dst_chain_height: Height,
+    ) -> Result<(), LinkError> {
+        let (dst_msg, src_msg) = match event {
+            IbcEvent::CloseInitChannel(close_init_ev) => {
+                info!(
+                    "[with delay] {} => event {}",
+                    self.src_chain.id(),
+                    close_init_ev
+                );
+                (
+                    Some(self.build_chan_close_confirm_from_event(&event)?),
+                    None,
+                )
+            }
+            IbcEvent::TimeoutPacket(timeout_ev) => {
+                // When a timeout packet for an ordered channel is processed on-chain (src here)
+                // the chain closes the channel but no close init event is emitted, instead
+                // we get a timeout packet event (this happens for both unordered and ordered channels)
+                // Here we check that the channel is closed on src and send a channel close confirm
+                // to the counterparty.
+                if self.ordered_channel()
+                    && self
+                        .src_channel(timeout_ev.height)?
+                        .state_matches(&ChannelState::Closed)
+                {
+                    info!(
+                        "[with delay] {} => event {} closes the channel",
+                        self.src_chain.id(),
+                        timeout_ev
+                    );
+                    (
+                        Some(self.build_chan_close_confirm_from_event(&event)?),
+                        None,
+                    )
+                } else {
+                    (None, None)
+                }
+            }
+            IbcEvent::SendPacket(send_packet_ev) => {
+                info!(
+                    "[with delay] {} => event {}",
+                    self.src_chain.id(),
+                    send_packet_ev
+                );
+                self.handle_delayed_send_packet_event(&send_packet_ev, dst_chain_height)?
+            }
+            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                info!(
+                    "[with delay] {} => event {}",
+                    self.src_chain.id(),
+                    write_ack_ev
+                );
+                (Some(self.build_ack_from_recv_event(&write_ack_ev)?), None)
+            }
+            _ => (None, None),
+        };
+
+        // Collect messages to be sent to the destination chain
+        if let Some(msg) = dst_msg {
+            self.packet_msgs.push(msg);
+            self.dst_msgs_input_events.push(event.clone());
+        }
+
+        // Collect timeout messages, to be sent to the source chain
+        if let Some(msg) = src_msg {
+            // For Ordered channels a single timeout event should be sent as this closes the channel.
+            // Otherwise a multi message transaction will fail.
+            if self.unordered_channel() || self.timeout_msgs.is_empty() {
+                self.timeout_msgs.push(msg);
+                self.src_msgs_input_events.push(event.clone());
+            }
+        }
+
+        Ok(())
+    }
+
+    fn handle_delayed_send_packet_event(
+        &mut self,
+        event: &SendPacket,
+        dst_chain_height: Height,
+    ) -> Result<(Option<Any>, Option<Any>), LinkError> {
+        let packet = event.packet.clone();
+
+        // The latest height of the destination chain.
+        // Necessary for computing timeout heights correctly.
+        let latest_dst_chain_height = self.dst_latest_height()?;
+
+        if self
+            .dst_channel(dst_chain_height)?
+            .state_matches(&ChannelState::Closed)
+        {
+            Ok((
+                None,
+                Some(self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?),
+            ))
+        } else if packet.timeout_height != Height::zero()
+            && packet.timeout_height < dst_chain_height
+        {
+            // Handle timeouts
+            // The packet timed-out relative to the "old" destination chain height. The "old" height
+            // is the height which the dst. chain had when this batch of events was scheduled.
+            // In this case, relay to the source chain the timeout message.
+            Ok((
+                None,
+                Some(self.build_timeout_packet(&event.packet, dst_chain_height)?),
+            ))
+        } else if packet.timeout_height != Height::zero()
+            && packet.timeout_height < latest_dst_chain_height
+        {
+            // The packet timed-out relative to the latest destination chain height.
+            // We build an updateClient message for the client hosted on the source chain, and
+            // schedule this event in a separate batch for later processing.
+            self.schedule_batch(
+                vec![IbcEvent::SendPacket(event.clone())],
+                latest_dst_chain_height,
+            );
+            Ok((
+                None,
+                Some(
+                    self.build_update_client_on_src(dst_chain_height)?
+                        .pop()
+                        .unwrap(),
+                ),
+            ))
+        // } else if packet.timeout_timestamp != 0 && packet.timeout_timestamp < dst_chain.query_time() {
+        //     TODO - add query to get the current chain time
+        } else {
+            Ok((
+                Some(self.build_recv_packet(&event.packet, event.height)?),
+                None,
+            ))
+        }
+    }
+
     // Determines if the events received are relevant and should be processed.
     // Only events for a port/channel matching one of the channel ends should be processed.
     fn collect_events(&mut self, events: &[IbcEvent]) {
@@ -492,7 +630,7 @@ impl RelayPath {
                 // Collect the messages for all events
                 for event in self.all_events.clone() {
                     debug!("{} => {:?}", self.src_chain.id(), event);
-                    self.handle_packet_event(&event, batch.dst_height)?;
+                    self.handle_delayed_packet_event(&event, batch.dst_height)?;
                 }
 
                 // Send messages
@@ -953,7 +1091,7 @@ impl RelayPath {
 
             for e in batch.events {
                 info!("Handling event @ height {}", e.height());
-                self.handle_packet_event(&e, batch.dst_height)?;
+                self.handle_delayed_packet_event(&e, batch.dst_height)?;
             }
 
             // Send messages
@@ -1169,8 +1307,8 @@ impl RelayPath {
                 None,
                 Some(self.build_timeout_packet(&event.packet, dst_chain_height)?),
             ))
-            // } else if packet.timeout_timestamp != 0 && packet.timeout_timestamp < dst_chain.query_time() {
-            //     TODO - add query to get the current chain time
+        // } else if packet.timeout_timestamp != 0 && packet.timeout_timestamp < dst_chain.query_time() {
+        //     TODO - add query to get the current chain time
         } else {
             Ok((
                 Some(self.build_recv_packet(&event.packet, event.height)?),
