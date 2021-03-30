@@ -10,7 +10,7 @@ use ibc_relayer::config::StoreConfig;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::commands::cli_utils::{spawn_chain_runtime, ChainHandlePair, SpawnOptions};
+use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair, SpawnOptions};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 

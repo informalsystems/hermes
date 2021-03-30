@@ -23,6 +23,7 @@
   - Added `client-upgrade` CLI ([#357])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
   - Added delay feature for packet relaying ([#640])
+  - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
 
 ### IMPROVEMENTS
 
@@ -83,6 +84,7 @@
 [#734]: https://github.com/informalsystems/ibc-rs/issues/734
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
+[#748]: https://github.com/informalsystems/ibc-rs/issues/748
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
 [#754]: https://github.com/informalsystems/ibc-rs/issues/754
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761

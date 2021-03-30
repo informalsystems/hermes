@@ -8,7 +8,7 @@ use ibc::Height;
 use ibc_relayer::channel::{Channel, ChannelSide};
 use ibc_relayer::config::StoreConfig;
 
-use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
+use crate::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;

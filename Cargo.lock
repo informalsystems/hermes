@@ -1135,6 +1135,7 @@ dependencies = [
  "abscissa_core",
  "anomaly",
  "crossbeam-channel 0.5.0",
+ "crossbeam-utils 0.8.3",
  "dirs-next",
  "futures",
  "gumdrop 0.7.0",
