@@ -357,6 +357,7 @@ impl CloseInit {
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
     }
+
     pub fn channel_id(&self) -> &ChannelId {
         // FIXME(romac): Rework encoding of IbcEvents which use `Attributes`
         self.0
@@ -364,15 +365,19 @@ impl CloseInit {
             .as_ref()
             .expect("CloseInit should always have a channel_id")
     }
+
     pub fn counterparty_port_id(&self) -> &PortId {
         &self.0.counterparty_port_id
     }
+
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
         self.0.counterparty_channel_id.as_ref()
     }
+
     pub fn height(&self) -> Height {
         self.0.height
     }
+
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
     }

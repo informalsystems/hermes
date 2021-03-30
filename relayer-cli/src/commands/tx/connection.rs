@@ -5,7 +5,7 @@ use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc_relayer::config::StoreConfig;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 
-use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
+use crate::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
