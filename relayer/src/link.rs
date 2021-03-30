@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -78,21 +77,29 @@ pub struct ScheduledBatch {
     dst_height: Height,
 }
 
+pub enum OperationalDataTarget {
+    Source,
+    Destination,
+}
+
 pub struct OperationalData {
     chain_height: Height,
     events: Vec<IbcEvent>,
     msgs: Vec<Any>,
+
+    target: OperationalDataTarget,
     /// Stores the time when the clients on the target chain has been updated, i.e., when this data
     /// was scheduled. Necessary for packet delays.
     scheduled_time: Instant,
 }
 
-impl Default for OperationalData {
-    fn default() -> Self {
+impl OperationalData {
+    pub fn new(chain_height: Height, target: OperationalDataTarget) -> Self {
         OperationalData {
-            chain_height: Default::default(),
+            chain_height,
             events: vec![],
             msgs: vec![],
+            target,
             scheduled_time: Instant::now(),
         }
     }
@@ -110,12 +117,13 @@ pub struct RelayPath {
     timeout_msgs: Vec<Any>,
     scheduled: Vec<ScheduledBatch>,
 
-    // Operational data, for targeting both the source and destination chain. Each operational data
-    // batch is indexed here by the Height of the target chain which the proofs.
+    // Operational data, for targeting both the source and destination chain.
+    // These vectors of operational data are ordered decreasingly by their age, with element at
+    // position `0` being the oldest.
     // The operational data targeting the source chain comprises mostly timeout packet messages.
-    src_operational_data: HashMap<Height, OperationalData>,
+    src_operational_data: Vec<OperationalData>,
     // The operational data targeting the destination chain comprises mostly RecvPacket and Ack msgs.
-    dst_operational_data: HashMap<Height, OperationalData>,
+    dst_operational_data: Vec<OperationalData>,
 }
 
 impl RelayPath {
@@ -440,6 +448,14 @@ impl RelayPath {
         Ok(())
     }
 
+    fn handle_send_packet_event_unified(
+        &self,
+        _event: &SendPacket,
+        _dst_chain_height: Height,
+    ) -> Result<(Option<Any>, Option<Any>), LinkError> {
+        unimplemented!()
+    }
+
     fn handle_delayed_send_packet_event(
         &mut self,
         event: &SendPacket,
@@ -635,7 +651,14 @@ impl RelayPath {
 
         // Obtain the operational data for the source chain (mostly timeout packets) and for the
         // destination chain (receive packet messages).
-        let (src_od, dst_od) = self.generate_operational_data(events)?;
+        let (src_opt, dst_opt) = self.generate_operational_data(events)?;
+
+        if let Some(src_od) = src_opt {
+            self.schedule_operational_data(src_od);
+        }
+        if let Some(dst_od) = dst_opt {
+            self.schedule_operational_data(dst_od);
+        }
 
         if self.channel.connection_delay.as_nanos() > 0 {
             self.relay_with_delay()
@@ -647,11 +670,92 @@ impl RelayPath {
     fn generate_operational_data(
         &self,
         input: Vec<IbcEvent>,
-    ) -> Result<(OperationalData, OperationalData), LinkError> {
-        let mut src_od = Default::default();
-        let mut dst_od = Default::default();
+    ) -> Result<(Option<OperationalData>, Option<OperationalData>), LinkError> {
+        let src_height = match input.get(0) {
+            None => return Ok((None, None)),
+            Some(ev) => ev.height(),
+        };
 
-        Ok((src_od, dst_od))
+        let mut src_od = OperationalData::new(src_height, OperationalDataTarget::Source);
+        let mut dst_od = OperationalData::new(
+            self.dst_latest_height()?,
+            OperationalDataTarget::Destination,
+        );
+
+        for event in input {
+            let (dst_msg, src_msg) = match event {
+                IbcEvent::CloseInitChannel(ref close_init_ev) => {
+                    info!(
+                        "[generating OD] {} => event {}",
+                        self.src_chain.id(),
+                        close_init_ev
+                    );
+                    (
+                        Some(self.build_chan_close_confirm_from_event(&event)?),
+                        None,
+                    )
+                }
+                IbcEvent::TimeoutPacket(ref timeout_ev) => {
+                    // When a timeout packet for an ordered channel is processed on-chain (src here)
+                    // the chain closes the channel but no close init event is emitted, instead
+                    // we get a timeout packet event (this happens for both unordered and ordered channels)
+                    // Here we check that the channel is closed on src and send a channel close confirm
+                    // to the counterparty.
+                    if self.ordered_channel()
+                        && self
+                            .src_channel(timeout_ev.height)?
+                            .state_matches(&ChannelState::Closed)
+                    {
+                        info!(
+                            "[generating OD] {} => event {} closes the channel",
+                            self.src_chain.id(),
+                            timeout_ev
+                        );
+                        (
+                            Some(self.build_chan_close_confirm_from_event(&event)?),
+                            None,
+                        )
+                    } else {
+                        (None, None)
+                    }
+                }
+                IbcEvent::SendPacket(ref send_packet_ev) => {
+                    info!(
+                        "[generating OD] {} => event {}",
+                        self.src_chain.id(),
+                        send_packet_ev
+                    );
+                    self.handle_send_packet_event_unified(&send_packet_ev, dst_od.chain_height)?
+                }
+                IbcEvent::WriteAcknowledgement(ref write_ack_ev) => {
+                    info!(
+                        "[generating OD] {} => event {}",
+                        self.src_chain.id(),
+                        write_ack_ev
+                    );
+                    (Some(self.build_ack_from_recv_event(&write_ack_ev)?), None)
+                }
+                _ => (None, None),
+            };
+
+            // Collect messages to be sent to the destination chain
+            if let Some(msg) = dst_msg {
+                dst_od.msgs.push(msg);
+                dst_od.events.push(event.clone());
+            }
+
+            // Collect timeout messages, to be sent to the source chain
+            if let Some(msg) = src_msg {
+                // For Ordered channels a single timeout event should be sent as this closes the channel.
+                // Otherwise a multi message transaction will fail.
+                if self.unordered_channel() || src_od.msgs.is_empty() {
+                    src_od.msgs.push(msg);
+                    src_od.events.push(event.clone());
+                }
+            }
+        }
+
+        Ok((Some(src_od), Some(dst_od)))
     }
 
     /// Sends the client update in a separate transaction from packet messages, allowing for the
@@ -1430,6 +1534,52 @@ impl RelayPath {
                     events_batch.update_time.elapsed()
                 );
                 return Some(events_batch);
+            }
+        }
+        None
+    }
+
+    fn schedule_operational_data(&mut self, mut od: OperationalData) {
+        if od.msgs.is_empty() {
+            panic!("Cannot schedule an empty operational data!")
+        }
+        info!(
+            "Scheduling op. data with {} events for dst chain height: {}",
+            od.events.len(),
+            od.chain_height
+        );
+
+        od.scheduled_time = Instant::now();
+
+        match od.target {
+            OperationalDataTarget::Source => self.src_operational_data.push(od),
+            OperationalDataTarget::Destination => self.dst_operational_data.push(od),
+        };
+    }
+
+    fn try_fetch_scheduled_operational_data(&mut self) -> Option<OperationalData> {
+        // The head of the op. data vector contains the oldest entry.
+        if let Some(od_data_src) = self.src_operational_data.first() {
+            if od_data_src.scheduled_time.elapsed() > self.channel.connection_delay {
+                let op_src = self.src_operational_data.remove(0);
+                info!(
+                    "Found operational data for source with {} events (delayed by: {:#?})",
+                    op_src.events.len(),
+                    op_src.scheduled_time.elapsed()
+                );
+                return Some(op_src);
+            }
+        }
+
+        if let Some(od_data_dst) = self.dst_operational_data.first() {
+            if od_data_dst.scheduled_time.elapsed() > self.channel.connection_delay {
+                let op_dst = self.dst_operational_data.remove(0);
+                info!(
+                    "Found operational data for destination with {} events (delayed by: {:#?})",
+                    op_dst.events.len(),
+                    op_dst.scheduled_time.elapsed()
+                );
+                return Some(op_dst);
             }
         }
         None
