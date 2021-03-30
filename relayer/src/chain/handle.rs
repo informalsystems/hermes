@@ -130,7 +130,7 @@ pub enum ChainRequest {
 
     QueryConsensusStates {
         request: QueryConsensusStatesRequest,
-        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight> >,
+        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
     },
 
     QueryUpgradedClientState {
