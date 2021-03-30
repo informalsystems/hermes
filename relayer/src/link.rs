@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -77,6 +78,26 @@ pub struct ScheduledBatch {
     dst_height: Height,
 }
 
+pub struct OperationalData {
+    chain_height: Height,
+    events: Vec<IbcEvent>,
+    msgs: Vec<Any>,
+    /// Stores the time when the clients on the target chain has been updated, i.e., when this data
+    /// was scheduled. Necessary for packet delays.
+    scheduled_time: Instant,
+}
+
+impl Default for OperationalData {
+    fn default() -> Self {
+        OperationalData {
+            chain_height: Default::default(),
+            events: vec![],
+            msgs: vec![],
+            scheduled_time: Instant::now(),
+        }
+    }
+}
+
 pub struct RelayPath {
     src_chain: Box<dyn ChainHandle>,
     dst_chain: Box<dyn ChainHandle>,
@@ -88,6 +109,13 @@ pub struct RelayPath {
     packet_msgs: Vec<Any>,
     timeout_msgs: Vec<Any>,
     scheduled: Vec<ScheduledBatch>,
+
+    // Operational data, for targeting both the source and destination chain. Each operational data
+    // batch is indexed here by the Height of the target chain which the proofs.
+    // The operational data targeting the source chain comprises mostly timeout packet messages.
+    src_operational_data: HashMap<Height, OperationalData>,
+    // The operational data targeting the destination chain comprises mostly RecvPacket and Ack msgs.
+    dst_operational_data: HashMap<Height, OperationalData>,
 }
 
 impl RelayPath {
@@ -107,6 +135,8 @@ impl RelayPath {
             packet_msgs: vec![],
             timeout_msgs: vec![],
             scheduled: vec![],
+            src_operational_data: Default::default(),
+            dst_operational_data: Default::default(),
         }
     }
 
@@ -474,52 +504,54 @@ impl RelayPath {
 
     // Determines if the events received are relevant and should be processed.
     // Only events for a port/channel matching one of the channel ends should be processed.
-    fn collect_events(&mut self, events: &[IbcEvent]) {
+    fn filter_events(&mut self, events: &[IbcEvent]) -> Vec<IbcEvent> {
+        let mut result = vec![];
+
         for event in events.iter() {
             match event {
                 IbcEvent::SendPacket(send_packet_ev) => {
                     if self.src_channel_id() == &send_packet_ev.packet.source_channel
                         && self.src_port_id() == &send_packet_ev.packet.source_port
                     {
-                        self.all_events.push(event.clone());
+                        result.push(event.clone());
                     }
                 }
                 IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                     if self.channel.src_channel_id() == &write_ack_ev.packet.destination_channel
                         && self.channel.src_port_id() == &write_ack_ev.packet.destination_port
                     {
-                        self.all_events.push(event.clone());
+                        result.push(event.clone());
                     }
                 }
                 IbcEvent::CloseInitChannel(chan_close_ev) => {
                     if self.channel.src_channel_id() == chan_close_ev.channel_id()
                         && self.channel.src_port_id() == chan_close_ev.port_id()
                     {
-                        self.all_events.push(event.clone());
+                        result.push(event.clone());
                     }
                 }
                 IbcEvent::TimeoutPacket(timeout_ev) => {
                     if self.channel.src_channel_id() == timeout_ev.src_channel_id()
                         && self.channel.src_port_id() == timeout_ev.src_port_id()
                     {
-                        self.all_events.push(event.clone());
+                        result.push(event.clone());
                     }
                 }
                 _ => {}
             }
         }
+        result
     }
 
-    // May adjust the height of events in self.all_events.
-    // Checks if the client on destination chain is at a higher height than the event height.
+    // May adjust the height of the input vector of events.
+    // Checks if the client on destination chain is at a higher height than the events height.
     // This can happen if a client update has happened after the event was emitted but before
     // this point when the relayer starts to process the events.
-    fn adjust_events_height(&mut self) -> Result<(), LinkError> {
-        if self.all_events.is_empty() {
-            return Ok(());
-        }
-
-        let event_height = self.all_events[0].height();
+    fn adjust_events_height(&self, events: &mut Vec<IbcEvent>) -> Result<(), LinkError> {
+        let event_height = match events.get(0) {
+            None => return Ok(()),
+            Some(ev) => ev.height(),
+        };
 
         // Check if a consensus state at event_height + 1 exists on destination chain already
         // and update src_height
@@ -542,16 +574,14 @@ impl RelayPath {
             .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?
             .latest_height();
 
-        // event_height + 1 is the height at which the client on destination chain
+        // (event_height + 1) is the height at which the client on destination chain
         // should be updated, unless ...
         if trusted_height > event_height.increment() {
             // ... client is already at a higher height.
             let new_height = trusted_height
                 .decrement()
                 .map_err(|e| LinkError::Failed(e.to_string()))?;
-            self.all_events
-                .iter_mut()
-                .for_each(|ev| ev.set_height(new_height));
+            events.iter_mut().for_each(|ev| ev.set_height(new_height));
         }
 
         Ok(())
@@ -599,15 +629,29 @@ impl RelayPath {
     pub fn relay_from_events(&mut self, batch: EventBatch) -> Result<(), LinkError> {
         self.clear_packets(batch.height)?;
 
-        // Collect relevant events in `self.all_events`.
-        self.collect_events(&batch.events);
-        self.adjust_events_height()?;
+        // Collect relevant events & adjust their height.
+        let mut events = self.filter_events(&batch.events);
+        self.adjust_events_height(&mut events)?;
+
+        // Obtain the operational data for the source chain (mostly timeout packets) and for the
+        // destination chain (receive packet messages).
+        let (src_od, dst_od) = self.generate_operational_data(events)?;
 
         if self.channel.connection_delay.as_nanos() > 0 {
             self.relay_with_delay()
         } else {
             self.relay_immediately()
         }
+    }
+
+    fn generate_operational_data(
+        &self,
+        input: Vec<IbcEvent>,
+    ) -> Result<(OperationalData, OperationalData), LinkError> {
+        let mut src_od = Default::default();
+        let mut dst_od = Default::default();
+
+        Ok((src_od, dst_od))
     }
 
     /// Sends the client update in a separate transaction from packet messages, allowing for the
