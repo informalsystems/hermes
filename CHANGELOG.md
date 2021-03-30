@@ -15,7 +15,7 @@
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Use a stateless light client without a runtime ([#673])
 
 - [ibc-relayer-cli]
   - Added `create connection` and `create channel` CLIs ([#630], [#715])
@@ -71,6 +71,7 @@
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
