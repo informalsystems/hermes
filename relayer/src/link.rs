@@ -1,3 +1,4 @@
+use std::fmt;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -80,6 +81,15 @@ pub struct ScheduledBatch {
 pub enum OperationalDataTarget {
     Source,
     Destination,
+}
+
+impl fmt::Display for OperationalDataTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            OperationalDataTarget::Source => write!(f, "Source"),
+            OperationalDataTarget::Destination => write!(f, "Destination"),
+        }
+    }
 }
 
 pub struct OperationalData {
@@ -654,17 +664,13 @@ impl RelayPath {
         let (src_opt, dst_opt) = self.generate_operational_data(events)?;
 
         if let Some(src_od) = src_opt {
-            self.schedule_operational_data(src_od);
+            self.schedule_operational_data(src_od)?;
         }
         if let Some(dst_od) = dst_opt {
-            self.schedule_operational_data(dst_od);
+            self.schedule_operational_data(dst_od)?;
         }
 
-        if self.channel.connection_delay.as_nanos() > 0 {
-            self.relay_with_delay()
-        } else {
-            self.relay_immediately()
-        }
+        Ok(())
     }
 
     fn generate_operational_data(
@@ -758,46 +764,25 @@ impl RelayPath {
         Ok((Some(src_od), Some(dst_od)))
     }
 
-    /// Sends the client update in a separate transaction from packet messages, allowing for the
-    /// delay period to pass between the client update and packet messages.
-    fn relay_with_delay(&mut self) -> Result<(), LinkError> {
-        // If there are some new events, update src. and dest. clients, then schedule the relaying
-        // of packets corresponding to these events.
-        if !self.all_events.is_empty() {
-            let dst_update_height = self.dst_latest_height()?;
-            let src_update_height = self.all_events[0].height().increment();
-            self.update_clients(src_update_height, dst_update_height)?;
+    fn apply(&mut self, od: OperationalData) -> Result<(), LinkError> {
+        for i in 0..MAX_ITER {
+            info!(
+                "Relaying with operational data to {} with {} msgs [{}/{}]",
+                od.target,
+                od.msgs.len(),
+                i,
+                MAX_ITER
+            );
 
-            // Schedule the event batch, and let it sit for a while until the delay period passes
-            // TODO(Adi) How to handle possible corner-case of Height(revision: 1)?
-            let proof_height = dst_update_height.decrement().unwrap();
-            self.schedule_batch(self.all_events.clone(), proof_height);
-        }
+            // Send messages
+            let res = self.send_msgs()?;
+            debug!("\nresult {:?}", res);
 
-        // Iterate through all the outstanding event batches that have fulfilled their delay period,
-        // and send the packet messages corresponding to these events
-        while let Some(batch) = self.try_fetch_scheduled_batch() {
-            self.all_events = batch.events;
-
-            for _i in 0..MAX_ITER {
-                self.reset_buffers();
-
-                // Collect the messages for all events
-                for event in self.all_events.clone() {
-                    info!("{} => {:?}", self.src_chain.id(), event);
-                    self.handle_delayed_packet_event(&event, batch.dst_height)?;
-                }
-
-                // Send messages
-                let res = self.send_msgs()?;
-                debug!("\nresult {:?}", res);
-
-                if self.all_events.is_empty() {
-                    break;
-                }
-
-                debug!("retrying");
+            if self.all_events.is_empty() {
+                break;
             }
+
+            debug!("retrying");
         }
 
         self.all_events = vec![];
@@ -806,6 +791,7 @@ impl RelayPath {
 
     /// Send a multi message transaction with packet messages, prepending the client update.
     /// Ignores any delay period for packets.
+    #[allow(dead_code)]
     fn relay_immediately(&mut self) -> Result<(), LinkError> {
         if self.all_events.is_empty() {
             return Ok(());
@@ -895,13 +881,8 @@ impl RelayPath {
         Ok((dst_tx_events, src_tx_events))
     }
 
-    /// Sends ClientUpdate transactions ahead of a scheduled batch.
-    /// Includes basic retrying and returns failure only after all retries are exhausted.
-    pub fn update_clients(
-        &self,
-        src_chain_height: Height,
-        dst_chain_height: Height,
-    ) -> Result<(), LinkError> {
+    /// Handles updating the client on the destination chain
+    fn update_client_dst(&self, src_chain_height: Height) -> Result<(), LinkError> {
         // Handle the update on the destination chain
         // Check if a consensus state at update_height exists on destination chain already
         for i in 0..MAX_ITER {
@@ -941,7 +922,11 @@ impl RelayPath {
             }
         }
 
-        // Handle the update on the source chain
+        Ok(())
+    }
+
+    /// Handles updating the client on the source chain
+    fn update_client_src(&self, dst_chain_height: Height) -> Result<(), LinkError> {
         for i in 0..MAX_ITER {
             if self
                 .src_chain()
@@ -977,8 +962,18 @@ impl RelayPath {
                 }
             }
         }
-
         Ok(())
+    }
+
+    /// Sends ClientUpdate transactions ahead of a scheduled batch.
+    /// Includes basic retrying and returns failure only after all retries are exhausted.
+    pub fn update_clients(
+        &self,
+        src_chain_height: Height,
+        dst_chain_height: Height,
+    ) -> Result<(), LinkError> {
+        self.update_client_dst(src_chain_height)?;
+        self.update_client_src(dst_chain_height)
     }
 
     pub fn send_update_client_and_msgs(
@@ -1520,26 +1515,7 @@ impl RelayPath {
         }
     }
 
-    /// Pulls out the next batch of events that have fulfilled the predefined delay period and can
-    /// now be processed. Does not block: if no batch fulfilled the delay period (or no batch is
-    /// scheduled), return immediately with `None`.
-    fn try_fetch_scheduled_batch(&mut self) -> Option<ScheduledBatch> {
-        // The head of the scheduled vector contains the oldest scheduled batch.
-        if let Some(batch) = self.scheduled.first() {
-            if batch.update_time.elapsed() > self.channel.connection_delay {
-                let events_batch = self.scheduled.remove(0);
-                info!(
-                    "Found a scheduled batch with {} events (delayed by: {:#?})",
-                    events_batch.events.len(),
-                    events_batch.update_time.elapsed()
-                );
-                return Some(events_batch);
-            }
-        }
-        None
-    }
-
-    fn schedule_operational_data(&mut self, mut od: OperationalData) {
+    fn schedule_operational_data(&mut self, mut od: OperationalData) -> Result<(), LinkError> {
         if od.msgs.is_empty() {
             panic!("Cannot schedule an empty operational data!")
         }
@@ -1551,12 +1527,26 @@ impl RelayPath {
 
         od.scheduled_time = Instant::now();
 
+        // Update clients ahead of scheduling the operational data, if the delays are non-zero.
+        if self.channel.connection_delay.as_nanos() > 0 {
+            let target_height = od.chain_height.increment();
+            match od.target {
+                OperationalDataTarget::Source => self.update_client_src(target_height)?,
+                OperationalDataTarget::Destination => self.update_client_dst(target_height)?,
+            };
+        }
+
         match od.target {
             OperationalDataTarget::Source => self.src_operational_data.push(od),
             OperationalDataTarget::Destination => self.dst_operational_data.push(od),
         };
+
+        Ok(())
     }
 
+    /// Pulls out the next operational data that has fulfilled the predefined delay period and can
+    /// now be processed. Does not block: if no OD fulfilled the delay period (or none is
+    /// scheduled), returns immediately with `None`.
     fn try_fetch_scheduled_operational_data(&mut self) -> Option<OperationalData> {
         // The head of the op. data vector contains the oldest entry.
         if let Some(od_data_src) = self.src_operational_data.first() {
@@ -1571,6 +1561,7 @@ impl RelayPath {
             }
         }
 
+        // No operational data was found targeting the source chain; try for the destination chain.
         if let Some(od_data_dst) = self.dst_operational_data.first() {
             if od_data_dst.scheduled_time.elapsed() > self.channel.connection_delay {
                 let op_dst = self.dst_operational_data.remove(0);
@@ -1629,8 +1620,16 @@ impl Link {
                 self.a_to_b.relay_from_events(batch.unwrap_or_clone())?;
             }
 
+            if let Some(od) = self.a_to_b.try_fetch_scheduled_operational_data() {
+                self.a_to_b.apply(od)?;
+            }
+
             if let Ok(batch) = events_b.try_recv() {
                 self.b_to_a.relay_from_events(batch.unwrap_or_clone())?;
+            }
+
+            if let Some(od) = self.b_to_a.try_fetch_scheduled_operational_data() {
+                self.b_to_a.apply(od)?;
             }
 
             // TODO - select over the two subscriptions
