@@ -5,8 +5,8 @@ log_level = 'info'
 
 [[chains]]
 id = 'ibc-0'
-rpc_addr = 'tcp://ibc-0:26657'
-grpc_addr = 'tcp://ibc-0:9090'
+rpc_addr = 'http://ibc-0:26657'
+grpc_addr = 'http://ibc-0:9090'
 websocket_addr = 'ws://ibc-0:26657'
 account_prefix = 'cosmos'
 key_name = 'testkey'
@@ -19,8 +19,8 @@ trusting_period = '14days'
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'tcp://ibc-1:26657'
-grpc_addr = 'tcp://ibc-1:9090'
+rpc_addr = 'http://ibc-1:26657'
+grpc_addr = 'http://ibc-1:9090'
 websocket_addr = 'ws://ibc-1:26657'
 account_prefix = 'cosmos'
 key_name = 'testkey'
