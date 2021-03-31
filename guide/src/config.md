@@ -63,9 +63,9 @@ A `chains` section includes parameters related to a chain and the full node to w
 
 * __gas__: Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is `300000`
 
-* __fee_amount__: Specify the amount value to be used in the fee for a transaction. Default value is `1000`
-
 * __fee_denom__: Specify the denom to be used in the fee for a transaction.
+
+* __fee_amount__: Specify the amount value to be used in the fee for a transaction. Default value is `1000`
 
 * __clock_drift__: Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is `5s`
 
@@ -112,8 +112,8 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
-fee_amount = 10
 fee_denom = 'stake'
+fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -154,8 +154,8 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
-fee_amount = 10
 fee_denom = 'stake'
+fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
 

@@ -5,14 +5,14 @@ log_level = 'error'
 
 [[chains]]
 id = 'ibc-0'
-rpc_addr = 'http://127.0.0.1:26657'
+rpc_addr = 'http://127.0.0.1:26657/'
 grpc_addr = 'http://127.0.0.1:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 3000000
-fee_amount = 10
 fee_denom = 'stake'
+fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -22,14 +22,14 @@ denominator = '3'
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'http://127.0.0.1:26557'
+rpc_addr = 'http://127.0.0.1:26557/'
 grpc_addr = 'http://127.0.0.1:9091'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 3000000
-fee_amount = 1000
 fee_denom = 'stake'
+fee_amount = 1000
 clock_drift = '5s'
 trusting_period = '14days'
 
