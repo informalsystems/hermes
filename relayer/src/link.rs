@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use prost_types::Any;
 use thiserror::Error;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc::{
@@ -78,6 +78,7 @@ pub struct ScheduledBatch {
     dst_height: Height,
 }
 
+#[derive(Clone)]
 pub enum OperationalDataTarget {
     Source,
     Destination,
@@ -96,6 +97,7 @@ impl fmt::Display for OperationalDataTarget {
 /// Each `OperationalData` item is uniquely identified by the combination of two attributes:
 ///     - `target`: represents the target of the packet messages, either source or destination chain,
 ///     - `proofs_height`: represents the height for the proofs in all the messages.
+#[derive(Clone)]
 pub struct OperationalData {
     proofs_height: Height,
     events: Vec<IbcEvent>,
@@ -116,6 +118,34 @@ impl OperationalData {
             target,
             scheduled_time: Instant::now(),
         }
+    }
+
+    pub fn prepend_client_updates(self, relay_path: &RelayPath) -> Result<Self, LinkError> {
+        if self.msgs.is_empty() {
+            warn!("Ignoring prepend_client_updates() method call on an empty OperationalData!");
+            return Ok(self);
+        }
+
+        // Fetch the client update message. Vector may be empty if the client already has the header
+        // for the requested height.
+        let mut client_update_opt = match self.target {
+            OperationalDataTarget::Source => {
+                relay_path.build_update_client_on_src(self.proofs_height.increment())?
+            }
+            OperationalDataTarget::Destination => {
+                relay_path.build_update_client_on_dst(self.proofs_height.increment())?
+            }
+        };
+
+        let msgs = if let Some(client_update) = client_update_opt.pop() {
+            let mut res = self.msgs.clone();
+            res.insert(0, client_update);
+            res
+        } else {
+            self.msgs
+        };
+
+        Ok(Self { msgs, ..self })
     }
 }
 
@@ -462,6 +492,7 @@ impl RelayPath {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn build_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
@@ -689,10 +720,14 @@ impl RelayPath {
         let (src_opt, dst_opt) = self.generate_operational_data(events)?;
 
         if let Some(src_od) = src_opt {
-            self.schedule_operational_data(src_od)?;
+            if !src_od.msgs.is_empty() {
+                self.schedule_operational_data(src_od)?;
+            }
         }
         if let Some(dst_od) = dst_opt {
-            self.schedule_operational_data(dst_od)?;
+            if !dst_od.msgs.is_empty() {
+                self.schedule_operational_data(dst_od)?;
+            }
         }
 
         Ok(())
@@ -775,8 +810,8 @@ impl RelayPath {
             // Collect messages to be sent to the destination chain (e.g., RecvPacket)
             if let Some(msg) = dst_msg {
                 warn!(
-                    "Adding new message {:?} from event {:?} in the dst operational data.",
-                    msg, event
+                    "[-> DST.OP:] Adding message type {} from event {:?}",
+                    msg.type_url, event
                 );
                 dst_od.msgs.push(msg);
                 dst_od.events.push(event.clone());
@@ -788,8 +823,8 @@ impl RelayPath {
                 // Otherwise a multi message transaction will fail.
                 if self.unordered_channel() || src_od.msgs.is_empty() {
                     warn!(
-                        "Adding new message {:?} from event {:?} in the src operational data.",
-                        msg, event
+                        "[-> SRC.OP:] Adding message type {} from event {:?}",
+                        msg.type_url, event
                     );
                     src_od.msgs.push(msg);
                     src_od.events.push(event.clone());
@@ -801,28 +836,57 @@ impl RelayPath {
     }
 
     fn apply(&mut self, od: OperationalData) -> Result<(), LinkError> {
+        // Check if the clients have already been updated
+        let od = if !self.non_zero_delay() {
+            // Prepend client updates to the scheduled messages.
+            od.prepend_client_updates(&self)?
+        } else {
+            od
+        };
+
         for i in 0..MAX_ITER {
             info!(
-                "Relaying with operational data to {} with {} msgs [{}/{}]",
+                "Relaying with operational data to {} with {} msgs [try {}/{}]",
                 od.target,
                 od.msgs.len(),
-                i,
+                i + 1,
                 MAX_ITER
             );
 
-            // Send messages
-            let res = self.send_msgs()?;
-            debug!("\nresult {:?}", res);
-
-            if self.all_events.is_empty() {
-                break;
-            }
-
-            debug!("retrying");
+            // Consume the operational data by attempting to send its messages
+            self.relay_from_operational_data(od.clone())?;
         }
 
-        self.all_events = vec![];
         Ok(())
+    }
+
+    fn relay_from_operational_data(&mut self, od: OperationalData) -> Result<(), LinkError> {
+        if od.msgs.is_empty() {
+            warn!("Ignoring empty operational data!");
+            return Ok(());
+        }
+
+        let target = match od.target {
+            OperationalDataTarget::Source => &self.src_chain,
+            OperationalDataTarget::Destination => &self.dst_chain,
+        };
+
+        info!(
+            "Sending {} messages to {} ({})",
+            od.msgs.len(),
+            od.target,
+            target.id()
+        );
+
+        let target_tx_events = target.send_msgs(od.msgs)?;
+        info!("Result {:?}\n", target_tx_events);
+
+        Ok(())
+    }
+
+    /// Returns `true` if the delay for this relaying path is non-zero; and `false` otherwise.
+    fn non_zero_delay(&self) -> bool {
+        self.channel.connection_delay.as_nanos() > 0
     }
 
     /// Send a multi message transaction with packet messages, prepending the client update.
@@ -1001,7 +1065,7 @@ impl RelayPath {
         Ok(())
     }
 
-    /// Sends ClientUpdate transactions ahead of a scheduled batch.
+    /// Sends ClientUpdate transactions (to both source and dest chains) ahead of a scheduled batch.
     /// Includes basic retrying and returns failure only after all retries are exhausted.
     pub fn update_clients(
         &self,
@@ -1509,6 +1573,7 @@ impl RelayPath {
 
     /// Verifies if any sendPacket messages timed-out. If so, moves them from destination op. data
     /// to source operational data, and adjusts the events and messages accordingly.
+    #[allow(dead_code)]
     fn recheck_send_packet_events(&mut self) {
         unimplemented!()
         // let dest_chain_latest = self.dst_latest_height()?;
@@ -1528,7 +1593,8 @@ impl RelayPath {
         // }
     }
 
-    fn add_to_operational_data(&self, msg: Any) {
+    #[allow(dead_code)]
+    fn add_to_operational_data(&self, _msg: Any) {
         unimplemented!()
     }
 
@@ -1578,24 +1644,30 @@ impl RelayPath {
 
     fn schedule_operational_data(&mut self, mut od: OperationalData) -> Result<(), LinkError> {
         if od.msgs.is_empty() {
-            panic!("Cannot schedule an empty operational data!")
+            warn!(
+                "Ignoring operational data for {} because it has no messages",
+                od.target
+            );
+            return Ok(());
         }
         info!(
-            "Scheduling op. data with {} events for dst chain height: {}",
+            "Scheduling op. data with {} events and {} msgs for target chain ({}) (height {})",
             od.events.len(),
-            od.proofs_height
+            od.msgs.len(),
+            od.target,
+            od.proofs_height,
         );
 
-        od.scheduled_time = Instant::now();
-
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
-        if self.channel.connection_delay.as_nanos() > 0 {
+        if self.non_zero_delay() {
             let target_height = od.proofs_height.increment();
             match od.target {
                 OperationalDataTarget::Source => self.update_client_src(target_height)?,
                 OperationalDataTarget::Destination => self.update_client_dst(target_height)?,
             };
         }
+
+        od.scheduled_time = Instant::now();
 
         match od.target {
             OperationalDataTarget::Source => self.src_operational_data.push(od),
@@ -1609,7 +1681,8 @@ impl RelayPath {
     /// now be processed. Does not block: if no OD fulfilled the delay period (or none is
     /// scheduled), returns immediately with `None`.
     fn try_fetch_scheduled_operational_data(&mut self) -> Option<OperationalData> {
-        self.recheck_send_packet_events();
+        // TODO(Adi)!
+        // self.recheck_send_packet_events();
 
         // The head of the op. data vector contains the oldest entry.
         if let Some(od_data_src) = self.src_operational_data.first() {
