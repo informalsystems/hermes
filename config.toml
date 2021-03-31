@@ -5,7 +5,7 @@ log_level = 'error'
 
 [[chains]]
 id = 'ibc-0'
-rpc_addr = 'http://127.0.0.1:26657/'
+rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
@@ -22,7 +22,7 @@ denominator = '3'
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'http://127.0.0.1:26557/'
+rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 account_prefix = 'cosmos'
 key_name = 'testkey'

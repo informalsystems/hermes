@@ -341,7 +341,7 @@ pub mod test_utils {
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
         ChainConfig {
             id: ChainId::from_str(id).unwrap(),
-            rpc_addr: "127.0.0.1:26656".parse().unwrap(),
+            rpc_addr: "http://127.0.0.1:26656".parse().unwrap(),
             grpc_addr: "".to_string(),
             account_prefix: "".to_string(),
             key_name: "".to_string(),

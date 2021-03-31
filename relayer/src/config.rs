@@ -29,7 +29,7 @@ pub mod default {
     }
 
     pub fn rpc_addr() -> tendermint_rpc::Url {
-        "localhost:26657".parse().unwrap()
+        "http://127.0.0.1:26657".parse().unwrap()
     }
 
     pub fn trusting_period() -> Duration {
