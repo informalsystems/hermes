@@ -32,7 +32,7 @@ pub(crate) fn process(
             if old_connection_end.state_matches(&State::Init)
                 && old_connection_end.counterparty_matches(&msg.counterparty())
                 && old_connection_end.client_id_matches(msg.client_id())
-                && old_connection_end.delay_period == msg.delay_period
+                && old_connection_end.delay_period() == msg.delay_period
             {
                 // A ConnectionEnd already exists and all validation passed.
                 output.log(format!(

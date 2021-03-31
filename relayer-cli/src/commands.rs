@@ -18,7 +18,6 @@ use self::{
 };
 use crate::commands::misbehaviour::MisbehaviourCmd;
 
-mod cli_utils;
 mod config;
 mod create;
 mod keys;
@@ -72,7 +71,8 @@ pub enum CliCmd {
     Start(StartCmd),
 
     /// The `start-multi` subcommand
-    #[options(help = "Start the relayer in multi-channel mode")]
+    #[options(help = "Start the relayer in multi-channel mode. \
+                      Omit the options to pick up connections from the configuration.")]
     StartMulti(StartMultiCmd),
 
     /// The `query` subcommand

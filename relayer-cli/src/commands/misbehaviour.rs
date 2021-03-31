@@ -9,7 +9,7 @@ use ibc_relayer::config::StoreConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::CliApp;
-use crate::commands::cli_utils::{spawn_chain_runtime, SpawnOptions};
+use crate::cli_utils::{spawn_chain_runtime, SpawnOptions};
 use crate::conclude::Output;
 use crate::prelude::*;
 use ibc::ics02_client::client_state::ClientState;

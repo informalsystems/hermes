@@ -3,8 +3,8 @@
 # Copied from https://github.com/cosmos/relayer and modified to initialize Gaia chains.
 
 usage() {
-  echo "Usage: $0 [CHAIN_0_ID] [CHAIN_1_ID]"
-  echo "Example: $0 ibc-0 ibc-1"
+  echo "Usage: $0 CHAIN_0_ID CHAIN_1_ID [CHAIN_2_ID]"
+  echo "Example: $0 ibc-0 ibc-1 ibc-2"
   exit 1
 }
 
@@ -21,13 +21,15 @@ if [ -z "$2" ]; then
   missing "CHAIN_1_ID"
 fi
 
-if [ "$#" -gt 2 ]; then
+
+if [ "$#" -gt 3 ]; then
   echo "Incorrect number of parameters."
   usage
 fi
 
 CHAIN_0_ID="$1"
 CHAIN_1_ID="$2"
+CHAIN_2_ID="$3"
 
 GAIA_DATA="$(pwd)/data"
 
@@ -64,12 +66,22 @@ ONE_CHAIN="$(dirname "$0")/one-chain"
 
 CHAIN_0_RPC_PORT=26657
 CHAIN_1_RPC_PORT=26557
+CHAIN_2_RPC_PORT=26457
 
 CHAIN_0_SAMOLEANS=100000000000
 CHAIN_1_SAMOLEANS=100000000000
+CHAIN_2_SAMOLEANS=100000000000
 
 "$ONE_CHAIN" gaiad "$CHAIN_0_ID" ./data $CHAIN_0_RPC_PORT 26656 6060 9090 $CHAIN_0_SAMOLEANS
 "$ONE_CHAIN" gaiad "$CHAIN_1_ID" ./data $CHAIN_1_RPC_PORT 26556 6061 9091 $CHAIN_1_SAMOLEANS
 
+if [ -n "$CHAIN_2_ID" ]; then
+  "$ONE_CHAIN" gaiad "$CHAIN_2_ID" ./data $CHAIN_2_RPC_PORT 26456 6062 9092 $CHAIN_2_SAMOLEANS
+fi
+
 [ -f "$GAIA_DATA/$CHAIN_0_ID.log" ] && echo "$CHAIN_0_ID initialized. Watch file $GAIA_DATA/$CHAIN_0_ID.log to see its execution."
 [ -f "$GAIA_DATA/$CHAIN_1_ID.log" ] && echo "$CHAIN_1_ID initialized. Watch file $GAIA_DATA/$CHAIN_1_ID.log to see its execution."
+
+if [ -n "$CHAIN_2_ID" ]; then
+  [ -f "$GAIA_DATA/$CHAIN_2_ID.log" ] && echo "$CHAIN_2_ID initialized. Watch file $GAIA_DATA/$CHAIN_2_ID.log to see its execution."
+fi

@@ -43,7 +43,7 @@ pub mod profiling {
 
 /// Measure the time until the current scope ends.
 ///
-/// Only enabled when the "profiling" is enabled.
+/// Only enabled when the "profiling" feature is enabled.
 ///
 /// ## Example
 ///
