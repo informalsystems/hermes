@@ -183,16 +183,16 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.module_version(port_id, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildHeader { trusted_height, target_height, reply_to }) => {
-                            self.build_header(trusted_height, target_height, reply_to)?
+                        Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
+                            self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildClientState { height, reply_to }) => {
                             self.build_client_state(height, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildConsensusState { trusted, target, reply_to }) => {
-                            self.build_consensus_state(trusted, target, reply_to)?
+                        Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
+                            self.build_consensus_state(trusted, target, client_state, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
@@ -352,6 +352,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         &mut self,
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyHeader>,
     ) -> Result<(), Error> {
         let header = {
@@ -364,7 +365,9 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             let trusted_light_block = self.light_client.fetch(trusted_height.increment())?;
 
             // Get the light block at target_height from chain.
-            let target_light_block = self.light_client.verify(trusted_height, target_height)?;
+            let target_light_block =
+                self.light_client
+                    .verify(trusted_height, target_height, &client_state)?;
 
             let header =
                 self.chain
@@ -403,9 +406,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         &mut self,
         trusted: Height,
         target: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let light_block = self.light_client.verify(trusted, target)?;
+        let light_block = self.light_client.verify(trusted, target, &client_state)?;
 
         let consensus_state = self
             .chain

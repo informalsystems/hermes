@@ -210,10 +210,12 @@ impl ChainHandle for ProdChainHandle {
         &self,
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
     ) -> Result<AnyHeader, Error> {
         self.send(|reply_to| ChainRequest::BuildHeader {
             trusted_height,
             target_height,
+            client_state,
             reply_to,
         })
     }
@@ -226,10 +228,12 @@ impl ChainHandle for ProdChainHandle {
         &self,
         trusted: Height,
         target: Height,
+        client_state: AnyClientState,
     ) -> Result<AnyConsensusState, Error> {
         self.send(|reply_to| ChainRequest::BuildConsensusState {
             trusted,
             target,
+            client_state,
             reply_to,
         })
     }

@@ -81,6 +81,7 @@ pub enum ChainRequest {
     BuildHeader {
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyHeader>,
     },
 
@@ -92,6 +93,7 @@ pub enum ChainRequest {
     BuildConsensusState {
         trusted: Height,
         target: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     },
 
@@ -286,6 +288,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
     ) -> Result<AnyHeader, Error>;
 
     /// Constructs a client state at the given height
@@ -296,6 +299,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         trusted: Height,
         target: Height,
+        client_state: AnyClientState,
     ) -> Result<AnyConsensusState, Error>;
 
     fn build_connection_proofs_and_client_state(

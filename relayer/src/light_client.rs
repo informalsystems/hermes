@@ -1,3 +1,5 @@
+use ibc::ics02_client::client_state::AnyClientState;
+
 use crate::chain::Chain;
 use crate::error;
 
@@ -18,6 +20,7 @@ pub trait LightClient<C: Chain>: Send + Sync {
         &mut self,
         trusted: ibc::Height,
         target: ibc::Height,
+        client_state: &AnyClientState,
     ) -> Result<C::LightBlock, error::Error>;
 
     /// Fetch a header from the chain at the given height, without verifying it
