@@ -22,4 +22,7 @@ pub trait LightClient<C: Chain>: Send + Sync {
         trusted: ibc::Height,
         target: ibc::Height,
     ) -> Result<C::LightBlock, error::Error>;
+
+    /// Fetch a header from the chain at the given height, without verifying it
+    fn fetch(&mut self, height: ibc::Height) -> Result<C::LightBlock, error::Error>;
 }

@@ -38,4 +38,8 @@ impl super::LightClient<MockChain> for LightClient {
     ) -> Result<<MockChain as Chain>::LightBlock, Error> {
         Ok(self.light_block(target))
     }
+
+    fn fetch(&mut self, _height: Height) -> Result<<MockChain as Chain>::LightBlock, Error> {
+        unimplemented!()
+    }
 }

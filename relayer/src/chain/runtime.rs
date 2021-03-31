@@ -356,13 +356,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let header = {
             // Get the light block at trusted_height + 1 from chain.
-            // TODO - This is tendermint specific and needs to be refactored during
-            // the relayer light client refactoring.
-            // Note: This is needed to get the next validator set. While there is a next validator set
-            // in the light block at trusted height, the proposer is not known/set in this set.
-            let trusted_light_block = self
-                .light_client
-                .verify_to_target(trusted_height, trusted_height.increment())?;
+            //
+            // TODO: This is tendermint specific and needs to be refactored during
+            //       the relayer light client refactoring.
+            // NOTE: This is needed to get the next validator set. While there is a next validator set
+            //       in the light block at trusted height, the proposer is not known/set in this set.
+            let trusted_light_block = self.light_client.fetch(trusted_height.increment())?;
 
             // Get the light block at target_height from chain.
             let target_light_block = self

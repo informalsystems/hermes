@@ -57,6 +57,13 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         Ok(light_block)
     }
+
+    fn fetch(&mut self, height: ibc::Height) -> Result<LightBlock, Error> {
+        let height = TMHeight::try_from(height.revision_height)
+            .map_err(|e| error::Kind::InvalidHeight.context(e))?;
+
+        self.fetch_light_block(AtHeight::At(height))
+    }
 }
 
 impl LightClient {
