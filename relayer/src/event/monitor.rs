@@ -5,7 +5,6 @@ use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
-use tendermint::net;
 use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
 use tokio::runtime::Runtime as TokioRuntime;
 use tokio::task::JoinHandle;
@@ -15,6 +14,7 @@ use ibc::{events::IbcEvent, ics24_host::identifier::ChainId};
 
 use crate::error::{Error, Kind};
 use ibc::ics02_client::height::Height;
+use tendermint::net;
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -44,7 +44,7 @@ pub struct EventMonitor {
     /// Channel to handler where the monitor for this chain sends the events
     tx_batch: channel::Sender<EventBatch>,
     /// Node Address
-    node_addr: net::Address,
+    node_addr: tendermint_rpc::Url,
     /// Queries
     event_queries: Vec<Query>,
     /// All subscriptions combined in a single stream
@@ -57,16 +57,21 @@ impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
         chain_id: ChainId,
-        rpc_addr: net::Address,
+        node_addr: tendermint_rpc::Url,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, channel::Receiver<EventBatch>), Error> {
         let (tx, rx) = channel::unbounded();
 
-        let websocket_addr = rpc_addr.clone();
+        let websocket_addr = net::Address::Tcp {
+            peer_id: None,
+            host: node_addr.host().to_string(),
+            port: node_addr.port(),
+        };
+
         let (websocket_client, websocket_driver) = rt.block_on(async move {
             WebSocketClient::new(websocket_addr.clone())
                 .await
-                .map_err(|e| Kind::Rpc(websocket_addr).context(e))
+                .map_err(|e| Kind::Rpc2(websocket_addr).context(e))
         })?;
 
         let websocket_driver_handle = rt.spawn(websocket_driver.run());
@@ -81,7 +86,7 @@ impl EventMonitor {
             websocket_driver_handle,
             event_queries,
             tx_batch: tx,
-            node_addr: rpc_addr,
+            node_addr,
             subscriptions: Box::new(futures::stream::empty()),
         };
 

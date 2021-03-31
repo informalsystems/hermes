@@ -9,7 +9,7 @@ use std::{
 };
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::{net, Hash};
+use tendermint::Hash;
 use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
 
 use ibc::ics24_host::identifier::{ChainId, PortId};
@@ -28,7 +28,7 @@ pub mod default {
         200_000
     }
 
-    pub fn rpc_addr() -> net::Address {
+    pub fn rpc_addr() -> tendermint_rpc::Url {
         "localhost:26657".parse().unwrap()
     }
 
@@ -110,7 +110,7 @@ impl Default for GlobalConfig {
 pub struct ChainConfig {
     pub id: ChainId,
     #[serde(default = "default::rpc_addr")]
-    pub rpc_addr: net::Address,
+    pub rpc_addr: tendermint_rpc::Url,
     pub grpc_addr: String,
     pub account_prefix: String,
     pub key_name: String,
@@ -188,7 +188,7 @@ impl PeersConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LightClientConfig {
     pub peer_id: PeerId,
-    pub address: net::Address,
+    pub address: tendermint_rpc::Url,
     #[serde(default = "default::timeout", with = "humantime_serde")]
     pub timeout: Duration,
     pub trusted_header_hash: Hash,

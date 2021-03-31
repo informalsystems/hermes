@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-use tendermint_testgen::light_block::TMLightBlock;
+use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
 use ibc::downcast;
@@ -53,7 +53,7 @@ pub struct MockChain {
 }
 
 impl Chain for MockChain {
-    type LightBlock = TMLightBlock;
+    type LightBlock = TmLightBlock;
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
