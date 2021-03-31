@@ -37,7 +37,7 @@ impl super::LightClient<MockChain> for LightClient {
         Ok(self.light_block(target))
     }
 
-    fn fetch(&mut self, _height: Height) -> Result<TMLightBlock, Error> {
-        unimplemented!()
+    fn fetch(&mut self, height: Height) -> Result<TMLightBlock, Error> {
+        Ok(self.light_block(height))
     }
 }
