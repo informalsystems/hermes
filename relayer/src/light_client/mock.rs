@@ -24,14 +24,7 @@ impl LightClient {
 }
 
 impl super::LightClient<MockChain> for LightClient {
-    fn verify_to_latest(
-        &mut self,
-        _trusted: Height,
-    ) -> Result<<MockChain as Chain>::LightBlock, Error> {
-        unimplemented!()
-    }
-
-    fn verify_to_target(
+    fn verify(
         &mut self,
         _trusted: Height,
         target: Height,

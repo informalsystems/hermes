@@ -364,9 +364,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             let trusted_light_block = self.light_client.fetch(trusted_height.increment())?;
 
             // Get the light block at target_height from chain.
-            let target_light_block = self
-                .light_client
-                .verify_to_target(trusted_height, target_height)?;
+            let target_light_block = self.light_client.verify(trusted_height, target_height)?;
 
             let header =
                 self.chain
@@ -407,11 +405,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         target: Height,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let latest_light_block = self.light_client.verify_to_target(trusted, target)?;
+        let light_block = self.light_client.verify(trusted, target)?;
 
         let consensus_state = self
             .chain
-            .build_consensus_state(latest_light_block)
+            .build_consensus_state(light_block)
             .map(|cs| cs.wrap_any());
 
         reply_to

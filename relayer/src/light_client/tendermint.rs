@@ -29,22 +29,7 @@ pub struct LightClient {
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
-    fn verify_to_latest(&mut self, trusted: ibc::Height) -> Result<LightBlock, Error> {
-        let mut state = self.prepare_state(trusted)?;
-
-        let light_block = self
-            .client
-            .verify_to_highest(&mut state)
-            .map_err(|e| error::Kind::LightClient(self.chain_id.to_string()).context(e))?;
-
-        Ok(light_block)
-    }
-
-    fn verify_to_target(
-        &mut self,
-        trusted: ibc::Height,
-        target: ibc::Height,
-    ) -> Result<LightBlock, Error> {
+    fn verify(&mut self, trusted: ibc::Height, target: ibc::Height) -> Result<LightBlock, Error> {
         let target_height = TMHeight::try_from(target.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
