@@ -102,8 +102,8 @@ impl Default for GlobalConfig {
 pub struct ChainConfig {
     pub id: ChainId,
     pub rpc_addr: tendermint_rpc::Url,
-    pub grpc_addr: String,
     pub websocket_addr: tendermint_rpc::Url,
+    pub grpc_addr: tendermint_rpc::Url,
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,

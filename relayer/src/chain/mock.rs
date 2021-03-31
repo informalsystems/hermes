@@ -342,7 +342,7 @@ pub mod test_utils {
         ChainConfig {
             id: ChainId::from_str(id).unwrap(),
             rpc_addr: "http://127.0.0.1:26656".parse().unwrap(),
-            grpc_addr: "".to_string(),
+            grpc_addr: "http://127.0.0.1:9090".parse().unwrap(),
             websocket_addr: "ws://127.0.0.1:26656".parse().unwrap(),
             account_prefix: "".to_string(),
             key_name: "".to_string(),
