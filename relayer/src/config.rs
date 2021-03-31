@@ -24,16 +24,8 @@ pub mod default {
         Duration::from_secs(10)
     }
 
-    pub fn gas() -> u64 {
-        200_000
-    }
-
-    pub fn rpc_addr() -> tendermint_rpc::Url {
-        "http://127.0.0.1:26657".parse().unwrap()
-    }
-
     pub fn trusting_period() -> Duration {
-        Duration::from_secs(336 * 60 * 60) // 336 hours
+        Duration::from_secs(336 * 60 * 60) // 336 hours ~ 14 days
     }
 
     pub fn clock_drift() -> Duration {
@@ -109,9 +101,9 @@ impl Default for GlobalConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
     pub id: ChainId,
-    #[serde(default = "default::rpc_addr")]
     pub rpc_addr: tendermint_rpc::Url,
     pub grpc_addr: String,
+    pub websocket_addr: tendermint_rpc::Url,
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,

@@ -27,9 +27,9 @@ pub enum Kind {
     #[error("RPC error to endpoint {0}")]
     Rpc(tendermint_rpc::Url),
 
-    /// RPC error (typically raised by the RPC client or the RPC requester)
-    #[error("RPC error to endpoint {0}")]
-    Rpc2(tendermint::net::Address),
+    /// Websocket error (typically raised by the Websocket client)
+    #[error("Websocket error to endpoint {0}")]
+    Websocket(tendermint_rpc::Url),
 
     /// GRPC error (typically raised by the GRPC client or the GRPC requester)
     #[error("GRPC error")]

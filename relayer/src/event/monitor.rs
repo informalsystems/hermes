@@ -14,7 +14,6 @@ use ibc::{events::IbcEvent, ics24_host::identifier::ChainId};
 
 use crate::error::{Error, Kind};
 use ibc::ics02_client::height::Height;
-use tendermint::net;
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -62,16 +61,11 @@ impl EventMonitor {
     ) -> Result<(Self, channel::Receiver<EventBatch>), Error> {
         let (tx, rx) = channel::unbounded();
 
-        let websocket_addr = net::Address::Tcp {
-            peer_id: None,
-            host: node_addr.host().to_string(),
-            port: node_addr.port(),
-        };
-
+        let ws_addr = node_addr.clone();
         let (websocket_client, websocket_driver) = rt.block_on(async move {
-            WebSocketClient::new(websocket_addr.clone())
+            WebSocketClient::new(ws_addr.clone())
                 .await
-                .map_err(|e| Kind::Rpc2(websocket_addr).context(e))
+                .map_err(|e| Kind::Websocket(ws_addr).context(e))
         })?;
 
         let websocket_driver_handle = rt.spawn(websocket_driver.run());

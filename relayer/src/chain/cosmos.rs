@@ -358,8 +358,11 @@ impl Chain for CosmosSdkChain {
     > {
         crate::time!("init_event_monitor");
 
-        let (mut event_monitor, event_receiver) =
-            EventMonitor::new(self.config.id.clone(), self.config.rpc_addr.clone(), rt)?;
+        let (mut event_monitor, event_receiver) = EventMonitor::new(
+            self.config.id.clone(),
+            self.config.websocket_addr.clone(),
+            rt,
+        )?;
 
         event_monitor.subscribe().unwrap();
         let monitor_thread = thread::spawn(move || event_monitor.run());
