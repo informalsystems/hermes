@@ -1,9 +1,12 @@
-use crate::chain::mock::MockChain;
-use crate::chain::Chain;
-use crate::error::Error;
+use tendermint_testgen::light_block::TMLightBlock;
+
 use ibc::ics24_host::identifier::ChainId;
 use ibc::mock::host::HostBlock;
 use ibc::Height;
+
+use crate::chain::mock::MockChain;
+use crate::chain::Chain;
+use crate::error::Error;
 
 /// A light client serving a mock chain.
 pub struct LightClient {
@@ -18,21 +21,17 @@ impl LightClient {
     }
 
     /// Returns a LightBlock at the requested height `h`.
-    fn light_block(&self, h: Height) -> <MockChain as Chain>::LightBlock {
+    fn light_block(&self, h: Height) -> TMLightBlock {
         HostBlock::generate_tm_block(self.chain_id.clone(), h.revision_height)
     }
 }
 
 impl super::LightClient<MockChain> for LightClient {
-    fn verify(
-        &mut self,
-        _trusted: Height,
-        target: Height,
-    ) -> Result<<MockChain as Chain>::LightBlock, Error> {
+    fn verify(&mut self, _trusted: Height, target: Height) -> Result<TMLightBlock, Error> {
         Ok(self.light_block(target))
     }
 
-    fn fetch(&mut self, _height: Height) -> Result<<MockChain as Chain>::LightBlock, Error> {
+    fn fetch(&mut self, _height: Height) -> Result<TMLightBlock, Error> {
         unimplemented!()
     }
 }
