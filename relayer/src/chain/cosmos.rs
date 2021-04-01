@@ -78,6 +78,7 @@ const DEFAULT_GAS_FEE_AMOUNT: u64 = 1000;
 pub struct CosmosSdkChain {
     config: ChainConfig,
     rpc_client: HttpClient,
+    grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
 }
@@ -87,13 +88,11 @@ impl CosmosSdkChain {
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
 
-        // TODO - generalize this
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-
         let mut client = self
             .block_on(
-                ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -324,11 +323,15 @@ impl Chain for CosmosSdkChain {
         let key_store = KeyRing::init(StoreBackend::Test, config.clone())
             .map_err(|e| Kind::KeyBase.context(e))?;
 
+        let grpc_addr =
+            Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
+
         Ok(Self {
             rt,
             config,
             keybase: key_store,
             rpc_client,
+            grpc_addr,
         })
     }
 
@@ -358,8 +361,11 @@ impl Chain for CosmosSdkChain {
     > {
         crate::time!("init_event_monitor");
 
-        let (mut event_monitor, event_receiver) =
-            EventMonitor::new(self.config.id.clone(), self.config.rpc_addr.clone(), rt)?;
+        let (mut event_monitor, event_receiver) = EventMonitor::new(
+            self.config.id.clone(),
+            self.config.websocket_addr.clone(),
+            rt,
+        )?;
 
         event_monitor.subscribe().unwrap();
         let monitor_thread = thread::spawn(move || event_monitor.run());
@@ -471,12 +477,11 @@ impl Chain for CosmosSdkChain {
     fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
         crate::time!("query_chain_clients");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -522,13 +527,10 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
 
-        let grpc_address =
-            Uri::from_str(&self.config.grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-
         let mut client = self
             .block_on(
                 ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
-                    grpc_address,
+                    self.grpc_addr.clone(),
                 ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
@@ -573,13 +575,10 @@ impl Chain for CosmosSdkChain {
         let tm_height =
             Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
 
-        let grpc_address =
-            Uri::from_str(&self.config.grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-
         let mut client = self
             .block_on(
                 ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
-                    grpc_address,
+                    self.grpc_addr.clone(),
                 ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
@@ -622,11 +621,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<ConnectionId>, Error> {
         crate::time!("query_connections");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -655,11 +654,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<ConnectionId>, Error> {
         crate::time!("query_connections");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -698,11 +697,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<ChannelId>, Error> {
         crate::time!("query_connection_channels");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -728,11 +727,11 @@ impl Chain for CosmosSdkChain {
     fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
         crate::time!("query_connections");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -777,11 +776,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
         crate::time!("query_packet_commitments");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -810,11 +809,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<u64>, Error> {
         crate::time!("query_unreceived_packets");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -836,11 +835,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
         crate::time!("query_packet_acknowledgements");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -869,11 +868,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<u64>, Error> {
         crate::time!("query_unreceived_acknowledgements");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -894,11 +893,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Sequence, Error> {
         crate::time!("query_next_sequence_receive");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -1290,11 +1289,11 @@ async fn broadcast_tx_commit(
 
 /// Uses the GRPC client to retrieve the account sequence
 async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
-    let grpc_addr = Uri::from_str(&chain.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-    let mut client =
-        ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(grpc_addr)
-            .await
-            .map_err(|e| Kind::Grpc.context(e))?;
+    let mut client = ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(
+        chain.grpc_addr.clone(),
+    )
+    .await
+    .map_err(|e| Kind::Grpc.context(e))?;
 
     let request = tonic::Request::new(QueryAccountRequest { address });
 
