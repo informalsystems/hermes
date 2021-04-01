@@ -570,7 +570,7 @@ impl RelayPath {
             if self
                 .build_recv_packet_and_timeout_msgs(Some(height))
                 .is_ok()
-                && self.relay_packet_ack_msgs(Some(height)).is_ok()
+                && self.build_packet_ack_msgs(Some(height)).is_ok()
             {
                 return Ok(());
             }
@@ -1124,11 +1124,10 @@ impl RelayPath {
 
     /// Returns relevant packet events for building RecvPacket
     /// and timeout messages.
-    /// Also returns the height (on source chain) corresponding to these events.
     fn target_height_and_send_packet_events(
         &self,
         opt_query_height: Option<Height>,
-    ) -> Result<(Height, Vec<IbcEvent>), LinkError> {
+    ) -> Result<Vec<IbcEvent>, LinkError> {
         let mut events_result = vec![];
 
         // Query packet commitments on source chain that have not been acknowledged
@@ -1140,7 +1139,7 @@ impl RelayPath {
         let (packet_commitments, src_response_height) =
             self.src_chain.query_packet_commitments(pc_request)?;
         if packet_commitments.is_empty() {
-            return Ok((src_response_height, events_result));
+            return Ok(events_result);
         }
         let commit_sequences = packet_commitments.iter().map(|p| p.sequence).collect();
         info!(
@@ -1175,7 +1174,7 @@ impl RelayPath {
         );
 
         if sequences.is_empty() {
-            return Ok((query_height, events_result));
+            return Ok(events_result);
         }
 
         events_result = self.src_chain.query_txs(QueryPacketEventDataRequest {
@@ -1196,15 +1195,16 @@ impl RelayPath {
         }
         info!("[{}] Received from query_txs {:?}", self, packet_sequences);
 
-        Ok((query_height, events_result))
+        Ok(events_result)
     }
 
-    /// Populates the `self.all_events` field with relevant packet events for building ack
-    /// messages. Returns the height (on source chain) corresponding to these events.
+    /// Returns relevant packet events for building ack messages.
     fn target_height_and_write_ack_events(
-        &mut self,
+        &self,
         opt_query_height: Option<Height>,
-    ) -> Result<Height, LinkError> {
+    ) -> Result<Vec<IbcEvent>, LinkError> {
+        let mut events_result = vec![];
+
         // Get the sequences of packets that have been acknowledged on source
         let pc_request = QueryPacketAcknowledgementsRequest {
             port_id: self.src_port_id().to_string(),
@@ -1217,7 +1217,7 @@ impl RelayPath {
             .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
         if acks_on_source.is_empty() {
-            return Ok(src_response_height);
+            return Ok(events_result);
         }
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
@@ -1252,10 +1252,10 @@ impl RelayPath {
         );
 
         if sequences.is_empty() {
-            return Ok(query_height);
+            return Ok(events_result);
         }
 
-        self.all_events = self
+        events_result = self
             .src_chain
             .query_txs(QueryPacketEventDataRequest {
                 event_id: IbcEventType::WriteAck,
@@ -1274,23 +1274,22 @@ impl RelayPath {
                 .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
             packet_sequences.push(write_ack_event.packet.sequence);
         }
-        info!("received from query_txs {:?}", packet_sequences);
+        info!("[{}] Received from query_txs {:?}", self, packet_sequences);
 
-        Ok(query_height)
+        Ok(events_result)
     }
 
     /// Handles the relaying of RecvPacket and Timeout messages.
     /// The `opt_query_height` parameter allows to optionally use a specific height on the source
     /// chain where to query for packet data. If `None`, the latest available height on the source
     /// chain is used.
-    /// TODO(Adi) Rename this method to something like "build..." or "prepare.."
     pub fn build_recv_packet_and_timeout_msgs(
         &mut self,
         opt_query_height: Option<Height>,
     ) -> Result<(), LinkError> {
         // Get the events for the send packets on source chain that have not been received on
         // destination chain (i.e. ack was not seen on source chain).
-        let (_, mut events) = self.target_height_and_send_packet_events(opt_query_height)?;
+        let mut events = self.target_height_and_send_packet_events(opt_query_height)?;
 
         // Skip: no relevant events found.
         if events.is_empty() {
@@ -1298,11 +1297,6 @@ impl RelayPath {
         }
 
         self.adjust_events_height(&mut events)?;
-
-        // TODO(Adi) Safe to replace this with `adjust_events_height`?
-        // for event in self.all_events.iter_mut() {
-        //     event.set_height(src_height);
-        // }
 
         self.events_to_operational_data(events)?;
 
@@ -1313,53 +1307,24 @@ impl RelayPath {
     /// The `opt_query_height` parameter allows to optionally use a specific height on the source
     /// chain where to query for packet data. If `None`, the latest available height on the source
     /// chain is used.
-    pub fn relay_packet_ack_msgs(
+    pub fn build_packet_ack_msgs(
         &mut self,
         opt_query_height: Option<Height>,
-    ) -> Result<Vec<IbcEvent>, LinkError> {
+    ) -> Result<(), LinkError> {
         self.all_events = vec![];
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
-        let src_height = self.target_height_and_write_ack_events(opt_query_height)?;
+        let mut events = self.target_height_and_write_ack_events(opt_query_height)?;
 
         // Skip: no relevant events found.
-        if self.all_events.is_empty() {
-            return Ok(vec![]);
+        if events.is_empty() {
+            return Ok(());
         }
 
-        for event in self.all_events.iter_mut() {
-            event.set_height(src_height);
-        }
+        self.adjust_events_height(&mut events)?;
 
-        let dst_update_height = self.dst_latest_height()?;
-
-        let (mut dst_res, mut src_res) = if self.channel.connection_delay.as_nanos() > 0 {
-            // Update clients & schedule the original events
-            let src_update_height = src_height.increment();
-            self.update_clients(src_update_height, dst_update_height)?;
-            self.schedule_batch(self.all_events.clone(), dst_update_height);
-
-            // Block waiting for the delay to pass
-            let batch = self.fetch_scheduled_batch()?;
-
-            self.reset_buffers();
-
-            for e in batch.events {
-                self.handle_packet_event(&e, batch.dst_height)?;
-            }
-
-            // Send messages
-            self.send_msgs()?
-        } else {
-            // Send a multi message transaction with both client update and the ACK messages
-            for event in self.all_events.clone() {
-                self.handle_packet_event(&event, dst_update_height)?;
-            }
-            self.send_update_client_and_msgs(dst_update_height)?
-        };
-
-        dst_res.append(&mut src_res);
-        Ok(dst_res)
+        self.events_to_operational_data(events)?;
+        Ok(())
     }
 
     fn build_recv_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
@@ -1958,6 +1923,14 @@ impl Link {
     }
 
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
-        self.a_to_b.relay_packet_ack_msgs(None)
+        self.a_to_b.build_packet_ack_msgs(None)?;
+
+        // Block waiting for all of the scheduled data
+        while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
+            // TODO(Adi) Should return the vector of resulting events
+            self.a_to_b.apply(odata)?;
+        }
+
+        Ok(vec![])
     }
 }
