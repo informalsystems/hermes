@@ -51,9 +51,11 @@ A `chains` section includes parameters related to a chain and the full node to w
 
 * __id__: Specify the chain ID. For example `ibc-0`
 
-* __rpc_addr__: Specify the RPC address and port where the chain RPC server listens on. For example `tcp://localhost:26657`
+* __rpc_addr__: Specify the RPC address and port where the chain RPC server listens on. For example `http://localhost:26657`
 
-* __grpc_addr__: Specify the GRPC address and port where the chain GRPC server listens on. For example `tcp://localhost:9090`
+* __grpc_addr__: Specify the GRPC address and port where the chain GRPC server listens on. For example `http://localhost:9090`
+
+* __websocket_addr__: Specify the WebSocket address and port where the chain WebSocket server listens on. For example `ws://localhost:26657/websocket`
 
 * __account_prefix__: Specify the prefix used by the chain. For example `cosmos`
 
@@ -78,6 +80,7 @@ For example if you want to add a configuration for a chain named `ibc-0`:
 id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26657/websocket'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
@@ -108,6 +111,7 @@ log_level = 'error'
 id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26657/websocket'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
@@ -150,6 +154,7 @@ path = '/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
+websocket_addr = 'ws://localhost:26557/websocket'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'

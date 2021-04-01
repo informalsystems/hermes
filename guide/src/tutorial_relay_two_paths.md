@@ -33,8 +33,9 @@ up properly for two hermes instances.
 
     [[chains]]
     id = 'ibc-0'
-    rpc_addr = 'tcp://localhost:26657'
-    grpc_addr = 'tcp://localhost:9090'
+    rpc_addr = 'http://localhost:26657'
+    grpc_addr = 'http://localhost:9090'
+    websocket_addr = 'ws://localhost:26657/websocket'
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
@@ -48,8 +49,9 @@ up properly for two hermes instances.
 
     [[chains]]
     id = 'ibc-1'
-    rpc_addr = 'tcp://localhost:26557'
-    grpc_addr = 'tcp://localhost:9091'
+    rpc_addr = 'http://localhost:26557'
+    grpc_addr = 'http://localhost:9091'
+    websocket_addr = 'ws://localhost:26557/websocket'
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
@@ -108,8 +110,9 @@ up properly for two hermes instances.
 
     [[chains]]
     id = 'ibc-0'
-    rpc_addr = 'tcp://localhost:26657'
-    grpc_addr = 'tcp://localhost:9090'
+    rpc_addr = 'http://localhost:26657'
+    grpc_addr = 'http://localhost:9090'
+    websocket_addr = 'ws://localhost:26657/websocket'
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
@@ -123,8 +126,9 @@ up properly for two hermes instances.
 
     [[chains]]
     id = 'ibc-1'
-    rpc_addr = 'tcp://localhost:26557'
-    grpc_addr = 'tcp://localhost:9091'
+    rpc_addr = 'http://localhost:26557'
+    grpc_addr = 'http://localhost:9091'
+    websocket_addr = 'ws://localhost:26557/websocket'
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'

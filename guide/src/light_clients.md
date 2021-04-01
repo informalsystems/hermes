@@ -56,7 +56,7 @@ FLAGS:
 In order to add a light client primary peer for a given chain execute the following command:
 
 ```shell
-hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] -p -y -f
+hermes -c [CONFIG_FILE] light add http://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] -p -y -f
 ```
 
 #### Set the Secondary Light Client Peer for a Chain
@@ -64,7 +64,7 @@ hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [
 In order to add a light client secondary peer for a given chain execute the following command:
 
 ```shell
-hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
+hermes -c [CONFIG_FILE] light add http://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
 ```
 
 > The `peer-id` above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.
