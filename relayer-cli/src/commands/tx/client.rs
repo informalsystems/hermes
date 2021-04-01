@@ -3,11 +3,10 @@ use tracing::info;
 
 use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer::config::StoreConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
-use crate::cli_utils::{ChainHandlePair, SpawnOptions};
+use crate::cli_utils::ChainHandlePair;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::{Error, Kind};
 
@@ -26,13 +25,7 @@ impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let chains = match ChainHandlePair::spawn_with(
-            spawn_options,
-            &config,
-            &self.src_chain_id,
-            &self.dst_chain_id,
-        ) {
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
@@ -75,13 +68,7 @@ impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let chains = match ChainHandlePair::spawn_with(
-            spawn_options,
-            &config,
-            &self.src_chain_id,
-            &self.dst_chain_id,
-        ) {
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
@@ -127,14 +114,8 @@ impl Runnable for TxUpgradeClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let chains = ChainHandlePair::spawn_with(
-            spawn_options,
-            &config,
-            &self.src_chain_id,
-            &self.dst_chain_id,
-        )
-        .unwrap_or_else(exit_with_unrecoverable_error);
+        let chains = ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         info!("Started the chain runtimes");
 

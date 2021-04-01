@@ -350,7 +350,6 @@ pub mod test_utils {
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),
-            peers: None,
         }
     }
 }

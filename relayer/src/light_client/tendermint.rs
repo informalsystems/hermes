@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::time::Duration;
 
 use tendermint_rpc as rpc;
 
@@ -56,19 +57,19 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 }
 
 impl LightClient {
-    pub fn from_config(config: &ChainConfig) -> Result<Self, Error> {
+    pub fn from_config(
+        config: &ChainConfig,
+        peer_id: PeerId,
+        timeout: Option<Duration>,
+    ) -> Result<Self, Error> {
         let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| error::Kind::LightClient(config.rpc_addr.to_string()).context(e))?;
 
-        let peer = config.primary().ok_or_else(|| {
-            error::Kind::LightClient(config.rpc_addr.to_string()).context("no primary peer")
-        })?;
-
-        let io = components::io::ProdIo::new(peer.peer_id, rpc_client, Some(peer.timeout));
+        let io = components::io::ProdIo::new(peer_id, rpc_client, timeout);
 
         Ok(Self {
             chain_id: config.id.clone(),
-            peer_id: peer.peer_id,
+            peer_id,
             io,
         })
     }
