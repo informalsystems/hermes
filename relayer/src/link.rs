@@ -66,19 +66,6 @@ pub enum LinkError {
     OldPacketClearingFailed,
 }
 
-/// A batch of events that are scheduled for later processing.
-pub struct ScheduledBatch {
-    /// Stores the time when the clients on src and dest chains have been updated.
-    update_time: Instant,
-
-    /// The outstanding batch of events.
-    events: Vec<IbcEvent>,
-
-    /// The height which the destination chain has when the batch is scheduled.
-    /// The client on source chain was updated with a header corresponding to this height.
-    dst_height: Height,
-}
-
 #[derive(Clone, PartialEq)]
 pub enum OperationalDataTarget {
     Source,
@@ -190,7 +177,6 @@ pub struct RelayPath {
     src_msgs_input_events: Vec<IbcEvent>,
     packet_msgs: Vec<Any>,
     timeout_msgs: Vec<Any>,
-    scheduled: Vec<ScheduledBatch>,
 
     // Operational data, for targeting both the source and destination chain.
     // These vectors of operational data are ordered decreasingly by their age, with element at
@@ -217,7 +203,6 @@ impl RelayPath {
             src_msgs_input_events: vec![],
             packet_msgs: vec![],
             timeout_msgs: vec![],
-            scheduled: vec![],
             src_operational_data: Default::default(),
             dst_operational_data: Default::default(),
         }
@@ -1556,52 +1541,6 @@ impl RelayPath {
             self.dst_operational_data
                 .retain(|odata| odata.batch.len() > 0);
             Ok(())
-        }
-    }
-
-    /// Registers a new batch of events to be processed later. The batch can be retrieved once a
-    /// predefined delay period elapses, via method `next_scheduled_batch`.
-    fn schedule_batch(&mut self, events: Vec<IbcEvent>, dst_height: Height) {
-        if events.is_empty() {
-            panic!("Cannot schedule an empty event batch")
-        }
-        info!(
-            "[{}] Scheduling batch with {} events for dst height: {}",
-            self,
-            events.len(),
-            dst_height
-        );
-
-        let sc_event = ScheduledBatch {
-            update_time: Instant::now(),
-            events,
-            dst_height,
-        };
-        self.scheduled.push(sc_event);
-    }
-
-    /// Pulls out the next batch of events that have fulfilled the predefined delay period and can
-    /// now be processed. Blocking call: waits until the delay period for the oldest event batch
-    /// is fulfilled. If no batch is currently scheduled, returns immediately with error.
-    pub fn fetch_scheduled_batch(&mut self) -> Result<ScheduledBatch, LinkError> {
-        if let Some(batch) = self.scheduled.first() {
-            info!(
-                "[{}] Found a scheduled batch with {} events. Waiting for delay period ({:#?}) to pass",
-                self,
-                batch.events.len(),
-                self.channel.connection_delay
-            );
-            // Wait until the delay period passes
-            while batch.update_time.elapsed() <= self.channel.connection_delay {
-                thread::sleep(Duration::from_millis(100))
-            }
-
-            let events_batch = self.scheduled.remove(0);
-            Ok(events_batch)
-        } else {
-            Err(LinkError::Failed(
-                "There is no scheduled batch of events!".into(),
-            ))
         }
     }
 
