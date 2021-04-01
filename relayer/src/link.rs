@@ -325,58 +325,6 @@ impl RelayPath {
             .map_err(LinkError::ClientError)
     }
 
-    fn build_msg_from_event(
-        &self,
-        event: &IbcEvent,
-        dst_chain_height: Height,
-    ) -> Result<(Option<Any>, Option<Any>), LinkError> {
-        match event {
-            IbcEvent::CloseInitChannel(close_init_ev) => {
-                info!("{} => event {}", self.src_chain.id(), close_init_ev);
-                Ok((
-                    Some(self.build_chan_close_confirm_from_event(&event)?),
-                    None,
-                ))
-            }
-            IbcEvent::TimeoutPacket(timeout_ev) => {
-                // When a timeout packet for an ordered channel is processed on-chain (src here)
-                // the chain closes the channel but no close init event is emitted, instead
-                // we get a timeout packet event (this happens for both unordered and ordered channels)
-                // Here we check that the channel is closed on src and send a channel close confirm
-                // to the counterparty.
-                if self.ordered_channel()
-                    && self
-                        .src_channel(timeout_ev.height)?
-                        .state_matches(&ChannelState::Closed)
-                {
-                    info!(
-                        "{} => event {} closes the channel",
-                        self.src_chain.id(),
-                        timeout_ev
-                    );
-                    Ok((
-                        Some(self.build_chan_close_confirm_from_event(&event)?),
-                        None,
-                    ))
-                } else {
-                    Ok((None, None))
-                }
-            }
-            IbcEvent::SendPacket(send_packet_ev) => {
-                info!("{} => event {}", self.src_chain.id(), send_packet_ev);
-                Ok(self.build_recv_or_timeout_from_send_packet_event(
-                    &send_packet_ev,
-                    dst_chain_height,
-                )?)
-            }
-            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                info!("{} => event {}", self.src_chain.id(), write_ack_ev);
-                Ok((Some(self.build_ack_from_recv_event(&write_ack_ev)?), None))
-            }
-            _ => Ok((None, None)),
-        }
-    }
-
     fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
         let proofs = self
             .src_chain()
@@ -392,40 +340,6 @@ impl RelayPath {
         };
 
         Ok(new_msg.to_any())
-    }
-
-    /// Builds a message out of an `event`.
-    /// Handles building both ordinary `RecvPacket` messages,
-    /// as well as channel close handshake (`ChanCloseConfirm`), `WriteAck` messages,
-    /// and timeouts messages (`MsgTimeoutOnClose` or `MsgTimeout`).
-    ///
-    /// The parameter `dst_chain_height` represents the height which the proofs for timeout
-    /// messages should target. It is necessary that the client hosted on the source chain
-    /// has a consensus state installed corresponding for this height.
-    fn handle_packet_event(
-        &mut self,
-        event: &IbcEvent,
-        dst_chain_height: Height,
-    ) -> Result<(), LinkError> {
-        let (dst_msg, timeout) = self.build_msg_from_event(event, dst_chain_height)?;
-
-        // Collect messages to be sent to the destination chain
-        if let Some(msg) = dst_msg {
-            self.packet_msgs.push(msg);
-            self.dst_msgs_input_events.push(event.clone());
-        }
-
-        // Collect timeout messages, to be sent to the source chain
-        if let Some(msg) = timeout {
-            // For Ordered channels a single timeout event should be sent as this closes the channel.
-            // Otherwise a multi message transaction will fail.
-            if self.unordered_channel() || self.timeout_msgs.is_empty() {
-                self.timeout_msgs.push(msg);
-                self.src_msgs_input_events.push(event.clone());
-            }
-        }
-
-        Ok(())
     }
 
     fn build_timeout_from_send_packet_event(
@@ -605,6 +519,13 @@ impl RelayPath {
     }
 
     /// Generates operational data out of a set of events.
+    /// Handles building operational data targeting both the destination and source chains.
+    ///
+    /// For the destination chain, the op. data will contain `RecvPacket` messages,
+    /// as well as channel close handshake (`ChanCloseConfirm`), `WriteAck` messages.
+    ///
+    /// For the source chain, the op. data will contain timeout packet messages (`MsgTimeoutOnClose`
+    /// or `MsgTimeout`).
     fn generate_operational_data(
         &self,
         input: Vec<IbcEvent>,
@@ -838,42 +759,6 @@ impl RelayPath {
     /// Conversely, returns `false` if the delay is zero.
     fn non_zero_delay(&self) -> bool {
         self.channel.connection_delay.as_nanos() > 0
-    }
-
-    /// Send a multi message transaction with packet messages, prepending the client update.
-    /// Ignores any delay period for packets.
-    #[allow(dead_code)]
-    fn relay_immediately(&mut self) -> Result<(), LinkError> {
-        if self.all_events.is_empty() {
-            return Ok(());
-        }
-
-        let dst_update_height = self.dst_latest_height()?;
-
-        for _i in 0..MAX_ITER {
-            self.reset_buffers();
-
-            // Collect the messages for all events
-            for event in self.all_events.clone() {
-                println!("{} => {:?}", self.src_chain.id(), event);
-                self.handle_packet_event(&event, dst_update_height)?;
-            }
-
-            // Send client update and messages
-            let res = self.send_update_client_and_msgs(dst_update_height);
-            println!("\nresult {:?}", res);
-
-            if self.all_events.is_empty() {
-                break;
-            }
-
-            println!("retrying");
-        }
-
-        // TODO - add error
-        self.all_events = vec![];
-
-        Ok(())
     }
 
     /// Picks up all messages that sit in `self.packet_msgs` and `self.timeout_msgs` and sends them
@@ -1481,10 +1366,9 @@ impl RelayPath {
         let mut all_dst_odata = self.dst_operational_data.clone();
 
         let mut timed_out: HashMap<usize, Vec<GeneratedMessage>> = HashMap::default();
-        let mut odata_pos = 0;
 
         // For each operational data targeting the destination chain...
-        for odata in all_dst_odata.iter_mut() {
+        for (odata_pos, odata) in all_dst_odata.iter_mut().enumerate() {
             // ... check each `SendPacket` event, whether it should generate a timeout message
             let mut retain_batch = vec![];
 
@@ -1514,7 +1398,6 @@ impl RelayPath {
             }
             // Update the whole batch, keeping only the relevant ones
             odata.batch = retain_batch;
-            odata_pos += 1;
         }
 
         if timed_out.is_empty() {
@@ -1538,8 +1421,9 @@ impl RelayPath {
 
             self.dst_operational_data = all_dst_odata;
             // Possibly some op. data became empty (if no events were kept).
+            // Retain only the non-empty ones.
             self.dst_operational_data
-                .retain(|odata| odata.batch.len() > 0);
+                .retain(|odata| !odata.batch.is_empty());
             Ok(())
         }
     }
