@@ -1,4 +1,4 @@
-use tendermint_testgen::light_block::TMLightBlock;
+use tendermint_testgen::light_block::TmLightBlock;
 
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics24_host::identifier::ChainId;
@@ -22,7 +22,7 @@ impl LightClient {
     }
 
     /// Returns a LightBlock at the requested height `h`.
-    fn light_block(&self, h: Height) -> TMLightBlock {
+    fn light_block(&self, h: Height) -> TmLightBlock {
         HostBlock::generate_tm_block(self.chain_id.clone(), h.revision_height)
     }
 }
@@ -33,11 +33,11 @@ impl super::LightClient<MockChain> for LightClient {
         _trusted: Height,
         target: Height,
         _client_state: &AnyClientState,
-    ) -> Result<TMLightBlock, Error> {
+    ) -> Result<TmLightBlock, Error> {
         Ok(self.light_block(target))
     }
 
-    fn fetch(&mut self, height: Height) -> Result<TMLightBlock, Error> {
+    fn fetch(&mut self, height: Height) -> Result<TmLightBlock, Error> {
         Ok(self.light_block(height))
     }
 }
