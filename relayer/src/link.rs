@@ -1649,22 +1649,28 @@ impl Link {
     pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
         self.a_to_b.build_recv_packet_and_timeout_msgs(None)?;
 
+        let mut results = vec![];
+
         // Block waiting for all of the scheduled data (until `None` is returned)
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
-            self.a_to_b.relay_from_operational_data(odata)?;
+            let mut last_res = self.a_to_b.relay_from_operational_data(odata)?;
+            results.append(&mut last_res);
         }
 
-        Ok(vec![])
+        Ok(results)
     }
 
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
         self.a_to_b.build_packet_ack_msgs(None)?;
 
+        let mut results = vec![];
+
         // Block waiting for all of the scheduled data
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
-            self.a_to_b.relay_from_operational_data(odata)?;
+            let mut last_res = self.a_to_b.relay_from_operational_data(odata)?;
+            results.append(&mut last_res);
         }
 
-        Ok(vec![])
+        Ok(results)
     }
 }
