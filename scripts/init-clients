@@ -68,33 +68,6 @@ CHAIN_2_RPC_ADDR="http://127.0.0.1:$CHAIN_2_RPC_PORT"
 echo "Building the Rust relayer..."
 cargo build -q
 
-# cleanup the client entries from config
-echo "Removing light client peers from configuration..."
-cargo run -q --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_0_ID" --all -y || true
-cargo run -q --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_1_ID" --all -y || true
-
-if [ -n "$CHAIN_2_ID" ]; then
-  cargo run -q --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_2_ID" --all -y || true
-fi
-
-# set the primary peers for clients on each chain
-echo "Adding primary peers to light client configuration..."
-cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -f -p -s "$GAIA_DATA/$CHAIN_0_ID/data" -y
-cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -f -p -s "$GAIA_DATA/$CHAIN_1_ID/data" -y
-
-if [ -n "$CHAIN_2_ID" ]; then
-  cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_2_RPC_ADDR -c "$CHAIN_2_ID" -f -p -s "$GAIA_DATA/$CHAIN_2_ID/data" -y
-fi
-
-# set the secondary peers for clients on each chain
-echo "Adding secondary peers to light client configuration..."
-cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -s "$GAIA_DATA/$CHAIN_0_ID/data" -y --peer-id 2427F8D914A6862279B3326FA64F76E3BC06DB2E
-cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -s "$GAIA_DATA/$CHAIN_1_ID/data" -y --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E
-
-if [ -n "$CHAIN_2_ID" ]; then
-  cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_2_RPC_ADDR -c "$CHAIN_2_ID" -s "$GAIA_DATA/$CHAIN_2_ID/data" -y --peer-id 08B4625466AE926E7A5BB3D3DFF611E6CD118A88
-fi
-
 # add the key seeds to the keyring of each chain
 echo "Importing keys..."
 cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_0_ID" "$GAIA_DATA/$CHAIN_0_ID/key_seed.json"
