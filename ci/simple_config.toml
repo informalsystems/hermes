@@ -5,26 +5,28 @@ log_level = 'info'
 
 [[chains]]
 id = 'ibc-0'
-rpc_addr = 'tcp://ibc-0:26657'
-grpc_addr = 'tcp://ibc-0:9090'
+rpc_addr = 'http://ibc-0:26657'
+grpc_addr = 'http://ibc-0:9090'
+websocket_addr = 'ws://ibc-0:26657/websocket'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas = 200000
-fee_amount = 10
 fee_denom = 'stake'
+fee_amount = 10
+gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'tcp://ibc-1:26657'
-grpc_addr = 'tcp://ibc-1:9090'
+rpc_addr = 'http://ibc-1:26657'
+grpc_addr = 'http://ibc-1:9090'
+websocket_addr = 'ws://ibc-1:26657/websocket'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas = 200000
-fee_amount = 10
 fee_denom = 'stake'
+fee_amount = 10
+gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'

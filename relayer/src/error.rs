@@ -1,7 +1,6 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
-use tendermint::net;
 use thiserror::Error;
 
 use ibc::{
@@ -29,7 +28,11 @@ pub enum Kind {
 
     /// RPC error (typically raised by the RPC client or the RPC requester)
     #[error("RPC error to endpoint {0}")]
-    Rpc(net::Address),
+    Rpc(tendermint_rpc::Url),
+
+    /// Websocket error (typically raised by the Websocket client)
+    #[error("Websocket error to endpoint {0}")]
+    Websocket(tendermint_rpc::Url),
 
     /// GRPC error (typically raised by the GRPC client or the GRPC requester)
     #[error("GRPC error")]

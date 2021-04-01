@@ -9,8 +9,8 @@ use ibc_relayer::{
     config::{Config, LightClientConfig, PeersConfig},
     util::block_on,
 };
+use tendermint::block::Height;
 use tendermint::hash::Hash;
-use tendermint::{block::Height, net};
 use tendermint_light_client::types::PeerId;
 use tendermint_rpc::{Client, HttpClient};
 
@@ -20,7 +20,7 @@ use crate::prelude::*;
 pub struct AddCmd {
     /// RPC network address (required)
     #[options(free)]
-    address: Option<net::Address>,
+    address: Option<tendermint_rpc::Url>,
 
     /// identifier of the chain (required)
     #[options(short = "c")]
@@ -77,7 +77,7 @@ struct AddOptions {
     chain_id: ChainId,
 
     /// RPC network address
-    address: net::Address,
+    address: tendermint_rpc::Url,
 
     /// whether this is the primary peer or not
     primary: bool,
@@ -136,7 +136,7 @@ impl AddOptions {
 #[derive(Debug, Clone)]
 pub struct NodeStatus {
     chain_id: ChainId,
-    address: net::Address,
+    address: tendermint_rpc::Url,
     peer_id: PeerId,
     hash: Hash,
     height: Height,
@@ -183,7 +183,7 @@ fn add(mut config: Config, options: AddOptions) -> Result<(), BoxError> {
     Ok(())
 }
 
-fn fetch_status(chain_id: ChainId, address: net::Address) -> Result<NodeStatus, BoxError> {
+fn fetch_status(chain_id: ChainId, address: tendermint_rpc::Url) -> Result<NodeStatus, BoxError> {
     let rpc_client = HttpClient::new(address.clone())?;
     let response = block_on(rpc_client.status())?;
 

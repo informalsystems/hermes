@@ -5,7 +5,7 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::link::LinkParameters;
 use ibc_relayer::relay::{channel_relay, relay_on_new_link};
 
-use crate::commands::cli_utils::ChainHandlePair;
+use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
 use crate::prelude::*;
 

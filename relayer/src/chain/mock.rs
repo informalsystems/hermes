@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-use tendermint_testgen::light_block::TMLightBlock;
+use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
 use ibc::downcast;
@@ -53,7 +53,7 @@ pub struct MockChain {
 }
 
 impl Chain for MockChain {
-    type LightBlock = TMLightBlock;
+    type LightBlock = TmLightBlock;
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
@@ -336,14 +336,15 @@ pub mod test_utils {
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
         ChainConfig {
             id: ChainId::from_str(id).unwrap(),
-            rpc_addr: "127.0.0.1:26656".parse().unwrap(),
-            grpc_addr: "".to_string(),
+            rpc_addr: "http://127.0.0.1:26656".parse().unwrap(),
+            grpc_addr: "http://127.0.0.1:9090".parse().unwrap(),
+            websocket_addr: "ws://127.0.0.1:26656/websocket".parse().unwrap(),
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),
             gas: None,
-            fee_amount: Some(1000),
             fee_denom: "stake".to_string(),
+            fee_amount: Some(1000),
             max_msg_num: None,
             max_tx_size: None,
             clock_drift: Duration::from_secs(5),

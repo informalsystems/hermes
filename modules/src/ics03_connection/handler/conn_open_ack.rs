@@ -68,7 +68,7 @@ pub(crate) fn process(
             ctx.commitment_prefix(),                        // Local commitment prefix.
         ),
         vec![msg.version().clone()],
-        new_conn_end.delay_period,
+        new_conn_end.delay_period(),
     );
 
     // 2. Pass the details to the verification function.
