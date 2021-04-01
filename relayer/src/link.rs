@@ -151,6 +151,12 @@ impl OperationalData {
             }
         }
 
+        info!(
+            "[{}] Assembled batch of {} message(s)",
+            relay_path,
+            msgs.len()
+        );
+
         Ok(msgs)
     }
 }
@@ -480,9 +486,11 @@ impl RelayPath {
     }
 
     /// Should not run more than once per execution.
-    pub fn clear_packets(&mut self, height: Height) -> Result<(), LinkError> {
+    pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
-            self.relay_pending_packets(height)?;
+            let clear_height = above_height.decrement().map_err(|e| LinkError::Failed(
+                format!("Cannot clear packets @height {}, because this height cannot be decremented: {}", above_height, e.to_string())))?;
+            self.relay_pending_packets(clear_height)?;
             info!("[{}] Finished clearing pending packets", self);
             self.clear_packets = false;
         }
@@ -490,8 +498,8 @@ impl RelayPath {
         Ok(())
     }
 
-    /// Iterate through the IBC Events, generate & schedule the resulting operational data.
-    pub fn relay_from_events(&mut self, batch: EventBatch) -> Result<(), LinkError> {
+    /// Generate & schedule operational data from the input `batch` of IBC events.
+    pub fn process_event_batch(&mut self, batch: EventBatch) -> Result<(), LinkError> {
         self.clear_packets(batch.height)?;
 
         // Collect relevant events from the incoming batch & adjust their height.
@@ -645,21 +653,24 @@ impl RelayPath {
         Ok((src_od_res, dst_od_res))
     }
 
-    fn apply(&mut self, initial_od: OperationalData) -> Result<(), LinkError> {
+    fn relay_from_operational_data(
+        &mut self,
+        initial_od: OperationalData,
+    ) -> Result<(), LinkError> {
         // We will operate on potentially different operational data if the initial one fails.
-        let mut od = initial_od;
+        let mut odata = initial_od;
 
         for i in 0..MAX_ITER {
             info!(
                 "[{}] Relaying with operational data to {} [try {}/{}]",
                 self,
-                od.target,
+                odata.target,
                 i + 1,
                 MAX_ITER
             );
 
             // Consume the operational data by attempting to send its messages
-            match self.relay_from_operational_data(od.clone())? {
+            match self.send_from_operational_data(odata.clone())? {
                 None => {
                     // Done with this op. data
                     info!("[{}] Success", self);
@@ -675,10 +686,10 @@ impl RelayPath {
                     let (src_opt, dst_opt) = self.generate_operational_data(events)?;
 
                     if let Some(src_od) = src_opt {
-                        if src_od.target == od.target {
+                        if src_od.target == odata.target {
                             // Our target is the _source_ chain, retry these messages
                             info!("[{}] Will retry with op data {}", self, src_od);
-                            od = src_od;
+                            odata = src_od;
                         } else {
                             // Our target is the _destination_ chain, the data in `src_od` contains
                             // potentially new timeout messages that have to be handled separately.
@@ -687,10 +698,10 @@ impl RelayPath {
                     }
 
                     if let Some(dst_od) = dst_opt {
-                        if dst_od.target == od.target {
+                        if dst_od.target == odata.target {
                             // Our target is the _destination_ chain, retry these messages
                             info!("[{}] Will retry with op data {}", self, dst_od);
-                            od = dst_od;
+                            odata = dst_od;
                         } else {
                             // Our target is the _source_ chain, but `dst_od` has new messages
                             // intended for the destination chain, this should never be the case
@@ -702,7 +713,7 @@ impl RelayPath {
                         }
                     } else {
                         // There is no message intended for the destination chain
-                        if od.target == OperationalDataTarget::Destination {
+                        if odata.target == OperationalDataTarget::Destination {
                             info!(
                                 "[{}] Exhausted all events from this operational data.",
                                 self
@@ -718,7 +729,7 @@ impl RelayPath {
     }
 
     /// Returns the input events if a sending failure occurs.
-    fn relay_from_operational_data(
+    fn send_from_operational_data(
         &mut self,
         odata: OperationalData,
     ) -> Result<Option<Vec<IbcEvent>>, LinkError> {
@@ -732,18 +743,11 @@ impl RelayPath {
             OperationalDataTarget::Destination => &self.dst_chain,
         };
 
-        info!(
-            "[{}] Sending {} messages to {} ({})",
-            self,
-            odata.batch.len(),
-            odata.target,
-            target.id()
-        );
-
         let msgs = odata.assemble_msgs(self)?;
 
         let target_tx_events = target.send_msgs(msgs)?;
         info!("[{}] Result {:?}\n", self, target_tx_events);
+
         let ev = target_tx_events
             .into_iter()
             .find(|event| matches!(event, IbcEvent::ChainError(_)));
@@ -759,62 +763,6 @@ impl RelayPath {
     /// Conversely, returns `false` if the delay is zero.
     fn non_zero_delay(&self) -> bool {
         self.channel.connection_delay.as_nanos() > 0
-    }
-
-    /// Picks up all messages that sit in `self.packet_msgs` and `self.timeout_msgs` and sends them
-    /// to the destination and source chain, respectively.
-    pub fn send_msgs(&mut self) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), LinkError> {
-        let mut src_tx_events = vec![];
-        let mut dst_tx_events = vec![];
-
-        // Clear this field. We use it to re-collect the src and dst input events if Tx-es fail
-        self.all_events = vec![];
-
-        if !self.packet_msgs.is_empty() {
-            info!(
-                "sending {} messages to {}",
-                self.packet_msgs.len(),
-                self.dst_chain.id()
-            );
-
-            dst_tx_events = self.dst_chain.send_msgs(self.packet_msgs.clone())?;
-            info!("result {:?}\n", dst_tx_events);
-
-            let ev = dst_tx_events
-                .clone()
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-            // Recycle the original events that produced these messages, we'll retry based on them
-            if ev.is_some() {
-                self.all_events
-                    .append(&mut self.dst_msgs_input_events.clone());
-            }
-        }
-
-        if !self.timeout_msgs.is_empty() {
-            info!(
-                "sending {:?} messages to {}",
-                self.timeout_msgs.len(),
-                self.src_chain.id(),
-            );
-
-            src_tx_events = self.src_chain.send_msgs(self.timeout_msgs.clone())?;
-            info!("result {:?}\n", src_tx_events);
-
-            let ev = src_tx_events
-                .clone()
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-            // Recycle
-            if ev.is_some() {
-                self.all_events
-                    .append(&mut self.src_msgs_input_events.clone());
-            }
-        }
-
-        Ok((dst_tx_events, src_tx_events))
     }
 
     /// Handles updating the client on the destination chain
@@ -914,90 +862,12 @@ impl RelayPath {
         self.update_client_src(dst_chain_height)
     }
 
-    pub fn send_update_client_and_msgs(
-        &mut self,
-        dst_update_height: Height,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), LinkError> {
-        let mut src_tx_events = vec![];
-        let mut dst_tx_events = vec![];
-
-        if self.all_events.is_empty() {
-            return Ok((dst_tx_events, src_tx_events));
-        }
-
-        let src_update_height = self.all_events[0].height().increment();
-
-        // Clear all_events and collect the src and dst input events if Tx-es fail
-        self.all_events = vec![];
-
-        if !self.packet_msgs.is_empty() {
-            let mut msgs_to_send = vec![];
-
-            // Check if a consensus state at update_height exists on destination chain already
-            if self
-                .dst_chain()
-                .proven_client_consensus(self.dst_client_id(), src_update_height, Height::zero())
-                .is_err()
-            {
-                msgs_to_send = self.build_update_client_on_dst(src_update_height)?;
-                info!("sending update client at height {:?}", src_update_height);
-            }
-
-            msgs_to_send.append(&mut self.packet_msgs);
-
-            info!(
-                "sending {} messages to {}",
-                msgs_to_send.len(),
-                self.dst_chain.id()
-            );
-
-            dst_tx_events = self.dst_chain.send_msgs(msgs_to_send)?;
-            info!("result {:?}\n", dst_tx_events);
-
-            let ev = dst_tx_events
-                .clone()
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-            if let Some(_e) = ev {
-                self.all_events
-                    .append(&mut self.dst_msgs_input_events.clone());
-            }
-        }
-
-        if !self.timeout_msgs.is_empty() {
-            let mut msgs_to_send = self.build_update_client_on_src(dst_update_height)?;
-            msgs_to_send.append(&mut self.timeout_msgs);
-            info!(
-                "sending {:?} messages to {}, update client at height {:?}",
-                msgs_to_send.len(),
-                self.src_chain.id(),
-                dst_update_height,
-            );
-
-            src_tx_events = self.src_chain.send_msgs(msgs_to_send)?;
-            info!("result {:?}\n", src_tx_events);
-
-            let ev = src_tx_events
-                .clone()
-                .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-            if let Some(_e) = ev {
-                self.all_events
-                    .append(&mut self.src_msgs_input_events.clone());
-            }
-        }
-
-        Ok((dst_tx_events, src_tx_events))
-    }
-
-    /// Returns relevant packet events for building RecvPacket
-    /// and timeout messages.
+    /// Returns relevant packet events for building RecvPacket and timeout messages.
+    /// Additionally returns the height (on source chain) corresponding to these events.
     fn target_height_and_send_packet_events(
         &self,
         opt_query_height: Option<Height>,
-    ) -> Result<Vec<IbcEvent>, LinkError> {
+    ) -> Result<(Vec<IbcEvent>, Height), LinkError> {
         let mut events_result = vec![];
 
         // Query packet commitments on source chain that have not been acknowledged
@@ -1008,8 +878,11 @@ impl RelayPath {
         };
         let (packet_commitments, src_response_height) =
             self.src_chain.query_packet_commitments(pc_request)?;
+
+        let query_height = opt_query_height.unwrap_or(src_response_height);
+
         if packet_commitments.is_empty() {
-            return Ok(events_result);
+            return Ok((events_result, query_height));
         }
         let commit_sequences = packet_commitments.iter().map(|p| p.sequence).collect();
         info!(
@@ -1018,8 +891,6 @@ impl RelayPath {
             self.src_chain.id(),
             commit_sequences
         );
-
-        let query_height = opt_query_height.unwrap_or(src_response_height);
 
         // Get the packets that have not been received on destination chain
         let request = QueryUnreceivedPacketsRequest {
@@ -1044,7 +915,7 @@ impl RelayPath {
         );
 
         if sequences.is_empty() {
-            return Ok(events_result);
+            return Ok((events_result, query_height));
         }
 
         events_result = self.src_chain.query_txs(QueryPacketEventDataRequest {
@@ -1065,14 +936,15 @@ impl RelayPath {
         }
         info!("[{}] Received from query_txs {:?}", self, packet_sequences);
 
-        Ok(events_result)
+        Ok((events_result, query_height))
     }
 
     /// Returns relevant packet events for building ack messages.
+    /// Additionally returns the height (on source chain) corresponding to these events.
     fn target_height_and_write_ack_events(
         &self,
         opt_query_height: Option<Height>,
-    ) -> Result<Vec<IbcEvent>, LinkError> {
+    ) -> Result<(Vec<IbcEvent>, Height), LinkError> {
         let mut events_result = vec![];
 
         // Get the sequences of packets that have been acknowledged on source
@@ -1086,11 +958,11 @@ impl RelayPath {
             .query_packet_acknowledgements(pc_request)
             .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
-        if acks_on_source.is_empty() {
-            return Ok(events_result);
-        }
-
         let query_height = opt_query_height.unwrap_or(src_response_height);
+
+        if acks_on_source.is_empty() {
+            return Ok((events_result, query_height));
+        }
 
         let acked_sequences = acks_on_source.iter().map(|p| p.sequence).collect();
         info!(
@@ -1122,7 +994,7 @@ impl RelayPath {
         );
 
         if sequences.is_empty() {
-            return Ok(events_result);
+            return Ok((events_result, query_height));
         }
 
         events_result = self
@@ -1146,10 +1018,10 @@ impl RelayPath {
         }
         info!("[{}] Received from query_txs {:?}", self, packet_sequences);
 
-        Ok(events_result)
+        Ok((events_result, query_height))
     }
 
-    /// Handles the relaying of RecvPacket and Timeout messages.
+    /// Schedules the relaying of RecvPacket and Timeout messages.
     /// The `opt_query_height` parameter allows to optionally use a specific height on the source
     /// chain where to query for packet data. If `None`, the latest available height on the source
     /// chain is used.
@@ -1159,21 +1031,23 @@ impl RelayPath {
     ) -> Result<(), LinkError> {
         // Get the events for the send packets on source chain that have not been received on
         // destination chain (i.e. ack was not seen on source chain).
-        let mut events = self.target_height_and_send_packet_events(opt_query_height)?;
+        let (mut events, height) = self.target_height_and_send_packet_events(opt_query_height)?;
 
         // Skip: no relevant events found.
         if events.is_empty() {
             return Ok(());
         }
 
-        self.adjust_events_height(&mut events)?;
+        for event in events.iter_mut() {
+            event.set_height(height);
+        }
 
         self.events_to_operational_data(events)?;
 
         Ok(())
     }
 
-    /// Handles the relaying of packet acknowledgment messages.
+    /// Schedules the relaying of packet acknowledgment messages.
     /// The `opt_query_height` parameter allows to optionally use a specific height on the source
     /// chain where to query for packet data. If `None`, the latest available height on the source
     /// chain is used.
@@ -1184,14 +1058,16 @@ impl RelayPath {
         self.all_events = vec![];
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
-        let mut events = self.target_height_and_write_ack_events(opt_query_height)?;
+        let (mut events, height) = self.target_height_and_write_ack_events(opt_query_height)?;
 
         // Skip: no relevant events found.
         if events.is_empty() {
             return Ok(());
         }
 
-        self.adjust_events_height(&mut events)?;
+        for event in events.iter_mut() {
+            event.set_height(height);
+        }
 
         self.events_to_operational_data(events)?;
         Ok(())
@@ -1358,7 +1234,7 @@ impl RelayPath {
 
     /// Verifies if any sendPacket messages timed-out. If so, moves them from destination op. data
     /// to source operational data, and adjusts the events and messages accordingly.
-    fn recheck_send_packet_events(&mut self) -> Result<(), LinkError> {
+    fn check_timeouts(&mut self) -> Result<(), LinkError> {
         let dst_current_height = self.dst_latest_height()?;
 
         // Intermediary data struct to help better manage the transfer from dst. operational data
@@ -1589,23 +1465,23 @@ impl Link {
             }
 
             if let Ok(batch) = events_a.try_recv() {
-                self.a_to_b.relay_from_events(batch.unwrap_or_clone())?;
+                self.a_to_b.process_event_batch(batch.unwrap_or_clone())?;
             }
 
-            self.a_to_b.recheck_send_packet_events()?;
+            self.a_to_b.check_timeouts()?;
 
             if let Some(od) = self.a_to_b.try_fetch_scheduled_operational_data() {
-                self.a_to_b.apply(od)?;
+                self.a_to_b.relay_from_operational_data(od)?;
             }
 
             if let Ok(batch) = events_b.try_recv() {
-                self.b_to_a.relay_from_events(batch.unwrap_or_clone())?;
+                self.b_to_a.process_event_batch(batch.unwrap_or_clone())?;
             }
 
-            self.b_to_a.recheck_send_packet_events()?;
+            self.b_to_a.check_timeouts()?;
 
             if let Some(od) = self.b_to_a.try_fetch_scheduled_operational_data() {
-                self.b_to_a.apply(od)?;
+                self.b_to_a.relay_from_operational_data(od)?;
             }
 
             // TODO - select over the two subscriptions
@@ -1739,7 +1615,7 @@ impl Link {
         // Block waiting for all of the scheduled data
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
             // TODO(Adi) Should return the vector of resulting events
-            self.a_to_b.apply(odata)?;
+            self.a_to_b.relay_from_operational_data(odata)?;
         }
 
         Ok(vec![])
@@ -1751,7 +1627,7 @@ impl Link {
         // Block waiting for all of the scheduled data
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
             // TODO(Adi) Should return the vector of resulting events
-            self.a_to_b.apply(odata)?;
+            self.a_to_b.relay_from_operational_data(odata)?;
         }
 
         Ok(vec![])

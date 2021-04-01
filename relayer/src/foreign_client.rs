@@ -326,8 +326,9 @@ impl ForeignClient {
 
         if trusted_height >= target_height {
             warn!(
-                "Client {} height ({}) >= chain target height ({}). Omitting update message.",
-                self.id, trusted_height, target_height
+                "Client {} on {}: trusted height ({}) >= chain target height ({}). Omitting update message.",
+                self.id, trusted_height, self.dst_chain.id(),
+                target_height
             );
             return Ok(vec![]);
         }
