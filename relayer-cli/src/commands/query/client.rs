@@ -6,9 +6,11 @@ use tracing::info;
 
 use ibc::events::IbcEventType;
 use ibc::ics02_client::client_consensus::QueryClientEventRequest;
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::query::QueryTxRequest;
+use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_relayer::chain::Chain;
@@ -67,19 +69,11 @@ pub struct QueryClientConsensusCmd {
     #[options(free, required, help = "identifier of the client to query")]
     client_id: ClientId,
 
-    #[options(
-        free,
-        required,
-        help = "revision number of the client's consensus state to query"
-    )]
-    consensus_rev_number: u64,
+    #[options(help = "height of the client's consensus state to query", short = "c")]
+    consensus_height: Option<u64>,
 
-    #[options(
-        free,
-        required,
-        help = "height (revision height) of the client's consensus state to query"
-    )]
-    consensus_rev_height: u64,
+    #[options(help = "show only consensus heights", short = "s")]
+    heights_only: bool,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
@@ -106,26 +100,54 @@ impl Runnable for QueryClientConsensusCmd {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
-        let consensus_height =
-            ibc::Height::new(self.consensus_rev_number, self.consensus_rev_height);
-        let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
-        if height == ibc::Height::zero() {
-            let res = chain.query_consensus_states(QueryConsensusStatesRequest {
-                client_id: self.client_id.to_string(),
-                pagination: None,
-            });
-            match res {
-                Ok(states) => Output::success(states).exit(),
-                Err(e) => Output::error(format!("{}", e)).exit(),
-            }
-        } else {
-            let res = chain.proven_client_consensus(&self.client_id, consensus_height, height);
-            match res {
-                Ok((cs, _)) => Output::success(cs).exit(),
-                Err(e) => Output::error(format!("{}", e)).exit(),
+        let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
+            Ok(cs) => cs.chain_id(),
+            Err(e) => {
+                return Output::error(format!(
+                    "Failed while querying client '{}' on chain '{}' with error: {}",
+                    self.client_id, self.chain_id, e
+                ))
+                .exit()
             }
         };
+
+        match self.consensus_height {
+            Some(cs_height) => {
+                let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
+                let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
+                let res = chain.proven_client_consensus(&self.client_id, consensus_height, height);
+                match res {
+                    Ok((cs, _)) => Output::success(cs).exit(),
+                    Err(e) => Output::error(format!("{}", e)).exit(),
+                }
+            }
+            None => {
+                let res = chain.query_consensus_states(QueryConsensusStatesRequest {
+                    client_id: self.client_id.to_string(),
+                    pagination: None,
+                });
+
+                let res = chain.query_consensus_states(QueryConsensusStatesRequest {
+                    client_id: self.client_id.to_string(),
+                    pagination: None,
+                });
+                match res {
+                    Ok(states) => {
+                        if self.heights_only {
+                            let heights: Vec<Height> = states
+                                .iter()
+                                .filter_map(|cs| Option::from(cs.height))
+                                .collect();
+                            Output::success(heights).exit()
+                        } else {
+                            Output::success(states).exit()
+                        }
+                    }
+                    Err(e) => Output::error(format!("{}", e)).exit(),
+                }
+            }
+        }
     }
 }
 
