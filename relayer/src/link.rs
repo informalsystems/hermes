@@ -301,7 +301,6 @@ impl RelayPath {
         self.channel.ordering == Order::Ordered
     }
 
-    // TODO(Adi): This needs refactoring!
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = ForeignClient {
             id: self.dst_client_id().clone(),
@@ -1422,43 +1421,47 @@ impl RelayPath {
         None
     }
 
+    /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
+    /// waiting for the delay period to pass.
+    /// Returns `None` if there is no operational data scheduled.
     fn fetch_scheduled_operational_data(&mut self) -> Option<OperationalData> {
-        if let Some(odata) = self.src_operational_data.first() {
-            info!(
-                "[{}] Found a scheduled op. data with batch of size {} for {}. Waiting for delay period ({:#?}) to pass",
-                self,
-                odata.batch.len(),
-                odata.target,
-                self.channel.connection_delay
-            );
-            // Wait until the delay period passes
-            while odata.scheduled_time.elapsed() <= self.channel.connection_delay {
-                // Todo: Smarter sleep here, we can infer the exact duration (instead of 100).
-                thread::sleep(Duration::from_millis(100))
+        if let Some(odata) = self
+            .src_operational_data
+            .first()
+            .or_else(|| self.dst_operational_data.first())
+        {
+            // Check if the delay period did not completely elapse
+            match self
+                .channel
+                .connection_delay
+                .checked_sub(odata.scheduled_time.elapsed())
+            {
+                None => info!(
+                    "[{}] Ready to fetch a scheduled op. data with batch of size {} targeting {}.",
+                    self,
+                    odata.batch.len(),
+                    odata.target,
+                ),
+                Some(delay_left) => {
+                    info!(
+                        "[{}] Waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}.",
+                        self,
+                        delay_left,
+                        odata.batch.len(),
+                        odata.target,
+                    );
+                    // Wait until the delay period passes
+                    thread::sleep(delay_left);
+                }
             }
 
-            let od = self.src_operational_data.remove(0);
+            let od = match odata.target {
+                OperationalDataTarget::Source => self.src_operational_data.remove(0),
+                OperationalDataTarget::Destination => self.dst_operational_data.remove(0),
+            };
             return Some(od);
         }
-
-        if let Some(odata) = self.dst_operational_data.first() {
-            info!(
-                "[{}] Found a scheduled op. data with batch of size {} for {}. Waiting for delay period ({:#?}) to pass",
-                self,
-                odata.batch.len(),
-                odata.target,
-                self.channel.connection_delay
-            );
-            // Wait until the delay period passes
-            while odata.scheduled_time.elapsed() <= self.channel.connection_delay {
-                thread::sleep(Duration::from_millis(100))
-            }
-
-            let od = self.dst_operational_data.remove(0);
-            Some(od)
-        } else {
-            None
-        }
+        None
     }
 }
 
