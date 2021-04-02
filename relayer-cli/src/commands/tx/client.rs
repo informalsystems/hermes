@@ -69,6 +69,12 @@ pub struct TxUpdateClientCmd {
         help = "identifier of the client to be updated on destination chain"
     )]
     dst_client_id: ClientId,
+
+    #[options(help = "the chain height which this query should reflect", short = "h")]
+    height: Option<u64>,
+
+    #[options(help = "the chain height which this query should reflect", short = "t")]
+    trusted_height: Option<u64>,
 }
 
 impl Runnable for TxUpdateClientCmd {
@@ -86,6 +92,16 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
+        let height = match self.height {
+            Some(height) => ibc::Height::new(chains.src.id().version(), height),
+            None => ibc::Height::zero(),
+        };
+
+        let trusted_height = match self.trusted_height {
+            Some(height) => ibc::Height::new(chains.src.id().version(), height),
+            None => ibc::Height::zero(),
+        };
+
         let client = ForeignClient {
             dst_chain: chains.dst,
             src_chain: chains.src,
@@ -93,7 +109,7 @@ impl Runnable for TxUpdateClientCmd {
         };
 
         let res: Result<IbcEvent, Error> = client
-            .build_update_client_and_send()
+            .build_update_client_and_send(height, trusted_height)
             .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
