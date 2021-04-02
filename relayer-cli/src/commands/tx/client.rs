@@ -24,6 +24,11 @@ pub struct TxCreateClientCmd {
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
+
+        if self.src_chain_id == self.dst_chain_id {
+            Output::error("source and destination chains must be different".to_string()).exit()
+        }
+
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
