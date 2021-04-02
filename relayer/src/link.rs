@@ -84,21 +84,23 @@ impl fmt::Display for OperationalDataTarget {
     }
 }
 
-/// A proto-encoded packet message, alongside the event which generated it.
+/// A packet messages that is prepared for sending to a chain, but has not been sent yet.
+/// Comprises both the proto-encoded packet message, alongside the event which generated it.
 #[derive(Clone)]
-pub struct GeneratedMessage {
+pub struct TransitMessage {
     event: IbcEvent,
     msg: Any,
 }
 
-/// Holds events received from the source chain, plus packet messages generated from these events.
+/// Holds all the necessary information for handling a set of in-transit messages.
+///
 /// Each `OperationalData` item is uniquely identified by the combination of two attributes:
 ///     - `target`: represents the target of the packet messages, either source or destination chain,
 ///     - `proofs_height`: represents the height for the proofs in all the messages.
 #[derive(Clone)]
 pub struct OperationalData {
     proofs_height: Height,
-    batch: Vec<GeneratedMessage>,
+    batch: Vec<TransitMessage>,
     target: OperationalDataTarget,
     /// Stores the time when the clients on the target chain has been updated, i.e., when this data
     /// was scheduled. Necessary for packet delays.
@@ -182,7 +184,7 @@ pub struct RelayPath {
     channel: Channel,
     clear_packets: bool,
 
-    // Operational data, for targeting both the source and destination chain.
+    // Operational data, targeting both the source and destination chain.
     // These vectors of operational data are ordered decreasingly by their age, with element at
     // position `0` being the oldest.
     // The operational data targeting the source chain comprises mostly timeout packet messages.
@@ -602,7 +604,7 @@ impl RelayPath {
                     "[{}][-> Destination] Adding message type {} from event {:?}",
                     self, msg.type_url, event
                 );
-                dst_od.batch.push(GeneratedMessage {
+                dst_od.batch.push(TransitMessage {
                     event: event.clone(),
                     msg,
                 });
@@ -617,7 +619,7 @@ impl RelayPath {
                         "[{}][-> Source] Adding message type {} from event {:?}",
                         self, msg.type_url, event
                     );
-                    src_od.batch.push(GeneratedMessage { event, msg });
+                    src_od.batch.push(TransitMessage { event, msg });
                 }
             }
         }
@@ -754,7 +756,8 @@ impl RelayPath {
                 return None;
             }
         }
-        return None;
+
+        None
     }
 
     /// Sends a transaction to the chain targeted by the operational data `odata`.
@@ -1284,7 +1287,7 @@ impl RelayPath {
         // to source operational data.
         let mut all_dst_odata = self.dst_operational_data.clone();
 
-        let mut timed_out: HashMap<usize, Vec<GeneratedMessage>> = HashMap::default();
+        let mut timed_out: HashMap<usize, Vec<TransitMessage>> = HashMap::default();
 
         // For each operational data targeting the destination chain...
         for (odata_pos, odata) in all_dst_odata.iter_mut().enumerate() {
@@ -1292,7 +1295,7 @@ impl RelayPath {
             let mut retain_batch = vec![];
 
             for gm in odata.batch.iter() {
-                let GeneratedMessage { event, .. } = gm;
+                let TransitMessage { event, .. } = gm;
 
                 if let IbcEvent::SendPacket(e) = event {
                     if let Some(new_msg) =
@@ -1300,12 +1303,13 @@ impl RelayPath {
                         self.build_timeout_from_send_packet_event(e, dst_current_height)?
                     {
                         info!("[{}] Found a timed-out msg in the op data {}.", self, odata);
-                        timed_out.entry(odata_pos).or_insert_with(Vec::new).push(
-                            GeneratedMessage {
+                        timed_out
+                            .entry(odata_pos)
+                            .or_insert_with(Vec::new)
+                            .push(TransitMessage {
                                 event: event.clone(),
                                 msg: new_msg,
-                            },
-                        );
+                            });
                     } else {
                         // A SendPacket event, but did not time-out yet, retain
                         retain_batch.push(gm.clone());

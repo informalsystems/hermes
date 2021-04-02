@@ -36,7 +36,7 @@ pub struct CreateConnectionCommand {
     client_b: Option<ClientId>,
 
     #[options(
-        help = "delay period parameter for the new connection (nanos); default: `0`",
+        help = "delay period parameter for the new connection (seconds); default: `0`",
         no_short
     )]
     delay: Option<u64>,
@@ -91,7 +91,10 @@ impl CreateConnectionCommand {
 
         // Finally, execute the connection handshake.
         let delay = self.delay.unwrap_or(0);
-        let c = Connection::new(client_a, client_b, delay);
+        match Connection::new(client_a, client_b, delay) {
+            Ok(con) => Output::success(format!("{:?}", con)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        }
     }
 
     /// Create a connection reusing pre-existing clients on both chains.
@@ -159,6 +162,9 @@ impl CreateConnectionCommand {
 
         // All verification passed. Create the Connection object & do the handshake.
         let delay = self.delay.unwrap_or(0);
-        let c = Connection::new(client_a, client_b, delay);
+        match Connection::new(client_a, client_b, delay) {
+            Ok(con) => Output::success(format!("{:?}", con)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        }
     }
 }

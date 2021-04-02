@@ -119,7 +119,7 @@ impl Channel {
                 b_port,
                 Default::default(),
             ),
-            connection_delay: Duration::from_nanos(connection.delay_period),
+            connection_delay: Duration::from_secs(connection.delay_period),
         };
         channel.handshake()?;
         Ok(channel)

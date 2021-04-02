@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, warn};
@@ -20,12 +22,15 @@ use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
 
+// TODO: The constant should eventually be part of the IBC client (ICS 02, ICS 07)
+const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
+
 #[derive(Debug, Error)]
 pub enum ConnectionError {
     #[error("failed with underlying cause: {0}")]
     Failed(String),
 
-    #[error("constructor parameters do not match: underlying error: {0}")]
+    #[error("connection constructor error: {0}")]
     ConstructorFailed(String),
 
     #[error("failed during a query to chain id {0} due to underlying error: {1}")]
@@ -77,6 +82,15 @@ impl Connection {
         delay_period: u64,
     ) -> Result<Connection, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
+
+        // Validate the delay period against the upper bound
+        let pd_secs = Duration::from_secs(delay_period);
+        if pd_secs > MAX_PACKET_DELAY {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "Invalid delay period '{:?}': should be max '{:?}'",
+                pd_secs, MAX_PACKET_DELAY
+            )));
+        }
 
         let mut c = Connection {
             delay_period,
