@@ -28,7 +28,7 @@ pub struct QueryClientStateCmd {
     #[options(free, required, help = "identifier of the client to query")]
     client_id: ClientId,
 
-    #[options(help = "the chain height which this query should reflect", short = "h")]
+    #[options(help = "the chain height context for the query", short = "h")]
     height: Option<u64>,
 }
 
@@ -75,7 +75,10 @@ pub struct QueryClientConsensusCmd {
     #[options(help = "show only consensus heights", short = "s")]
     heights_only: bool,
 
-    #[options(help = "the chain height which this query should reflect", short = "h")]
+    #[options(
+        help = "the chain height context to be used, applicable only to a specific height",
+        short = "h"
+    )]
     height: Option<u64>,
 }
 
@@ -128,10 +131,6 @@ impl Runnable for QueryClientConsensusCmd {
                     pagination: None,
                 });
 
-                let res = chain.query_consensus_states(QueryConsensusStatesRequest {
-                    client_id: self.client_id.to_string(),
-                    pagination: None,
-                });
                 match res {
                     Ok(states) => {
                         if self.heights_only {
@@ -166,7 +165,7 @@ pub struct QueryClientHeaderCmd {
     #[options(free, required, help = "height of header to query")]
     consensus_height: u64,
 
-    #[options(help = "the chain height which this query should reflect", short = "h")]
+    #[options(help = "the chain height context for the query", short = "h")]
     height: Option<u64>,
 }
 

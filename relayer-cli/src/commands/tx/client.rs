@@ -70,10 +70,10 @@ pub struct TxUpdateClientCmd {
     )]
     dst_client_id: ClientId,
 
-    #[options(help = "the chain height which this query should reflect", short = "h")]
-    height: Option<u64>,
+    #[options(help = "the target heightof the client update", short = "h")]
+    target_height: Option<u64>,
 
-    #[options(help = "the chain height which this query should reflect", short = "t")]
+    #[options(help = "the trusted height of the client update", short = "t")]
     trusted_height: Option<u64>,
 }
 
@@ -92,7 +92,7 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let height = match self.height {
+        let height = match self.target_height {
             Some(height) => ibc::Height::new(chains.src.id().version(), height),
             None => ibc::Height::zero(),
         };

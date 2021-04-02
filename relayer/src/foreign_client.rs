@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::{thread, time::Duration};
 
 use prost_types::Any;
@@ -7,7 +6,9 @@ use tracing::{debug, error, info, warn};
 
 use ibc::downcast;
 use ibc::events::{IbcEvent, IbcEventType};
-use ibc::ics02_client::client_consensus::{ConsensusState, QueryClientEventRequest};
+use ibc::ics02_client::client_consensus::{
+    AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
+};
 use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::events::UpdateClient;
@@ -322,7 +323,7 @@ impl ForeignClient {
         &self,
         target_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        self.build_update_client_with_trusted(target_height, None)
+        self.build_update_client_with_trusted(target_height, Height::zero())
     }
 
     /// Returns a vector with a message for updating the client to height `target_height`.
@@ -330,7 +331,7 @@ impl ForeignClient {
     pub fn build_update_client_with_trusted(
         &self,
         target_height: Height,
-        trusted_height: Option<Height>,
+        trusted_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
         // Wait for source chain to reach `target_height`
         while self.src_chain().query_latest_height().map_err(|e| {
@@ -354,22 +355,32 @@ impl ForeignClient {
                 ))
             })?;
 
-        // If not specified, set trusted state to client's latest. Otherwise ensure that a consensus
-        // state at trusted height exists on-chain.
-        let trusted_height = match trusted_height {
-            None => client_state.latest_height(),
-            Some(h) => {
-                let cs_heights = self.consensus_state_heights()?;
-                let heights: HashSet<_> = cs_heights.iter().collect();
-                if !heights.contains(&h) {
-                    return Err(ForeignClientError::ClientUpdate(format!(
+        // If not specified, set trusted state to the highest height smaller than target height.
+        // Otherwise ensure that a consensus state at trusted height exists on-chain.
+        let cs_heights = self.consensus_state_heights()?;
+        let trusted_height = if trusted_height == Height::zero() {
+            // Get highest height smaller than target height
+            cs_heights
+                .into_iter()
+                .find(|h| h < &target_height)
+                .ok_or_else(|| {
+                    ForeignClientError::ClientUpdate(format!(
+                        "chain {} is missing trusted state smaller than target height {}",
+                        self.dst_chain().id(),
+                        target_height
+                    ))
+                })?
+        } else {
+            cs_heights
+                .into_iter()
+                .find(|h| h == &trusted_height)
+                .ok_or_else(|| {
+                    ForeignClientError::ClientUpdate(format!(
                         "chain {} is missing trusted state at height {}",
                         self.dst_chain().id(),
-                        h
-                    )));
-                };
-                h
-            }
+                        trusted_height
+                    ))
+                })?
         };
 
         if trusted_height >= target_height {
@@ -407,6 +418,10 @@ impl ForeignClient {
         Ok(vec![new_msg.to_any()])
     }
 
+    pub fn build_latest_update_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {
+        self.build_update_client_and_send(Height::zero(), Height::zero())
+    }
+
     pub fn build_update_client_and_send(
         &self,
         height: Height,
@@ -424,7 +439,7 @@ impl ForeignClient {
             height
         };
 
-        let new_msgs = self.build_update_client_with_trusted(h, Some(trusted_height))?;
+        let new_msgs = self.build_update_client_with_trusted(h, trusted_height)?;
         if new_msgs.is_empty() {
             return Err(ForeignClientError::ClientUpdate(format!(
                 "Client {} is already up-to-date with chain {}@{}",
@@ -448,11 +463,9 @@ impl ForeignClient {
 
     /// Attempts to update a client using header from the latest height of its source chain.
     pub fn update(&self) -> Result<(), ForeignClientError> {
-        let res = self
-            .build_update_client_and_send(Height::zero(), Height::zero())
-            .map_err(|e| {
-                ForeignClientError::ClientUpdate(format!("build_create_client_and_send {:?}", e))
-            })?;
+        let res = self.build_latest_update_client_and_send().map_err(|e| {
+            ForeignClientError::ClientUpdate(format!("build_create_client_and_send {:?}", e))
+        })?;
 
         info!(
             "Client id {:?} on {:?} updated with return message {:?}\n",
@@ -502,11 +515,11 @@ impl ForeignClient {
         Ok(Some(update))
     }
 
-    /// Retrieves all consensus heights for this client and sorts them in reverse
-    /// order. If they are not pruned on chain then last consensus state is the one
+    /// Retrieves all consensus states for this client and sorts them in reverse height
+    /// order. If consensus states are not pruned on chain, then last consensus state is the one
     /// installed by the `CreateClient` operation.
-    fn consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
-        let mut consensus_state_heights: Vec<Height> = self
+    fn consensus_states(&self) -> Result<Vec<AnyConsensusStateWithHeight>, ForeignClientError> {
+        let mut consensus_states = self
             .dst_chain
             .query_consensus_states(QueryConsensusStatesRequest {
                 client_id: self.id.to_string(),
@@ -518,13 +531,21 @@ impl ForeignClient {
                     self.src_chain.id(),
                     format!("{}", e),
                 )
-            })?
+            })?;
+        consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
+        consensus_states.reverse();
+        Ok(consensus_states)
+    }
+
+    /// Retrieves all consensus heights for this client sorted in reverse
+    /// order.
+    fn consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
+        let consensus_state_heights: Vec<Height> = self
+            .consensus_states()?
             .iter()
             .filter_map(|cs| Option::from(cs.height))
             .collect();
 
-        consensus_state_heights.sort();
-        consensus_state_heights.reverse();
         Ok(consensus_state_heights)
     }
 
@@ -790,7 +811,7 @@ mod test {
         };
 
         // This action should fail because no client exists (yet)
-        let res = a_client.build_update_client_and_send(Height::zero(), Height::zero());
+        let res = a_client.build_latest_update_client_and_send();
         assert!(
             res.is_err(),
             "build_update_client_and_send was supposed to fail (no client existed)"
@@ -814,7 +835,7 @@ mod test {
         // This should fail because the client on chain a already has the latest headers. Chain b,
         // the source chain for the client on a, is at the same height where it was when the client
         // was created, so an update should fail here.
-        let res = a_client.build_update_client_and_send(Height::zero(), Height::zero());
+        let res = a_client.build_latest_update_client_and_send();
         assert!(
             res.is_err(),
             "build_update_client_and_send was supposed to fail",
@@ -843,7 +864,7 @@ mod test {
 
         // Now we can update both clients -- a ping pong, similar to ICS18 `client_update_ping_pong`
         for _i in 1..num_iterations {
-            let res = a_client.build_update_client_and_send(Height::zero(), Height::zero());
+            let res = a_client.build_latest_update_client_and_send();
             assert!(
                 res.is_ok(),
                 "build_update_client_and_send failed (chain a) with error: {:?}",
@@ -859,7 +880,7 @@ mod test {
             );
 
             // And also update the client on chain b.
-            let res = b_client.build_update_client_and_send(Height::zero(), Height::zero());
+            let res = b_client.build_latest_update_client_and_send();
             assert!(
                 res.is_ok(),
                 "build_update_client_and_send failed (chain b) with error: {:?}",

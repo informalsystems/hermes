@@ -631,11 +631,14 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        Ok(response
+        let mut consensus_states: Vec<AnyConsensusStateWithHeight> = response
             .consensus_states
             .into_iter()
             .filter_map(|cs| TryFrom::try_from(cs).ok())
-            .collect())
+            .collect();
+        consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
+        consensus_states.reverse();
+        Ok(consensus_states)
     }
 
     /// Performs a query to retrieve the identifiers of all connections.
