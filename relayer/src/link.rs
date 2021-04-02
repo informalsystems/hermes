@@ -646,7 +646,6 @@ impl RelayPath {
     ) -> Result<Vec<IbcEvent>, LinkError> {
         // We will operate on potentially different operational data if the initial one fails.
         let mut odata = initial_od;
-        let mut result = vec![];
 
         for i in 0..MAX_ITER {
             info!(
@@ -662,12 +661,12 @@ impl RelayPath {
                 Ok(events) => {
                     // Done with this op. data
                     info!("[{}] Success", self);
-                    result = events;
+                    return Ok(events);
                 }
                 Err(LinkError::SendError) => {
                     // This error means we can retry
                     match self.regenerate_operational_data(odata.clone()) {
-                        None => break,
+                        None => return Ok(vec![]), // Nothing to retry
                         Some(new_od) => odata = new_od,
                     }
                 }
@@ -677,7 +676,7 @@ impl RelayPath {
                 }
             }
         }
-        Ok(result)
+        Ok(vec![])
     }
 
     /// Helper for managing retries of the `relay_from_operational_data` method.
@@ -1424,8 +1423,6 @@ impl RelayPath {
     }
 
     fn fetch_scheduled_operational_data(&mut self) -> Option<OperationalData> {
-        // TODO(ADI): Should call self.recheck_send_packet_events()?;
-
         if let Some(odata) = self.src_operational_data.first() {
             info!(
                 "[{}] Found a scheduled op. data with batch of size {} for {}. Waiting for delay period ({:#?}) to pass",
@@ -1644,7 +1641,7 @@ impl Link {
                 a_channel.counterparty().port_id.clone(),
                 b_channel_id,
             ),
-            connection_delay: Duration::from_nanos(a_connection.delay_period()),
+            connection_delay: Duration::from_secs(a_connection.delay_period()),
         };
 
         Ok(Link::new(channel))
