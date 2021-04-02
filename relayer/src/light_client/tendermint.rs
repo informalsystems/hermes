@@ -1,9 +1,14 @@
 use std::convert::TryFrom;
 
-use ibc::downcast;
+use bitcoin::hashes::core::cmp::Ordering;
 use tendermint_light_client::{
-    builder::LightClientBuilder, builder::SupervisorBuilder, light_client, store, supervisor,
-    supervisor::Handle, supervisor::Supervisor, types::Height as TMHeight, types::LightBlock,
+    components::{self, io::AtHeight},
+    light_client::{LightClient as TmLightClient, Options as TmOptions},
+    operations,
+    state::State as LightClientState,
+    store::{memory::MemoryStore, LightStore},
+    types::Height as TMHeight,
+    types::{LightBlock, PeerId, Status},
 };
 use tendermint_rpc as rpc;
 
@@ -12,64 +17,55 @@ use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::header::AnyHeader;
 use ibc::ics07_tendermint::header::{Header as TmHeader, Header};
 use ibc::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::{downcast, ics02_client::client_state::AnyClientState};
+use ibc::{ics02_client::client_type::ClientType, ics24_host::identifier::ChainId};
 
 use crate::error::Kind;
 use crate::{
     chain::CosmosSdkChain,
-    config::{ChainConfig, LightClientConfig, StoreConfig},
-    error,
+    config::ChainConfig,
+    error::{self, Error},
 };
-use bitcoin::hashes::core::cmp::Ordering;
 
 pub struct LightClient {
-    handle: Box<dyn Handle>,
-    pub chain_id: ChainId,
+    chain_id: ChainId,
+    peer_id: PeerId,
+    io: components::io::ProdIo,
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, error::Error> {
-        self.handle.latest_trusted().map_err(|e| {
-            error::Kind::LightClientSupervisor(self.chain_id.clone())
-                .context(e)
-                .into()
-        })
+    fn verify(
+        &mut self,
+        trusted: ibc::Height,
+        target: ibc::Height,
+        client_state: &AnyClientState,
+    ) -> Result<LightBlock, Error> {
+        let target_height = TMHeight::try_from(target.revision_height)
+            .map_err(|e| error::Kind::InvalidHeight.context(e))?;
+
+        let client = self.prepare_client(client_state)?;
+        let mut state = self.prepare_state(trusted)?;
+
+        let light_block = client
+            .verify_to_target(target_height, &mut state)
+            .map_err(|e| error::Kind::LightClient(self.chain_id.to_string()).context(e))?;
+
+        Ok(light_block)
     }
 
-    fn verify_to_latest(&self) -> Result<LightBlock, error::Error> {
-        self.handle.verify_to_highest().map_err(|e| {
-            error::Kind::LightClientSupervisor(self.chain_id.clone())
-                .context(e)
-                .into()
-        })
-    }
-
-    fn verify_to_target(&self, height: ibc::Height) -> Result<LightBlock, error::Error> {
-        crate::time!("verify_to_target for consensus {:?}", height);
-
+    fn fetch(&mut self, height: ibc::Height) -> Result<LightBlock, Error> {
         let height = TMHeight::try_from(height.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
-        self.handle.verify_to_target(height).map_err(|e| {
-            error::Kind::LightClientSupervisor(self.chain_id.clone())
-                .context(e)
-                .into()
-        })
-    }
-
-    fn get_minimal_set(
-        &self,
-        _latest_client_state_height: ibc::Height,
-        _target_height: ibc::Height,
-    ) -> Result<Vec<ibc::Height>, error::Error> {
-        todo!()
+        self.fetch_light_block(AtHeight::At(height))
     }
 
     fn build_misbehaviour(
-        &self,
+        &mut self,
+        client_state: &AnyClientState,
         update: UpdateClient,
         latest_chain_height: ibc::Height,
-    ) -> Result<Option<AnyMisbehaviour>, error::Error> {
+    ) -> Result<Option<AnyMisbehaviour>, Error> {
         crate::time!("light client build_misbehaviour");
 
         let update_header = update.header.clone().ok_or_else(|| {
@@ -92,9 +88,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let tm_chain_header = {
             assert!(trusted_height < latest_chain_height);
-            let trusted_light_block = self.verify_to_target(trusted_height)?;
-            let target_light_block = self.verify_to_target(target_height)?;
-
+            let trusted_light_block = self.fetch(trusted_height.increment())?;
+            let target_light_block = self.verify(trusted_height, target_height, &client_state)?;
             TmHeader {
                 trusted_height,
                 signed_header: target_light_block.signed_header.clone(),
@@ -122,21 +117,21 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 }
 
 impl LightClient {
-    fn new(handle: impl Handle + 'static, chain_id: ChainId) -> Self {
-        Self {
-            handle: Box::new(handle),
-            chain_id,
-        }
-    }
+    pub fn from_config(config: &ChainConfig) -> Result<Self, Error> {
+        let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
+            .map_err(|e| error::Kind::LightClient(config.rpc_addr.to_string()).context(e))?;
 
-    pub fn from_config(
-        chain_config: &ChainConfig,
-        reset: bool,
-    ) -> Result<(Self, Supervisor), error::Error> {
-        let supervisor = build_supervisor(&chain_config, reset)?;
-        let handle = supervisor.handle();
+        let peer = config.primary().ok_or_else(|| {
+            error::Kind::LightClient(config.rpc_addr.to_string()).context("no primary peer")
+        })?;
 
-        Ok((Self::new(handle, chain_config.id.clone()), supervisor))
+        let io = components::io::ProdIo::new(peer.peer_id, rpc_client, Some(peer.timeout));
+
+        Ok(Self {
+            chain_id: config.id.clone(),
+            peer_id: peer.peer_id,
+            io,
+        })
     }
 
     /// TODO - move to light client supervisor/ library
@@ -153,78 +148,57 @@ impl LightClient {
             Ordering::Less => false,
         }
     }
-}
 
-fn build_instance(
-    config: &LightClientConfig,
-    options: light_client::Options,
-    reset: bool,
-) -> Result<supervisor::Instance, error::Error> {
-    let rpc_client = rpc::HttpClient::new(config.address.clone())
-        .map_err(|e| error::Kind::LightClientInstance(config.address.to_string()).context(e))?;
+    fn prepare_client(&self, client_state: &AnyClientState) -> Result<TmLightClient, Error> {
+        let clock = components::clock::SystemClock;
+        let hasher = operations::hasher::ProdHasher;
+        let verifier = components::verifier::ProdVerifier::default();
+        let scheduler = components::scheduler::basic_bisecting_schedule;
 
-    let store: Box<dyn store::LightStore> = match &config.store {
-        StoreConfig::Disk { path } => {
-            let db = sled::open(path).map_err(|e| {
-                error::Kind::LightClientInstance(config.address.to_string()).context(e)
+        let client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                error::Kind::ClientTypeMismatch {
+                    expected: ClientType::Tendermint,
+                    got: client_state.client_type(),
+                }
             })?;
-            Box::new(store::sled::SledStore::new(db))
-        }
-        StoreConfig::Memory { .. } => Box::new(store::memory::MemoryStore::new()),
-    };
 
-    let builder = LightClientBuilder::prod(
-        config.peer_id,
-        rpc_client,
-        store,
-        options,
-        Some(config.timeout),
-    );
+        let params = TmOptions {
+            trust_threshold: client_state.trust_level,
+            trusting_period: client_state.trusting_period,
+            clock_drift: client_state.max_clock_drift,
+        };
 
-    let builder = if reset {
-        builder.trust_primary_at(config.trusted_height, config.trusted_header_hash)
-    } else {
-        builder.trust_from_store()
-    }
-    .map_err(|e| error::Kind::LightClientInstance(config.address.to_string()).context(e))?;
-
-    Ok(builder.build())
-}
-
-fn build_supervisor(config: &ChainConfig, reset: bool) -> Result<Supervisor, error::Error> {
-    let options = light_client::Options {
-        trust_threshold: config.trust_threshold,
-        trusting_period: config.trusting_period,
-        clock_drift: config.clock_drift,
-    };
-
-    let primary_config = config.primary().ok_or_else(|| {
-        error::Kind::LightClientSupervisor(config.id.clone())
-            .context("missing light client primary peer config")
-    })?;
-
-    let witnesses_configs = config.witnesses().ok_or_else(|| {
-        error::Kind::LightClientSupervisor(config.id.clone())
-            .context("missing light client witnesses peer config")
-    })?;
-
-    let primary = build_instance(primary_config, options, reset)?;
-
-    let mut witnesses = Vec::with_capacity(witnesses_configs.len());
-    for conf in witnesses_configs {
-        let instance = build_instance(conf, options, reset)?;
-        witnesses.push((conf.peer_id, conf.address.clone(), instance));
+        Ok(TmLightClient::new(
+            self.peer_id,
+            params,
+            clock,
+            scheduler,
+            verifier,
+            hasher,
+            self.io.clone(),
+        ))
     }
 
-    let supervisor = SupervisorBuilder::new()
-        .primary(
-            primary_config.peer_id,
-            primary_config.address.clone(),
-            primary,
-        )
-        .witnesses(witnesses)
-        .map_err(|e| error::Kind::LightClientSupervisor(config.id.clone()).context(e))?
-        .build_prod();
+    fn prepare_state(&self, trusted: ibc::Height) -> Result<LightClientState, Error> {
+        let trusted_height = TMHeight::try_from(trusted.revision_height)
+            .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
-    Ok(supervisor)
+        let trusted_block = self.fetch_light_block(AtHeight::At(trusted_height))?;
+
+        let mut store = MemoryStore::new();
+        store.insert(trusted_block, Status::Trusted);
+
+        Ok(LightClientState::new(store))
+    }
+
+    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, Error> {
+        use tendermint_light_client::components::io::Io;
+
+        self.io.fetch_light_block(height).map_err(|e| {
+            error::Kind::LightClient(self.chain_id.to_string())
+                .context(e)
+                .into()
+        })
+    }
 }

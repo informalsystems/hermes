@@ -13,6 +13,7 @@
   - Support for relayer restart ([#561])
   - Add support for ordered channels ([#599])
   - Misbehaviour detection and evidence submission ([#632])
+  - Use a stateless light client without a runtime ([#673])
 
 - [ibc-relayer-cli]
   - Added `create connection` and `create channel` CLIs ([#630], [#715])
@@ -70,6 +71,7 @@
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#632]: https://github.com/informalsystems/ibc-rs/issues/632
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695

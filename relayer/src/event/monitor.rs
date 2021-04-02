@@ -5,7 +5,6 @@ use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
-use tendermint::net;
 use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
 use tokio::runtime::Runtime as TokioRuntime;
 use tokio::task::JoinHandle;
@@ -44,7 +43,7 @@ pub struct EventMonitor {
     /// Channel to handler where the monitor for this chain sends the events
     tx_batch: channel::Sender<EventBatch>,
     /// Node Address
-    node_addr: net::Address,
+    node_addr: tendermint_rpc::Url,
     /// Queries
     event_queries: Vec<Query>,
     /// All subscriptions combined in a single stream
@@ -57,16 +56,16 @@ impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
         chain_id: ChainId,
-        rpc_addr: net::Address,
+        node_addr: tendermint_rpc::Url,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, channel::Receiver<EventBatch>), Error> {
         let (tx, rx) = channel::unbounded();
 
-        let websocket_addr = rpc_addr.clone();
+        let ws_addr = node_addr.clone();
         let (websocket_client, websocket_driver) = rt.block_on(async move {
-            WebSocketClient::new(websocket_addr.clone())
+            WebSocketClient::new(ws_addr.clone())
                 .await
-                .map_err(|e| Kind::Rpc(websocket_addr).context(e))
+                .map_err(|e| Kind::Websocket(ws_addr).context(e))
         })?;
 
         let websocket_driver_handle = rt.spawn(websocket_driver.run());
@@ -81,7 +80,7 @@ impl EventMonitor {
             websocket_driver_handle,
             event_queries,
             tx_batch: tx,
-            node_addr: rpc_addr,
+            node_addr,
             subscriptions: Box::new(futures::stream::empty()),
         };
 

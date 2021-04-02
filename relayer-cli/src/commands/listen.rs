@@ -52,8 +52,9 @@ pub(crate) fn subscribe(
     chain_config: ChainConfig,
     rt: Arc<TokioRuntime>,
 ) -> Result<(EventMonitor, channel::Receiver<EventBatch>), BoxError> {
-    let (mut event_monitor, rx) = EventMonitor::new(chain_config.id, chain_config.rpc_addr, rt)
-        .map_err(|e| format!("couldn't initialize event monitor: {}", e))?;
+    let (mut event_monitor, rx) =
+        EventMonitor::new(chain_config.id, chain_config.websocket_addr, rt)
+            .map_err(|e| format!("couldn't initialize event monitor: {}", e))?;
 
     event_monitor
         .subscribe()
