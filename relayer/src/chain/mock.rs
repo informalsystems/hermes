@@ -318,9 +318,11 @@ impl Chain for MockChain {
 
     fn query_consensus_states(
         &self,
-        _request: QueryConsensusStatesRequest,
+        request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        unimplemented!()
+        Ok(self
+            .context
+            .consensus_states(&request.client_id.parse().unwrap()))
     }
 
     fn query_upgraded_consensus_state(
