@@ -30,6 +30,10 @@ Are there any disadvantages of including this feature? -->
 
 <!-- Detailed description of requirements of implementation -->
 
+## Acceptance Criteria
+
+<!-- What's the definition of "done" for this issue? -->
+
 ____
 
 #### For Admin Use
