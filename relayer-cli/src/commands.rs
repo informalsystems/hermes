@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
 
 use crate::config::Config;
+use crate::DEFAULT_CONFIG_PATH;
 
 use self::{
     create::CreateCmds, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
@@ -31,7 +32,7 @@ mod version;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
-    dirs_next::home_dir().map(|home| home.join(".hermes/config.toml"))
+    dirs_next::home_dir().map(|home| home.join(DEFAULT_CONFIG_PATH))
 }
 
 // TODO: Re-add the `config` subcommand

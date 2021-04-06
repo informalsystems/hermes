@@ -92,7 +92,7 @@ impl CreateConnectionCommand {
 
         // Finally, execute the connection handshake.
         // TODO: pass the `delay` parameter here.
-        let c = Connection::new(client_a, client_b, 0);
+        let _c = Connection::new(client_a, client_b, 0);
     }
 
     /// Create a connection reusing pre-existing clients on both chains.
@@ -160,6 +160,6 @@ impl CreateConnectionCommand {
 
         // All verification passed. Create the Connection object & do the handshake.
         // TODO: pass the `delay` parameter here.
-        let c = Connection::new(client_a, client_b, 0);
+        let _c = Connection::new(client_a, client_b, 0);
     }
 }
