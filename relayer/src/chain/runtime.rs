@@ -45,7 +45,6 @@ use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::client_state::AnyClientState;
 
 pub struct Threads {
-    pub light_client: Option<thread::JoinHandle<()>>,
     pub chain_runtime: thread::JoinHandle<()>,
     pub event_monitor: Option<thread::JoinHandle<()>>,
 }
@@ -84,16 +83,15 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let chain = C::bootstrap(config, rt.clone())?;
 
         // Start the light client
-        let (light_client_handler, light_client_thread) = chain.init_light_client()?;
+        let light_client = chain.init_light_client()?;
 
         // Start the event monitor
         let (event_receiver, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
 
         // Instantiate & spawn the runtime
-        let (handle, runtime_thread) = Self::init(chain, light_client_handler, event_receiver, rt);
+        let (handle, runtime_thread) = Self::init(chain, light_client, event_receiver, rt);
 
         let threads = Threads {
-            light_client: light_client_thread,
             chain_runtime: runtime_thread,
             event_monitor: event_monitor_thread,
         };
@@ -173,10 +171,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.send_msgs(proto_msgs, reply_to)?
                         },
 
-                        Ok(ChainRequest::GetMinimalSet { from, to, reply_to }) => {
-                            self.get_minimal_set(from, to, reply_to)?
-                        }
-
                         Ok(ChainRequest::Signer { reply_to }) => {
                             self.get_signer(reply_to)?
                         }
@@ -189,16 +183,16 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.module_version(port_id, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildHeader { trusted_height, target_height, reply_to }) => {
-                            self.build_header(trusted_height, target_height, reply_to)?
+                        Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
+                            self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildClientState { height, reply_to }) => {
                             self.build_client_state(height, reply_to)?
                         }
 
-                        Ok(ChainRequest::BuildConsensusState { height, reply_to }) => {
-                            self.build_consensus_state(height, reply_to)?
+                        Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
+                            self.build_consensus_state(trusted, target, client_state, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
@@ -324,15 +318,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn get_minimal_set(
-        &self,
-        _from: Height,
-        _to: Height,
-        _reply_to: ReplyTo<Vec<AnyHeader>>,
-    ) -> Result<(), Error> {
-        todo!()
-    }
-
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
 
@@ -364,23 +349,25 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     fn build_header(
-        &self,
+        &mut self,
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyHeader>,
     ) -> Result<(), Error> {
         let header = {
             // Get the light block at trusted_height + 1 from chain.
-            // TODO - This is tendermint specific and needs to be refactored during
-            // the relayer light client refactoring.
-            // Note: This is needed to get the next validator set. While there is a next validator set
-            // in the light block at trusted height, the proposer is not known/set in this set.
-            let trusted_light_block = self
-                .light_client
-                .verify_to_target(trusted_height.increment())?;
+            //
+            // TODO: This is tendermint specific and needs to be refactored during
+            //       the relayer light client refactoring.
+            // NOTE: This is needed to get the next validator set. While there is a next validator set
+            //       in the light block at trusted height, the proposer is not known/set in this set.
+            let trusted_light_block = self.light_client.fetch(trusted_height.increment())?;
 
             // Get the light block at target_height from chain.
-            let target_light_block = self.light_client.verify_to_target(target_height)?;
+            let target_light_block =
+                self.light_client
+                    .verify(trusted_height, target_height, &client_state)?;
 
             let header =
                 self.chain
@@ -416,15 +403,17 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
     /// Constructs a consensus state for the given height
     fn build_consensus_state(
-        &self,
-        height: Height,
+        &mut self,
+        trusted: Height,
+        target: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let latest_light_block = self.light_client.verify_to_target(height)?;
+        let light_block = self.light_client.verify(trusted, target, &client_state)?;
 
         let consensus_state = self
             .chain
-            .build_consensus_state(latest_light_block)
+            .build_consensus_state(light_block)
             .map(|cs| cs.wrap_any());
 
         reply_to

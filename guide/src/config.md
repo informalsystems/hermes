@@ -63,6 +63,10 @@ A `chains` section includes parameters related to a chain and the full node to w
 
 * __gas__: Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is `300000`
 
+* __fee_denom__: Specify the denom to be used in the fee for a transaction.
+
+* __fee_amount__: Specify the amount value to be used in the fee for a transaction. Default value is `1000`
+
 * __clock_drift__: Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is `5s`
 
 * __trusting_period__: Specify the amount of time to be used as the trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default value is `14days` (336 hours)
@@ -72,8 +76,8 @@ For example if you want to add a configuration for a chain named `ibc-0`:
 ```toml
 [[chains]]
 id = 'ibc-0'
-rpc_addr = 'tcp://localhost:26657'
-grpc_addr = 'tcp://localhost:9090'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
@@ -102,12 +106,14 @@ log_level = 'error'
 
 [[chains]]
 id = 'ibc-0'
-rpc_addr = 'tcp://localhost:26657'
-grpc_addr = 'tcp://localhost:9090'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
+fee_denom = 'stake'
+fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -120,7 +126,7 @@ primary = '66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
 
 [[chains.peers.light_clients]]
 peer_id = '66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
-address = 'tcp://localhost:26657'
+address = 'http://127.0.0.1:26657'
 timeout = '10s'
 trusted_header_hash = 'A24F654188BC3FC9EFE589FB33D513CE9AC86BFA48B063BDBF1D769750713E09'
 trusted_height = '15'
@@ -131,7 +137,7 @@ path = '/ibc-rs/data/ibc-0/data/66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
 
 [[chains.peers.light_clients]]
 peer_id = '2427F8D914A6862279B3326FA64F76E3BC06DB2E'
-address = 'tcp://localhost:26657'
+address = 'http://127.0.0.1:26657'
 timeout = '10s'
 trusted_header_hash = '44E7C90BFA53256AD72B84286BFDA70FE87BBC7C0D80A1DB199C72A4FBE88FB6'
 trusted_height = '16'
@@ -142,12 +148,14 @@ path = '/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
 
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'tcp://localhost:26557'
-grpc_addr = 'tcp://localhost:9091'
+rpc_addr = 'http://127.0.0.1:26557'
+grpc_addr = 'http://127.0.0.1:9091'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
+fee_denom = 'stake'
+fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -160,7 +168,7 @@ primary = '28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
 
 [[chains.peers.light_clients]]
 peer_id = '28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
-address = 'tcp://localhost:26557'
+address = 'http://127.0.0.1:26557'
 timeout = '10s'
 trusted_header_hash = '66BD0E5ED1FA2022A036782F7D8444DB98DC0326B379BCA6BA75864295D1C910'
 trusted_height = '4'
@@ -171,7 +179,7 @@ path = '/ibc-rs/data/ibc-1/data/28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
 
 [[chains.peers.light_clients]]
 peer_id = 'A885BB3D3DFF6101188B462466AE926E7A6CD51E'
-address = 'tcp://localhost:26557'
+address = 'http://127.0.0.1:26557'
 timeout = '10s'
 trusted_header_hash = '0325BFAA36407D1F11966AEC57D34131CB27B370D3698F284F09152ADE3423C4'
 trusted_height = '5'

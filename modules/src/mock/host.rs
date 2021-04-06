@@ -3,7 +3,7 @@
 use std::convert::TryFrom;
 
 use tendermint::chain::Id as TMChainId;
-use tendermint_testgen::light_block::TMLightBlock;
+use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
@@ -30,7 +30,7 @@ pub enum HostType {
 #[derive(Clone, Debug)]
 pub enum HostBlock {
     Mock(MockHeader),
-    SyntheticTendermint(Box<TMLightBlock>),
+    SyntheticTendermint(Box<TmLightBlock>),
 }
 
 impl HostBlock {
@@ -58,7 +58,7 @@ impl HostBlock {
         }
     }
 
-    pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TMLightBlock {
+    pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
         let mut block = TestgenLightBlock::new_default(height).generate().unwrap();
         block.signed_header.header.chain_id = TMChainId::try_from(chain_id.to_string()).unwrap();
 
@@ -66,8 +66,8 @@ impl HostBlock {
     }
 }
 
-impl From<TMLightBlock> for AnyConsensusState {
-    fn from(light_block: TMLightBlock) -> Self {
+impl From<TmLightBlock> for AnyConsensusState {
+    fn from(light_block: TmLightBlock) -> Self {
         let cs = TMConsensusState::from(light_block.signed_header.header);
         AnyConsensusState::Tendermint(cs)
     }
@@ -94,8 +94,8 @@ impl From<HostBlock> for AnyHeader {
     }
 }
 
-impl From<TMLightBlock> for TMHeader {
-    fn from(light_block: TMLightBlock) -> Self {
+impl From<TmLightBlock> for TMHeader {
+    fn from(light_block: TmLightBlock) -> Self {
         // TODO: This conversion is incorrect for `trusted_height` and `trusted_validator_set`.
         TMHeader {
             signed_header: light_block.signed_header,

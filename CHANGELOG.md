@@ -15,13 +15,14 @@
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Use a stateless light client without a runtime ([#673])
 
 - [ibc-relayer-cli]
   - Added `create connection` and `create channel` CLIs ([#630], [#715])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
   - Added `client-upgrade` CLI ([#357])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
+  - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
 
 ### IMPROVEMENTS
 
@@ -51,6 +52,7 @@
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
+  - Make fee denom and amount configurable ([#754])
 
 ### BREAKING CHANGES
 
@@ -70,6 +72,7 @@
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
@@ -80,7 +83,9 @@
 [#734]: https://github.com/informalsystems/ibc-rs/issues/734
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
+[#748]: https://github.com/informalsystems/ibc-rs/issues/748
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
+[#754]: https://github.com/informalsystems/ibc-rs/issues/754
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
 [#772]: https://github.com/informalsystems/ibc-rs/issues/772
 [#770]: https://github.com/informalsystems/ibc-rs/issues/770

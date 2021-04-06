@@ -9,7 +9,7 @@ use std::{
 };
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::{net, Hash};
+use tendermint::Hash;
 use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
 
 use ibc::ics24_host::identifier::{ChainId, PortId};
@@ -24,16 +24,8 @@ pub mod default {
         Duration::from_secs(10)
     }
 
-    pub fn gas() -> u64 {
-        200_000
-    }
-
-    pub fn rpc_addr() -> net::Address {
-        "localhost:26657".parse().unwrap()
-    }
-
     pub fn trusting_period() -> Duration {
-        Duration::from_secs(336 * 60 * 60) // 336 hours
+        Duration::from_secs(336 * 60 * 60) // 336 hours ~ 14 days
     }
 
     pub fn clock_drift() -> Duration {
@@ -113,13 +105,15 @@ impl Default for GlobalConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
     pub id: ChainId,
-    #[serde(default = "default::rpc_addr")]
-    pub rpc_addr: net::Address,
-    pub grpc_addr: String,
+    pub rpc_addr: tendermint_rpc::Url,
+    pub websocket_addr: tendermint_rpc::Url,
+    pub grpc_addr: tendermint_rpc::Url,
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
     pub gas: Option<u64>,
+    pub fee_denom: String,
+    pub fee_amount: Option<u64>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
@@ -190,7 +184,7 @@ impl PeersConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LightClientConfig {
     pub peer_id: PeerId,
-    pub address: net::Address,
+    pub address: tendermint_rpc::Url,
     #[serde(default = "default::timeout", with = "humantime_serde")]
     pub timeout: Duration,
     pub trusted_header_hash: Hash,
