@@ -6,7 +6,7 @@ use ibc::ics04_channel::channel::Order;
 use crate::chain::handle::ChainHandle;
 use crate::channel::Channel;
 use crate::config::RelayPath;
-use crate::connection::Connection;
+use crate::connection::{Connection, DEFAULT_PACKET_DELAY_SEC};
 use crate::foreign_client::ForeignClient;
 use crate::link::{Link, LinkParameters};
 
@@ -54,7 +54,7 @@ pub fn connect_with_new_channel(
     let client_on_b = ForeignClient::new(b_chain_handle.clone(), a_chain_handle.clone())?;
 
     // Setup the connection between the two chains
-    let connection = Connection::new(client_on_a, client_on_b, 0)?;
+    let connection = Connection::new(client_on_a, client_on_b, DEFAULT_PACKET_DELAY_SEC)?;
 
     // Setup the channel over the connection
     Ok(Channel::new(

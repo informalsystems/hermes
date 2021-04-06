@@ -7,7 +7,7 @@ use ibc::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::channel::Channel;
 use ibc_relayer::config::StoreConfig;
-use ibc_relayer::connection::Connection;
+use ibc_relayer::connection::{Connection, DEFAULT_PACKET_DELAY_SEC};
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair, SpawnOptions};
@@ -93,8 +93,8 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.
-        let con =
-            Connection::new(client_a, client_b, 0).unwrap_or_else(exit_with_unrecoverable_error);
+        let con = Connection::new(client_a, client_b, DEFAULT_PACKET_DELAY_SEC)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally create the channel.
         let channel = Channel::new(con, self.order, self.port_a.clone(), self.port_b.clone())

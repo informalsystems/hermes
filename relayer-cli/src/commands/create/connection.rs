@@ -4,7 +4,7 @@ use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::Height;
 use ibc_relayer::config::StoreConfig;
-use ibc_relayer::connection::Connection;
+use ibc_relayer::connection::{Connection, DEFAULT_PACKET_DELAY_SEC};
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair, SpawnOptions};
@@ -90,7 +90,7 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally, execute the connection handshake.
-        let delay = self.delay.unwrap_or(0);
+        let delay = self.delay.unwrap_or(DEFAULT_PACKET_DELAY_SEC);
         match Connection::new(client_a, client_b, delay) {
             Ok(con) => Output::success(format!("{:?}", con)).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -161,7 +161,7 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // All verification passed. Create the Connection object & do the handshake.
-        let delay = self.delay.unwrap_or(0);
+        let delay = self.delay.unwrap_or(DEFAULT_PACKET_DELAY_SEC);
         match Connection::new(client_a, client_b, delay) {
             Ok(con) => Output::success(format!("{:?}", con)).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),

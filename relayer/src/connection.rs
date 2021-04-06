@@ -22,8 +22,11 @@ use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
 
-// TODO: The constant should eventually be part of the IBC client (ICS 02, ICS 07)
-const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
+/// Maximum value allowed for packet delay on any new connection that the relayer establishes.
+pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
+
+/// Default value (in seconds) for the packet delay of a new connection.
+pub const DEFAULT_PACKET_DELAY_SEC: u64 = 0;
 
 #[derive(Debug, Error)]
 pub enum ConnectionError {
@@ -79,12 +82,12 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
-        delay_period: u64,
+        delay_period_sec: u64,
     ) -> Result<Connection, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
         // Validate the delay period against the upper bound
-        let pd_secs = Duration::from_secs(delay_period);
+        let pd_secs = Duration::from_secs(delay_period_sec);
         if pd_secs > MAX_PACKET_DELAY {
             return Err(ConnectionError::ConstructorFailed(format!(
                 "Invalid delay period '{:?}': should be max '{:?}'",
@@ -93,7 +96,7 @@ impl Connection {
         }
 
         let mut c = Connection {
-            delay_period,
+            delay_period: delay_period_sec,
             a_side: ConnectionSide::new(
                 a_client.dst_chain(),
                 a_client.id().clone(),
