@@ -27,7 +27,6 @@ up properly for two hermes instances.
 
     ```toml
     [global]
-    timeout = '10s'
     strategy = 'naive'
     log_level = 'error'
 
@@ -36,6 +35,7 @@ up properly for two hermes instances.
     rpc_addr = 'http://localhost:26657'
     grpc_addr = 'http://localhost:9090'
     websocket_addr = 'ws://localhost:26657/websocket'
+    rpc_timeout = '10s'
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
@@ -52,6 +52,7 @@ up properly for two hermes instances.
     rpc_addr = 'http://localhost:26557'
     grpc_addr = 'http://localhost:9091'
     websocket_addr = 'ws://localhost:26557/websocket'
+    rpc_timeout = '10s'
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
@@ -104,7 +105,6 @@ up properly for two hermes instances.
 
     ```toml
     [global]
-    timeout = '10s'
     strategy = 'naive'
     log_level = 'error'
 
@@ -113,6 +113,7 @@ up properly for two hermes instances.
     rpc_addr = 'http://localhost:26657'
     grpc_addr = 'http://localhost:9090'
     websocket_addr = 'ws://localhost:26657/websocket'
+    rpc_timeout = '10s'
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
@@ -129,6 +130,7 @@ up properly for two hermes instances.
     rpc_addr = 'http://localhost:26557'
     grpc_addr = 'http://localhost:9091'
     websocket_addr = 'ws://localhost:26557/websocket'
+    rpc_timeout = '10s'
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'

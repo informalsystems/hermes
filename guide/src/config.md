@@ -26,8 +26,6 @@ The global section has parameters that apply globally to the relayer operation.
 
 #### Parameters
 
-* __timeout__: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is `10s` (10 seconds).
-
 * __strategy__: Specify the strategy to be used by the relayer. Currently only `naive` is supported.
 
 * __log_level__: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
@@ -38,7 +36,6 @@ Here is an example for the `global` section:
 
 ```toml
 [global]
-timeout = '10s'
 strategy = 'naive'
 log_level = 'info'
 ```
@@ -56,6 +53,8 @@ A `chains` section includes parameters related to a chain and the full node to w
 * __grpc_addr__: Specify the GRPC address and port where the chain GRPC server listens on. For example `http://localhost:9090`
 
 * __websocket_addr__: Specify the WebSocket address and port where the chain WebSocket server listens on. For example `ws://localhost:26657/websocket`
+
+* __rpc_timeout__: Specify the maximum amount of time (duration) that the RPC requests should take before timing out. Default value is `10s` (10 seconds).
 
 * __account_prefix__: Specify the prefix used by the chain. For example `cosmos`
 
@@ -81,6 +80,7 @@ id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
 websocket_addr = 'ws://localhost:26657/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
@@ -103,7 +103,6 @@ Here is a full example of a configuration file with two chains configured and li
 
 ```toml
 [global]
-timeout = '10s'
 strategy = 'naive'
 log_level = 'error'
 
@@ -112,6 +111,7 @@ id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
 websocket_addr = 'ws://localhost:26657/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
@@ -155,6 +155,7 @@ id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://localhost:26557/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'

@@ -115,7 +115,6 @@ Relevant snippet:
 
 ```toml
 [global]
-timeout = '10s'
 strategy = 'naive'
 log_level = 'error'
 ```
