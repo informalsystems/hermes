@@ -346,8 +346,7 @@ impl Chain for CosmosSdkChain {
             .map(|s| s.node_info.id)
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
-        let timeout = Duration::from_secs(10); // TODO: Get from global config
-        let light_client = TmLightClient::from_config(&self.config, peer_id, Some(timeout))?;
+        let light_client = TmLightClient::from_config(&self.config, peer_id)?;
 
         Ok(Box::new(light_client))
     }

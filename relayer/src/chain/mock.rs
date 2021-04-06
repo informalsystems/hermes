@@ -339,6 +339,7 @@ pub mod test_utils {
             rpc_addr: "http://127.0.0.1:26656".parse().unwrap(),
             grpc_addr: "http://127.0.0.1:9090".parse().unwrap(),
             websocket_addr: "ws://127.0.0.1:26656/websocket".parse().unwrap(),
+            rpc_timeout: crate::config::default::rpc_timeout(),
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),

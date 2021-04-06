@@ -13,7 +13,7 @@ use crate::error;
 pub mod default {
     use super::*;
 
-    pub fn timeout() -> Duration {
+    pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
     }
 
@@ -70,9 +70,6 @@ impl Default for Strategy {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GlobalConfig {
-    #[serde(default = "default::timeout", with = "humantime_serde")]
-    pub timeout: Duration,
-
     #[serde(default)]
     pub strategy: Strategy,
 
@@ -84,7 +81,6 @@ pub struct GlobalConfig {
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
-            timeout: default::timeout(),
             strategy: Strategy::default(),
             log_level: "info".to_string(),
         }
@@ -97,6 +93,8 @@ pub struct ChainConfig {
     pub rpc_addr: tendermint_rpc::Url,
     pub websocket_addr: tendermint_rpc::Url,
     pub grpc_addr: tendermint_rpc::Url,
+    #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
+    pub rpc_timeout: Duration,
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,

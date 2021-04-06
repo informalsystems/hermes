@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::time::Duration;
 
 use tendermint_rpc as rpc;
 
@@ -13,8 +12,11 @@ use tendermint_light_client::{
     types::{LightBlock, PeerId, Status},
 };
 
-use ibc::{downcast, ics02_client::client_state::AnyClientState};
-use ibc::{ics02_client::client_type::ClientType, ics24_host::identifier::ChainId};
+use ibc::{
+    downcast,
+    ics02_client::{client_state::AnyClientState, client_type::ClientType},
+    ics24_host::identifier::ChainId,
+};
 
 use crate::{
     chain::CosmosSdkChain,
@@ -57,15 +59,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 }
 
 impl LightClient {
-    pub fn from_config(
-        config: &ChainConfig,
-        peer_id: PeerId,
-        timeout: Option<Duration>,
-    ) -> Result<Self, Error> {
+    pub fn from_config(config: &ChainConfig, peer_id: PeerId) -> Result<Self, Error> {
         let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| error::Kind::LightClient(config.rpc_addr.to_string()).context(e))?;
 
-        let io = components::io::ProdIo::new(peer_id, rpc_client, timeout);
+        let io = components::io::ProdIo::new(peer_id, rpc_client, Some(config.rpc_timeout));
 
         Ok(Self {
             chain_id: config.id.clone(),
