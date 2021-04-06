@@ -24,7 +24,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
 
     let packet = &msg.packet;
 
-    let source_channel_end = ctx
+    let mut source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or_else(|| {
             Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
@@ -113,6 +113,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
             &msg.proofs.clone(),
         )?;
 
+        source_channel_end.state = State::Closed;
         PacketResult::Timeout(TimeoutPacketResult {
             port_id: packet.source_port.clone(),
             channel_id: packet.source_channel.clone(),

@@ -5,7 +5,7 @@
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics04_channel::channel::{ChannelEnd, State};
+use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::{error::Error, packet::Receipt};
 use crate::ics05_port::capabilities::Capability;
@@ -155,31 +155,15 @@ pub trait ChannelKeeper {
                 }
             }
             PacketResult::Timeout(res) => {
-                match res.channel {
-                    Some(c) => {
-                        //Ordered Channel
-                        let mut channel = c;
-                        channel.state = State::Closed;
-                        self.store_channel(
-                            (res.port_id.clone(), res.channel_id.clone()),
-                            &channel,
-                        )?;
-
-                        self.delete_packet_commitment((
-                            res.port_id.clone(),
-                            res.channel_id.clone(),
-                            res.seq,
-                        ))?;
-                    }
-                    None => {
-                        //Unordered Channel
-                        self.delete_packet_commitment((
-                            res.port_id.clone(),
-                            res.channel_id.clone(),
-                            res.seq,
-                        ))?;
-                    }
+                if let Some(c) = res.channel {
+                    //Ordered Channel
+                    self.store_channel((res.port_id.clone(), res.channel_id.clone()), &c)?;
                 }
+                self.delete_packet_commitment((
+                    res.port_id.clone(),
+                    res.channel_id.clone(),
+                    res.seq,
+                ))?;
             }
         }
         Ok(())
