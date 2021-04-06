@@ -338,6 +338,10 @@ impl MockContext {
     pub fn add_port(&mut self, port_id: PortId) {
         self.port_capabilities.insert(port_id, Capability::new());
     }
+
+    pub fn consensus_states(&self, client_id: &ClientId) -> Option<&HashMap<Height, AnyConsensusState>> {
+        self.clients.get(client_id).map(|record| &record.consensus_states)
+    }
 }
 
 impl Ics26Context for MockContext {}
