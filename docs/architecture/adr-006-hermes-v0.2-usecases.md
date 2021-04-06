@@ -230,7 +230,6 @@ of the config file will look as follows:
 
 ```toml
 [global]
-timeout = '10s'
 strategy = 'naive'
 log_level = 'error'
 log_json = 'false'
