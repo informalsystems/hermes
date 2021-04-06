@@ -123,10 +123,10 @@ pub enum Kind {
     LowPacketHeight(Height, Height),
 
     #[error("Packet timeout height {0} > chain height {1}")]
-    PacketTOHeightNotReached(Height, Height),
+    PacketTimeoutHeightNotReached(Height, Height),
 
     #[error("Packet timeout timestamp {0} > chain timestamp {1}")]
-    PacketTOTimestampNotReached(u64, u64),
+    PacketTimeoutTimestampNotReached(u64, u64),
 
     #[error("Receiving chain block timestamp >= packet timeout timestamp")]
     LowPacketTimestamp,

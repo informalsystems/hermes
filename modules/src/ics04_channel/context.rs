@@ -145,7 +145,7 @@ pub trait ChannelKeeper {
                         self.store_next_sequence_ack((res.port_id.clone(), res.channel_id), s)?;
                     }
                     None => {
-                        //Unorderded Channel
+                        //Unordered Channel
                         self.delete_packet_acknowledgement((
                             res.port_id.clone(),
                             res.channel_id.clone(),
@@ -154,7 +154,6 @@ pub trait ChannelKeeper {
                     }
                 }
             }
-
             PacketResult::Timeout(res) => {
                 match res.channel {
                     Some(c) => {
@@ -173,7 +172,7 @@ pub trait ChannelKeeper {
                         ))?;
                     }
                     None => {
-                        //Unorderded Channel
+                        //Unordered Channel
                         self.delete_packet_commitment((
                             res.port_id.clone(),
                             res.channel_id.clone(),

@@ -61,7 +61,9 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
     let packet_height = packet.timeout_height;
 
     if (!packet.timeout_height.is_zero()) && packet_height > proof_height {
-        return Err(Kind::PacketTOHeightNotReached(packet.timeout_height, proof_height).into());
+        return Err(
+            Kind::PacketTimeoutHeightNotReached(packet.timeout_height, proof_height).into(),
+        );
     }
 
     let consensus_state = ctx
@@ -74,7 +76,9 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
 
     let packet_timestamp = packet.timeout_timestamp;
     if packet.timeout_timestamp != 0 && packet_timestamp > proof_timestamp {
-        return Err(Kind::PacketTOTimestampNotReached(packet_timestamp, proof_timestamp).into());
+        return Err(
+            Kind::PacketTimeoutTimestampNotReached(packet_timestamp, proof_timestamp).into(),
+        );
     }
 
     //verify packet commitment
