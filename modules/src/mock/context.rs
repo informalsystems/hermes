@@ -420,15 +420,14 @@ impl MockContext {
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
-        let cls1 = self.clients[client_id]
+        self.clients[client_id]
             .consensus_states
             .iter()
             .map(|(k, v)| AnyConsensusStateWithHeight {
                 height: *k,
                 consensus_state: v.clone(),
             })
-            .collect();
-        cls1
+            .collect()
     }
 }
 
