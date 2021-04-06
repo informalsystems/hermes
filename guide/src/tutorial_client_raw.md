@@ -7,7 +7,7 @@ First you will need to create a client for each chain:
 This command submits a transaction to a destination chain (`ibc-0`) with a request to create a client for a source chain (`ibc-1`):
 
 ```shell
-hermes tx raw create-client ibc-0 ibc-1
+hermes tx raw create-client ibc-0 ibc-1 | jq
 ```
 
 if the command is successful a message similar to the one below will be displayed `status:success`:
@@ -21,10 +21,13 @@ if the command is successful a message similar to the one below will be displaye
                 "client_id": "07-tendermint-0",
                 "client_type": "Tendermint",
                 "consensus_height": {
-                    "revision_height": 9082,
+                    "revision_height": 998,
                     "revision_number": 1
-                },
-                "height": "1"
+                  },
+                  "height": {
+                    "revision_height": 1009,
+                    "revision_number": 0
+                  }
             }
         }
     ]
@@ -36,7 +39,7 @@ if the command is successful a message similar to the one below will be displaye
 You can also execute a __query__ to view the client state on destination chain `ibc-0` by specifying the `client_id` value `07-tendermint-0`:
 
 ```shell
-hermes query client state ibc-0 07-tendermint-0
+hermes query client state ibc-0 07-tendermint-0  | jq
 ```
 
 which show a message similar to the one below:
@@ -54,7 +57,7 @@ which show a message similar to the one below:
       "revision_number": 0
     },
     "latest_height": {
-      "revision_height": 9082,
+      "revision_height": 981,
       "revision_number": 1
     },
     "max_clock_drift": {
@@ -84,10 +87,10 @@ which show a message similar to the one below:
 Now let's do the same for `ibc-1` as the destination chain:
 
 ```shell
-hermes tx raw create-client ibc-1 ibc-0
+hermes tx raw create-client ibc-1 ibc-0 | jq
 ```
 
-Take note of the `client_id` allocated for this client. In the examples we assume is `07-tendermint-1`.
+Take note of the `client_id` allocated for this client. In the examples we assume is `07-tendermint-1` (this client identity is obtained by creating two clients on ibc-1 for ibc-0).
 
 As before, if the command is successful a message with `status:success` is displayed:
 
@@ -99,10 +102,13 @@ As before, if the command is successful a message with `status:success` is displ
             "client_id": "07-tendermint-1",
             "client_type": "Tendermint",
             "consensus_height": {
-                "revision_height": 9505,
+                "revision_height": 1162,
                 "revision_number": 0
             },
-            "height": "1"
+            "height": {
+                "revision_height": 1154,
+                "revision_number": 1
+              }
         }
     }
 }

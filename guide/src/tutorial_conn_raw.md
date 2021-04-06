@@ -13,7 +13,7 @@ Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0` in or
 
 Send a connection try to `ibc-1`:
 ```shell
-hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-1 -s connection-0
+hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0
 ```
 
 Take note of the ID allocated by the chain, e.g. `connection-1` on `ibc-1`. Use in the `conn-ack` CLI

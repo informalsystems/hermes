@@ -71,9 +71,9 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
 Send those samoleans back, from `ibc-1` to `ibc-1`.
 
 ```shell script
-hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 1 -d ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC
 hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
 hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 ```
 
-The `ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.
+The `ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.

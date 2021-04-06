@@ -20,10 +20,13 @@ Currently, cosmos-SDK implementation uses:
               "client_id": "07-tendermint-0",
               "client_type": "Tendermint",
               "consensus_height": {
-                "revision_height": 44895,
+                "revision_height": 294,
                 "revision_number": 0
               },
-              "height": "1"
+              "height": {
+                "revision_height": 286,
+                "revision_number": 1
+              }
             }
           }
         }
@@ -44,7 +47,10 @@ Currently, cosmos-SDK implementation uses:
               "connection_id": "connection-0",
               "counterparty_client_id": "07-tendermint-0",
               "counterparty_connection_id": null,
-              "height": "1"
+              "height": {
+                "revision_height": 718,
+                "revision_number": 1
+              }
             }
           }
         }
@@ -61,11 +67,14 @@ Currently, cosmos-SDK implementation uses:
           "status": "success",
           "result": {
             "OpenInitChannel": {
-              "channel_id": "channel-2",
+              "channel_id": "channel-0",
               "connection_id": "connection-0",
               "counterparty_channel_id": null,
               "counterparty_port_id": "transfer",
-              "height": "1",
+              "height": {
+                "revision_height": 761,
+                "revision_number": 1
+              },
               "port_id": "transfer"
             }
           }
