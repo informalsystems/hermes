@@ -86,7 +86,7 @@ up properly for two hermes instances.
     cp ../data/ibc-0/key_seed.json data/ibc-0/
     cp ../data/ibc-1/key_seed.json data/ibc-1/
     ```
-6. Initialize the light clients:
+6. Import the signing keys into the keyrings:
 
     ```shell
     ../scripts/init-clients config.toml ibc-0 ibc-1
@@ -164,7 +164,7 @@ up properly for two hermes instances.
     cp ../data/ibc-0/key_seed.json data/ibc-0/
     cp ../data/ibc-1/key_seed.json data/ibc-1/
     ```
-11. Initialize the light clients:
+11. Import the signing keys into the keyrings:
 
     ```shell
     ../scripts/init-clients config.toml ibc-0 ibc-1

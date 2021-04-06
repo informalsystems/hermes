@@ -88,7 +88,8 @@ Then just __`copy`__ the content for `config.toml` above and __`paste`__ into th
 
 ### Running the script to start the chains
 
-From the `ibc-rs` repository folder run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`) and configure the light client peers:
+From the `ibc-rs` repository folder run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`)
+and import the signing keys into the keyring:
 
 ```bash
 ./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
@@ -145,9 +146,6 @@ pagination:
 ibc-0 initialized. Watch file /dev/github.com/informalsystems/ibc-rs/data/ibc-0.log to see its execution.
 ibc-1 initialized. Watch file /dev/github.com/informalsystems/ibc-rs/data/ibc-1.log to see its execution.
 Building the Rust relayer...
-Removing light client peers from configuration...
-Adding primary peers to light client configuration...
-Adding secondary peers to light client configuration...
 Importing keys...
 Done!
 ```

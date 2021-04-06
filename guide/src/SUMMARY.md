@@ -27,7 +27,6 @@
        - [Concurrent packet relaying on multiple paths](./tutorial_relay_two_paths.md)
 - [Commands Reference](./commands.md)
    - [Keys](./keys.md)
-   - [Light clients](./light_clients.md)
    - [Path setup and streaming](./relayer_loop.md)
    - [Raw transactions](./transactions.md)
      - [Client](./tx_client.md)
