@@ -15,24 +15,28 @@
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Use a stateless light client without a runtime ([#673])
 
 - [ibc-relayer-cli]
-  - Added `create connection` CLI ([#630])
+  - Added `create connection` and `create channel` CLIs ([#630], [#715])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
+  - Added `client-upgrade` CLI ([#357])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
+  - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
 
 ### IMPROVEMENTS
 
 - [ibc]
   - Follow Rust guidelines naming conventions ([#689])
   - Per client structure modules ([#740])
-  
+  - MBT: use modelator crate ([#761])
+
 - [ibc-relayer]
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Clarified success path for updating a client that is already up-to-date ([#734])
+  - Added `create` and `update` wrappers for client raw commands ([#772])
 
 ### BUG FIXES
 
@@ -44,9 +48,11 @@
   - Replaced `rust-crypto` & `bitcoin-wallet` deprecated dependencies ([#352])
   - Fix for hard-coded account number ([#752])
   - Fix for chains that don't have `cosmos` account prefix ([#416])
+  - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
+  - Make fee denom and amount configurable ([#754])
 
 ### BREAKING CHANGES
 
@@ -60,20 +66,30 @@
   - [nothing yet]
 
 [#352]: https://github.com/informalsystems/ibc-rs/issues/352
+[#357]: https://github.com/informalsystems/ibc-rs/issues/357
 [#416]: https://github.com/informalsystems/ibc-rs/issues/416
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
+[#715]: https://github.com/informalsystems/ibc-rs/issues/715
 [#702]: https://github.com/informalsystems/ibc-rs/issues/702
+[#734]: https://github.com/informalsystems/ibc-rs/issues/734
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
+[#748]: https://github.com/informalsystems/ibc-rs/issues/748
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
+[#754]: https://github.com/informalsystems/ibc-rs/issues/754
+[#761]: https://github.com/informalsystems/ibc-rs/issues/761
+[#772]: https://github.com/informalsystems/ibc-rs/issues/772
+[#770]: https://github.com/informalsystems/ibc-rs/issues/770
+
 
 ## v0.1.1
 *February 17, 2021*

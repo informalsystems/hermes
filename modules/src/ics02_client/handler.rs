@@ -7,11 +7,13 @@ use crate::ics02_client::msgs::ClientMsg;
 
 pub mod create_client;
 pub mod update_client;
+pub mod upgrade_client;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ClientResult {
     Create(create_client::Result),
     Update(update_client::Result),
+    Upgrade(upgrade_client::Result),
 }
 
 /// General entry point for processing any message related to ICS2 (client functions) protocols.
@@ -22,5 +24,6 @@ where
     match msg {
         ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),
         ClientMsg::UpdateClient(msg) => update_client::process(ctx, msg),
+        ClientMsg::UpgradeClient(msg) => upgrade_client::process(ctx, msg),
     }
 }

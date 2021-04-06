@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-use tendermint_testgen::light_block::TMLightBlock;
+use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
 use ibc::downcast;
@@ -53,7 +53,7 @@ pub struct MockChain {
 }
 
 impl Chain for MockChain {
-    type LightBlock = TMLightBlock;
+    type LightBlock = TmLightBlock;
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
@@ -70,13 +70,8 @@ impl Chain for MockChain {
         })
     }
 
-    #[allow(clippy::type_complexity)]
-    fn init_light_client(
-        &self,
-    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
-        let light_client = MockLightClient::new(self);
-
-        Ok((Box::new(light_client), None))
+    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
+        Ok(Box::new(MockLightClient::new(self)))
     }
 
     fn init_event_monitor(
@@ -145,6 +140,13 @@ impl Chain for MockChain {
             Kind::Query("client state".into()).context("unexpected client state type")
         })?;
         Ok(client_state)
+    }
+
+    fn query_upgraded_client_state(
+        &self,
+        _height: Height,
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        unimplemented!()
     }
 
     fn query_connection(
@@ -300,18 +302,23 @@ impl Chain for MockChain {
 
     fn build_header(
         &self,
+        trusted_height: Height,
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
         Ok(Self::Header {
             signed_header: target_light_block.signed_header.clone(),
             validator_set: target_light_block.validators,
-            trusted_height: Height::new(
-                self.id().version(),
-                u64::from(trusted_light_block.signed_header.header.height),
-            ),
+            trusted_height,
             trusted_validator_set: trusted_light_block.validators,
         })
+    }
+
+    fn query_upgraded_consensus_state(
+        &self,
+        _height: Height,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        unimplemented!()
     }
 }
 
@@ -329,12 +336,15 @@ pub mod test_utils {
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
         ChainConfig {
             id: ChainId::from_str(id).unwrap(),
-            rpc_addr: "127.0.0.1:26656".parse().unwrap(),
-            grpc_addr: "".to_string(),
+            rpc_addr: "http://127.0.0.1:26656".parse().unwrap(),
+            grpc_addr: "http://127.0.0.1:9090".parse().unwrap(),
+            websocket_addr: "ws://127.0.0.1:26656/websocket".parse().unwrap(),
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),
             gas: None,
+            fee_denom: "stake".to_string(),
+            fee_amount: Some(1000),
             max_msg_num: None,
             max_tx_size: None,
             clock_drift: Duration::from_secs(5),

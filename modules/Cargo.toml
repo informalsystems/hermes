@@ -27,7 +27,7 @@ anomaly = "0.2.0"
 chrono = "0.4"
 thiserror = "1.0.24"
 serde_derive = "1.0.104"
-serde = "1.0.124"
+serde = "1.0.125"
 serde_json = "1"
 tracing = "0.1.13"
 prost = "0.7"
@@ -49,7 +49,7 @@ version = "=0.18.1"
 optional = true
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["macros"] }
+modelator = { git = "https://github.com/informalsystems/modelator", rev = "99f656fa8b3cf46a2aa0b6513e4e140d1778c4bd" }
 tendermint-rpc = { version = "=0.18.1", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.18.1" } # Needed for generating (synthetic) light blocks.
 sha2 = { version = "0.9.3" }

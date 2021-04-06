@@ -116,9 +116,9 @@ impl Application for CliApp {
             .transpose()?
             .unwrap_or_default();
 
-        // For `start` cmd exclusively we disable JSON; otherwise output is JSON-only
+        // For `start` and `start-multi` commands exclusively we disable JSON; otherwise output is JSON-only
         let json_on = if let Some(c) = &command.command {
-            !matches!(c, CliCmd::Start(..))
+            !matches!(c, CliCmd::Start(_) | CliCmd::StartMulti(_))
         } else {
             true
         };

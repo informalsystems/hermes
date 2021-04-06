@@ -1,6 +1,8 @@
 use std::convert::TryFrom;
+use std::time::SystemTime;
 
 use chrono::{TimeZone, Utc};
+use prost_types::Timestamp;
 use serde::Serialize;
 use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::Protobuf;
@@ -76,7 +78,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
 impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
         RawConsensusState {
-            timestamp: Some(value.timestamp.to_system_time().unwrap().into()),
+            timestamp: Some(Timestamp::from(SystemTime::from(value.timestamp))),
             root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot {
                 hash: value.root.into_vec(),
             }),

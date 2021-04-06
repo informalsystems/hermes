@@ -1,10 +1,12 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
-use tendermint::net;
 use thiserror::Error;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
+use ibc::{
+    ics02_client::client_type::ClientType,
+    ics24_host::identifier::{ChannelId, ConnectionId},
+};
 
 /// An error that can be raised by the relayer.
 pub type Error = anomaly::Error<Kind>;
@@ -26,19 +28,19 @@ pub enum Kind {
 
     /// RPC error (typically raised by the RPC client or the RPC requester)
     #[error("RPC error to endpoint {0}")]
-    Rpc(net::Address),
+    Rpc(tendermint_rpc::Url),
+
+    /// Websocket error (typically raised by the Websocket client)
+    #[error("Websocket error to endpoint {0}")]
+    Websocket(tendermint_rpc::Url),
 
     /// GRPC error (typically raised by the GRPC client or the GRPC requester)
     #[error("GRPC error")]
     Grpc,
 
-    /// Light client supervisor error
-    #[error("Light client supervisor error for chain id {0}")]
-    LightClientSupervisor(ChainId),
-
     /// Light client instance error, typically raised by a `Client`
-    #[error("Light client instance error for rpc address {0}")]
-    LightClientInstance(String),
+    #[error("Light client error for RPC address {0}")]
+    LightClient(String),
 
     /// Trusted store error, raised by instances of `Store`
     #[error("Store error")]
@@ -47,6 +49,10 @@ pub enum Kind {
     /// Event error (raised by the event monitor)
     #[error("Bad Notification")]
     Event,
+
+    /// Missing ClientState in the upgrade CurrentPlan
+    #[error("The upgrade plan specifies no upgraded client state")]
+    EmptyUpgradedClientState,
 
     /// Response does not contain data
     #[error("Empty response value")]
@@ -162,6 +168,12 @@ pub enum Kind {
 
     #[error("bech32 encoding failed")]
     Bech32Encoding(#[from] bech32::Error),
+
+    #[error("client type mismatch: expected '{expected}', got '{got}'")]
+    ClientTypeMismatch {
+        expected: ClientType,
+        got: ClientType,
+    },
 }
 
 impl Kind {

@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::fmt;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
@@ -90,7 +90,7 @@ impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Default)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Default)]
 pub struct CommitmentPrefix {
     bytes: Vec<u8>,
 }

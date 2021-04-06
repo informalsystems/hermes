@@ -5,13 +5,15 @@ log_level = 'error'
 
 [[chains]]
 id = 'chain_A'
-rpc_addr = 'tcp://localhost:26657'
-grpc_addr = 'tcp://localhost:9090'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26657/websocket'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-
 gas = 200000
+fee_denom = 'stake'
+fee_amount = 10
 max_msg_num = 4
 max_tx_size = 1048576
 clock_drift = '5s'
@@ -23,11 +25,14 @@ denominator = '3'
 
 [[chains]]
 id = 'chain_B'
-rpc_addr = 'tcp://localhost:26557'
-grpc_addr = 'tcp://localhost:9090'
+rpc_addr = 'http://127.0.0.1:26557'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26557/websocket'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
+fee_denom = 'stake'
+fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
 

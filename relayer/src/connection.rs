@@ -4,7 +4,9 @@ use tracing::{error, warn};
 
 use ibc::events::IbcEvent;
 use ibc::ics02_client::height::Height;
-use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
+use ibc::ics03_connection::connection::{
+    ConnectionEnd, Counterparty, IdentifiedConnectionEnd, State,
+};
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -74,21 +76,7 @@ impl Connection {
         b_client: ForeignClient,
         delay_period: u64,
     ) -> Result<Connection, ConnectionError> {
-        // Validate that the two clients serve the same two chains
-        if a_client.src_chain().id().ne(&b_client.dst_chain().id()) {
-            return Err(ConnectionError::ConstructorFailed(format!(
-                "the source chain of client a ({}) does not not match the destination chain of client b ({})",
-                a_client.src_chain().id(),
-                b_client.dst_chain().id()
-            )));
-        }
-        if a_client.dst_chain().id().ne(&b_client.src_chain().id()) {
-            return Err(ConnectionError::ConstructorFailed(format!(
-                "the destination chain of client a ({}) does not not match the source chain of client b ({})",
-                a_client.dst_chain().id(),
-                b_client.src_chain().id()
-            )));
-        }
+        Self::validate_clients(&a_client, &b_client)?;
 
         let mut c = Connection {
             delay_period,
@@ -106,6 +94,85 @@ impl Connection {
         c.handshake()?;
 
         Ok(c)
+    }
+
+    pub fn find(
+        a_client: ForeignClient,
+        b_client: ForeignClient,
+        conn_end_a: &IdentifiedConnectionEnd,
+    ) -> Result<Connection, ConnectionError> {
+        Self::validate_clients(&a_client, &b_client)?;
+
+        // Validate the connection end
+        if conn_end_a.end().client_id().ne(a_client.id()) {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "the client id in the connection end ({}) does not match the foreign client id ({})",
+                conn_end_a.end().client_id(), a_client.id()
+            )));
+        }
+        if conn_end_a.end().counterparty().client_id() != b_client.id() {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "the counterparty client id in the connection end ({}) does not match the foreign client id ({})",
+                conn_end_a.end().counterparty().client_id(), b_client.id()
+            )));
+        }
+        if !conn_end_a.end().state_matches(&State::Open) {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "the connection end is expected to be in state 'Open'; found state: {:?}",
+                conn_end_a.end().state()
+            )));
+        }
+        let b_conn_id = conn_end_a
+            .end()
+            .counterparty()
+            .connection_id()
+            .cloned()
+            .ok_or_else(|| {
+                ConnectionError::ConstructorFailed(format!(
+                    "the connection end has no connection id field in the counterparty: {:?}",
+                    conn_end_a.end().counterparty()
+                ))
+            })?;
+
+        let c = Connection {
+            delay_period: 0, // TODO: Unclear if we should add mechanism to check the delay period
+            a_side: ConnectionSide {
+                chain: a_client.dst_chain.clone(),
+                client_id: a_client.id.clone(),
+                connection_id: conn_end_a.id().clone(),
+            },
+            b_side: ConnectionSide {
+                chain: b_client.dst_chain.clone(),
+                client_id: b_client.id.clone(),
+                connection_id: b_conn_id,
+            },
+        };
+
+        Ok(c)
+    }
+
+    // Verifies that the two clients are mutually consistent, i.e., they serve the same two chains.
+    fn validate_clients(
+        a_client: &ForeignClient,
+        b_client: &ForeignClient,
+    ) -> Result<(), ConnectionError> {
+        if a_client.src_chain().id() != b_client.dst_chain().id() {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "the source chain of client a ({}) does not not match the destination chain of client b ({})",
+                a_client.src_chain().id(),
+                b_client.dst_chain().id()
+            )));
+        }
+
+        if a_client.dst_chain().id() != b_client.src_chain().id() {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "the destination chain of client a ({}) does not not match the source chain of client b ({})",
+                a_client.dst_chain().id(),
+                b_client.src_chain().id()
+            )));
+        }
+
+        Ok(())
     }
 
     pub fn src_chain(&self) -> Box<dyn ChainHandle> {

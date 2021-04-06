@@ -2,6 +2,8 @@ use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 use crate::ics02_client::client_type::ClientType;
+use crate::ics23_commitment::error::Kind as Ics23Kind;
+use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
@@ -20,6 +22,9 @@ pub enum Kind {
 
     #[error("client not found: {0}")]
     ClientNotFound(ClientId),
+
+    #[error("client is frozen: {0}")]
+    ClientFrozen(ClientId),
 
     #[error("consensus state not found at: {0} at height {1}")]
     ConsensusStateNotFound(ClientId, Height),
@@ -54,8 +59,8 @@ pub enum Kind {
     #[error("invalid raw client consensus state")]
     InvalidRawConsensusState,
 
-    #[error("invalid identifer")]
-    InvalidIdentifier,
+    #[error("invalid client identifier: validation error: {0}")]
+    InvalidClientIdentifier(ValidationKind),
 
     #[error("invalid raw header")]
     InvalidRawHeader,
@@ -65,6 +70,12 @@ pub enum Kind {
 
     #[error("invalid address")]
     InvalidAddress,
+
+    #[error("invalid proof for the upgraded client state")]
+    InvalidUpgradeClientProof(Ics23Kind),
+
+    #[error("invalid proof for the upgraded consensus state")]
+    InvalidUpgradeConsensusStateProof(Ics23Kind),
 
     #[error("mismatch between client and arguments types, expected: {0:?}")]
     ClientArgsTypeMismatch(ClientType),

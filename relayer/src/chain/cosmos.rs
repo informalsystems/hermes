@@ -35,7 +35,7 @@ use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
-use ibc::ics24_host::{Path, IBC_QUERY_PATH};
+use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 // Support for GRPC
@@ -43,6 +43,9 @@ use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::cosmos::upgrade::v1beta1::{
+    QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
+};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
@@ -70,10 +73,12 @@ use ibc::ics02_client::client_state::AnyClientState;
 const DEFAULT_MAX_GAS: u64 = 300000;
 const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
+const DEFAULT_GAS_FEE_AMOUNT: u64 = 1000;
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
     rpc_client: HttpClient,
+    grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
 }
@@ -83,13 +88,11 @@ impl CosmosSdkChain {
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
 
-        // TODO - generalize this
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-
         let mut client = self
             .block_on(
-                ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -180,14 +183,8 @@ impl CosmosSdkChain {
             sequence: acct_response.sequence,
         };
 
-        // Gas Fee
-        let coin = Coin {
-            denom: "stake".to_string(),
-            amount: "10000".to_string(),
-        };
-
         let fee = Some(Fee {
-            amount: vec![coin],
+            amount: vec![self.fee()],
             gas_limit: self.gas(),
             payer: "".to_string(),
             granter: "".to_string(),
@@ -240,6 +237,19 @@ impl CosmosSdkChain {
         self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
+    fn fee(&self) -> Coin {
+        let amount = self
+            .config
+            .clone()
+            .fee_amount
+            .unwrap_or(DEFAULT_GAS_FEE_AMOUNT);
+
+        Coin {
+            denom: self.config.fee_denom.clone(),
+            amount: amount.to_string(),
+        }
+    }
+
     fn max_msg_num(&self) -> usize {
         self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
     }
@@ -269,6 +279,34 @@ impl CosmosSdkChain {
 
         Ok(response)
     }
+
+    // Perform an ABCI query against the client upgrade sub-store to fetch a proof.
+    fn query_client_upgrade_proof(
+        &self,
+        data: ClientUpgradePath,
+        height: Height,
+    ) -> Result<(MerkleProof, ICSHeight), Error> {
+        let prev_height =
+            Height::try_from(height.value() - 1).map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).unwrap();
+        let response = self.block_on(abci_query(
+            &self,
+            path,
+            Path::Upgrade(data).to_string(),
+            prev_height,
+            true,
+        ))?;
+
+        let proof = response.proof.ok_or(Kind::EmptyResponseProof)?;
+
+        let height = ICSHeight::new(
+            self.config.id.version(),
+            response.height.increment().value(),
+        );
+
+        Ok((proof, height))
+    }
 }
 
 impl Chain for CosmosSdkChain {
@@ -285,26 +323,23 @@ impl Chain for CosmosSdkChain {
         let key_store = KeyRing::init(StoreBackend::Test, config.clone())
             .map_err(|e| Kind::KeyBase.context(e))?;
 
+        let grpc_addr =
+            Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
+
         Ok(Self {
             rt,
             config,
             keybase: key_store,
             rpc_client,
+            grpc_addr,
         })
     }
 
-    // TODO use a simpler approach to create the light client
-    #[allow(clippy::type_complexity)]
-    fn init_light_client(
-        &self,
-    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
+    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
         crate::time!("init_light_client");
 
-        let (lc, supervisor) = TMLightClient::from_config(&self.config, true)?;
-
-        let supervisor_thread = thread::spawn(move || supervisor.run().unwrap());
-
-        Ok((Box::new(lc), Some(supervisor_thread)))
+        let light_client = TMLightClient::from_config(&self.config)?;
+        Ok(Box::new(light_client))
     }
 
     fn init_event_monitor(
@@ -319,8 +354,11 @@ impl Chain for CosmosSdkChain {
     > {
         crate::time!("init_event_monitor");
 
-        let (mut event_monitor, event_receiver) =
-            EventMonitor::new(self.config.id.clone(), self.config.rpc_addr.clone(), rt)?;
+        let (mut event_monitor, event_receiver) = EventMonitor::new(
+            self.config.id.clone(),
+            self.config.websocket_addr.clone(),
+            rt,
+        )?;
 
         event_monitor.subscribe().unwrap();
         let monitor_thread = thread::spawn(move || event_monitor.run());
@@ -416,7 +454,7 @@ impl Chain for CosmosSdkChain {
 
         if status.sync_info.catching_up {
             fail!(
-                Kind::LightClientSupervisor(self.config.id.clone()),
+                Kind::LightClient(self.config.rpc_addr.to_string()),
                 "node at {} running chain {} not caught up",
                 self.config().rpc_addr,
                 self.config().id,
@@ -432,12 +470,11 @@ impl Chain for CosmosSdkChain {
     fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
         crate::time!("query_chain_clients");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -477,6 +514,99 @@ impl Chain for CosmosSdkChain {
         Ok(client_state)
     }
 
+    fn query_upgraded_client_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        crate::time!("query_upgraded_client_state");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let req = tonic::Request::new(QueryCurrentPlanRequest {});
+        let response = self
+            .block_on(client.current_plan(req))
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let upgraded_client_state_raw = response
+            .into_inner()
+            .plan
+            .ok_or(Kind::EmptyResponseValue)?
+            .upgraded_client_state
+            .ok_or(Kind::EmptyUpgradedClientState)?;
+        let client_state = AnyClientState::try_from(upgraded_client_state_raw)
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        // TODO: Better error kinds here.
+        let tm_client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::Query("upgraded client state".into()).context("unexpected client state type")
+            })?;
+
+        // Query for the proof.
+        let tm_height =
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+        let (proof, _proof_height) = self.query_client_upgrade_proof(
+            ClientUpgradePath::UpgradedClientState(height.revision_height),
+            tm_height,
+        )?;
+
+        Ok((tm_client_state, proof))
+    }
+
+    fn query_upgraded_consensus_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        crate::time!("query_upgraded_consensus_state");
+
+        let tm_height =
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        let mut client = self
+            .block_on(
+                ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let req = tonic::Request::new(QueryUpgradedConsensusStateRequest {
+            last_height: tm_height.into(),
+        });
+        let response = self
+            .block_on(client.upgraded_consensus_state(req))
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let upgraded_consensus_state_raw = response
+            .into_inner()
+            .upgraded_consensus_state
+            .ok_or(Kind::EmptyResponseValue)?;
+
+        // TODO: More explicit error kinds (should not reuse Grpc all over the place)
+        let consensus_state = AnyConsensusState::try_from(upgraded_consensus_state_raw)
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
+            .ok_or_else(|| {
+                Kind::Query("upgraded consensus state".into())
+                    .context("unexpected consensus state type")
+            })?;
+
+        // Fetch the proof.
+        let (proof, _proof_height) = self.query_client_upgrade_proof(
+            ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
+            tm_height,
+        )?;
+
+        Ok((tm_consensus_state, proof))
+    }
+
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_client_connections(
         &self,
@@ -484,11 +614,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<ConnectionId>, Error> {
         crate::time!("query_connections");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -517,11 +647,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<ConnectionId>, Error> {
         crate::time!("query_connections");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -551,7 +681,7 @@ impl Chain for CosmosSdkChain {
     ) -> Result<ConnectionEnd, Error> {
         let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
         Ok(ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("connection".into()).context(e))?)
+            .map_err(|e| Kind::Query(format!("connection {}", connection_id)).context(e))?)
     }
 
     fn query_connection_channels(
@@ -560,11 +690,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<ChannelId>, Error> {
         crate::time!("query_connection_channels");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -590,11 +720,11 @@ impl Chain for CosmosSdkChain {
     fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
         crate::time!("query_connections");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -639,11 +769,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
         crate::time!("query_packet_commitments");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -672,11 +802,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<u64>, Error> {
         crate::time!("query_unreceived_packets");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -698,11 +828,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
         crate::time!("query_packet_acknowledgements");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -731,11 +861,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Vec<u64>, Error> {
         crate::time!("query_unreceived_acknowledgements");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -756,11 +886,11 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Sequence, Error> {
         crate::time!("query_next_sequence_receive");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -986,13 +1116,11 @@ impl Chain for CosmosSdkChain {
 
     fn build_header(
         &self,
+        trusted_height: ICSHeight,
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
         crate::time!("build_header");
-
-        let trusted_height =
-            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
 
         Ok(TMHeader {
             trusted_height,
@@ -1154,11 +1282,11 @@ async fn broadcast_tx_commit(
 
 /// Uses the GRPC client to retrieve the account sequence
 async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
-    let grpc_addr = Uri::from_str(&chain.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-    let mut client =
-        ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(grpc_addr)
-            .await
-            .map_err(|e| Kind::Grpc.context(e))?;
+    let mut client = ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(
+        chain.grpc_addr.clone(),
+    )
+    .await
+    .map_err(|e| Kind::Grpc.context(e))?;
 
     let request = tonic::Request::new(QueryAccountRequest { address });
 

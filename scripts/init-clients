@@ -3,8 +3,8 @@
 # Initialize the light clients in the relayer configuration.
 
 usage() {
-  echo "Usage: $0 [CONFIG_FILE] [CHAIN_0_ID] [CHAIN_1_ID]"
-  echo "Example: $0 ./config.toml ibc-0 ibc-1"
+  echo "Usage: $0 CONFIG_FILE CHAIN_0_ID CHAIN_1_ID [CHAIN_2_ID]"
+  echo "Example: $0 ./config.toml ibc-0 ibc-1 ibc-2"
   exit 1
 }
 
@@ -25,7 +25,8 @@ if [ -z "$3" ]; then
   missing "CHAIN_1_ID"
 fi
 
-if [ "$#" -gt 3 ]; then
+
+if [ "$#" -gt 4 ]; then
   echo "Incorrect number of parameters."
   usage
 fi
@@ -33,8 +34,9 @@ fi
 CONFIG_FILE="$1"
 CHAIN_0_ID="$2"
 CHAIN_1_ID="$3"
+CHAIN_2_ID="$4"
 
-if ! [ -f $CONFIG_FILE ]; then
+if ! [ -f "$CONFIG_FILE" ]; then
   echo "[CONFIG_FILE] ($1) does not exist or is not a file."
   usage
 fi
@@ -49,35 +51,57 @@ if ! grep -q -s "$CHAIN_1_ID" "$CONFIG_FILE"; then
   usage
 fi
 
+if [ -n "$CHAIN_2_ID" ] && ! grep -q -s "$CHAIN_2_ID" "$CONFIG_FILE"; then
+  echo "error: configuration for chain [$CHAIN_2_ID] does not exist in file $CONFIG_FILE."
+  usage
+fi
+
 GAIA_DATA="$(pwd)/data"
 
 CHAIN_0_RPC_PORT=26657
-CHAIN_0_RPC_ADDR="localhost:$CHAIN_0_RPC_PORT"
+CHAIN_0_RPC_ADDR="http://127.0.0.1:$CHAIN_0_RPC_PORT"
 CHAIN_1_RPC_PORT=26557
-CHAIN_1_RPC_ADDR="localhost:$CHAIN_1_RPC_PORT"
+CHAIN_1_RPC_ADDR="http://127.0.0.1:$CHAIN_1_RPC_PORT"
+CHAIN_2_RPC_PORT=26457
+CHAIN_2_RPC_ADDR="http://127.0.0.1:$CHAIN_2_RPC_PORT"
 
 echo "Building the Rust relayer..."
-cargo build &> /dev/null
+cargo build -q
 
 # cleanup the client entries from config
 echo "Removing light client peers from configuration..."
-cargo run --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_0_ID" --all -y &> /dev/null || true
-cargo run --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_1_ID" --all -y &> /dev/null || true
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_0_ID" --all -y || true
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_1_ID" --all -y || true
+
+if [ -n "$CHAIN_2_ID" ]; then
+  cargo run -q --bin hermes -- -c "$CONFIG_FILE" light rm -c "$CHAIN_2_ID" --all -y || true
+fi
 
 # set the primary peers for clients on each chain
 echo "Adding primary peers to light client configuration..."
-cargo run --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -f -p -s "$GAIA_DATA/$CHAIN_0_ID/data" -y &>/dev/null
-cargo run --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -f -p -s "$GAIA_DATA/$CHAIN_1_ID/data" -y &>/dev/null
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -f -p -s "$GAIA_DATA/$CHAIN_0_ID/data" -y
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -f -p -s "$GAIA_DATA/$CHAIN_1_ID/data" -y
+
+if [ -n "$CHAIN_2_ID" ]; then
+  cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_2_RPC_ADDR -c "$CHAIN_2_ID" -f -p -s "$GAIA_DATA/$CHAIN_2_ID/data" -y
+fi
 
 # set the secondary peers for clients on each chain
 echo "Adding secondary peers to light client configuration..."
-cargo run --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -s "$GAIA_DATA/$CHAIN_0_ID/data" -y --peer-id 2427F8D914A6862279B3326FA64F76E3BC06DB2E &>/dev/null
-cargo run --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -s "$GAIA_DATA/$CHAIN_1_ID/data" -y --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E &>/dev/null
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -s "$GAIA_DATA/$CHAIN_0_ID/data" -y --peer-id 2427F8D914A6862279B3326FA64F76E3BC06DB2E
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -s "$GAIA_DATA/$CHAIN_1_ID/data" -y --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E
+
+if [ -n "$CHAIN_2_ID" ]; then
+  cargo run -q --bin hermes -- -c "$CONFIG_FILE" light add $CHAIN_2_RPC_ADDR -c "$CHAIN_2_ID" -s "$GAIA_DATA/$CHAIN_2_ID/data" -y --peer-id 08B4625466AE926E7A5BB3D3DFF611E6CD118A88
+fi
 
 # add the key seeds to the keyring of each chain
 echo "Importing keys..."
-cargo run --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_0_ID" "$GAIA_DATA/$CHAIN_0_ID/key_seed.json" &>/dev/null
-cargo run --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_1_ID" "$GAIA_DATA/$CHAIN_1_ID/key_seed.json" &>/dev/null
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_0_ID" "$GAIA_DATA/$CHAIN_0_ID/key_seed.json"
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_1_ID" "$GAIA_DATA/$CHAIN_1_ID/key_seed.json"
+
+if [ -n "$CHAIN_2_ID" ]; then
+  cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_2_ID" "$GAIA_DATA/$CHAIN_2_ID/key_seed.json"
+fi
 
 echo "Done!"
-
