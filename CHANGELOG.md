@@ -2,9 +2,11 @@
 
 ## Unreleased Changes
 
-- [high level summary]
+> [TODO: high level summary]
 
 ### FEATURES
+
+- Update to `tendermint-rs` v0.19.0 ([#798])
 
 - [ibc]
   - Added handler(s) for sending packets ([#695]) and for recv. and ack. packets ([#736])
@@ -91,20 +93,21 @@
 [#772]: https://github.com/informalsystems/ibc-rs/issues/772
 [#770]: https://github.com/informalsystems/ibc-rs/issues/770
 [#793]: https://github.com/informalsystems/ibc-rs/pull/793
+[#798]: https://github.com/informalsystems/ibc-rs/issues/798
 
 
 ## v0.1.1
 *February 17, 2021*
 
 This release brings a quick fix for a problem with a dependency of crate
-`ibc-relayer`, which causes build & installation issues. Many thanks to 
+`ibc-relayer`, which causes build & installation issues. Many thanks to
 @Fraccaman for bringing this problem to our attention! ([#672])
 
 
 Additionally, this release also introduces initial implementation for most of
 ICS 004 handlers, and several bug fixes and improvements, e.g., refactored
 some CLI code, refactored the Height type in the IBC Events, and a bug fix
-involving packet acks in a 3-chain setup. More details below. 
+involving packet acks in a 3-chain setup. More details below.
 
 ### FEATURES
 - [ibc-relayer]
