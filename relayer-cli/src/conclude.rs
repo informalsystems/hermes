@@ -60,8 +60,7 @@ use std::fmt;
 use serde::Serialize;
 use tracing::error;
 
-use crate::components::TRACING_COMPONENT_ID;
-use crate::prelude::{app_reader, Application};
+use crate::prelude::app_reader;
 
 /// Functional-style method to exit a program.
 ///
@@ -85,11 +84,7 @@ pub fn exit_with(out: Output) {
 /// Returns false otherwise.
 pub fn json() -> bool {
     let a = app_reader();
-    // if the custom Tracing component is loaded, then JSON is enabled
-    a.state()
-        .components
-        .get_by_id(TRACING_COMPONENT_ID)
-        .is_some()
+    a.json_output()
 }
 
 /// Exits the program. Useful when a type produces an error which can no longer be propagated, and

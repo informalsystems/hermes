@@ -41,6 +41,9 @@ pub struct CliApp {
 
     /// Application state.
     state: application::State<Self>,
+
+    /// Toggle json output on/off. Changed with the global config option `-j` / `--json`.
+    json_output: bool,
 }
 
 /// Initialize a new application instance.
@@ -52,7 +55,15 @@ impl Default for CliApp {
         Self {
             config: None,
             state: application::State::default(),
+            json_output: false,
         }
+    }
+}
+
+impl CliApp {
+    /// Whether or not JSON output is enabled
+    pub fn json_output(&self) -> bool {
+        self.json_output
     }
 }
 
@@ -116,6 +127,9 @@ impl Application for CliApp {
             .map(|path| self.load_config(&path))
             .transpose()?
             .unwrap_or_default();
+
+        // Update the `json_output` flag
+        self.json_output = command.json;
 
         if command.json {
             // Enable JSON by using the crate-level `Tracing`
