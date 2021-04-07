@@ -2,6 +2,7 @@
 
 ## Changelog
 * 2020-05-19: First draft. Accepted
+* 2020-04-06: Configuration updates
 
 ## Definitions
 These definitions are specific for this document and they may not be consistent with the IBC Specification.
@@ -110,20 +111,23 @@ The relayer MAY:
 The initial implementation will heavily borrow from the Go relayer implementation that uses a "naive" algorithm for relaying messages. The structure of the configuration file is similar with the one in Go (see [Go-Relayer](https://github.com/cosmos/relayer))
 
 ### Configuration
-(WIP)
+
+> WIP
+
 Upon start the relayer reads a configuration file that includes global and per chain parameters. The file format is .toml
 Below is an example of a configuration file.
 
 ```toml
-title = "IBC Relayer Config Example"
-
 [global]
-timeout = "10s"
 strategy = "naive"
+log_level = "error"
 
 [[chains]]
   id = "chain_A"
-  rpc_addr = "localhost:26657"
+  rpc_addr = "http://localhost:26657"
+  grpc_addr = "http://localhost:9090"
+  websocket_addr = "ws://localhost:26657/websocket"
+  rpc_timeout = "10s"
   account_prefix = "cosmos"
   key_name = "testkey"
   store_prefix = "ibc"
@@ -135,7 +139,10 @@ strategy = "naive"
 
 [[chains]]
   id = "chain_B"
-  rpc_addr = "localhost:26557"
+  rpc_addr = "http://localhost:26557"
+  grpc_addr = "http://localhost:9091"
+  websocket_addr = "ws://localhost:26557/websocket"
+  rpc_timeout = "10s"
   account_prefix = "cosmos"
   key_name = "testkey"
   store_prefix = "ibc"
@@ -197,13 +204,19 @@ pub enum Strategy {
 }
 
 pub struct GlobalConfig {
-    pub timeout: Duration,
     pub strategy: Strategy,
+
+    /// All valid log levels, as defined in tracing:
+    /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
+    pub log_level: String,
 }
 
 pub struct ChainConfig {
     pub id: ChainId,
-    pub rpc_addr: net::Address,
+    pub rpc_addr: tendermint_rpc::Url,
+    pub websocket_addr: tendermint_rpc::Url,
+    pub grpc_addr: tendermint_rpc::Url,
+    pub rpc_timeout: Duration,
     pub account_prefix: String,
     pub key_name: String,
     pub client_ids: Vec<String>,
@@ -247,13 +260,6 @@ To validate a configuration file:
 `relayer -c <config_file> config validate ` 
 
 The command verifies that the specified configuration file parses and it is semantically correct. 
-
-#### Light Client Initialization
-To initialize a light client:
-
-`relayer -c <config_file> light init -x <hash> -h <height> <chain>`
-
-The command initializes the light client for `<chain>` with a trusted height and hash. This should be done for all chains for which relaying is performed.
 
 #### Start
 To start the relayer:

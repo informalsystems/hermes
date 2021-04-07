@@ -2,10 +2,9 @@ use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer::config::StoreConfig;
 use ibc_relayer::link::{Link, LinkParameters};
 
-use crate::cli_utils::{ChainHandlePair, SpawnOptions};
+use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
@@ -29,13 +28,7 @@ impl Runnable for TxRawPacketRecvCmd {
     fn run(&self) {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let chains = match ChainHandlePair::spawn_with(
-            spawn_options,
-            &config,
-            &self.src_chain_id,
-            &self.dst_chain_id,
-        ) {
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
@@ -79,13 +72,7 @@ impl Runnable for TxRawPacketAckCmd {
     fn run(&self) {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let chains = match ChainHandlePair::spawn_with(
-            spawn_options,
-            &config,
-            &self.src_chain_id,
-            &self.dst_chain_id,
-        ) {
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };

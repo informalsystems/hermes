@@ -241,7 +241,7 @@ impl ForeignClient {
             .wrap_any();
 
         let consensus_state = self.src_chain
-            .build_consensus_state(latest_height)
+            .build_consensus_state(client_state.latest_height(),  latest_height, client_state.clone())
             .map_err(|e| ForeignClientError::ClientCreate(format!("failed while building client consensus state from src chain ({}) with error: {}", self.src_chain.id(), e)))?
             .wrap_any();
 
@@ -312,8 +312,8 @@ impl ForeignClient {
             thread::sleep(Duration::from_millis(100))
         }
 
-        // Get the latest trusted height from the client state on destination.
-        let trusted_height = self
+        // Get the latest client state on destination.
+        let client_state = self
             .dst_chain()
             .query_client_state(&self.id, Height::default())
             .map_err(|e| {
@@ -321,8 +321,9 @@ impl ForeignClient {
                     "failed querying client state on dst chain {} with error: {}",
                     self.id, e
                 ))
-            })?
-            .latest_height();
+            })?;
+
+        let trusted_height = client_state.latest_height();
 
         if trusted_height >= target_height {
             warn!(
@@ -335,7 +336,7 @@ impl ForeignClient {
 
         let header = self
             .src_chain()
-            .build_header(trusted_height, target_height)
+            .build_header(trusted_height, target_height, client_state)
             .map_err(|e| {
                 ForeignClientError::ClientUpdate(format!(
                     "failed building header with error: {}",

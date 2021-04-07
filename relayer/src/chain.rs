@@ -80,9 +80,7 @@ pub trait Chain: Sized {
 
     #[allow(clippy::type_complexity)]
     /// Initializes and returns the light client (if any) associated with this chain.
-    fn init_light_client(
-        &self,
-    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error>;
+    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error>;
 
     /// Initializes and returns the event monitor (if any) associated with this chain.
     fn init_event_monitor(

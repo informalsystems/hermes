@@ -27,13 +27,16 @@ pub struct CompileCmd {
 
 impl CompileCmd {
     pub fn run(&self) {
-        let tmp = TempDir::new("ibc-proto").unwrap();
+        let tmp_sdk = TempDir::new("ibc-proto-sdk").unwrap();
+        Self::output_version(&self.sdk, tmp_sdk.as_ref(), "COSMOS_SDK_COMMIT");
+        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref());
 
-        Self::output_version(&self.sdk, tmp.as_ref(), "COSMOS_SDK_COMMIT");
-        Self::output_version(&self.ibc, tmp.as_ref(), "COSMOS_IBC_COMMIT");
-        Self::compile_sdk_protos(&self.sdk, tmp.as_ref());
-        Self::compile_ibc_protos(&self.ibc, &self.sdk, tmp.as_ref());
-        Self::copy_generated_files(tmp.as_ref(), &self.out);
+        let tmp_ibc = TempDir::new("ibc-proto-ibc-go").unwrap();
+        Self::output_version(&self.ibc, tmp_ibc.as_ref(), "COSMOS_IBC_COMMIT");
+        Self::compile_ibc_protos(&self.ibc, tmp_ibc.as_ref());
+
+        // Merge the generated files into a single directory, taking care not to overwrite anything
+        Self::copy_generated_files(tmp_sdk.as_ref(), tmp_ibc.as_ref(), &self.out);
     }
 
     fn output_version(dir: &Path, out_dir: &Path, commit_file: &str) {
@@ -45,7 +48,7 @@ impl CompileCmd {
         std::fs::write(path, rev).unwrap();
     }
 
-    fn compile_ibc_protos(ibc_dir: &Path, sdk_dir: &Path, out_dir: &Path) {
+    fn compile_ibc_protos(ibc_dir: &Path, out_dir: &Path) {
         println!(
             "[info ] Compiling IBC .proto files to Rust into '{}'...",
             out_dir.display()
@@ -59,7 +62,6 @@ impl CompileCmd {
 
         let proto_includes_paths = [
             format!("{}/proto", ibc_dir.display()),
-            format!("{}/proto/cosmos", sdk_dir.display()),
             format!("{}/third_party/proto", ibc_dir.display()),
         ];
 
@@ -182,7 +184,7 @@ impl CompileCmd {
         }
     }
 
-    fn copy_generated_files(from_dir: &Path, to_dir: &Path) {
+    fn copy_generated_files(from_dir_sdk: &Path, from_dir_ibc: &Path, to_dir: &Path) {
         println!(
             "[info ] Copying generated files into '{}'...",
             to_dir.display()
@@ -193,7 +195,8 @@ impl CompileCmd {
         create_dir_all(&to_dir).unwrap();
 
         // Copy new compiled files (prost does not use folder structures)
-        let errors = WalkDir::new(from_dir)
+        // Copy the SDK files first
+        let errors_sdk = WalkDir::new(from_dir_sdk)
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.file_type().is_file())
@@ -210,9 +213,53 @@ impl CompileCmd {
             .filter_map(|e| e.err())
             .collect::<Vec<_>>();
 
-        if !errors.is_empty() {
-            for e in errors {
-                println!("[error] Error while copying compiled file: {}", e);
+        if !errors_sdk.is_empty() {
+            for e in errors_sdk {
+                println!("[error] Error while copying SDK-compiled file: {}", e);
+            }
+
+            panic!("[error] Aborted.");
+        }
+
+        // Copy the IBC-go files second, double-checking if anything is overwritten
+        let errors_ibc = WalkDir::new(from_dir_ibc)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+            .map(|e| {
+                let generated_fname = e.file_name().to_owned().into_string().unwrap();
+                let prefix = &generated_fname[0..6];
+
+                let target_fname = format!(
+                    "{}/{}",
+                    to_dir.display(),
+                    generated_fname,
+                );
+
+                // If it's a cosmos-relevant file and it exists, we should not overwrite it.
+                if Path::new(&target_fname).exists() && prefix.eq("cosmos") {
+                    let original_cosmos_file = std::fs::read(target_fname.clone()).unwrap();
+                    let new_cosmos_file = std::fs::read(e.path()).unwrap();
+                    if original_cosmos_file != new_cosmos_file {
+                        println!(
+                            "[warn ] Cosmos-related file exists already {}! Ignoring the one generated from IBC-go {:?}",
+                            target_fname, e.path()
+                        );
+                    }
+                    Ok(0)
+                } else {
+                    copy(
+                        e.path(),
+                        target_fname,
+                    )
+                }
+            })
+            .filter_map(|e| e.err())
+            .collect::<Vec<_>>();
+
+        if !errors_ibc.is_empty() {
+            for e in errors_ibc {
+                println!("[error] Error while copying IBC-go compiled file: {}", e);
             }
 
             panic!("[error] Aborted.");

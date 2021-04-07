@@ -6,11 +6,10 @@ use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::channel::Channel;
-use ibc_relayer::config::StoreConfig;
 use ibc_relayer::connection::{Connection, DEFAULT_PACKET_DELAY_SEC};
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair, SpawnOptions};
+use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
@@ -77,11 +76,9 @@ impl CreateChannelCommand {
             .exit();
         }
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+        let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let chains =
-            ChainHandlePair::spawn_with(spawn_options, &config, &self.chain_a_id, chain_b_id)
-                .unwrap_or_else(exit_with_unrecoverable_error);
         info!(
             "Creating new clients, new connection, and a new channel with order {:?} and version {}",
             self.order, self.version
@@ -107,10 +104,8 @@ impl CreateChannelCommand {
     fn run_reusing_connection(&self) {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-
         // Validate & spawn runtime for side a.
-        let chain_a = spawn_chain_runtime(spawn_options.clone(), &config, &self.chain_a_id)
+        let chain_a = spawn_chain_runtime(&config, &self.chain_a_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Unwrap the identifier of the connection on side a.
@@ -137,8 +132,8 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Spawn the runtime for side b.
-        let chain_b = spawn_chain_runtime(spawn_options, &config, &chain_b_id)
-            .unwrap_or_else(exit_with_unrecoverable_error);
+        let chain_b =
+            spawn_chain_runtime(&config, &chain_b_id).unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the foreign client handles.
         let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), conn_end.client_id())
