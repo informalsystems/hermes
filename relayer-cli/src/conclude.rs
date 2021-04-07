@@ -70,7 +70,7 @@ pub fn exit_with(out: Output) {
     // Handle the output message
     match json() {
         true => println!("{}", serde_json::to_string(&out).unwrap()),
-        false => println!("{}: {}", out.status, out.result),
+        false => println!("{}\n{:#}", out.status, out.result),
     }
 
     // The return code
