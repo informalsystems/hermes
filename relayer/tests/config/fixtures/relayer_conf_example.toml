@@ -2,6 +2,7 @@
 timeout = '10s'
 strategy = 'naive'
 log_level = 'error'
+log_json = false
 
 [[chains]]
 id = 'chain_A'
