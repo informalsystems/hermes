@@ -56,6 +56,9 @@
   - Hermes guide: improved installation guideline ([#672])
   - Make fee denom and amount configurable ([#754])
 
+- [ibc-proto]
+  - Fix for proto files re-compilation bug ([#801])
+
 ### BREAKING CHANGES
 
 - [ibc]
@@ -94,6 +97,7 @@
 [#770]: https://github.com/informalsystems/ibc-rs/issues/770
 [#793]: https://github.com/informalsystems/ibc-rs/pull/793
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
+[#801]: https://github.com/informalsystems/ibc-rs/issues/801
 
 
 ## v0.1.1
