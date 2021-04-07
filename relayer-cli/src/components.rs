@@ -1,5 +1,6 @@
 use std::io;
 
+use abscissa_core::component::Id;
 use abscissa_core::{Component, FrameworkError};
 use tracing_subscriber::fmt::{
     format::{Format, Json, JsonFields},
@@ -10,6 +11,8 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{reload::Handle, EnvFilter, FmtSubscriber};
 
 use ibc_relayer::config::GlobalConfig;
+
+pub const TRACING_COMPONENT_ID: Id = Id::new("ibc_relayer_cli::components::Tracing");
 
 /// Custom types to simplify the `Tracing` definition below
 type Formatter = TracingFormatter<JsonFields, Format<Json, SystemTime>, StdWriter>;

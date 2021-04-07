@@ -2,7 +2,6 @@
 timeout = '10s'
 strategy = 'naive'
 log_level = 'info'
-log_json = false
 
 [[chains]]
 id = 'ibc-0'

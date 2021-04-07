@@ -60,12 +60,18 @@ use std::fmt;
 use serde::Serialize;
 use tracing::error;
 
+use crate::components::TRACING_COMPONENT_ID;
+use crate::prelude::{app_reader, Application};
+
 /// Functional-style method to exit a program.
 ///
 /// ## Note: See `Output::exit()` for the preferred method of exiting a relayer command.
 pub fn exit_with(out: Output) {
     // Handle the output message
-    println!("{}", serde_json::to_string(&out).unwrap());
+    match json() {
+        true => println!("{}", serde_json::to_string(&out).unwrap()),
+        false => println!("{}: {}", out.status, out.result),
+    }
 
     // The return code
     if out.status == Status::Error {
@@ -73,6 +79,17 @@ pub fn exit_with(out: Output) {
     } else {
         std::process::exit(0);
     }
+}
+
+/// Returns true if the application global json flag `-j` or `--json` is enabled.
+/// Returns false otherwise.
+pub fn json() -> bool {
+    let a = app_reader();
+    // if the custom Tracing component is loaded, then JSON is enabled
+    a.state()
+        .components
+        .get_by_id(TRACING_COMPONENT_ID)
+        .is_some()
 }
 
 /// Exits the program. Useful when a type produces an error which can no longer be propagated, and
