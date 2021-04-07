@@ -1,5 +1,4 @@
 use abscissa_core::{Component, FrameworkError};
-use ibc_relayer::config::GlobalConfig;
 use tracing_subscriber::fmt::{
     format::{Format, Json, JsonFields},
     time::SystemTime,
@@ -7,6 +6,8 @@ use tracing_subscriber::fmt::{
 };
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{reload::Handle, EnvFilter, FmtSubscriber};
+
+use ibc_relayer::config::GlobalConfig;
 
 /// Abscissa component for initializing the `tracing` subsystem
 #[derive(Component, Debug)]

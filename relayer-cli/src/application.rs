@@ -1,14 +1,15 @@
 //! Cli Abscissa Application
 
-use crate::components::Tracing;
-use crate::{commands::CliCmd, config::Config};
-
 use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
     component::Component,
-    config, trace, Application, Configurable, EntryPoint, FrameworkError, StandardPaths,
+    config, trace, Application, Configurable, FrameworkError, StandardPaths,
 };
+
+use crate::components::Tracing;
+use crate::entry::EntryPoint;
+use crate::{commands::CliCmd, config::Config};
 
 /// Application state
 pub static APPLICATION: AppCell<CliApp> = AppCell::new();
@@ -116,11 +117,12 @@ impl Application for CliApp {
             .transpose()?
             .unwrap_or_default();
 
-        if config.global.log_json {
-            // Enable JSON by using the crate-level [`Tracing`]
+        if command.json {
+            // Enable JSON by using the crate-level `Tracing`
             let tracing = Tracing::new(config.global)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
+            // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
             let alt_tracing = abscissa_core::trace::Tracing::new(
                 abscissa_core::trace::Config::from(config.global.log_level),
                 abscissa_core::terminal::ColorChoice::Auto,
@@ -130,12 +132,9 @@ impl Application for CliApp {
         }
     }
 
-    /// Get tracing configuration from command-line options
+    // This method used to be called from `framework_components`, no longer relevant since we
+    // customized the framework.
     fn tracing_config(&self, command: &EntryPoint<CliCmd>) -> trace::Config {
-        if command.verbose {
-            trace::Config::verbose()
-        } else {
-            trace::Config::default()
-        }
+        unimplemented!()
     }
 }

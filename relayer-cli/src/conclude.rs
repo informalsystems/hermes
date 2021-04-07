@@ -55,7 +55,7 @@
 //! Output::success(h).with_result(end).exit();
 //! ```
 
-use std::fmt::Display;
+use std::fmt;
 
 use serde::Serialize;
 use tracing::error;
@@ -65,7 +65,6 @@ use tracing::error;
 /// ## Note: See `Output::exit()` for the preferred method of exiting a relayer command.
 pub fn exit_with(out: Output) {
     // Handle the output message
-    // TODO: To unify all relayer output, consider replacing `println` with a `tracing` macro below.
     println!("{}", serde_json::to_string(&out).unwrap());
 
     // The return code
@@ -93,7 +92,7 @@ pub fn exit_with(out: Output) {
 /// let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
 ///     .unwrap_or_else(exit_with_unrecoverable_error);
 /// ```
-pub fn exit_with_unrecoverable_error<T, E: Display>(err: E) -> T {
+pub fn exit_with_unrecoverable_error<T, E: fmt::Display>(err: E) -> T {
     // TODO(@romac): Once never (!) stabilizes, adapt `Output::exit` to return !
     //  https://github.com/informalsystems/ibc-rs/pull/688#discussion_r583758439
     Output::error(format!("{}", err)).exit();
@@ -182,4 +181,13 @@ pub enum Status {
 
     #[serde(rename(serialize = "error"))]
     Error,
+}
+
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Status::Success => write!(f, "Success"),
+            Status::Error => write!(f, "Error"),
+        }
+    }
 }
