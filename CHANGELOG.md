@@ -25,6 +25,7 @@
   - Added `client-upgrade` CLI ([#357])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
+  - Add option to specify which events to listen for in `listen` command ([#550])
 
 ### IMPROVEMENTS
 
@@ -75,6 +76,7 @@
 [#357]: https://github.com/informalsystems/ibc-rs/issues/357
 [#416]: https://github.com/informalsystems/ibc-rs/issues/416
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
+[#550]: https://github.com/informalsystems/ibc-rs/issues/550
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
