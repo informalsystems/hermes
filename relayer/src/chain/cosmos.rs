@@ -62,7 +62,7 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
-use crate::light_client::tendermint::LightClient as TMLightClient;
+use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
@@ -320,7 +320,7 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Rpc(config.rpc_addr.clone()).context(e))?;
 
         // Initialize key store and load key
-        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
+        let keybase = KeyRing::init(StoreBackend::Test, config.clone())
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         let grpc_addr =
@@ -329,16 +329,25 @@ impl Chain for CosmosSdkChain {
         Ok(Self {
             rt,
             config,
-            keybase: key_store,
+            keybase,
             rpc_client,
             grpc_addr,
         })
     }
 
     fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
+        use tendermint_light_client::types::PeerId;
+
         crate::time!("init_light_client");
 
-        let light_client = TMLightClient::from_config(&self.config)?;
+        let peer_id: PeerId = self
+            .rt
+            .block_on(self.rpc_client.status())
+            .map(|s| s.node_info.id)
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+
+        let light_client = TmLightClient::from_config(&self.config, peer_id)?;
+
         Ok(Box::new(light_client))
     }
 

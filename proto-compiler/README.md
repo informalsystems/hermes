@@ -23,7 +23,7 @@ Note: the full commit hash must be specified.
 Alternatively, one can check out a tag for the Cosmos SDK with the `--sdk-tag` option:
 
 ```bash
-$ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
+$ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-go-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
 ```
 
 ### Generate Rust sources from Protobuf definitions
@@ -34,6 +34,8 @@ To generate the Rust sources from the Protobuf definitions, and copy them to the
 $ cargo run -- compile --sdk /tmp/cosmos/sdk --ibc /tmp/cosmos/ibc --out ../proto/src/prost
 ```
 
-Additionally, this command will output the commit hash at which the Cosmos SDK is checked out into `$out/COSMOS_SDK_COMMIT`.
+Additionally, this command will output the commit hash at which the Cosmos SDK is checked out into `$out/COSMOS_SDK_COMMIT` and
+similarly the commit hash for IBC-go is saved into `$out/COSMOS_IBC_VERSION`.
 
-This value is exposed via the `ibc_proto::COSMOS_SDK_VERSION` constant in the `ibc-proto` library.
+The two commit values are exposed via the `ibc_proto::COSMOS_SDK_VERSION` and `ibc_proto::COSMOS_IBC_VERSION` 
+constants in the `ibc-proto` library.

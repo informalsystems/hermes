@@ -2,9 +2,11 @@
 
 ## Unreleased Changes
 
-- [high level summary]
+> [TODO: high level summary]
 
 ### FEATURES
+
+- Update to `tendermint-rs` v0.19.0 ([#798])
 
 - [ibc]
   - Added handler(s) for sending packets ([#695]) and for recv. and ack. packets ([#736])
@@ -23,6 +25,7 @@
   - Added `client-upgrade` CLI ([#357])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
+  - Add option to specify which events to listen for in `listen` command ([#550])
 
 ### IMPROVEMENTS
 
@@ -49,10 +52,14 @@
   - Fix for hard-coded account number ([#752])
   - Fix for chains that don't have `cosmos` account prefix ([#416])
   - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
+  - Don't send `MsgAcknowledgment` if channel is closed ([#675])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
   - Make fee denom and amount configurable ([#754])
+
+- [ibc-proto]
+  - Fix for proto files re-compilation bug ([#801])
 
 ### BREAKING CHANGES
 
@@ -60,19 +67,22 @@
   - `MsgConnectionOpenAck.counterparty_connection_id` is now a `ConnectionId` instead of an `Option<ConnectionId>`([#700])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Remove the light client configuration from the global configuration ([#793])
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+    - Remove the light add and light rm commands ([#793])
+
 
 [#352]: https://github.com/informalsystems/ibc-rs/issues/352
 [#357]: https://github.com/informalsystems/ibc-rs/issues/357
 [#416]: https://github.com/informalsystems/ibc-rs/issues/416
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
+[#550]: https://github.com/informalsystems/ibc-rs/issues/550
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
+[#675]: https://github.com/informalsystems/ibc-rs/issues/675
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
@@ -89,20 +99,23 @@
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
 [#772]: https://github.com/informalsystems/ibc-rs/issues/772
 [#770]: https://github.com/informalsystems/ibc-rs/issues/770
+[#793]: https://github.com/informalsystems/ibc-rs/pull/793
+[#798]: https://github.com/informalsystems/ibc-rs/issues/798
+[#801]: https://github.com/informalsystems/ibc-rs/issues/801
 
 
 ## v0.1.1
 *February 17, 2021*
 
 This release brings a quick fix for a problem with a dependency of crate
-`ibc-relayer`, which causes build & installation issues. Many thanks to 
+`ibc-relayer`, which causes build & installation issues. Many thanks to
 @Fraccaman for bringing this problem to our attention! ([#672])
 
 
 Additionally, this release also introduces initial implementation for most of
 ICS 004 handlers, and several bug fixes and improvements, e.g., refactored
 some CLI code, refactored the Height type in the IBC Events, and a bug fix
-involving packet acks in a 3-chain setup. More details below. 
+involving packet acks in a 3-chain setup. More details below.
 
 ### FEATURES
 - [ibc-relayer]
