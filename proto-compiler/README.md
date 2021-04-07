@@ -23,7 +23,7 @@ Note: the full commit hash must be specified.
 Alternatively, one can check out a tag for the Cosmos SDK with the `--sdk-tag` option:
 
 ```bash
-$ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
+$ cargo run -- clone --out /tmp/cosmos --sdk-tag v0.42.1 --ibc-go-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
 ```
 
 ### Generate Rust sources from Protobuf definitions
