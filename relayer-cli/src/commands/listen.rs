@@ -48,7 +48,7 @@ pub fn listen(rt: Arc<TokioRuntime>, config: ChainConfig) -> Result<(), BoxError
     Ok(())
 }
 
-pub(crate) fn subscribe(
+fn subscribe(
     chain_config: ChainConfig,
     rt: Arc<TokioRuntime>,
 ) -> Result<(EventMonitor, channel::Receiver<EventBatch>), BoxError> {

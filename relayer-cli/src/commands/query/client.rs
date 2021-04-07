@@ -83,7 +83,7 @@ pub struct QueryClientConsensusCmd {
 }
 
 /// Implementation of the query for a client's consensus state at a certain height.
-/// hermes query client consensus ibc-0 07-tendermint-0 22
+/// hermes query client consensus ibc-0 07-tendermint-0 -c 22
 impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();
@@ -150,7 +150,7 @@ impl Runnable for QueryClientConsensusCmd {
     }
 }
 
-/// Query client consensus command
+/// Query client header command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientHeaderCmd {
     #[options(free, required, help = "identifier of the chain to query")]
@@ -159,9 +159,6 @@ pub struct QueryClientHeaderCmd {
     #[options(free, required, help = "identifier of the client to query")]
     client_id: ClientId,
 
-    #[options(free, required, help = "epoch of the header to query")]
-    consensus_version: u64,
-
     #[options(free, required, help = "height of header to query")]
     consensus_height: u64,
 
@@ -169,8 +166,8 @@ pub struct QueryClientHeaderCmd {
     height: Option<u64>,
 }
 
-/// Implementation of the query for a client's consensus state at a certain height.
-/// hermes query client consensus ibc-0 07-tendermint-0 22
+/// Implementation of the query for the header used in a client update at a certain height.
+/// hermes query client header ibc-0 07-tendermint-0 22
 impl Runnable for QueryClientHeaderCmd {
     fn run(&self) {
         let config = app_config();
@@ -190,7 +187,20 @@ impl Runnable for QueryClientHeaderCmd {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
-        let consensus_height = ibc::Height::new(self.consensus_version, self.consensus_height);
+
+        let counterparty_chain = match chain.query_client_state(&self.client_id, Height::zero()) {
+            Ok(cs) => cs.chain_id(),
+            Err(e) => {
+                return Output::error(format!(
+                    "Failed while querying client '{}' on chain '{}' with error: {}",
+                    self.client_id, self.chain_id, e
+                ))
+                .exit()
+            }
+        };
+
+        let consensus_height =
+            ibc::Height::new(counterparty_chain.version(), self.consensus_height);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
         let res = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {

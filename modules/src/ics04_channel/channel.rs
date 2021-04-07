@@ -357,6 +357,7 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 
 #[cfg(test)]
 pub mod test_util {
+
     use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;

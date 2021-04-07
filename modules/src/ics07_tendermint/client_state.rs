@@ -197,7 +197,7 @@ impl TryFrom<RawClientState> for ClientState {
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         RawClientState {
-            chain_id: value.chain_id.as_str().parse().unwrap(),
+            chain_id: value.chain_id.to_string(),
             trust_level: Some(Fraction {
                 numerator: value.trust_level.numerator,
                 denominator: value.trust_level.denominator,

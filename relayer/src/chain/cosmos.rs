@@ -974,7 +974,6 @@ impl Chain for CosmosSdkChain {
                 Ok(result)
             }
 
-            // TODO - to be replaced with query for update client event
             QueryTxRequest::Client(request) => {
                 let response = self
                     .block_on(self.rpc_client.tx_search(

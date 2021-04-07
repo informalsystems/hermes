@@ -200,13 +200,14 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics24_host::identifier::{ClientId, ConnectionId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     /// Testing-specific helper methods.
     impl MsgConnectionOpenTry {
