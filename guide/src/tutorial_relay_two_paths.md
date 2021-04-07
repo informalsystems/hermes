@@ -89,7 +89,7 @@ up properly for two hermes instances.
 6. Import the signing keys into the keyrings:
 
     ```shell
-    ../scripts/init-clients config.toml ibc-0 ibc-1
+    ../scripts/init-hermes config.toml ibc-0 ibc-1
     ```
 
 7. Let's proceed similarly for the second instance, but pay attention to the commands
@@ -167,7 +167,7 @@ up properly for two hermes instances.
 11. Import the signing keys into the keyrings:
 
     ```shell
-    ../scripts/init-clients config.toml ibc-0 ibc-1
+    ../scripts/init-hermes config.toml ibc-0 ibc-1
     ```
 
 12. Start the first relayer in the `relay_a` directory:
