@@ -2,10 +2,9 @@ use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc_relayer::config::StoreConfig;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 
-use crate::cli_utils::{ChainHandlePair, SpawnOptions};
+use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
@@ -14,13 +13,8 @@ macro_rules! conn_open_cmd {
     ($dbg_string:literal, $func:ident, $self:expr, $conn:expr) => {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let chains = match ChainHandlePair::spawn_with(
-            spawn_options,
-            &config,
-            &$self.src_chain_id,
-            &$self.dst_chain_id,
-        ) {
+        let chains = match ChainHandlePair::spawn(&config, &$self.src_chain_id, &$self.dst_chain_id)
+        {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };

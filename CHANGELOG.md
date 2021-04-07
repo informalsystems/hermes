@@ -67,10 +67,11 @@
   - `MsgConnectionOpenAck.counterparty_connection_id` is now a `ConnectionId` instead of an `Option<ConnectionId>`([#700])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Remove the light client configuration from the global configuration ([#793])
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+    - Remove the light add and light rm commands ([#793])
+
 
 [#352]: https://github.com/informalsystems/ibc-rs/issues/352
 [#357]: https://github.com/informalsystems/ibc-rs/issues/357
@@ -98,6 +99,7 @@
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
 [#772]: https://github.com/informalsystems/ibc-rs/issues/772
 [#770]: https://github.com/informalsystems/ibc-rs/issues/770
+[#793]: https://github.com/informalsystems/ibc-rs/pull/793
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
 [#801]: https://github.com/informalsystems/ibc-rs/issues/801
 
