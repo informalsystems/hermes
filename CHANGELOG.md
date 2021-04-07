@@ -49,6 +49,7 @@
   - Fix for hard-coded account number ([#752])
   - Fix for chains that don't have `cosmos` account prefix ([#416])
   - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
+  - Don't send `MsgAcknowledgment` if channel is closed ([#675])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -73,6 +74,7 @@
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
+[#675]: https://github.com/informalsystems/ibc-rs/issues/675
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
