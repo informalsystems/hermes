@@ -131,8 +131,8 @@ impl OperationalData {
 
         let mut msgs: Vec<Any> = self.batch.iter().map(|gm| gm.msg.clone()).collect();
 
-        // If its _not_ non-zero zero, means it's zero delay, so we prepend the client update msgs.
-        if !relay_path.non_zero_delay() {
+        // For zero delay we prepend the client update msgs.
+        if relay_path.zero_delay() {
             let update_height = self.proofs_height.increment();
 
             info!(
@@ -363,9 +363,7 @@ impl RelayPath {
                 "[{}] New timeout message emerged, with proofs for height {}",
                 self, dst_chain_height
             );
-            Ok(Some(
-                self.build_timeout_packet(&event.packet, dst_chain_height)?,
-            ))
+            Ok(self.build_timeout_packet(&event.packet, dst_chain_height)?)
         } else {
             Ok(None)
         }
@@ -592,7 +590,7 @@ impl RelayPath {
                         self.src_chain.id(),
                         write_ack_ev
                     );
-                    (Some(self.build_ack_from_recv_event(&write_ack_ev)?), None)
+                    (self.build_ack_from_recv_event(&write_ack_ev)?, None)
                 }
                 _ => (None, None),
             };
@@ -792,10 +790,10 @@ impl RelayPath {
         }
     }
 
-    /// Returns `true` if the delay for this relaying path is non-zero.
-    /// Conversely, returns `false` if the delay is zero.
-    fn non_zero_delay(&self) -> bool {
-        self.channel.connection_delay.as_nanos() > 0
+    /// Returns `true` if the delay for this relaying path is zero.
+    /// Conversely, returns `false` if the delay is non-zero.
+    fn zero_delay(&self) -> bool {
+        self.channel.connection_delay.as_nanos() == 0
     }
 
     /// Handles updating the client on the destination chain
@@ -1129,8 +1127,22 @@ impl RelayPath {
         Ok(msg.to_any())
     }
 
-    fn build_ack_from_recv_event(&self, event: &WriteAcknowledgement) -> Result<Any, LinkError> {
+    fn build_ack_from_recv_event(
+        &self,
+        event: &WriteAcknowledgement,
+    ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
+        let acked =
+            self.dst_chain()
+                .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
+                    port_id: self.dst_port_id().to_string(),
+                    channel_id: self.dst_channel_id().to_string(),
+                    packet_ack_sequences: vec![packet.sequence.into()],
+                })?;
+        if acked.is_empty() {
+            return Ok(None);
+        }
+
         let (_, proofs) = self
             .src_chain
             .build_packet_proofs(
@@ -1156,10 +1168,14 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any())
+        Ok(Some(msg.to_any()))
     }
 
-    fn build_timeout_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
+    fn build_timeout_packet(
+        &self,
+        packet: &Packet,
+        height: Height,
+    ) -> Result<Option<Any>, LinkError> {
         let (packet_type, next_sequence_received) = if self.ordered_channel() {
             let next_seq = self
                 .dst_chain()
@@ -1170,6 +1186,16 @@ impl RelayPath {
                 .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
             (PacketMsgType::TimeoutOrdered, next_seq)
         } else {
+            let acked =
+                self.dst_chain()
+                    .query_unreceived_packets(QueryUnreceivedPacketsRequest {
+                        port_id: self.dst_port_id().to_string(),
+                        channel_id: self.dst_channel_id().to_string(),
+                        packet_commitment_sequences: vec![packet.sequence.into()],
+                    })?;
+            if acked.is_empty() {
+                return Ok(None);
+            }
             (PacketMsgType::TimeoutUnordered, packet.sequence)
         };
 
@@ -1198,7 +1224,7 @@ impl RelayPath {
             proofs.height()
         );
 
-        Ok(msg.to_any())
+        Ok(Some(msg.to_any()))
     }
 
     fn build_timeout_on_close_packet(
@@ -1254,7 +1280,7 @@ impl RelayPath {
         {
             Ok((
                 None,
-                Some(self.build_timeout_packet(&event.packet, dst_chain_height)?),
+                self.build_timeout_packet(&event.packet, dst_chain_height)?,
             ))
         } else {
             Ok((
@@ -1369,7 +1395,7 @@ impl RelayPath {
         );
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
-        if self.non_zero_delay() {
+        if !self.zero_delay() {
             let target_height = od.proofs_height.increment();
             match od.target {
                 OperationalDataTarget::Source => self.update_client_src(target_height)?,
