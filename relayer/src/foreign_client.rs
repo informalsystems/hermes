@@ -555,31 +555,26 @@ impl ForeignClient {
     /// until it gets to the first misbehaviour.
     ///
     /// The following cases are covered:
-    /// 1 - forks, double signing, assumes at least one consensus state before the fork point exists
-    ///
-    /// Assuming existing consensus states on chain B are: [Sn,.., Sf, Sf-1, S0] with `Sf-1` being
+    /// 1 - fork:
+    /// Assumes at least one consensus state before the fork point exists.
+    /// Let existing consensus states on chain B be: [Sn,.., Sf, Sf-1, S0] with `Sf-1` being
     /// the most recent state before fork.
     /// Chain A is queried for a header `Hf'` at `Sf.height` and if it is different than the `Hf`
     /// in the event for the client update (the one that has generated `Sf` on chain), then the two
     /// headers are included in the evidence and submitted.
     /// Note that in this case the headers are different but have the same height.
     ///
-    /// 2 - time travelling lunatic attack: some header with a height that is higher than the latest
+    /// 2 - BFT time violation for unavailable header:
+    /// Some header with a height that is higher than the latest
     /// height on A has been accepted and a consensus state was created on B. Note that this implies
     /// that the timestamp of this header must be within the `clock_drift` of the client.
-    ///
-    /// Assuming the client on B has been updated with `h2`(not present on/ produced by chain A)
+    /// Assume the client on B has been updated with `h2`(not present on/ produced by chain A)
     /// and it has a timestamp of `t2` that is at most `clock_drift` in the future.
-    /// The misbehavior detector (`MD`) gets the latest header from A, let it be `h1` with a
-    /// timestamp of `t1`. If `t1 >= t2` then evidence of misbehavior is submitted to A.
+    /// Then the latest header from A is fetched, let it be `h1`, with a timestamp of `t1`.
+    /// If `t1 >= t2` then evidence of misbehavior is submitted to A.
     ///
-    /// The following case is not covered:
-    /// 2' - same as 2 but `t1 < t2`.
-    /// Problem: If `h2` has a high height then no other client updates can be installed on `B`
-    /// for a long time. There is currently no other opportunity to check `h2` except a process
-    /// restart. In the future the `update_client` event should be rechecked for every new block
-    /// on `A` or after `clock_drift` time so it falls back into case 2 above. In other words,
-    /// given enough time the misbehavior detector will find a header `h1'` on A with `t1' >= t2`
+    /// 3 - BFT time violation for existing headers (TODO):
+    /// Ensure that consensus state times are monotonically increasing with height.
     ///
     /// Other notes:
     /// - the algorithm builds misbehavior at each consensus height, starting with the
@@ -590,7 +585,7 @@ impl ForeignClient {
     ///
     pub fn handle_misbehaviour(
         &self,
-        mut update_event: UpdateClient,
+        mut update: Option<UpdateClient>,
     ) -> Result<Option<AnyMisbehaviour>, ForeignClientError> {
         thread::sleep(Duration::from_millis(100));
 
@@ -605,21 +600,15 @@ impl ForeignClient {
                 ))
             })?;
 
-        // get the list of consensus state heights in reverse order
+        // Get the list of consensus state heights in reverse order.
         // Note: If chain does not prune consensus states then the last consensus state is
         // the one installed by the `CreateClient` which does not include a header.
         // For chains that do support pruning, it is possible that the last consensus state
         // was installed by an `UpdateClient` and an event and header will be found.
         let consensus_state_heights = self.consensus_state_heights()?;
-
-        // there must exists at least two consensus states on-chain for evidence handling to work
-        if consensus_state_heights.len() <= 1 {
-            return Ok(None);
-        }
-
         info!(
-            "checking misbehaviour starting from {:?}, for consensus state heights {:?}",
-            update_event.common.consensus_height, consensus_state_heights,
+            "checking misbehaviour for consensus state heights {:?}",
+            consensus_state_heights
         );
 
         let mut first_misbehaviour = None;
@@ -627,11 +616,40 @@ impl ForeignClient {
             ForeignClientError::Misbehaviour(format!("failed to get latest height {}", e))
         })?;
 
-        for (i, h) in consensus_state_heights.iter().enumerate() {
-            if h > &update_event.common.consensus_height {
+        for target_height in consensus_state_heights.iter() {
+            // Start with specified update event or the one for latest consensus height
+            let update_event = if let Some(ref event) = update {
+                // we are here on the first iteration when called with `Some` update event
+                event.clone()
+            } else if let Some(event) = self.update_client_event(*target_height)? {
+                // we are here either on the first iteration with `None` initial update event or
+                // subsequent iterations
+                event.clone()
+            } else {
+                // we are here if the consensus state was installed on-chain when client was
+                // created, therefore there will be no update client event
+                break;
+            };
+
+            // Skip over heights higher than the update event one.
+            // This can happen if a client update happened with a lower height than latest.
+            if target_height > update_event.consensus_height() {
                 continue;
             }
 
+            // Ensure consensus height of the event is same as target height. This should be the
+            // case as we either
+            // - got the `update_event` from the `target_height` above, or
+            // - an `update_event` was specified and we should eventually find a consensus state
+            //   at that height
+            // We break here in case we got a bogus event.
+            if target_height < update_event.consensus_height() {
+                break;
+            }
+
+            // Check for misbehaviour according to the specific source chain type.
+            // In case of Tendermint client, this will also check the BFT time violation if
+            // a header for the event height is not available.
             let misbehavior = self
                 .src_chain
                 .build_misbehaviour(
@@ -646,13 +664,8 @@ impl ForeignClient {
             if misbehavior.is_some() {
                 first_misbehaviour = misbehavior;
             }
-
-            // get the previous update client event
-            if let Some(new_update) = self.update_client_event(consensus_state_heights[i + 1])? {
-                update_event = new_update;
-                continue;
-            }
-            break;
+            // Clear the update
+            update = None;
         }
 
         Ok(first_misbehaviour)
@@ -662,31 +675,10 @@ impl ForeignClient {
         &self,
         update: Option<UpdateClient>,
     ) -> Result<Option<IbcEvent>, ForeignClientError> {
-        // if event is None start with the last client update event
-        let update = match update {
-            Some(update) => Some(update),
-            None => {
-                let client_state = self
-                    .dst_chain
-                    .query_client_state(self.id(), Height::zero())
-                    .map_err(|e| {
-                        ForeignClientError::Misbehaviour(format!(
-                            "failed to query client state {}",
-                            e
-                        ))
-                    })?;
-                self.update_client_event(client_state.latest_height())?
-            }
-        };
-
-        if update.is_none() {
-            return Ok(None);
-        }
-
-        match self.handle_misbehaviour(update.unwrap())? {
+        match self.handle_misbehaviour(update)? {
             None => Ok(None),
             Some(misbehaviour) => {
-                error!("MISBEHAVIOUR detected {:?}, sending evidence", misbehaviour);
+                error!("MISBEHAVIOUR detected {}, sending evidence", misbehaviour);
 
                 let signer = self.dst_chain().get_signer().map_err(|e| {
                     ForeignClientError::Misbehaviour(format!(

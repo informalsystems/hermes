@@ -13,6 +13,7 @@ use crate::ics02_client::header::AnyHeader;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
+use std::cmp::Ordering;
 
 /// Tendermint consensus header
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)] // TODO: Add Eq bound once present in tendermint-rs
@@ -32,6 +33,24 @@ impl Header {
     }
     pub fn time(&self) -> Time {
         self.signed_header.header.time
+    }
+
+    pub fn incompatible_with(&self, ibc_client_header: &Header) -> bool {
+        let ibc_client_height = ibc_client_header.signed_header.header.height;
+        let chain_header_height = self.signed_header.header.height;
+
+        match ibc_client_height.cmp(&&chain_header_height) {
+            Ordering::Equal => {
+                // fork
+                self.signed_header.commit.block_id
+                    != ibc_client_header.signed_header.commit.block_id
+            }
+            Ordering::Greater => {
+                // BFT time violation
+                self.signed_header.header.time <= ibc_client_header.signed_header.header.time
+            }
+            Ordering::Less => false,
+        }
     }
 }
 

@@ -5,6 +5,8 @@ use tendermint_proto::Protobuf;
 
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
+
+#[cfg(any(test, feature = "mocks"))]
 use crate::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 
 use crate::ics24_host::identifier::ClientId;
@@ -94,6 +96,17 @@ impl From<AnyMisbehaviour> for Any {
                 type_url: MOCK_MISBEHAVIOUR_TYPE_URL.to_string(),
                 value: misbehaviour.encode_vec().unwrap(),
             },
+        }
+    }
+}
+
+impl std::fmt::Display for AnyMisbehaviour {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            AnyMisbehaviour::Tendermint(tm) => write!(f, "{}", tm),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyMisbehaviour::Mock(mock) => write!(f, "{:?}", mock),
         }
     }
 }

@@ -60,3 +60,17 @@ impl From<Misbehaviour> for RawMisbehaviour {
         }
     }
 }
+
+impl std::fmt::Display for Misbehaviour {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "{:?} h1: {:?}-{:?} h2: {:?}-{:?}",
+            self.client_id,
+            self.header1.height(),
+            self.header1.trusted_height,
+            self.header2.height(),
+            self.header2.trusted_height,
+        )
+    }
+}

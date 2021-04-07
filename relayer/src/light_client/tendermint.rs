@@ -1,6 +1,5 @@
 use std::convert::TryFrom;
 
-use bitcoin::hashes::core::cmp::Ordering;
 use tendermint_light_client::{
     components::{self, io::AtHeight},
     light_client::{LightClient as TmLightClient, Options as TmOptions},
@@ -15,7 +14,7 @@ use tendermint_rpc as rpc;
 use ibc::ics02_client::client_misbehaviour::{AnyMisbehaviour, Misbehaviour};
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::header::AnyHeader;
-use ibc::ics07_tendermint::header::{Header as TmHeader, Header};
+use ibc::ics07_tendermint::header::Header as TmHeader;
 use ibc::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 use ibc::{downcast, ics02_client::client_state::AnyClientState};
 use ibc::{ics02_client::client_type::ClientType, ics24_host::identifier::ChainId};
@@ -85,9 +84,20 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         // set the target height to the minimum between the update height and latest chain height
         let target_height = std::cmp::min(*update.consensus_height(), latest_chain_height);
         let trusted_height = tm_ibc_client_header.trusted_height;
+        // TODO - check that a consensus state at trusted_height still exists on-chain,
+        // currently we don't have access to Cosmos chain query from here
 
-        let tm_chain_header = {
-            assert!(trusted_height < latest_chain_height);
+        if trusted_height >= latest_chain_height {
+            // Can happen with multiple FLA attacks, we return no evidence and hope to catch this in
+            // the next iteration. e.g:
+            // existing consensus states: 1000, 900, 300, 200 (only known by the caller)
+            // latest_chain_height = 300
+            // target_height = 1000
+            // trusted_height = 900
+            return Ok(None);
+        }
+
+        let tm_witness_node_header = {
             let trusted_light_block = self.fetch(trusted_height.increment())?;
             let target_light_block = self.verify(trusted_height, target_height, &client_state)?;
             TmHeader {
@@ -98,19 +108,18 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             }
         };
 
-        let misbehaviour =
-            if LightClient::incompatible_headers(&tm_ibc_client_header, &tm_chain_header) {
-                Some(
-                    AnyMisbehaviour::Tendermint(TmMisbehaviour {
-                        client_id: update.client_id().clone(),
-                        header1: tm_ibc_client_header,
-                        header2: tm_chain_header,
-                    })
-                    .wrap_any(),
-                )
-            } else {
-                None
-            };
+        let misbehaviour = if tm_witness_node_header.incompatible_with(&tm_ibc_client_header) {
+            Some(
+                AnyMisbehaviour::Tendermint(TmMisbehaviour {
+                    client_id: update.client_id().clone(),
+                    header1: tm_ibc_client_header,
+                    header2: tm_witness_node_header,
+                })
+                .wrap_any(),
+            )
+        } else {
+            None
+        };
 
         Ok(misbehaviour)
     }
@@ -132,21 +141,6 @@ impl LightClient {
             peer_id: peer.peer_id,
             io,
         })
-    }
-
-    /// TODO - move to light client supervisor/ library
-    pub fn incompatible_headers(ibc_client_header: &Header, chain_header: &Header) -> bool {
-        let ibc_client_height = ibc_client_header.signed_header.header.height;
-        let chain_header_height = chain_header.signed_header.header.height;
-
-        match ibc_client_height.cmp(&&chain_header_height) {
-            Ordering::Equal => ibc_client_header == chain_header,
-            Ordering::Greater => {
-                ibc_client_header.signed_header.header.time
-                    <= chain_header.signed_header.header.time
-            }
-            Ordering::Less => false,
-        }
     }
 
     fn prepare_client(&self, client_state: &AnyClientState) -> Result<TmLightClient, Error> {

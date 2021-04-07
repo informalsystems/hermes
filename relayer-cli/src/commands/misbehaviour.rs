@@ -22,13 +22,16 @@ pub struct MisbehaviourCmd {
         help = "identifier of the chain where client updates are monitored for misbehaviour"
     )]
     chain_id: ChainId,
+
+    #[options(help = "identifier of the client to be monitored for misbehaviour")]
+    client_id: Option<ClientId>,
 }
 
 impl Runnable for MisbehaviourCmd {
     fn run(&self) {
         let config = app_config();
 
-        let res = monitor_misbehaviour(&self.chain_id, &config);
+        let res = monitor_misbehaviour(&self.chain_id, &self.client_id, &config);
         match res {
             Ok(()) => Output::success(()).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -38,6 +41,7 @@ impl Runnable for MisbehaviourCmd {
 
 pub fn monitor_misbehaviour(
     chain_id: &ChainId,
+    client_id: &Option<ClientId>,
     config: &config::Reader<CliApp>,
 ) -> Result<(), BoxError> {
     let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
@@ -52,8 +56,14 @@ pub fn monitor_misbehaviour(
         .query_clients(QueryClientStatesRequest { pagination: None })
         .map_err(|e| format!("could not query clients for {}", chain.id()))?;
 
-    for client_id in clients.iter() {
-        misbehaviour_handling(chain.clone(), config, client_id, None)?;
+    // check previous updates that may have been missed
+    match client_id {
+        Some(client_id) => misbehaviour_handling(chain.clone(), config, client_id, None)?,
+        None => {
+            for client_id in clients.iter() {
+                misbehaviour_handling(chain.clone(), config, client_id, None)?;
+            }
+        }
     }
 
     // process update client events
@@ -61,7 +71,13 @@ pub fn monitor_misbehaviour(
         for event in event_batch.events.iter() {
             match event {
                 IbcEvent::UpdateClient(update) => {
+                    if let Some(specified_client) = client_id {
+                        if update.client_id() != specified_client {
+                            continue;
+                        }
+                    }
                     dbg!(update);
+
                     misbehaviour_handling(
                         chain.clone(),
                         config,
@@ -73,6 +89,11 @@ pub fn monitor_misbehaviour(
                 IbcEvent::CreateClient(create) => {
                     // TODO - get header from full node, consensus state from chain, compare
                 }
+
+                IbcEvent::ClientMisbehaviour(misbehaviour) => {
+                    // TODO - submit misbehaviour to the witnesses (our full node)
+                }
+
                 _ => {}
             }
         }
@@ -110,7 +131,12 @@ fn misbehaviour_handling(
 
     let misbehaviour_detection_result = client
         .detect_misbehaviour_and_send_evidence(update)
-        .map_err(|e| format!("could not run misbehaviour detection for {}", client_id))?;
+        .map_err(|e| {
+            format!(
+                "could not run misbehaviour detection for {}: {}",
+                client_id, e
+            )
+        })?;
 
     if let Some(evidence_submission_result) = misbehaviour_detection_result {
         info!(
