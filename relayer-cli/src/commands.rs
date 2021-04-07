@@ -13,15 +13,13 @@ use crate::config::Config;
 use crate::DEFAULT_CONFIG_PATH;
 
 use self::{
-    create::CreateCmds, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
-    start::StartCmd, start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds,
-    version::VersionCmd,
+    create::CreateCmds, keys::KeysCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
+    start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds, version::VersionCmd,
 };
 
 mod config;
 mod create;
 mod keys;
-mod light;
 mod listen;
 mod query;
 mod start;
@@ -50,10 +48,6 @@ pub enum CliCmd {
     /// The `keys` subcommand
     #[options(help = "Manage keys in the relayer for each chain")]
     Keys(KeysCmd),
-
-    /// The `light` subcommand
-    #[options(help = "Basic functionality for managing the light clients")]
-    Light(LightCmd),
 
     /// The `create` subcommand
     #[options(help = "Create objects (client, connection, or channel) on chains")]

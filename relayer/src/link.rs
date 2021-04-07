@@ -254,7 +254,11 @@ impl RelayPath {
             }
             IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                 info!("{} => event {}", self.src_chain.id(), write_ack_ev);
-                Ok((Some(self.build_ack_from_recv_event(&write_ack_ev)?), None))
+                if self.dst_channel()?.state_matches(&ChannelState::Closed) {
+                    Ok((None, None))
+                } else {
+                    Ok((Some(self.build_ack_from_recv_event(&write_ack_ev)?), None))
+                }
             }
             _ => Ok((None, None)),
         }
