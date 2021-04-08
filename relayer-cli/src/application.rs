@@ -7,7 +7,7 @@ use abscissa_core::{
     config, trace, Application, Configurable, FrameworkError, StandardPaths,
 };
 
-use crate::components::Tracing;
+use crate::components::JsonTracing;
 use crate::entry::EntryPoint;
 use crate::{commands::CliCmd, config::Config};
 
@@ -128,27 +128,22 @@ impl Application for CliApp {
             .transpose()?
             .unwrap_or_default();
 
-        // Update the `json_output` flag
+        // Update the `json_output` flag used by `conclude::Output`
         self.json_output = command.json;
 
         if command.json {
             // Enable JSON by using the crate-level `Tracing`
-            let tracing = Tracing::new(config.global)?;
+            let tracing = JsonTracing::new(config.global)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
             // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
-            let alt_tracing = abscissa_core::trace::Tracing::new(
-                abscissa_core::trace::Config::from(config.global.log_level),
-                abscissa_core::terminal::ColorChoice::Auto,
+            let alt_tracing = trace::Tracing::new(
+                trace::Config::from(config.global.log_level),
+                self.term_colors(command),
             )
             .unwrap();
+
             Ok(vec![Box::new(terminal), Box::new(alt_tracing)])
         }
-    }
-
-    // This method used to be called from `framework_components`, no longer relevant since we
-    // customized the framework.
-    fn tracing_config(&self, command: &EntryPoint<CliCmd>) -> trace::Config {
-        unimplemented!()
     }
 }

@@ -17,7 +17,7 @@ type StdWriter = fn() -> io::Stderr;
 
 /// Abscissa component for initializing the `tracing` subsystem
 #[derive(Component, Debug)]
-pub struct Tracing {
+pub struct JsonTracing {
     filter_handle: Handle<EnvFilter, Formatter>,
 }
 
@@ -25,7 +25,7 @@ pub struct Tracing {
 ///     - customizes the log output level, for filtering the output produced via tracing macros
 ///         (`debug!`, `info!`, etc.) or abscissa macros (`status_err`, `status_info`, etc.).
 ///     - enables JSON-formatted output
-impl Tracing {
+impl JsonTracing {
     /// Creates a new [`Tracing`] component
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
@@ -39,6 +39,7 @@ impl Tracing {
             .with_ansi(use_color)
             .json()
             .with_filter_reloading();
+
         let filter_handle = builder.reload_handle();
 
         let subscriber = builder.finish();
