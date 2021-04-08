@@ -220,7 +220,7 @@ impl KeyRingOperations for KeyRing {
                         .map_err(|_| Kind::KeyStoreOperation.context("cannot open key file"))?;
                     let mut file_contents = String::new();
                     file.read_to_string(&mut file_contents)
-                        .map_err(|_| Kind::KeyStoreOperation.context("cannot ready key file"))?;
+                        .map_err(|_| Kind::KeyStoreOperation.context("cannot read key file"))?;
                     let key_entry = self
                         .key_from_seed_file(file_contents.as_str(), chain_config)
                         .map_err(|_| {

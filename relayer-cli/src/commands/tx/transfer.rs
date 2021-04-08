@@ -39,6 +39,12 @@ pub struct TxIcs20MsgTransferCmd {
     #[options(free, required, help = "timeout in number of blocks since current")]
     height_offset: u64,
 
+    #[options(
+        help = "receiving account address on the destination chain",
+        short = "r"
+    )]
+    receiver: Option<String>,
+
     #[options(help = "denomination of the coins to send", short = "d")]
     denom: Option<String>,
 
@@ -71,6 +77,7 @@ impl TxIcs20MsgTransferCmd {
             packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,
             denom,
+            receiver: self.receiver.clone(),
             height_offset: self.height_offset,
             number_msgs,
         };
