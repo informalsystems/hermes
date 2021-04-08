@@ -800,7 +800,8 @@ impl RelayPath {
     fn update_client_dst(&self, src_chain_height: Height) -> Result<(), LinkError> {
         // Handle the update on the destination chain
         // Check if a consensus state at update_height exists on destination chain already
-        for i in 0..MAX_ITER {
+        let mut dst_err_ev = None;
+        for _i in 0..MAX_ITER {
             if self
                 .dst_chain()
                 .proven_client_consensus(self.dst_client_id(), src_chain_height, Height::zero())
@@ -817,33 +818,29 @@ impl RelayPath {
                 let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
                 info!("[{}] Result {:?}", self, dst_tx_events);
 
-                let dst_err_ev = dst_tx_events
+                dst_err_ev = dst_tx_events
                     .into_iter()
                     .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
-                if let Some(err_ev) = dst_err_ev {
-                    // If there was an error and this was the last retry
-                    if i == (MAX_ITER - 1) {
-                        return Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
-                            format!(
-                                "Failed to update client on destination {} with err: {:?}",
-                                self.dst_chain.id(),
-                                err_ev
-                            ),
-                        )));
-                    } // Else: retry the update
-                } else {
-                    break; // Update succeeded
+                if dst_err_ev.is_none() {
+                    return Ok(());
                 }
             }
         }
 
-        Ok(())
+        Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
+            format!(
+                "Failed to update client on destination {} with err: {:?}",
+                self.dst_chain.id(),
+                dst_err_ev
+            ),
+        )))
     }
 
     /// Handles updating the client on the source chain
     fn update_client_src(&self, dst_chain_height: Height) -> Result<(), LinkError> {
-        for i in 0..MAX_ITER {
+        let mut src_err_ev = None;
+        for _i in 0..MAX_ITER {
             if self
                 .src_chain()
                 .proven_client_consensus(self.src_client_id(), dst_chain_height, Height::zero())
@@ -860,26 +857,23 @@ impl RelayPath {
                 let src_tx_events = self.src_chain.send_msgs(src_update)?;
                 info!("[{}] Result {:?}", self, src_tx_events);
 
-                let src_err_ev = src_tx_events
+                src_err_ev = src_tx_events
                     .into_iter()
                     .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
-                if let Some(err_ev) = src_err_ev {
-                    if i == (MAX_ITER - 1) {
-                        return Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
-                            format!(
-                                "Failed to update client on source {} with err: {:?}",
-                                self.src_chain.id(),
-                                err_ev
-                            ),
-                        )));
-                    } // Else: retry the update
-                } else {
-                    break; // Update succeeded
+                if src_err_ev.is_none() {
+                    return Ok(());
                 }
             }
         }
-        Ok(())
+
+        Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
+            format!(
+                "Failed to update client on source {} with err: {:?}",
+                self.src_chain.id(),
+                src_err_ev
+            ),
+        )))
     }
 
     /// Sends ClientUpdate transactions (to both source and dest chains) ahead of a scheduled batch.
