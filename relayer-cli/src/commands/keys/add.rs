@@ -10,7 +10,7 @@ use crate::error::{Error, Kind};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysAddCmd {
-    #[options(free, help = "identifier of the chain")]
+    #[options(free, required, help = "identifier of the chain")]
     chain_id: ChainId,
 
     #[options(free, help = "the key path and filename")]
