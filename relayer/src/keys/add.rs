@@ -35,7 +35,7 @@ pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
         .map_err(|e| Kind::KeyBase.context(e))?;
 
     Ok(format!(
-        "Added key {} ({}) on {} chain",
+        "Added key '{}' ({}) on chain {}",
         opts.name.as_str(),
         key_entry.account.as_str(),
         chain.id().clone()
