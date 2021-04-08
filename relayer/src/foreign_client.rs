@@ -578,8 +578,8 @@ impl ForeignClient {
     ///
     /// Other notes:
     /// - the algorithm builds misbehavior at each consensus height, starting with the
-    /// highest height assuming the previous one is trusted. It submits the last constructed
-    /// evidence (the one with the lowest height)
+    /// highest height assuming the previous one is trusted. It submits the first constructed
+    /// evidence (the one with the highest height)
     /// - a lot of the logic here is derived from the behavior of the only implemented client
     /// (ics07-tendermint) and might not be general enough.
     ///
@@ -614,7 +614,7 @@ impl ForeignClient {
         for target_height in consensus_state_heights.iter() {
             // Start with specified update event or the one for latest consensus height
             let update_event = if let Some(ref event) = update {
-                // we are here on the first iteration when called with `Some` update event
+                // we are here only on the first iteration when called with `Some` update event
                 event.clone()
             } else if let Some(event) = self.update_client_event(*target_height)? {
                 // we are here either on the first iteration with `None` initial update event or
@@ -653,7 +653,7 @@ impl ForeignClient {
                 })?;
 
             if misbehavior.is_some() {
-                // TODO - updateClient operations if supporting headers are missing on-chain
+                // TODO - add updateClient messages if supporting headers are missing on-chain
                 return Ok(misbehavior);
             }
             // Clear the update
