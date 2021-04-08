@@ -38,7 +38,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
         ))),
         UPDATE_EVENT_TYPE => Some(IbcEvent::UpdateClient(UpdateClient {
             common: extract_attributes_from_tx(event),
-            header: extract_header_from_tx(event), // TODO fix
+            header: extract_header_from_tx(event),
         })),
         MISBEHAVIOUR_EVENT_TYPE => Some(IbcEvent::ClientMisbehaviour(ClientMisbehaviour(
             extract_attributes_from_tx(event),

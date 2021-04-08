@@ -25,6 +25,7 @@ pub struct MsgSubmitAnyMisbehaviour {
 
 impl Msg for MsgSubmitAnyMisbehaviour {
     type ValidationError = crate::ics24_host::error::ValidationError;
+    type Raw = RawMsgSubmitMisbehaviour;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -33,8 +34,6 @@ impl Msg for MsgSubmitAnyMisbehaviour {
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
-
-    type Raw = RawMsgSubmitMisbehaviour;
 }
 
 impl Protobuf<RawMsgSubmitMisbehaviour> for MsgSubmitAnyMisbehaviour {}

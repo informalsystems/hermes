@@ -35,23 +35,22 @@ impl Header {
         self.signed_header.header.time
     }
 
-    pub fn compatible_with(&self, ibc_client_header: &Header) -> bool {
-        let ibc_client_height = ibc_client_header.signed_header.header.height;
+    pub fn compatible_with(&self, other_header: &Header) -> bool {
+        let ibc_client_height = other_header.signed_header.header.height;
         let self_header_height = self.signed_header.header.height;
 
         match self_header_height.cmp(&&ibc_client_height) {
             Ordering::Equal => {
                 // fork
-                self.signed_header.commit.block_id
-                    != ibc_client_header.signed_header.commit.block_id
+                self.signed_header.commit.block_id == other_header.signed_header.commit.block_id
             }
             Ordering::Greater => {
                 // BFT time violation
-                self.signed_header.header.time < ibc_client_header.signed_header.header.time
+                self.signed_header.header.time > other_header.signed_header.header.time
             }
             Ordering::Less => {
                 // BFT time violation
-                self.signed_header.header.time > ibc_client_header.signed_header.header.time
+                self.signed_header.header.time < other_header.signed_header.header.time
             }
         }
     }
