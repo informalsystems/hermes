@@ -4,10 +4,10 @@ use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
     component::Component,
-    config, trace, Application, Configurable, FrameworkError, StandardPaths,
+    config, Application, Configurable, FrameworkError, StandardPaths,
 };
 
-use crate::components::JsonTracing;
+use crate::components::{JsonTracing, PrettyTracing};
 use crate::entry::EntryPoint;
 use crate::{commands::CliCmd, config::Config};
 
@@ -137,12 +137,7 @@ impl Application for CliApp {
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
             // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
-            let tracing = trace::Tracing::new(
-                trace::Config::from(config.global.log_level),
-                self.term_colors(command),
-            )
-            .unwrap();
-
+            let tracing = PrettyTracing::new(config.global)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }
