@@ -1,14 +1,15 @@
 //! Cli Abscissa Application
 
-use crate::components::Tracing;
-use crate::{commands::CliCmd, config::Config};
-
 use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
     component::Component,
-    config, trace, Application, Configurable, EntryPoint, FrameworkError, StandardPaths,
+    config, Application, Configurable, FrameworkError, StandardPaths,
 };
+
+use crate::components::{JsonTracing, PrettyTracing};
+use crate::entry::EntryPoint;
+use crate::{commands::CliCmd, config::Config};
 
 /// Application state
 pub static APPLICATION: AppCell<CliApp> = AppCell::new();
@@ -40,6 +41,9 @@ pub struct CliApp {
 
     /// Application state.
     state: application::State<Self>,
+
+    /// Toggle json output on/off. Changed with the global config option `-j` / `--json`.
+    json_output: bool,
 }
 
 /// Initialize a new application instance.
@@ -51,7 +55,15 @@ impl Default for CliApp {
         Self {
             config: None,
             state: application::State::default(),
+            json_output: false,
         }
+    }
+}
+
+impl CliApp {
+    /// Whether or not JSON output is enabled
+    pub fn json_output(&self) -> bool {
+        self.json_output
     }
 }
 
@@ -116,32 +128,17 @@ impl Application for CliApp {
             .transpose()?
             .unwrap_or_default();
 
-        // For `start` and `start-multi` commands exclusively we disable JSON; otherwise output is JSON-only
-        let json_on = if let Some(c) = &command.command {
-            !matches!(c, CliCmd::Start(_) | CliCmd::StartMulti(_))
-        } else {
-            true
-        };
+        // Update the `json_output` flag used by `conclude::Output`
+        self.json_output = command.json;
 
-        if json_on {
-            let tracing = Tracing::new(config.global)?;
+        if command.json {
+            // Enable JSON by using the crate-level `Tracing`
+            let tracing = JsonTracing::new(config.global)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
-            let alt_tracing = abscissa_core::trace::Tracing::new(
-                abscissa_core::trace::Config::from(config.global.log_level),
-                abscissa_core::terminal::ColorChoice::Auto,
-            )
-            .unwrap();
-            Ok(vec![Box::new(terminal), Box::new(alt_tracing)])
-        }
-    }
-
-    /// Get tracing configuration from command-line options
-    fn tracing_config(&self, command: &EntryPoint<CliCmd>) -> trace::Config {
-        if command.verbose {
-            trace::Config::verbose()
-        } else {
-            trace::Config::default()
+            // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
+            let tracing = PrettyTracing::new(config.global)?;
+            Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }
 }

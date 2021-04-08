@@ -40,6 +40,7 @@
 - [ibc-relayer-cli]
   - Clarified success path for updating a client that is already up-to-date ([#734])
   - Added `create` and `update` wrappers for client raw commands ([#772])
+  - Output by default is human-readable, and JSON is optional ([#805])
 
 ### BUG FIXES
 
@@ -102,6 +103,7 @@
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
 [#801]: https://github.com/informalsystems/ibc-rs/issues/801
 [#801]: https://github.com/informalsystems/ibc-rs/issues/809
+[#805]: https://github.com/informalsystems/ibc-rs/issues/805
 
 
 ## v0.1.1
