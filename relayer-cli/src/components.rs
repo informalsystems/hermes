@@ -1,13 +1,16 @@
 use std::io;
 
 use abscissa_core::{Component, FrameworkError};
-use tracing_subscriber::fmt::{
-    format::{Format, Json, JsonFields},
-    time::SystemTime,
-    Formatter as TracingFormatter,
+use tracing_subscriber::{
+    fmt::{
+        format::{Format, Json, JsonFields},
+        time::SystemTime,
+        Formatter as TracingFormatter,
+    },
+    reload::Handle,
+    util::SubscriberInitExt,
+    EnvFilter, FmtSubscriber,
 };
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{reload::Handle, EnvFilter, FmtSubscriber};
 
 use ibc_relayer::config::GlobalConfig;
 
@@ -15,16 +18,17 @@ use ibc_relayer::config::GlobalConfig;
 type Formatter = TracingFormatter<JsonFields, Format<Json, SystemTime>, StdWriter>;
 type StdWriter = fn() -> io::Stderr;
 
-/// Abscissa component for initializing the `tracing` subsystem
+/// A custom component for parametrizing `tracing` in the relayer.
+/// Primarily used for:
+///
+/// - Customizing the log output level, for filtering the output produced via tracing macros
+///   (`debug!`, `info!`, etc.) or abscissa macros (`status_err`, `status_info`, etc.).
+/// - Enabling JSON-formatted output without coloring
 #[derive(Component, Debug)]
 pub struct JsonTracing {
     filter_handle: Handle<EnvFilter, Formatter>,
 }
 
-/// A custom component for parametrizing `tracing` in the relayer. Primarily used for:
-///     - customizes the log output level, for filtering the output produced via tracing macros
-///         (`debug!`, `info!`, etc.) or abscissa macros (`status_err`, `status_info`, etc.).
-///     - enables JSON-formatted output
 impl JsonTracing {
     /// Creates a new [`Tracing`] component
     #[allow(trivial_casts)]

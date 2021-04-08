@@ -137,13 +137,13 @@ impl Application for CliApp {
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
             // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
-            let alt_tracing = trace::Tracing::new(
+            let tracing = trace::Tracing::new(
                 trace::Config::from(config.global.log_level),
                 self.term_colors(command),
             )
             .unwrap();
 
-            Ok(vec![Box::new(terminal), Box::new(alt_tracing)])
+            Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }
 }
