@@ -8,6 +8,9 @@ pub enum Kind {
     #[error("invalid key")]
     InvalidKey,
 
+    #[error("key not found")]
+    KeyNotFound,
+
     #[error("key already exists")]
     ExistingKey,
 
@@ -21,7 +24,7 @@ pub enum Kind {
     Bech32Account,
 
     #[error("key store error")]
-    KeyStoreOperation,
+    KeyStore,
 }
 
 impl Kind {

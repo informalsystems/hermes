@@ -4,9 +4,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::chain::{Chain, CosmosSdkChain};
 use crate::config::ChainConfig;
-use crate::error;
 use crate::error::{Error, Kind};
-use crate::keyring::store::KeyRingOperations;
 use std::fs;
 
 #[derive(Clone, Debug)]
@@ -17,10 +15,10 @@ pub struct KeysAddOptions {
 }
 
 pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
-    let rt = TokioRuntime::new().unwrap();
+    let rt = Arc::new(TokioRuntime::new().unwrap());
 
     // Get the destination chain
-    let chain = CosmosSdkChain::bootstrap(opts.clone().chain_config, Arc::new(rt))?;
+    let mut chain = CosmosSdkChain::bootstrap(opts.clone().chain_config, rt)?;
 
     let key_contents = fs::read_to_string(&opts.file)
         .map_err(|_| Kind::KeyBase.context("error reading the key file"))?;
@@ -28,21 +26,18 @@ pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
     // Check if it's a valid Key seed file
     let key_entry = chain
         .keybase()
-        .key_from_seed_file(&key_contents, chain.config());
+        .key_from_seed_file(&key_contents)
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
-    match key_entry {
-        Ok(k) => {
-            chain
-                .keybase()
-                .add_key(key_contents.as_str())
-                .map_err(|e| error::Kind::KeyBase.context(e))?;
-            Ok(format!(
-                "Added key {} ({}) on {} chain",
-                opts.name.as_str(),
-                k.account.as_str(),
-                chain.id().clone()
-            ))
-        }
-        Err(e) => Err(Kind::KeyBase.context(e).into()),
-    }
+    chain
+        .keybase_mut()
+        .add_key(key_entry.clone())
+        .map_err(|e| Kind::KeyBase.context(e))?;
+
+    Ok(format!(
+        "Added key {} ({}) on {} chain",
+        opts.name.as_str(),
+        key_entry.account.as_str(),
+        chain.id().clone()
+    ))
 }

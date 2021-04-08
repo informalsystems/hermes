@@ -1,8 +1,5 @@
-use std::collections::BTreeMap;
 use std::convert::TryFrom;
-use std::fs;
-use std::fs::File;
-use std::io::{Read, Write};
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
 use bech32::{ToBase32, Variant};
@@ -15,53 +12,18 @@ use bitcoin::{
 use hdpath::StandardHDPath;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use ripemd160::Ripemd160;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::config::ChainConfig;
 use crate::keyring::errors::{Error, Kind};
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
-pub const KEYSTORE_TEST_BACKEND: &str = "keyring-test";
+pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test"; // TODO: Change to "keyring"
 pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 
-pub type Address = Vec<u8>;
-
-pub enum KeyRing {
-    MemoryKeyStore {
-        store: BTreeMap<String, String>,
-        chain_config: ChainConfig,
-    },
-    TestKeyStore {
-        store: Box<Path>,
-        chain_config: ChainConfig,
-    },
-}
-
-pub enum StoreBackend {
-    Memory,
-    Test,
-}
-
-pub trait KeyRingOperations: Sized {
-    fn init(backend: StoreBackend, chain_config: ChainConfig) -> Result<KeyRing, Error>;
-    fn key_from_seed_file(
-        &self,
-        key_file_content: &str,
-        chain_config: &ChainConfig,
-    ) -> Result<KeyEntry, Error>;
-    fn key_from_mnemonic(
-        &self,
-        mnemonic_words: &str,
-        chain_config: &ChainConfig,
-    ) -> Result<KeyEntry, Error>;
-    fn get_key(&self) -> Result<KeyEntry, Error>;
-    fn add_key(&self, key_contents: &str) -> Result<(), Error>;
-    fn sign_msg(&self, msg: Vec<u8>) -> Vec<u8>;
-}
-
 /// Key entry stores the Private Key and Public Key as well the address
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyEntry {
     /// Public key
     pub public_key: ExtendedPubKey,
@@ -69,83 +31,172 @@ pub struct KeyEntry {
     /// Private key
     pub private_key: ExtendedPrivKey,
 
-    /// Address
-    pub address: Vec<u8>,
-
     /// Account Bech32 format - TODO allow hrp
     pub account: String,
+
+    /// Address
+    pub address: Vec<u8>,
 }
 
-impl KeyRingOperations for KeyRing {
-    /// Initialize a in memory key entry store
-    fn init(backend: StoreBackend, chain_config: ChainConfig) -> Result<KeyRing, Error> {
-        match backend {
-            StoreBackend::Memory => {
-                let store: BTreeMap<String, String> = BTreeMap::new();
-                Ok(KeyRing::MemoryKeyStore {
-                    store,
-                    chain_config,
-                })
-            }
-            StoreBackend::Test => {
-                // Create keys folder if it does not exist
-                let keys_folder = get_test_backend_folder(&chain_config).map_err(|e| {
-                    Kind::KeyStoreOperation
-                        .context(format!("failed to create keys folder: {:?}", e))
-                })?;
-                fs::create_dir_all(keys_folder.clone())
-                    .map_err(|_| Kind::KeyStoreOperation.context("error creating keys folder"))?;
+pub trait KeyStore {
+    fn get_key(&self) -> Result<KeyEntry, Error>;
+    fn add_key(&mut self, key_entry: KeyEntry) -> Result<(), Error>;
+}
 
-                Ok(KeyRing::TestKeyStore {
-                    store: Box::<Path>::from(keys_folder),
-                    chain_config,
-                })
+pub struct Memory {
+    account_prefix: String,
+    key_entry: Option<KeyEntry>,
+}
+
+impl Memory {
+    pub fn new(account_prefix: String, key_entry: Option<KeyEntry>) -> Self {
+        Self {
+            account_prefix,
+            key_entry,
+        }
+    }
+}
+
+impl KeyStore for Memory {
+    fn get_key(&self) -> Result<KeyEntry, Error> {
+        self.key_entry
+            .clone()
+            .ok_or_else(|| Kind::KeyNotFound.into())
+    }
+
+    fn add_key(&mut self, key_entry: KeyEntry) -> Result<(), Error> {
+        if self.key_entry.is_some() {
+            return Err(Kind::ExistingKey.into());
+        }
+
+        self.key_entry = Some(key_entry);
+
+        Ok(())
+    }
+}
+
+pub struct Disk {
+    key_name: String,
+    account_prefix: String,
+    store: PathBuf,
+}
+
+impl Disk {
+    pub fn new(key_name: String, account_prefix: String, store: PathBuf) -> Self {
+        Self {
+            key_name,
+            account_prefix,
+            store,
+        }
+    }
+}
+
+impl KeyStore for Disk {
+    fn get_key(&self) -> Result<KeyEntry, Error> {
+        let mut filename = self.store.join(&self.key_name);
+        filename.set_extension(KEYSTORE_FILE_EXTENSION);
+
+        if !filename.as_path().exists() {
+            return Err(Kind::KeyStore.context("cannot find key file").into());
+        }
+
+        let file =
+            File::open(filename).map_err(|_| Kind::KeyStore.context("cannot open key file"))?;
+
+        let key_entry = serde_json::from_reader(file)
+            .map_err(|_| Kind::KeyStore.context("cannot ready key file"))?;
+
+        Ok(key_entry)
+    }
+
+    fn add_key(&mut self, key_entry: KeyEntry) -> Result<(), Error> {
+        let mut filename = self.store.join(&self.key_name);
+        filename.set_extension(KEYSTORE_FILE_EXTENSION);
+
+        let file = File::create(filename)
+            .map_err(|_| Kind::KeyStore.context("error creating the key file"))?;
+
+        serde_json::to_writer_pretty(file, &key_entry)
+            .map_err(|_| Kind::KeyStore.context("error writing the key file"))?;
+
+        Ok(())
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Store {
+    Memory,
+    Disk,
+}
+
+pub enum KeyRing {
+    Memory(Memory),
+    Disk(Disk),
+}
+
+impl KeyRing {
+    pub fn new(store: Store, chain_config: ChainConfig) -> Result<Self, Error> {
+        match store {
+            Store::Memory => Ok(Self::Memory(Memory::new(chain_config.account_prefix, None))),
+
+            Store::Disk => {
+                // Create keys folder if it does not exist
+                let keys_folder = disk_store_path(chain_config.id.as_str()).map_err(|e| {
+                    Kind::KeyStore.context(format!("failed to create keys folder: {:?}", e))
+                })?;
+
+                fs::create_dir_all(keys_folder.clone())
+                    .map_err(|_| Kind::KeyStore.context("error creating keys folder"))?;
+
+                Ok(Self::Disk(Disk::new(
+                    chain_config.key_name,
+                    chain_config.account_prefix,
+                    keys_folder,
+                )))
             }
+        }
+    }
+
+    pub fn get_key(&self) -> Result<KeyEntry, Error> {
+        match self {
+            KeyRing::Memory(m) => m.get_key(),
+            KeyRing::Disk(d) => d.get_key(),
+        }
+    }
+
+    pub fn add_key(&mut self, key_entry: KeyEntry) -> Result<(), Error> {
+        match self {
+            KeyRing::Memory(m) => m.add_key(key_entry),
+            KeyRing::Disk(d) => d.add_key(key_entry),
         }
     }
 
     /// Get key from seed file
-    fn key_from_seed_file(
-        &self,
-        key_file_content: &str,
-        chain_config: &ChainConfig,
-    ) -> Result<KeyEntry, Error> {
-        let key_json: Value =
+    pub fn key_from_seed_file(&self, key_file_content: &str) -> Result<KeyEntry, Error> {
+        #[derive(Serialize, Deserialize)]
+        struct KeyFile {
+            name: String,
+            r#type: String,
+            address: String,
+            pubkey: String,
+            mnemonic: String,
+        }
+
+        let key_file: KeyFile =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
-        let key: KeyEntry;
+        let key = self
+            .key_from_mnemonic(&key_file.mnemonic)
+            .map_err(|e| Kind::InvalidMnemonic.context(e))?;
 
-        let _mnemonic: String = "".to_string();
-        let mnemonic_value = key_json.get("mnemonic");
-        match mnemonic_value {
-            Some(m) => {
-                let mnemonic = m.as_str();
-                match mnemonic {
-                    Some(v) => {
-                        key = self
-                            .key_from_mnemonic(v, chain_config)
-                            .map_err(|e| Kind::InvalidMnemonic.context(e))?;
-                        Ok(key)
-                    }
-                    None => Err(Kind::InvalidMnemonic
-                        .context("invalid key file, cannot find mnemonic".to_string())
-                        .into()),
-                }
-            }
-            None => Err(Kind::InvalidMnemonic
-                .context("invalid key file, cannot find mnemonic".to_string())
-                .into()),
-        }
+        Ok(key)
     }
 
     /// Add a key entry in the store using a mnemonic.
-    fn key_from_mnemonic(
-        &self,
-        mnemonic_words: &str,
-        chain_config: &ChainConfig,
-    ) -> Result<KeyEntry, Error> {
+    pub fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
         let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
             .map_err(|e| Kind::InvalidMnemonic.context(e))?;
+
         let seed = Seed::new(&mnemonic, "");
 
         // Get Private Key from seed and standard derivation path
@@ -161,12 +212,8 @@ impl KeyRingOperations for KeyRing {
         let address = get_address(public_key);
 
         // Get Bech32 account
-        let account = bech32::encode(
-            chain_config.account_prefix.as_str(),
-            address.to_base32(),
-            Variant::Bech32,
-        )
-        .map_err(|e| Kind::Bech32Account.context(e))?;
+        let account = bech32::encode(self.account_prefix(), address.to_base32(), Variant::Bech32)
+            .map_err(|e| Kind::Bech32Account.context(e))?;
 
         let key = KeyEntry {
             public_key,
@@ -178,113 +225,24 @@ impl KeyRingOperations for KeyRing {
         Ok(key)
     }
 
-    /// Return a key entry from a key name
-    fn get_key(&self) -> Result<KeyEntry, Error> {
-        match &self {
-            KeyRing::MemoryKeyStore {
-                store,
-                chain_config,
-            } => {
-                if !store.contains_key(chain_config.key_name.clone().as_str()) {
-                    Err(Kind::InvalidKey.into())
-                } else {
-                    let key_content = store.get(chain_config.key_name.as_str());
-                    match key_content {
-                        Some(k) => {
-                            let key_entry =
-                                self.key_from_seed_file(k, chain_config).map_err(|_| {
-                                    Kind::KeyStoreOperation.context("failed to get key entry")
-                                })?;
-                            Ok(key_entry)
-                        }
-                        None => Err(Kind::InvalidKey.into()),
-                    }
-                }
-            }
-            KeyRing::TestKeyStore {
-                store: _store,
-                chain_config,
-            } => {
-                // Fetch key from test folder and return key entry
-                let keys_folder = get_test_backend_folder(chain_config).map_err(|e| {
-                    Kind::KeyStoreOperation
-                        .context(format!("failed to retrieve keys folder: {:?}", e))
-                })?;
-
-                let mut filename =
-                    Path::new(keys_folder.as_os_str()).join(chain_config.key_name.clone());
-                filename.set_extension(KEYSTORE_FILE_EXTENSION);
-
-                if Path::exists(filename.as_path()) {
-                    let mut file = File::open(filename)
-                        .map_err(|_| Kind::KeyStoreOperation.context("cannot open key file"))?;
-                    let mut file_contents = String::new();
-                    file.read_to_string(&mut file_contents)
-                        .map_err(|_| Kind::KeyStoreOperation.context("cannot ready key file"))?;
-                    let key_entry = self
-                        .key_from_seed_file(file_contents.as_str(), chain_config)
-                        .map_err(|_| {
-                            Kind::KeyStoreOperation.context("error getting key from file")
-                        })?;
-                    Ok(key_entry)
-                } else {
-                    Err(Kind::KeyStoreOperation
-                        .context("cannot find key file")
-                        .into())
-                }
-            }
-        }
-    }
-
-    /// Insert an entry in the key store
-    fn add_key(&self, key_contents: &str) -> Result<(), Error> {
-        match self {
-            KeyRing::MemoryKeyStore {
-                store,
-                chain_config,
-            } => match store.get(chain_config.key_name.clone().as_str()) {
-                Some(_s) => Err(Kind::ExistingKey
-                    .context("key already exists".to_string())
-                    .into()),
-                None => {
-                    store
-                        .clone()
-                        .insert(chain_config.key_name.to_string(), key_contents.to_string());
-                    Ok(())
-                }
-            },
-            KeyRing::TestKeyStore {
-                store: _store,
-                chain_config,
-            } => {
-                // Save file to appropriate location in the keys folder
-                let keys_folder = get_test_backend_folder(chain_config).map_err(|e| {
-                    Kind::KeyStoreOperation
-                        .context(format!("failed to retrieve keys folder: {:?}", e))
-                })?;
-
-                let mut filename =
-                    Path::new(keys_folder.as_os_str()).join(chain_config.key_name.clone());
-                filename.set_extension(KEYSTORE_FILE_EXTENSION);
-
-                let mut file = File::create(filename)
-                    .map_err(|_| Kind::KeyStoreOperation.context("error creating the key file"))?;
-
-                file.write_all(&key_contents.as_bytes())
-                    .map_err(|_| Kind::KeyStoreOperation.context("error writing the key file"))?;
-
-                Ok(())
-            }
-        }
-    }
-
     /// Sign a message
-    fn sign_msg(&self, msg: Vec<u8>) -> Vec<u8> {
-        let key = self.get_key().unwrap();
+    pub fn sign_msg(&self, msg: Vec<u8>) -> Result<Vec<u8>, Error> {
+        let key = self.get_key()?;
+
         let private_key_bytes = key.private_key.private_key.to_bytes();
-        let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice()).unwrap();
+        let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice()).map_err(|_| {
+            Kind::InvalidKey.context("could not build signing key from private key bytes")
+        })?;
+
         let signature: Signature = signing_key.sign(&msg);
-        signature.as_ref().to_vec()
+        Ok(signature.as_ref().to_vec())
+    }
+
+    pub fn account_prefix(&self) -> &str {
+        match self {
+            KeyRing::Memory(m) => &m.account_prefix,
+            KeyRing::Disk(d) => &d.account_prefix,
+        }
     }
 }
 
@@ -304,18 +262,14 @@ fn get_address(pk: ExtendedPubKey) -> Vec<u8> {
     rip_result.to_vec()
 }
 
-fn get_test_backend_folder(chain_config: &ChainConfig) -> Result<PathBuf, Error> {
-    let home = dirs_next::home_dir();
-    match home {
-        Some(h) => {
-            let folder = Path::new(h.as_path())
-                .join(KEYSTORE_DEFAULT_FOLDER)
-                .join(chain_config.id.as_str())
-                .join(KEYSTORE_TEST_BACKEND);
-            Ok(folder)
-        }
-        None => Err(Into::<Error>::into(
-            Kind::KeyStoreOperation.context("cannot retrieve home folder location"),
-        )),
-    }
+fn disk_store_path(folder_name: &str) -> Result<PathBuf, Error> {
+    let home = dirs_next::home_dir()
+        .ok_or_else(|| Kind::KeyStore.context("cannot retrieve home folder location"))?;
+
+    let folder = Path::new(home.as_path())
+        .join(KEYSTORE_DEFAULT_FOLDER)
+        .join(folder_name)
+        .join(KEYSTORE_DISK_BACKEND);
+
+    Ok(folder)
 }

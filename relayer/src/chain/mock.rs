@@ -96,6 +96,10 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
+    fn keybase_mut(&mut self) -> &mut KeyRing {
+        unimplemented!()
+    }
+
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self

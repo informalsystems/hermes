@@ -100,6 +100,9 @@ pub trait Chain: Sized {
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
 
+    /// Returns the chain's keybase, mutably
+    fn keybase_mut(&mut self) -> &mut KeyRing;
+
     /// Sends one or more transactions with `msgs` to chain.
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 

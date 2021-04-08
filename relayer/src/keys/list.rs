@@ -5,7 +5,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 use crate::chain::{Chain, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::keyring::store::KeyRingOperations;
 
 #[derive(Clone, Debug)]
 pub struct KeysListOptions {
