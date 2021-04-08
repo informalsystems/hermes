@@ -18,7 +18,7 @@ pub struct CloneCmd {
 
     /// commit to checkout
     #[argh(option, short = 'i')]
-    ibc_go_commit: String,
+    ibc_go_commit: Option<String>,
 
     /// where to checkout the repository
     #[argh(option, short = 'o')]
@@ -88,30 +88,39 @@ impl CloneCmd {
         }
 
         println!("[info ] Cloning cosmos/ibc-go repository...");
+    
+        match &self.ibc_go_commit {
+            Some(ibc_go_commit) => {
+                let ibc_path = self.ibc_subdir();
+                let ibc_repo = if ibc_path.exists() {
+                    println!("[info ] Found IBC Go source at '{}'", ibc_path.display());
 
-        let ibc_path = self.ibc_subdir();
-        let ibc_repo = if ibc_path.exists() {
-            println!("[info ] Found IBC Go source at '{}'", ibc_path.display());
+                    Repository::open(&ibc_path).unwrap_or_else(|e| {
+                        println!("[error] Failed to open repository: {}", e);
+                        process::exit(1)
+                    })
+                } else {
+                    Repository::clone(IBC_GO_URL, &ibc_path).unwrap_or_else(|e| {
+                        println!("[error] Failed to clone the IBC Go repository: {}", e);
+                        process::exit(1)
+                    })
+                };
 
-            Repository::open(&ibc_path).unwrap_or_else(|e| {
-                println!("[error] Failed to open repository: {}", e);
-                process::exit(1)
-            })
-        } else {
-            Repository::clone(IBC_GO_URL, &ibc_path).unwrap_or_else(|e| {
-                println!("[error] Failed to clone the IBC Go repository: {}", e);
-                process::exit(1)
-            })
-        };
-
-        println!("[info ] Cloned at '{}'", ibc_path.display());
-        checkout_commit(&ibc_repo, &self.ibc_go_commit).unwrap_or_else(|e| {
-            println!(
-                "[error] Failed to checkout IBC Go commit {}: {}",
-                self.ibc_go_commit, e
-            );
-            process::exit(1)
-        });
+                println!("[info ] Cloned at '{}'", ibc_path.display());
+                checkout_commit(&ibc_repo, ibc_go_commit).unwrap_or_else(|e| {
+                    println!(
+                        "[error] Failed to checkout IBC Go commit {}: {}",
+                        ibc_go_commit, e
+                    );
+                    process::exit(1)
+                });
+            }
+            None => {
+                println!(
+                    "[info ] No `-i`/`--ibc_go_commit` option passed. Skipping the IBC Go repo."
+                )
+            }
+        }
     }
 }
 
