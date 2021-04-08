@@ -7,11 +7,10 @@ First you will need to create a client for each chain:
 This command submits a transaction to a destination chain (`ibc-0`) with a request to create a client for a source chain (`ibc-1`):
 
 ```shell
-hermes -j create client ibc-0 ibc-1 | jq
+hermes tx raw create-client ibc-0 ibc-1
 ```
 
-If the command is successful a message similar to the one below will be displayed,
-having `status:success`:
+if the command is successful a message similar to the one below will be displayed `status:success`:
 
 ```json
 {
@@ -37,10 +36,10 @@ having `status:success`:
 You can also execute a __query__ to view the client state on destination chain `ibc-0` by specifying the `client_id` value `07-tendermint-0`:
 
 ```shell
-hermes -j query client state ibc-0 07-tendermint-0 | jq
+hermes query client state ibc-0 07-tendermint-0
 ```
 
-which will output a message similar to the one below:
+which show a message similar to the one below:
 
 ```json
 {
@@ -85,10 +84,10 @@ which will output a message similar to the one below:
 Now let's do the same for `ibc-1` as the destination chain:
 
 ```shell
-hermes -j create client ibc-1 ibc-0 | jq
+hermes tx raw create-client ibc-1 ibc-0
 ```
 
-Take note of the `client_id` allocated for this client. In the subsequent examples we assume is `07-tendermint-1`.
+Take note of the `client_id` allocated for this client. In the examples we assume is `07-tendermint-1`.
 
 As before, if the command is successful a message with `status:success` is displayed:
 
@@ -109,16 +108,16 @@ As before, if the command is successful a message with `status:success` is displ
 }
 ```
 
-### 1.2 `update client`
+### 1.2 `update-client`
 
-Client states can be updated by sending an `update client` transaction:
+Client states can be updated by sending an `update-client` transaction:
 
 ```shell
-hermes -j update client ibc-0 ibc-1 07-tendermint-0
+hermes tx raw update-client ibc-0 ibc-1 07-tendermint-0
 ```
 
 ```shell
-hermes -j update client ibc-1 ibc-0 07-tendermint-1
+hermes tx raw update-client ibc-1 ibc-0 07-tendermint-1
 ```
 
 ## Next Steps

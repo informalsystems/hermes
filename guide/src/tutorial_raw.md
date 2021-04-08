@@ -6,11 +6,11 @@ In the rest of this section we will show how to create the clients, establish a 
 A chain allocates identifiers when it creates clients, connections and channels. These identifiers can subsequently be used to refer to existing clients, connections and channels.
 
 Chains allocate identifiers using a chain specific allocation scheme.
-Currently, Cosmos-SDK implementation uses:
+Currently, cosmos-SDK implementation uses:
  - `07-tendermint-<n>` for tendermint clients
     - For example `07-tendermin-0` is assigned to the first client created on `ibc-1`:
         ```shell
-        hermes -j create client ibc-1 ibc-0 | jq
+        hermes tx raw create-client ibc-1 ibc-0 | jq
         ```
         ```json
         {
