@@ -876,17 +876,6 @@ impl RelayPath {
         )))
     }
 
-    /// Sends ClientUpdate transactions (to both source and dest chains) ahead of a scheduled batch.
-    /// Includes basic retrying and returns failure only after all retries are exhausted.
-    pub fn update_clients(
-        &self,
-        src_chain_height: Height,
-        dst_chain_height: Height,
-    ) -> Result<(), LinkError> {
-        self.update_client_dst(src_chain_height)?;
-        self.update_client_src(dst_chain_height)
-    }
-
     /// Returns relevant packet events for building RecvPacket and timeout messages.
     /// Additionally returns the height (on source chain) corresponding to these events.
     fn target_height_and_send_packet_events(
