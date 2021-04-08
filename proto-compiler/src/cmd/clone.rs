@@ -91,9 +91,9 @@ impl CloneCmd {
 
         let ibc_path = self.ibc_subdir();
         let ibc_repo = if ibc_path.exists() {
-            println!("[info ] Found IBC Go source at '{}'", sdk_path.display());
+            println!("[info ] Found IBC Go source at '{}'", ibc_path.display());
 
-            Repository::open(&sdk_path).unwrap_or_else(|e| {
+            Repository::open(&ibc_path).unwrap_or_else(|e| {
                 println!("[error] Failed to open repository: {}", e);
                 process::exit(1)
             })
