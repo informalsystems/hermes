@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 use std::collections::HashMap;
+use std::iter::FromIterator;
+use std::array::IntoIter;
 
 use ibc::{ics03_connection::context::ConnectionReader};
 use ibc::ics02_client::context::ClientReader;
@@ -7,13 +9,11 @@ use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
 use ibc::ics26_routing::msgs::Ics26Envelope;
-use ibc::mock::context::MockContext;
-use ibc::mock::host::HostType;
 use serde::{Deserialize, Serialize};
 use ibc::ics02_client::error::Kind as ICS02ErrorKind;
 use ibc::ics18_relayer::error::Error as ICS18Error;
 
-use modelator::{StateHandler, ActionHandler};
+use modelator::{ActionHandler, StateHandler, event::Runner, tester::TestResult};
 
 use super::ibcsystem::IBCSystem;
 
@@ -28,6 +28,15 @@ pub struct Chain {
     pub clients: HashMap<u64, Client>,
 }
 
+impl Chain {
+    pub fn new(height: u64) -> Chain {
+        Chain {
+            height,
+            clients: HashMap::new()
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Client {
     pub heights: Vec<u64>,
@@ -35,19 +44,7 @@ pub struct Client {
 
 impl StateHandler<ClientsState> for IBCSystem {
     fn init(&mut self, state: ClientsState) {
-        // initiliaze all chains
-        self.contexts.clear();
-        for (chain_id, chain) in state.chains {
-            // never GC blocks
-            let max_history_size = usize::MAX;
-            let ctx = MockContext::new(
-                self.make(chain_id.clone()),
-                HostType::Mock,
-                max_history_size,
-                self.make(chain.height),
-            );
-            assert!(self.contexts.insert(chain_id, ctx).is_none());
-        }
+        self.init(state.chains.iter().map(|(chain_id, chain)|(chain_id.clone(), chain.height)));
     }
 
     fn read(&self) -> ClientsState {
@@ -80,6 +77,25 @@ pub struct ChainClientAction {
     pub client_action: ClientAction,
 }
 
+impl ChainClientAction {
+    pub fn create_client(chain_id: &str, client_state: u64, consensus_state: u64) -> ChainClientAction {
+        ChainClientAction {
+            chain_id: chain_id.to_string(),
+            client_action: ClientAction::ICS02CreateClient(
+                ICS02CreateClient { client_state, consensus_state }
+            ),
+        }
+    }
+    pub fn update_client(chain_id: &str, client_id: u64, header: u64) -> ChainClientAction {
+        ChainClientAction {
+            chain_id: chain_id.to_string(),
+            client_action: ClientAction::ICS02UpdateClient(
+                ICS02UpdateClient { client_id, header }
+            ),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "type")]
 pub enum ClientAction {
@@ -101,38 +117,13 @@ pub struct ICS02UpdateClient {
     pub header: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum ClientActionOutcome {
     OK,
     ICS02ClientNotFound,
     ICS02HeaderVerificationFailure,
 }
 
-
-
-#[test]
-pub fn test() {
-    let x = ICS02CreateClient {
-        client_state: 10,
-        consensus_state: 20,
-        
-    };
-    let m = ChainClientAction {
-        chain_id: "1".to_string(),
-        client_action: ClientAction::ICS02CreateClient(x),
-
-    };
-    
-    
-
-    let s = serde_json::to_string_pretty(&m).unwrap();
-    println!("{}", &s);
-
-    let m2: ChainClientAction = serde_json::from_str(&s).unwrap();
-    println!("{:?}", m2);
-    
-
-}
 
 impl IBCSystem {
     fn encode_client_action(&self, action: ClientAction) -> ClientMsg {
@@ -174,10 +165,47 @@ impl ActionHandler<ChainClientAction> for IBCSystem {
     type Outcome = ClientActionOutcome;
 
     fn handle(&mut self, action: ChainClientAction) -> Self::Outcome {
-        let msg = self.encode_client_action(action.client_action.clone());
+        let msg = Ics26Envelope::Ics2Msg(self.encode_client_action(action.client_action.clone()));
         let ctx = self.chain_context_mut(&action.chain_id);
-        let result = ctx.deliver(Ics26Envelope::Ics2Msg(msg));
+        let result = ctx.deliver(msg);
         self.decode_client_outcome(result)
     }
 }
 
+#[test]
+pub fn test() {
+    let mut runner = Runner::<IBCSystem>::new()
+        .with_state::<ClientsState>()
+        .with_action::<ChainClientAction>();
+
+        let initial = ClientsState {
+            chains: HashMap::from_iter(IntoIter::new([
+                ("chain1".into(), Chain::new(10)),
+                ("chain2".into(), Chain::new(20))
+             ]))
+        };
+
+        let events = modelator::event::EventStream::new()
+            // initialize the state of your system from abstract state
+            .init(initial)
+            // you can inspect the current abstract state of your system
+            .check(|state: ClientsState| println!("{:?}", state) )
+            // or make assertions about it
+            .check(|state: ClientsState| assert_eq!(state.chains.len(), 2) )
+            // you can also execute abstract actions against your system
+            .action(ChainClientAction::create_client("chain1", 10, 20))
+            // and require a particular outcome of the action
+            .outcome(ClientActionOutcome::OK)
+            .check(|state: ClientsState| assert_eq!(state.chains["chain1"].clients.len(), 1))
+            .action(ChainClientAction::update_client("chain1", 1, 30))
+            // there is no client with id 1
+            .outcome(ClientActionOutcome::ICS02ClientNotFound)
+            .action(ChainClientAction::update_client("chain1", 0, 30))
+            // debug-print the state again
+            .check(|state: ClientsState| println!("{:?}", state) )
+            .check(|state: ClientsState| assert_eq!(state.chains["chain1"].clients[&0].heights, vec![10,30]) );
+
+        let mut system = IBCSystem::new();
+        let result = runner.run(&mut system, &mut events.into_iter());
+        assert!(matches!(result, TestResult::Success(_)))
+}

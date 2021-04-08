@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::{fmt::{Debug, Display}, slice::Iter};
 use std::{any::Any, collections::HashMap};
 use std::error::Error;
 
@@ -28,6 +28,28 @@ pub struct IBCSystem {
 
 
 impl IBCSystem {
+    pub fn new() -> IBCSystem {
+        IBCSystem {
+            contexts: HashMap::new(),
+            recipe: Self::make_recipe(),
+        }
+    }
+
+    // Initialize the system for a set of chains with given ids and heights
+    pub fn init(&mut self, chains: impl Iterator<Item = (String, u64)>) {
+        self.contexts.clear();
+        for (chain_id, height) in chains {
+            let max_history_size = usize::MAX;
+            let ctx = MockContext::new(
+                self.make(chain_id.clone()),
+                ibc::mock::host::HostType::Mock,
+                max_history_size,
+                self.make(height),
+            );
+            self.contexts.insert(chain_id, ctx);
+        }
+    }
+
     pub fn make<From: Sized + Any, To: Sized + Any>(&self, x: From) -> To {
         self.recipe.make(x)
     }
@@ -35,7 +57,6 @@ impl IBCSystem {
     pub fn take<T: Sized + Any>(&self) -> T {
         self.recipe.take()
     }
-
 
     /// Returns a reference to the `MockContext` of a given `chain_id`.
     /// Panic if the context for `chain_id` is not found.
