@@ -6,7 +6,7 @@ use ibc_relayer::keys::list::{list_keys, KeysListOptions};
 
 use crate::application::app_config;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Kind;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysListCmd {
@@ -35,10 +35,10 @@ impl Runnable for KeysListCmd {
             Ok(result) => result,
         };
 
-        let res: Result<String, Error> = list_keys(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res = list_keys(opts).map_err(|e| Kind::Keys.context(e));
 
         match res {
-            Ok(r) => Output::success(r).exit(),
+            Ok(r) => Output::success_msg(r).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }

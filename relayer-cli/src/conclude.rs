@@ -58,7 +58,7 @@
 use std::fmt;
 
 use serde::Serialize;
-use tracing::error;
+use tracing::warn;
 
 use crate::prelude::app_reader;
 
@@ -66,14 +66,17 @@ use crate::prelude::app_reader;
 ///
 /// ## Note: See `Output::exit()` for the preferred method of exiting a relayer command.
 pub fn exit_with(out: Output) {
+    let status = out.status;
+
     // Handle the output message
-    match json() {
-        true => println!("{}", serde_json::to_string(&out).unwrap()),
-        false => println!("{}\n{:#}", out.status, out.result),
+    if json() {
+        println!("{}", serde_json::to_string(&out.into_json()).unwrap());
+    } else {
+        println!("{}: {}", out.status, out.result);
     }
 
     // The return code
-    if out.status == Status::Error {
+    if status == Status::Error {
         std::process::exit(1);
     } else {
         std::process::exit(0);
@@ -111,17 +114,38 @@ pub fn exit_with_unrecoverable_error<T, E: fmt::Display>(err: E) -> T {
     unreachable!()
 }
 
+/// The result to display before quitting, can either be a JSON value, some plain text,
+/// a value to print with its Debug instance, or nothing.
+#[derive(Debug)]
+pub enum Result {
+    Json(serde_json::Value),
+    Value(Box<dyn fmt::Debug>),
+    Text(String),
+    Nothing,
+}
+
+impl fmt::Display for Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Result::Json(v) => write!(f, "{}", serde_json::to_string(v).unwrap()),
+            Result::Value(v) => write!(f, "{:#?}", v),
+            Result::Text(t) => write!(f, "{}", t),
+            Result::Nothing => write!(f, "no output"),
+        }
+    }
+}
+
 /// A CLI output with support for JSON serialization. The only mandatory field is the `status`,
 /// which typically signals a success (UNIX process return code `0`) or an error (code `1`). An
 /// optional `result` can be added to an output.
 ///
-#[derive(Serialize, Debug)]
+#[derive(Debug)]
 pub struct Output {
     /// The return status
     pub status: Status,
 
     /// The result of a command, such as the output from a query or transaction.
-    pub result: serde_json::Value,
+    pub result: Result,
 }
 
 impl Output {
@@ -129,7 +153,7 @@ impl Output {
     pub fn new(status: Status) -> Self {
         Output {
             status,
-            result: serde_json::Value::Null,
+            result: Result::Nothing,
         }
     }
 
@@ -144,49 +168,92 @@ impl Output {
     }
 
     /// Builder-style method for attaching a result to an output object.
-    pub fn with_result(mut self, result: impl Serialize + std::fmt::Debug) -> Self {
-        self.result = Self::serialize_result(result);
+    pub fn with_result<R>(mut self, result: R) -> Self
+    where
+        R: Serialize + std::fmt::Debug + 'static,
+    {
+        if json() {
+            self.result = Result::Json(serialize_result(result));
+        } else {
+            self.result = Result::Value(Box::new(result));
+        }
+
+        self
+    }
+
+    /// Builder-style method for attaching a plain text message to an output object.
+    pub fn with_msg(mut self, msg: impl ToString) -> Self {
+        self.result = Result::Text(msg.to_string());
         self
     }
 
     /// Quick-access constructor for an output signalling a success `status` and tagged with the
     /// input `result`.
-    pub fn success(result: impl Serialize + std::fmt::Debug) -> Self {
+    pub fn success<R>(result: R) -> Self
+    where
+        R: Serialize + std::fmt::Debug + 'static,
+    {
         Output::with_success().with_result(result)
     }
 
-    /// Quick-access constructor for an output signalling a error `status` and tagged with the
-    /// input `result`.
-    pub fn error(result: impl Serialize + std::fmt::Debug) -> Self {
-        Output::with_error().with_result(result)
+    /// Quick-access constructor for an output message signalling a error `status`.
+    pub fn error(msg: impl ToString) -> Self {
+        Output::with_error().with_msg(msg)
     }
 
-    /// Helper to serialize a result into a `serde_json::Value`.
-    fn serialize_result(res: impl Serialize + std::fmt::Debug) -> serde_json::Value {
-        let last_resort = format!("{:?}", res);
-
-        match serde_json::to_value(res) {
-            Ok(json_val) => json_val,
-            Err(e) => {
-                // Signal the serialization error
-                error!(
-                    "Output constructor failed with non-recoverable error {} for input {}",
-                    e, last_resort
-                );
-                // Package the result with the infallible `Debug` instead of `JSON`
-                serde_json::Value::String(last_resort)
-            }
-        }
+    /// Quick-access constructor for an output signalling a success `status` and tagged with the
+    /// input `result`.
+    pub fn success_msg(msg: impl ToString) -> Self {
+        Output::with_success().with_msg(msg)
     }
 
     /// Exits from the process with the current output. Convenience wrapper over `exit_with`.
     pub fn exit(self) {
         exit_with(self);
     }
+
+    /// Convert this output value to a JSON value
+    pub fn into_json(self) -> serde_json::Value {
+        let mut map = serde_json::Map::new();
+
+        map.insert(
+            "status".to_string(),
+            serde_json::to_value(self.status).unwrap(),
+        );
+
+        let value = match self.result {
+            Result::Json(v) => v,
+            Result::Value(v) => serde_json::Value::String(format!("{:#?}", v)),
+            Result::Text(v) => serde_json::Value::String(v),
+            Result::Nothing => serde_json::Value::String("no output".to_string()),
+        };
+
+        map.insert("result".to_string(), value);
+
+        serde_json::Value::Object(map)
+    }
+}
+
+/// Helper to serialize a result into a `serde_json::Value`.
+fn serialize_result(res: impl Serialize + std::fmt::Debug) -> serde_json::Value {
+    let last_resort = format!("{:#?}", res);
+
+    match serde_json::to_value(res) {
+        Ok(json_val) => json_val,
+        Err(e) => {
+            // Signal the serialization error
+            warn!(
+                "Output constructor failed with non-recoverable error {} for input {}",
+                e, last_resort
+            );
+            // Package the result with the infallible `Debug` instead of `JSON`
+            serde_json::Value::String(last_resort)
+        }
+    }
 }
 
 /// Represents the exit status of any CLI command
-#[derive(Serialize, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum Status {
     #[serde(rename(serialize = "success"))]
     Success,
