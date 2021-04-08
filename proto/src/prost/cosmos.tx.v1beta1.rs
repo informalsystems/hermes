@@ -196,6 +196,8 @@ pub struct GetTxsEventRequest {
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag="2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+    #[prost(enumeration="OrderBy", tag="3")]
+    pub order_by: i32,
 }
 /// GetTxsEventResponse is the response type for the Service.TxsByEvents
 /// RPC method.
@@ -265,6 +267,17 @@ pub struct GetTxResponse {
     /// tx_response is the queried TxResponses.
     #[prost(message, optional, tag="2")]
     pub tx_response: ::core::option::Option<super::super::base::abci::v1beta1::TxResponse>,
+}
+/// OrderBy defines the sorting order
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum OrderBy {
+    /// ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults to ASC in this case.
+    Unspecified = 0,
+    /// ORDER_BY_ASC defines ascending order
+    Asc = 1,
+    /// ORDER_BY_DESC defines descending order
+    Desc = 2,
 }
 /// BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC method.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

@@ -10,7 +10,6 @@
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
 pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
-pub const COSMOS_IBC_VERSION: &str = include_str!("prost/COSMOS_IBC_COMMIT");
 
 pub mod cosmos {
     pub mod auth {

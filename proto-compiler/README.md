@@ -15,7 +15,7 @@ cargo build --locked
 Run the following command to clone the Cosmos SDK and the IBC-Go repositories, and check out a specific commit:
 
 ```bash
-$ cargo run -- clone --out /tmp/cosmos --sdk-commit 21814558eaa47b018018711e5fe16e0b16811fce --ibc-go-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
+$ cargo run -- clone --out /tmp/cosmos --sdk-commit 7648bfca45b9d0897103ec739210607dce77c4fb --ibc-go-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
 ```
 
 Note:
