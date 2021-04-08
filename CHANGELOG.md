@@ -53,6 +53,7 @@
   - Fix for chains that don't have `cosmos` account prefix ([#416])
   - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
   - Don't send `MsgAcknowledgment` if channel is closed ([#675])
+  - Fix a bug where the keys addresses had their account prefix overriden by the prefix in the configuration ([#751])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -94,6 +95,7 @@
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
 [#748]: https://github.com/informalsystems/ibc-rs/issues/748
+[#751]: https://github.com/informalsystems/ibc-rs/issues/751
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
 [#754]: https://github.com/informalsystems/ibc-rs/issues/754
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
