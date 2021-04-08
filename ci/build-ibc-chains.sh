@@ -8,7 +8,7 @@ set -eou pipefail
 ## After updating the gaia version below, double-check the following (see readme.md also):
 ##   - the new version made it to docker hub, and is available for download, e.g. `docker pull informaldev/ibc-1:v4.0.0`
 ##   - the image versions and the relayer release in `docker-compose.yml` are consistent with the new version
-GAIA_BRANCH="v4.1.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
+GAIA_BRANCH="v4.2.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 BASE_DIR="$(dirname $0)"
 ONE_CHAIN="$BASE_DIR/../scripts/one-chain"
@@ -29,7 +29,7 @@ ls -allh "$CHAIN_HOME"
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Gaiad version"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad version --long
+gaiad version --long  --log_level error
 
 MONIKER=node_ibc_0
 CHAIN_ID=ibc-0
