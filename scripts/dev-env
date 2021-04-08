@@ -35,7 +35,7 @@ CHAIN_1_ID="$3"
 CHAIN_2_ID="$4"
 
 SETUP_CHAINS="$(dirname "$0")/setup-chains"
-INIT_CLIENTS="$(dirname "$0")/init-clients"
+INIT_CLIENTS="$(dirname "$0")/init-hermes"
 
 "$SETUP_CHAINS" "$CHAIN_0_ID" "$CHAIN_1_ID" "$CHAIN_2_ID"
 "$INIT_CLIENTS" "$CONFIG_FILE" "$CHAIN_0_ID" "$CHAIN_1_ID" "$CHAIN_2_ID"

@@ -32,8 +32,16 @@ impl EventBatch {
 type SubscriptionResult = Result<tendermint_rpc::event::Event, tendermint_rpc::Error>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
-/// Connect to a TM node, receive push events over a websocket and filter them for the
+/// Connect to a Tendermint node, subscribe to a set of queries,
+/// receive push events over a websocket, and filter them for the
 /// event handler.
+///
+/// The default events that are queried are:
+/// - [`EventType::NewBlock`]
+/// - [`EventType::Tx`]
+///
+/// Those can be extending or overriden using
+/// [`EventMonitor::add_query`] and [`EventMonitor::set_queries`].
 pub struct EventMonitor {
     chain_id: ChainId,
     /// WebSocket to collect events from
@@ -85,6 +93,22 @@ impl EventMonitor {
         };
 
         Ok((monitor, rx))
+    }
+
+    /// Set the queries to subscribe to.
+    ///
+    /// ## Note
+    /// For this change to take effect, one has to [`subscribe`] again.
+    pub fn set_queries(&mut self, queries: Vec<Query>) {
+        self.event_queries = queries;
+    }
+
+    /// Add a new query to subscribe to.
+    ///
+    /// ## Note
+    /// For this change to take effect, one has to [`subscribe`] again.
+    pub fn add_query(&mut self, query: Query) {
+        self.event_queries.push(query);
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.

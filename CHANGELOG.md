@@ -23,6 +23,7 @@
   - Added `client-upgrade` CLI ([#357])
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
+  - Add option to specify which events to listen for in `listen` command ([#550])
 
 ### IMPROVEMENTS
 
@@ -49,10 +50,14 @@
   - Fix for hard-coded account number ([#752])
   - Fix for chains that don't have `cosmos` account prefix ([#416])
   - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
+  - Don't send `MsgAcknowledgment` if channel is closed ([#675])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
   - Make fee denom and amount configurable ([#754])
+
+- [ibc-proto]
+  - Fix for proto files re-compilation bug ([#801])
 
 ### BREAKING CHANGES
 
@@ -60,20 +65,23 @@
   - `MsgConnectionOpenAck.counterparty_connection_id` is now a `ConnectionId` instead of an `Option<ConnectionId>`([#700])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Remove the light client configuration from the global configuration ([#793])
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+    - Remove the light add and light rm commands ([#793])
+
 
 [#352]: https://github.com/informalsystems/ibc-rs/issues/352
 [#357]: https://github.com/informalsystems/ibc-rs/issues/357
 [#416]: https://github.com/informalsystems/ibc-rs/issues/416
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561
+[#550]: https://github.com/informalsystems/ibc-rs/issues/550
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#632]: https://github.com/informalsystems/ibc-rs/issues/632
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
+[#675]: https://github.com/informalsystems/ibc-rs/issues/675
 [#685]: https://github.com/informalsystems/ibc-rs/issues/685
 [#689]: https://github.com/informalsystems/ibc-rs/issues/689
 [#695]: https://github.com/informalsystems/ibc-rs/issues/695
@@ -90,7 +98,9 @@
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
 [#772]: https://github.com/informalsystems/ibc-rs/issues/772
 [#770]: https://github.com/informalsystems/ibc-rs/issues/770
+[#793]: https://github.com/informalsystems/ibc-rs/pull/793
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
+[#801]: https://github.com/informalsystems/ibc-rs/issues/801
 
 
 ## v0.1.1

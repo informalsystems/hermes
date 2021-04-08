@@ -5,11 +5,10 @@ use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::config::StoreConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::CliApp;
-use crate::cli_utils::{spawn_chain_runtime, SpawnOptions};
+use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
 use crate::prelude::*;
 use ibc::ics02_client::client_state::ClientState;
@@ -44,9 +43,7 @@ pub fn monitor_misbehaviour(
     client_id: &Option<ClientId>,
     config: &config::Reader<CliApp>,
 ) -> Result<(), BoxError> {
-    let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-
-    let chain = spawn_chain_runtime(spawn_options, &config, chain_id)
+    let chain = spawn_chain_runtime(&config, chain_id)
         .map_err(|e| format!("could not spawn the chain runtime for {}", chain_id))?;
 
     let subscription = chain.subscribe()?;
@@ -108,8 +105,6 @@ fn misbehaviour_handling(
     client_id: &ClientId,
     update: Option<UpdateClient>,
 ) -> Result<(), BoxError> {
-    let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-
     let client_state = chain
         .query_client_state(client_id, Height::zero())
         .map_err(|e| format!("could not query client state for {}", client_id))?;
@@ -118,8 +113,8 @@ fn misbehaviour_handling(
         // nothing to do
         return Ok(());
     }
-    let counterparty_chain = spawn_chain_runtime(spawn_options, &config, &client_state.chain_id())
-        .map_err(|e| {
+    let counterparty_chain =
+        spawn_chain_runtime(&config, &client_state.chain_id()).map_err(|e| {
             format!(
                 "could not spawn the chain runtime for {}",
                 client_state.chain_id()

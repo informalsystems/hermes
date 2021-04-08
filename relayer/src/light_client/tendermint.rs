@@ -11,13 +11,18 @@ use tendermint_light_client::{
 };
 use tendermint_rpc as rpc;
 
-use ibc::ics02_client::client_misbehaviour::{AnyMisbehaviour, Misbehaviour};
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::header::AnyHeader;
-use ibc::ics07_tendermint::header::Header as TmHeader;
-use ibc::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
-use ibc::{downcast, ics02_client::client_state::AnyClientState};
-use ibc::{ics02_client::client_type::ClientType, ics24_host::identifier::ChainId};
+use ibc::{
+    downcast,
+    ics02_client::{
+        client_misbehaviour::{AnyMisbehaviour, Misbehaviour},
+        client_state::AnyClientState,
+        client_type::ClientType,
+        events::UpdateClient,
+        header::AnyHeader,
+    },
+    ics07_tendermint::{header::Header as TmHeader, misbehaviour::Misbehaviour as TmMisbehaviour},
+    ics24_host::identifier::ChainId,
+};
 
 use crate::error::Kind;
 use crate::{
@@ -126,19 +131,15 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 }
 
 impl LightClient {
-    pub fn from_config(config: &ChainConfig) -> Result<Self, Error> {
+    pub fn from_config(config: &ChainConfig, peer_id: PeerId) -> Result<Self, Error> {
         let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| error::Kind::LightClient(config.rpc_addr.to_string()).context(e))?;
 
-        let peer = config.primary().ok_or_else(|| {
-            error::Kind::LightClient(config.rpc_addr.to_string()).context("no primary peer")
-        })?;
-
-        let io = components::io::ProdIo::new(peer.peer_id, rpc_client, Some(peer.timeout));
+        let io = components::io::ProdIo::new(peer_id, rpc_client, Some(config.rpc_timeout));
 
         Ok(Self {
             chain_id: config.id.clone(),
-            peer_id: peer.peer_id,
+            peer_id,
             io,
         })
     }

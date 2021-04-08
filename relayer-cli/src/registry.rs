@@ -30,7 +30,7 @@ impl<'a> Registry<'a> {
     /// return its handle.
     pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Box<dyn ChainHandle>, Error> {
         if !self.handles.contains_key(chain_id) {
-            let handle = spawn_chain_runtime(Default::default(), &self.config, chain_id)?;
+            let handle = spawn_chain_runtime(&self.config, chain_id)?;
             self.handles.insert(chain_id.clone(), handle);
         }
 

@@ -1,16 +1,9 @@
 //! Relayer configuration
 
-use std::{
-    fs,
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::{fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::Hash;
-use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
+use tendermint_light_client::types::TrustThreshold;
 
 use ibc::ics24_host::identifier::{ChainId, PortId};
 
@@ -20,7 +13,7 @@ use crate::error;
 pub mod default {
     use super::*;
 
-    pub fn timeout() -> Duration {
+    pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
     }
 
@@ -77,9 +70,6 @@ impl Default for Strategy {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GlobalConfig {
-    #[serde(default = "default::timeout", with = "humantime_serde")]
-    pub timeout: Duration,
-
     #[serde(default)]
     pub strategy: Strategy,
 
@@ -91,7 +81,6 @@ pub struct GlobalConfig {
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
-            timeout: default::timeout(),
             strategy: Strategy::default(),
             log_level: "info".to_string(),
         }
@@ -104,6 +93,8 @@ pub struct ChainConfig {
     pub rpc_addr: tendermint_rpc::Url,
     pub websocket_addr: tendermint_rpc::Url,
     pub grpc_addr: tendermint_rpc::Url,
+    #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
+    pub rpc_timeout: Duration,
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
@@ -118,34 +109,6 @@ pub struct ChainConfig {
     pub trusting_period: Duration,
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
-
-    // initially empty, to configure with the `light add/rm` commands
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub peers: Option<PeersConfig>,
-}
-
-impl ChainConfig {
-    pub fn primary(&self) -> Option<&LightClientConfig> {
-        let peers = self.peers.as_ref()?;
-        peers.light_client(peers.primary)
-    }
-
-    pub fn light_client(&self, id: PeerId) -> Option<&LightClientConfig> {
-        let peers = self.peers.as_ref()?;
-        peers.light_client(id)
-    }
-
-    pub fn witnesses(&self) -> Option<Vec<&LightClientConfig>> {
-        let peers = self.peers.as_ref()?;
-
-        Some(
-            peers
-                .light_clients
-                .iter()
-                .filter(|p| p.peer_id != peers.primary)
-                .collect(),
-        )
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -159,55 +122,6 @@ pub struct Connection {
 pub struct RelayPath {
     pub a_port: PortId,
     pub b_port: PortId,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PeersConfig {
-    pub primary: PeerId,
-    pub light_clients: Vec<LightClientConfig>,
-}
-
-impl PeersConfig {
-    pub fn light_client(&self, id: PeerId) -> Option<&LightClientConfig> {
-        self.light_clients.iter().find(|p| p.peer_id == id)
-    }
-
-    pub fn light_client_mut(&mut self, id: PeerId) -> Option<&mut LightClientConfig> {
-        self.light_clients.iter_mut().find(|p| p.peer_id == id)
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LightClientConfig {
-    pub peer_id: PeerId,
-    pub address: tendermint_rpc::Url,
-    #[serde(default = "default::timeout", with = "humantime_serde")]
-    pub timeout: Duration,
-    pub trusted_header_hash: Hash,
-    pub trusted_height: Height,
-    pub store: StoreConfig,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(tag = "type")]
-pub enum StoreConfig {
-    #[serde(rename = "disk")]
-    Disk { path: PathBuf },
-    #[serde(rename = "memory")]
-    Memory {
-        #[serde(skip)]
-        dummy: (),
-    },
-}
-
-impl StoreConfig {
-    pub fn disk(path: PathBuf) -> Self {
-        Self::Disk { path }
-    }
-
-    pub fn memory() -> Self {
-        Self::Memory { dummy: () }
-    }
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

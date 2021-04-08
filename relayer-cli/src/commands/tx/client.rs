@@ -4,11 +4,10 @@ use tracing::info;
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer::config::StoreConfig;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
-use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair, SpawnOptions};
+use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::{Error, Kind};
 
@@ -26,18 +25,7 @@ pub struct TxCreateClientCmd {
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
-
-        if self.src_chain_id == self.dst_chain_id {
-            Output::error("source and destination chains must be different".to_string()).exit()
-        }
-
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let chains = match ChainHandlePair::spawn_with(
-            spawn_options,
-            &config,
-            &self.src_chain_id,
-            &self.dst_chain_id,
-        ) {
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
@@ -83,12 +71,10 @@ impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let dst_chain =
-            match spawn_chain_runtime(spawn_options.clone(), &config, &self.dst_chain_id) {
-                Ok(handle) => handle,
-                Err(e) => return Output::error(format!("{}", e)).exit(),
-            };
+        let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         let src_chain_id =
             match dst_chain.query_client_state(&self.dst_client_id, ibc::Height::zero()) {
@@ -102,7 +88,7 @@ impl Runnable for TxUpdateClientCmd {
                 }
             };
 
-        let src_chain = match spawn_chain_runtime(spawn_options, &config, &src_chain_id) {
+        let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
             Ok(handle) => handle,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
@@ -158,14 +144,8 @@ impl Runnable for TxUpgradeClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-        let chains = ChainHandlePair::spawn_with(
-            spawn_options,
-            &config,
-            &self.src_chain_id,
-            &self.dst_chain_id,
-        )
-        .unwrap_or_else(exit_with_unrecoverable_error);
+        let chains = ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         info!("Started the chain runtimes");
 
