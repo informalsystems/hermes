@@ -43,6 +43,7 @@ pub trait KeyStore {
     fn add_key(&mut self, key_entry: KeyEntry) -> Result<(), Error>;
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Memory {
     account_prefix: String,
     key_entry: Option<KeyEntry>,
@@ -75,6 +76,7 @@ impl KeyStore for Memory {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Disk {
     key_name: String,
     account_prefix: String,
@@ -129,6 +131,7 @@ pub enum Store {
     Disk,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum KeyRing {
     Memory(Memory),
     Disk(Disk),
@@ -193,7 +196,6 @@ impl KeyRing {
         // the mnemonic will have the configured account prefix which may
         // not match the one in the key file.
         //
-        // TODO: Implement proper deserialization of the the KeyFile into a KeyEntry.
         key.account = key_file.address;
 
         Ok(key)
