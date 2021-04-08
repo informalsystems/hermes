@@ -12,9 +12,10 @@ EXTENDS Integers, FiniteSets, IBCCoreDefinitions
  ***************************************************************************)
 
 \* Handle "ChanOpenInit" datagrams
+\* @type: (Str, CHAINSTORE, Set(DATAGRAM)) => CHAINSTORE;
 HandleChanOpenInit(chainID, chain, datagrams) ==
     \* get chainID's connection end
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get "ChanOpenInit" datagrams, with a valid port and channel ID
     LET chanOpenInitDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ChanOpenInit"
@@ -23,13 +24,13 @@ HandleChanOpenInit(chainID, chain, datagrams) ==
     
     \* if there are valid "ChanOpenInit" datagrams and the connection is not "UNINIT", 
     \* initialize the channel end and update the chain
-    IF /\ chanOpenInitDgrs /= AsSetDatagrams({}) 
+    IF /\ chanOpenInitDgrs /= {}
        /\ connectionEnd.state /= "UNINIT" 
        /\ connectionEnd.channelEnd.state = "UNINIT"
     THEN LET chanOpenInitDgr == CHOOSE dgr \in chanOpenInitDgrs : TRUE IN
          LET chanOpenInitChannelEnd == 
              IF connectionEnd.channelEnd.order = "ORDERED" 
-             THEN AsChannelEnd([
+             THEN [
                     state |-> "INIT",
                     order |-> "ORDERED",
                     nextSendSeq |-> 1,
@@ -39,21 +40,21 @@ HandleChanOpenInit(chainID, chain, datagrams) ==
                     channelID |-> chanOpenInitDgr.channelID,
                     counterpartyPortID |-> chanOpenInitDgr.counterpartyPortID,
                     counterpartyChannelID |-> chanOpenInitDgr.counterpartyChannelID
-                  ])
-             ELSE AsChannelEnd([ 
+                  ]
+             ELSE [ 
                     state |-> "INIT",
                     order |-> "UNORDERED",
                     portID |-> chanOpenInitDgr.portID,
                     channelID |-> chanOpenInitDgr.channelID,
                     counterpartyPortID |-> chanOpenInitDgr.counterpartyPortID,
                     counterpartyChannelID |-> chanOpenInitDgr.counterpartyChannelID
-                  ]) IN 
-         LET chanOpenInitConnectionEnd == AsConnectionEnd([
+                  ] IN 
+         LET chanOpenInitConnectionEnd == [
              chain.connectionEnd EXCEPT !.channelEnd = chanOpenInitChannelEnd
-         ]) IN
-         LET chanOpenInitChain == AsChainStore([
+         ] IN
+         LET chanOpenInitChain == [
              chain EXCEPT !.connectionEnd = chanOpenInitConnectionEnd            
-         ]) IN
+         ] IN
          
          chanOpenInitChain
     
@@ -61,9 +62,10 @@ HandleChanOpenInit(chainID, chain, datagrams) ==
     ELSE chain
 
 \* Handle "ChanOpenTry" datagrams
+\* @type: (Str, CHAINSTORE, Set(DATAGRAM)) => CHAINSTORE;
 HandleChanOpenTry(chainID, chain, datagrams) ==
     \* get chainID's connection end
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get "ChanOpenTry" datagrams, with a valid port and channel ID
     LET chanOpenTryDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ChanOpenTry"
@@ -73,7 +75,7 @@ HandleChanOpenTry(chainID, chain, datagrams) ==
     
     \* if there are valid "ChanOpenTry" datagrams and the connection is "OPEN", 
     \* update the channel end
-    IF /\ chanOpenTryDgrs /= AsSetDatagrams({}) 
+    IF /\ chanOpenTryDgrs /= {}
        /\ chain.connectionEnd.state = "OPEN" 
     THEN LET chanOpenTryDgr == CHOOSE dgr \in chanOpenTryDgrs : TRUE IN
          \* if the channel end is uninitialized
@@ -87,7 +89,7 @@ HandleChanOpenTry(chainID, chain, datagrams) ==
          \* update the channel end in the chain store           
          THEN LET chanOpenTryChannelEnd == 
                 IF connectionEnd.channelEnd.order = "ORDERED" 
-                THEN AsChannelEnd([
+                THEN [
                         state |-> "TRYOPEN",
                         order |-> "ORDERED",
                         nextSendSeq |-> 1,
@@ -97,23 +99,23 @@ HandleChanOpenTry(chainID, chain, datagrams) ==
                         channelID |-> chanOpenTryDgr.channelID,
                         counterpartyPortID |-> chanOpenTryDgr.counterpartyPortID,
                         counterpartyChannelID |-> chanOpenTryDgr.counterpartyChannelID
-                  ])
-                ELSE AsChannelEnd([
+                  ]
+                ELSE [
                         state |-> "TRYOPEN",
                         order |-> "UNORDERED",
                         portID |-> chanOpenTryDgr.portID,
                         channelID |-> chanOpenTryDgr.channelID,
                         counterpartyPortID |-> chanOpenTryDgr.counterpartyPortID,
                         counterpartyChannelID |-> chanOpenTryDgr.counterpartyChannelID
-                  ]) IN 
+                  ] IN 
        
-              LET chanOpenTryConnectionEnd == AsConnectionEnd([
+              LET chanOpenTryConnectionEnd == [
                   connectionEnd EXCEPT !.channelEnd = chanOpenTryChannelEnd
-              ]) IN
+              ] IN
               
-              LET chanOpenTryChain == AsChainStore([
+              LET chanOpenTryChain == [
                   chain EXCEPT !.connectionEnd = chanOpenTryConnectionEnd
-              ]) IN
+              ] IN
                  
               chanOpenTryChain
 
@@ -122,11 +124,12 @@ HandleChanOpenTry(chainID, chain, datagrams) ==
     ELSE chain
 
 \* Handle "ChanOpenAck" datagrams
+\* @type: (Str, CHAINSTORE, Set(DATAGRAM)) => CHAINSTORE;
 HandleChanOpenAck(chainID, chain, datagrams) ==
     \* get chainID's connection end
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get chainID's channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    LET channelEnd == GetChannelEnd(chain) IN
     \* get "ChanOpenAck" datagrams, with a valid channel ID
     LET chanOpenAckDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ChanOpenAck"
@@ -135,22 +138,22 @@ HandleChanOpenAck(chainID, chain, datagrams) ==
                             /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     \* if there are valid "ChanOpenAck" datagrams, update the channel end
-    IF /\ chanOpenAckDgrs /= AsSetDatagrams({}) 
+    IF /\ chanOpenAckDgrs /= {}
        /\ connectionEnd.state = "OPEN"
     THEN \* if the channel end on the chain is in "INIT" or it is in "TRYOPEN",   
          \* update the channel end   
          IF \/ channelEnd.state = "INIT"
             \/ channelEnd.state = "TRYOPEN"
          THEN LET chanOpenAckDgr == CHOOSE dgr \in chanOpenAckDgrs : TRUE IN
-              LET chanOpenAckChannelEnd == AsChannelEnd([
+              LET chanOpenAckChannelEnd == [
                   channelEnd EXCEPT !.state = "OPEN"
-              ]) IN
-              LET chanOpenAckConnectionEnd == AsConnectionEnd([ 
+              ] IN
+              LET chanOpenAckConnectionEnd == [ 
                   connectionEnd EXCEPT !.channelEnd = chanOpenAckChannelEnd
-              ]) IN
-              LET chanOpenAckChain == AsChainStore([
+              ] IN
+              LET chanOpenAckChain == [
                   chain EXCEPT !.connectionEnd = chanOpenAckConnectionEnd
-              ]) IN
+              ] IN
               
               chanOpenAckChain
 
@@ -160,11 +163,12 @@ HandleChanOpenAck(chainID, chain, datagrams) ==
     
 
 \* Handle "ChanOpenConfirm" datagrams
+\* @type: (Str, CHAINSTORE, Set(DATAGRAM)) => CHAINSTORE;
 HandleChanOpenConfirm(chainID, chain, datagrams) ==
     \* get chainID's connection end
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get chainID's channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    LET channelEnd ==  GetChannelEnd(chain) IN
     \* get "ChanOpenConfirm" datagrams, with a valid channel ID 
     LET chanOpenConfirmDgrs == {dgr \in datagrams : 
                                 /\ dgr.type = "ChanOpenConfirm"
@@ -173,20 +177,20 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
                                 /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     \* if there are valid "ChanOpenConfirm" datagrams, update the channel end
-    IF /\ chanOpenConfirmDgrs /= AsSetDatagrams({}) 
+    IF /\ chanOpenConfirmDgrs /= {}
        /\ connectionEnd.state = "OPEN"
     THEN \* if the channel end on the chain is in "TRYOPEN", update the channel end 
          IF channelEnd.state = "TRYOPEN"
          THEN LET chanOpenConfirmDgr == CHOOSE dgr \in chanOpenConfirmDgrs : TRUE IN
-              LET chanOpenConfirmChannelEnd == AsChannelEnd([
+              LET chanOpenConfirmChannelEnd == [
                   channelEnd EXCEPT !.state = "OPEN"
-              ]) IN
-              LET chanOpenConfirmConnectionEnd == AsConnectionEnd([ 
+              ] IN
+              LET chanOpenConfirmConnectionEnd == [ 
                   connectionEnd EXCEPT !.channelEnd = chanOpenConfirmChannelEnd
-              ]) IN
-              LET chanOpenConfirmChain == AsChainStore([
+              ] IN
+              LET chanOpenConfirmChain == [
                   chain EXCEPT !.connectionEnd = chanOpenConfirmConnectionEnd
-              ]) IN
+              ] IN
                  
               chanOpenConfirmChain
 
@@ -195,11 +199,12 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
     ELSE chain
     
 \* Handle "ChanCloseInit" datagrams
+\* @type: (Str, CHAINSTORE, Set(DATAGRAM)) => CHAINSTORE;
 HandleChanCloseInit(chainID, chain, datagrams) ==
     \* get chainID's connection end
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get chainID's channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    LET channelEnd == GetChannelEnd(chain) IN
     \* get "ChanCloseInit" datagrams, with a valid channel ID 
     LET chanCloseInitDgrs == {dgr \in datagrams : 
                               /\ dgr.type = "ChanCloseInit"
@@ -207,21 +212,21 @@ HandleChanCloseInit(chainID, chain, datagrams) ==
                               /\ dgr.channelID = channelEnd.channelID} IN
     
     \* if there are valid "ChanCloseInit" datagrams
-    IF /\ chanCloseInitDgrs /= AsSetDatagrams({})
+    IF /\ chanCloseInitDgrs /= {}
     \* and the channel end is neither UNINIT nor CLOSED
        /\ channelEnd.state \notin {"UNINIT", "CLOSED"}
     \* and the connection end is OPEN   
        /\ connectionEnd.state = "OPEN"
     THEN \* then close the channel end
-         LET chanCloseInitChannelEnd == AsChannelEnd([
+         LET chanCloseInitChannelEnd == [
              channelEnd EXCEPT !.state = "CLOSED"
-         ]) IN
-         LET chanCloseInitConnectionEnd == AsConnectionEnd([ 
+         ] IN
+         LET chanCloseInitConnectionEnd == [ 
              connectionEnd EXCEPT !.channelEnd = chanCloseInitChannelEnd
-         ]) IN
-         LET chanCloseInitChain == AsChainStore([
+         ] IN
+         LET chanCloseInitChain == [
              chain EXCEPT !.connectionEnd = chanCloseInitConnectionEnd
-         ]) IN
+         ] IN
          
          chanCloseInitChain
     
@@ -229,11 +234,12 @@ HandleChanCloseInit(chainID, chain, datagrams) ==
     ELSE chain
 
 \* Handle "ChanCloseConfirm" datagrams
+\* @type: (Str, CHAINSTORE, Set(DATAGRAM)) => CHAINSTORE;
 HandleChanCloseConfirm(chainID, chain, datagrams) ==
     \* get chainID's connection end
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get chainID's channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    LET channelEnd == GetChannelEnd(chain) IN
     \* get "ChanCloseConfirm" datagrams, with a valid channel ID 
     LET chanCloseConfirmDgrs == {dgr \in datagrams : 
                                  /\ dgr.type = "ChanCloseConfirm"
@@ -242,21 +248,21 @@ HandleChanCloseConfirm(chainID, chain, datagrams) ==
                                  /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     \* if there are valid "ChanCloseConfirm" datagrams
-    IF /\ chanCloseConfirmDgrs /= AsSetDatagrams({})
+    IF /\ chanCloseConfirmDgrs /= {}
     \* and the channel end is neither UNINIT nor CLOSED
        /\ channelEnd.state \notin {"UNINIT", "CLOSED"}
     \* and the connection end is OPEN   
        /\ connectionEnd.state = "OPEN"
     THEN \* then close the channel end
-         LET chanCloseConfirmChannelEnd == AsChannelEnd([
+         LET chanCloseConfirmChannelEnd == [
              channelEnd EXCEPT !.state = "CLOSED"
-         ]) IN
-         LET chanCloseConfirmConnectionEnd == AsConnectionEnd([ 
+         ] IN
+         LET chanCloseConfirmConnectionEnd == [ 
              connectionEnd EXCEPT !.channelEnd = chanCloseConfirmChannelEnd
-         ]) IN
-         LET chanCloseConfirmChain == AsChainStore([
+         ] IN
+         LET chanCloseConfirmChain == [
              chain EXCEPT !.connectionEnd = chanCloseConfirmConnectionEnd
-         ]) IN
+         ] IN
          
          chanCloseConfirmChain
     

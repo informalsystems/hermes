@@ -7,229 +7,114 @@
 
 EXTENDS Integers, FiniteSets, Sequences
 
-(********************* TYPE ANNOTATIONS FOR APALACHE ***********************)
-\* operator for type annotations
-a <: b == a
-
-\* unordered channel end type
-UnorderedChannelEndType == 
+(************************ TYPE ALIASES FOR SNOWCAT *************************)
+(* @typeAlias: CHAN = 
     [
-        state |-> STRING, 
-        order |-> STRING, 
-        channelID |-> STRING, 
-        counterpartyPortID |-> STRING,
-        counterpartyChannelID |-> STRING
-    ]
-    
-\* ordered channel end type
-OrderedChannelEndType == 
+        state: Str, 
+        order: Str, 
+        portID: Str, 
+        channelID: Str, 
+        counterpartyPortID: Str, 
+        counterpartyChannelID: Str, 
+        nextSendSeq: Int, 
+        nextRcvSeq: Int, 
+        nextAckSeq: Int
+    ]; 
+*)
+(* @typeAlias: CONN = 
     [
-        state |-> STRING, 
-        order |-> STRING, 
-        channelID |-> STRING, 
-        counterpartyPortID |-> STRING,
-        counterpartyChannelID |-> STRING,
-        nextSendSeq |-> Int, 
-        nextRcvSeq |-> Int, 
-        nextAckSeq |-> Int
-    ]
-
-\* to deal with union types, use the supertype    
-ChannelEndType == OrderedChannelEndType    
-       
-\* connection end type
-ConnectionEndType == 
+        state: Str, 
+        connectionID: Str, 
+        clientID: Str, 
+        counterpartyConnectionID: Str, 
+        counterpartyClientID: Str, 
+        channelEnd: CHAN, 
+        versions: Set(Int)
+    ]; 
+*)
+(* @typeAlias: PACKET = 
     [
-        state |-> STRING, 
-        connectionID |-> STRING, 
-        clientID |-> STRING,
-        counterpartyConnectionID |-> STRING, 
-        counterpartyClientID |-> STRING,
-        channelEnd |-> ChannelEndType,
-        versions |-> {Int}
-    ]
-
-\* packet commitment type
-PacketCommitmentType == 
+        sequence: Int,
+        timeoutHeight: Int,
+        srcPortID: Str,
+        srcChannelID: Str, 
+        dstPortID: Str,
+        dstChannelID: Str
+    ]; 
+*)
+(* @typeAlias: PACKETCOMM = 
     [
-        portID |-> STRING,
-        channelID |-> STRING, 
-        sequence |-> Int, 
-        timeoutHeight |-> Int
-    ]
-   
-\* packet receipt type
-PacketReceiptType ==
+        portID: Str, 
+        channelID: Str,
+        sequence: Int,
+        timeoutHeight: Int
+    ]; 
+*)   
+(* @typeAlias: PACKETREC = 
     [
-        portID |-> STRING,
-        channelID |-> STRING, 
-        sequence |-> Int 
-    ]    
-
-\* packet acknowledgement type
-PacketAcknowledgementType ==
+        portID: Str, 
+        channelID: Str,
+        sequence: Int
+    ]; 
+*)   
+(* @typeAlias: PACKETACK = 
     [
-        portID |-> STRING, 
-        channelID |-> STRING,
-        sequence |-> Int,
-        acknowledgement |-> BOOLEAN
-    ]  
-    
-\* packet type
-PacketType ==
+        portID: Str, 
+        channelID: Str,
+        sequence: Int,
+        acknowledgement: Bool
+    ]; 
+*)  
+(* @typeAlias: CHAINSTORE = 
     [
-        sequence |-> Int,
-        timeoutHeight |-> Int, 
-        srcPortID |-> STRING,
-        srcChainID |-> STRING,
-        dstPortID |-> STRING,
-        dstChainID |-> STRING
-    ]
-    
-\* packet log entry type    
-PacketLogEntryType ==
+        height: Int, 
+        counterpartyClientHeights: Set(Int), 
+        connectionEnd: CONN, 
+        packetCommitments: Set(PACKETCOMM), 
+        packetsToAcknowledge: Seq(PACKET), 
+        packetReceipts: Set(PACKETREC),
+        packetAcknowledgements: Set(PACKETACK)
+    ]; 
+*)   
+(* @typeAlias: DATAGRAM = 
     [
-        type |-> STRING,
-        srcChainID |-> STRING,
-        sequence |-> Int,
-        timeoutHeight |-> Int,
-        acknowledgement |-> BOOLEAN
-    ]
-        
-
-\* chain store type 
-ChainStoreType == 
+        type: Str, 
+        height: Int, 
+        proofHeight: Int, 
+        consensusHeight: Int, 
+        clientID: Str, 
+        counterpartyClientID: Str, 
+        connectionID: Str, 
+        counterpartyConnectionID: Str, 
+        versions: Set(Int), 
+        portID: Str, 
+        channelID: Str, 
+        counterpartyPortID: Str, 
+        counterpartyChannelID: Str, 
+        packet: PACKET, 
+        acknowledgement: Bool
+    ]; 
+*)
+(* @typeAlias: LOGENTRY = 
     [
-        height |-> Int, 
-        counterpartyClientHeights |-> {Int},
-        connectionEnd |-> ConnectionEndType, 
-        packetCommitments |-> {PacketCommitmentType},
-        packetsToAcknowledge |-> Seq(PacketType),
-        packetReceipts |-> {PacketReceiptType},
-        packetAcknowledgements |-> {PacketAcknowledgementType} 
-    ]
-
-\* history variable type
-HistoryType == 
+        type: Str, 
+        srcChainID: Str, 
+        sequence: Int, 
+        timeoutHeight: Int, 
+        acknowledgement: Bool
+    ]; 
+*)
+(* @typeAlias: HISTORY = 
     [
-        connInit |-> BOOLEAN, 
-        connTryOpen |-> BOOLEAN, 
-        connOpen |-> BOOLEAN,
-        chanInit |-> BOOLEAN, 
-        chanTryOpen |-> BOOLEAN, 
-        chanOpen |-> BOOLEAN, 
-        chanClosed |-> BOOLEAN
-    ]
-
-\* client datagram type
-ClientDatagramType ==
-    [
-        type |-> STRING,
-        clientID |-> STRING,
-        height |-> Int   
-    ]
-
-\* connection datagram type
-ConnectionDatagramType ==
-    [
-        type |-> STRING,
-        connectionID |-> STRING,
-        clientID |-> STRING,
-        counterpartyConnectionID |-> STRING,
-        counterpartyClientID |-> STRING,
-        version |-> {Int},
-        proofHeight |-> Int,
-        consensusHeight |-> Int
-    ]
-
-\* channel datagram type
-ChannelDatagramType ==
-    [
-        type |-> STRING,
-        channelID |-> STRING,
-        counterpartyChannelID |-> STRING,
-        proofHeight |-> Int
-    ]
-
-\* packet datagram type
-PacketDatagramType ==
-    [
-        type |-> STRING,
-        packet |-> PacketType,
-        acknowledgement |-> BOOLEAN,
-        proofHeight |-> Int
-    ]
-
-\* datagram type (record type containing fields of all datagrams)                  
-DatagramType ==
-    [
-        type |-> STRING,
-        height |-> Int,
-        proofHeight |-> Int,
-        consensusHeight |-> Int,
-        clientID |-> STRING,
-        counterpartyClientID |-> STRING,
-        connectionID |-> STRING,
-        counterpartyConnectionID |-> STRING,
-        version |-> {Int},
-        portID |-> STRING,
-        channelID |-> STRING,
-        counterpartyPortID |-> STRING,
-        counterpartyChannelID |-> STRING,
-        packet |-> PacketType,
-        acknowledgement |-> BOOLEAN
-    ]
-
-AsID(ID) == ID <: STRING
-AsInt(n) == n <: Int
-AsSetInt(S) == S <: {Int}
-AsString(s) == s <: STRING
-
-AsChannelEnd(channelEnd) == channelEnd <: ChannelEndType
-AsSetChannelEnd(CE) == CE <: {ChannelEndType}
-
-AsConnectionEnd(connectionEnd) == connectionEnd <: ConnectionEndType  
-
-AsChainStore(chainStore) == chainStore <: ChainStoreType
-
-AsHistory(history) == history <: HistoryType
-
-AsDatagram(dgr) == dgr <: DatagramType
-
-AsClientDatagram(dgr) == dgr <: ClientDatagramType
-AsSetClientDatagrams(Dgrs) == Dgrs <: {ClientDatagramType}
-
-AsConnectionDatagram(dgr) == dgr <: ConnectionDatagramType
-AsSetConnectionDatagrams(Dgrs) == Dgrs <: {ConnectionDatagramType}
-
-AsChannelDatagram(dgr) == dgr <: ChannelDatagramType
-AsSetChannelDatagrams(Dgrs) == Dgrs <: {ChannelDatagramType}
-
-AsPacketDatagram(dgr) == dgr <: PacketDatagramType
-AsSetPacketDatagrams(Dgrs) == Dgrs <: {PacketDatagramType}
-AsSeqPacketDatagrams(Dgrs) == Dgrs <: Seq(PacketDatagramType)
-
-AsSetDatagrams(Dgrs) == Dgrs <: {DatagramType}
-AsSeqDatagrams(Dgrs) == Dgrs <: Seq(DatagramType)
-
-AsPacket(packet) == packet <: PacketType
-AsSetPacket(P) == P <: {PacketType}
-AsSeqPacket(P) == P <: Seq(PacketType)
-
-AsPacketCommitment(pc) == pc <: PacketCommitmentType
-AsSetPacketCommitment(PC) == PC <: {PacketCommitmentType}
-
-AsPacketReceipt(pr) == pr <: PacketReceiptType
-AsSetPacketReceipt(PR) == PR <: {PacketReceiptType}
-AsSeqPacketReceipt(PR) == PR <: Seq(PacketReceiptType)
-
-AsPacketAcknowledgement(pa) == pa <: PacketAcknowledgementType
-AsSetPacketAcknowledgement(PA) == PA <: {PacketAcknowledgementType}
-
-AsPacketLogEntry(logEntry) == logEntry <: PacketLogEntryType
-AsPacketLog(packetLog) == packetLog <: Seq(PacketLogEntryType)
-
-
+        connInit: Bool, 
+        connTryOpen: Bool, 
+        connOpen: Bool, 
+        chanInit: Bool, 
+        chanTryOpen: Bool, 
+        chanOpen: Bool, 
+        chanClosed: Bool
+    ];
+*)            
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"} 
 ClientIDs == {"clA", "clB"}
@@ -294,7 +179,7 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
              channelID : ChannelIDs \union {nullChannelID},
              counterpartyPortID : PortIDs \union {nullPortID},
              counterpartyChannelID : ChannelIDs \union {nullChannelID}
-         ] <: {ChannelEndType}
+         ] 
     ELSE \* set of ordered channels
          [
              state : ChannelStates,
@@ -306,7 +191,7 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
              channelID : ChannelIDs \union {nullChannelID},
              counterpartyPortID : PortIDs \union {nullPortID},
              counterpartyChannelID : ChannelIDs \union {nullChannelID}
-         ] <: {ChannelEndType}
+         ] 
     
     
 (******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
@@ -318,14 +203,14 @@ PacketCommitments(Heights, maxPacketSeq) ==
         channelID : ChannelIDs, 
         sequence : 1..maxPacketSeq, 
         timeoutHeight : Heights
-    ] <: {PacketCommitmentType} 
+    ] 
     
 PacketReceipts(maxPacketSeq) ==
     [
         portID : PortIDs,
         channelID : ChannelIDs, 
         sequence : 1..maxPacketSeq
-    ] <: {PacketReceiptType}
+    ] 
     
 PacketAcknowledgements(maxPacketSeq) ==
     [
@@ -333,7 +218,7 @@ PacketAcknowledgements(maxPacketSeq) ==
         channelID : ChannelIDs, 
         sequence : 1..maxPacketSeq,
         acknowledgement : BOOLEAN
-    ] <: {PacketAcknowledgementType}
+    ] 
 
 (***************************** ConnectionEnds *****************************
     A set of connection end records. 
@@ -371,7 +256,7 @@ ConnectionEnds(channelOrdering, maxPacketSeq, Versions) ==
         counterpartyClientID : ClientIDs \union {nullClientID},
         versions : (SUBSET Versions) \ {{}}, 
         channelEnd : ChannelEnds(channelOrdering, maxPacketSeq)
-    ] <: {ConnectionEndType} 
+    ] 
     
 (********************************* Packets *********************************
  A set of packets.
@@ -384,7 +269,7 @@ Packets(Heights, maxPacketSeq) ==
         srcChannelID : ChannelIDs,
         dstPortID : PortIDs,
         dstChannelID : ChannelIDs
-    ] <: {PacketType}    
+    ] 
 
 (******************************** ChainStores ******************************
     A set of chain records. 
@@ -423,7 +308,7 @@ ChainStores(Heights, channelOrdering, maxPacketSeq, Versions) ==
         packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)), 
         packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
         packetsToAcknowledge : Seq(Packets(Heights, maxPacketSeq))
-    ] <: {ChainStoreType}
+    ] 
 
 (******************************** Datagrams ********************************
  A set of datagrams.
@@ -454,7 +339,8 @@ Datagrams(Heights, maxPacketSeq, Versions) ==
         consensusHeight : Heights
     ] \union [
         type : {"ConnOpenAck"}, 
-        connectionID : ConnectionIDs, 
+        connectionID : ConnectionIDs,
+        versions : SUBSET (Versions), 
         proofHeight : Heights, 
         consensusHeight : Heights
     ] \union [
@@ -503,10 +389,9 @@ Datagrams(Heights, maxPacketSeq, Versions) ==
         acknowledgement : BOOLEAN, 
         proofHeight : Heights
     ]
-    <: {DatagramType}
     
 NullDatagram == 
-    [type |-> "null"] <: DatagramType    
+    [type |-> "null"] 
     
 (**************************** PacketLogEntries *****************************
  A set of packet log entries.
@@ -533,10 +418,9 @@ PacketLogEntries(Heights, maxPacketSeq) ==
         timeoutHeight : Heights,
         acknowledgement : BOOLEAN
     ]
-    <: {PacketLogEntryType}
 
 NullPacketLogEntry ==
-    [type |-> "null"] <: PacketLogEntryType
+    [type |-> "null"] 
 
 Histories ==
     [
@@ -548,7 +432,6 @@ Histories ==
         chanOpen : BOOLEAN,
         chanClosed : BOOLEAN
      ] 
-     <: {HistoryType}
 
 (***************************************************************************
  Initial values of a channel end, connection end, chain
@@ -619,18 +502,16 @@ InitConnectionEnds(Versions, channelOrdering) ==
 InitChainStore(Versions, channelOrdering) == 
     [
         height : {1},
-        counterpartyClientHeights : {AsSetInt({})}, 
+        counterpartyClientHeights : {{}}, 
         connectionEnd : InitConnectionEnds(Versions, channelOrdering),
         
-        packetCommitments : {AsSetPacketCommitment({})},
-        packetReceipts : {AsSetPacketReceipt({})}, 
-        packetAcknowledgements : {AsSetPacketAcknowledgement({})},
-        packetsToAcknowledge : {AsSeqPacket(<<>>)}
+        packetCommitments : {{}},
+        packetReceipts : {{}}, 
+        packetAcknowledgements : {{}},
+        packetsToAcknowledge : {<<>>}
         
     ] 
-    <: {ChainStoreType}
         
-
 \* Initial value of history flags         
 InitHistory ==
      [
@@ -641,7 +522,7 @@ InitHistory ==
         chanTryOpen |-> FALSE,
         chanOpen |-> FALSE,
         chanClosed |-> FALSE
-     ]  <: HistoryType  
+     ]  
          
 (***************************************************************************
  Client helper operators
@@ -649,35 +530,43 @@ InitHistory ==
 
 \* get the ID of chainID's counterparty chain    
 GetCounterpartyChainID(chainID) ==
-    IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")    
+    \* IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")    
+    IF chainID = "chainA" THEN "chainB" ELSE "chainA"
  
 \* get the client ID of the client for chainID 
 GetClientID(chainID) ==
-    IF chainID = "chainA" THEN AsID("clA") ELSE AsID("clB")
+    \* IF chainID = "chainA" THEN AsID("clA") ELSE AsID("clB")
+    IF chainID = "chainA" THEN "clA" ELSE "clB"
         
 \* get the client ID of the client for chainID's counterparty chain           
 GetCounterpartyClientID(chainID) ==
-    IF chainID = "chainA" THEN AsID("clB") ELSE AsID("clA")
+    \* IF chainID = "chainA" THEN AsID("clB") ELSE AsID("clA")
+    IF chainID = "chainA" THEN "clB" ELSE "clA"
     
 \* get the latest height of chainID
+\* @type: (CHAINSTORE) => Int;
 GetLatestHeight(chain) ==
-    AsInt(chain.height)   
+    chain.height
       
 \* get the maximal height of the client for chainID's counterparty chain    
+\* @type: (CHAINSTORE) => Int;
 GetMaxCounterpartyClientHeight(chain) ==
-    IF chain.counterpartyClientHeights /= AsSetInt({})
-    THEN AsInt(Max(chain.counterpartyClientHeights))
-    ELSE AsInt(nullHeight)
+    IF chain.counterpartyClientHeights /= {}
+    THEN Max(chain.counterpartyClientHeights)
+    ELSE nullHeight
 
 \* get the set of heights of the client for chainID's counterparty chain    
+\* @type: (CHAINSTORE) => Set(Int);
 GetCounterpartyClientHeights(chain) ==
-    AsSetInt(chain.counterpartyClientHeights)        
+    chain.counterpartyClientHeights
 
 \* returns true if the counterparty client is initialized on chainID
+\* @type: (CHAINSTORE) => Bool;
 IsCounterpartyClientOnChain(chain) ==
-    AsInt(chain.counterpartyClientHeights) /= AsInt({})
+    chain.counterpartyClientHeights /= {}
 
 \* returns true if the height h is in counterparty client heights on chainID 
+\* @type: (CHAINSTORE, Int) => Bool;
 IsCounterpartyClientHeightOnChain(chain, h) ==
     h \in chain.counterpartyClientHeights
      
@@ -688,44 +577,49 @@ IsCounterpartyClientHeightOnChain(chain, h) ==
 \* get the connection ID of the connection end at chainID
 GetConnectionID(chainID) ==
     IF chainID = "chainA"
-    THEN AsID("connAtoB")
+    THEN "connAtoB"
     ELSE IF chainID = "chainB"
-         THEN AsID("connBtoA")
-         ELSE AsID(nullConnectionID)      
+         THEN "connBtoA"
+         ELSE nullConnectionID
 
 \* get the connection ID of the connection end at chainID's counterparty chain
 GetCounterpartyConnectionID(chainID) ==
     IF chainID = "chainA"
-    THEN AsID("connBtoA")
+    THEN "connBtoA"
     ELSE IF chainID = "chainB"
-         THEN AsID("connAtoB")
-         ELSE AsID(nullConnectionID)
+         THEN "connAtoB"
+         ELSE nullConnectionID
           
 \* get the connection end at chainID
+\* @type: (CHAINSTORE) => CONN;
 GetConnectionEnd(chain) == 
-    AsConnectionEnd(chain.connectionEnd)
+    chain.connectionEnd
     
 \* pick the minimal version from a set of versions
 PickVersion(versions) == 
-    IF versions /= AsSetInt({})
+    IF versions /= {}
     THEN LET minVersion == Min(versions) IN
          {minVersion}
-    ELSE AsSetInt({})
+    ELSE {}
     
 
 \* returns true if the connection end on chainID is UNINIT
+\* @type: (CHAINSTORE) => Bool;
 IsConnectionUninit(chain) ==
-    AsString(chain.connectionEnd.state) = "UNINIT"
+    chain.connectionEnd.state = "UNINIT"
 
 \* returns true if the connection end on chainID is INIT
+\* @type: (CHAINSTORE) => Bool;
 IsConnectionInit(chain) ==
     chain.connectionEnd.state = "INIT"
 
 \* returns true if the connection end on chainID is TRYOPEN
+\* @type: (CHAINSTORE) => Bool;
 IsConnectionTryOpen(chain) ==
     chain.connectionEnd.state = "TRYOPEN"
     
 \* returns true if the connection end on chainID is OPEN
+\* @type: (CHAINSTORE) => Bool;
 IsConnectionOpen(chain) ==
     chain.connectionEnd.state = "OPEN"
           
@@ -736,60 +630,66 @@ IsConnectionOpen(chain) ==
 \* get the channel ID of the channel end at the connection end of chainID
 GetChannelID(chainID) ==
     IF chainID = "chainA"
-    THEN AsID("chanAtoB")
+    THEN "chanAtoB"
     ELSE IF chainID = "chainB"
-         THEN AsID("chanBtoA")
-         ELSE AsID(nullChannelID)
+         THEN "chanBtoA"
+         ELSE nullChannelID
          
 \* get the channel ID of the channel end at chainID's counterparty chain
 GetCounterpartyChannelID(chainID) ==
     IF chainID = "chainA"
-    THEN AsID("chanBtoA")
+    THEN "chanBtoA"
     ELSE IF chainID = "chainB"
-         THEN AsID("chanAtoB")
-         ELSE AsID(nullChannelID) 
+         THEN "chanAtoB"
+         ELSE nullChannelID
          
 \* get the port ID at chainID
 GetPortID(chainID) ==
     IF chainID = "chainA"
-    THEN AsID("portA")
+    THEN "portA"
     ELSE IF chainID = "chainB"
-         THEN AsID("portB")
-         ELSE AsID(nullPortID)      
+         THEN "portB"
+         ELSE nullPortID
    
 \* get the port ID at chainID's counterparty chain
 GetCounterpartyPortID(chainID) ==
     IF chainID = "chainA"
-    THEN AsID("portB")
+    THEN "portB"
     ELSE IF chainID = "chainB"
-         THEN AsID("portA")
-         ELSE AsID(nullPortID) 
+         THEN "portA"
+         ELSE nullPortID
                    
-\* get the channel end at the connection end of chainID          
+\* get the channel end at the connection end of chainID         
+\* @type: (CHAINSTORE) => CHAN;
 GetChannelEnd(chain) ==
     chain.connectionEnd.channelEnd
     
 \* returns true if the channel end on chainID is UNINIT
+\* @type: (CHAINSTORE) => Bool;
 IsChannelUninit(chain) ==
     chain.connectionEnd.channelEnd.state = "UNINIT"
 
 \* returns true if the channel end on chainID is INIT
+\* @type: (CHAINSTORE) => Bool;
 IsChannelInit(chain) ==
     chain.connectionEnd.channelEnd.state = "INIT"
 
 \* returns true if the channel end on chainID is TRYOPEN
+\* @type: (CHAINSTORE) => Bool;
 IsChannelTryOpen(chain) ==
     chain.connectionEnd.channelEnd.state = "TRYOPEN"
     
 \* returns true if the channel end on chainID is OPEN
+\* @type: (CHAINSTORE) => Bool;
 IsChannelOpen(chain) ==
     chain.connectionEnd.channelEnd.state = "OPEN"    
     
 \* returns true if the channel end on chainID is CLOSED
+\* @type: (CHAINSTORE) => Bool;
 IsChannelClosed(chain) ==
     chain.connectionEnd.channelEnd.state = "CLOSED"                                   
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 01 10:41:22 CET 2020 by ilinastoilkovska
+\* Last modified Wed Apr 07 15:36:08 CEST 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska
