@@ -185,9 +185,16 @@ impl KeyRing {
         let key_file: KeyFile =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
-        let key = self
+        let mut key = self
             .key_from_mnemonic(&key_file.mnemonic)
             .map_err(|e| Kind::InvalidMnemonic.context(e))?;
+
+        // Use the account in the key file, otherwise the one decoded from
+        // the mnemonic will have the configured account prefix which may
+        // not match the one in the key file.
+        //
+        // TODO: Implement proper deserialization of the the KeyFile into a KeyEntry.
+        key.account = key_file.address;
 
         Ok(key)
     }
