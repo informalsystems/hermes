@@ -198,8 +198,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.build_consensus_state(trusted, target, client_state, reply_to)?
                         }
 
-                       Ok(ChainRequest::BuildMisbehaviour { client_state, update_event, latest_chain_height, reply_to }) => {
-                            self.build_misbehaviour(client_state, update_event, latest_chain_height, reply_to)?
+                       Ok(ChainRequest::BuildMisbehaviour { client_state, update_event, reply_to }) => {
+                            self.build_misbehaviour(client_state, update_event, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
@@ -443,14 +443,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         &mut self,
         client_state: AnyClientState,
         update_event: UpdateClient,
-        latest_chain_height: Height,
         reply_to: ReplyTo<Option<AnyMisbehaviour>>,
     ) -> Result<(), Error> {
-        let misbehaviour = self.light_client.build_misbehaviour(
-            &client_state,
-            update_event,
-            latest_chain_height,
-        )?;
+        let misbehaviour = self
+            .light_client
+            .build_misbehaviour(&client_state, update_event)?;
 
         reply_to
             .send(Ok(misbehaviour))

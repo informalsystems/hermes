@@ -3,7 +3,6 @@ use ibc::events::IbcEvent;
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
@@ -22,8 +21,12 @@ pub struct MisbehaviourCmd {
     )]
     chain_id: ChainId,
 
-    #[options(help = "identifier of the client to be monitored for misbehaviour")]
-    client_id: Option<ClientId>,
+    #[options(
+        free,
+        required,
+        help = "identifier of the client to be monitored for misbehaviour"
+    )]
+    client_id: ClientId,
 }
 
 impl Runnable for MisbehaviourCmd {
@@ -40,7 +43,7 @@ impl Runnable for MisbehaviourCmd {
 
 pub fn monitor_misbehaviour(
     chain_id: &ChainId,
-    client_id: &Option<ClientId>,
+    client_id: &ClientId,
     config: &config::Reader<CliApp>,
 ) -> Result<(), BoxError> {
     let chain = spawn_chain_runtime(&config, chain_id)
@@ -48,31 +51,14 @@ pub fn monitor_misbehaviour(
 
     let subscription = chain.subscribe()?;
 
-    // check the current states for all clients on chain
-    let clients = chain
-        .query_clients(QueryClientStatesRequest { pagination: None })
-        .map_err(|e| format!("could not query clients for {}", chain.id()))?;
-
     // check previous updates that may have been missed
-    match client_id {
-        Some(client_id) => misbehaviour_handling(chain.clone(), config, client_id, None)?,
-        None => {
-            for client_id in clients.iter() {
-                misbehaviour_handling(chain.clone(), config, client_id, None)?;
-            }
-        }
-    }
+    misbehaviour_handling(chain.clone(), config, client_id, None)?;
 
     // process update client events
     while let Ok(event_batch) = subscription.recv() {
         for event in event_batch.events.iter() {
             match event {
                 IbcEvent::UpdateClient(update) => {
-                    if let Some(specified_client) = client_id {
-                        if update.client_id() != specified_client {
-                            continue;
-                        }
-                    }
                     dbg!(update);
 
                     misbehaviour_handling(

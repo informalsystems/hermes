@@ -47,7 +47,6 @@ impl super::LightClient<MockChain> for LightClient {
         &mut self,
         _client_state: &AnyClientState,
         _update: UpdateClient,
-        _latest_chain_height: Height,
     ) -> Result<Option<AnyMisbehaviour>, Error> {
         unimplemented!()
     }

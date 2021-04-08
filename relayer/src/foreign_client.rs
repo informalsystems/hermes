@@ -564,7 +564,7 @@ impl ForeignClient {
     /// headers are included in the evidence and submitted.
     /// Note that in this case the headers are different but have the same height.
     ///
-    /// 2 - BFT time violation for unavailable header:
+    /// 2 - BFT time violation for unavailable header (a.k.a. Future Lunatic Attack or FLA):
     /// Some header with a height that is higher than the latest
     /// height on A has been accepted and a consensus state was created on B. Note that this implies
     /// that the timestamp of this header must be within the `clock_drift` of the client.
@@ -611,11 +611,6 @@ impl ForeignClient {
             consensus_state_heights
         );
 
-        let mut first_misbehaviour = None;
-        let latest_chain_height = self.src_chain.query_latest_height().map_err(|e| {
-            ForeignClientError::Misbehaviour(format!("failed to get latest height {}", e))
-        })?;
-
         for target_height in consensus_state_heights.iter() {
             // Start with specified update event or the one for latest consensus height
             let update_event = if let Some(ref event) = update {
@@ -652,23 +647,20 @@ impl ForeignClient {
             // a header for the event height is not available.
             let misbehavior = self
                 .src_chain
-                .build_misbehaviour(
-                    client_state.clone(),
-                    update_event.clone(),
-                    latest_chain_height,
-                )
+                .build_misbehaviour(client_state.clone(), update_event.clone())
                 .map_err(|e| {
                     ForeignClientError::Misbehaviour(format!("failed to build misbehaviour {}", e))
                 })?;
 
             if misbehavior.is_some() {
-                first_misbehaviour = misbehavior;
+                // TODO - updateClient operations if supporting headers are missing on-chain
+                return Ok(misbehavior);
             }
             // Clear the update
             update = None;
         }
 
-        Ok(first_misbehaviour)
+        Ok(None)
     }
 
     pub fn detect_misbehaviour_and_send_evidence(
@@ -704,8 +696,6 @@ impl ForeignClient {
                             e
                         ))
                     })?;
-
-                // TODO - invoke light client fork accountability
 
                 Ok(Some(events[0].clone()))
             }

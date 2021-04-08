@@ -29,7 +29,6 @@ pub trait LightClient<C: Chain>: Send + Sync {
         &mut self,
         client_state: &AnyClientState,
         update: UpdateClient,
-        latest_chain_height: ibc::Height,
     ) -> Result<Option<AnyMisbehaviour>, error::Error>;
     /// Fetch a header from the chain at the given height, without verifying it
     fn fetch(&mut self, height: ibc::Height) -> Result<C::LightBlock, error::Error>;

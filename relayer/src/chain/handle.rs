@@ -103,7 +103,6 @@ pub enum ChainRequest {
     BuildMisbehaviour {
         client_state: AnyClientState,
         update_event: UpdateClient,
-        latest_chain_height: Height,
         reply_to: ReplyTo<Option<AnyMisbehaviour>>,
     },
 
@@ -333,7 +332,6 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         client_state: AnyClientState,
         update: UpdateClient,
-        latest_chain_height: Height,
     ) -> Result<Option<AnyMisbehaviour>, Error>;
 
     fn build_connection_proofs_and_client_state(

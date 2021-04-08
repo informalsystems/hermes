@@ -68,7 +68,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         &mut self,
         client_state: &AnyClientState,
         update: UpdateClient,
-        latest_chain_height: ibc::Height,
     ) -> Result<Option<AnyMisbehaviour>, Error> {
         crate::time!("light client build_misbehaviour");
 
@@ -87,6 +86,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             })?;
 
         // set the target height to the minimum between the update height and latest chain height
+        let latest_chain_height = ibc::Height::new(
+            self.chain_id.version(),
+            u64::from(self.fetch_light_block(AtHeight::Highest)?.height()),
+        );
+
         let target_height = std::cmp::min(*update.consensus_height(), latest_chain_height);
         let trusted_height = tm_ibc_client_header.trusted_height;
         // TODO - check that a consensus state at trusted_height still exists on-chain,
@@ -113,7 +117,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             }
         };
 
-        let misbehaviour = if tm_witness_node_header.incompatible_with(&tm_ibc_client_header) {
+        let misbehaviour = if !tm_witness_node_header.compatible_with(&tm_ibc_client_header) {
             Some(
                 AnyMisbehaviour::Tendermint(TmMisbehaviour {
                     client_id: update.client_id().clone(),

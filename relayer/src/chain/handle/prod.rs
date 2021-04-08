@@ -257,12 +257,10 @@ impl ChainHandle for ProdChainHandle {
         &self,
         client_state: AnyClientState,
         update_event: UpdateClient,
-        latest_chain_height: Height,
     ) -> Result<Option<AnyMisbehaviour>, Error> {
         self.send(|reply_to| ChainRequest::BuildMisbehaviour {
             client_state,
             update_event,
-            latest_chain_height,
             reply_to,
         })
     }
