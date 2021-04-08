@@ -482,7 +482,7 @@ impl RelayPath {
     }
 
     /// Generate & schedule operational data from the input `batch` of IBC events.
-    pub fn process_event_batch(&mut self, batch: EventBatch) -> Result<(), LinkError> {
+    pub fn update_schedule(&mut self, batch: EventBatch) -> Result<(), LinkError> {
         self.clear_packets(batch.height)?;
 
         // Collect relevant events from the incoming batch & adjust their height.
@@ -1281,9 +1281,7 @@ impl RelayPath {
 
     /// Checks if there are any operational data items ready, and if so performs the relaying
     /// of corresponding packets to the target chain.
-    fn step(&mut self) -> Result<(), LinkError> {
-        self.check_timeouts()?;
-
+    fn execute_schedule(&mut self) -> Result<(), LinkError> {
         if let Some(od) = self.try_fetch_scheduled_operational_data() {
             self.relay_from_operational_data(od)?;
         }
@@ -1291,9 +1289,10 @@ impl RelayPath {
         Ok(())
     }
 
+    /// Refreshes the scheduled batches.
     /// Verifies if any sendPacket messages timed-out. If so, moves them from destination op. data
     /// to source operational data, and adjusts the events and messages accordingly.
-    fn check_timeouts(&mut self) -> Result<(), LinkError> {
+    fn refresh_schedule(&mut self) -> Result<(), LinkError> {
         let dst_current_height = self.dst_latest_height()?;
 
         // Intermediary data struct to help better manage the transfer from dst. operational data
@@ -1526,19 +1525,21 @@ impl Link {
                 return Ok(());
             }
 
-            // Input new events to the relay path.
+            // Input new events to the relay path, and schedule any batch associated with them
             if let Ok(batch) = events_a.try_recv() {
-                self.a_to_b.process_event_batch(batch.unwrap_or_clone())?;
+                self.a_to_b.update_schedule(batch.unwrap_or_clone())?;
             }
 
-            // Input new events to the relay path.
-            self.a_to_b.step()?;
+            // Refresh the scheduled batches and execute any outstanding ones.
+            self.a_to_b.refresh_schedule()?;
+            self.a_to_b.execute_schedule()?;
 
             if let Ok(batch) = events_b.try_recv() {
-                self.b_to_a.process_event_batch(batch.unwrap_or_clone())?;
+                self.b_to_a.update_schedule(batch.unwrap_or_clone())?;
             }
 
-            self.b_to_a.step()?;
+            self.b_to_a.refresh_schedule()?;
+            self.b_to_a.execute_schedule()?;
 
             // TODO - select over the two subscriptions
             thread::sleep(Duration::from_millis(100))

@@ -263,7 +263,7 @@ impl Worker {
 
         while let Ok(cmd) = self.rx.recv() {
             match cmd {
-                WorkerCmd::PacketEvents { batch } => link.a_to_b.process_event_batch(batch)?,
+                WorkerCmd::PacketEvents { batch } => link.a_to_b.update_schedule(batch)?,
                 WorkerCmd::NewBlocks {
                     height,
                     new_blocks: _,
