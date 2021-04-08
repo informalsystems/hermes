@@ -203,6 +203,9 @@ mod tests {
             "ics20".to_string(),
         );
 
+        let mut source_ordered_channel_end = source_channel_end.clone();
+        source_ordered_channel_end.ordering = Order::Ordered;
+
         let connection_end = ConnectionEnd::new(
             ConnectionState::Open,
             ClientId::default(),
@@ -250,7 +253,27 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Good parameters".to_string(),
+                name: "Good parameters Unordered channel".to_string(),
+                ctx: context.clone()
+                    .with_client(&ClientId::default(), client_height)
+                    .with_connection(ConnectionId::default(), connection_end.clone())
+                    .with_port_capability(packet.destination_port.clone())
+                    .with_channel(
+                        packet.source_port.clone(),
+                        packet.source_channel.clone(),
+                        source_channel_end,
+                    )
+                    .with_packet_commitment(
+                        msg_ok.packet.source_port.clone(),
+                        msg_ok.packet.source_channel.clone(),
+                        msg_ok.packet.sequence,
+                        data.clone(),
+                    ),
+                msg: msg_ok.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Good parameters Ordered Channel".to_string(),
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
@@ -258,19 +281,19 @@ mod tests {
                     .with_channel(
                         packet.source_port.clone(),
                         packet.source_channel,
-                        source_channel_end,
+                        source_ordered_channel_end,
                     )
                     .with_packet_commitment(
                         msg_ok.packet.source_port.clone(),
                         msg_ok.packet.source_channel.clone(),
                         msg_ok.packet.sequence,
                         data,
-                    ), //with_ack_sequence required for ordered channels
-                    // .with_ack_sequence(
-                    //     packet.destination_port,
-                    //     packet.destination_channel,
-                    //     1.into(),
-                    // ),
+                    )
+                    .with_ack_sequence(
+                         packet.destination_port,
+                         packet.destination_channel,
+                         1.into(),
+                     ),
                 msg: msg_ok,
                 want_pass: true,
             },

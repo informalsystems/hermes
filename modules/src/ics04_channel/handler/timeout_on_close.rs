@@ -190,7 +190,6 @@ mod tests {
         let source_channel_end = ChannelEnd::new(
             State::Open,
             Order::Ordered,
-            //Order::default(),
             Counterparty::new(
                 packet.destination_port.clone(),
                 Some(packet.destination_channel.clone()),
