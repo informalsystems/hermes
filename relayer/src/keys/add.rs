@@ -36,6 +36,7 @@ pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
                 .keybase()
                 .add_key(key_contents.as_str())
                 .map_err(|e| error::Kind::KeyBase.context(e))?;
+
             Ok(format!(
                 "Added key {} ({}) on {} chain",
                 opts.name.as_str(),
