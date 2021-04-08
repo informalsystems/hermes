@@ -26,6 +26,7 @@
   - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
   - Add option to specify which events to listen for in `listen` command ([#550])
+  - Add option to customise receiver address for `ft-transfer` command ([#806])
 
 ### IMPROVEMENTS
 
@@ -102,6 +103,7 @@
 [#793]: https://github.com/informalsystems/ibc-rs/pull/793
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
 [#801]: https://github.com/informalsystems/ibc-rs/issues/801
+[#806]: https://github.com/informalsystems/ibc-rs/issues/806
 
 
 ## v0.1.1
