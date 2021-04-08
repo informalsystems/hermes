@@ -88,7 +88,7 @@ impl CloneCmd {
         }
 
         println!("[info ] Cloning cosmos/ibc-go repository...");
-    
+
         match &self.ibc_go_commit {
             Some(ibc_go_commit) => {
                 let ibc_path = self.ibc_subdir();
