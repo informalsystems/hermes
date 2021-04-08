@@ -800,31 +800,35 @@ impl RelayPath {
     fn update_client_dst(&self, src_chain_height: Height) -> Result<(), LinkError> {
         // Handle the update on the destination chain
         // Check if a consensus state at update_height exists on destination chain already
+        if self
+            .dst_chain()
+            .proven_client_consensus(self.dst_client_id(), src_chain_height, Height::zero())
+            .is_ok()
+        {
+            return Ok(());
+        }
+
         let mut dst_err_ev = None;
         for _i in 0..MAX_ITER {
-            if self
-                .dst_chain()
-                .proven_client_consensus(self.dst_client_id(), src_chain_height, Height::zero())
-                .is_err()
-            {
-                let dst_update = self.build_update_client_on_dst(src_chain_height)?;
-                info!(
-                    "[{}] sending updateClient to client hosted on dest. chain {} for height {:?}",
-                    self,
-                    self.dst_chain().id(),
-                    src_chain_height
-                );
+            let dst_update = self.build_update_client_on_dst(src_chain_height)?;
+            info!(
+                "[{}] sending updateClient to client hosted on dest. chain {} for height {:?}",
+                self,
+                self.dst_chain().id(),
+                src_chain_height
+            );
 
-                let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
-                info!("[{}] Result {:?}", self, dst_tx_events);
+            let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
+            info!("[{}] Result {:?}", self, dst_tx_events);
 
-                dst_err_ev = dst_tx_events
-                    .into_iter()
-                    .find(|event| matches!(event, IbcEvent::ChainError(_)));
+            dst_err_ev = dst_tx_events
+                .into_iter()
+                .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
-                if dst_err_ev.is_none() {
-                    return Ok(());
-                }
+            info!("[{}] dst_err_ev {:?}", self, dst_err_ev);
+
+            if dst_err_ev.is_none() {
+                return Ok(());
             }
         }
 
@@ -839,31 +843,33 @@ impl RelayPath {
 
     /// Handles updating the client on the source chain
     fn update_client_src(&self, dst_chain_height: Height) -> Result<(), LinkError> {
+        if self
+            .src_chain()
+            .proven_client_consensus(self.src_client_id(), dst_chain_height, Height::zero())
+            .is_ok()
+        {
+            return Ok(());
+        }
+
         let mut src_err_ev = None;
         for _i in 0..MAX_ITER {
-            if self
-                .src_chain()
-                .proven_client_consensus(self.src_client_id(), dst_chain_height, Height::zero())
-                .is_err()
-            {
-                let src_update = self.build_update_client_on_src(dst_chain_height)?;
-                info!(
-                    "[{}] sending updateClient to client hosted on src. chain {} for height {:?}",
-                    self,
-                    self.src_chain.id(),
-                    dst_chain_height,
-                );
+            let src_update = self.build_update_client_on_src(dst_chain_height)?;
+            info!(
+                "[{}] sending updateClient to client hosted on src. chain {} for height {:?}",
+                self,
+                self.src_chain.id(),
+                dst_chain_height,
+            );
 
-                let src_tx_events = self.src_chain.send_msgs(src_update)?;
-                info!("[{}] Result {:?}", self, src_tx_events);
+            let src_tx_events = self.src_chain.send_msgs(src_update)?;
+            info!("[{}] Result {:?}", self, src_tx_events);
 
-                src_err_ev = src_tx_events
-                    .into_iter()
-                    .find(|event| matches!(event, IbcEvent::ChainError(_)));
+            src_err_ev = src_tx_events
+                .into_iter()
+                .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
-                if src_err_ev.is_none() {
-                    return Ok(());
-                }
+            if src_err_ev.is_none() {
+                return Ok(());
             }
         }
 
@@ -1332,30 +1338,30 @@ impl RelayPath {
 
         if timed_out.is_empty() {
             // Nothing timed out in the meantime
-            Ok(())
-        } else {
-            // Schedule new operational data targeting the source chain
-            for (&_pos, batch) in timed_out.iter() {
-                let mut new_od =
-                    OperationalData::new(dst_current_height, OperationalDataTarget::Source);
-                new_od.batch = batch.clone();
-
-                info!(
-                    "[{}] Scheduling from batch of size {}",
-                    self,
-                    new_od.batch.len()
-                );
-
-                self.schedule_operational_data(new_od)?;
-            }
-
-            self.dst_operational_data = all_dst_odata;
-            // Possibly some op. data became empty (if no events were kept).
-            // Retain only the non-empty ones.
-            self.dst_operational_data
-                .retain(|odata| !odata.batch.is_empty());
-            Ok(())
+            return Ok(());
         }
+
+        // Schedule new operational data targeting the source chain
+        for (&_pos, batch) in timed_out.iter() {
+            let mut new_od =
+                OperationalData::new(dst_current_height, OperationalDataTarget::Source);
+            new_od.batch = batch.clone();
+
+            info!(
+                "[{}] Scheduling from batch of size {}",
+                self,
+                new_od.batch.len()
+            );
+
+            self.schedule_operational_data(new_od)?;
+        }
+
+        self.dst_operational_data = all_dst_odata;
+        // Possibly some op. data became empty (if no events were kept).
+        // Retain only the non-empty ones.
+        self.dst_operational_data
+            .retain(|odata| !odata.batch.is_empty());
+        Ok(())
     }
 
     /// Adds a new operational data item for this relaying path to process later.
