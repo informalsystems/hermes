@@ -410,50 +410,6 @@ impl RelayPath {
         result
     }
 
-    // May adjust the height of the input vector of events.
-    // Checks if the client on destination chain is at a higher height than the events height.
-    // This can happen if a client update has happened after the event was emitted but before
-    // this point when the relayer starts to process the events.
-    fn adjust_events_height(&self, events: &mut Vec<IbcEvent>) -> Result<(), LinkError> {
-        let event_height = match events.get(0) {
-            None => return Ok(()),
-            Some(ev) => ev.height(),
-        };
-
-        // Check if a consensus state at event_height + 1 exists on destination chain already
-        // and update src_height
-        if self
-            .dst_chain()
-            .proven_client_consensus(
-                self.dst_client_id(),
-                event_height.increment(),
-                Height::zero(),
-            )
-            .is_ok()
-        {
-            return Ok(());
-        }
-
-        // Get the latest trusted height from the client state on destination.
-        let trusted_height = self
-            .dst_chain()
-            .query_client_state(self.dst_client_id(), Height::zero())
-            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?
-            .latest_height();
-
-        // (event_height + 1) is the height at which the client on destination chain
-        // should be updated, unless ...
-        if trusted_height > event_height.increment() {
-            // ... client is already at a higher height.
-            let new_height = trusted_height
-                .decrement()
-                .map_err(|e| LinkError::Failed(e.to_string()))?;
-            events.iter_mut().for_each(|ev| ev.set_height(new_height));
-        }
-
-        Ok(())
-    }
-
     fn relay_pending_packets(&mut self, height: Height) -> Result<(), LinkError> {
         info!("[{}] Clearing old packets", self);
         for _i in 0..MAX_ITER {
@@ -486,8 +442,7 @@ impl RelayPath {
         self.clear_packets(batch.height)?;
 
         // Collect relevant events from the incoming batch & adjust their height.
-        let mut events = self.filter_events(&batch.events);
-        self.adjust_events_height(&mut events)?;
+        let events = self.filter_events(&batch.events);
 
         // Transform the events into operational data items
         self.events_to_operational_data(events)
