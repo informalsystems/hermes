@@ -611,15 +611,15 @@ impl ForeignClient {
             consensus_state_heights
         );
 
-        for target_height in consensus_state_heights.iter() {
+        for target_height in consensus_state_heights {
             // Start with specified update event or the one for latest consensus height
             let update_event = if let Some(ref event) = update {
                 // we are here only on the first iteration when called with `Some` update event
                 event.clone()
-            } else if let Some(event) = self.update_client_event(*target_height)? {
+            } else if let Some(event) = self.update_client_event(target_height)? {
                 // we are here either on the first iteration with `None` initial update event or
                 // subsequent iterations
-                event.clone()
+                event
             } else {
                 // we are here if the consensus state was installed on-chain when client was
                 // created, therefore there will be no update client event
@@ -656,6 +656,7 @@ impl ForeignClient {
                 // TODO - add updateClient messages if supporting headers are missing on-chain
                 return Ok(misbehavior);
             }
+
             // Clear the update
             update = None;
         }

@@ -184,12 +184,13 @@ impl UpdateClient {
     pub fn height(&self) -> Height {
         self.common.height
     }
+
     pub fn set_height(&mut self, height: Height) {
         self.common.height = height;
     }
 
-    pub fn consensus_height(&self) -> &Height {
-        &self.common.consensus_height
+    pub fn consensus_height(&self) -> Height {
+        self.common.consensus_height
     }
 }
 

@@ -94,7 +94,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             u64::from(self.fetch_light_block(AtHeight::Highest)?.height()),
         );
 
-        let target_height = std::cmp::min(*update.consensus_height(), latest_chain_height);
+        let target_height = std::cmp::min(update.consensus_height(), latest_chain_height);
         let trusted_height = tm_ibc_client_header.trusted_height;
         // TODO - check that a consensus state at trusted_height still exists on-chain,
         // currently we don't have access to Cosmos chain query from here
