@@ -39,6 +39,7 @@ up properly for two hermes instances.
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
+    fee_denom = 'stake'
     gas = 200000
     clock_drift = '5s'
     trusting_period = '14days'
@@ -56,6 +57,7 @@ up properly for two hermes instances.
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
+    fee_denom = 'stake'
     gas = 200000
     clock_drift = '5s'
     trusting_period = '14days'
@@ -117,6 +119,7 @@ up properly for two hermes instances.
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
+    fee_denom = 'stake'
     gas = 200000
     clock_drift = '5s'
     trusting_period = '14days'
@@ -134,6 +137,7 @@ up properly for two hermes instances.
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
+    fee_denom = 'stake'
     gas = 200000
     clock_drift = '5s'
     trusting_period = '14days'
