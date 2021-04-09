@@ -24,6 +24,7 @@
   - Update gaia to version 4.2.0 for e2e tests on CI ([#809])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
   - Add option to specify which events to listen for in `listen` command ([#550])
+  - Add `keys restore` command to import a signing key from its mnemonic ([#813])
 
 ### IMPROVEMENTS
 
