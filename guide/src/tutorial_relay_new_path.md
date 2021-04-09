@@ -6,8 +6,8 @@ Hermes packet relaying can be done over a newly established path. It performs cl
 
     ```toml
     [[connections]]
-    a_chain = "ibc1"
-    b_chain = "ibc0"
+    a_chain = 'ibc-1'
+    b_chain = 'ibc-0'
 
     [[connections.paths]]
     a_port = 'transfer'

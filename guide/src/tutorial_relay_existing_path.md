@@ -5,7 +5,7 @@ Hermes can listen to IBC packet events over a specified path and relay receive p
 1. From one terminal start hermes using the `start` command and specify the port and a previously established channel:
 
    ```shell script
-   hermes start ibc-0 ibc-1 transfer channel-0
+   hermes start ibc-0 ibc-1 -p transfer -c channel-0
    ```
 
     > In this example, the channel identifier on `ibc-0`is `channel-0` while the identifier on`ibc-1` is `channel-1`
