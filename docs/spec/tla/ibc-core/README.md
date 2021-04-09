@@ -207,8 +207,17 @@ To import the specification in the TLA+ toolbox and run TLC:
   - add the properties `IBCSafety` and `IBCDelivery`
   - run TLC on the model
 
-#### Basic checks
+#### Basic checks with TLC
 
 We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 3 minutes and the property `IBCSafety` in 5 minutes.
 As TLC usually takes longer to check liveness properties, we have not 
 conducted extensive experiments to check `IBCDelivery` with TLC yet.
+
+#### Apalache
+
+The specification contains type annotations for the 
+model checker [Apalache](https://github.com/informalsystems/apalache).
+The specification passes the type check using the type checker [Snowcat](https://apalache.informal.systems/docs/apalache/typechecker-snowcat.html) 
+integrated in Apalache.  
+
+
