@@ -6,18 +6,18 @@ use ibc_relayer::keys::restore::{restore_key, KeysRestoreOptions};
 
 use crate::application::app_config;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Kind;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeyRestoreCmd {
-    #[options(free, help = "identifier of the chain")]
+    #[options(free, required, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[options(free, help = "the key name")]
-    name: Option<String>,
+    #[options(short = "n", required, help = "key name")]
+    name: String,
 
-    #[options(free, help = "mnemonic to add key")]
-    mnemonic: Option<String>,
+    #[options(short = "m", required, help = "mnemonic to restore the key from")]
+    mnemonic: String,
 }
 
 impl KeyRestoreCmd {
@@ -26,20 +26,16 @@ impl KeyRestoreCmd {
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
-        let key_name = self
-            .name
-            .clone()
-            .ok_or_else(|| "missing key name".to_string())?;
+        let name = self.name.clone();
+        // .ok_or_else(|| "missing key name".to_string())?;
 
-        let mnemonic_words = self
-            .mnemonic
-            .clone()
-            .ok_or_else(|| "missing mnemonic".to_string())?;
+        let mnemonic = self.mnemonic.clone();
+        // .ok_or_else(|| "missing mnemonic".to_string())?;
 
         Ok(KeysRestoreOptions {
-            name: key_name,
-            mnemonic: mnemonic_words,
-            chain_config: chain_config.clone(),
+            name,
+            mnemonic,
+            config: chain_config.clone(),
         })
     }
 }
@@ -53,11 +49,10 @@ impl Runnable for KeyRestoreCmd {
             Ok(result) => result,
         };
 
-        let res: Result<Vec<u8>, Error> =
-            restore_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res = restore_key(opts).map_err(|e| Kind::Keys.context(e));
 
         match res {
-            Ok(r) => Output::success(r).exit(),
+            Ok(msg) => Output::success_msg(msg).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
