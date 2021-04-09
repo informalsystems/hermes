@@ -66,7 +66,7 @@ use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventBatch, EventMonitor};
-use crate::keyring::store::{KeyEntry, KeyRing, Store};
+use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 

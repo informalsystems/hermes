@@ -35,7 +35,7 @@ use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
-use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 pub(crate) mod cosmos;

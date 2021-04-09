@@ -33,7 +33,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
 
 use crate::connection::ConnectionMsgType;
-use crate::keyring::store::KeyEntry;
+use crate::keyring::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
 use ibc::query::QueryTxRequest;
 

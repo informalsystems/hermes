@@ -42,7 +42,7 @@ use crate::chain::Chain;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
-use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 /// The representation of a mocked chain as the relayer sees it.

@@ -38,7 +38,7 @@ use crate::{
     connection::ConnectionMsgType,
     error::{Error, Kind},
     event::{bus::EventBus, monitor::EventBatch},
-    keyring::store::KeyEntry,
+    keyring::KeyEntry,
     light_client::LightClient,
 };
 

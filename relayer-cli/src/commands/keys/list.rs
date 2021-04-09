@@ -4,7 +4,7 @@ use anomaly::BoxError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::{ChainConfig, Config},
-    keyring::store::{KeyEntry, KeyRing, Store},
+    keyring::{KeyEntry, KeyRing, Store},
 };
 
 use crate::application::app_config;
