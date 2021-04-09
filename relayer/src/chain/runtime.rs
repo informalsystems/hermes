@@ -4,8 +4,8 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::{
     events::IbcEvent,
     ics02_client::{

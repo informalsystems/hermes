@@ -4,8 +4,8 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Misbehaviour as RawMisbehaviour;
 
-use crate::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::ics02_client::error::{self, Error};
+use crate::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::ics24_host::identifier::ClientId;
 use crate::mock::header::MockHeader;
 use crate::Height;

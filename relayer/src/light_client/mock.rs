@@ -1,8 +1,8 @@
 use tendermint_testgen::light_block::TmLightBlock;
 
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::mock::host::HostBlock;
 use ibc::Height;

@@ -6,9 +6,9 @@ use dyn_clone::DynClone;
 use serde::{Serialize, Serializer};
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
