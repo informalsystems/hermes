@@ -15,10 +15,12 @@ cargo build --locked
 Run the following command to clone the Cosmos SDK and the IBC-Go repositories, and check out a specific commit:
 
 ```bash
-$ cargo run -- clone --out /tmp/cosmos --sdk-commit 21814558eaa47b018018711e5fe16e0b16811fce --ibc-go-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
+$ cargo run -- clone --out /tmp/cosmos --sdk-commit 7648bfca45b9d0897103ec739210607dce77c4fb --ibc-go-commit 333c1f338b2a14a1928a6f8ab64c37123c0e97b6
 ```
 
-Note: the full commit hash must be specified.
+Note:
+- the full commit hash must be specified.
+- the option `--ibc-go-commit` is not mandatory: if skipped, then the IBC go repository is omitted.
 
 Alternatively, one can check out a tag for the Cosmos SDK with the `--sdk-tag` option:
 
@@ -33,6 +35,8 @@ To generate the Rust sources from the Protobuf definitions, and copy them to the
 ```bash
 $ cargo run -- compile --sdk /tmp/cosmos/sdk --ibc /tmp/cosmos/ibc --out ../proto/src/prost
 ```
+
+Note: the `--ibc` option is not mandatory; if omitted, then the IBC .proto files from the SDK repository will be used
 
 Additionally, this command will output the commit hash at which the Cosmos SDK is checked out into `$out/COSMOS_SDK_COMMIT` and
 similarly the commit hash for IBC-go is saved into `$out/COSMOS_IBC_VERSION`.

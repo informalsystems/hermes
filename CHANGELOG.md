@@ -23,8 +23,8 @@
   - Added `create connection` and `create channel` CLIs ([#630], [#715])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
   - Added `client-upgrade` CLI ([#357])
-  - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
   - Added delay feature for packet relaying ([#640])
+  - Update gaia to version 4.2.0 for e2e tests on CI ([#809])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
   - Add option to specify which events to listen for in `listen` command ([#550])
 
@@ -41,6 +41,7 @@
 - [ibc-relayer-cli]
   - Clarified success path for updating a client that is already up-to-date ([#734])
   - Added `create` and `update` wrappers for client raw commands ([#772])
+  - Output by default is human-readable, and JSON is optional ([#805])
 
 ### BUG FIXES
 
@@ -91,7 +92,6 @@
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
 [#715]: https://github.com/informalsystems/ibc-rs/issues/715
-[#702]: https://github.com/informalsystems/ibc-rs/issues/702
 [#734]: https://github.com/informalsystems/ibc-rs/issues/734
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
@@ -104,6 +104,8 @@
 [#793]: https://github.com/informalsystems/ibc-rs/pull/793
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
 [#801]: https://github.com/informalsystems/ibc-rs/issues/801
+[#801]: https://github.com/informalsystems/ibc-rs/issues/809
+[#805]: https://github.com/informalsystems/ibc-rs/issues/805
 
 
 ## v0.1.1

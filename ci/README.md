@@ -184,7 +184,7 @@ If you need to generate configuration files for a new gaia release and new conta
 __Note__: This will generate the files for the chains in the `/ci/chains/gaia` folder and build the Docker containers. At the end of the script it will ask if you want to push these new images to Docker Hub. In order to do so you need to have Docker login configured on your machine with permissions to push the container. If you don't want to push them (just have them built locally) just cancel the script execution (by hitting `CTRL+C`)
 
 
-4. Committing the release files. If you want to add the new chain files generated to the ibc-rs repository, just `git commit` the files
+4. Committing the release files. **You have to** add the new chain files generated to the ibc-rs repository, just `git commit` the files, otherwise the CI might fail because private keys don't match.
 
 
 5. Update the release for Docker Compose. If this new release should be the default release for running the end to end (e2e) test you need to update the release version in the `docker-compose.yml` file in the `ci` folder of the repository. Open the file and change the release version in all the places required (image name and RELEASE variables. For example, if current release is `v3.0.0` and the new one is `v4.0.0` just do a find and replace with these two values.
