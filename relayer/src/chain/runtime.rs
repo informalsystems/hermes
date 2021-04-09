@@ -199,7 +199,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                         }
 
                        Ok(ChainRequest::BuildMisbehaviour { client_state, update_event, reply_to }) => {
-                            self.build_misbehaviour(client_state, update_event, reply_to)?
+                            self.check_misbehaviour(update_event, client_state, reply_to)?
                         }
 
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
@@ -439,15 +439,15 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     /// Constructs AnyMisbehaviour for the update event
-    fn build_misbehaviour(
+    fn check_misbehaviour(
         &mut self,
-        client_state: AnyClientState,
         update_event: UpdateClient,
+        client_state: AnyClientState,
         reply_to: ReplyTo<Option<AnyMisbehaviour>>,
     ) -> Result<(), Error> {
         let misbehaviour = self
             .light_client
-            .build_misbehaviour(&client_state, update_event)?;
+            .check_misbehaviour(update_event, &client_state)?;
 
         reply_to
             .send(Ok(misbehaviour))

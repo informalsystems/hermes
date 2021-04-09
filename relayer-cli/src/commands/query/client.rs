@@ -134,10 +134,7 @@ impl Runnable for QueryClientConsensusCmd {
                 match res {
                     Ok(states) => {
                         if self.heights_only {
-                            let heights: Vec<Height> = states
-                                .iter()
-                                .filter_map(|cs| Option::from(cs.height))
-                                .collect();
+                            let heights: Vec<Height> = states.iter().map(|cs| cs.height).collect();
                             Output::success(heights).exit()
                         } else {
                             Output::success(states).exit()

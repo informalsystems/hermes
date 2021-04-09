@@ -43,10 +43,10 @@ impl super::LightClient<MockChain> for LightClient {
         Ok(self.light_block(height))
     }
 
-    fn build_misbehaviour(
+    fn check_misbehaviour(
         &mut self,
-        _client_state: &AnyClientState,
         _update: UpdateClient,
+        _client_state: &AnyClientState,
     ) -> Result<Option<AnyMisbehaviour>, Error> {
         unimplemented!()
     }

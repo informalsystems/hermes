@@ -50,6 +50,7 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
 
 /// Requests that a `ChainHandle` may send to a `ChainRuntime`.
 #[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum ChainRequest {
     Terminate {
         reply_to: ReplyTo<()>,
@@ -328,10 +329,10 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         client_state: AnyClientState,
     ) -> Result<AnyConsensusState, Error>;
 
-    fn build_misbehaviour(
+    fn check_misbehaviour(
         &self,
-        client_state: AnyClientState,
         update: UpdateClient,
+        client_state: AnyClientState,
     ) -> Result<Option<AnyMisbehaviour>, Error>;
 
     fn build_connection_proofs_and_client_state(

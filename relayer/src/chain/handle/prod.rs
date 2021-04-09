@@ -253,10 +253,10 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn build_misbehaviour(
+    fn check_misbehaviour(
         &self,
-        client_state: AnyClientState,
         update_event: UpdateClient,
+        client_state: AnyClientState,
     ) -> Result<Option<AnyMisbehaviour>, Error> {
         self.send(|reply_to| ChainRequest::BuildMisbehaviour {
             client_state,

@@ -118,10 +118,10 @@ fn misbehaviour_handling(
             )
         })?;
 
-    if let Some(evidence_submission_result) = misbehaviour_detection_result {
+    if !misbehaviour_detection_result.is_empty() {
         info!(
-            "\nEvidence submission result {:?}",
-            evidence_submission_result
+            "evidence submission result {:?}",
+            misbehaviour_detection_result
         );
     }
 

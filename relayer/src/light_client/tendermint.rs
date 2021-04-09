@@ -67,12 +67,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     /// Given a client update event that includes the header used in a client update.
     /// it looks for misbehaviour by fetching a header at same or latest height.
     /// TODO - return also intermediate headers.
-    fn build_misbehaviour(
+    fn check_misbehaviour(
         &mut self,
-        client_state: &AnyClientState,
         update: UpdateClient,
+        client_state: &AnyClientState,
     ) -> Result<Option<AnyMisbehaviour>, Error> {
-        crate::time!("light client build_misbehaviour");
+        crate::time!("light client check_misbehaviour");
 
         let update_header = update.header.clone().ok_or_else(|| {
             Kind::Misbehaviour(format!(

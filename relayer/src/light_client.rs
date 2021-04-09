@@ -25,10 +25,10 @@ pub trait LightClient<C: Chain>: Send + Sync {
         client_state: &AnyClientState,
     ) -> Result<C::LightBlock, error::Error>;
 
-    fn build_misbehaviour(
+    fn check_misbehaviour(
         &mut self,
-        client_state: &AnyClientState,
         update: UpdateClient,
+        client_state: &AnyClientState,
     ) -> Result<Option<AnyMisbehaviour>, error::Error>;
     /// Fetch a header from the chain at the given height, without verifying it
     fn fetch(&mut self, height: ibc::Height) -> Result<C::LightBlock, error::Error>;

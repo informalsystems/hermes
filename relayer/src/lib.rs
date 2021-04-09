@@ -8,7 +8,6 @@
     unused_qualifications,
     rust_2018_idioms
 )]
-#![allow(clippy::large_enum_variant)]
 
 //! IBC Relayer implementation
 

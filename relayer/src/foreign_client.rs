@@ -24,6 +24,7 @@ use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 
 use crate::chain::handle::ChainHandle;
+use crate::relay::MAX_ITER;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -477,6 +478,10 @@ impl ForeignClient {
         Ok(())
     }
 
+    /// Retrieves the client update event that was emitted when a consensus state at the
+    /// specified height was created on chain.
+    /// It is possible that the event cannot be retrieved if the information is not yet available
+    /// on the full node. To handle this the query is retried a few times.
     pub fn update_client_event(
         &self,
         consensus_height: Height,
@@ -488,24 +493,38 @@ impl ForeignClient {
             consensus_height,
         };
 
-        // Tx query fails if we don't wait a bit here (block is not ready/ indexed?)
-        thread::sleep(Duration::from_millis(100));
-        let res = self
-            .dst_chain
-            .query_txs(QueryTxRequest::Client(request))
-            .map_err(|e| {
-                ForeignClientError::Misbehaviour(format!(
-                    "failed to query Tx-es for update client event {}",
-                    e
-                ))
-            })?;
+        let mut events = vec![];
+        for i in 0..MAX_ITER {
+            thread::sleep(Duration::from_millis(100));
+            let result = self
+                .dst_chain
+                .query_txs(QueryTxRequest::Client(request.clone()))
+                .map_err(|e| {
+                    ForeignClientError::Misbehaviour(format!(
+                        "failed to query Tx-es for update client event {}",
+                        e
+                    ))
+                });
+            match result {
+                Err(e) => {
+                    error!("query_tx with error {}, retry {}/{}", e, i + 1, MAX_ITER);
+                    continue;
+                }
+                Ok(result) => {
+                    events = result;
+                }
+            }
+        }
 
-        if res.is_empty() {
+        if events.is_empty() {
             return Ok(None);
-        };
+        }
 
-        assert_eq!(res.len(), 1);
-        let event = res[0].clone();
+        // It is possible in theory that `query_txs` returns multiple client update events for the
+        // same consensus height. This could happen when multiple client updates with same header
+        // were submitted to chain. However this is not what it's observed during testing.
+        // Regardless, just take the event from the first update.
+        let event = events[0].clone();
         let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
             ForeignClientError::Misbehaviour(format!(
                 "query Tx-es returned unexpected event {}",
@@ -515,7 +534,7 @@ impl ForeignClient {
         Ok(Some(update))
     }
 
-    /// Retrieves all consensus states for this client and sorts them in reverse height
+    /// Retrieves all consensus states for this client and sorts them in descending height
     /// order. If consensus states are not pruned on chain, then last consensus state is the one
     /// installed by the `CreateClient` operation.
     fn consensus_states(&self) -> Result<Vec<AnyConsensusStateWithHeight>, ForeignClientError> {
@@ -532,24 +551,23 @@ impl ForeignClient {
                     format!("{}", e),
                 )
             })?;
-        consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
-        consensus_states.reverse();
+        consensus_states.sort_by_key(|a| std::cmp::Reverse(a.height));
         Ok(consensus_states)
     }
 
-    /// Retrieves all consensus heights for this client sorted in reverse
+    /// Retrieves all consensus heights for this client sorted in descending
     /// order.
     fn consensus_state_heights(&self) -> Result<Vec<Height>, ForeignClientError> {
         let consensus_state_heights: Vec<Height> = self
             .consensus_states()?
             .iter()
-            .filter_map(|cs| Option::from(cs.height))
+            .map(|cs| cs.height)
             .collect();
 
         Ok(consensus_state_heights)
     }
 
-    /// Check for misbehaviour and submit evidence.
+    /// Checks for misbehaviour and submits evidence.
     /// The check starts with and `update_event` emitted by chain B (`dst_chain`) for a client update
     /// with a header from chain A (`src_chain`). The algorithm goes backwards through the headers
     /// until it gets to the first misbehaviour.
@@ -592,7 +610,7 @@ impl ForeignClient {
         // Get the latest client state on destination.
         let client_state = self
             .dst_chain()
-            .query_client_state(&self.id, Height::default())
+            .query_client_state(&self.id, Height::zero())
             .map_err(|e| {
                 ForeignClientError::Misbehaviour(format!(
                     "failed querying client state on dst chain {} with error: {}",
@@ -600,7 +618,7 @@ impl ForeignClient {
                 ))
             })?;
 
-        // Get the list of consensus state heights in reverse order.
+        // Get the list of consensus state heights in descending order.
         // Note: If chain does not prune consensus states then the last consensus state is
         // the one installed by the `CreateClient` which does not include a header.
         // For chains that do support pruning, it is possible that the last consensus state
@@ -644,16 +662,17 @@ impl ForeignClient {
 
             // Check for misbehaviour according to the specific source chain type.
             // In case of Tendermint client, this will also check the BFT time violation if
-            // a header for the event height is not available.
+            // a header for the event height cannot be retrieved from the witness.
             let misbehavior = self
                 .src_chain
-                .build_misbehaviour(client_state.clone(), update_event.clone())
+                .check_misbehaviour(update_event, client_state.clone())
                 .map_err(|e| {
                     ForeignClientError::Misbehaviour(format!("failed to build misbehaviour {}", e))
                 })?;
 
             if misbehavior.is_some() {
-                // TODO - add updateClient messages if supporting headers are missing on-chain
+                // TODO - add updateClient messages if light blocks are returned from
+                //  `src_chain.check_misbehaviour` call above i.e. supporting headers are required
                 return Ok(misbehavior);
             }
 
@@ -667,15 +686,15 @@ impl ForeignClient {
     pub fn detect_misbehaviour_and_send_evidence(
         &self,
         update: Option<UpdateClient>,
-    ) -> Result<Option<IbcEvent>, ForeignClientError> {
+    ) -> Result<Vec<IbcEvent>, ForeignClientError> {
         match self.handle_misbehaviour(update)? {
-            None => Ok(None),
+            None => Ok(vec![]),
             Some(misbehaviour) => {
-                error!("MISBEHAVIOUR detected {}, sending evidence", misbehaviour);
+                error!("MISBEHAVIOUR DETECTED {}, sending evidence", misbehaviour);
 
                 let signer = self.dst_chain().get_signer().map_err(|e| {
                     ForeignClientError::Misbehaviour(format!(
-                        "failed getting signer for dst chain ({}) with error: {}",
+                        "failed getting signer for destination chain ({}), error: {}",
                         self.dst_chain.id(),
                         e
                     ))
@@ -692,13 +711,13 @@ impl ForeignClient {
                     .send_msgs(vec![msg.to_any()])
                     .map_err(|e| {
                         ForeignClientError::Misbehaviour(format!(
-                            "failed sending evidence to dst chain ({}) with err: {}",
+                            "failed sending evidence to destination chain ({}), error: {}",
                             self.dst_chain.id(),
                             e
                         ))
                     })?;
 
-                Ok(Some(events[0].clone()))
+                Ok(events)
             }
         }
     }

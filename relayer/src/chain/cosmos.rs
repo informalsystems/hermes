@@ -999,10 +999,7 @@ impl Chain for CosmosSdkChain {
                     return Ok(vec![]);
                 }
 
-                assert!(response.txs.len() == 1);
-
-                let events = update_client_from_tx_search_response(self.id(), &request, response)
-                    .map_or(vec![], |v| vec![v]);
+                let events = update_client_from_tx_search_response(self.id(), &request, response);
 
                 Ok(events)
             }
@@ -1310,25 +1307,21 @@ fn packet_from_tx_search_response(
     }
 }
 
-// Extract the update client event from the query_txs RPC response.
+// Extract all update client events for the requested client and height from the query_txs RPC response.
 fn update_client_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryClientEventRequest,
-    mut response: tendermint_rpc::endpoint::tx_search::Response,
-) -> Option<IbcEvent> {
+    response: tendermint_rpc::endpoint::tx_search::Response,
+) -> Vec<IbcEvent> {
     crate::time!("update_client_from_tx_search_response");
 
-    assert!(
-        response.txs.len() <= 1,
-        "update_client_from_tx_search_response: unexpected number of txs"
-    );
-    if let Some(r) = response.txs.pop() {
+    let mut matching = Vec::new();
+
+    for r in response.txs {
         let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
         if request.height != ICSHeight::zero() && height > request.height {
-            return None;
+            return vec![];
         }
-
-        let mut matching = Vec::new();
 
         for e in r.tx_result.events {
             if e.type_str != request.event_id.as_str() {
@@ -1358,16 +1351,8 @@ fn update_client_from_tx_search_response(
 
             matching.push(event);
         }
-
-        assert_eq!(
-            matching.len(),
-            1,
-            "update_client_from_tx_search_response: unexpected number of matching packets"
-        );
-        matching.pop()
-    } else {
-        None
     }
+    matching
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
