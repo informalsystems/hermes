@@ -342,33 +342,6 @@ impl RelayPath {
         Ok(new_msg.to_any())
     }
 
-    fn build_timeout_from_send_packet_event(
-        &self,
-        event: &SendPacket,
-        dst_chain_height: Height,
-    ) -> Result<Option<Any>, LinkError> {
-        let packet = event.packet.clone();
-        if self
-            .dst_channel(dst_chain_height)?
-            .state_matches(&ChannelState::Closed)
-        {
-            Ok(Some(self.build_timeout_on_close_packet(
-                &event.packet,
-                dst_chain_height,
-            )?))
-        } else if packet.timeout_height != Height::zero()
-            && packet.timeout_height < dst_chain_height
-        {
-            debug!(
-                "[{}] new timeout message emerged, with proofs for height {}",
-                self, dst_chain_height
-            );
-            Ok(self.build_timeout_packet(&event.packet, dst_chain_height)?)
-        } else {
-            Ok(None)
-        }
-    }
-
     // Determines if the events received are relevant and should be processed.
     // Only events for a port/channel matching one of the channel ends should be processed.
     fn filter_events(&self, events: &[IbcEvent]) -> Vec<IbcEvent> {
@@ -1196,28 +1169,40 @@ impl RelayPath {
         Ok(msg.to_any())
     }
 
+    fn build_timeout_from_send_packet_event(
+        &self,
+        event: &SendPacket,
+        dst_chain_height: Height,
+    ) -> Result<Option<Any>, LinkError> {
+        let packet = event.packet.clone();
+        if self
+            .dst_channel(dst_chain_height)?
+            .state_matches(&ChannelState::Closed)
+        {
+            return Ok(Some(
+                self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?,
+            ));
+        }
+
+        if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height {
+            debug!(
+                "[{}] new timeout message emerged, with proofs for height {}",
+                self, dst_chain_height
+            );
+            return self.build_timeout_packet(&event.packet, dst_chain_height);
+        }
+
+        Ok(None)
+    }
+
     fn build_recv_or_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
         dst_chain_height: Height,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
-        let packet = event.packet.clone();
-
-        if self
-            .dst_channel(dst_chain_height)?
-            .state_matches(&ChannelState::Closed)
-        {
-            Ok((
-                None,
-                Some(self.build_timeout_on_close_packet(&event.packet, dst_chain_height)?),
-            ))
-        } else if packet.timeout_height != Height::zero()
-            && packet.timeout_height < dst_chain_height
-        {
-            Ok((
-                None,
-                self.build_timeout_packet(&event.packet, dst_chain_height)?,
-            ))
+        let timeout = self.build_timeout_from_send_packet_event(event, dst_chain_height)?;
+        if timeout.is_some() {
+            Ok((timeout, None))
         } else {
             Ok((
                 Some(self.build_recv_packet(&event.packet, event.height)?),
