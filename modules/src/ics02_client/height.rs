@@ -8,7 +8,7 @@ use crate::ics02_client::error::{Error, Kind};
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
     /// Previously known as "epoch"
     pub revision_number: u64,
@@ -122,13 +122,20 @@ impl From<Height> for RawHeight {
     }
 }
 
-impl std::fmt::Display for Height {
+impl std::fmt::Debug for Height {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
             "revision: {}, height: {}",
             self.revision_number, self.revision_height
         )
+    }
+}
+
+/// Custom debug output to omit the packet data
+impl std::fmt::Display for Height {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}-{}", self.revision_number, self.revision_height)
     }
 }
 

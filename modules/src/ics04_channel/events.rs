@@ -25,11 +25,9 @@ const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
 
 /// Packet event types
 const SEND_PACKET: &str = "send_packet";
-const RECV_PACKET: &str = "recv_packet";
 const WRITE_ACK: &str = "write_acknowledgement";
 const ACK_PACKET: &str = "acknowledge_packet";
 const TIMEOUT: &str = "timeout_packet";
-const TIMEOUT_ON_CLOSE: &str = "timeout_on_close_packet";
 
 /// Packet event attribute keys
 const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
@@ -416,7 +414,7 @@ impl std::fmt::Display for CloseInit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
-            "{:?} {} {:?}",
+            "{} {} {:?}",
             self.height(),
             CLOSE_INIT_EVENT_TYPE,
             self.0
@@ -528,7 +526,7 @@ impl From<SendPacket> for IbcEvent {
 
 impl std::fmt::Display for SendPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?} {} {}", self.height, SEND_PACKET, self.packet)
+        write!(f, "h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -566,7 +564,7 @@ impl From<ReceivePacket> for IbcEvent {
 
 impl std::fmt::Display for ReceivePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?} {} {}", self.height, RECV_PACKET, self.packet)
+        write!(f, "h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -611,7 +609,7 @@ impl From<WriteAcknowledgement> for IbcEvent {
 
 impl std::fmt::Display for WriteAcknowledgement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?} {} {}", self.height, WRITE_ACK, self.packet)
+        write!(f, "h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -647,7 +645,7 @@ impl From<AcknowledgePacket> for IbcEvent {
 
 impl std::fmt::Display for AcknowledgePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{} {} {}", self.height, ACK_PACKET, self.packet)
+        write!(f, "h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -690,7 +688,7 @@ impl From<TimeoutPacket> for IbcEvent {
 
 impl std::fmt::Display for TimeoutPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{} {} {}", self.height, TIMEOUT, self.packet)
+        write!(f, "h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -727,6 +725,6 @@ impl From<TimeoutOnClosePacket> for IbcEvent {
 
 impl std::fmt::Display for TimeoutOnClosePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{} {} {}", self.height, TIMEOUT_ON_CLOSE, self.packet)
+        write!(f, "h:{}, {}", self.height, self.packet)
     }
 }

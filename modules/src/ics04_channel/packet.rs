@@ -92,7 +92,7 @@ pub struct Packet {
     pub timeout_timestamp: u64,
 }
 
-impl std::fmt::Display for Packet {
+impl std::fmt::Debug for Packet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
@@ -103,16 +103,16 @@ impl std::fmt::Display for Packet {
 }
 
 /// Custom debug output to omit the packet data
-impl std::fmt::Debug for Packet {
+impl std::fmt::Display for Packet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
-            "{}: ({} {}) -> ({} {}) timeout=({} / {})",
+            "seq:{}, path:{}/{}->{}/{}, toh:{}, tos:{})",
             self.sequence,
-            self.source_port,
             self.source_channel,
-            self.destination_port,
+            self.source_port,
             self.destination_channel,
+            self.destination_port,
             self.timeout_height,
             self.timeout_timestamp
         )
