@@ -2,21 +2,37 @@
 
 EXTENDS Integers, FiniteSets, Sequences, IBCTokenTransferDefinitions
 
-CONSTANTS MaxHeight, \* maximal height of all the chains in the system
-          MaxPacketSeq, \* maximal packet sequence number
-          MaxBalance, \* maximal account balance
-          NativeDenominationChainA, \* native denomination of tokens at ChainA
-          NativeDenominationChainB \* native denomination of tokens at ChainA
+CONSTANTS 
+    \* @type: Int;
+    MaxHeight, \* maximal height of all the chains in the system
+    \* @type: Int;
+    MaxPacketSeq, \* maximal packet sequence number
+    \* @type: Int;
+    MaxBalance, \* maximal account balance
+    \* @type: Str;
+    NativeDenominationChainA, \* native denomination of tokens at ChainA
+    \* @type: Str;
+    NativeDenominationChainB \* native denomination of tokens at ChainA
 
-VARIABLES chainAstore, \* store of ChainA
-          chainBstore, \* store of ChainB
-          packetDatagramsChainA, \* set of packet datagrams incoming to ChainA
-          packetDatagramsChainB, \* set of packet datagrams incoming to ChainB
-          packetLog, \* packet log
-          appPacketSeqChainA, \* packet sequence number from the application on ChainA
-          appPacketSeqChainB, \* packet sequence number from the application on ChainB
-          accounts, \* a map from chainIDs and denominations to account balances
-          escrowAccounts \* a map from channelIDs and denominations to escrow account balances
+VARIABLES 
+    \* @type: CHAINSTORE;
+    chainAstore, \* store of ChainA
+    \* @type: CHAINSTORE;
+    chainBstore, \* store of ChainB
+    \* @type: Seq(DATAGRAM);
+    packetDatagramsChainA, \* sequence of packet datagrams incoming to ChainA
+    \* @type: Seq(DATAGRAM);
+    packetDatagramsChainB, \* sequence of packet datagrams incoming to ChainB
+    \* @type: Seq(LOGENTRY);
+    packetLog, \* packet log
+    \* @type: Int;
+    appPacketSeqChainA, \* packet sequence number from the application on ChainA
+    \* @type: Int;
+    appPacketSeqChainB, \* packet sequence number from the application on ChainB
+    \* @type: ACCOUNT -> Int;
+    accounts, \* a map from chainIDs and denominations to account balances
+    \* @type: ACCOUNT -> Int;
+    escrowAccounts \* a map from channelIDs and denominations to escrow account balances
 
 chainAvars == <<chainAstore, packetDatagramsChainA, appPacketSeqChainA>>
 chainBvars == <<chainBstore, packetDatagramsChainB, appPacketSeqChainB>>
@@ -83,6 +99,7 @@ UpdateClientHeights(chainID) ==
 
 
 \* Compute a packet datagram designated for dstChainID, based on the packetLogEntry
+\* @type: (Str, Str, LOGENTRY) => DATAGRAM;
 PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
     
     LET srcChannelID == GetChannelID(srcChainID) IN \* "chanAtoB" (if srcChainID = "chainA")
@@ -94,32 +111,40 @@ PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
     LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
     
     \* the source chain of the packet that is received by dstChainID is srcChainID
-    LET recvPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
-                                 timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> srcChannelID,
-                                 srcPortID |-> srcPortID,
-                                 dstChannelID |-> dstChannelID,
-                                 dstPortID |-> dstPortID,
-                                 data |-> logEntry.data]) IN
+    LET recvPacket == [
+                        sequence |-> packetLogEntry.sequence, 
+                        timeoutHeight |-> packetLogEntry.timeoutHeight,
+                        srcChannelID |-> srcChannelID,
+                        srcPortID |-> srcPortID,
+                        dstChannelID |-> dstChannelID,
+                        dstPortID |-> dstPortID,
+                        data |-> packetLogEntry.data
+                      ] IN
                                  
     \* the source chain of the packet that is acknowledged by srcChainID is dstChainID
-    LET ackPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
-                                 timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> dstChannelID,
-                                 srcPortID |-> dstPortID,
-                                 dstChannelID |-> srcChannelID,
-                                 dstPortID |-> srcPortID,
-                                 data |-> logEntry.data]) IN                                 
+    LET ackPacket == [
+                        sequence |-> packetLogEntry.sequence, 
+                        timeoutHeight |-> packetLogEntry.timeoutHeight,
+                        srcChannelID |-> dstChannelID,
+                        srcPortID |-> dstPortID,
+                        dstChannelID |-> srcChannelID,
+                        dstPortID |-> srcPortID,
+                        data |-> packetLogEntry.data
+                     ] IN  
     
     IF packetLogEntry.type = "PacketSent"
-    THEN AsDatagram([type |-> "PacketRecv",
-          packet |-> recvPacket(packetLogEntry),  
-          proofHeight |-> srcHeight])
+    THEN [
+            type |-> "PacketRecv",
+            packet |-> recvPacket,
+            proofHeight |-> srcHeight
+         ]
     ELSE IF packetLogEntry.type = "WriteAck"
-         THEN AsDatagram([type |-> "PacketAck",
-                  packet |-> ackPacket(packetLogEntry),
-                  acknowledgement |-> packetLogEntry.acknowledgement,  
-                  proofHeight |-> srcHeight])
+         THEN [
+                type |-> "PacketAck",
+                packet |-> ackPacket,
+                acknowledgement |-> packetLogEntry.acknowledgement,  
+                proofHeight |-> srcHeight
+              ]
          ELSE NullDatagram 
  
 (***************************************************************************
@@ -131,7 +156,7 @@ PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
  
 \* create datagrams depending on packet log
 CreateDatagrams ==
-    /\ packetLog /= AsPacketLog(<<>>)
+    /\ packetLog /= <<>>
     /\ LET packetLogEntry == Head(packetLog) IN
        LET srcChainID == packetLogEntry.srcChainID IN
        LET dstChainID == GetCounterpartyChainID(srcChainID) IN
@@ -190,7 +215,7 @@ Init ==
             [<<counterpartyChannelID, nativeDenom>> \in {<<"chanBtoA", <<NativeDenominationChainA>>>>, 
                                            <<"chanAtoB", <<NativeDenominationChainB>>>>} 
                                            |-> 0]
-    /\ packetLog = AsPacketLog(<<>>)
+    /\ packetLog = <<>>
     
     
 \* Next state action
@@ -214,7 +239,7 @@ Spec == Init /\ [][Next]_vars /\ Fairness
 RECURSIVE Sum(_)
 
 Sum(S) ==
-  IF S = AsSetInt({})
+  IF S = {}
   THEN 0
   ELSE LET x == CHOOSE y \in S: TRUE IN
     x + Sum(S \ {x})
@@ -223,10 +248,12 @@ GetNativeDenomination(chainID) ==
     IF chainID = "chainA"
     THEN NativeDenominationChainA
     ELSE NativeDenominationChainB
-    
+
+\* @type: (Str) => Set(Seq(Str));    
 PrefixedDenoms(nativeDenomination) ==
     {<<portID, channelID, nativeDenomination>> : portID \in PortIDs, channelID \in ChannelIDs}    
     
+\* @type: Set(<<Str, Seq(Str)>>);
 EscrowAccountsDomain ==
     {<<GetCounterpartyChannelID(chainID), <<GetNativeDenomination(chainID)>>>> : 
             chainID \in ChainIDs}    
@@ -237,25 +264,34 @@ Denominations ==
     PrefixedDenoms(NativeDenominationChainA) 
     \union 
     PrefixedDenoms(NativeDenominationChainB)
+        
+\* create expected packet receipt for a given packet commitment
+\* @type: (Str, PACKETCOMM) => [channelID: Str, portID: Str, sequence: Int];
+PacketReceipt(chainID, packetCommitment) == 
+    [
+        channelID |-> GetCounterpartyChannelID(chainID),
+        portID |-> GetCounterpartyPortID(chainID),
+        sequence |-> packetCommitment.sequence
+    ]        
     
+\* get the escrow account IDs for the native denomination
+\* @type: (Str) => Set(<<Str, Seq(Str)>>);
+EscrowAccountIDs(nativeDenomination) == 
+    {<<channelID, <<nativeDenomination>>>> : channelID \in ChannelIDs} 
+
 \* a packet is in flight if a packet commitment exists, but a 
 \* corresponding packet receipt is not on the counterparty chain    
+\* @type: (Str, Str) => Set(Int);
 GetAmountsInFlight(chainID, nativeDenom) ==
 
     \* get packet commitments of chainID and packet receipts of its counterparty
     LET packetCommittments == GetChainByID(chainID).packetCommitments IN
     LET counterpartyChainID == GetCounterpartyChainID(chainID) IN
     LET counterpartyPacketReceipts == GetChainByID(counterpartyChainID).packetReceipts IN
-    
-    \* create expected packet receipt for a given packet commitment
-    LET packetReceipt(packetCommitment) == 
-        [channelID |-> GetCounterpartyChannelID(chainID),
-         portID |-> GetCounterpartyPortID(chainID),
-         sequence |-> packetCommitment.sequence] IN 
          
     \* get packet commitments for packets in flight
     LET inFlight == {pc \in packetCommittments : 
-            packetReceipt(pc) \notin counterpartyPacketReceipts} IN
+            PacketReceipt(chainID, pc) \notin counterpartyPacketReceipts} IN
     
     \* get packet data for packets in flight
     LET inFlightData == {pc.data : pc \in inFlight} IN
@@ -282,12 +318,13 @@ SumOverLocalAccounts(chainID) ==
     escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
 
 \* compute the sum over the amounts in escrow accounts
+\* @type: (Str) => Int;
 SumOverEscrowAccounts(chainID) ==
     \* get the native denomination of chainID
     LET nativeDenomination == GetNativeDenomination(chainID) IN
     
     \* get the escrow account IDs for the native denomination
-    LET escrowAccountIDs == {<<channelID, <<nativeDenomination>>>> : channelID \in ChannelIDs} IN
+    LET escrowAccountIDs == EscrowAccountIDs(nativeDenomination) IN
     \* get the amounts in escrow accounts for the native denomination    
     LET escrowAccountAmounts == {escrowAccounts[accountID] : 
             accountID \in (escrowAccountIDs \intersect DOMAIN escrowAccounts)} IN

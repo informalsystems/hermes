@@ -29,7 +29,7 @@ Heights == 1..MaxHeight \* set of possible heights of the chains in the system
 \* Assume timeoutHeight is MaxHeight
 CreatePacket(packetData) ==
     LET channelEnd == chainStore.channelEnd IN
-    AsPacket([
+    [
         sequence |-> appPacketSeq,
         timeoutHeight |-> MaxHeight,
         data |-> packetData, 
@@ -37,10 +37,11 @@ CreatePacket(packetData) ==
         srcChannelID |-> channelEnd.channelID,
         dstPortID |-> channelEnd.counterpartyPortID,
         dstChannelID |-> channelEnd.counterpartyChannelID
-    ])
+    ]
   
 
 \* Update the chain store and packet log with ICS20 packet datagrams 
+\* @type: (Str, DATAGRAM, Seq(LOGENTRY)) => [store: CHAINSTORE, log: Seq(LOGENTRY), accounts: ACCOUNT -> Int, escrowAccounts: ACCOUNT -> Int];
 TokenTransferUpdate(chainID, packetDatagram, log) ==
     LET packet == packetDatagram.packet IN
     \* get the new updated store, packet log, and accounts
@@ -82,7 +83,7 @@ AdvanceChain ==
 \* handle the incoming packet datagrams
 HandlePacketDatagrams ==
     \* enabled if incomingPacketDatagrams is not empty
-    /\ incomingPacketDatagrams /= AsSeqDatagrams(<<>>)
+    /\ incomingPacketDatagrams /= <<>>
     /\ LET tokenTransferUpdate == TokenTransferUpdate(ChainID, Head(incomingPacketDatagrams), packetLog) IN 
         /\ chainStore' = tokenTransferUpdate.store 
         /\ packetLog' = tokenTransferUpdate.log
@@ -115,14 +116,13 @@ SendPacket ==
                 \* update chain store with packet committment
                 /\ chainStore' = updatedChainStore
                 \* log sent packet
-                /\ packetLog' = Append(packetLog, 
-                                  AsPacketLogEntry(
-                                    [type |-> "PacketSent", 
-                                     srcChainID |-> ChainID,  
-                                     sequence |-> packet.sequence,
-                                     timeoutHeight |-> packet.timeoutHeight,
-                                     data |-> packet.data]
-                                  ))
+                /\ packetLog' = Append(packetLog, [
+                                                    type |-> "PacketSent", 
+                                                    srcChainID |-> ChainID,  
+                                                    sequence |-> packet.sequence,
+                                                    timeoutHeight |-> packet.timeoutHeight,
+                                                    data |-> packet.data
+                                                  ])
                 \* update bank accounts 
                 /\ accounts' = createOutgoingPacketOutcome.accounts
                 \* update escrow accounts 
@@ -135,7 +135,7 @@ SendPacket ==
        
 \* Acknowledge a packet
 AcknowledgePacket ==
-    /\ chainStore.packetsToAcknowledge /= AsSeqPacketsToAck(<<>>)
+    /\ chainStore.packetsToAcknowledge /= <<>>
     \* write acknowledgements to chain store
     /\ chainStore' = WriteAcknowledgement(chainStore, Head(chainStore.packetsToAcknowledge))
     \* log acknowledgement
@@ -155,8 +155,8 @@ AcknowledgePacket ==
 \*  - the appPacketSeq is set to 1
 Init == 
     /\ chainStore = ICS20InitChainStore(ChainID)
-    /\ incomingPacketDatagrams = AsSeqDatagrams(<<>>)
-    /\ appPacketSeq = AsInt(1)
+    /\ incomingPacketDatagrams = <<>>
+    /\ appPacketSeq = 1
     
 \* Next state action
 \* The chain either
@@ -180,7 +180,7 @@ Fairness ==
 \* Type invariant   
 \* ChainStores, Datagrams, PacketLogEntries are defined in IBCTokenTransferDefinitions.tla        
 TypeOK ==    
-    /\ chainStore \in ChainStores(Heights, MaxPacketSeq, MaxBalance, NativeDenomination)
+    /\ chainStore \in ChainStores(Heights, MaxPacketSeq, MaxBalance, {NativeDenomination})
     /\ appPacketSeq \in 1..(MaxPacketSeq + 1)
             
         

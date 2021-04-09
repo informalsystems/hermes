@@ -3,10 +3,12 @@
 EXTENDS Integers, FiniteSets
 
 \* subtract coins from account
+\* @type: (ACCOUNT -> Int, ACCOUNT, Int) => ACCOUNT -> Int;
 SubtractCoins(accounts, accountID, amount) ==
     [accounts EXCEPT ![accountID] = accounts[accountID] - amount]
 
 \* add coins to account
+\* @type: (ACCOUNT -> Int, ACCOUNT, Int) => ACCOUNT -> Int;
 AddCoins(accounts, accountID, amount) ==
     LET newDomain == (DOMAIN accounts) \union {accountID} IN
      
@@ -29,6 +31,7 @@ AddCoins(accounts, accountID, amount) ==
 \*        to account balances
 \*      - receiverAccounts is a map from receiver addresses and denominations 
 \*        to account balances
+\* @type: (ACCOUNT -> Int, Str, ACCOUNT -> Int, Str, Seq(Str), Int) => [senderAccounts: ACCOUNT -> Int, receiverAccounts: ACCOUNT -> Int, error: Bool];
 TransferCoins(senderAccounts, senderAddr, 
               receiverAccounts, receiverAddr, 
               denomination, amount) ==
@@ -58,6 +61,7 @@ TransferCoins(senderAccounts, senderAddr,
 \* denomination  
 \*      - accounts is a map from addresses and denominations 
 \*        to account balances
+\* @type: (ACCOUNT -> Int, Str, Seq(Str), Int) => [accounts: ACCOUNT -> Int, error: Bool];
 BurnCoins(accounts, address, denomination, amount) ==
     LET accountID == <<address, denomination>> IN
     LET balance == accounts[accountID] IN
@@ -78,6 +82,7 @@ BurnCoins(accounts, address, denomination, amount) ==
     
 
 \* Mint new coins of denomination to account with the given address
+\* @type: (ACCOUNT -> Int, Str, Seq(Str), Int, Int) => [accounts: ACCOUNT -> Int, error: Bool];
 MintCoins(accounts, address, denomination, amount, maxBalance) ==
     LET accountID == <<address, denomination>> IN
 
