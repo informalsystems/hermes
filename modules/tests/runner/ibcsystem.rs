@@ -1,23 +1,26 @@
-use std::{fmt::{Debug, Display}, slice::Iter};
-use std::{any::Any, collections::HashMap};
 use std::error::Error;
+use std::{any::Any, collections::HashMap};
+use std::{
+    fmt::{Debug, Display},
+    slice::Iter,
+};
 
-use ibc::{ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader}};
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
-use ibc::ics03_connection::connection::{Counterparty};
+use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::version::Version;
+use ibc::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::ics26_routing::error::{Error as ICS26Error, Kind as ICS26ErrorKind};
 use ibc::mock::client_state::{MockClientState, MockConsensusState};
 use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
 use ibc::Height;
-use ibc::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
-use ibc::ics26_routing::error::{Error as ICS26Error, Kind as ICS26ErrorKind};
 
-use modelator::{Recipe};
+use modelator::Recipe;
 
 #[derive(Debug)]
 pub struct IBCSystem {
@@ -25,7 +28,6 @@ pub struct IBCSystem {
     pub contexts: HashMap<String, MockContext>,
     pub recipe: Recipe,
 }
-
 
 impl IBCSystem {
     pub fn new() -> IBCSystem {
@@ -56,6 +58,10 @@ impl IBCSystem {
 
     pub fn take<T: Sized + Any>(&self) -> T {
         self.recipe.take()
+    }
+
+    pub fn take_as<T: Sized + Any>(&self, name: &str) -> T {
+        self.recipe.take_as(name)
     }
 
     /// Returns a reference to the `MockContext` of a given `chain_id`.
@@ -97,7 +103,7 @@ impl IBCSystem {
             .expect("expected source in ICS26 error")
             .downcast_ref::<anomaly::Error<K>>()
             .map(|e| e.kind().clone())
-    }     
+    }
 
     pub fn make_recipe() -> Recipe {
         let mut r = Recipe::new();
@@ -109,7 +115,25 @@ impl IBCSystem {
             ClientId::new(ClientType::Mock, client_id)
                 .expect("it should be possible to create the client identifier")
         });
+        r.add(|_, client_id: ClientId| {
+            client_id
+                .as_str()
+                .split("-")
+                .last()
+                .expect("a valid ClientId should be separated by '-'")
+                .parse::<u64>()
+                .expect("a valid ClientId should have a numeric counter at the end")
+        });
         r.add(|_, connection_id: u64| ConnectionId::new(connection_id));
+        r.add(|_, connection_id: ConnectionId| {
+            connection_id
+                .as_str()
+                .split("-")
+                .last()
+                .expect("a valid ConnectionId should be separated by '-'")
+                .parse::<u64>()
+                .expect("a valid ConnectionId should have a numeric counter at the end")
+        });
 
         r.add(|_, height: u64| Height::new(0, height));
         r.add(|r, height: u64| MockHeader::new(r.make(height)));
@@ -132,15 +156,56 @@ impl IBCSystem {
                 .expect("it should be possible to create the consensus proof")
         });
         r.add(|r, height: u64| {
-            Proofs::new(
-                r.take(),
-                None,
-                Some(r.make(height)),
-                None,
-                r.make(height),
-            )
-            .expect("it should be possible to create the proofs")
+            Proofs::new(r.take(), None, Some(r.make(height)), None, r.make(height))
+                .expect("it should be possible to create the proofs")
         });
         r
-    }    
+    }
+}
+
+// #[macro_export]
+// macro_rules! chain_action {
+//     (
+//         $name:ident : $kind:ident
+//         $($arg:ident : $t:ty),*
+//     ) => {
+//         pub fn $name(chain_id: &str, $($arg: $t),*) -> ChainAction {
+//             ChainAction {
+//                 chain_id: chain_id.to_string(),
+//                 action: Action::$kind($kind {
+//                     $($arg),*
+//                 }),
+//             }
+//         }
+//     };
+// }
+
+#[macro_export]
+macro_rules! chain_action {
+    (
+        $name:ident : $kind:ident
+        $( $([$m:meta])* $arg:ident : $t:ty),*
+    ) => {
+
+        #[derive(Debug, Clone, PartialEq, Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        pub struct $kind {
+            $(
+                $(#[$m])*
+                pub $arg: $t
+            
+            ),*
+        }
+
+        impl ChainAction {        
+            pub fn $name(chain_id: &str, $($arg: $t),*) -> ChainAction {
+                ChainAction {
+                    chain_id: chain_id.to_string(),
+                    action: Action::$kind($kind {
+                        $($arg),*
+                    }),
+                }
+            }
+        }
+    };
 }
