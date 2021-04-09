@@ -104,10 +104,10 @@ impl StateHandler<AbstractState> for IBCSystem {
             for connection_id in 0..ctr {
                 if let Some(connection_end) = ctx.connection_end(&self.make(connection_id)) {
                     let connection = Connection {
-                        client_id: self.make(connection_end.client_id().clone()),
+                        client_id: Some(self.make(connection_end.client_id().clone())),
                         connection_id: Some(connection_id),
-                        counterparty_client_id: self
-                            .make(connection_end.counterparty().client_id().clone()),
+                        counterparty_client_id: Some(self
+                            .make(connection_end.counterparty().client_id().clone())),
                         counterparty_connection_id: connection_end
                             .counterparty()
                             .connection_id()
@@ -262,5 +262,55 @@ impl ActionHandler<ChainAction> for IBCSystem {
         let ctx = self.chain_context_mut(&action.chain_id);
         let result = ctx.deliver(Ics26Envelope::Ics3Msg(msg));
         self.decode_connection_outcome(result)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::ics02::{AbstractState as ClientState, ChainAction as ClientAction};
+
+    #[test]
+    pub fn test() {
+        let initial = AbstractState {
+            chains: HashMap::from_iter(IntoIter::new([
+                ("chain1".into(), Chain::new(10)),
+                ("chain2".into(), Chain::new(20)),
+            ])),
+        };
+
+        let events = modelator::EventStream::new()
+            // initialize the state of your system from abstract state
+            .init(initial)
+            // you can inspect the current abstract state of your system
+            .check(|state: AbstractState| println!("{:?}", state))
+            // or make assertions about it
+            .check(|state: AbstractState| assert_eq!(state.chains.len(), 2))
+            // you can also execute abstract actions against your system
+            .action(ChainAction::connection_open_init("chain1", 10, "chain2".to_string(), 30))
+            // should fail because no client exist yet
+            .outcome(ActionOutcome::ICS03MissingClient)
+            // let's create the client
+            .action(ClientAction::create_client("chain1", 10, 20))
+            // and try again
+            .action(ChainAction::connection_open_init("chain1", 0, "chain2".to_string(), 30))
+            // should pass now
+            .outcome(ActionOutcome::OK)
+            // debug-print the client state
+            .check(|state: ClientState| println!("{:?}", state))
+            // debug-print the connection state
+            .check(|state: AbstractState| println!("{:?}", state))
+            ;
+
+        let mut runner = Runner::<IBCSystem>::new()
+            .with_state::<AbstractState>()
+            .with_action::<ChainAction>()
+            .with_state::<ClientState>()
+            .with_action::<ClientAction>()
+            ;
+        let mut system = IBCSystem::new();
+        let result = runner.run(&mut system, &mut events.into_iter());
+        assert!(matches!(result, TestResult::Success(_)))
     }
 }

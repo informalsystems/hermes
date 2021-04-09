@@ -163,23 +163,6 @@ impl IBCSystem {
     }
 }
 
-// #[macro_export]
-// macro_rules! chain_action {
-//     (
-//         $name:ident : $kind:ident
-//         $($arg:ident : $t:ty),*
-//     ) => {
-//         pub fn $name(chain_id: &str, $($arg: $t),*) -> ChainAction {
-//             ChainAction {
-//                 chain_id: chain_id.to_string(),
-//                 action: Action::$kind($kind {
-//                     $($arg),*
-//                 }),
-//             }
-//         }
-//     };
-// }
-
 #[macro_export]
 macro_rules! chain_action {
     (
