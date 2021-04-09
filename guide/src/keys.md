@@ -35,7 +35,7 @@ The private key file can be obtained by using the `keys add` on a Cosmos chain, 
 gaiad keys add ...
 ```
 
-The command outputs a JSON similar to the one below. You can save this file (e.g. key_seed.json) and use it to add to the relayer
+The command outputs a JSON similar to the one below. You can save this file (e.g. `key_seed.json`) and use it to add to the relayer
 
 ```json
 {
@@ -52,7 +52,7 @@ The command outputs a JSON similar to the one below. You can save this file (e.g
 
 ### Adding Keys
 
-In order to add a key to a chain use the `keys add` command:
+#### Add a private key to a chain from a key file
 
 ```shell
 USAGE:
@@ -63,22 +63,50 @@ DESCRIPTION:
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain
-    file                      the key path and filename
 
+FLAGS:
+    -f, --file FILE           the path to the key file (conflicts with --mnemonic)
 ```
-
-#### Add a private key to a chain
 
 To add a private key file to a chain:
 
 ```shell
-hermes -c config keys add [CHAIN_ID] [PRIVATE_KEY_FILE]
+hermes -c config keys add [CHAIN_ID] -f [PRIVATE_KEY_FILE]
 ```
 
 If the command is successful a message similar to the one below will be displayed:
 
 ```json
-{"status":"success","result":["Added key testkey ([ADDRESS]) on [CHAIN ID] chain"]}
+Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
+```
+
+#### Restore a private key to a chain from a mnemonic
+
+```shell
+USAGE:
+    hermes keys restore <OPTIONS>
+
+DESCRIPTION:
+    restore a key to a configured chain using a mnemonic
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+
+FLAGS:
+    -n, --name NAME           key name
+    -m, --mnemonic MNEMONIC   mnemonic to restore the key from
+```
+
+To restore a key from its mnemonic:
+
+```shell
+hermes -c config keys restore [CHAIN_ID] -m "[MNEMONIC]"
+```
+
+If the command is successful a message similar to the one below will be displayed:
+
+```json
+Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 ```
 
 ### List keys
@@ -107,5 +135,5 @@ hermes -c config keys list [CHAIN_ID]
 If the command is successful a message similar to the one below will be displayed:
 
 ```json
-{"status":"success","result":["chain: [CHAIN_ID] -> testkey ([ADDRESS])"]}
+[CHAIN_ID] -> [KEY_NAME] ([ADDRESS])
 ```
