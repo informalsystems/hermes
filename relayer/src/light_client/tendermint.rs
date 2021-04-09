@@ -80,6 +80,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 self.chain_id
             ))
         })?;
+
         let tm_ibc_client_header =
             downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
                 Kind::Misbehaviour(format!(
@@ -88,14 +89,14 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 ))
             })?;
 
-        // set the target height to the minimum between the update height and latest chain height
-        let latest_chain_height = ibc::Height::new(
-            self.chain_id.version(),
-            u64::from(self.fetch_light_block(AtHeight::Highest)?.height()),
-        );
+        let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
+        let latest_chain_height =
+            ibc::Height::new(self.chain_id.version(), latest_chain_block.height().into());
 
+        // set the target height to the minimum between the update height and latest chain height
         let target_height = std::cmp::min(update.consensus_height(), latest_chain_height);
         let trusted_height = tm_ibc_client_header.trusted_height;
+
         // TODO - check that a consensus state at trusted_height still exists on-chain,
         // currently we don't have access to Cosmos chain query from here
 
@@ -114,7 +115,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             let target_light_block = self.verify(trusted_height, target_height, &client_state)?;
             TmHeader {
                 trusted_height,
-                signed_header: target_light_block.signed_header.clone(),
+                signed_header: target_light_block.signed_header,
                 validator_set: target_light_block.validators,
                 trusted_validator_set: trusted_light_block.validators,
             }
