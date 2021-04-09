@@ -66,7 +66,7 @@ use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventBatch, EventMonitor};
-use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
+use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 
@@ -214,7 +214,10 @@ impl CosmosSdkChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self.keybase.sign_msg(signdoc_buf);
+        let signed = self
+            .keybase
+            .sign_msg(signdoc_buf)
+            .map_err(|e| Kind::KeyBase.context(e))?;
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
@@ -323,8 +326,8 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Rpc(config.rpc_addr.clone()).context(e))?;
 
         // Initialize key store and load key
-        let keybase = KeyRing::init(StoreBackend::Test, config.clone())
-            .map_err(|e| Kind::KeyBase.context(e))?;
+        let keybase =
+            KeyRing::new(Store::Disk, config.clone()).map_err(|e| Kind::KeyBase.context(e))?;
 
         let grpc_addr =
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
@@ -384,6 +387,10 @@ impl Chain for CosmosSdkChain {
 
     fn keybase(&self) -> &KeyRing {
         &self.keybase
+    }
+
+    fn keybase_mut(&mut self) -> &mut KeyRing {
+        &mut self.keybase
     }
 
     /// Send one or more transactions that include all the specified messages

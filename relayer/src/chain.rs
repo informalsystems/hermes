@@ -35,7 +35,7 @@ use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
-use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 pub(crate) mod cosmos;
@@ -100,6 +100,9 @@ pub trait Chain: Sized {
 
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
+
+    /// Returns the chain's keybase, mutably
+    fn keybase_mut(&mut self) -> &mut KeyRing;
 
     /// Sends one or more transactions with `msgs` to chain.
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;

@@ -19,7 +19,8 @@ pub enum KeysCmd {
     /// The `keys list` subcommand
     #[options(help = "List keys configured on a chain")]
     List(list::KeysListCmd),
-    ///// The `keys restore` subcommand
-    // #[options(help = "restore a key to a configured chain using a mnemonic")]
-    // Restore(restore::KeyRestoreCmd),
+
+    /// The `keys restore` subcommand
+    #[options(help = "restore a key to a configured chain using a mnemonic")]
+    Restore(restore::KeyRestoreCmd),
 }

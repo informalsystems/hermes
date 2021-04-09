@@ -32,7 +32,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use crate::{
     connection::ConnectionMsgType,
     error::{Error, Kind},
-    keyring::store::KeyEntry,
+    keyring::KeyEntry,
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};

@@ -8,6 +8,9 @@ pub enum Kind {
     #[error("invalid key")]
     InvalidKey,
 
+    #[error("key not found")]
+    KeyNotFound,
+
     #[error("key already exists")]
     ExistingKey,
 
@@ -20,8 +23,14 @@ pub enum Kind {
     #[error("cannot generate bech32 account")]
     Bech32Account,
 
+    #[error("bech32 error")]
+    Bech32,
+
+    #[error("mismatch between the public key in the key file and the public key in the mnemonic")]
+    PublicKeyMismatch { keyfile: Vec<u8>, mnemonic: Vec<u8> },
+
     #[error("key store error")]
-    KeyStoreOperation,
+    KeyStore,
 }
 
 impl Kind {
