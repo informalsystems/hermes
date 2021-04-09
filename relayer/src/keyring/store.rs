@@ -62,7 +62,7 @@ impl TryFrom<KeyFile> for KeyEntry {
         let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
         let public_key_bytes = public_key.public_key.to_bytes();
 
-        assert!(public_key_bytes.len() >= keyfile_pubkey_bytes.len());
+        assert!(public_key_bytes.len() <= keyfile_pubkey_bytes.len());
 
         // FIXME: For some reason that is currently unclear, the public key decoded from
         //        the keyfile contains a few extraneous leading bytes. To compare both
