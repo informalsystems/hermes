@@ -523,7 +523,7 @@ impl ForeignClient {
             .dst_chain
             .query_consensus_states(QueryConsensusStatesRequest {
                 client_id: self.id.to_string(),
-                pagination: None,
+                pagination: ibc_proto::cosmos::base::query::pagination::all(),
             })
             .map_err(|e| {
                 ForeignClientError::ClientQuery(

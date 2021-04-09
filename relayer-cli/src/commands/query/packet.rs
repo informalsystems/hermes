@@ -68,7 +68,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
         let grpc_request = QueryPacketCommitmentsRequest {
             port_id: opts.port_id.to_string(),
             channel_id: opts.channel_id.to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
         let res: Result<(Vec<PacketState>, Height), Error> = chain
@@ -266,7 +266,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         let commitments_request = QueryPacketCommitmentsRequest {
             port_id: opts.port_id.to_string(),
             channel_id: opts.channel_id.to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
         let seq_res = src_chain
@@ -363,7 +363,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
         let grpc_request = QueryPacketAcknowledgementsRequest {
             port_id: opts.port_id.to_string(),
             channel_id: opts.channel_id.to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
         let res: Result<(Vec<PacketState>, Height), Error> = chain
@@ -561,7 +561,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         let acks_request = QueryPacketAcknowledgementsRequest {
             port_id: opts.port_id.to_string(),
             channel_id: opts.channel_id.to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
         let seq_res = src_chain

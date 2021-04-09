@@ -38,6 +38,17 @@ pub mod cosmos {
             pub mod v1beta1 {
                 include!("prost/cosmos.base.query.v1beta1.rs");
             }
+
+            pub mod pagination {
+                use super::v1beta1::PageRequest;
+
+                pub fn all() -> Option<PageRequest> {
+                    Some(PageRequest {
+                        limit: u64::MAX,
+                        ..Default::default()
+                    })
+                }
+            }
         }
         pub mod reflection {
             pub mod v1beta1 {

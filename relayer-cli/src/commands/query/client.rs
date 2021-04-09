@@ -128,7 +128,7 @@ impl Runnable for QueryClientConsensusCmd {
             None => {
                 let res = chain.query_consensus_states(QueryConsensusStatesRequest {
                     client_id: self.client_id.to_string(),
-                    pagination: None,
+                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
                 });
 
                 match res {

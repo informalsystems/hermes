@@ -545,7 +545,7 @@ impl RelayPath {
         let pc_request = QueryPacketCommitmentsRequest {
             port_id: self.src_port_id().to_string(),
             channel_id: self.src_channel_id().to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
         let (packet_commitments, query_height) =
             self.src_chain.query_packet_commitments(pc_request)?;
@@ -615,7 +615,7 @@ impl RelayPath {
         let pc_request = QueryPacketAcknowledgementsRequest {
             port_id: self.src_port_id().to_string(),
             channel_id: self.src_channel_id().to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
         let (acks_on_source, query_height) = self
             .src_chain
