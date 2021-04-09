@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
 
-use crate::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use crate::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics24_host::identifier::ClientId;
@@ -17,7 +17,7 @@ pub struct Misbehaviour {
     pub header2: Header,
 }
 
-impl crate::ics02_client::client_misbehaviour::Misbehaviour for Misbehaviour {
+impl crate::ics02_client::misbehaviour::Misbehaviour for Misbehaviour {
     fn client_id(&self) -> &ClientId {
         &self.client_id
     }

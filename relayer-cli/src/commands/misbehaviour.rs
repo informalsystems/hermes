@@ -59,8 +59,7 @@ pub fn monitor_misbehaviour(
         for event in event_batch.events.iter() {
             match event {
                 IbcEvent::UpdateClient(update) => {
-                    dbg!(update);
-
+                    debug!("{:?}", update);
                     misbehaviour_handling(
                         chain.clone(),
                         config,

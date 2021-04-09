@@ -9,7 +9,7 @@ use ibc::events::{IbcEvent, IbcEventType};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
 };
-use ibc::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::header::Header;

@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour;
 
-use crate::ics02_client::client_misbehaviour::AnyMisbehaviour;
+use crate::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;

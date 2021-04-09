@@ -14,11 +14,11 @@ use tendermint_rpc as rpc;
 use ibc::{
     downcast,
     ics02_client::{
-        client_misbehaviour::{AnyMisbehaviour, Misbehaviour},
         client_state::AnyClientState,
         client_type::ClientType,
         events::UpdateClient,
         header::AnyHeader,
+        misbehaviour::{AnyMisbehaviour, Misbehaviour},
     },
     ics07_tendermint::{header::Header as TmHeader, misbehaviour::Misbehaviour as TmMisbehaviour},
     ics24_host::identifier::ChainId,
