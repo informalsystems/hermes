@@ -1,12 +1,14 @@
 use abscissa_core::{Command, Options, Runnable};
 
+use anomaly::BoxError;
 use ibc::ics24_host::identifier::ChainId;
-use ibc_relayer::config::Config;
-use ibc_relayer::keys::restore::{restore_key, KeysRestoreOptions};
+use ibc_relayer::{
+    config::{ChainConfig, Config},
+    keyring::store::{KeyEntry, KeyRing, Store},
+};
 
 use crate::application::app_config;
 use crate::conclude::Output;
-use crate::error::Kind;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeyRestoreCmd {
@@ -20,6 +22,13 @@ pub struct KeyRestoreCmd {
     mnemonic: String,
 }
 
+#[derive(Clone, Debug)]
+pub struct KeysRestoreOptions {
+    pub name: String,
+    pub mnemonic: String,
+    pub config: ChainConfig,
+}
+
 impl KeyRestoreCmd {
     fn validate_options(&self, config: &Config) -> Result<KeysRestoreOptions, String> {
         let chain_config = config
@@ -27,10 +36,7 @@ impl KeyRestoreCmd {
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let name = self.name.clone();
-        // .ok_or_else(|| "missing key name".to_string())?;
-
         let mnemonic = self.mnemonic.clone();
-        // .ok_or_else(|| "missing mnemonic".to_string())?;
 
         Ok(KeysRestoreOptions {
             name,
@@ -49,11 +55,24 @@ impl Runnable for KeyRestoreCmd {
             Ok(result) => result,
         };
 
-        let res = restore_key(opts).map_err(|e| Kind::Keys.context(e));
+        let chain_id = opts.config.id.clone();
+        let key = restore_key(&opts.name, &opts.mnemonic, opts.config);
 
-        match res {
-            Ok(msg) => Output::success_msg(msg).exit(),
+        match key {
+            Ok(key) => Output::success_msg(format!(
+                "Restored key '{}' ({}) on chain {}",
+                opts.name, key.account, chain_id
+            ))
+            .exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
+}
+
+pub fn restore_key(name: &str, mnemonic: &str, config: ChainConfig) -> Result<KeyEntry, BoxError> {
+    let mut keyring = KeyRing::new(Store::Disk, config)?;
+    let key_entry = keyring.key_from_mnemonic(mnemonic)?;
+    keyring.add_key(key_entry.clone())?;
+
+    Ok(key_entry)
 }
