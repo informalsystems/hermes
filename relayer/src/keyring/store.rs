@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
@@ -23,7 +23,7 @@ pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test"; // TODO: Change to "keyr
 pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 
 /// Key entry stores the Private Key and Public Key as well the address
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KeyEntry {
     /// Public key
     pub public_key: ExtendedPubKey,
@@ -36,6 +36,57 @@ pub struct KeyEntry {
 
     /// Address
     pub address: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct KeyFile {
+    pub name: String,
+    pub r#type: String,
+    pub address: String,
+    pub pubkey: String,
+    pub mnemonic: String,
+}
+
+impl TryFrom<KeyFile> for KeyEntry {
+    type Error = Error;
+
+    fn try_from(key_file: KeyFile) -> Result<Self, Self::Error> {
+        // Decode the Bech32-encoded address from the key file
+        let keyfile_address_bytes = decode_bech32(&key_file.address)?;
+
+        // Decode the Bech32-encoded public key from the key file
+        let mut keyfile_pubkey_bytes = decode_bech32(&key_file.pubkey)?;
+
+        // Decode the private key from the mnemonic
+        let private_key = private_key_from_mnemonic(&key_file.mnemonic)?;
+        let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
+        let public_key_bytes = public_key.public_key.to_bytes();
+
+        assert!(public_key_bytes.len() >= keyfile_pubkey_bytes.len());
+
+        // FIXME: For some reason that is currently unclear, the public key decoded from
+        //        the keyfile contains a few extraneous leading bytes. To compare both
+        //        public keys, we therefore strip those leading bytes off and keep the
+        //        common parts.
+        let keyfile_pubkey_bytes =
+            keyfile_pubkey_bytes.split_off(keyfile_pubkey_bytes.len() - public_key_bytes.len());
+
+        // Ensure that the public key in the key file and the one extracted from the mnemonic match.
+        if keyfile_pubkey_bytes != public_key_bytes {
+            return Err(Kind::PublicKeyMismatch {
+                keyfile: keyfile_pubkey_bytes,
+                mnemonic: public_key_bytes,
+            }
+            .into());
+        }
+
+        Ok(KeyEntry {
+            public_key,
+            private_key,
+            account: key_file.address,
+            address: keyfile_address_bytes,
+        })
+    }
 }
 
 pub trait KeyStore {
@@ -177,63 +228,33 @@ impl KeyRing {
 
     /// Get key from seed file
     pub fn key_from_seed_file(&self, key_file_content: &str) -> Result<KeyEntry, Error> {
-        #[derive(Serialize, Deserialize)]
-        struct KeyFile {
-            name: String,
-            r#type: String,
-            address: String,
-            pubkey: String,
-            mnemonic: String,
-        }
-
         let key_file: KeyFile =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
-        let mut key = self
-            .key_from_mnemonic(&key_file.mnemonic)
-            .map_err(|e| Kind::InvalidMnemonic.context(e))?;
-
-        // Use the account in the key file, otherwise the one decoded from
-        // the mnemonic will have the configured account prefix which may
-        // not match the one in the key file.
-        //
-        // TODO: Deserialize key entry directly from the key file
-        key.account = key_file.address;
-
-        Ok(key)
+        key_file.try_into()
     }
 
     /// Add a key entry in the store using a mnemonic.
     pub fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
-        let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
-            .map_err(|e| Kind::InvalidMnemonic.context(e))?;
+        // Get the private key from the mnemonic
+        let private_key = private_key_from_mnemonic(mnemonic_words)?;
 
-        let seed = Seed::new(&mnemonic, "");
-
-        // Get Private Key from seed and standard derivation path
-        let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
-        let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
-            .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
-            .map_err(|e| Kind::PrivateKey.context(e))?;
-
-        // Get Public Key from Private Key
+        // Get the public Key from the private key
         let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
 
-        // Get address from the Public Key
+        // Get address from the public Key
         let address = get_address(public_key);
 
-        // Get Bech32 account
+        // Compute Bech32 account
         let account = bech32::encode(self.account_prefix(), address.to_base32(), Variant::Bech32)
             .map_err(|e| Kind::Bech32Account.context(e))?;
 
-        let key = KeyEntry {
+        Ok(KeyEntry {
             public_key,
             private_key,
             address,
             account,
-        };
-
-        Ok(key)
+        })
     }
 
     /// Sign a message
@@ -257,6 +278,22 @@ impl KeyRing {
     }
 }
 
+/// Decode an extended private key from a mnemonic
+fn private_key_from_mnemonic(mnemonic_words: &str) -> Result<ExtendedPrivKey, Error> {
+    let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
+        .map_err(|e| Kind::InvalidMnemonic.context(e))?;
+
+    let seed = Seed::new(&mnemonic, "");
+
+    // Get Private Key from seed and standard derivation path
+    let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
+    let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
+        .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
+        .map_err(|e| Kind::PrivateKey.context(e))?;
+
+    Ok(private_key)
+}
+
 /// Return an address from a Public Key
 fn get_address(pk: ExtendedPubKey) -> Vec<u8> {
     let mut hasher = Sha256::new();
@@ -271,6 +308,16 @@ fn get_address(pk: ExtendedPubKey) -> Vec<u8> {
     let rip_result = rip_hasher.finalize();
 
     rip_result.to_vec()
+}
+
+fn decode_bech32(input: &str) -> Result<Vec<u8>, Error> {
+    use bech32::FromBase32;
+
+    let bytes = bech32::decode(input)
+        .and_then(|(_, data, _)| Vec::from_base32(&data))
+        .map_err(|e| Kind::Bech32Account.context(e))?;
+
+    Ok(bytes)
 }
 
 fn disk_store_path(folder_name: &str) -> Result<PathBuf, Error> {
