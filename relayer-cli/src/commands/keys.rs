@@ -13,7 +13,9 @@ pub enum KeysCmd {
     Help(Help<Self>),
 
     /// The `keys add` subcommand
-    #[options(help = "Adds a key to a configured chain")]
+    #[options(
+        help = "Adds a key to a configured chain, either from a key file or from a mnemonic"
+    )]
     Add(add::KeysAddCmd),
 
     /// The `keys list` subcommand
