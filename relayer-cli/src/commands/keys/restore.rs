@@ -15,16 +15,12 @@ pub struct KeyRestoreCmd {
     #[options(free, required, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[options(short = "n", required, help = "key name")]
-    name: String,
-
     #[options(short = "m", required, help = "mnemonic to restore the key from")]
     mnemonic: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct KeysRestoreOptions {
-    pub name: String,
     pub mnemonic: String,
     pub config: ChainConfig,
 }
@@ -35,12 +31,8 @@ impl KeyRestoreCmd {
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
-        let name = self.name.clone();
-        let mnemonic = self.mnemonic.clone();
-
         Ok(KeysRestoreOptions {
-            name,
-            mnemonic,
+            mnemonic: self.mnemonic.clone(),
             config: chain_config.clone(),
         })
     }
@@ -55,13 +47,14 @@ impl Runnable for KeyRestoreCmd {
             Ok(result) => result,
         };
 
+        let key_name = opts.config.key_name.clone();
         let chain_id = opts.config.id.clone();
-        let key = restore_key(&opts.name, &opts.mnemonic, opts.config);
+        let key = restore_key(&opts.mnemonic, opts.config);
 
         match key {
             Ok(key) => Output::success_msg(format!(
                 "Restored key '{}' ({}) on chain {}",
-                opts.name, key.account, chain_id
+                key_name, key.account, chain_id
             ))
             .exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -69,7 +62,7 @@ impl Runnable for KeyRestoreCmd {
     }
 }
 
-pub fn restore_key(name: &str, mnemonic: &str, config: ChainConfig) -> Result<KeyEntry, BoxError> {
+pub fn restore_key(mnemonic: &str, config: ChainConfig) -> Result<KeyEntry, BoxError> {
     let mut keyring = KeyRing::new(Store::Disk, config)?;
     let key_entry = keyring.key_from_mnemonic(mnemonic)?;
     keyring.add_key(key_entry.clone())?;
