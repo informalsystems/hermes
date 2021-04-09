@@ -963,11 +963,11 @@ impl Chain for CosmosSdkChain {
 
                 let mut result: Vec<IbcEvent> = vec![];
 
-                for seq in request.sequences.iter() {
+                for seq in &request.sequences {
                     // query all Tx-es that include events related to packet with given port, channel and sequence
                     let response = self
                         .block_on(self.rpc_client.tx_search(
-                            packet_query(&request, seq),
+                            packet_query(&request, *seq),
                             false,
                             1,
                             1,
@@ -978,6 +978,7 @@ impl Chain for CosmosSdkChain {
                     let mut events =
                         packet_from_tx_search_response(self.id(), &request, *seq, response)
                             .map_or(vec![], |v| vec![v]);
+
                     result.append(&mut events);
                 }
                 Ok(result)
@@ -997,10 +998,12 @@ impl Chain for CosmosSdkChain {
                 if response.txs.is_empty() {
                     return Ok(vec![]);
                 }
+
                 assert!(response.txs.len() == 1);
 
                 let events = update_client_from_tx_search_response(self.id(), &request, response)
                     .map_or(vec![], |v| vec![v]);
+
                 Ok(events)
             }
         }
@@ -1202,7 +1205,7 @@ impl Chain for CosmosSdkChain {
     }
 }
 
-fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query {
+fn packet_query(request: &QueryPacketEventDataRequest, seq: Sequence) -> Query {
     tendermint_rpc::query::Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
         request.source_channel_id.to_string(),
