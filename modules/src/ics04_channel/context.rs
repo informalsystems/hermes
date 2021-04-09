@@ -145,7 +145,7 @@ pub trait ChannelKeeper {
                         self.store_next_sequence_ack((res.port_id.clone(), res.channel_id), s)?;
                     }
                     None => {
-                        //Unorderded Channel
+                        //Unordered Channel
                         self.delete_packet_acknowledgement((
                             res.port_id.clone(),
                             res.channel_id.clone(),
@@ -153,6 +153,17 @@ pub trait ChannelKeeper {
                         ))?;
                     }
                 }
+            }
+            PacketResult::Timeout(res) => {
+                if let Some(c) = res.channel {
+                    //Ordered Channel
+                    self.store_channel((res.port_id.clone(), res.channel_id.clone()), &c)?;
+                }
+                self.delete_packet_commitment((
+                    res.port_id.clone(),
+                    res.channel_id.clone(),
+                    res.seq,
+                ))?;
             }
         }
         Ok(())
@@ -165,6 +176,9 @@ pub trait ChannelKeeper {
         heigh: Height,
         data: Vec<u8>,
     ) -> Result<(), Error>;
+
+    fn delete_packet_commitment(&mut self, key: (PortId, ChannelId, Sequence))
+        -> Result<(), Error>;
 
     fn store_packet_receipt(
         &mut self,

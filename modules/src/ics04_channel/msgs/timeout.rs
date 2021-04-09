@@ -99,7 +99,7 @@ impl From<MsgTimeout> for RawMsgTimeout {
 }
 
 #[cfg(test)]
-mod test_util {
+pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
@@ -108,15 +108,15 @@ mod test_util {
 
     /// Returns a dummy `RawMsgTimeout`, for testing only!
     /// The `height` parametrizes both the proof height as well as the timeout height.
-    pub fn get_dummy_raw_msg_timeout(height: u64) -> RawMsgTimeout {
+    pub fn get_dummy_raw_msg_timeout(height: u64, timeout_timestamp: u64) -> RawMsgTimeout {
         RawMsgTimeout {
-            packet: Some(get_dummy_raw_packet(height, 0)),
+            packet: Some(get_dummy_raw_packet(height, timeout_timestamp)),
             proof_unreceived: get_dummy_proof(),
             proof_height: Some(RawHeight {
                 revision_number: 0,
                 revision_height: height,
             }),
-            next_sequence_recv: 0,
+            next_sequence_recv: 1,
             signer: get_dummy_bech32_account(),
         }
     }
@@ -141,7 +141,8 @@ mod test {
         }
 
         let height = 50;
-        let default_raw_msg = get_dummy_raw_msg_timeout(height);
+        let timeout_timestamp = 0;
+        let default_raw_msg = get_dummy_raw_msg_timeout(height, timeout_timestamp);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -199,7 +200,7 @@ mod test {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_raw_msg_timeout(15);
+        let raw = get_dummy_raw_msg_timeout(15, 0);
         let msg = MsgTimeout::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgTimeout::from(msg.clone());
         let msg_back = MsgTimeout::try_from(raw_back.clone()).unwrap();
