@@ -15,7 +15,7 @@ use crate::{events::IbcEvent, handler::HandlerOutput};
 
 use crate::ics04_channel::msgs::{
     acknowledgement, chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm,
-    chan_open_init, chan_open_try, recv_packet, ChannelMsg, PacketMsg,
+    chan_open_init, chan_open_try, recv_packet, timeout, timeout_on_close, ChannelMsg, PacketMsg,
 };
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::error::{Error, Kind};
@@ -129,6 +129,16 @@ where
                 let domain_msg = acknowledgement::MsgAcknowledgement::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(Ics4PacketMsg(PacketMsg::AckPacket(domain_msg)))
+            }
+            timeout::TYPE_URL => {
+                let domain_msg = timeout::MsgTimeout::decode_vec(&any_msg.value)
+                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                Ok(Ics4PacketMsg(PacketMsg::ToPacket(domain_msg)))
+            }
+            timeout_on_close::TYPE_URL => {
+                let domain_msg = timeout_on_close::MsgTimeoutOnClose::decode_vec(&any_msg.value)
+                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                Ok(Ics4PacketMsg(PacketMsg::ToClosePacket(domain_msg)))
             }
 
             _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)),
@@ -253,6 +263,7 @@ mod tests {
         chan_open_init::{test_util::get_dummy_raw_msg_chan_open_init, MsgChannelOpenInit},
         chan_open_try::{test_util::get_dummy_raw_msg_chan_open_try, MsgChannelOpenTry},
         recv_packet::{test_util::get_dummy_raw_msg_recv_packet, MsgRecvPacket},
+        timeout_on_close::{test_util::get_dummy_raw_msg_timeout_on_close, MsgTimeoutOnClose},
         ChannelMsg, PacketMsg,
     };
 
@@ -282,6 +293,8 @@ mod tests {
         let start_client_height = Height::new(0, client_height);
         let update_client_height = Height::new(0, 34);
         let update_client_height_after_send = Height::new(0, 35);
+
+        let update_client_height_after_second_send = Height::new(0, 36);
 
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
@@ -341,6 +354,14 @@ mod tests {
                 .unwrap();
 
         let msg_transfer = get_dummy_msg_transfer(35);
+
+        let msg_transfer_two = get_dummy_msg_transfer(36);
+
+        let mut msg_to_on_close =
+            MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
+        msg_to_on_close.packet.sequence = 2.into();
+        msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
+        msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
 
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 
@@ -455,9 +476,9 @@ mod tests {
             Test {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
-                    client_id,
+                    client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height_after_send).into(),
-                    signer: default_signer,
+                    signer: default_signer.clone(),
                 })),
                 want_pass: true,
             },
@@ -470,6 +491,20 @@ mod tests {
                 name: "Re-Receive packet".to_string(),
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)),
                 want_pass: false,
+            },
+            Test {
+                name: "Packet send".to_string(),
+                msg: Ics26Envelope::Ics20Msg(msg_transfer_two),
+                want_pass: true,
+            },
+            Test {
+                name: "Client update successful".to_string(),
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                    client_id,
+                    header: MockHeader::new(update_client_height_after_second_send).into(),
+                    signer: default_signer,
+                })),
+                want_pass: true,
             },
             //ICS04-close channel
             Test {
@@ -485,6 +520,12 @@ mod tests {
                     msg_chan_close_confirm,
                 )),
                 want_pass: false,
+            },
+            //ICS04-to_on_close
+            Test {
+                name: "Timeout on close".to_string(),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::ToClosePacket(msg_to_on_close)),
+                want_pass: true,
             },
         ]
         .into_iter()
