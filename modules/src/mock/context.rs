@@ -529,15 +529,6 @@ impl ChannelKeeper for MockContext {
         Ok(())
     }
 
-    fn store_packet_receipt(
-        &mut self,
-        key: (PortId, ChannelId, Sequence),
-        receipt: Receipt,
-    ) -> Result<(), Ics4Error> {
-        self.packet_receipt.insert(key, receipt);
-        Ok(())
-    }
-
     fn store_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
@@ -607,6 +598,23 @@ impl ChannelKeeper for MockContext {
 
     fn increase_channel_counter(&mut self) {
         self.channel_ids_counter += 1;
+    }
+
+    fn delete_packet_commitment(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+    ) -> Result<(), Ics4Error> {
+        self.packet_commitment.remove(&key);
+        Ok(())
+    }
+
+    fn store_packet_receipt(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        receipt: Receipt,
+    ) -> Result<(), Ics4Error> {
+        self.packet_receipt.insert(key, receipt);
+        Ok(())
     }
 }
 

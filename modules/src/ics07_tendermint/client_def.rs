@@ -117,4 +117,28 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }
+
+    fn verify_next_sequence_recv(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_packet_receipt_absence(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
 }
