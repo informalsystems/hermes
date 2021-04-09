@@ -36,7 +36,9 @@ impl Runnable for QueryConnectionsCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
 
-        let req = QueryConnectionsRequest { pagination: None };
+        let req = QueryConnectionsRequest {
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        };
 
         let res = chain.query_connections(req);
 

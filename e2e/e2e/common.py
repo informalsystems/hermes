@@ -39,7 +39,6 @@ Timestamp = NewType('Timestamp', int)
 ClientType = NewType('ClientType', str)
 BlockHeight = NewType('BlockHeight', str)
 
-
 def split():
     sleep(0.5)
     print()

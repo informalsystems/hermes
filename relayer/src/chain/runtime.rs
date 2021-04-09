@@ -3,23 +3,28 @@ use std::{sync::Arc, thread};
 use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
-        client_consensus::ConsensusState, client_state::ClientState, header::AnyHeader,
-        header::Header,
+        client_consensus::{AnyConsensusState, ConsensusState},
+        client_state::{AnyClientState, ClientState},
+        header::{AnyHeader, Header},
     },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
-    ics04_channel::{
-        channel::{ChannelEnd, QueryPacketEventDataRequest},
-        packet::{PacketMsgType, Sequence},
-    },
+    ics03_connection::connection::ConnectionEnd,
+    ics03_connection::version::Version,
+    ics04_channel::channel::ChannelEnd,
+    ics04_channel::packet::{PacketMsgType, Sequence},
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    query::QueryTxRequest,
     signer::Signer,
     Height,
 };
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
@@ -41,8 +46,6 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
 };
-use ibc::ics02_client::client_consensus::AnyConsensusState;
-use ibc::ics02_client::client_state::AnyClientState;
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
@@ -195,6 +198,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.build_consensus_state(trusted, target, client_state, reply_to)?
                         }
 
+                       Ok(ChainRequest::BuildMisbehaviour { client_state, update_event, reply_to }) => {
+                            self.check_misbehaviour(update_event, client_state, reply_to)?
+                        }
+
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
                             self.build_connection_proofs_and_client_state(message_type, connection_id, client_id, height, reply_to)?
                         },
@@ -207,8 +214,16 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_latest_height(reply_to)?
                         }
 
+                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
+                            self.query_clients(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
+                            self.query_consensus_states(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryUpgradedClientState { height, reply_to }) => {
@@ -423,6 +438,24 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    /// Constructs AnyMisbehaviour for the update event
+    fn check_misbehaviour(
+        &mut self,
+        update_event: UpdateClient,
+        client_state: AnyClientState,
+        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+    ) -> Result<(), Error> {
+        let misbehaviour = self
+            .light_client
+            .check_misbehaviour(update_event, &client_state)?;
+
+        reply_to
+            .send(Ok(misbehaviour))
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
@@ -466,6 +499,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<ClientId>>,
+    ) -> Result<(), Error> {
+        let clients = self.chain.query_clients(request);
+
+        reply_to
+            .send(clients)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn query_upgraded_client_state(
         &self,
         height: Height,
@@ -478,6 +525,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
+    ) -> Result<(), Error> {
+        let consensus_states = self.chain.query_consensus_states(request);
+
+        reply_to
+            .send(consensus_states)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
@@ -713,7 +774,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
     fn query_txs(
         &self,
-        request: QueryPacketEventDataRequest,
+        request: QueryTxRequest,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);

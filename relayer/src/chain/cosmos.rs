@@ -9,9 +9,6 @@ use bitcoin::hashes::hex::ToHex;
 use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
-use tokio::runtime::Runtime as TokioRuntime;
-use tonic::codegen::http::Uri;
-
 use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
@@ -20,22 +17,30 @@ use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
+use tokio::runtime::Runtime as TokioRuntime;
+use tonic::codegen::http::Uri;
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
+use ibc::ics02_client::client_consensus::{
+    AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
+};
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
-use ibc::ics07_tendermint::header::Header as TMHeader;
+use ibc::ics07_tendermint::header::Header as TmHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
+use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 // Support for GRPC
@@ -51,7 +56,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -66,8 +71,6 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
-use ibc::ics02_client::client_consensus::AnyConsensusState;
-use ibc::ics02_client::client_state::AnyClientState;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -311,7 +314,7 @@ impl CosmosSdkChain {
 
 impl Chain for CosmosSdkChain {
     type LightBlock = TMLightBlock;
-    type Header = TMHeader;
+    type Header = TmHeader;
     type ConsensusState = TMConsensusState;
     type ClientState = ClientState;
 
@@ -614,6 +617,37 @@ impl Chain for CosmosSdkChain {
         )?;
 
         Ok((tm_consensus_state, proof))
+    }
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
+        crate::time!("query_chain_clients");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+        let response = self
+            .block_on(client.consensus_states(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let mut consensus_states: Vec<AnyConsensusStateWithHeight> = response
+            .consensus_states
+            .into_iter()
+            .filter_map(|cs| TryFrom::try_from(cs).ok())
+            .collect();
+        consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
+        consensus_states.reverse();
+        Ok(consensus_states)
     }
 
     /// Performs a query to retrieve the identifiers of all connections.
@@ -920,28 +954,56 @@ impl Chain for CosmosSdkChain {
     /// string attributes (sequence is emmitted as a string).
     /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
     /// for all packets could be performed but it would return all packets ever sent.
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("query_txs");
 
-        let mut result: Vec<IbcEvent> = vec![];
+        match request {
+            QueryTxRequest::Packet(request) => {
+                crate::time!("query_txs");
 
-        for seq in request.sequences.iter() {
-            // query all Tx-es that include events related to packet with given port, channel and sequence
-            let response = self
-                .block_on(self.rpc_client.tx_search(
-                    packet_query(&request, seq),
-                    false,
-                    1,
-                    1,
-                    Order::Ascending,
-                ))
-                .unwrap(); // todo
+                let mut result: Vec<IbcEvent> = vec![];
 
-            let mut events = packet_from_tx_search_response(self.id(), &request, *seq, response)
-                .map_or(vec![], |v| vec![v]);
-            result.append(&mut events);
+                for seq in &request.sequences {
+                    // query all Tx-es that include events related to packet with given port, channel and sequence
+                    let response = self
+                        .block_on(self.rpc_client.tx_search(
+                            packet_query(&request, *seq),
+                            false,
+                            1,
+                            1,
+                            Order::Ascending,
+                        ))
+                        .unwrap(); // todo
+
+                    let mut events =
+                        packet_from_tx_search_response(self.id(), &request, *seq, response)
+                            .map_or(vec![], |v| vec![v]);
+
+                    result.append(&mut events);
+                }
+                Ok(result)
+            }
+
+            QueryTxRequest::Client(request) => {
+                let response = self
+                    .block_on(self.rpc_client.tx_search(
+                        header_query(&request),
+                        false,
+                        1,
+                        1,
+                        Order::Ascending,
+                    ))
+                    .unwrap(); // todo
+
+                if response.txs.is_empty() {
+                    return Ok(vec![]);
+                }
+
+                let events = update_client_from_tx_search_response(self.id(), &request, response);
+
+                Ok(events)
+            }
         }
-        Ok(result)
     }
 
     fn proven_client_state(
@@ -1131,7 +1193,7 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Self::Header, Error> {
         crate::time!("build_header");
 
-        Ok(TMHeader {
+        Ok(TmHeader {
             trusted_height,
             signed_header: target_light_block.signed_header.clone(),
             validator_set: target_light_block.validators,
@@ -1140,7 +1202,7 @@ impl Chain for CosmosSdkChain {
     }
 }
 
-fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query {
+fn packet_query(request: &QueryPacketEventDataRequest, seq: Sequence) -> Query {
     tendermint_rpc::query::Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
         request.source_channel_id.to_string(),
@@ -1160,6 +1222,20 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query 
     .and_eq(
         format!("{}.packet_sequence", request.event_id.as_str()),
         seq.to_string(),
+    )
+}
+
+fn header_query(request: &QueryClientEventRequest) -> Query {
+    tendermint_rpc::query::Query::eq(
+        format!("{}.client_id", request.event_id.as_str()),
+        request.client_id.to_string(),
+    )
+    .and_eq(
+        format!("{}.consensus_height", request.event_id.as_str()),
+        format!(
+            "{}-{}",
+            request.consensus_height.revision_number, request.consensus_height.revision_height
+        ),
     )
 }
 
@@ -1229,6 +1305,54 @@ fn packet_from_tx_search_response(
     } else {
         None
     }
+}
+
+// Extract all update client events for the requested client and height from the query_txs RPC response.
+fn update_client_from_tx_search_response(
+    chain_id: &ChainId,
+    request: &QueryClientEventRequest,
+    response: tendermint_rpc::endpoint::tx_search::Response,
+) -> Vec<IbcEvent> {
+    crate::time!("update_client_from_tx_search_response");
+
+    let mut matching = Vec::new();
+
+    for r in response.txs {
+        let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
+        if request.height != ICSHeight::zero() && height > request.height {
+            return vec![];
+        }
+
+        for e in r.tx_result.events {
+            if e.type_str != request.event_id.as_str() {
+                continue;
+            }
+
+            let res = ClientEvents::try_from_tx(&e);
+            if res.is_none() {
+                continue;
+            }
+            let event = res.unwrap();
+            let update = match &event {
+                IbcEvent::UpdateClient(update) => Some(update),
+                _ => None,
+            };
+
+            if update.is_none() {
+                continue;
+            }
+
+            let update = update.unwrap();
+            if update.common.client_id != request.client_id
+                || update.common.consensus_height != request.consensus_height
+            {
+                continue;
+            }
+
+            matching.push(event);
+        }
+    }
+    matching
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.

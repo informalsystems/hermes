@@ -9,7 +9,7 @@ use sha2::Digest;
 
 use crate::application::ics20_fungible_token_transfer::context::Ics20Context;
 use crate::events::IbcEvent;
-use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -417,6 +417,17 @@ impl MockContext {
 
     pub fn add_port(&mut self, port_id: PortId) {
         self.port_capabilities.insert(port_id, Capability::new());
+    }
+
+    pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
+        self.clients[client_id]
+            .consensus_states
+            .iter()
+            .map(|(k, v)| AnyConsensusStateWithHeight {
+                height: *k,
+                consensus_state: v.clone(),
+            })
+            .collect()
     }
 }
 

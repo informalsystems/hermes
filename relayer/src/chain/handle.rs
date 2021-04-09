@@ -5,12 +5,16 @@ use crossbeam_channel as channel;
 use dyn_clone::DynClone;
 use serde::{Serialize, Serializer};
 
+use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
-        channel::{ChannelEnd, QueryPacketEventDataRequest},
+        channel::ChannelEnd,
         packet::{PacketMsgType, Sequence},
     },
     ics23_commitment::commitment::CommitmentPrefix,
@@ -19,22 +23,21 @@ use ibc::{
     signer::Signer,
     Height,
 };
-
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+pub use prod::ProdChainHandle;
 
 use crate::connection::ConnectionMsgType;
 use crate::keyring::store::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
+use ibc::query::QueryTxRequest;
 
 mod prod;
-use ibc::ics02_client::client_consensus::AnyConsensusState;
-use ibc::ics02_client::client_state::AnyClientState;
-pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
 
@@ -47,6 +50,7 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
 
 /// Requests that a `ChainHandle` may send to a `ChainRuntime`.
 #[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum ChainRequest {
     Terminate {
         reply_to: ReplyTo<()>,
@@ -97,6 +101,12 @@ pub enum ChainRequest {
         reply_to: ReplyTo<AnyConsensusState>,
     },
 
+    BuildMisbehaviour {
+        client_state: AnyClientState,
+        update_event: UpdateClient,
+        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+    },
+
     BuildConnectionProofsAndClientState {
         message_type: ConnectionMsgType,
         connection_id: ConnectionId,
@@ -105,10 +115,20 @@ pub enum ChainRequest {
         reply_to: ReplyTo<(Option<AnyClientState>, Proofs)>,
     },
 
+    QueryClients {
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<ClientId>>,
+    },
+
     QueryClientState {
         client_id: ClientId,
         height: Height,
         reply_to: ReplyTo<AnyClientState>,
+    },
+
+    QueryConsensusStates {
+        request: QueryConsensusStatesRequest,
+        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
     },
 
     QueryUpgradedClientState {
@@ -203,7 +223,7 @@ pub enum ChainRequest {
     },
 
     QueryPacketEventData {
-        request: QueryPacketEventDataRequest,
+        request: QueryTxRequest,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 }
@@ -227,11 +247,18 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+
     fn query_client_state(
         &self,
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error>;
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -302,6 +329,12 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         client_state: AnyClientState,
     ) -> Result<AnyConsensusState, Error>;
 
+    fn check_misbehaviour(
+        &self,
+        update: UpdateClient,
+        client_state: AnyClientState,
+    ) -> Result<Option<AnyMisbehaviour>, Error>;
+
     fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
@@ -346,7 +379,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error>;
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 }
 
 impl Serialize for dyn ChainHandle {

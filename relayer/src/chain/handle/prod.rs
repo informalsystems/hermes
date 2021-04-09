@@ -2,13 +2,18 @@ use std::fmt::Debug;
 
 use crossbeam_channel as channel;
 
+use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::query::QueryTxRequest;
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
-    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
+    ics04_channel::channel::ChannelEnd,
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::ChainId,
     ics24_host::identifier::ChannelId,
@@ -21,6 +26,7 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::{
@@ -30,8 +36,6 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
-use ibc::ics02_client::client_consensus::AnyConsensusState;
-use ibc::ics02_client::client_state::AnyClientState;
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -101,6 +105,10 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
     }
 
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+        self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })
+    }
+
     fn query_client_state(
         &self,
         client_id: &ClientId,
@@ -111,6 +119,13 @@ impl ChainHandle for ProdChainHandle {
             height,
             reply_to,
         })
+    }
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConsensusStates { request, reply_to })
     }
 
     fn query_upgraded_client_state(
@@ -238,6 +253,18 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
+    fn check_misbehaviour(
+        &self,
+        update_event: UpdateClient,
+        client_state: AnyClientState,
+    ) -> Result<Option<AnyMisbehaviour>, Error> {
+        self.send(|reply_to| ChainRequest::BuildMisbehaviour {
+            client_state,
+            update_event,
+            reply_to,
+        })
+    }
+
     fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
@@ -316,7 +343,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
     }
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
     }
 }
