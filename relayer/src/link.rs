@@ -5,6 +5,7 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, info};
 
+use ibc::query::QueryTxRequest;
 use ibc::{
     downcast,
     events::{IbcEvent, IbcEventType},
@@ -23,7 +24,6 @@ use ibc::{
     tx_msg::Msg,
     Height,
 };
-
 use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
@@ -545,7 +545,7 @@ impl RelayPath {
         let pc_request = QueryPacketCommitmentsRequest {
             port_id: self.src_port_id().to_string(),
             channel_id: self.src_channel_id().to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
         let (packet_commitments, query_height) =
             self.src_chain.query_packet_commitments(pc_request)?;
@@ -587,7 +587,7 @@ impl RelayPath {
             return Ok(());
         }
 
-        self.all_events = self.src_chain.query_txs(QueryPacketEventDataRequest {
+        let query = QueryTxRequest::Packet(QueryPacketEventDataRequest {
             event_id: IbcEventType::SendPacket,
             source_port_id: self.src_port_id().clone(),
             source_channel_id: self.src_channel_id().clone(),
@@ -595,7 +595,9 @@ impl RelayPath {
             destination_channel_id: self.dst_channel_id().clone(),
             sequences,
             height: self.src_height,
-        })?;
+        });
+
+        self.all_events = self.src_chain.query_txs(query)?;
 
         let mut packet_sequences = vec![];
         for event in self.all_events.iter() {
@@ -613,7 +615,7 @@ impl RelayPath {
         let pc_request = QueryPacketAcknowledgementsRequest {
             port_id: self.src_port_id().to_string(),
             channel_id: self.src_channel_id().to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
         let (acks_on_source, query_height) = self
             .src_chain
@@ -661,7 +663,7 @@ impl RelayPath {
 
         self.all_events = self
             .src_chain
-            .query_txs(QueryPacketEventDataRequest {
+            .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
                 event_id: IbcEventType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
                 source_channel_id: self.dst_channel_id().clone(),
@@ -669,7 +671,7 @@ impl RelayPath {
                 destination_channel_id: self.src_channel_id().clone(),
                 sequences,
                 height: self.src_height,
-            })
+            }))
             .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
         let mut packet_sequences = vec![];

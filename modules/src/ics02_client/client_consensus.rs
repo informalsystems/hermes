@@ -1,15 +1,20 @@
 use core::marker::{Send, Sync};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use chrono::{DateTime, Utc};
 use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
+use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
+
+use crate::events::IbcEventType;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::height::Height;
 use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
+use crate::ics24_host::identifier::ClientId;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
 
@@ -108,6 +113,41 @@ impl From<AnyConsensusState> for Any {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct AnyConsensusStateWithHeight {
+    pub height: Height,
+    pub consensus_state: AnyConsensusState,
+}
+
+impl Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {}
+
+impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
+    type Error = Error;
+
+    fn try_from(value: ConsensusStateWithHeight) -> Result<Self, Self::Error> {
+        let state = value
+            .consensus_state
+            .map(AnyConsensusState::try_from)
+            .transpose()
+            .map_err(|e| Kind::InvalidRawConsensusState.context(e))?
+            .ok_or(Kind::EmptyConsensusStateResponse)?;
+
+        Ok(AnyConsensusStateWithHeight {
+            height: value.height.ok_or(Kind::InvalidHeightResult)?.try_into()?,
+            consensus_state: state,
+        })
+    }
+}
+
+impl From<AnyConsensusStateWithHeight> for ConsensusStateWithHeight {
+    fn from(value: AnyConsensusStateWithHeight) -> Self {
+        ConsensusStateWithHeight {
+            height: Some(value.height.into()),
+            consensus_state: Some(value.consensus_state.into()),
+        }
+    }
+}
+
 impl ConsensusState for AnyConsensusState {
     fn client_type(&self) -> ClientType {
         self.client_type()
@@ -124,4 +164,12 @@ impl ConsensusState for AnyConsensusState {
     fn wrap_any(self) -> AnyConsensusState {
         self
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct QueryClientEventRequest {
+    pub height: crate::Height,
+    pub event_id: IbcEventType,
+    pub client_id: ClientId,
+    pub consensus_height: crate::Height,
 }

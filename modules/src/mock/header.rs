@@ -1,6 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
-use serde::Serialize;
+use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
@@ -13,7 +13,7 @@ use crate::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
 use crate::Height;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Copy, Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct MockHeader {
     pub height: Height,
     pub timestamp: u64,

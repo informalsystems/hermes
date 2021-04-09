@@ -2,11 +2,12 @@ use abscissa_core::{Command, Options, Runnable};
 use tracing::info;
 
 use ibc::events::IbcEvent;
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
-use crate::cli_utils::ChainHandlePair;
+use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::{Error, Kind};
 
@@ -24,7 +25,6 @@ pub struct TxCreateClientCmd {
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
-
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
@@ -53,34 +53,64 @@ pub struct TxUpdateClientCmd {
     #[options(free, required, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
-    #[options(free, required, help = "identifier of the source chain")]
-    src_chain_id: ChainId,
-
     #[options(
         free,
         required,
         help = "identifier of the client to be updated on destination chain"
     )]
     dst_client_id: ClientId,
+
+    #[options(help = "the target height of the client update", short = "h")]
+    target_height: Option<u64>,
+
+    #[options(help = "the trusted height of the client update", short = "t")]
+    trusted_height: Option<u64>,
 }
 
 impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
-            Ok(chains) => chains,
+        let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
+            Ok(handle) => handle,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
+        let src_chain_id =
+            match dst_chain.query_client_state(&self.dst_client_id, ibc::Height::zero()) {
+                Ok(cs) => cs.chain_id(),
+                Err(e) => {
+                    return Output::error(format!(
+                        "Query of client '{}' on chain '{}' failed with error: {}",
+                        self.dst_client_id, self.dst_chain_id, e
+                    ))
+                    .exit()
+                }
+            };
+
+        let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
+
+        let height = match self.target_height {
+            Some(height) => ibc::Height::new(src_chain.id().version(), height),
+            None => ibc::Height::zero(),
+        };
+
+        let trusted_height = match self.trusted_height {
+            Some(height) => ibc::Height::new(src_chain.id().version(), height),
+            None => ibc::Height::zero(),
+        };
+
         let client = ForeignClient {
-            dst_chain: chains.dst,
-            src_chain: chains.src,
+            dst_chain,
+            src_chain,
             id: self.dst_client_id.clone(),
         };
 
         let res: Result<IbcEvent, Error> = client
-            .build_update_client_and_send()
+            .build_update_client_and_send(height, trusted_height)
             .map_err(|e| Kind::Tx.context(e).into());
 
         match res {

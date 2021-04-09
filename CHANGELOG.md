@@ -14,9 +14,7 @@
 - [ibc-relayer]
   - Support for relayer restart ([#561])
   - Add support for ordered channels ([#599])
-  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
-
-- [ibc-relayer]
+  - Misbehaviour detection and evidence submission ([#632])
   - Use a stateless light client without a runtime ([#673])
 
 - [ibc-relayer-cli]
@@ -35,7 +33,7 @@
   - MBT: use modelator crate ([#761])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer-cli]
   - Clarified success path for updating a client that is already up-to-date ([#734])
@@ -82,6 +80,7 @@
 [#550]: https://github.com/informalsystems/ibc-rs/issues/550
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
+[#632]: https://github.com/informalsystems/ibc-rs/issues/632
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#675]: https://github.com/informalsystems/ibc-rs/issues/675

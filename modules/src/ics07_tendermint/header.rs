@@ -1,7 +1,9 @@
 use std::convert::{TryFrom, TryInto};
 
+use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
+use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
@@ -11,14 +13,47 @@ use crate::ics02_client::header::AnyHeader;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
+use std::cmp::Ordering;
 
 /// Tendermint consensus header
-#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once present in tendermint-rs
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)] // TODO: Add Eq bound once present in tendermint-rs
 pub struct Header {
     pub signed_header: SignedHeader, // contains the commitment root
     pub validator_set: ValidatorSet, // the validator set that signed Header
     pub trusted_height: Height, // the height of a trusted header seen by client less than or equal to Header
     pub trusted_validator_set: ValidatorSet, // the last trusted validator set at trusted height
+}
+
+impl Header {
+    pub fn height(&self) -> Height {
+        Height::new(
+            ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
+            u64::from(self.signed_header.header.height),
+        )
+    }
+    pub fn time(&self) -> Time {
+        self.signed_header.header.time
+    }
+
+    pub fn compatible_with(&self, other_header: &Header) -> bool {
+        let ibc_client_height = other_header.signed_header.header.height;
+        let self_header_height = self.signed_header.header.height;
+
+        match self_header_height.cmp(&&ibc_client_height) {
+            Ordering::Equal => {
+                // 1 - fork
+                self.signed_header.commit.block_id == other_header.signed_header.commit.block_id
+            }
+            Ordering::Greater => {
+                // 2 - BFT time violation
+                self.signed_header.header.time > other_header.signed_header.header.time
+            }
+            Ordering::Less => {
+                // 3 - BFT time violation
+                self.signed_header.header.time < other_header.signed_header.header.time
+            }
+        }
+    }
 }
 
 impl crate::ics02_client::header::Header for Header {
@@ -27,10 +62,7 @@ impl crate::ics02_client::header::Header for Header {
     }
 
     fn height(&self) -> Height {
-        Height::new(
-            ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
-            u64::from(self.signed_header.header.height),
-        )
+        self.height()
     }
 
     fn wrap_any(self) -> AnyHeader {

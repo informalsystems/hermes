@@ -1,7 +1,8 @@
 //! `query` subcommand
 
-use crate::commands::query::channels::QueryChannelsCmd;
 use abscissa_core::{Command, Options, Runnable};
+
+use crate::commands::query::channels::QueryChannelsCmd;
 
 mod channel;
 mod channels;
@@ -51,6 +52,10 @@ pub enum QueryClientCmds {
     /// The `query client consensus` subcommand
     #[options(help = "Query client consensus state")]
     Consensus(client::QueryClientConsensusCmd),
+
+    /// The `query client header` subcommand
+    #[options(help = "Query client header")]
+    Header(client::QueryClientHeaderCmd),
 
     /// The `query client connections` subcommand
     #[options(help = "Query client connections")]
