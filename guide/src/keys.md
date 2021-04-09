@@ -1,5 +1,15 @@
 # Adding Keys to the Relayer
 
+> __WARNING__: Currently the relayer does NOT support a `keyring` store to securely
+> store the private key file. The key file will be stored on the local file system
+> in the user __$HOME__ folder under `$HOME/.rrly`
+
+> __BREAKING__: As of Hermes v0.2.0, the format of the keys stored on disk has changed, and
+> keys which had been previously configured must now be re-imported using either the `keys add`
+> or the `keys restore` commands.
+
+---
+
 Using the `keys` command you can add and list keys. 
 
 #### Show usage
@@ -46,9 +56,6 @@ The command outputs a JSON similar to the one below. You can save this file (e.g
   "mnemonic": "[24 words mnemonic]"
 }
 ```
-
-> __WARNING__: Currently the relayer does NOT support a `keyring` store to securely store the private key file. The key file will be stored on the local file system in the user __$HOME__ folder under `$HOME/.rrly`
-
 
 ### Adding Keys
 
