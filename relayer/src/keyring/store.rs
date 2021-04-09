@@ -143,13 +143,14 @@ impl KeyRing {
             Store::Memory => Ok(Self::Memory(Memory::new(chain_config.account_prefix, None))),
 
             Store::Disk => {
-                // Create keys folder if it does not exist
                 let keys_folder = disk_store_path(chain_config.id.as_str()).map_err(|e| {
-                    Kind::KeyStore.context(format!("failed to create keys folder: {:?}", e))
+                    Kind::KeyStore.context(format!("failed to compute keys folder path: {:?}", e))
                 })?;
 
-                fs::create_dir_all(keys_folder.clone())
-                    .map_err(|_| Kind::KeyStore.context("error creating keys folder"))?;
+                // Create keys folder if it does not exist
+                fs::create_dir_all(keys_folder.clone()).map_err(|e| {
+                    Kind::KeyStore.context(format!("failed to create keys folder: {:?}", e))
+                })?;
 
                 Ok(Self::Disk(Disk::new(
                     chain_config.key_name,
@@ -196,6 +197,7 @@ impl KeyRing {
         // the mnemonic will have the configured account prefix which may
         // not match the one in the key file.
         //
+        // TODO: Deserialize key entry directly from the key file
         key.account = key_file.address;
 
         Ok(key)
