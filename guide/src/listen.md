@@ -1,25 +1,30 @@
 # Relayer Listen Mode
 
-The relayer can be started in `listen` mode to display the events emitted by a given chain. `NewBlock` and IBC events are shown.
+The relayer can be started in `listen` mode to display the events emitted by a given chain. `NewBlock` and `Tx` IBC events are shown.
 
 ```shell
 USAGE:
-    hermes listen <OPTIONS>
+    ibc-relayer-cli listen <OPTIONS>
 
 DESCRIPTION:
-    Listen to IBC events
+    Listen to and display IBC events emitted by a chain
 
 POSITIONAL ARGUMENTS:
-    chain_id
+    chain_id                  Identifier of the chain to listen for events from
+
+FLAGS:
+    -e, --event EVENT         Add an event type to listen for, can be repeated. Listen for all events by default (available: Tx, NewBlock)
 ```
 
 __Example__
 
-Start the relayer in listen mode for `ibc-0` events and observe the output:
+Start the relayer in listen mode for all `ibc-0` events and observe the output:
 
 ```shell
-hermes listen ibc-0
+$ hermes listen ibc-0
+```
 
+```
 [relayer-cli/src/commands/listen.rs:45] event_batch = EventBatch {
     chain_id: ChainId {
         id: "ibc-0",
@@ -61,7 +66,9 @@ hermes listen ibc-0
             ),
         ),
     ],
+
 ...
+
 [relayer-cli/src/commands/listen.rs:45] event_batch = EventBatch {
     chain_id: ChainId {
         id: "ibc-0",
@@ -135,3 +142,19 @@ hermes listen ibc-0
     ],
 }
 ```
+
+## Filter events
+
+The `listen` command accepts an `--event` flag to specify which event types to listen for.
+
+At the moment, two event types are available:
+- `NewBlock` 
+- `Tx`
+
+The `--event` flag can be repeated to specify more than one event type.
+
+- To listen for only `NewBlock` events on `ibc-0`, invoke `hermes listen ibc-0 --event NewBlock`
+- To listen for only `Tx` events on `ibc-0`, invoke `hermes listen ibc-0 --event Tx`
+- To listen for both `NewBlock` and `Tx` events on `ibc-0`, invoke `hermes listen ibc-0 --e NewBlock --event Tx`
+
+If the `--event` flag is omitted, the relayer will subscribe to all event types.
