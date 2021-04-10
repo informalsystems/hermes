@@ -70,7 +70,7 @@ pub enum LinkError {
     SendError(Box<IbcEvent>),
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum OperationalDataTarget {
     Source,
     Destination,
@@ -571,10 +571,11 @@ impl RelayPath {
 
         for i in 0..MAX_ITER {
             info!(
-                "[{}] relay with operational data to {} proofs height {} [try {}/{}]",
+                "[{}] relay op. data to {}, proofs height {}, (delayed by: {:?}) [try {}/{}]",
                 self,
                 odata.target,
                 odata.proofs_height,
+                odata.scheduled_time.elapsed(),
                 i + 1,
                 MAX_ITER
             );
@@ -1226,11 +1227,12 @@ impl RelayPath {
     /// Checks if there are any operational data items ready, and if so performs the relaying
     /// of corresponding packets to the target chain.
     fn execute_schedule(&mut self) -> Result<(), LinkError> {
-        let (src_od, dst_od) = self.try_fetch_scheduled_operational_data();
-        if let Some(od) = src_od {
+        let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
+        for od in src_ods {
             self.relay_from_operational_data(od)?;
         }
-        if let Some(od) = dst_od {
+
+        for od in dst_ods {
             self.relay_from_operational_data(od)?;
         }
 
@@ -1349,49 +1351,34 @@ impl RelayPath {
         Ok(())
     }
 
-    /// Pulls out the next operational that has fulfilled the predefined delay period and can
+    /// Pulls out the operational elements with elapsed delay period and that can
     /// now be processed. Does not block: if no OD fulfilled the delay period (or none is
-    /// scheduled), returns immediately with `None`.
+    /// scheduled), returns immediately with `vec![]`.
     fn try_fetch_scheduled_operational_data(
         &mut self,
-    ) -> (Option<OperationalData>, Option<OperationalData>) {
-        // The head of the op. data vector contains the oldest entry.
-        (
-            match self.src_operational_data.first() {
-                None => None,
-                Some(od_data_src) => {
-                    if od_data_src.scheduled_time.elapsed() > self.channel.connection_delay {
-                        let op_src = self.src_operational_data.remove(0);
-                        info!(
-                        "[{}] found operational data for source with size: {} (delayed by: {:#?})",
-                        self,
-                        op_src.batch.len(),
-                        op_src.scheduled_time.elapsed()
-                    );
-                        Some(op_src)
-                    } else {
-                        None
-                    }
-                }
-            },
-            match self.dst_operational_data.first() {
-                None => None,
-                Some(od_data_dst) => {
-                    if od_data_dst.scheduled_time.elapsed() > self.channel.connection_delay {
-                        let op_dst = self.dst_operational_data.remove(0);
-                        info!(
-                        "[{}] found operational data for destination with size: {} (delayed by: {:#?})",
-                        self,
-                        op_dst.batch.len(),
-                        op_dst.scheduled_time.elapsed()
-                    );
-                        Some(op_dst)
-                    } else {
-                        None
-                    }
-                }
-            },
-        )
+    ) -> (Vec<OperationalData>, Vec<OperationalData>) {
+        // The first elements of the op. data vector contain the oldest entry.
+        // Remove and return the elements with elapsed delay.
+
+        let src_ods: Vec<OperationalData> = self
+            .src_operational_data
+            .clone()
+            .into_iter()
+            .filter(|op| op.clone().scheduled_time.elapsed() > self.channel.connection_delay)
+            .collect();
+
+        self.src_operational_data = self.src_operational_data[src_ods.len()..].to_owned();
+
+        let dst_ods: Vec<OperationalData> = self
+            .dst_operational_data
+            .clone()
+            .into_iter()
+            .filter(|op| op.clone().scheduled_time.elapsed() > self.channel.connection_delay)
+            .collect();
+
+        self.dst_operational_data = self.dst_operational_data[dst_ods.len()..].to_owned();
+
+        (src_ods, dst_ods)
     }
 
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
