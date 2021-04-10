@@ -93,7 +93,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
         let req = QueryConnectionChannelsRequest {
             connection: self.connection_id.to_string(),
-            pagination: None,
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
         let res: Result<_, Error> = chain

@@ -7,16 +7,17 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::ConsensusState;
+use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::header::Header;
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::proofs::{ConsensusProof, Proofs};
+use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
@@ -24,7 +25,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -34,7 +35,7 @@ use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
-use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 pub(crate) mod cosmos;
@@ -100,6 +101,9 @@ pub trait Chain: Sized {
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
 
+    /// Returns the chain's keybase, mutably
+    fn keybase_mut(&mut self) -> &mut KeyRing;
+
     /// Sends one or more transactions with `msgs` to chain.
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 
@@ -127,6 +131,11 @@ pub trait Chain: Sized {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<Self::ClientState, Error>;
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -207,7 +216,7 @@ pub trait Chain: Sized {
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error>;
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error>;
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
 
     // Provable queries
     fn proven_client_state(

@@ -14,9 +14,7 @@
 - [ibc-relayer]
   - Support for relayer restart ([#561])
   - Add support for ordered channels ([#599])
-  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
-
-- [ibc-relayer]
+  - Misbehaviour detection and evidence submission ([#632])
   - Use a stateless light client without a runtime ([#673])
 
 - [ibc-relayer-cli]
@@ -27,6 +25,7 @@
   - Update gaia to version 4.2.0 for e2e tests on CI ([#809])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
   - Add option to specify which events to listen for in `listen` command ([#550])
+  - Add `keys restore` command to import a signing key from its mnemonic ([#813])
 
 ### IMPROVEMENTS
 
@@ -36,7 +35,7 @@
   - MBT: use modelator crate ([#761])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer-cli]
   - Clarified success path for updating a client that is already up-to-date ([#734])
@@ -55,6 +54,7 @@
   - Fix for chains that don't have `cosmos` account prefix ([#416])
   - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
   - Don't send `MsgAcknowledgment` if channel is closed ([#675])
+  - Fix a bug where the keys addresses had their account prefix overriden by the prefix in the configuration ([#751])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -82,6 +82,7 @@
 [#550]: https://github.com/informalsystems/ibc-rs/issues/550
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
+[#632]: https://github.com/informalsystems/ibc-rs/issues/632
 [#640]: https://github.com/informalsystems/ibc-rs/issues/640
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
@@ -96,6 +97,7 @@
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
 [#748]: https://github.com/informalsystems/ibc-rs/issues/748
+[#751]: https://github.com/informalsystems/ibc-rs/issues/751
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
 [#754]: https://github.com/informalsystems/ibc-rs/issues/754
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761

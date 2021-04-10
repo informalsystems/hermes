@@ -277,13 +277,13 @@ mod tests {
             match res {
                 Ok(proto_output) => {
                     assert_eq!(
-                        test.want_pass,
-                        true,
-                        "recv_packet: test passed but was supposed to fail for test: {}, \nparams \n msg={:?}\nctx:{:?}",
-                        test.name,
-                        test.msg.clone(),
-                        test.ctx.clone()
-                    );
+                            test.want_pass,
+                            true,
+                            "recv_packet: test passed but was supposed to fail for test: {}, \nparams \n msg={:?}\nctx:{:?}",
+                            test.name,
+                            test.msg.clone(),
+                            test.ctx.clone()
+                        );
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::ReceivePacket(_)));
@@ -291,14 +291,14 @@ mod tests {
                 }
                 Err(e) => {
                     assert_eq!(
-                        test.want_pass,
-                        false,
-                        "recv_packet: did not pass test: {}, \nparams \nmsg={:?}\nctx={:?}\nerror={:?}",
-                        test.name,
-                        test.msg.clone(),
-                        test.ctx.clone(),
-                        e,
-                    );
+                            test.want_pass,
+                            false,
+                            "recv_packet: did not pass test: {}, \nparams \nmsg={:?}\nctx={:?}\nerror={:?}",
+                            test.name,
+                            test.msg.clone(),
+                            test.ctx.clone(),
+                            e,
+                        );
                 }
             }
         }

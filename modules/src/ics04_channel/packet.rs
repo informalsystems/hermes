@@ -10,7 +10,7 @@ use crate::Height;
 
 use super::handler::{
     acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
-    write_acknowledgement::WriteAckPacketResult,
+    timeout::TimeoutPacketResult, write_acknowledgement::WriteAckPacketResult,
 };
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
@@ -29,6 +29,7 @@ pub enum PacketResult {
     Recv(RecvPacketResult),
     WriteAck(WriteAckPacketResult),
     Ack(AckPacketResult),
+    Timeout(TimeoutPacketResult),
 }
 
 #[derive(Clone, Debug)]
@@ -61,6 +62,7 @@ impl Sequence {
         Sequence(self.0 + 1)
     }
 }
+
 impl From<u64> for Sequence {
     fn from(seq: u64) -> Self {
         Sequence(seq)

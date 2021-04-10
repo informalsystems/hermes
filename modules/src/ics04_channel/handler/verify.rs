@@ -4,7 +4,7 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics04_channel::packet::Packet;
+use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::ics24_host::identifier::ClientId;
 use crate::proofs::Proofs;
 
@@ -126,6 +126,68 @@ pub fn verify_packet_acknowledgement_proofs(
             &packet.source_channel,
             &packet.sequence,
             acknowledgement,
+        )
+        .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
+}
+
+/// Entry point for verifying all timeout proofs.
+pub fn verify_next_sequence_recv(
+    ctx: &dyn ChannelReader,
+    client_id: ClientId,
+    packet: Packet,
+    seq: Sequence,
+    proofs: &Proofs,
+) -> Result<(), Error> {
+    let client_state = ctx
+        .client_state(&client_id)
+        .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
+
+    // The client must not be frozen.
+    if client_state.is_frozen() {
+        return Err(Kind::FrozenClient(client_id).into());
+    }
+
+    let client_def = AnyClient::from_client_type(client_state.client_type());
+
+    // Verify the proof for the packet against the chain store.
+    Ok(client_def
+        .verify_next_sequence_recv(
+            &client_state,
+            proofs.height(),
+            proofs.object_proof(),
+            &packet.destination_port,
+            &packet.destination_channel,
+            &seq,
+        )
+        .map_err(|_| Kind::PacketVerificationFailed(seq))?)
+}
+
+pub fn verify_packet_receipt_absence(
+    ctx: &dyn ChannelReader,
+    client_id: ClientId,
+    packet: Packet,
+    proofs: &Proofs,
+) -> Result<(), Error> {
+    let client_state = ctx
+        .client_state(&client_id)
+        .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
+
+    // The client must not be frozen.
+    if client_state.is_frozen() {
+        return Err(Kind::FrozenClient(client_id).into());
+    }
+
+    let client_def = AnyClient::from_client_type(client_state.client_type());
+
+    // Verify the proof for the packet against the chain store.
+    Ok(client_def
+        .verify_packet_receipt_absence(
+            &client_state,
+            proofs.height(),
+            proofs.object_proof(),
+            &packet.destination_port,
+            &packet.destination_channel,
+            &packet.sequence,
         )
         .map_err(|_| Kind::PacketVerificationFailed(packet.sequence))?)
 }

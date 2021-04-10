@@ -40,14 +40,13 @@ class ClientUpdated:
 @cmd("tx raw update-client")
 class TxUpdateClient(Cmd[ClientUpdated]):
     dst_chain_id: ChainId
-    src_chain_id: ChainId
     dst_client_id: ClientId
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id]
+        return [self.dst_chain_id, self.dst_client_id]
 
     def process(self, result: Any) -> ClientUpdated:
-        return from_dict(ClientUpdated, result['UpdateClient'])
+        return from_dict(ClientUpdated, result['UpdateClient']['common'])
 
 
 # -----------------------------------------------------------------------------
@@ -102,8 +101,8 @@ def create_client(c: Config, dst: ChainId, src: ChainId) -> ClientCreated:
     return client
 
 
-def update_client(c: Config, dst: ChainId, src: ChainId, client_id: ClientId) -> ClientUpdated:
-    cmd = TxUpdateClient(dst_chain_id=dst, src_chain_id=src,
+def update_client(c: Config, dst: ChainId, client_id: ClientId) -> ClientUpdated:
+    cmd = TxUpdateClient(dst_chain_id=dst,
                          dst_client_id=client_id)
     res = cmd.run(c).success()
     l.info(f'Updated client to: {res.consensus_height}')
@@ -122,7 +121,7 @@ def create_update_query_client(c: Config, dst: ChainId, src: ChainId) -> ClientI
     split()
     query_client_state(c, dst, client.client_id)
     split()
-    update_client(c, dst, src, client.client_id)
+    update_client(c, dst, client.client_id)
     split()
     query_client_state(c, dst, client.client_id)
     split()

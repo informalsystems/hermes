@@ -1,17 +1,22 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
+use std::convert::{TryFrom, TryInto};
+
+use anomaly::BoxError;
+use serde_derive::{Deserialize, Serialize};
+use subtle_encoding::hex;
+use tendermint_proto::Protobuf;
+
 use crate::attribute;
 use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics24_host::identifier::ClientId;
-use anomaly::BoxError;
-
+use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
-use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use crate::ics24_host::identifier::ClientId;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
 const UPDATE_EVENT_TYPE: &str = "update_client";
+const MISBEHAVIOUR_EVENT_TYPE: &str = "client_misbehaviour";
 const UPGRADE_EVENT_TYPE: &str = "upgrade_client";
 
 /// The content of the `key` field for the attribute containing the client identifier.
@@ -23,12 +28,19 @@ const CLIENT_TYPE_ATTRIBUTE_KEY: &str = "client_type";
 /// The content of the `key` field for the attribute containing the height.
 const CONSENSUS_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
 
+/// The content of the `key` field for the header in update client event.
+const HEADER: &str = "header";
+
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.as_ref() {
         CREATE_EVENT_TYPE => Some(IbcEvent::CreateClient(CreateClient(
             extract_attributes_from_tx(event),
         ))),
-        UPDATE_EVENT_TYPE => Some(IbcEvent::UpdateClient(UpdateClient(
+        UPDATE_EVENT_TYPE => Some(IbcEvent::UpdateClient(UpdateClient {
+            common: extract_attributes_from_tx(event),
+            header: extract_header_from_tx(event),
+        })),
+        MISBEHAVIOUR_EVENT_TYPE => Some(IbcEvent::ClientMisbehaviour(ClientMisbehaviour(
             extract_attributes_from_tx(event),
         ))),
         UPGRADE_EVENT_TYPE => Some(IbcEvent::UpgradeClient(UpgradeClient(
@@ -54,6 +66,19 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
     }
 
     attr
+}
+
+pub fn extract_header_from_tx(event: &tendermint::abci::Event) -> Option<AnyHeader> {
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        if let HEADER = key {
+            let header_bytes = hex::decode(value).unwrap();
+            let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
+            return Some(header);
+        }
+    }
+    None
 }
 
 /// NewBlock event signals the committing & execution of a new block.
@@ -143,37 +168,57 @@ impl From<CreateClient> for IbcEvent {
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct UpdateClient(Attributes);
+pub struct UpdateClient {
+    pub common: Attributes,
+    pub header: Option<AnyHeader>,
+}
 
 impl UpdateClient {
     pub fn client_id(&self) -> &ClientId {
-        &self.0.client_id
+        &self.common.client_id
+    }
+    pub fn client_type(&self) -> ClientType {
+        self.common.client_type
     }
 
     pub fn height(&self) -> Height {
-        self.0.height
+        self.common.height
     }
+
     pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
+        self.common.height = height;
+    }
+
+    pub fn consensus_height(&self) -> Height {
+        self.common.consensus_height
     }
 }
 
 impl From<Attributes> for UpdateClient {
     fn from(attrs: Attributes) -> Self {
-        UpdateClient(attrs)
+        UpdateClient {
+            common: attrs,
+            header: None,
+        }
     }
 }
 
 impl TryFrom<RawObject> for UpdateClient {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let header_str: String = attribute!(obj, "update_client.header");
+        let header_bytes = hex::decode(header_str).unwrap();
+        let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
         let consensus_height_str: String = attribute!(obj, "update_client.consensus_height");
-        Ok(UpdateClient(Attributes {
-            height: obj.height,
-            client_id: attribute!(obj, "update_client.client_id"),
-            client_type: attribute!(obj, "update_client.client_type"),
-            consensus_height: consensus_height_str.as_str().try_into()?,
-        }))
+        Ok(UpdateClient {
+            common: Attributes {
+                height: obj.height,
+                client_id: attribute!(obj, "update_client.client_id"),
+                client_type: attribute!(obj, "update_client.client_type"),
+                consensus_height: consensus_height_str.as_str().try_into()?,
+            },
+            header: Some(header),
+        })
     }
 }
 
@@ -183,12 +228,12 @@ impl From<UpdateClient> for IbcEvent {
     }
 }
 
-/// ClientMisbehavior event signals the update of an on-chain client (IBC Client) with evidence of
-/// misbehavior.
+/// ClientMisbehaviour event signals the update of an on-chain client (IBC Client) with evidence of
+/// misbehaviour.
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ClientMisbehavior(Attributes);
+pub struct ClientMisbehaviour(Attributes);
 
-impl ClientMisbehavior {
+impl ClientMisbehaviour {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
@@ -200,11 +245,11 @@ impl ClientMisbehavior {
     }
 }
 
-impl TryFrom<RawObject> for ClientMisbehavior {
+impl TryFrom<RawObject> for ClientMisbehaviour {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let consensus_height_str: String = attribute!(obj, "client_misbehaviour.consensus_height");
-        Ok(ClientMisbehavior(Attributes {
+        Ok(ClientMisbehaviour(Attributes {
             height: obj.height,
             client_id: attribute!(obj, "client_misbehaviour.client_id"),
             client_type: attribute!(obj, "client_misbehaviour.client_type"),
@@ -213,9 +258,9 @@ impl TryFrom<RawObject> for ClientMisbehavior {
     }
 }
 
-impl From<ClientMisbehavior> for IbcEvent {
-    fn from(v: ClientMisbehavior) -> Self {
-        IbcEvent::ClientMisbehavior(v)
+impl From<ClientMisbehaviour> for IbcEvent {
+    fn from(v: ClientMisbehaviour) -> Self {
+        IbcEvent::ClientMisbehaviour(v)
     }
 }
 

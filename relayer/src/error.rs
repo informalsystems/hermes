@@ -163,6 +163,9 @@ pub enum Kind {
     #[error("the input header is not recognized as a header for this chain")]
     InvalidInputHeader,
 
+    #[error("error raised while submitting the misbehaviour evidence: {0}")]
+    Misbehaviour(String),
+
     #[error("invalid key address: {0}")]
     InvalidKeyAddress(String),
 

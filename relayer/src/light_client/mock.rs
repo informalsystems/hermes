@@ -1,6 +1,8 @@
 use tendermint_testgen::light_block::TmLightBlock;
 
 use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::mock::host::HostBlock;
 use ibc::Height;
@@ -39,5 +41,13 @@ impl super::LightClient<MockChain> for LightClient {
 
     fn fetch(&mut self, height: Height) -> Result<TmLightBlock, Error> {
         Ok(self.light_block(height))
+    }
+
+    fn check_misbehaviour(
+        &mut self,
+        _update: UpdateClient,
+        _client_state: &AnyClientState,
+    ) -> Result<Option<AnyMisbehaviour>, Error> {
+        unimplemented!()
     }
 }

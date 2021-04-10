@@ -47,9 +47,7 @@ pub trait ClientKeeper {
                 )?;
                 Ok(())
             }
-            Upgrade(_) => {
-                unimplemented!()
-            }
+            Upgrade(_) => unimplemented!(),
         }
     }
 

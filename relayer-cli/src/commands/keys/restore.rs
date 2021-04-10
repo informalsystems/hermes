@@ -1,23 +1,28 @@
 use abscissa_core::{Command, Options, Runnable};
 
+use anomaly::BoxError;
 use ibc::ics24_host::identifier::ChainId;
-use ibc_relayer::config::Config;
-use ibc_relayer::keys::restore::{restore_key, KeysRestoreOptions};
+use ibc_relayer::{
+    config::{ChainConfig, Config},
+    keyring::{KeyEntry, KeyRing, Store},
+};
 
 use crate::application::app_config;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeyRestoreCmd {
-    #[options(free, help = "identifier of the chain")]
+    #[options(free, required, help = "identifier of the chain")]
     chain_id: ChainId,
 
-    #[options(free, help = "the key name")]
-    name: Option<String>,
+    #[options(short = "m", required, help = "mnemonic to restore the key from")]
+    mnemonic: String,
+}
 
-    #[options(free, help = "mnemonic to add key")]
-    mnemonic: Option<String>,
+#[derive(Clone, Debug)]
+pub struct KeysRestoreOptions {
+    pub mnemonic: String,
+    pub config: ChainConfig,
 }
 
 impl KeyRestoreCmd {
@@ -26,20 +31,9 @@ impl KeyRestoreCmd {
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
-        let key_name = self
-            .name
-            .clone()
-            .ok_or_else(|| "missing key name".to_string())?;
-
-        let mnemonic_words = self
-            .mnemonic
-            .clone()
-            .ok_or_else(|| "missing mnemonic".to_string())?;
-
         Ok(KeysRestoreOptions {
-            name: key_name,
-            mnemonic: mnemonic_words,
-            chain_config: chain_config.clone(),
+            mnemonic: self.mnemonic.clone(),
+            config: chain_config.clone(),
         })
     }
 }
@@ -53,12 +47,25 @@ impl Runnable for KeyRestoreCmd {
             Ok(result) => result,
         };
 
-        let res: Result<Vec<u8>, Error> =
-            restore_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let key_name = opts.config.key_name.clone();
+        let chain_id = opts.config.id.clone();
+        let key = restore_key(&opts.mnemonic, opts.config);
 
-        match res {
-            Ok(r) => Output::success(r).exit(),
+        match key {
+            Ok(key) => Output::success_msg(format!(
+                "Restored key '{}' ({}) on chain {}",
+                key_name, key.account, chain_id
+            ))
+            .exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
+}
+
+pub fn restore_key(mnemonic: &str, config: ChainConfig) -> Result<KeyEntry, BoxError> {
+    let mut keyring = KeyRing::new(Store::Disk, config)?;
+    let key_entry = keyring.key_from_mnemonic(mnemonic)?;
+    keyring.add_key(key_entry.clone())?;
+
+    Ok(key_entry)
 }
