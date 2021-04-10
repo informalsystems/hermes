@@ -1213,7 +1213,7 @@ impl RelayPath {
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let timeout = self.build_timeout_from_send_packet_event(event, dst_chain_height)?;
         if timeout.is_some() {
-            Ok((timeout, None))
+            Ok((None, timeout))
         } else {
             Ok((
                 Some(self.build_recv_packet(&event.packet, event.height)?),
