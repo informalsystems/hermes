@@ -98,6 +98,8 @@ pub struct TransitMessage {
 /// Each `OperationalData` item is uniquely identified by the combination of two attributes:
 ///     - `target`: represents the target of the packet messages, either source or destination chain,
 ///     - `proofs_height`: represents the height for the proofs in all the messages.
+///       Note: this is the height at which the proofs are queried. A client consensus state at
+///       `proofs_height + 1` must exist on-chain in order to verify the proofs.
 #[derive(Clone)]
 pub struct OperationalData {
     proofs_height: Height,
@@ -569,9 +571,10 @@ impl RelayPath {
 
         for i in 0..MAX_ITER {
             info!(
-                "[{}] relay with operational data to {} [try {}/{}]",
+                "[{}] relay with operational data to {} proofs height {} [try {}/{}]",
                 self,
                 odata.target,
+                odata.proofs_height,
                 i + 1,
                 MAX_ITER
             );
@@ -626,7 +629,7 @@ impl RelayPath {
             Err(e) => {
                 error!(
                     "[{}] failed to regenerate operational data from initial data: {} \
-                    with error {}. Giving up on this op. data.",
+                    with error {}, discarding this op. data",
                     self, initial_odata, e
                 );
                 return None;
@@ -644,7 +647,7 @@ impl RelayPath {
                 if let Err(e) = self.schedule_operational_data(src_od) {
                     error!(
                         "[{}] failed to schedule newly-generated operational data from \
-                    initial data: {} with error {}. Giving up on this op. data.",
+                    initial data: {} with error {}, discarding this op. data",
                         self, initial_odata, e
                     );
                     return None;
@@ -669,10 +672,7 @@ impl RelayPath {
         } else {
             // There is no message intended for the destination chain
             if initial_odata.target == OperationalDataTarget::Destination {
-                info!(
-                    "[{}] exhausted all events from this operational data.",
-                    self
-                );
+                info!("[{}] exhausted all events from this operational data", self);
                 return None;
             }
         }
@@ -700,7 +700,7 @@ impl RelayPath {
         let msgs = odata.assemble_msgs(self)?;
 
         let tx_events = target.send_msgs(msgs)?;
-        debug!("[{}] result {}\n", self, VecIbcEvents(tx_events.clone()));
+        info!("[{}] result {}\n", self, VecIbcEvents(tx_events.clone()));
 
         let ev = tx_events
             .clone()
@@ -735,15 +735,15 @@ impl RelayPath {
         for i in 0..MAX_ITER {
             let dst_update = self.build_update_client_on_dst(src_chain_height)?;
             info!(
-                "[{}] {}/{} sending updateClient to client hosted on dest. chain {} for height {:?}",
+                "[{}] sending updateClient to client hosted on dest. chain {} for height {} [try {}/{}]",
                 self,
-                i, MAX_ITER,
                 self.dst_chain().id(),
-                src_chain_height
+                src_chain_height,
+                i + 1, MAX_ITER,
             );
 
             let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
-            debug!(
+            info!(
                 "[{}] result {}\n",
                 self,
                 VecIbcEvents(dst_tx_events.clone())
@@ -760,9 +760,9 @@ impl RelayPath {
 
         Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
             format!(
-                "Failed to update client on destination {} with err: {:?}",
+                "Failed to update client on destination {} with err: {}",
                 self.dst_chain.id(),
-                dst_err_ev
+                dst_err_ev.unwrap()
             ),
         )))
     }
@@ -781,14 +781,14 @@ impl RelayPath {
         for _i in 0..MAX_ITER {
             let src_update = self.build_update_client_on_src(dst_chain_height)?;
             info!(
-                "[{}] sending updateClient to client hosted on src. chain {} for height {:?}",
+                "[{}] sending updateClient to client hosted on src. chain {} for height {}",
                 self,
                 self.src_chain.id(),
                 dst_chain_height,
             );
 
             let src_tx_events = self.src_chain.send_msgs(src_update)?;
-            debug!(
+            info!(
                 "[{}] result {}\n",
                 self,
                 VecIbcEvents(src_tx_events.clone())
@@ -805,9 +805,9 @@ impl RelayPath {
 
         Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
             format!(
-                "Failed to update client on source {} with err: {:?}",
+                "Failed to update client on source {} with err: {}",
                 self.src_chain.id(),
-                src_err_ev
+                src_err_ev.unwrap()
             ),
         )))
     }
@@ -1039,7 +1039,7 @@ impl RelayPath {
         let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?);
 
         trace!(
-            "[{}] built recv_packet msg {}, proofs at height {:?}",
+            "[{}] built recv_packet msg {}, proofs at height {}",
             self,
             msg.packet,
             proofs.height()
@@ -1083,7 +1083,7 @@ impl RelayPath {
         );
 
         trace!(
-            "[{}] built acknowledgment msg {}, proofs at height {:?}",
+            "[{}] built acknowledgment msg {}, proofs at height {}",
             self,
             msg.packet,
             proofs.height()
@@ -1139,7 +1139,7 @@ impl RelayPath {
         );
 
         trace!(
-            "[{}] built timeout msg {}, proofs at height {:?}",
+            "[{}] built timeout msg {}, proofs at height {}",
             self,
             msg.packet,
             proofs.height()
@@ -1172,7 +1172,7 @@ impl RelayPath {
         );
 
         trace!(
-            "[{}] built timeout on close msg {}, proofs at height {:?}",
+            "[{}] built timeout on close msg {}, proofs at height {}",
             self,
             msg.packet,
             proofs.height()
@@ -1262,7 +1262,7 @@ impl RelayPath {
                         // Catch any SendPacket event that timed-out
                         self.build_timeout_from_send_packet_event(e, dst_current_height)?
                     {
-                        debug!("[{}] found a timed-out msg in the op data {}.", self, odata);
+                        debug!("[{}] found a timed-out msg in the op data {}", self, odata);
                         timed_out
                             .entry(odata_pos)
                             .or_insert_with(Vec::new)
@@ -1295,7 +1295,7 @@ impl RelayPath {
             new_od.batch = batch.clone();
 
             info!(
-                "[{}] scheduling from batch of size {}",
+                "[{}] re-scheduling from new timed-out batch of size {}",
                 self,
                 new_od.batch.len()
             );
@@ -1327,7 +1327,7 @@ impl RelayPath {
             self,
             od.batch.len(),
             od.target,
-            od.proofs_height,
+            od.proofs_height.increment(), // increment for easier correlation with the client logs
         );
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
@@ -1410,14 +1410,14 @@ impl RelayPath {
                 .checked_sub(odata.scheduled_time.elapsed())
             {
                 None => info!(
-                    "[{}] ready to fetch a scheduled op. data with batch of size {} targeting {}.",
+                    "[{}] ready to fetch a scheduled op. data with batch of size {} targeting {}",
                     self,
                     odata.batch.len(),
                     odata.target,
                 ),
                 Some(delay_left) => {
                     info!(
-                        "[{}] waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}.",
+                        "[{}] waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
                         self,
                         delay_left,
                         odata.batch.len(),

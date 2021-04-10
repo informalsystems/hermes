@@ -70,7 +70,7 @@ impl fmt::Display for VecIbcEvents {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "events:")?;
         for v in &self.0 {
-            write!(f, "\t{}", v)?;
+            writeln!(f, "\t{}", v)?;
         }
         Ok(())
     }
