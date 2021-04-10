@@ -25,9 +25,6 @@ use crate::relay::MAX_ITER;
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
 
-/// Default value (in seconds) for the packet delay of a new connection.
-pub const DEFAULT_PACKET_DELAY_SEC: u64 = 0;
-
 #[derive(Debug, Error)]
 pub enum ConnectionError {
     #[error("failed with underlying cause: {0}")]

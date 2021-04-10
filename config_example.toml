@@ -48,3 +48,11 @@ delay = '10s'
 [[connections.paths]]
 a_port = 'transfer'
 b_port = 'transfer'
+
+[[connections]]
+a_chain = 'ibc-0'
+b_chain = 'ibc-1'
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'

@@ -6,12 +6,13 @@ use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
 use ibc_relayer::channel::Channel;
-use ibc_relayer::connection::{Connection, DEFAULT_PACKET_DELAY_SEC};
+use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
+use ibc_relayer::config::default::connection_delay;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct CreateChannelCommand {
@@ -47,10 +48,10 @@ pub struct CreateChannelCommand {
     )]
     port_b: PortId,
 
-    #[options(help = "the order for parametrizing the new channel")]
+    #[options(help = "the channel ordering, valid options 'unordered' and 'ordered'")]
     order: Order,
 
-    #[options(help = "the version for parametrizing the new channel")]
+    #[options(help = "the version for the new channel")]
     version: String,
 }
 
@@ -90,7 +91,7 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.
-        let con = Connection::new(client_a, client_b, DEFAULT_PACKET_DELAY_SEC)
+        let con = Connection::new(client_a, client_b, connection_delay().as_secs())
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally create the channel.

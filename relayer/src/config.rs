@@ -8,6 +8,10 @@ use tendermint_light_client::types::TrustThreshold;
 use ibc::ics24_host::identifier::{ChainId, PortId};
 
 use crate::error;
+use ibc::ics04_channel::channel::Order;
+
+/// Default value (in seconds) for the packet delay of a new connection.
+pub const DEFAULT_PACKET_DELAY_SEC: u64 = 0;
 
 /// Defaults for various fields
 pub mod default {
@@ -23,6 +27,13 @@ pub mod default {
 
     pub fn clock_drift() -> Duration {
         Duration::from_secs(5) // 5 seconds
+    }
+
+    pub fn connection_delay() -> Duration {
+        Duration::from_secs(DEFAULT_PACKET_DELAY_SEC)
+    }
+    pub fn channel_ordering() -> Order {
+        Order::default()
     }
 }
 
@@ -43,16 +54,26 @@ impl Config {
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
     }
-    pub fn relay_paths(&self, src_chain: &ChainId, dst_chain: &ChainId) -> Option<Vec<RelayPath>> {
-        self.connections
-            .as_ref()?
-            .iter()
-            .find(|c| {
-                c.a_chain == *src_chain && c.b_chain == *dst_chain
-                    || c.a_chain == *dst_chain && c.b_chain == *src_chain
-            })?
-            .paths
-            .clone()
+
+    pub fn first_matching_path(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+    ) -> Option<(Connection, RelayPath)> {
+        let connection = self.connections.as_ref()?.iter().find(|c| {
+            c.a_chain == *src_chain && c.b_chain == *dst_chain
+                || c.a_chain == *dst_chain && c.b_chain == *src_chain
+        });
+        match connection {
+            None => None,
+            Some(conn) => {
+                if let Some(paths) = conn.clone().paths {
+                    Some((conn.clone(), paths[0].clone()))
+                } else {
+                    None
+                }
+            }
+        }
     }
 }
 
@@ -115,6 +136,8 @@ pub struct ChainConfig {
 pub struct Connection {
     pub a_chain: ChainId,
     pub b_chain: ChainId,
+    #[serde(default = "default::connection_delay", with = "humantime_serde")]
+    pub delay: Duration,
     pub paths: Option<Vec<RelayPath>>,
 }
 
@@ -122,6 +145,8 @@ pub struct Connection {
 pub struct RelayPath {
     pub a_port: PortId,
     pub b_port: PortId,
+    #[serde(default = "default::channel_ordering")]
+    pub ordering: Order,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

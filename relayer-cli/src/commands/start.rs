@@ -1,6 +1,5 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::link::LinkParameters;
 use ibc_relayer::relay::{channel_relay, relay_on_new_link};
@@ -48,22 +47,23 @@ impl Runnable for StartCmd {
                 }
             }
             (None, None) => {
-                let ordering = Order::default(); // TODO - add to config
-                let relay_paths = &config
-                    .clone()
-                    .relay_paths(&self.src_chain_id, &self.dst_chain_id);
+                // Relay for a single channel, first on the first connection between the two chains
+                let relay_path = config.first_matching_path(&self.src_chain_id, &self.dst_chain_id);
 
-                match relay_paths {
-                    Some(paths) => {
+                match relay_path {
+                    Some((connection, path)) => {
                         info!("Start relayer on {:?}", self);
-                        // Relay for a single channel, first on the connection between the two chains
-                        match relay_on_new_link(chains.src, chains.dst, ordering, paths[0].clone())
-                        {
+                        let delay = connection.delay.as_secs();
+                        let ordering = path.ordering;
+
+                        match relay_on_new_link(chains.src, chains.dst, delay, ordering, path) {
                             Ok(()) => Output::success(()).exit(),
                             Err(e) => Output::error(e.to_string()).exit(),
                         }
                     }
-                    None => Output::error(format!("No paths configured for {:?}", self)).exit(),
+                    None => {
+                        Output::error(format!("No connections configured for {:?}", self)).exit()
+                    }
                 }
             }
             _ => Output::error(format!(
