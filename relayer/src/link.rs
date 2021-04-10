@@ -66,8 +66,8 @@ pub enum LinkError {
     #[error("clearing of old packets failed")]
     OldPacketClearingFailed,
 
-    #[error("failed while sending messages to the target chain")]
-    SendError,
+    #[error("chain error when sending messages: {0}")]
+    SendError(Box<IbcEvent>),
 }
 
 #[derive(Clone, PartialEq)]
@@ -583,8 +583,9 @@ impl RelayPath {
                     info!("[{}] success", self);
                     return Ok(events);
                 }
-                Err(LinkError::SendError) => {
+                Err(LinkError::SendError(ev)) => {
                     // This error means we can retry
+                    error!("[{}] error {}", self, ev);
                     match self.regenerate_operational_data(odata.clone()) {
                         None => return Ok(vec![]), // Nothing to retry
                         Some(new_od) => odata = new_od,
@@ -706,10 +707,9 @@ impl RelayPath {
             .into_iter()
             .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
-        if ev.is_some() {
-            Err(LinkError::SendError)
-        } else {
-            Ok(tx_events)
+        match ev {
+            Some(ev) => Err(LinkError::SendError(Box::new(ev))),
+            None => Ok(tx_events),
         }
     }
 
@@ -732,11 +732,12 @@ impl RelayPath {
         }
 
         let mut dst_err_ev = None;
-        for _i in 0..MAX_ITER {
+        for i in 0..MAX_ITER {
             let dst_update = self.build_update_client_on_dst(src_chain_height)?;
             info!(
-                "[{}] sending updateClient to client hosted on dest. chain {} for height {:?}",
+                "[{}] {}/{} sending updateClient to client hosted on dest. chain {} for height {:?}",
                 self,
+                i, MAX_ITER,
                 self.dst_chain().id(),
                 src_chain_height
             );
