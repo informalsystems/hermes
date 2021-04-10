@@ -64,13 +64,25 @@ pub enum IbcEvent {
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
+/// For use in debug messages
+pub struct VecIbcEvents(pub Vec<IbcEvent>);
+impl fmt::Display for VecIbcEvents {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "events:")?;
+        for v in &self.0 {
+            write!(f, "\t{}", v)?;
+        }
+        Ok(())
+    }
+}
+
 impl fmt::Display for IbcEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             IbcEvent::NewBlock(ev) => write!(f, "NewBlock({})", ev.height),
 
-            IbcEvent::CreateClient(ev) => write!(f, "CreateClientEv({:?})", ev),
-            IbcEvent::UpdateClient(ev) => write!(f, "UpdateClientEv({:?})", ev),
+            IbcEvent::CreateClient(ev) => write!(f, "CreateClientEv({})", ev),
+            IbcEvent::UpdateClient(ev) => write!(f, "UpdateClientEv({})", ev),
             IbcEvent::UpgradeClient(ev) => write!(f, "UpgradeClientEv({:?})", ev),
             IbcEvent::ClientMisbehaviour(ev) => write!(f, "ClientMisbehaviourEv({:?})", ev),
 

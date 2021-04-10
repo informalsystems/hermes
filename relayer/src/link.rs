@@ -38,6 +38,7 @@ use crate::error::Error;
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
+use ibc::events::VecIbcEvents;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -698,7 +699,7 @@ impl RelayPath {
         let msgs = odata.assemble_msgs(self)?;
 
         let tx_events = target.send_msgs(msgs)?;
-        debug!("[{}] result {:?}\n", self, tx_events);
+        debug!("[{}] result {}\n", self, VecIbcEvents(tx_events.clone()));
 
         let ev = tx_events
             .clone()
@@ -741,7 +742,11 @@ impl RelayPath {
             );
 
             let dst_tx_events = self.dst_chain.send_msgs(dst_update)?;
-            info!("[{}] result {:?}", self, dst_tx_events);
+            debug!(
+                "[{}] result {}\n",
+                self,
+                VecIbcEvents(dst_tx_events.clone())
+            );
 
             dst_err_ev = dst_tx_events
                 .into_iter()
@@ -782,7 +787,11 @@ impl RelayPath {
             );
 
             let src_tx_events = self.src_chain.send_msgs(src_update)?;
-            info!("[{}] result {:?}", self, src_tx_events);
+            debug!(
+                "[{}] result {}\n",
+                self,
+                VecIbcEvents(src_tx_events.clone())
+            );
 
             src_err_ev = src_tx_events
                 .into_iter()
@@ -1188,8 +1197,8 @@ impl RelayPath {
 
         if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height {
             debug!(
-                "[{}] new timeout message emerged, with proofs for height {}",
-                self, dst_chain_height
+                "[{}] new timeout message emerged for seq {}, with proofs for height {}",
+                self, event.packet.sequence, dst_chain_height
             );
             return self.build_timeout_packet(&event.packet, dst_chain_height);
         }
