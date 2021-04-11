@@ -6,8 +6,8 @@ This section describes a number of commands that can be used to manage clients, 
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `create client`        | [Create a client for source chain on destination chain](./clients.html#create-client)                         |
 | `update client`        | [Update the specified client on destination chain](./clients.html#update-client)                              |
-| `create connection`    | [Establish a connection using existing or new clients](./connections.html#create-connection)                            |
-| `create channel`       | [Establish a channel using existing or new connection](./channels.html#create-channel)                            |
+| `create connection`    | [Establish a connection using existing or new clients](./connections.html#establish-connection)                            |
+| `create channel`       | [Establish a channel using existing or new connection](./channels.html#establish-channel)                            |
 | `start`                | [Relay packets over a new or exsiting channel](./packets.html#start)                            |
 
 

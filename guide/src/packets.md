@@ -1,4 +1,9 @@
 # Packet Relaying
+
+## Table of Contents
+<!-- toc -->
+
+### Start
 The `start` command can be used to send packet transactions triggered by IBC packet events that occur for a given channel. This is also referred to packet streaming.
 A new channel can be established or an existing one can be specified.
 
@@ -18,13 +23,13 @@ FLAGS:
     -c, --src-channel-id SRC-CHANNEL-ID
 ```
 
-## Start with New Channel
+### Start with New Channel
 
 Use the `start` command without flags to create new clients on `source` and `destination` chains, and new connection and new channel between the two chains.
 
 > Reusing existing clients or connection is not possible with the current version. The port used by the channel is obtained from and must be specified in the configuration file.
 
-### Example
+#### Example
 
 ```shell script
 hermes start ibc-0 ibc-1
@@ -32,11 +37,11 @@ hermes start ibc-0 ibc-1
 
 The relayer creates a new client on each chain and then established a new connection and a new channel using that connection. After that is enters a listen loop acting on packet events that occur on that channel.
 
-## Start on Existing Channel
+### Start on Existing Channel
 
 Use the `start` command and specify the source port and channel identifier of a channel that is already created and in open state on both chains.
 
-### Example
+#### Example
 
 ```shell script
 hermes start ibc-0 ibc-1 -p transfer -c channel-0
@@ -55,3 +60,14 @@ Current events and actions are:
   - `MsgTimeout`, sent to the `source` chain if the channel is in open state on the `destination` chain, but a timeout has occurred.
   - `MsgTimeoutOnClose`, sent to the `source` chain if the channel is in closed state on the `destination` chain.
 - `write_acknowledgement`: the relayer builds a `MsgAcknowledgement` packet that is sent to the `destination` chain.
+
+## Packet Delay
+
+(WIP)
+
+If the relay path is using a non-zero delay connection, then `hermes` will delay all packet transactions. The delay is
+relative to the submission time for the client update at the height required by the packet proof.
+The delay is used to prevent light client attacks and ensures that misbehavior detection finalizes before the transaction is submitted.
+For more information on the misbehavior detector see [the misbehaviour section](./misbehaviour.html#monitoring-misbehaviour-and-evidence-submission)
+
+TODO - add link to spec

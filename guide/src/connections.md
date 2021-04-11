@@ -33,3 +33,7 @@ hermes create connection ibc-0 ibc-1 | jq
 ```json
 
 ```
+
+## Non-zero Delay Connection
+A connection can be created with a delay parameter. See [packet delay](./packets.html#packet_delay)
+TODO - link with section in packets
