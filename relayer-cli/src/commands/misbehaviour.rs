@@ -47,7 +47,7 @@ pub fn monitor_misbehaviour(
     config: &config::Reader<CliApp>,
 ) -> Result<(), BoxError> {
     let chain = spawn_chain_runtime(&config, chain_id)
-        .map_err(|e| format!("could not spawn the chain runtime for {}", chain_id))?;
+        .map_err(|e| format!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
 
     let subscription = chain.subscribe()?;
 
@@ -68,11 +68,11 @@ pub fn monitor_misbehaviour(
                     )?;
                 }
 
-                IbcEvent::CreateClient(create) => {
+                IbcEvent::CreateClient(_create) => {
                     // TODO - get header from full node, consensus state from chain, compare
                 }
 
-                IbcEvent::ClientMisbehaviour(misbehaviour) => {
+                IbcEvent::ClientMisbehaviour(_misbehaviour) => {
                     // TODO - submit misbehaviour to the witnesses (our full node)
                 }
 
@@ -92,7 +92,7 @@ fn misbehaviour_handling(
 ) -> Result<(), BoxError> {
     let client_state = chain
         .query_client_state(client_id, Height::zero())
-        .map_err(|e| format!("could not query client state for {}", client_id))?;
+        .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
 
     if client_state.is_frozen() {
         // nothing to do
@@ -101,8 +101,9 @@ fn misbehaviour_handling(
     let counterparty_chain =
         spawn_chain_runtime(&config, &client_state.chain_id()).map_err(|e| {
             format!(
-                "could not spawn the chain runtime for {}",
-                client_state.chain_id()
+                "could not spawn the chain runtime for {}: {}",
+                client_state.chain_id(),
+                e
             )
         })?;
 
