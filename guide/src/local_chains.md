@@ -204,9 +204,9 @@ $HOME/.hermes/
 
 #### Next Steps
 
-We now offer two options with regard to connecting the two chains:
+Following sections describe the commands to connect and relay packets between two chains. High level you can:
 
-1. you can use [individual (raw) transactions](./tutorial_raw.html) to create 
-   all the necessary chain objects (clients, connections, channels), or
-2. you can perform this step using a 
-   [simplified approach](./tutorial_relay_paths.html).
+1. use a [simplified approach](./tutorial_relay_paths.html) for managing relaying paths, or
+2. use [individual (raw) transactions](./tutorial_raw.html) to create 
+   all the necessary chain objects (clients, connections, channels) and relay packets.
+

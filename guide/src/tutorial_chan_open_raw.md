@@ -22,11 +22,7 @@ Send a channel open acknowledgment to `ibc-0`:
 ```shell
 hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1
 ```
-Note that, in order use a channel with index 1 on ibc-1 in the handshake, prior to execute the channel handshake 
-decribe here run 
-```hermes tx raw chan-open-init ibc-1 ibc-0 connection-1 transfer transfer -o UNORDERED```,  
-otherwise the counter for channels of ibc-0 starts at zero and the counter party of channel-0 on ibc-0 is channel-0 on ibc-1 
-(created by ```chan-open-try ibc-1 ibc-0```).  
+
 ### 3.4 chan-open-confirm
 
 Send the open confirmation to `ibc-1`:
