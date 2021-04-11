@@ -129,7 +129,7 @@ arbitrary debug, info, or other outputs may be produced.  Example, with
 `log_level = 'debug'`:
 
 ```bash
-Running `target/debug/relayer query client consensus ibc-0 07-tendermint-X 0 1`
+Running `target/debug/relayer query client consensus ibc-0 07-tendermint-X -c 121`
 {"timestamp":"Jan 20 19:21:52.070","level":"DEBUG","fields":{"message":"registered component: abscissa_core::terminal::component::Terminal (v0.5.2)"},"target":"abscissa_core::component::registry"}
 {"timestamp":"Jan 20 19:21:52.071","level":"DEBUG","fields":{"message":"registered component: relayer_cli::components::Tracing (v0.0.6)"},"target":"abscissa_core::component::registry"}
 {"timestamp":"Jan 20 19:21:52.078","level":"INFO","fields":{"message":"Options QueryClientConsensusOptions { client_id: ClientId(\"07-tendermint-X\"), revision_number: 0, revision_height: 1, height: 0, proof: true }"},"target":"relayer_cli::commands::query::client"}

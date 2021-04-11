@@ -120,7 +120,7 @@ hermes query client state ibc-1 07-tendermint-2 | jq
 ```
 
 ## Query the client consensus state
-Use the `query client consensus` command to query the consensus state for a given client and consensus height:
+Use the `query client consensus` command to query the consensus states of a given client, or the state at a specified height:
 
 ```shell
 USAGE:
@@ -132,30 +132,57 @@ DESCRIPTION:
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
     client_id                 identifier of the client to query
-    consensus_epoch           epoch of the client's consensus state to query
-    consensus_height          height of the client's consensus state to query
 
 FLAGS:
-    -h, --height HEIGHT       the chain height which this query should reflect
+    -c, --consensus-height    CONSENSUS-HEIGHT
+    -s, --heights-only        show only consensus heights
+    -h, --height HEIGHT       the chain height context to be used, applicable only to a specific height
 ```
 
 __Example__
 
-Query the state of client `07-tendermint-2` on `ibc-1`:
+Query the states of client `07-tendermint-0` on `ibc-0`:
 
 ```shell
-hermes query client consensus ibc-1 07-tendermint-2 0 948 | jq
+hermes query client consensus ibc-0 07-tendermint-0 -s | jq
 ```
 
 ```json
 {
-  "status": "success",
+  "result": [
+    {
+      "revision_height": 169,
+      "revision_number": 1
+    },
+    {
+      "revision_height": 164,
+      "revision_number": 1
+    },
+    {
+      "revision_height": 139,
+      "revision_number": 1
+    },
+    {
+      "revision_height": 137,
+      "revision_number": 1
+    }
+  ],
+  "status": "success"
+}
+```
+
+Query `ibc-0` at height `200` for the consensus state for height `181`:
+```shell script
+hermes query client consensus ibc-0 07-tendermint-0 -c 181 -h 200 | jq
+```
+```json
+{
   "result": {
-    "type": "Tendermint",
-    "next_validators_hash": "61B504627364047439A253FFBDD5D384B31D29611BD4B2ABA2636C232ABADA33",
-    "root": "82EFC9F24C8B595BDADBFE1576B473648DD8EBC76F30DC21201539FCCE15A9F8",
-    "timestamp": "2021-02-01T13:42:30.30536Z"
-  }
+    "next_validators_hash": "D27C11A760010565B8DC01C4589CE3207AE784F40190F33422A80984A887A8F5",
+    "root": "0C17DEF5D5DF5B4B6D91D714E12B4792C0D322CEA9C8C4692AC3FE2F015E9591",
+    "timestamp": "2021-04-11T15:39:34.919129Z"
+  },
+  "status": "success"
 }
 ```
 
