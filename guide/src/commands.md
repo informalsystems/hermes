@@ -10,16 +10,24 @@ Commands to manage keys (private keys) for each chain.
 
 **[Path Setup and Streaming](./relayer_loop.md)**
 
-Commands to manage channels
+Commands to manage clients, connections, channels and performing packet relaying
 
-**[Raw Transactions](./transactions.md)**
+**[Listen Mode](./listen.md)**
 
-Command to submit transactions to configured chains
+Commands to listen for IBC events
+
+**[Upgrade](./upgrade.md)**
+
+Commands to perform client upgrade
+
+**[Monitor](./misbehaviour.md)**
+
+Commands to monitor clients and submit evidence of misbehaviour
 
 **[Queries](./queries.md)**
 
 Commands to execute queries on configured chains
 
-**[Listen Mode](./listen.md)**
+**[Raw Transactions](./transactions.md)**
 
-Commands to listen for IBC events
+Commands to submit individual transactions to configured chains
