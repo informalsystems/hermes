@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all)]
+#![allow(clippy::large_enum_variant)]
 #![deny(
     warnings,
     // missing_docs,
@@ -30,6 +31,7 @@ pub mod handler;
 pub mod keys;
 pub mod macros;
 pub mod proofs;
+pub mod query;
 pub mod signer;
 pub mod tx_msg;
 

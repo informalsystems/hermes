@@ -213,6 +213,7 @@ dependencies = [
  "bech32 0.7.3",
  "bitcoin_hashes",
  "secp256k1",
+ "serde",
 ]
 
 [[package]]
@@ -220,6 +221,9 @@ name = "bitcoin_hashes"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0aaf87b776808e26ae93289bc7d025092b6d909c193f0cdee0b3a86e7bd3c776"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "bitflags"
@@ -2110,6 +2114,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "733b114f058f260c0af7591434eef4272ae1a8ec2751766d3cb89c6df8d5e450"
 dependencies = [
  "secp256k1-sys",
+ "serde",
 ]
 
 [[package]]

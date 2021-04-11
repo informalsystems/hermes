@@ -2,11 +2,12 @@ use std::cmp::Ordering;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
+use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
-use crate::ics02_client::error::{Error, Kind};
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use serde_derive::{Deserialize, Serialize};
+
+use crate::ics02_client::error::{Error, Kind};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
@@ -141,6 +142,12 @@ impl TryFrom<&str> for Height {
             revision_number: split[0].parse::<u64>().unwrap(),
             revision_height: split[1].parse::<u64>().unwrap(),
         })
+    }
+}
+
+impl From<Height> for String {
+    fn from(height: Height) -> Self {
+        format!("{}-{}", height.revision_number, height.revision_number)
     }
 }
 

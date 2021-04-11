@@ -16,6 +16,7 @@ use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::merkle::cosmos_specs;
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
+use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ClientState {
@@ -154,14 +155,9 @@ impl TryFrom<RawClientState> for ClientState {
             .clone()
             .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?;
 
-        let chain_id = raw
-            .chain_id
-            .clone()
-            .try_into()
-            .map_err(|e| Kind::InvalidChainId(raw.chain_id.clone(), e))?;
-
         Ok(Self {
-            chain_id,
+            chain_id: ChainId::from_str(raw.chain_id.as_str())
+                .map_err(|_| Kind::InvalidRawClientState.context("Invalid chain identifier"))?,
             trust_level: TrustThreshold {
                 numerator: trust_level.numerator,
                 denominator: trust_level.denominator,
@@ -358,7 +354,6 @@ mod tests {
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
-    use std::convert::TryInto;
     use std::time::Duration;
 
     use tendermint::block::Header;
@@ -369,11 +364,9 @@ pub mod test_util {
     use crate::ics24_host::identifier::ChainId;
 
     pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {
-        let chain_id: ChainId = tm_header.chain_id.clone().try_into().unwrap();
-
         AnyClientState::Tendermint(
             ClientState::new(
-                chain_id,
+                ChainId::from(tm_header.chain_id.clone()),
                 Default::default(),
                 Duration::from_secs(64000),
                 Duration::from_secs(128000),

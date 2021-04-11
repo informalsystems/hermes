@@ -15,3 +15,9 @@ message ClientState {
 message ConsensusState {
   Header header = 1;
 }
+
+message Misbehaviour {
+  string client_id = 1;
+  Header header1 = 2;
+  Header header2 = 3;
+}
