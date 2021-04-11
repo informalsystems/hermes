@@ -119,11 +119,11 @@ As before, if the command is successful a message with `status:success` is displ
 Client states can be updated by sending an `update-client` transaction:
 
 ```shell
-hermes tx raw update-client ibc-0 ibc-1 07-tendermint-0
+hermes tx raw update-client ibc-0 07-tendermint-0
 ```
 
 ```shell
-hermes tx raw update-client ibc-1 ibc-0 07-tendermint-1
+hermes tx raw update-client ibc-0 07-tendermint-1
 ```
 
 ## Next Steps

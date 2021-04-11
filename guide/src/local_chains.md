@@ -109,16 +109,19 @@ graph TD
 If the script runs successfully you should see a message similar to the one below in the terminal:
 
 ```shell
-GAIA VERSION INFO: 4.0.0
+GAIA VERSION INFO: v4.2.0
 Generating gaia configurations...
 Creating gaiad instance: home=./data | chain-id=ibc-0 | p2p=:26656 | rpc=:26657 | profiling=:6060 | grpc=:9090 | samoleans=:100000000000
 Change settings in config.toml file...
+Start gaia on grpc port: 9090...
+Balances for validator 'cosmos1kx8dmaav2k3gjyqr80f6ddaf94v5yujpefu8j6' @ 'tcp://localhost:26657'
 balances:
 - amount: "0"
   denom: stake
 pagination:
   next_key: null
   total: "0"
+Balances for user 'cosmos1n33qt980aml6q8e2ky85g3dn98eh6fghg7cn6y' @ 'tcp://localhost:26657'
 balances:
 - amount: "100000000000"
   denom: samoleans
@@ -129,12 +132,15 @@ pagination:
   total: "0"
 Creating gaiad instance: home=./data | chain-id=ibc-1 | p2p=:26556 | rpc=:26557 | profiling=:6061 | grpc=:9091 | samoleans=:100000000000
 Change settings in config.toml file...
+Start gaia on grpc port: 9091...
+Balances for validator 'cosmos188qk2p3qr7rjkequjjmpx0frcc65p6dltmml0x' @ 'tcp://localhost:26557'
 balances:
 - amount: "0"
   denom: stake
 pagination:
   next_key: null
   total: "0"
+Balances for user 'cosmos1xkvpgw8dng3zr2au3n86u8e3h249355vg7jaef' @ 'tcp://localhost:26557'
 balances:
 - amount: "100000000000"
   denom: samoleans
@@ -143,10 +149,12 @@ balances:
 pagination:
   next_key: null
   total: "0"
-ibc-0 initialized. Watch file /dev/github.com/informalsystems/ibc-rs/data/ibc-0.log to see its execution.
-ibc-1 initialized. Watch file /dev/github.com/informalsystems/ibc-rs/data/ibc-1.log to see its execution.
+ibc-0 initialized. Watch file /Users/ancaz/rust/ibc-rs/data/ibc-0.log to see its execution.
+ibc-1 initialized. Watch file /Users/ancaz/rust/ibc-rs/data/ibc-1.log to see its execution.
 Building the Rust relayer...
 Importing keys...
+Success: Added key testkey (cosmos1n33qt980aml6q8e2ky85g3dn98eh6fghg7cn6y) on ibc-0 chain
+Success: Added key testkey (cosmos1xkvpgw8dng3zr2au3n86u8e3h249355vg7jaef) on ibc-1 chain
 Done!
 ```
 
