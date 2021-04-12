@@ -1,13 +1,15 @@
 # Packet Relaying
 
 ## Table of Contents
+
 <!-- toc -->
 
-### Start
+## Start
+
 The `start` command can be used to send packet transactions triggered by IBC packet events that occur for a given channel. This is also referred to packet streaming.
 A new channel can be established or an existing one can be specified.
 
-```shell script
+```shell
 USAGE:
     hermes start <OPTIONS>
 
@@ -23,27 +25,27 @@ FLAGS:
     -c, --src-channel-id SRC-CHANNEL-ID
 ```
 
-### Start with New Channel
+## Start with New Channel
 
 Use the `start` command without flags to create new clients on `source` and `destination` chains, and new connection and new channel between the two chains.
 
 > Reusing existing clients or connection is not possible with the current version. The port used by the channel is obtained from and must be specified in the configuration file.
 
-#### Example
+__Example__
 
-```shell script
+```shell
 hermes start ibc-0 ibc-1
 ```
 
 The relayer creates a new client on each chain and then established a new connection and a new channel using that connection. After that is enters a listen loop acting on packet events that occur on that channel.
 
-### Start on Existing Channel
+## Start on Existing Channel
 
 Use the `start` command and specify the source port and channel identifier of a channel that is already created and in open state on both chains.
 
-#### Example
+__Example__
 
-```shell script
+```shell
 hermes start ibc-0 ibc-1 -p transfer -c channel-0
 ```
 
