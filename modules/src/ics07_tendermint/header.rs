@@ -42,7 +42,7 @@ impl Header {
         match self_header_height.cmp(&&ibc_client_height) {
             Ordering::Equal => {
                 // 1 - fork
-                self.signed_header.commit.block_id != other_header.signed_header.commit.block_id
+                self.signed_header.commit.block_id == other_header.signed_header.commit.block_id
             }
             Ordering::Greater => {
                 // 2 - BFT time violation
