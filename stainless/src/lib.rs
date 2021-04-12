@@ -3,9 +3,6 @@ use stainless::*;
 
 use std::marker::PhantomData;
 
-trait Clone {
-    fn clone(&self) -> Self;
-}
 trait Default {
     fn default() -> Self;
 }
@@ -16,11 +13,6 @@ pub trait Equals {
 impl Equals for String {
     fn eq(&self, other: &Self) -> bool {
         *self == *other
-    }
-}
-impl Clone for String {
-    fn clone(&self) -> Self {
-        std::clone::Clone::clone(self)
     }
 }
 
@@ -82,7 +74,7 @@ impl<T: Equals> List<T> {
 impl<T: Clone> Clone for List<T> {
     fn clone(&self) -> Self {
         match self {
-            List::Cons(h, tail) => List::Cons(h.clone(), Box::new((*tail).clone())),
+            List::Cons(h, tail) => List::Cons(h.clone(), Box::new((**tail).clone())),
             _ => List::Nil,
         }
     }
@@ -108,7 +100,7 @@ impl Clone for ChannelId {
 pub struct PortId(String);
 impl Clone for PortId {
     fn clone(&self) -> Self {
-        PortId(Clone::clone(&self.0))
+        PortId(self.0.clone())
     }
 }
 impl Default for PortId {
@@ -276,7 +268,7 @@ impl ChannelEnd {
         &self.remote
     }
     pub fn version(&self) -> String {
-        Clone::clone(&self.version)
+        self.version.clone()
     }
 }
 
@@ -486,7 +478,7 @@ pub struct ChannelResult {
         && matches!(
           (output.result.channel_end.connection_hops().first(),
             msg.channel().connection_hops().first()),
-          (Option::Some(o), Option::Some(m)) //if o.eq(m)
+          (Option::Some(o), Option::Some(m)) if o.eq(m)
         )
     }
     _ => false,
