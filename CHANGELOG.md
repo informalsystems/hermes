@@ -105,12 +105,9 @@
 [#793]: https://github.com/informalsystems/ibc-rs/pull/793
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
 [#801]: https://github.com/informalsystems/ibc-rs/issues/801
-<<<<<<< HEAD
-[#806]: https://github.com/informalsystems/ibc-rs/issues/806
-=======
-[#801]: https://github.com/informalsystems/ibc-rs/issues/809
 [#805]: https://github.com/informalsystems/ibc-rs/issues/805
->>>>>>> master
+[#806]: https://github.com/informalsystems/ibc-rs/issues/806
+[#809]: https://github.com/informalsystems/ibc-rs/issues/809
 
 
 ## v0.1.1
