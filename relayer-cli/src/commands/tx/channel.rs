@@ -76,6 +76,7 @@ impl Runnable for TxRawChanOpenInitCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
+                    connection_delay: Default::default(),
                     ordering: self.ordering,
                     a_side: ChannelSide::new(
                         chains.src,
@@ -131,6 +132,7 @@ impl Runnable for TxRawChanOpenTryCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
+                    connection_delay: Default::default(),
                     ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
@@ -194,6 +196,7 @@ impl Runnable for TxRawChanOpenAckCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
+                    connection_delay: Default::default(),
                     ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
@@ -257,6 +260,7 @@ impl Runnable for TxRawChanOpenConfirmCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
+                    connection_delay: Default::default(),
                     ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
@@ -320,6 +324,7 @@ impl Runnable for TxRawChanCloseInitCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
+                    connection_delay: Default::default(),
                     ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
@@ -383,6 +388,7 @@ impl Runnable for TxRawChanCloseConfirmCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
+                    connection_delay: Default::default(),
                     ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,

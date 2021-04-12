@@ -20,6 +20,7 @@ use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
+use std::time::Duration;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
@@ -90,6 +91,7 @@ pub struct Channel {
     pub ordering: Order,
     pub a_side: ChannelSide,
     pub b_side: ChannelSide,
+    pub connection_delay: Duration,
 }
 
 impl Channel {
@@ -100,8 +102,8 @@ impl Channel {
         ordering: Order,
         a_port: PortId,
         b_port: PortId,
-    ) -> Result<Channel, ChannelError> {
-        let mut channel = Channel {
+    ) -> Result<Self, ChannelError> {
+        let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
                 connection.src_chain().clone(),
@@ -117,8 +119,11 @@ impl Channel {
                 b_port,
                 Default::default(),
             ),
+            connection_delay: connection.delay_period,
         };
+
         channel.handshake()?;
+
         Ok(channel)
     }
 
@@ -167,6 +172,7 @@ impl Channel {
             ordering: self.ordering,
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
+            connection_delay: self.connection_delay,
         }
     }
 
