@@ -96,9 +96,9 @@ fn misbehaviour_handling(
         .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
 
     if client_state.is_frozen() {
-        // nothing to do
-        return Ok(());
+        return Err(format!("client {} is already frozen", client_id).into());
     }
+
     let counterparty_chain =
         spawn_chain_runtime(&config, &client_state.chain_id()).map_err(|e| {
             format!(
