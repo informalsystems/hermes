@@ -135,6 +135,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use std::time::Duration;
 
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -205,7 +206,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            0,
+            Duration::from_secs(0),
         );
 
         let tests: Vec<Test> = vec![

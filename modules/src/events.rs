@@ -8,6 +8,8 @@ use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::Height;
+use prost::alloc::fmt::Formatter;
+use std::fmt;
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -60,6 +62,53 @@ pub enum IbcEvent {
 
     Empty(String),      // Special event, signifying empty response
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
+}
+
+/// For use in debug messages
+pub struct VecIbcEvents(pub Vec<IbcEvent>);
+impl fmt::Display for VecIbcEvents {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "events:")?;
+        for v in &self.0 {
+            writeln!(f, "\t{}", v)?;
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Display for IbcEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            IbcEvent::NewBlock(ev) => write!(f, "NewBlock({})", ev.height),
+
+            IbcEvent::CreateClient(ev) => write!(f, "CreateClientEv({})", ev),
+            IbcEvent::UpdateClient(ev) => write!(f, "UpdateClientEv({})", ev),
+            IbcEvent::UpgradeClient(ev) => write!(f, "UpgradeClientEv({:?})", ev),
+            IbcEvent::ClientMisbehaviour(ev) => write!(f, "ClientMisbehaviourEv({:?})", ev),
+
+            IbcEvent::OpenInitConnection(ev) => write!(f, "OpenInitConnectionEv({:?})", ev),
+            IbcEvent::OpenTryConnection(ev) => write!(f, "OpenTryConnectionEv({:?})", ev),
+            IbcEvent::OpenAckConnection(ev) => write!(f, "OpenAckConnectionEv({:?})", ev),
+            IbcEvent::OpenConfirmConnection(ev) => write!(f, "OpenConfirmConnectionEv({:?})", ev),
+
+            IbcEvent::OpenInitChannel(ev) => write!(f, "OpenInitChannelEv({:?})", ev),
+            IbcEvent::OpenTryChannel(ev) => write!(f, "OpenTryChannelEv({:?})", ev),
+            IbcEvent::OpenAckChannel(ev) => write!(f, "OpenAckChannelEv({:?})", ev),
+            IbcEvent::OpenConfirmChannel(ev) => write!(f, "OpenConfirmChannelEv({:?})", ev),
+            IbcEvent::CloseInitChannel(ev) => write!(f, "CloseInitChannelEv({})", ev),
+            IbcEvent::CloseConfirmChannel(ev) => write!(f, "CloseConfirmChannelEv({:?})", ev),
+
+            IbcEvent::SendPacket(ev) => write!(f, "SendPacketEv({})", ev),
+            IbcEvent::ReceivePacket(ev) => write!(f, "ReceivePacketEv({})", ev),
+            IbcEvent::WriteAcknowledgement(ev) => write!(f, "WriteAcknowledgementEv({})", ev),
+            IbcEvent::AcknowledgePacket(ev) => write!(f, "AcknowledgePacketEv({})", ev),
+            IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacketEv({})", ev),
+            IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacketEv({})", ev),
+
+            IbcEvent::Empty(ev) => write!(f, "EmptyEv({})", ev),
+            IbcEvent::ChainError(ev) => write!(f, "ChainErrorEv({})", ev),
+        }
+    }
 }
 
 // This is tendermint specific

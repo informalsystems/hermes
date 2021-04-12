@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
@@ -20,17 +21,17 @@ pub struct ConnectionEnd {
     client_id: ClientId,
     counterparty: Counterparty,
     versions: Vec<Version>,
-    delay_period: u64,
+    delay_period: Duration,
 }
 
 impl Default for ConnectionEnd {
     fn default() -> Self {
-        ConnectionEnd {
+        Self {
             state: State::Uninitialized,
             client_id: Default::default(),
             counterparty: Default::default(),
             versions: vec![],
-            delay_period: 0,
+            delay_period: Duration::from_secs(0),
         }
     }
 }
@@ -64,7 +65,7 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
                 .map(Version::try_from)
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            value.delay_period,
+            Duration::from_secs(value.delay_period),
         ))
     }
 }
@@ -80,7 +81,7 @@ impl From<ConnectionEnd> for RawConnectionEnd {
                 .collect(),
             state: value.state as i32,
             counterparty: Some(value.counterparty.into()),
-            delay_period: value.delay_period,
+            delay_period: value.delay_period.as_secs(),
         }
     }
 }
@@ -91,7 +92,7 @@ impl ConnectionEnd {
         client_id: ClientId,
         counterparty: Counterparty,
         versions: Vec<Version>,
-        delay_period: u64,
+        delay_period: Duration,
     ) -> Self {
         Self {
             state,
@@ -152,8 +153,9 @@ impl ConnectionEnd {
         self.counterparty.clone()
     }
 
-    /// Getter for the delay_period field.
-    pub fn delay_period(&self) -> u64 {
+    /// Getter for the delay_period field. This represents the duration, at minimum,
+    /// to delay the sending of a packet after the client update for that packet has been submitted.
+    pub fn delay_period(&self) -> Duration {
         self.delay_period
     }
 
