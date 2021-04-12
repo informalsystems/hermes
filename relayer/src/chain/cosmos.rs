@@ -307,19 +307,6 @@ impl CosmosSdkChain {
 
         Ok((proof, height))
     }
-
-    /// For a given Cosmos SDK chain, assemble the signer to use a custom address.
-    /// Alternative method to `Chain::get_signer()`.
-    pub fn custom_signer(&self, addr: String) -> Result<Signer, Error> {
-        let bech32 = bech32::encode(
-            &self.config.account_prefix,
-            addr.to_base32(),
-            Variant::Bech32,
-        )
-        .map_err(Kind::Bech32Encoding)?;
-
-        Ok(Signer::new(bech32))
-    }
 }
 
 impl Chain for CosmosSdkChain {

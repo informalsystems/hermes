@@ -3,8 +3,7 @@ use tracing::error;
 
 use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::ChainId;
-use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::tx_msg::Msg;
 
 use crate::chain::{Chain, CosmosSdkChain};
@@ -45,7 +44,7 @@ pub fn build_and_send_transfer_messages(
 ) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = match &opts.receiver {
         None => packet_dst_chain.get_signer(),
-        Some(r) => packet_dst_chain.custom_signer(r.clone()),
+        Some(r) => Ok(r.clone().into()),
     }
     .map_err(PacketError::KeyError)?;
 
