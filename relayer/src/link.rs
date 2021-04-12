@@ -1362,18 +1362,18 @@ impl RelayPath {
 
         let src_ods: Vec<OperationalData> = self
             .src_operational_data
-            .clone()
-            .into_iter()
-            .filter(|op| op.clone().scheduled_time.elapsed() > self.channel.connection_delay)
+            .iter()
+            .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
+            .cloned()
             .collect();
 
         self.src_operational_data = self.src_operational_data[src_ods.len()..].to_owned();
 
         let dst_ods: Vec<OperationalData> = self
             .dst_operational_data
-            .clone()
-            .into_iter()
-            .filter(|op| op.clone().scheduled_time.elapsed() > self.channel.connection_delay)
+            .iter()
+            .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
+            .cloned()
             .collect();
 
         self.dst_operational_data = self.dst_operational_data[dst_ods.len()..].to_owned();
