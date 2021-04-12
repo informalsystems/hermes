@@ -57,8 +57,26 @@ hermes misbehaviour ibc-0 07-tendermint-0
 ```
 
 ```json
-{"timestamp":"Apr 06 14:18:36.011","level":"ERROR","fields":{"message":"MISBEHAVIOUR DETECTED ClientId(\"07-tendermint-0\") h1: Height { revision_number: 1, revision_height: 17 }-Height { revision_number: 1, revision_height: 9 } h2: Height { revision_number: 1, revision_height: 17 }-Height { revision_number: 1, revision_height: 9 }, sending evidence"},"target":"ibc_relayer::foreign_client"}
-{"timestamp":"Apr 06 14:18:36.727","level":"INFO","fields":{"message":"\nEvidence submission result ClientMisbehaviour(ClientMisbehaviour(Attributes { height: Height { revision_number: 0, revision_height: 39 }, client_id: ClientId(\"07-tendermint-0\"), client_type: Tendermint, consensus_height: Height { revision_number: 1, revision_height: 17 } }))"},"target":"ibc_relayer_cli::commands::misbehaviour"}
+{"timestamp":"Apr 12 12:30:42.686","level":"INFO","fields":{"message":"checking misbehaviour for consensus state heights [Height { revision_number: 1, revision_height: 16 }, Height { revision_number: 1, revision_height: 8 }]"},"target":"ibc_relayer::foreign_client"}
+{"timestamp":"Apr 12 12:30:43.776","level":"ERROR","fields":{"message":"MISBEHAVIOUR DETECTED ClientId(\"07-tendermint-0\") h1: Height { revision_number: 1, revision_height: 16 }-Height { revision_number: 1, revision_height: 8 } h2: Height { revision_number: 1, revision_height: 16 }-Height { revision_number: 1, revision_height: 8 }, sending evidence"},"target":"ibc_relayer::foreign_client"}
+{"timestamp":"Apr 12 12:30:44.031","level":"INFO","fields":{"message":"evidence submission result [ClientMisbehaviour(ClientMisbehaviour(Attributes { height: Height { revision_number: 0, revision_height: 51 }, client_id: ClientId(\"07-tendermint-0\"), client_type: Tendermint, consensus_height: Height { revision_number: 1, revision_height: 16 } }))]"},"target":"ibc_relayer_cli::commands::misbehaviour"}
+{
+  "result": {
+    "ClientMisbehaviour": {
+      "client_id": "07-tendermint-0",
+      "client_type": "Tendermint",
+      "consensus_height": {
+        "revision_height": 16,
+        "revision_number": 1
+      },
+      "height": {
+        "revision_height": 51,
+        "revision_number": 0
+      }
+    }
+  },
+  "status": "success"
+}
 ```
 
 Querying client state from this point will show the client is in frozen state, with `frozen_height` indicating the height at which the client was frozen:
@@ -72,11 +90,11 @@ hermes query client state ibc-0 07-tendermint-0 | jq
     "allow_update_after_misbehaviour": false,
     "chain_id": "ibc-1",
     "frozen_height": {
-      "revision_height": 17,
+      "revision_height": 16,
       "revision_number": 1
     },
     "latest_height": {
-      "revision_height": 17,
+      "revision_height": 16,
       "revision_number": 1
     },
     "max_clock_drift": {
