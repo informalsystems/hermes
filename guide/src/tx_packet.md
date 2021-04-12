@@ -25,6 +25,7 @@ POSITIONAL ARGUMENTS:
     height_offset             timeout in number of blocks since current
 
 FLAGS:
+    -r, --receiver RECEIVER   receiving account address on the destination chain
     -d, --denom DENOM         denomination of the coins to send
     -n, --number-msgs NUMBER-MSGS
 ```
@@ -82,6 +83,53 @@ hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 10 -n 2 | jq
 ```
 
 The transfer packets are stored on `ibc-0` and can be relayed.
+
+To send transfer packets with a custom receiver address use the `--receiver | -r` flag.
+
+```shell
+hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -r board:1938586739 | jq
+```
+
+```json
+{
+  "result": [
+    {
+      "SendPacket": {
+        "height": {
+          "revision_height": 88,
+          "revision_number": 0
+        },
+        "packet": {
+          "data": "7B22616D6F756E74223A2239393939222C2264656E6F6D223A2273616D6F6C65616E73222C227265636569766572223A22626F6172643A31393338353836373339222C2273656E646572223A22636F736D6F7331646C6A6468736C6339787377713664337A7A3271387537363674346767667934766377636333227D",
+          "destination_channel": "channel-1",
+          "destination_port": "transfer",
+          "sequence": 2,
+          "source_channel": "channel-0",
+          "source_port": "transfer",
+          "timeout_height": {
+            "revision_height": 1077,
+            "revision_number": 1
+          },
+          "timeout_timestamp": 0
+        }
+      }
+    }
+  ],
+  "status": "success"
+}
+```
+
+```shell
+echo 7B22616D6F756E74223A2239393939222C2264656E6F6D223A2273616D6F6C65616E73222C227265636569766572223A22626F6172643A31393338353836373339222C2273656E646572223A22636F736D6F7331646C6A6468736C6339787377713664337A7A3271387537363674346767667934766377636333227D | xxd -r -p | jq
+```
+```json
+{
+  "amount": "9999",
+  "denom": "samoleans",
+  "receiver": "board:1938586739",
+  "sender": "cosmos1dljdhslc9xswq6d3zz2q8u766t4ggfy4vcwcc3"
+}
+```
 
 ## Relay receive and timeout packets
 
