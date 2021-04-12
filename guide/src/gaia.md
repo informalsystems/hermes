@@ -27,7 +27,11 @@ make install
 If the command above is successful you can run the following command to ensure it was properly installed:
 
 ```shell
-gaiad version
+$ gaiad version --log_level error --long | head -n4
+name: gaia
+server_name: gaiad
+version: v4.2.0
+commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 ```
 
 ## Next Steps

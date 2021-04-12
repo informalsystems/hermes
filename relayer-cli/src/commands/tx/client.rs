@@ -1,5 +1,4 @@
 use abscissa_core::{Command, Options, Runnable};
-use tracing::info;
 
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_state::ClientState;
@@ -103,11 +102,8 @@ impl Runnable for TxUpdateClientCmd {
             None => ibc::Height::zero(),
         };
 
-        let client = ForeignClient {
-            dst_chain,
-            src_chain,
-            id: self.dst_client_id.clone(),
-        };
+        let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res: Result<IbcEvent, Error> = client
             .build_update_client_and_send(height, trusted_height)
@@ -122,36 +118,40 @@ impl Runnable for TxUpdateClientCmd {
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxUpgradeClientCmd {
-    #[options(free, required, help = "identifier of the destination chain")]
-    dst_chain_id: ChainId,
+    #[options(free, required, help = "identifier of the chain that hosts the client")]
+    chain_id: ChainId,
 
-    #[options(
-        free,
-        required,
-        help = "identifier of the chain which underwent upgrade (source chain)"
-    )]
-    src_chain_id: ChainId,
-
-    #[options(
-        free,
-        required,
-        help = "identifier of the client to be upgraded on destination chain"
-    )]
-    dst_client_id: ClientId,
+    #[options(free, required, help = "identifier of the client to be upgraded")]
+    client_id: ClientId,
 }
 
 impl Runnable for TxUpgradeClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains = ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id)
-            .unwrap_or_else(exit_with_unrecoverable_error);
+        let dst_chain = match spawn_chain_runtime(&config, &self.chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
-        info!("Started the chain runtimes");
+        let src_chain_id = match dst_chain.query_client_state(&self.client_id, ibc::Height::zero())
+        {
+            Ok(cs) => cs.chain_id(),
+            Err(e) => {
+                return Output::error(format!(
+                    "Query of client '{}' on chain '{}' failed with error: {}",
+                    self.client_id, self.chain_id, e
+                ))
+                .exit()
+            }
+        };
 
-        // Instantiate the client hosted on the destination chain, which is targeting headers for
-        // the source chain.
-        let client = ForeignClient::find(chains.src, chains.dst, &self.dst_client_id)
+        let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
+
+        let client = ForeignClient::find(src_chain, dst_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let outcome = client.upgrade();
