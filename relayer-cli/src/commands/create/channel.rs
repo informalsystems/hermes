@@ -12,6 +12,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
+use ibc_relayer::config::default::connection_delay;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct CreateChannelCommand {
@@ -47,10 +48,10 @@ pub struct CreateChannelCommand {
     )]
     port_b: PortId,
 
-    #[options(help = "the order for parametrizing the new channel")]
+    #[options(help = "the channel ordering, valid options 'unordered' and 'ordered'")]
     order: Order,
 
-    #[options(help = "the version for parametrizing the new channel")]
+    #[options(help = "the version for the new channel")]
     version: String,
 }
 
@@ -68,6 +69,14 @@ impl CreateChannelCommand {
     fn run_using_new_connection(&self, chain_b_id: &ChainId) {
         let config = app_config();
 
+        // Bail with an explicit error. The user might be expecting to use this connection.
+        if self.connection_a.is_some() {
+            return Output::error(
+                "Option `<connection-a>` is incompatible with `<chain-b-id>`".to_string(),
+            )
+            .exit();
+        }
+
         let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
@@ -82,9 +91,8 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.
-        // TODO: pass the `delay` parameter here.
-        let con =
-            Connection::new(client_a, client_b, 0).unwrap_or_else(exit_with_unrecoverable_error);
+        let con = Connection::new(client_a, client_b, connection_delay())
+            .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally create the channel.
         let channel = Channel::new(con, self.order, self.port_a.clone(), self.port_b.clone())

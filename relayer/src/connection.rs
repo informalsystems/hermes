@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, warn};
@@ -20,12 +22,15 @@ use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
 
+/// Maximum value allowed for packet delay on any new connection that the relayer establishes.
+pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
+
 #[derive(Debug, Error)]
 pub enum ConnectionError {
     #[error("failed with underlying cause: {0}")]
     Failed(String),
 
-    #[error("constructor parameters do not match: underlying error: {0}")]
+    #[error("connection constructor error: {0}")]
     ConstructorFailed(String),
 
     #[error("failed during a query to chain id {0} due to underlying error: {1}")]
@@ -63,7 +68,7 @@ impl ConnectionSide {
 
 #[derive(Clone, Debug)]
 pub struct Connection {
-    pub delay_period: u64,
+    pub delay_period: Duration,
     pub a_side: ConnectionSide,
     pub b_side: ConnectionSide,
 }
@@ -74,11 +79,19 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
-        delay_period: u64,
-    ) -> Result<Connection, ConnectionError> {
+        delay_period: Duration,
+    ) -> Result<Self, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
-        let mut c = Connection {
+        // Validate the delay period against the upper bound
+        if delay_period > MAX_PACKET_DELAY {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "Invalid delay period '{:?}': should be max '{:?}'",
+                delay_period, MAX_PACKET_DELAY
+            )));
+        }
+
+        let mut c = Self {
             delay_period,
             a_side: ConnectionSide::new(
                 a_client.dst_chain(),
@@ -91,6 +104,7 @@ impl Connection {
                 Default::default(),
             ),
         };
+
         c.handshake()?;
 
         Ok(c)
@@ -135,7 +149,7 @@ impl Connection {
             })?;
 
         let c = Connection {
-            delay_period: 0, // TODO: Unclear if we should add mechanism to check the delay period
+            delay_period: conn_end_a.end().delay_period(),
             a_side: ConnectionSide {
                 chain: a_client.dst_chain.clone(),
                 client_id: a_client.id.clone(),
@@ -348,7 +362,7 @@ impl Connection {
             self.dst_client_id().clone(),
             counterparty,
             versions,
-            0,
+            Duration::from_secs(0),
         );
 
         // Retrieve existing connection if any
@@ -476,12 +490,14 @@ impl Connection {
 
         // Cross-check the delay_period
         let delay = if src_connection.delay_period() != self.delay_period {
-            warn!("`delay_period` for ConnectionEnd @{} is {}; delay period on local Connection object is set to {}",
-                self.src_chain().id(), src_connection.delay_period(), self.delay_period);
+            warn!("`delay_period` for ConnectionEnd @{} is {}s; delay period on local Connection object is set to {}s",
+                self.src_chain().id(), src_connection.delay_period().as_secs(), self.delay_period.as_secs());
+
             warn!(
-                "Overriding delay period for local connection object to {}",
-                src_connection.delay_period()
+                "Overriding delay period for local connection object to {}s",
+                src_connection.delay_period().as_secs()
             );
+
             src_connection.delay_period()
         } else {
             self.delay_period

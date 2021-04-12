@@ -82,6 +82,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryInto;
+    use std::time::Duration;
 
     use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
@@ -136,7 +137,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            0,
+            Duration::from_secs(0),
         );
 
         let tests: Vec<Test> = vec![

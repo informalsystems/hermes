@@ -155,6 +155,7 @@ mod tests {
     use crate::mock::context::MockContext;
 
     use std::convert::TryFrom;
+    use std::time::Duration;
 
     #[test]
     fn timeout_on_close_packet_processing() {
@@ -207,7 +208,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            0,
+            Duration::from_secs(0),
         );
 
         let tests: Vec<Test> = vec![

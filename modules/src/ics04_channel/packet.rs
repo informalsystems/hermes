@@ -81,7 +81,7 @@ impl std::fmt::Display for Sequence {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, Hash, Clone)]
+#[derive(PartialEq, Deserialize, Serialize, Hash, Clone)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
@@ -94,12 +94,29 @@ pub struct Packet {
     pub timeout_timestamp: u64,
 }
 
-impl std::fmt::Display for Packet {
+impl std::fmt::Debug for Packet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
             "{:?} {:?} {:?}",
             self.source_port, self.source_channel, self.sequence
+        )
+    }
+}
+
+/// Custom debug output to omit the packet data
+impl std::fmt::Display for Packet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "seq:{}, path:{}/{}->{}/{}, toh:{}, tos:{})",
+            self.sequence,
+            self.source_channel,
+            self.source_port,
+            self.destination_channel,
+            self.destination_port,
+            self.timeout_height,
+            self.timeout_timestamp
         )
     }
 }

@@ -1,5 +1,8 @@
-use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
+use std::{
+    convert::{TryFrom, TryInto},
+    str::FromStr,
+    time::Duration,
+};
 
 use tendermint_proto::Protobuf;
 
@@ -29,7 +32,7 @@ pub struct MsgConnectionOpenTry {
     pub counterparty: Counterparty,
     pub counterparty_versions: Vec<Version>,
     pub proofs: Proofs,
-    pub delay_period: u64, // FIXME(romac): Introduce newtype for `delay_period`
+    pub delay_period: Duration,
     pub signer: Signer,
 }
 
@@ -155,7 +158,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            delay_period: msg.delay_period,
+            delay_period: Duration::from_secs(msg.delay_period),
             signer: msg.signer.into(),
         })
     }
@@ -172,7 +175,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
-            delay_period: ics_msg.delay_period,
+            delay_period: ics_msg.delay_period.as_secs(),
             counterparty_versions: ics_msg
                 .counterparty_versions
                 .iter()
