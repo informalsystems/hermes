@@ -18,7 +18,7 @@ DESCRIPTION:
 
 POSITIONAL ARGUMENTS:
     src_chain_id              identifier of the source chain
-    dest_chain_id             identifier of the destination chain
+    dst_chain_id              identifier of the destination chain
     src_port_id               identifier of the source port
     src_channel_id            identifier of the source channel
     amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
@@ -26,7 +26,7 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -r, --receiver RECEIVER   receiving account address on the destination chain
-    -d, --denom DENOM         denomination of the coins to send
+    -d, --denom DENOM         denomination of the coins to send (default: samoleans)
     -n, --number-msgs NUMBER-MSGS
 ```
 
