@@ -56,7 +56,13 @@ impl Runnable for StartCmd {
                         let delay = connection.delay.as_secs();
                         let ordering = path.ordering;
 
-                        match relay_on_new_link(chains.src, chains.dst, delay, ordering, path) {
+                        match relay_on_new_link(
+                            chains.src,
+                            chains.dst,
+                            delay,
+                            ordering,
+                            path.clone(),
+                        ) {
                             Ok(()) => Output::success(()).exit(),
                             Err(e) => Output::error(e.to_string()).exit(),
                         }

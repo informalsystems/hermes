@@ -10,9 +10,6 @@ use ibc::ics24_host::identifier::{ChainId, PortId};
 use crate::error;
 use ibc::ics04_channel::channel::Order;
 
-/// Default value (in seconds) for the packet delay of a new connection.
-pub const DEFAULT_PACKET_DELAY_SEC: u64 = 0;
-
 /// Defaults for various fields
 pub mod default {
     use super::*;
@@ -26,14 +23,15 @@ pub mod default {
     }
 
     pub fn clock_drift() -> Duration {
-        Duration::from_secs(5) // 5 seconds
+        Duration::from_secs(5)
     }
 
     pub fn connection_delay() -> Duration {
-        Duration::from_secs(DEFAULT_PACKET_DELAY_SEC)
+        Duration::from_secs(0)
     }
+
     pub fn channel_ordering() -> Order {
-        Order::default()
+        Order::Unordered
     }
 }
 
@@ -59,21 +57,19 @@ impl Config {
         &self,
         src_chain: &ChainId,
         dst_chain: &ChainId,
-    ) -> Option<(Connection, RelayPath)> {
+    ) -> Option<(&Connection, &RelayPath)> {
         let connection = self.connections.as_ref()?.iter().find(|c| {
             c.a_chain == *src_chain && c.b_chain == *dst_chain
                 || c.a_chain == *dst_chain && c.b_chain == *src_chain
         });
-        match connection {
-            None => None,
-            Some(conn) => {
-                if let Some(paths) = conn.clone().paths {
-                    Some((conn.clone(), paths[0].clone()))
-                } else {
-                    None
-                }
+
+        connection.and_then(|conn| {
+            if let Some(ref paths) = conn.paths {
+                Some((conn, &paths[0]))
+            } else {
+                None
             }
-        }
+        })
     }
 }
 
