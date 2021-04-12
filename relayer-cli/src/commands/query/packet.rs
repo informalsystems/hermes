@@ -60,7 +60,8 @@ impl Runnable for QueryPacketCommitmentsCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
@@ -135,7 +136,8 @@ impl Runnable for QueryPacketCommitmentCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         // cargo run --bin hermes -- query packet commitment ibc-0 transfer ibconexfer 3 --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
@@ -231,7 +233,8 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSdkChain::bootstrap(src_chain_config, rt.clone()).unwrap();
@@ -355,7 +358,8 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
@@ -430,7 +434,8 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         // cargo run --bin hermes -- query packet acknowledgment ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
@@ -526,7 +531,8 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSdkChain::bootstrap(src_chain_config, rt.clone()).unwrap();
