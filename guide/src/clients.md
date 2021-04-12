@@ -32,20 +32,21 @@ hermes create client ibc-0 ibc-1
 Success: CreateClient(
     CreateClient(
         Attributes {
-            height: revision: 0, height: 4188,
+            height: revision: 0, height: 264,
             client_id: ClientId(
-                "07-tendermint-9",
+                "07-tendermint-1",
             ),
             client_type: Tendermint,
-            consensus_height: revision: 1, height: 4177,
+            consensus_height: revision: 1, height: 253,
         },
     ),
 )
 ```
 
-A new client is created with identifier `07-tendermint-9`
+A new client is created with identifier `07-tendermint-1`
 
 ## Update Client
+
 Use the `update client` command to update an existing client with a new consensus state.
 Specific update and trusted heights can be specified.
 
@@ -65,9 +66,9 @@ FLAGS:
     -t, --trusted-height TRUSTED-HEIGHT
 ```
 
-__Example__
+### Example 1
 
-Update the client on `ibc-0` with latest header of `ibc-1`
+Update the client on `ibc-0` with latest header of `ibc-1`:
 
 ```shell
 hermes update client ibc-0 07-tendermint-9
@@ -77,16 +78,46 @@ hermes update client ibc-0 07-tendermint-9
 Success: UpdateClient(
     UpdateClient {
         common: Attributes {
-            height: revision: 0, height: 4273,
+            height: revision: 0, height: 303,
             client_id: ClientId(
-                "07-tendermint-9",
+                "07-tendermint-1",
             ),
             client_type: Tendermint,
-            consensus_height: revision: 1, height: 4262,
+            consensus_height: revision: 1, height: 293,
         },
-        header: None,
+        header: Some(
+            Tendermint(...),
+        ),
     },
 )
 ```
 
-The client with identifier `07-tendermint-9` has been updated with the consensus state at height `1-4262`.
+The client with identifier `07-tendermint-1` has been updated with the consensus state at height `1-293`.
+
+### Example 2
+
+Update a client to a specific target height:
+
+```shell
+hermes update client ibc-0 07-tendermint-1 --target-height 320 --trusted-height 293
+```
+
+```rust
+Success: UpdateClient(
+    UpdateClient {
+        common: Attributes {
+            height: revision: 0, height: 555,
+            client_id: ClientId(
+                "07-tendermint-1",
+            ),
+            client_type: Tendermint,
+            consensus_height: revision: 1, height: 320,
+        },
+        header: Some(
+            Tendermint(...),
+        ),
+    },
+)
+```
+
+The client with identifier `07-tendermint-1` has been updated with the consensus state at height `1-320`, as specified.
