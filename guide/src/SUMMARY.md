@@ -34,6 +34,7 @@
      - [Packet relaying](./packets.md)
    - [Listen mode](./listen.md)
    - [Upgrade](./upgrade.md)
+     - [Upgrade test](./upgrade_test.md)
    - [Misbehaviour](./misbehaviour.md)
    - [Queries](./queries.md)
      - [Client](./query_client.md)
