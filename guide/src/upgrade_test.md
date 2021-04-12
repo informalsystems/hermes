@@ -22,7 +22,7 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 2. Create one client on `ibc-1` for `ibc-0`:
 
     ```shell
-    $ hermes tx raw create-client ibc-1 ibc-0
+    $ hermes create client ibc-1 ibc-0
     ```
 
 3. Create and submit an upgrade plan for chain `ibc-0`:
