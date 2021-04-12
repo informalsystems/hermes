@@ -3,6 +3,7 @@ pub mod step;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
+use std::time::Duration;
 
 use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::client_state::AnyClientState;
@@ -164,8 +165,8 @@ impl IbcTestRunner {
         Counterparty::new(client_id, connection_id, prefix)
     }
 
-    pub fn delay_period() -> u64 {
-        0
+    pub fn delay_period() -> Duration {
+        Duration::from_secs(0)
     }
 
     pub fn commitment_prefix() -> CommitmentPrefix {

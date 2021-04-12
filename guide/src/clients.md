@@ -1,9 +1,11 @@
 # Client
 
 ## Table of Contents
+
 <!-- toc -->
 
 ## Create Client
+
 Use the `create client` command to create a new client.
 
 ```shell
@@ -23,32 +25,28 @@ __Example__
 Create a new client of `ibc-1` on `ibc-0`:
 
 ```shell
-hermes create client ibc-0 ibc-1 | jq
+hermes create client ibc-0 ibc-1
 ```
 
-```json
-{
-  "result": {
-    "CreateClient": {
-      "client_id": "07-tendermint-0",
-      "client_type": "Tendermint",
-      "consensus_height": {
-        "revision_height": 355,
-        "revision_number": 1
-      },
-      "height": {
-        "revision_height": 568,
-        "revision_number": 0
-      }
-    }
-  },
-  "status": "success"
-}
+```rust
+Success: CreateClient(
+    CreateClient(
+        Attributes {
+            height: revision: 0, height: 264,
+            client_id: ClientId(
+                "07-tendermint-1",
+            ),
+            client_type: Tendermint,
+            consensus_height: revision: 1, height: 253,
+        },
+    ),
+)
 ```
 
-A new client is created with identifier `07-tendermint-3`
+A new client is created with identifier `07-tendermint-1`
 
 ## Update Client
+
 Use the `update client` command to update an existing client with a new consensus state.
 Specific update and trusted heights can be specified.
 
@@ -68,38 +66,56 @@ FLAGS:
     -t, --trusted-height TRUSTED-HEIGHT
 ```
 
-__Example__
+__Update client with latest header__
 
-Update the client on `ibc-0` with latest header of `ibc-1`
+the client on `ibc-0` with latest header of `ibc-1`:
 
 ```shell
-hermes update client ibc-0 07-tendermint-0  | jq
+hermes update client ibc-0 07-tendermint-9
 ```
 
-```json
-{
-  "result": {
-    "UpdateClient": {
-      "common": {
-        "client_id": "07-tendermint-0",
-        "client_type": "Tendermint",
-        "consensus_height": {
-          "revision_height": 273,
-          "revision_number": 1
+```rust
+Success: UpdateClient(
+    UpdateClient {
+        common: Attributes {
+            height: revision: 0, height: 303,
+            client_id: ClientId(
+                "07-tendermint-1",
+            ),
+            client_type: Tendermint,
+            consensus_height: revision: 1, height: 293,
         },
-        "height": {
-          "revision_height": 280,
-          "revision_number": 0
-        }
-      },
-      "header": {
-        "Tendermint": {
-        ...
-      }
-    }
-  },
-  "status": "success"
-}
+        header: Some(
+            Tendermint(...),
+        ),
+    },
+)
 ```
 
-The client with identifier `07-tendermint-0` has been updated with the consensus state at height `1-273`.
+The client with identifier `07-tendermint-1` has been updated with the consensus state at height `1-293`.
+
+__Update a client to a specific target height__
+
+```shell
+hermes update client ibc-0 07-tendermint-1 --target-height 320 --trusted-height 293
+```
+
+```rust
+Success: UpdateClient(
+    UpdateClient {
+        common: Attributes {
+            height: revision: 0, height: 555,
+            client_id: ClientId(
+                "07-tendermint-1",
+            ),
+            client_type: Tendermint,
+            consensus_height: revision: 1, height: 320,
+        },
+        header: Some(
+            Tendermint(...),
+        ),
+    },
+)
+```
+
+The client with identifier `07-tendermint-1` has been updated with the consensus state at height `1-320`, as specified.

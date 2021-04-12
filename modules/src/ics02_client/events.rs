@@ -125,6 +125,16 @@ impl Default for Attributes {
     }
 }
 
+impl std::fmt::Display for Attributes {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "ev_h:{}, {}({}), ",
+            self.height, self.client_id, self.consensus_height
+        )
+    }
+}
+
 /// CreateClient event signals the creation of a new on-chain client (IBC client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CreateClient(Attributes);
@@ -163,6 +173,12 @@ impl TryFrom<RawObject> for CreateClient {
 impl From<CreateClient> for IbcEvent {
     fn from(v: CreateClient) -> Self {
         IbcEvent::CreateClient(v)
+    }
+}
+
+impl std::fmt::Display for CreateClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -225,6 +241,12 @@ impl TryFrom<RawObject> for UpdateClient {
 impl From<UpdateClient> for IbcEvent {
     fn from(v: UpdateClient) -> Self {
         IbcEvent::UpdateClient(v)
+    }
+}
+
+impl std::fmt::Display for UpdateClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.common)
     }
 }
 

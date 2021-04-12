@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::time::Duration;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use tendermint_proto::Protobuf;
@@ -20,7 +21,7 @@ pub struct MsgConnectionOpenInit {
     pub client_id: ClientId,
     pub counterparty: Counterparty,
     pub version: Version,
-    pub delay_period: u64,
+    pub delay_period: Duration,
     pub signer: Signer,
 }
 
@@ -69,7 +70,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .ok_or(Kind::InvalidVersion)?
                 .try_into()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            delay_period: msg.delay_period,
+            delay_period: Duration::from_secs(msg.delay_period),
             signer: msg.signer.into(),
         })
     }
@@ -81,7 +82,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             client_id: ics_msg.client_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
             version: Some(ics_msg.version.into()),
-            delay_period: ics_msg.delay_period,
+            delay_period: ics_msg.delay_period.as_secs(),
             signer: ics_msg.signer.to_string(),
         }
     }

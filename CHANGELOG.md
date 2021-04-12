@@ -21,9 +21,11 @@
   - Added `create connection` and `create channel` CLIs ([#630], [#715])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
   - Added `client-upgrade` CLI ([#357])
+  - Added delay feature for packet relaying ([#640])
   - Update gaia to version 4.2.0 for e2e tests on CI ([#809])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
   - Add option to specify which events to listen for in `listen` command ([#550])
+  - Add option to customise receiver address for `ft-transfer` command ([#806])
   - Add `keys restore` command to import a signing key from its mnemonic ([#813])
 
 ### IMPROVEMENTS
@@ -82,6 +84,7 @@
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
 [#632]: https://github.com/informalsystems/ibc-rs/issues/632
+[#640]: https://github.com/informalsystems/ibc-rs/issues/640
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#675]: https://github.com/informalsystems/ibc-rs/issues/675
@@ -104,8 +107,9 @@
 [#793]: https://github.com/informalsystems/ibc-rs/pull/793
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
 [#801]: https://github.com/informalsystems/ibc-rs/issues/801
-[#801]: https://github.com/informalsystems/ibc-rs/issues/809
 [#805]: https://github.com/informalsystems/ibc-rs/issues/805
+[#806]: https://github.com/informalsystems/ibc-rs/issues/806
+[#809]: https://github.com/informalsystems/ibc-rs/issues/809
 
 
 ## v0.1.1

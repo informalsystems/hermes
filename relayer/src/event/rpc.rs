@@ -128,7 +128,7 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
             ))
         }
 
-        _ => Err("Incorrect Event Type".into()),
+        event_type => Err(format!("Incorrect event type: '{}'", event_type).into()),
     }
 }
 

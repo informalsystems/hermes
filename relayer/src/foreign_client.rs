@@ -301,8 +301,6 @@ impl ForeignClient {
 
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
     fn create(&mut self) -> Result<(), ForeignClientError> {
-        let done = '\u{1F36D}';
-
         match self.build_create_client_and_send() {
             Err(e) => {
                 error!("Failed CreateClient {:?}: {}", self.dst_chain.id(), e);
@@ -313,7 +311,7 @@ impl ForeignClient {
             }
             Ok(event) => {
                 self.id = extract_client_id(&event)?.clone();
-                println!("{}  {} => {:?}\n", done, self.dst_chain.id(), event);
+                info!("🍭  {} => {:#?}\n", self.dst_chain.id(), event);
             }
         }
         Ok(())
@@ -386,8 +384,9 @@ impl ForeignClient {
 
         if trusted_height >= target_height {
             warn!(
-                "Client height ({}) >= chain target height ({}). Cannot build update message.",
-                trusted_height, target_height
+                "Client {} on {}: trusted height ({}) >= chain target height ({}). Omitting update message.",
+                self.id, trusted_height, self.dst_chain.id(),
+                target_height
             );
             return Ok(vec![]);
         }

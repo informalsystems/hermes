@@ -1,4 +1,7 @@
+use std::time::Duration;
+
 use prost_types::Any;
+use serde::Serialize;
 use thiserror::Error;
 use tracing::{error, warn};
 
@@ -20,12 +23,15 @@ use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
 
+/// Maximum value allowed for packet delay on any new connection that the relayer establishes.
+pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
+
 #[derive(Debug, Error)]
 pub enum ConnectionError {
     #[error("failed with underlying cause: {0}")]
     Failed(String),
 
-    #[error("constructor parameters do not match: underlying error: {0}")]
+    #[error("connection constructor error: {0}")]
     ConstructorFailed(String),
 
     #[error("failed during a query to chain id {0} due to underlying error: {1}")]
@@ -52,7 +58,7 @@ impl ConnectionSide {
         chain: Box<dyn ChainHandle>,
         client_id: ClientId,
         connection_id: ConnectionId,
-    ) -> ConnectionSide {
+    ) -> Self {
         Self {
             chain,
             client_id,
@@ -61,9 +67,29 @@ impl ConnectionSide {
     }
 }
 
-#[derive(Clone, Debug)]
+impl Serialize for ConnectionSide {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Debug, Serialize)]
+        struct ConnectionSide<'a> {
+            client_id: &'a ClientId,
+            connection_id: &'a ConnectionId,
+        }
+
+        let value = ConnectionSide {
+            client_id: &self.client_id,
+            connection_id: &self.connection_id,
+        };
+
+        value.serialize(serializer)
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub struct Connection {
-    pub delay_period: u64,
+    pub delay_period: Duration,
     pub a_side: ConnectionSide,
     pub b_side: ConnectionSide,
 }
@@ -74,11 +100,19 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
-        delay_period: u64,
-    ) -> Result<Connection, ConnectionError> {
+        delay_period: Duration,
+    ) -> Result<Self, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
-        let mut c = Connection {
+        // Validate the delay period against the upper bound
+        if delay_period > MAX_PACKET_DELAY {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "Invalid delay period '{:?}': should be max '{:?}'",
+                delay_period, MAX_PACKET_DELAY
+            )));
+        }
+
+        let mut c = Self {
             delay_period,
             a_side: ConnectionSide::new(
                 a_client.dst_chain(),
@@ -91,6 +125,7 @@ impl Connection {
                 Default::default(),
             ),
         };
+
         c.handshake()?;
 
         Ok(c)
@@ -135,7 +170,7 @@ impl Connection {
             })?;
 
         let c = Connection {
-            delay_period: 0, // TODO: Unclear if we should add mechanism to check the delay period
+            delay_period: conn_end_a.end().delay_period(),
             a_side: ConnectionSide {
                 chain: a_client.dst_chain.clone(),
                 client_id: a_client.id.clone(),
@@ -209,7 +244,7 @@ impl Connection {
 
     /// Executes a connection handshake protocol (ICS 003) for this connection object
     fn handshake(&mut self) -> Result<(), ConnectionError> {
-        let done = '\u{1F942}'; // surprise emoji
+        let done = '🥂';
 
         let a_chain = self.a_side.chain.clone();
         let b_chain = self.b_side.chain.clone();
@@ -225,7 +260,7 @@ impl Connection {
                 }
                 Ok(result) => {
                     self.a_side.connection_id = extract_connection_id(&result)?.clone();
-                    println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), result);
+                    println!("🥂  {} => {:#?}\n", self.a_side.chain.id(), result);
                     break;
                 }
             }
@@ -242,7 +277,7 @@ impl Connection {
                 }
                 Ok(result) => {
                     self.b_side.connection_id = extract_connection_id(&result)?.clone();
-                    println!("{}  {} => {:?}\n", done, self.b_side.chain.id(), result);
+                    println!("{}  {} => {:#?}\n", done, self.b_side.chain.id(), result);
                     break;
                 }
             }
@@ -269,11 +304,9 @@ impl Connection {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                     // Ack to a_chain
                     match self.flipped().build_conn_ack_and_send() {
-                        Err(e) => {
-                            error!("Failed ConnAck {:?}: {}", self.a_side, e);
-                        }
+                        Err(e) => error!("Failed ConnAck {:?}: {}", self.a_side, e),
                         Ok(event) => {
-                            println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event)
+                            println!("{}  {} => {:#?}\n", done, self.a_side.chain.id(), event)
                         }
                     }
                 }
@@ -282,7 +315,7 @@ impl Connection {
                     match self.build_conn_confirm_and_send() {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.b_side, e),
                         Ok(event) => {
-                            println!("{}  {} => {:?}\n", done, self.b_side.chain.id(), event)
+                            println!("{}  {} => {:#?}\n", done, self.b_side.chain.id(), event)
                         }
                     }
                 }
@@ -291,14 +324,14 @@ impl Connection {
                     match self.flipped().build_conn_confirm_and_send() {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.a_side, e),
                         Ok(event) => {
-                            println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event)
+                            println!("{}  {} => {:#?}\n", done, self.a_side.chain.id(), event)
                         }
                     }
                 }
                 (State::Open, State::Open) => {
                     println!(
-                        "{}  {}  {}  Connection handshake finished for [{:#?}]\n",
-                        done, done, done, self
+                        "{0}{0}{0}  Connection handshake finished for [{1:#?}]\n",
+                        done, self
                     );
                     return Ok(());
                 }
@@ -348,7 +381,7 @@ impl Connection {
             self.dst_client_id().clone(),
             counterparty,
             versions,
-            0,
+            Duration::from_secs(0),
         );
 
         // Retrieve existing connection if any
@@ -476,12 +509,14 @@ impl Connection {
 
         // Cross-check the delay_period
         let delay = if src_connection.delay_period() != self.delay_period {
-            warn!("`delay_period` for ConnectionEnd @{} is {}; delay period on local Connection object is set to {}",
-                self.src_chain().id(), src_connection.delay_period(), self.delay_period);
+            warn!("`delay_period` for ConnectionEnd @{} is {}s; delay period on local Connection object is set to {}s",
+                self.src_chain().id(), src_connection.delay_period().as_secs(), self.delay_period.as_secs());
+
             warn!(
-                "Overriding delay period for local connection object to {}",
-                src_connection.delay_period()
+                "Overriding delay period for local connection object to {}s",
+                src_connection.delay_period().as_secs()
             );
+
             src_connection.delay_period()
         } else {
             self.delay_period

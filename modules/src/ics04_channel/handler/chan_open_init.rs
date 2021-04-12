@@ -37,7 +37,7 @@ pub(crate) fn process(
         _ => return Err(Kind::InvalidVersionLengthConnection.into()),
     };
 
-    let channel_feature = msg.channel().ordering().as_string().to_string();
+    let channel_feature = msg.channel().ordering().to_string();
     if !version.is_supported_feature(channel_feature) {
         return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
     }

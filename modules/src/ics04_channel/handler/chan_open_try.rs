@@ -94,7 +94,7 @@ pub(crate) fn process(
         _ => return Err(Kind::InvalidVersionLengthConnection.into()),
     };
 
-    let channel_feature = msg.channel().ordering().as_string().to_string();
+    let channel_feature = msg.channel().ordering().to_string();
     if !version.is_supported_feature(channel_feature) {
         return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
     }
@@ -165,6 +165,7 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use std::time::Duration;
 
     use crate::events::IbcEvent;
     use crate::ics02_client::client_type::ClientType;
@@ -207,7 +208,7 @@ mod tests {
             client_id.clone(),
             ConnectionCounterparty::try_from(get_dummy_raw_counterparty()).unwrap(),
             get_compatible_versions(),
-            0,
+            Duration::from_secs(0),
         );
 
         // We're going to test message processing against this message.

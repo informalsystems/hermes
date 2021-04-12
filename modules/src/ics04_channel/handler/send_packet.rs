@@ -118,6 +118,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 #[cfg(test)]
 mod tests {
     use std::convert::TryInto;
+    use std::time::Duration;
 
     use crate::events::IbcEvent;
     use crate::ics02_client::height::Height;
@@ -164,7 +165,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            0,
+            Duration::from_secs(0),
         );
 
         let mut packet_old: Packet = get_dummy_raw_packet(1, 1).try_into().unwrap();

@@ -1,8 +1,9 @@
 use std::convert::{TryFrom, TryInto};
+use std::fmt;
 use std::str::FromStr;
 
 use anomaly::fail;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel, Counterparty as RawCounterparty};
@@ -35,6 +36,7 @@ impl Default for ChannelEnd {
         }
     }
 }
+
 impl Protobuf<RawChannel> for ChannelEnd {}
 
 impl TryFrom<RawChannel> for ChannelEnd {
@@ -248,7 +250,7 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Order {
     None = 0,
     Unordered,
@@ -261,9 +263,15 @@ impl Default for Order {
     }
 }
 
+impl fmt::Display for Order {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 impl Order {
     /// Yields the Order as a string
-    pub fn as_string(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Self::None => "UNINITIALIZED",
             Self::Unordered => "ORDER_UNORDERED",
@@ -286,10 +294,10 @@ impl FromStr for Order {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "UNINITIALIZED" => Ok(Self::None),
-            "UNORDERED" => Ok(Self::Unordered),
-            "ORDERED" => Ok(Self::Ordered),
+        match s.to_lowercase().as_str() {
+            "uninitialized" => Ok(Self::None),
+            "unordered" => Ok(Self::Unordered),
+            "ordered" => Ok(Self::Ordered),
             _ => fail!(error::Kind::UnknownOrderType, s),
         }
     }
