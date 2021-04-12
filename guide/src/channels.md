@@ -24,7 +24,6 @@ FLAGS:
     --port-a PORT-A           identifier of the side `a` port for the new channel
     --port-b PORT-B           identifier of the side `b` port for the new channel
     -o, --order ORDER         the channel ordering, valid options 'unordered' and 'ordered'
-    -v, --version VERSION     the version for the new channel
 ```
 
 ## Examples
