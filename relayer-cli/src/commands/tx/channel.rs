@@ -86,12 +86,13 @@ impl Runnable for TxRawChanOpenInitCmd {
                         ChannelId::default(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         ChannelId::default(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -142,12 +143,13 @@ impl Runnable for TxRawChanOpenTryCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         ChannelId::default(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -206,12 +208,13 @@ impl Runnable for TxRawChanOpenAckCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -270,12 +273,13 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -334,12 +338,13 @@ impl Runnable for TxRawChanCloseInitCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -398,12 +403,13 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
                     ),
+                    version: None,
                 }
             }
         );

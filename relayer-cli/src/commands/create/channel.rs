@@ -50,8 +50,9 @@ pub struct CreateChannelCommand {
 
     #[options(help = "the channel ordering, valid options 'unordered' and 'ordered'")]
     order: Order,
-    // #[options(help = "the version for the new channel")]
-    // version: Option<u64>,
+
+    #[options(help = "the version for the new channel")]
+    version: Option<String>,
 }
 
 impl Runnable for CreateChannelCommand {
@@ -96,8 +97,14 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally create the channel.
-        let channel = Channel::new(con, self.order, self.port_a.clone(), self.port_b.clone())
-            .unwrap_or_else(exit_with_unrecoverable_error);
+        let channel = Channel::new(
+            con,
+            self.order,
+            self.port_a.clone(),
+            self.port_b.clone(),
+            self.version.clone(),
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
 
         Output::success(channel).exit();
     }
@@ -153,6 +160,7 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
+            self.version.clone(),
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
 

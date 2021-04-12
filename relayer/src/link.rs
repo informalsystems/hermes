@@ -1607,6 +1607,7 @@ impl Link {
                 b_channel_id,
             ),
             connection_delay: a_connection.delay_period(),
+            version: None,
         };
 
         Ok(Link::new(channel))

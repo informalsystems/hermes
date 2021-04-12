@@ -92,6 +92,7 @@ pub struct Channel {
     pub a_side: ChannelSide,
     pub b_side: ChannelSide,
     pub connection_delay: Duration,
+    pub version: Option<String>,
 }
 
 impl Channel {
@@ -102,7 +103,15 @@ impl Channel {
         ordering: Order,
         a_port: PortId,
         b_port: PortId,
+        version: Option<String>,
     ) -> Result<Self, ChannelError> {
+        let b_side_chain = connection.dst_chain().clone();
+        let version = version.unwrap_or(
+            b_side_chain
+                .module_version(&a_port)
+                .map_err(|e| ChannelError::QueryError(b_side_chain.id(), e))?,
+        );
+
         let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
@@ -120,6 +129,7 @@ impl Channel {
                 Default::default(),
             ),
             connection_delay: connection.delay_period,
+            version: Some(version),
         };
 
         channel.handshake()?;
@@ -173,6 +183,7 @@ impl Channel {
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
             connection_delay: self.connection_delay,
+            version: self.version.clone(),
         }
     }
 
@@ -306,6 +317,44 @@ impl Channel {
         })
     }
 
+    /// Returns the channel version if already set, otherwise it queries the destination chain
+    /// for the destination port's version.
+    /// Note: This query is currently not available and it is hardcoded in the `module_version()`
+    /// to be `ics20-1` for `transfer` port.
+    pub fn dst_version(&self) -> Result<String, ChannelError> {
+        Ok(self.version.clone()
+            .unwrap_or(
+                self
+                    .dst_chain()
+                    .module_version(self.dst_port_id())
+                    .map_err(|e| {
+                        ChannelError::Failed(format!(
+                            "failed while getting the module version from dst chain ({}) with error: {}",
+                            self.dst_chain().id(),
+                            e
+                        ))
+                    })?
+            ))
+    }
+
+    /// Returns the channel version if already set, otherwise it queries the source chain
+    /// for the source port's version.
+    pub fn src_version(&self) -> Result<String, ChannelError> {
+        Ok(self.version.clone()
+            .unwrap_or(
+                self
+                    .src_chain()
+                    .module_version(self.src_port_id())
+                    .map_err(|e| {
+                        ChannelError::Failed(format!(
+                            "failed while getting the module version from src chain ({}) with error: {}",
+                            self.src_chain().id(),
+                            e
+                        ))
+                    })?
+            ))
+    }
+
     pub fn build_chan_open_init(&self) -> Result<Vec<Any>, ChannelError> {
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ChannelError::Failed(format!(
@@ -317,23 +366,12 @@ impl Channel {
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
-        let chan_version = self
-            .dst_chain()
-            .module_version(self.dst_port_id())
-            .map_err(|e| {
-                ChannelError::Failed(format!(
-                    "failed while getting the module version from dst chain ({}) with error: {}",
-                    self.dst_chain().id(),
-                    e
-                ))
-            })?;
-
         let channel = ChannelEnd::new(
             State::Init,
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            chan_version,
+            self.dst_version()?,
         );
 
         // Build the domain type message
@@ -395,23 +433,12 @@ impl Channel {
             _ => State::Uninitialized,
         };
 
-        let chan_version = self
-            .dst_chain()
-            .module_version(self.dst_port_id())
-            .map_err(|e| {
-                ChannelError::Failed(format!(
-                    "failed while getting the module version from dst chain ({}) with error: {}",
-                    self.dst_chain().id(),
-                    e
-                ))
-            })?;
-
         let dst_expected_channel = ChannelEnd::new(
             highest_state,
             self.ordering,
             counterparty,
             vec![self.dst_connection_id().clone()],
-            chan_version,
+            self.dst_version()?,
         );
 
         // Retrieve existing channel if any
@@ -467,17 +494,12 @@ impl Channel {
             Some(self.src_channel_id().clone()),
         );
 
-        let v_dst = self
-            .dst_chain()
-            .module_version(self.dst_port_id())
-            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
-
         let channel = ChannelEnd::new(
             State::TryOpen,
             *src_channel.ordering(),
             counterparty,
             vec![self.dst_connection_id().clone()],
-            v_dst,
+            self.dst_version()?,
         );
 
         // Get signer
@@ -489,17 +511,11 @@ impl Channel {
             ))
         })?;
 
-        // Get source-chain version
-        let v_src = self
-            .src_chain()
-            .module_version(self.src_port_id())
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
-
         // Build the domain type message
         let new_msg = MsgChannelOpenTry {
             port_id: self.dst_port_id().clone(),
             previous_channel_id: src_channel.counterparty().channel_id.clone(),
-            counterparty_version: v_src,
+            counterparty_version: self.src_version()?,
             channel,
             proofs,
             signer,
@@ -579,17 +595,12 @@ impl Channel {
             ))
         })?;
 
-        let v_src = self
-            .src_chain()
-            .module_version(self.src_port_id())
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
-
         // Build the domain type message
         let new_msg = MsgChannelOpenAck {
             port_id: self.dst_port_id().clone(),
             channel_id: self.dst_channel_id().clone(),
             counterparty_channel_id: self.src_channel_id().clone(),
-            counterparty_version: v_src,
+            counterparty_version: self.src_version()?,
             proofs,
             signer,
         };

@@ -66,5 +66,6 @@ pub fn connect_with_new_channel(
         ordering,
         path.a_port,
         path.b_port,
+        None,
     )?)
 }
