@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anomaly::BoxError;
 use tracing::info;
 
@@ -10,13 +12,13 @@ use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
 use crate::link::{Link, LinkParameters};
 
-pub(crate) const MAX_ITER: u32 = 10;
+pub(crate) const MAX_ITER: usize = 10;
 
 /// Used by the `hermes start ibc-0 ibc-1`
 pub fn relay_on_new_link(
     a_chain_handle: Box<dyn ChainHandle>,
     b_chain_handle: Box<dyn ChainHandle>,
-    delay: u64,
+    delay: Duration,
     ordering: Order,
     path: RelayPath,
 ) -> Result<(), BoxError> {
@@ -45,7 +47,7 @@ pub fn channel_relay(
 pub fn connect_with_new_channel(
     a_chain_handle: Box<dyn ChainHandle>,
     b_chain_handle: Box<dyn ChainHandle>,
-    delay: u64,
+    delay: Duration,
     ordering: Order,
     path: RelayPath,
 ) -> Result<Channel, BoxError> {

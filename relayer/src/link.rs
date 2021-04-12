@@ -1606,7 +1606,7 @@ impl Link {
                 a_channel.counterparty().port_id.clone(),
                 b_channel_id,
             ),
-            connection_delay: Duration::from_secs(a_connection.delay_period()),
+            connection_delay: a_connection.delay_period(),
         };
 
         Ok(Link::new(channel))

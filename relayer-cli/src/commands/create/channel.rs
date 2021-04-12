@@ -91,7 +91,7 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.
-        let con = Connection::new(client_a, client_b, connection_delay().as_secs())
+        let con = Connection::new(client_a, client_b, connection_delay())
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally create the channel.

@@ -53,14 +53,12 @@ impl Runnable for StartCmd {
                 match relay_path {
                     Some((connection, path)) => {
                         info!("Start relayer on {:?}", self);
-                        let delay = connection.delay.as_secs();
-                        let ordering = path.ordering;
 
                         match relay_on_new_link(
                             chains.src,
                             chains.dst,
-                            delay,
-                            ordering,
+                            connection.delay,
+                            path.ordering,
                             path.clone(),
                         ) {
                             Ok(()) => Output::success(()).exit(),

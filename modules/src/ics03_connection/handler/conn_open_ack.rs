@@ -104,6 +104,7 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
+    use std::time::Duration;
 
     use crate::events::IbcEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
@@ -156,7 +157,7 @@ mod tests {
                 CommitmentPrefix::from(b"ibc".to_vec()),
             ),
             vec![msg_ack.version().clone()],
-            0_u64,
+            Duration::from_secs(0),
         );
 
         // A connection end with incorrect state `Open`; will be part of the context.

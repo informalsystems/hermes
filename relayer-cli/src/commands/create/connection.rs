@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::ics02_client::client_state::ClientState;
@@ -86,7 +88,7 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally, execute the connection handshake.
-        let delay = self.delay.unwrap_or_default();
+        let delay = Duration::from_secs(self.delay.unwrap_or_default());
         match Connection::new(client_a, client_b, delay) {
             Ok(con) => Output::success(format!("{:?}", con)).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -156,7 +158,7 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // All verification passed. Create the Connection object & do the handshake.
-        let delay = self.delay.unwrap_or_default();
+        let delay = Duration::from_secs(self.delay.unwrap_or_default());
         match Connection::new(client_a, client_b, delay) {
             Ok(con) => Output::success(format!("{:?}", con)).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),

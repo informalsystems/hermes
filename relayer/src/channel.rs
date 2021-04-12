@@ -102,8 +102,8 @@ impl Channel {
         ordering: Order,
         a_port: PortId,
         b_port: PortId,
-    ) -> Result<Channel, ChannelError> {
-        let mut channel = Channel {
+    ) -> Result<Self, ChannelError> {
+        let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
                 connection.src_chain().clone(),
@@ -119,9 +119,11 @@ impl Channel {
                 b_port,
                 Default::default(),
             ),
-            connection_delay: Duration::from_secs(connection.delay_period),
+            connection_delay: connection.delay_period,
         };
+
         channel.handshake()?;
+
         Ok(channel)
     }
 

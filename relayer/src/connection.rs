@@ -68,7 +68,7 @@ impl ConnectionSide {
 
 #[derive(Clone, Debug)]
 pub struct Connection {
-    pub delay_period: u64,
+    pub delay_period: Duration,
     pub a_side: ConnectionSide,
     pub b_side: ConnectionSide,
 }
@@ -79,21 +79,20 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
-        delay_period_sec: u64,
-    ) -> Result<Connection, ConnectionError> {
+        delay_period: Duration,
+    ) -> Result<Self, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
         // Validate the delay period against the upper bound
-        let pd_secs = Duration::from_secs(delay_period_sec);
-        if pd_secs > MAX_PACKET_DELAY {
+        if delay_period > MAX_PACKET_DELAY {
             return Err(ConnectionError::ConstructorFailed(format!(
                 "Invalid delay period '{:?}': should be max '{:?}'",
-                pd_secs, MAX_PACKET_DELAY
+                delay_period, MAX_PACKET_DELAY
             )));
         }
 
-        let mut c = Connection {
-            delay_period: delay_period_sec,
+        let mut c = Self {
+            delay_period,
             a_side: ConnectionSide::new(
                 a_client.dst_chain(),
                 a_client.id().clone(),
@@ -105,6 +104,7 @@ impl Connection {
                 Default::default(),
             ),
         };
+
         c.handshake()?;
 
         Ok(c)
@@ -362,7 +362,7 @@ impl Connection {
             self.dst_client_id().clone(),
             counterparty,
             versions,
-            0,
+            Duration::from_secs(0),
         );
 
         // Retrieve existing connection if any
@@ -490,12 +490,14 @@ impl Connection {
 
         // Cross-check the delay_period
         let delay = if src_connection.delay_period() != self.delay_period {
-            warn!("`delay_period` for ConnectionEnd @{} is {}; delay period on local Connection object is set to {}",
-                self.src_chain().id(), src_connection.delay_period(), self.delay_period);
+            warn!("`delay_period` for ConnectionEnd @{} is {}s; delay period on local Connection object is set to {}s",
+                self.src_chain().id(), src_connection.delay_period().as_secs(), self.delay_period.as_secs());
+
             warn!(
-                "Overriding delay period for local connection object to {}",
-                src_connection.delay_period()
+                "Overriding delay period for local connection object to {}s",
+                src_connection.delay_period().as_secs()
             );
+
             src_connection.delay_period()
         } else {
             self.delay_period
