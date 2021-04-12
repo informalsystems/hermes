@@ -35,5 +35,4 @@ hermes create connection ibc-0 ibc-1 | jq
 ```
 
 ## Non-zero Delay Connection
-A connection can be created with a delay parameter. See [packet delay](./packets.html#packet_delay)
-TODO - link with section in packets
+A connection can be created with a delay period parameter. This parameter specifies a period of time that must elpase after a successful client state update and before a packet with proofs using its commitment root can pe processed on chain. For more information see [how packet delay works](./packets.html#packet-delay) and  the [connection delay specification](https://github.com/cosmos/ibc/tree/master/spec/core/ics-003-connection-semantics).

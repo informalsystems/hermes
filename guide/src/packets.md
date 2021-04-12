@@ -68,6 +68,4 @@ Current events and actions are:
 If the relay path is using a non-zero delay connection, then `hermes` will delay all packet transactions. The delay is
 relative to the submission time for the client update at the height required by the packet proof.
 The delay is used to prevent light client attacks and ensures that misbehavior detection finalizes before the transaction is submitted.
-For more information on the misbehavior detector see [the misbehaviour section](./misbehaviour.html#monitoring-misbehaviour-and-evidence-submission)
-
-TODO - add link to spec
+For more information on the misbehavior detector see [the misbehaviour section](./misbehaviour.html#monitoring-misbehaviour-and-evidence-submission).
