@@ -1,7 +1,6 @@
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
-use crate::ics02_client::header::Header as ICS2Header;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::packet::Sequence;
@@ -114,6 +113,30 @@ impl ClientDef for TendermintClient {
         _channel_id: &ChannelId,
         _seq: &Sequence,
         _data: Vec<u8>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_next_sequence_recv(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_packet_receipt_absence(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
     ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }

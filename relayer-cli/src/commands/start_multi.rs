@@ -66,7 +66,7 @@ fn start_specified(
     let supervisor = Supervisor::spawn(chain_a, chain_b)?;
     supervisor.run()?;
 
-    Ok(Output::success("ok"))
+    Ok(Output::success_msg("ok"))
 }
 
 fn start_all_connections(config: &Config) -> Result<Output, BoxError> {
@@ -98,7 +98,7 @@ fn start_all_connections(config: &Config) -> Result<Output, BoxError> {
     });
 
     match result {
-        Ok(Ok(())) => Ok(Output::success("ok")),
+        Ok(Ok(())) => Ok(Output::success_msg("ok")),
         Ok(Err(e)) => Err(e),
         Err(e) => std::panic::resume_unwind(e),
     }

@@ -14,19 +14,18 @@
 - [ibc-relayer]
   - Support for relayer restart ([#561])
   - Add support for ordered channels ([#599])
-  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
-
-- [ibc-relayer]
+  - Misbehaviour detection and evidence submission ([#632])
   - Use a stateless light client without a runtime ([#673])
 
 - [ibc-relayer-cli]
   - Added `create connection` and `create channel` CLIs ([#630], [#715])
   - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
   - Added `client-upgrade` CLI ([#357])
-  - Update gaia to version 4.1.0 for e2e tests on CI ([#702])
+  - Update gaia to version 4.2.0 for e2e tests on CI ([#809])
   - Add `start-multi` command to relay on all paths defined in the configuration ([#748])
   - Add option to specify which events to listen for in `listen` command ([#550])
   - Add option to customise receiver address for `ft-transfer` command ([#806])
+  - Add `keys restore` command to import a signing key from its mnemonic ([#813])
 
 ### IMPROVEMENTS
 
@@ -36,11 +35,12 @@
   - MBT: use modelator crate ([#761])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer-cli]
   - Clarified success path for updating a client that is already up-to-date ([#734])
   - Added `create` and `update` wrappers for client raw commands ([#772])
+  - Output by default is human-readable, and JSON is optional ([#805])
 
 ### BUG FIXES
 
@@ -54,6 +54,7 @@
   - Fix for chains that don't have `cosmos` account prefix ([#416])
   - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
   - Don't send `MsgAcknowledgment` if channel is closed ([#675])
+  - Fix a bug where the keys addresses had their account prefix overriden by the prefix in the configuration ([#751])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -81,6 +82,7 @@
 [#550]: https://github.com/informalsystems/ibc-rs/issues/550
 [#599]: https://github.com/informalsystems/ibc-rs/issues/599
 [#630]: https://github.com/informalsystems/ibc-rs/issues/630
+[#632]: https://github.com/informalsystems/ibc-rs/issues/632
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#675]: https://github.com/informalsystems/ibc-rs/issues/675
@@ -90,11 +92,11 @@
 [#699]: https://github.com/informalsystems/ibc-rs/issues/699
 [#700]: https://github.com/informalsystems/ibc-rs/pull/700
 [#715]: https://github.com/informalsystems/ibc-rs/issues/715
-[#702]: https://github.com/informalsystems/ibc-rs/issues/702
 [#734]: https://github.com/informalsystems/ibc-rs/issues/734
 [#736]: https://github.com/informalsystems/ibc-rs/issues/736
 [#740]: https://github.com/informalsystems/ibc-rs/issues/740
 [#748]: https://github.com/informalsystems/ibc-rs/issues/748
+[#751]: https://github.com/informalsystems/ibc-rs/issues/751
 [#752]: https://github.com/informalsystems/ibc-rs/issues/752
 [#754]: https://github.com/informalsystems/ibc-rs/issues/754
 [#761]: https://github.com/informalsystems/ibc-rs/issues/761
@@ -103,7 +105,12 @@
 [#793]: https://github.com/informalsystems/ibc-rs/pull/793
 [#798]: https://github.com/informalsystems/ibc-rs/issues/798
 [#801]: https://github.com/informalsystems/ibc-rs/issues/801
+<<<<<<< HEAD
 [#806]: https://github.com/informalsystems/ibc-rs/issues/806
+=======
+[#801]: https://github.com/informalsystems/ibc-rs/issues/809
+[#805]: https://github.com/informalsystems/ibc-rs/issues/805
+>>>>>>> master
 
 
 ## v0.1.1

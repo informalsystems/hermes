@@ -18,7 +18,7 @@ pub struct CompileCmd {
 
     #[argh(option, short = 'i')]
     /// path to the Cosmos IBC proto files
-    ibc: PathBuf,
+    ibc: Option<PathBuf>,
 
     #[argh(option, short = 'o')]
     /// path to output the generated Rust sources into
@@ -27,16 +27,25 @@ pub struct CompileCmd {
 
 impl CompileCmd {
     pub fn run(&self) {
+        let with_ibc = self.ibc.is_none();
         let tmp_sdk = TempDir::new("ibc-proto-sdk").unwrap();
         Self::output_version(&self.sdk, tmp_sdk.as_ref(), "COSMOS_SDK_COMMIT");
-        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref());
+        Self::compile_sdk_protos(&self.sdk, tmp_sdk.as_ref(), with_ibc);
 
-        let tmp_ibc = TempDir::new("ibc-proto-ibc-go").unwrap();
-        Self::output_version(&self.ibc, tmp_ibc.as_ref(), "COSMOS_IBC_COMMIT");
-        Self::compile_ibc_protos(&self.ibc, tmp_ibc.as_ref());
+        match &self.ibc {
+            None => {
+                println!("[info ] Omitting the IBC-go repo");
+                Self::copy_generated_files(tmp_sdk.as_ref(), None, &self.out);
+            }
+            Some(ibc_path) => {
+                let tmp_ibc = TempDir::new("ibc-proto-ibc-go").unwrap();
+                Self::output_version(ibc_path, tmp_ibc.as_ref(), "COSMOS_IBC_COMMIT");
+                Self::compile_ibc_protos(ibc_path, tmp_ibc.as_ref());
 
-        // Merge the generated files into a single directory, taking care not to overwrite anything
-        Self::copy_generated_files(tmp_sdk.as_ref(), tmp_ibc.as_ref(), &self.out);
+                // Merge the generated files into a single directory, taking care not to overwrite anything
+                Self::copy_generated_files(tmp_sdk.as_ref(), Some(tmp_ibc.as_ref()), &self.out);
+            }
+        }
     }
 
     fn output_version(dir: &Path, out_dir: &Path, commit_file: &str) {
@@ -112,7 +121,7 @@ impl CompileCmd {
         }
     }
 
-    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path) {
+    fn compile_sdk_protos(sdk_dir: &Path, out_dir: &Path, with_ibc: bool) {
         println!(
             "[info ] Compiling Cosmos-SDK .proto files to Rust into '{}'...",
             out_dir.display()
@@ -121,7 +130,7 @@ impl CompileCmd {
         let root = env!("CARGO_MANIFEST_DIR");
 
         // Paths
-        let proto_paths = [
+        let mut proto_paths = vec![
             format!("{}/../proto/definitions/mock", root),
             format!("{}/proto/cosmos/auth", sdk_dir.display()),
             format!("{}/proto/cosmos/gov", sdk_dir.display()),
@@ -130,6 +139,11 @@ impl CompileCmd {
             format!("{}/proto/cosmos/staking", sdk_dir.display()),
             format!("{}/proto/cosmos/upgrade", sdk_dir.display()),
         ];
+
+        if with_ibc {
+            // Use the IBC proto files from the SDK
+            proto_paths.push(format!("{}/proto/ibc", sdk_dir.display()));
+        }
 
         let proto_includes_paths = [
             format!("{}/../proto", root),
@@ -184,7 +198,7 @@ impl CompileCmd {
         }
     }
 
-    fn copy_generated_files(from_dir_sdk: &Path, from_dir_ibc: &Path, to_dir: &Path) {
+    fn copy_generated_files(from_dir_sdk: &Path, from_dir_ibc_opt: Option<&Path>, to_dir: &Path) {
         println!(
             "[info ] Copying generated files into '{}'...",
             to_dir.display()
@@ -221,8 +235,9 @@ impl CompileCmd {
             panic!("[error] Aborted.");
         }
 
-        // Copy the IBC-go files second, double-checking if anything is overwritten
-        let errors_ibc = WalkDir::new(from_dir_ibc)
+        if let Some(from_dir_ibc) = from_dir_ibc_opt {
+            // Copy the IBC-go files second, double-checking if anything is overwritten
+            let errors_ibc = WalkDir::new(from_dir_ibc)
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.file_type().is_file())
@@ -257,12 +272,13 @@ impl CompileCmd {
             .filter_map(|e| e.err())
             .collect::<Vec<_>>();
 
-        if !errors_ibc.is_empty() {
-            for e in errors_ibc {
-                println!("[error] Error while copying IBC-go compiled file: {}", e);
-            }
+            if !errors_ibc.is_empty() {
+                for e in errors_ibc {
+                    println!("[error] Error while copying IBC-go compiled file: {}", e);
+                }
 
-            panic!("[error] Aborted.");
+                panic!("[error] Aborted.");
+            }
         }
     }
 }

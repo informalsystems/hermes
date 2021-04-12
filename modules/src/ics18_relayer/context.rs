@@ -1,11 +1,13 @@
 use prost_types::Any;
 
+use crate::events::IbcEvent;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::header::AnyHeader;
+
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
+use crate::signer::Signer;
 use crate::Height;
-use crate::{events::IbcEvent, signer::Signer};
 
 /// Trait capturing all dependencies (i.e., the context) which algorithms in ICS18 require to
 /// relay packets between chains. This trait comprises the dependencies towards a single chain.

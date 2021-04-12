@@ -1,8 +1,7 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
 
 use crate::ics02_client::client_consensus::ConsensusState;
-use crate::ics02_client::client_state::AnyClientState;
-use crate::ics02_client::client_state::ClientState;
+use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;

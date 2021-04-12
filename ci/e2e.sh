@@ -31,8 +31,8 @@ echo "==========================================================================
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Add keys for chains"
 echo "-----------------------------------------------------------------------------------------------------------------"
-hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" key_seed_"$CHAIN_A".json
-hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" key_seed_"$CHAIN_B".json
+hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" -f key_seed_"$CHAIN_A".json
+hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" -f key_seed_"$CHAIN_B".json
 
 echo "================================================================================================================="
 echo "                                             END-TO-END TESTS                                                    "

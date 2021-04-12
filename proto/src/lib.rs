@@ -10,7 +10,6 @@
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
 pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
-pub const COSMOS_IBC_VERSION: &str = include_str!("prost/COSMOS_IBC_COMMIT");
 
 pub mod cosmos {
     pub mod auth {
@@ -37,6 +36,17 @@ pub mod cosmos {
         pub mod query {
             pub mod v1beta1 {
                 include!("prost/cosmos.base.query.v1beta1.rs");
+            }
+
+            pub mod pagination {
+                use super::v1beta1::PageRequest;
+
+                pub fn all() -> Option<PageRequest> {
+                    Some(PageRequest {
+                        limit: u64::MAX,
+                        ..Default::default()
+                    })
+                }
             }
         }
         pub mod reflection {
@@ -86,7 +96,7 @@ pub mod ibc {
     pub mod apps {
         pub mod transfer {
             pub mod v1 {
-                include!("prost/ibc.apps.transfer.v1.rs");
+                include!("prost/ibc.applications.transfer.v1.rs");
             }
         }
     }

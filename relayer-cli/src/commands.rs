@@ -8,6 +8,7 @@
 use std::path::PathBuf;
 
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
+use tracing::info;
 
 use crate::config::Config;
 
@@ -15,11 +16,13 @@ use self::{
     create::CreateCmds, keys::KeysCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
     start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds, version::VersionCmd,
 };
+use crate::commands::misbehaviour::MisbehaviourCmd;
 
 mod config;
 mod create;
 mod keys;
 mod listen;
+mod misbehaviour;
 mod query;
 mod start;
 mod start_multi;
@@ -29,6 +32,7 @@ mod version;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
+    info!("Using default configuration from: '.hermes/config.toml'");
     dirs_next::home_dir().map(|home| home.join(".hermes/config.toml"))
 }
 
@@ -78,6 +82,10 @@ pub enum CliCmd {
     /// The `listen` subcommand
     #[options(help = "Listen to and display IBC events emitted by a chain")]
     Listen(ListenCmd),
+
+    /// The `misbehaviour` subcommand
+    #[options(help = "Listen to client update IBC events and handles misbehaviour")]
+    Misbehaviour(MisbehaviourCmd),
 
     /// The `version` subcommand
     #[options(help = "Display version information")]

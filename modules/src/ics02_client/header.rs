@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 
 use prost_types::Any;
+use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
@@ -26,7 +27,7 @@ pub trait Header: Clone + std::fmt::Debug + Send + Sync {
     fn wrap_any(self) -> AnyHeader;
 }
 
-#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)] // TODO: Add Eq bound once possible
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
     Tendermint(TendermintHeader),

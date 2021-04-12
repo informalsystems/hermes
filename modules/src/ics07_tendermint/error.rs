@@ -36,6 +36,9 @@ pub enum Kind {
 
     #[error("invalid raw header")]
     InvalidRawHeader,
+
+    #[error("invalid raw misbehaviour")]
+    InvalidRawMisbehaviour,
 }
 
 impl Kind {

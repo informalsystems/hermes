@@ -13,6 +13,7 @@ use crate::Height;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IbcEventType {
     CreateClient,
+    UpdateClient,
     SendPacket,
     WriteAck,
 }
@@ -21,6 +22,7 @@ impl IbcEventType {
     pub fn as_str(&self) -> &'static str {
         match *self {
             IbcEventType::CreateClient => "create_client",
+            IbcEventType::UpdateClient => "update_client",
             IbcEventType::SendPacket => "send_packet",
             IbcEventType::WriteAck => "write_acknowledgement",
         }
@@ -35,7 +37,7 @@ pub enum IbcEvent {
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
     UpgradeClient(ClientEvents::UpgradeClient),
-    ClientMisbehavior(ClientEvents::ClientMisbehavior),
+    ClientMisbehaviour(ClientEvents::ClientMisbehaviour),
 
     OpenInitConnection(ConnectionEvents::OpenInit),
     OpenTryConnection(ConnectionEvents::OpenTry),
@@ -87,7 +89,7 @@ impl IbcEvent {
             IbcEvent::NewBlock(bl) => bl.height(),
             IbcEvent::CreateClient(ev) => ev.height(),
             IbcEvent::UpdateClient(ev) => ev.height(),
-            IbcEvent::ClientMisbehavior(ev) => ev.height(),
+            IbcEvent::ClientMisbehaviour(ev) => ev.height(),
             IbcEvent::OpenInitConnection(ev) => ev.height(),
             IbcEvent::OpenTryConnection(ev) => ev.height(),
             IbcEvent::OpenAckConnection(ev) => ev.height(),
@@ -113,7 +115,7 @@ impl IbcEvent {
             IbcEvent::CreateClient(ev) => ev.set_height(height),
             IbcEvent::UpdateClient(ev) => ev.set_height(height),
             IbcEvent::UpgradeClient(ev) => ev.set_height(height),
-            IbcEvent::ClientMisbehavior(ev) => ev.set_height(height),
+            IbcEvent::ClientMisbehaviour(ev) => ev.set_height(height),
             IbcEvent::OpenInitConnection(ev) => ev.set_height(height),
             IbcEvent::OpenTryConnection(ev) => ev.set_height(height),
             IbcEvent::OpenAckConnection(ev) => ev.set_height(height),

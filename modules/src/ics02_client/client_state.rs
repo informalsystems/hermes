@@ -7,6 +7,7 @@ use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
+
 use crate::ics07_tendermint::client_state;
 use crate::ics24_host::identifier::ChainId;
 #[cfg(any(test, feature = "mocks"))]
@@ -53,6 +54,7 @@ impl AnyClientState {
             Self::Mock(mock_state) => mock_state.latest_height(),
         }
     }
+
     pub fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(state) => state.client_type(),
