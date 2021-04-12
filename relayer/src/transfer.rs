@@ -3,8 +3,7 @@ use tracing::error;
 
 use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::ChainId;
-use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::tx_msg::Msg;
 
 use crate::chain::{Chain, CosmosSdkChain};
@@ -33,6 +32,7 @@ pub struct TransferOptions {
     pub packet_src_channel_id: ChannelId,
     pub amount: u64,
     pub denom: String,
+    pub receiver: Option<String>,
     pub height_offset: u64,
     pub number_msgs: usize,
 }
@@ -42,9 +42,11 @@ pub fn build_and_send_transfer_messages(
     mut packet_dst_chain: CosmosSdkChain, // the chain where the transfer is sent
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, PacketError> {
-    let receiver = packet_dst_chain
-        .get_signer()
-        .map_err(PacketError::KeyError)?;
+    let receiver = match &opts.receiver {
+        None => packet_dst_chain.get_signer(),
+        Some(r) => Ok(r.clone().into()),
+    }
+    .map_err(PacketError::KeyError)?;
 
     let sender = packet_src_chain
         .get_signer()
