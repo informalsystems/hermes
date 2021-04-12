@@ -161,7 +161,7 @@ impl Supervisor {
                 continue;
             }
 
-            println!("[{}] events: {:?}", chain_id, events);
+            println!("[{}] events: {:#?}", chain_id, events);
 
             if let Some(worker) = self.worker_for_object(object, direction) {
                 worker.send_packet_events(height, events, chain_id.clone())?;
@@ -231,6 +231,12 @@ impl Worker {
     pub fn spawn(chains: ChainHandlePair, object: Object) -> WorkerHandle {
         let (tx, rx) = crossbeam_channel::unbounded();
 
+        println!(
+            "[{}] Spawned worker for object {:#?}",
+            object.short_name(),
+            object
+        );
+
         let worker = Self { chains, rx };
         let thread_handle = std::thread::spawn(move || worker.run(object));
 
@@ -250,8 +256,6 @@ impl Worker {
 
     /// Run the event loop for events associated with a [`UnidirectionalChannelPath`].
     fn run_uni_chan_path(self, path: UnidirectionalChannelPath) -> Result<(), BoxError> {
-        println!("running worker for object {:?}", path);
-
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
             self.chains.b.clone(),
@@ -280,12 +284,24 @@ impl Worker {
 pub struct UnidirectionalChannelPath {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
+
     /// Source chain identifier.
     pub src_chain_id: ChainId,
+
     /// Source channel identiier.
     pub src_channel_id: ChannelId,
+
     /// Source port identiier.
     pub src_port_id: PortId,
+}
+
+impl UnidirectionalChannelPath {
+    pub fn short_name(&self) -> String {
+        format!(
+            "{}->{}@{}:{}",
+            self.src_chain_id, self.dst_chain_id, self.src_channel_id, self.src_port_id
+        )
+    }
 }
 
 /// An object determines the amount of parallelism that can
@@ -316,6 +332,12 @@ impl Object {
     pub fn dst_chain_id(&self) -> &ChainId {
         match self {
             Self::UnidirectionalChannelPath(ref path) => &path.dst_chain_id,
+        }
+    }
+
+    pub fn short_name(&self) -> String {
+        match self {
+            Self::UnidirectionalChannelPath(ref path) => path.short_name(),
         }
     }
 
