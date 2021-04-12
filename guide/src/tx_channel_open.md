@@ -48,7 +48,7 @@ POSITIONAL ARGUMENTS:
     src_port_id               identifier of the source port
 
 FLAGS:
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
+    -o, --order ORDER         the channel ordering, valid options 'unordered' (default) and 'ordered'
 ```
 
 __Example__

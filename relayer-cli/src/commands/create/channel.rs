@@ -48,7 +48,7 @@ pub struct CreateChannelCommand {
     )]
     port_b: PortId,
 
-    #[options(help = "the channel ordering, valid options 'unordered' and 'ordered'")]
+    #[options(help = "the channel ordering, valid options 'unordered' (default) and 'ordered'")]
     order: Order,
 
     #[options(help = "the version for the new channel")]

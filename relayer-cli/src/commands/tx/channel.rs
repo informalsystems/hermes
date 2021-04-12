@@ -61,11 +61,8 @@ pub struct TxRawChanOpenInitCmd {
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(
-        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
-        short = "o"
-    )]
-    ordering: Order,
+    #[options(help = "the channel ordering, valid options 'unordered' (default) and 'ordered'")]
+    order: Order,
 }
 
 impl Runnable for TxRawChanOpenInitCmd {
@@ -77,7 +74,7 @@ impl Runnable for TxRawChanOpenInitCmd {
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
                     connection_delay: Default::default(),
-                    ordering: self.ordering,
+                    ordering: self.order,
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
