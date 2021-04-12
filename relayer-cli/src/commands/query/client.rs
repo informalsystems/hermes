@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::info;
 
 use ibc::events::IbcEventType;
 use ibc::ics02_client::client_consensus::QueryClientEventRequest;

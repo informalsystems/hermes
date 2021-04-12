@@ -37,10 +37,11 @@ pub struct CreateConnectionCommand {
     client_b: Option<ClientId>,
 
     #[options(
-        help = "delay period parameter for the new connection (seconds); default: `0`",
+        help = "delay period parameter for the new connection (seconds)",
+        default = "0",
         no_short
     )]
-    delay: Option<u64>,
+    delay: u64,
 }
 
 // cargo run --bin hermes -- create connection ibc-0 ibc-1
@@ -88,7 +89,7 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally, execute the connection handshake.
-        let delay = Duration::from_secs(self.delay.unwrap_or_default());
+        let delay = Duration::from_secs(self.delay);
         match Connection::new(client_a, client_b, delay) {
             Ok(conn) => Output::success(conn).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -158,7 +159,7 @@ impl CreateConnectionCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // All verification passed. Create the Connection object & do the handshake.
-        let delay = Duration::from_secs(self.delay.unwrap_or_default());
+        let delay = Duration::from_secs(self.delay);
         match Connection::new(client_a, client_b, delay) {
             Ok(conn) => Output::success(conn).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),

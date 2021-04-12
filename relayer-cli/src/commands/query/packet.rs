@@ -4,7 +4,6 @@ use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
 use subtle_encoding::{Encoding, Hex};
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::info;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
