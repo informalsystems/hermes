@@ -66,9 +66,9 @@ FLAGS:
     -t, --trusted-height TRUSTED-HEIGHT
 ```
 
-### Example 1
+__Update client with latest header__
 
-Update the client on `ibc-0` with latest header of `ibc-1`:
+the client on `ibc-0` with latest header of `ibc-1`:
 
 ```shell
 hermes update client ibc-0 07-tendermint-9
@@ -94,9 +94,7 @@ Success: UpdateClient(
 
 The client with identifier `07-tendermint-1` has been updated with the consensus state at height `1-293`.
 
-### Example 2
-
-Update a client to a specific target height:
+__Update a client to a specific target height__
 
 ```shell
 hermes update client ibc-0 07-tendermint-1 --target-height 320 --trusted-height 293
