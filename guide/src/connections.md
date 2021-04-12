@@ -30,7 +30,7 @@ __Example__
 hermes create connection ibc-0 ibc-1
 ```
 
-```
+```rust
 🥂  ibc-0 => OpenInitConnection(
     OpenInit(
         Attributes {
