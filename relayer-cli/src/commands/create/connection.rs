@@ -90,7 +90,7 @@ impl CreateConnectionCommand {
         // Finally, execute the connection handshake.
         let delay = Duration::from_secs(self.delay.unwrap_or_default());
         match Connection::new(client_a, client_b, delay) {
-            Ok(con) => Output::success(format!("{:?}", con)).exit(),
+            Ok(conn) => Output::success(conn).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -160,7 +160,7 @@ impl CreateConnectionCommand {
         // All verification passed. Create the Connection object & do the handshake.
         let delay = Duration::from_secs(self.delay.unwrap_or_default());
         match Connection::new(client_a, client_b, delay) {
-            Ok(con) => Output::success(format!("{:?}", con)).exit(),
+            Ok(conn) => Output::success(conn).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
