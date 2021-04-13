@@ -25,26 +25,23 @@ __Example__
 Create a new client of `ibc-1` on `ibc-0`:
 
 ```shell
-hermes tx raw create-client ibc-0 ibc-1 | jq
+hermes tx raw create-client ibc-0 ibc-1
 ```
 
-```json
+```rust
 {
-  "result": {
-    "CreateClient": {
-      "client_id": "07-tendermint-0",
-      "client_type": "Tendermint",
-      "consensus_height": {
-        "revision_height": 18,
-        "revision_number": 1
-      },
-      "height": {
-        "revision_height": 4167,
-        "revision_number": 0
-      }
-    }
-  },
-  "status": "success"
+    Success: CreateClient(
+        CreateClient(
+            Attributes {
+                height: revision: 0, height: 43,
+                client_id: ClientId(
+                    "07-tendermint-0",
+                ),
+                client_type: Tendermint,
+                consensus_height: revision: 1, height: 32,
+            },
+        ),
+    )
 }
 ```
 
@@ -75,33 +72,25 @@ __Example__
 Update the client on `ibc-0` with latest header of `ibc-1`
 
 ```shell
-hermes tx raw update-client ibc-0 07-tendermint-0  | jq
+hermes tx raw update-client ibc-0 07-tendermint-0
 ```
 
 ```json
-{
-  "result": {
-    "UpdateClient": {
-      "common": {
-        "client_id": "07-tendermint-0",
-        "client_type": "Tendermint",
-        "consensus_height": {
-          "revision_height": 273,
-          "revision_number": 1
+Success: UpdateClient(
+    UpdateClient {
+        common: Attributes {
+            height: revision: 0, height: 110,
+            client_id: ClientId(
+                "07-tendermint-0",
+            ),
+            client_type: Tendermint,
+            consensus_height: revision: 1, height: 109,
         },
-        "height": {
-          "revision_height": 280,
-          "revision_number": 0
-        }
-      },
-      "header": {
-        "Tendermint": {
-        ...
-      }
-    }
-  },
-  "status": "success"
-}
+        header: Some(
+            Tendermint(...),
+        ),
+    },
+)
 ```
 
 The client with identifier `07-tendermint-0` has been updated with the consensus state at height `1-273`.

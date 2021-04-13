@@ -7,30 +7,25 @@ First you will need to create a client for each chain:
 This command submits a transaction to a destination chain (`ibc-0`) with a request to create a client for a source chain (`ibc-1`):
 
 ```shell
-hermes tx raw create-client ibc-0 ibc-1 | jq
+hermes tx raw create-client ibc-0 ibc-1
 ```
 
 if the command is successful a message similar to the one below will be displayed `status:success`:
 
-```json
+```rust
 {
-    "status": "success",
-    "result": [
-        {
-            "CreateClient": {
-                "client_id": "07-tendermint-0",
-                "client_type": "Tendermint",
-                "consensus_height": {
-                    "revision_height": 998,
-                    "revision_number": 1
-                  },
-                  "height": {
-                    "revision_height": 1009,
-                    "revision_number": 0
-                  }
-            }
-        }
-    ]
+    Success: CreateClient(
+        CreateClient(
+            Attributes {
+                height: revision: 0, height: 43,
+                client_id: ClientId(
+                    "07-tendermint-0",
+                ),
+                client_type: Tendermint,
+                consensus_height: revision: 1, height: 32,
+            },
+        ),
+    )
 }
 ```
 

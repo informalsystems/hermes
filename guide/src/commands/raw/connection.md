@@ -58,19 +58,26 @@ First, let's initialize the connection on `ibc-0`:
 hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "OpenInitConnection": {
-      "client_id": "07-tendermint-0",
-      "connection_id": "connection-0",
-      "counterparty_client_id": "07-tendermint-1",
-      "counterparty_connection_id": null,
-      "height": "1"
-    }
-  }
-}
+```rust
+Success: OpenInitConnection(
+    OpenInit(
+        Attributes {
+            height: revision: 0, height: 1993,
+            connection_id: Some(
+                ConnectionId(
+                    "connection-0",
+                ),
+            ),
+            client_id: ClientId(
+                "07-tendermint-0",
+            ),
+            counterparty_connection_id: None,
+            counterparty_client_id: ClientId(
+                "07-tendermint-1",
+            ),
+        },
+    ),
+)
 ```
 
 A new connection has been initialized on `ibc-0` with identifier `connection-0`.
@@ -104,22 +111,33 @@ __Example__
 Let's now create the counterparty to `connection-0` on chain `ibc-1`:
 
 ```shell
-hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0 | jq
+hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0
 ```
 
 ```json
-{
-  "status": "success",
-  "result": {
-    "OpenTryConnection": {
-      "client_id": "07-tendermint-1",
-      "connection_id": "connection-1",
-      "counterparty_client_id": "07-tendermint-0",
-      "counterparty_connection_id": "connection-0",
-      "height": "1"
-    }
-  }
-}
+Success: OpenTryConnection(
+    OpenTry(
+        Attributes {
+            height: revision: 1, height: 2097,
+            connection_id: Some(
+                ConnectionId(
+                    "connection-1",
+                ),
+            ),
+            client_id: ClientId(
+                "07-tendermint-1",
+            ),
+            counterparty_connection_id: Some(
+                ConnectionId(
+                    "connection-0",
+                ),
+            ),
+            counterparty_client_id: ClientId(
+                "07-tendermint-0",
+            ),
+        },
+    ),
+)
 ```
 
 A new connection has been created on `ibc-1` with identifier `connection-1`.
@@ -154,22 +172,33 @@ __Example__
 We can now acknowledge on `ibc-0` that `ibc-1` has accepted the connection attempt:
 
 ```shell
-hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
+hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1
 ```
 
 ```json
-{
-  "status": "success",
-  "result": {
-    "OpenAckConnection": {
-      "client_id": "07-tendermint-0",
-      "connection_id": "connection-0",
-      "counterparty_client_id": "07-tendermint-1",
-      "counterparty_connection_id": "connection-1",
-      "height": "1"
-    }
-  }
-}
+Success: OpenAckConnection(
+    OpenAck(
+        Attributes {
+            height: revision: 0, height: 2181,
+            connection_id: Some(
+                ConnectionId(
+                    "connection-0",
+                ),
+            ),
+            client_id: ClientId(
+                "07-tendermint-0",
+            ),
+            counterparty_connection_id: Some(
+                ConnectionId(
+                    "connection-1",
+                ),
+            ),
+            counterparty_client_id: ClientId(
+                "07-tendermint-1",
+            ),
+        },
+    ),
+)
 ```
 
 > Note that the field `counterparty_connection_id` now points to the connection on `ibc-1`.
@@ -203,22 +232,33 @@ __Example__
 Confirm on `ibc-1` that `ibc-0` has accepted the connection attempt.
 
 ```shell
-hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
+hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0
 ```
 
 ```json
-{
-  "status": "success",
-  "result": {
-    "OpenConfirmConnection": {
-      "client_id": "07-tendermint-1",
-      "connection_id": "connection-1",
-      "counterparty_client_id": "07-tendermint-0",
-      "counterparty_connection_id": "connection-0",
-      "height": "1"
-    }
-  }
-}
+Success: OpenConfirmConnection(
+    OpenConfirm(
+        Attributes {
+            height: revision: 1, height: 2244,
+            connection_id: Some(
+                ConnectionId(
+                    "connection-1",
+                ),
+            ),
+            client_id: ClientId(
+                "07-tendermint-1",
+            ),
+            counterparty_connection_id: Some(
+                ConnectionId(
+                    "connection-0",
+                ),
+            ),
+            counterparty_client_id: ClientId(
+                "07-tendermint-0",
+            ),
+        },
+    ),
+)
 ```
 
 We have now successfully established a connection between the two chains.
