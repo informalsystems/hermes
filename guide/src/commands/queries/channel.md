@@ -11,7 +11,7 @@ USAGE:
     hermes query channels <OPTIONS>
 
 DESCRIPTION:
-    Query the identifiers of all channels on a chain
+    Query the identifiers of all channels on a given chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -22,19 +22,18 @@ __Example__
 Query all channels on `ibc-1`:
 
 ```shell
-hermes query channels ibc-1 | jq
+hermes query channels ibc-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": [
-    "channel-0",
-    "channel-1",
-    "channel-2",
-    "channel-3"
-  ]
-}
+```rust
+Success: [
+    ChannelId(
+        "channel-0",
+    ),
+    ChannelId(
+        "channel-1",
+    ),
+]
 ```
 
 # Query Channel Data
@@ -74,27 +73,32 @@ FLAGS:
 
 __Example__
 
-Query the channel end of channel `channel-1` on `ibc-1`:
+Query the channel end of channel `channel-1` on port `transfer` on `ibc-1`:
 
 ```shell
-hermes query channel end ibc-1 channel-1 | jq
+hermes query channel end ibc-1 channel-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "connection_hops": [
-      "connection-1"
-    ],
-    "ordering": "Unordered",
-    "remote": {
-      "channel_id": "channel-0",
-      "port_id": "transfer"
+```rust
+Success: ChannelEnd {
+    state: Open,
+    ordering: Unordered,
+    remote: Counterparty {
+        port_id: PortId(
+            "transfer",
+        ),
+        channel_id: Some(
+            ChannelId(
+                "channel-0",
+            ),
+        ),
     },
-    "state": "Open",
-    "version": "ics20-1"
-  }
+    connection_hops: [
+        ConnectionId(
+            "connection-1",
+        ),
+    ],
+    version: "ics20-1",
 }
 ```
 
