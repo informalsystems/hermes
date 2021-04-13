@@ -1,16 +1,22 @@
-# Concurrent packet relaying on multiple paths 
-At the moment, the `start` command relays packets over a single channel.
-To relay packets over multiple channels, one can instead use the `start-multi` command.
+# Concurrent packet relaying on multiple paths
 
-> __WARINING__: Relaying packets concurrently over multiple channels with the
+At the moment, the `start` command relays packets over a single channel.
+To relay packets over multiple channels concurrently, one can instead use
+the `start-multi` command.
+
+> __WARNING__: Relaying packets concurrently over multiple channels with the
 > `start-multi` command is currently __experimental__. Use at your own risk.
+
+> __Caveat__: At the moment, `start-multi` does not clear pending packets
+> when starting. It is therefore advised to only use it for channels which
+> do not have pending packets.
 
 1. Paste the following configuration in a file named `config.toml`:
 
     ```toml
     [global]
     strategy = 'naive'
-    log_level = 'error'
+    log_level = 'info'
 
     [[chains]]
     id = 'ibc-0'
@@ -210,16 +216,82 @@ To relay packets over multiple channels, one can instead use the `start-multi` c
 4. In a separate terminal, use the `ft-transfer` command to send:
 
     - two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
+
+      ```shell
+      hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+      ```
+
+      ```rust
+      Success: [
+          SendPacket(
+              SendPacket {
+                  height: revision: 0, height: 3056,
+                  packet: PortId("transfer") ChannelId("channel-0") Sequence(3),
+              },
+          ),
+          SendPacket(
+              SendPacket {
+                  height: revision: 0, height: 3056,
+                  packet: PortId("transfer") ChannelId("channel-0") Sequence(4),
+              },
+          ),
+      ]
+      ```
+
     - two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
 
-    ```shell
-    hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
-    hermes -c config.toml tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 1000 -n 2
+      ```shell
+      hermes -c config.toml tx raw ft-transfer ibc-1 ibc-2 transfer channel-1 9999 1000 -n 2
+      ```
+
+      ```rust
+      Success: [
+          SendPacket(
+              SendPacket {
+                  height: revision: 1, height: 3076,
+                  packet: PortId("transfer") ChannelId("channel-1") Sequence(3),
+              },
+          ),
+          SendPacket(
+              SendPacket {
+                  height: revision: 1, height: 3076,
+                  packet: PortId("transfer") ChannelId("channel-1") Sequence(4),
+              },
+          ),
+      ]
+      ```
+
+5. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packets` are sent out.
+
+    ```
+    (...)
+
+    INFO ibc_relayer::link: [ibc-0 -> ibc-1] result events:
+        UpdateClientEv(ev_h:1-3048, 07-tendermint-0(0-3057), )
+        WriteAcknowledgementEv(h:1-3048, seq:3, path:channel-0/transfer->channel-0/transfer, toh:1-4045, tos:0))
+        WriteAcknowledgementEv(h:1-3048, seq:4, path:channel-0/transfer->channel-0/transfer, toh:1-4045, tos:0))
+    INFO ibc_relayer::link: [ibc-0 -> ibc-1] success
+
+    (...)
+
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] clearing old packets
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] received from query_txs []
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] finished clearing pending packets
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] generate messages from batch with 2 events
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] scheduling op. data with 2 msg(s) for Destination chain (height 1-3049)
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] relay op. data to Destination, proofs height 1-3048, (delayed by: 2.154603ms) [try 1/10]
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] prepending Destination client update @ height 1-3049
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] assembled batch of 3 message(s)
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] result events:
+        UpdateClientEv(ev_h:0-3059, 07-tendermint-0(1-3049), )
+        AcknowledgePacketEv(h:0-3059, seq:3, path:channel-0/transfer->channel-0/transfer, toh:1-4045, tos:0))
+        AcknowledgePacketEv(h:0-3059, seq:4, path:channel-0/transfer->channel-0/transfer, toh:1-4045, tos:0))
+    INFO ibc_relayer::link: [ibc-1 -> ibc-0] success
+
+    (...)
     ```
 
-5. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packet`s are sent out.
-
-5. Query the unreceived packets on `ibc-1` and `ibc-2` from a different terminal:
+5. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
 
     ```shell
     hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
@@ -228,3 +300,8 @@ To relay packets over multiple channels, one can instead use the `start-multi` c
     hermes -c config.toml query packet unreceived-acks    ibc-1 ibc-0 transfer channel-0
     ```
 
+    If everything went well, each of these commands should result in:
+
+    ```
+    Success: []
+    ```
