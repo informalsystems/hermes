@@ -15,6 +15,7 @@
    - [Local chains](./tutorials/local-chains/index.md)
      - [Install Gaia](./tutorials/local-chains/gaia.md)
      - [Start the local chains](./tutorials/local-chains/start.md)
+     - [Identifiers](./tutorials/local-chains/identifiers.md)
      - [Connect the chains using relay paths](./tutorials/local-chains/relay-paths/index.md)
        - [Create a new path](./tutorials/local-chains/relay-paths/create-new-path.md)
        - [Packet relaying on existing path](./tutorials/local-chains/relay-paths/existing-path.md)

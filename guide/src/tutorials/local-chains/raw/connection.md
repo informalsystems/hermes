@@ -37,12 +37,13 @@ hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connec
 To verify that the two ends are in `Open` state:
 
 ```shell
-hermes query connection end ibc-1 connection-1
+hermes query connection end ibc-0 connection-0
 ```
 
 ```shell
-hermes query connection end ibc-0 connection-0
+hermes query connection end ibc-1 connection-1
 ```
+
 
 ## Next Steps
 

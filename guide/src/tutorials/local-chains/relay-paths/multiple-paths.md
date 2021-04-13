@@ -11,7 +11,7 @@ the `start-multi` command.
 > when starting. It is therefore advised to only use it for channels which
 > do not have pending packets.
 
-1. Paste the following configuration in a file named `config.toml`:
+1. Paste the following configuration in a file named __`multi-config.toml`__:
 
     ```toml
     [global]
@@ -20,9 +20,9 @@ the `start-multi` command.
 
     [[chains]]
     id = 'ibc-0'
-    rpc_addr = 'http://localhost:26657'
-    grpc_addr = 'http://localhost:9090'
-    websocket_addr = 'ws://localhost:26657/websocket'
+    rpc_addr = 'http://127.0.0.1:26657'
+    grpc_addr = 'http://127.0.0.1:9090'
+    websocket_addr = 'ws://127.0.0.1:26657/websocket'
     rpc_timeout = '10s'
     account_prefix = 'cosmos'
     key_name = 'testkey'
@@ -39,9 +39,9 @@ the `start-multi` command.
 
     [[chains]]
     id = 'ibc-1'
-    rpc_addr = 'http://localhost:26557'
-    grpc_addr = 'http://localhost:9091'
-    websocket_addr = 'ws://localhost:26557/websocket'
+    rpc_addr = 'http://127.0.0.1:26557'
+    grpc_addr = 'http://127.0.0.1:9091'
+    websocket_addr = 'ws://127.0.0.1:26557/websocket'
     rpc_timeout = '10s'
     account_prefix = 'cosmos'
     key_name = 'testkey'
@@ -52,6 +52,21 @@ the `start-multi` command.
     clock_drift = '5s'
     trusting_period = '14days'
 
+    [[chains]]
+    id = 'ibc-2'
+    rpc_addr = 'http://127.0.0.1:26457'
+    grpc_addr = 'http://127.0.0.1:9092'
+    websocket_addr = 'ws://127.0.0.1:26457/websocket'
+    rpc_timeout = '10s'
+    account_prefix = 'cosmos'
+    key_name = 'testkey'
+    store_prefix = 'ibc'
+    gas = 200000
+    fee_denom = 'stake'
+    fee_amount = 10
+    clock_drift = '5s'
+    trusting_period = '14days'
+   
     [chains.trust_threshold]
     numerator = '1'
     denominator = '3'
@@ -76,17 +91,18 @@ the `start-multi` command.
 2. Run the `dev-env` script with the parameters below to start three chains:
 
     ```bash
-    ./scripts/dev-env config.toml ibc-0 ibc-1 ibc-2
+    ./scripts/dev-env multi-config.toml ibc-0 ibc-1 ibc-2
     ```
 
     > __NOTE__: If the script above prompts you to delete the data folder, answer __'yes'__.
 
     The script configures and starts three __`gaiad`__ instances, named __`ibc-0`__, and __`ibc-1`__, and __`ibc-2`__.
 
-4. Create a channel between `ibc-0` and `ibc-1`:
+
+3. Create a channel between `ibc-0` and `ibc-1`:
 
     ```shell
-    hermes -c config.toml create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
+    hermes -c multi-config.toml create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
     ```
 
     ```rust
@@ -148,7 +164,7 @@ the `start-multi` command.
 5. Create a channel between `ibc-1` and `ibc-2`:
 
     ```shell
-    hermes -c config.toml create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
+    hermes -c multi-config.toml create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
     ```
 
     ```rust
@@ -210,7 +226,7 @@ the `start-multi` command.
 3. From a terminal, start Hermes using the `start-multi` command:
 
     ```shell
-    hermes -c config.toml start-multi
+    hermes -c multi-config.toml start-multi
     ```
 
 4. In a separate terminal, use the `ft-transfer` command to send:
@@ -218,7 +234,7 @@ the `start-multi` command.
     - two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
 
       ```shell
-      hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+      hermes -c multi-config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
       ```
 
       ```rust
@@ -241,7 +257,7 @@ the `start-multi` command.
     - two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
 
       ```shell
-      hermes -c config.toml tx raw ft-transfer ibc-1 ibc-2 transfer channel-1 9999 1000 -n 2
+      hermes -c multi-config.toml tx raw ft-transfer ibc-1 ibc-2 transfer channel-1 9999 1000 -n 2
       ```
 
       ```rust
@@ -294,10 +310,10 @@ the `start-multi` command.
 5. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
 
     ```shell
-    hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
-    hermes -c config.toml query packet unreceived-acks    ibc-0 ibc-1 transfer channel-1
-    hermes -c config.toml query packet unreceived-packets ibc-0 ibc-1 transfer channel-1
-    hermes -c config.toml query packet unreceived-acks    ibc-1 ibc-0 transfer channel-0
+    hermes -c multi-config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+    hermes -c multi-config.toml query packet unreceived-acks    ibc-0 ibc-1 transfer channel-1
+    hermes -c multi-config.toml query packet unreceived-packets ibc-0 ibc-1 transfer channel-1
+    hermes -c multi-config.toml query packet unreceived-acks    ibc-1 ibc-0 transfer channel-0
     ```
 
     If everything went well, each of these commands should result in:

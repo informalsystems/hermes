@@ -25,47 +25,7 @@ The following configuration file in the `ibc-rs` repository folder can be used f
 __config.toml__
 
 ```toml
-[global]
-strategy = 'naive'
-log_level = 'error'
-
-[[chains]]
-id = 'ibc-0'
-rpc_addr = 'http://localhost:26657'
-grpc_addr = 'http://localhost:9090'
-websocket_addr = 'ws://localhost:26657/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-gas = 3000000
-fee_denom = 'stake'
-fee_amount = 10
-clock_drift = '5s'
-trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
-
-[[chains]]
-id = 'ibc-1'
-rpc_addr = 'ws://localhost:26557'
-grpc_addr = 'ws://localhost:9091'
-websocket_addr = 'ws://localhost:26557/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-gas = 3000000
-fee_denom = 'stake'
-fee_amount = 10
-clock_drift = '5s'
-trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+{{#include ../../../../config.toml}}
 ```
 
 #### Saving the configuration file
@@ -181,6 +141,8 @@ data
 └── ibc-1.log
 
 ```
+
+> __Tip__: You can use the command `tree ./data/ -L 2` to view the folder structure above:
 
 ### $HOME/.hermes directory
 
