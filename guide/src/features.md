@@ -1,7 +1,7 @@
 # Features
 
 This section includes a summary of the supported and planned features.
-More details and feature comparison between the Rust and Go relayer implementations can be found in the [Feature Matrix](./feature_matrix.md)
+More details and feature comparison between the Rust and Go relayer implementations can be found in the [Feature Matrix](./features/matrix.md)
 
 ## Supported Features
 

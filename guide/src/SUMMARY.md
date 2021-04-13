@@ -6,7 +6,7 @@
 - [Introduction](./index.md)
     - [What is Hermes?](./relayer.md)
 - [Features](./features.md)
-    - [Feature matrix](./feature_matrix.md)
+    - [Feature matrix](./features/matrix.md)
 - [Getting Started](./getting_started.md)
    - [Pre-requisites](./pre_requisites.md)
    - [Installation](./installation.md)
