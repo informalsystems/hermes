@@ -32,12 +32,12 @@ hermes create client ibc-0 ibc-1
 Success: CreateClient(
     CreateClient(
         Attributes {
-            height: revision: 0, height: 264,
+            height: Height { revision: 0, height: 264 },
             client_id: ClientId(
                 "07-tendermint-1",
             ),
             client_type: Tendermint,
-            consensus_height: revision: 1, height: 253,
+            consensus_height: Height { revision: 1, height: 253 },
         },
     ),
 )
@@ -78,12 +78,12 @@ hermes update client ibc-0 07-tendermint-9
 Success: UpdateClient(
     UpdateClient {
         common: Attributes {
-            height: revision: 0, height: 303,
+            height: Height { revision: 0, height: 303 },
             client_id: ClientId(
                 "07-tendermint-1",
             ),
             client_type: Tendermint,
-            consensus_height: revision: 1, height: 293,
+            consensus_height: Height { revision: 1, height: 293 },
         },
         header: Some(
             Tendermint(...),
@@ -104,12 +104,12 @@ hermes update client ibc-0 07-tendermint-1 --target-height 320 --trusted-height 
 Success: UpdateClient(
     UpdateClient {
         common: Attributes {
-            height: revision: 0, height: 555,
+            height: Height { revision: 0, height: 555 },
             client_id: ClientId(
                 "07-tendermint-1",
             ),
             client_type: Tendermint,
-            consensus_height: revision: 1, height: 320,
+            consensus_height: Height { revision: 1, height: 320 },
         },
         header: Some(
             Tendermint(...),

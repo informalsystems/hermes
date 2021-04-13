@@ -34,7 +34,7 @@ hermes create connection ibc-0 ibc-1
 🥂  ibc-0 => OpenInitConnection(
     OpenInit(
         Attributes {
-            height: revision: 0, height: 4073,
+            height: Height { revision: 0, height: 4073 },
             connection_id: Some(
                 ConnectionId(
                     "connection-8",
@@ -54,7 +54,7 @@ hermes create connection ibc-0 ibc-1
 🥂  ibc-1 => OpenTryConnection(
     OpenTry(
         Attributes {
-            height: revision: 1, height: 4069,
+            height: Height { revision: 1, height: 4069 },
             connection_id: Some(
                 ConnectionId(
                     "connection-8",
@@ -78,7 +78,7 @@ hermes create connection ibc-0 ibc-1
 🥂  ibc-0 => OpenAckConnection(
     OpenAck(
         Attributes {
-            height: revision: 0, height: 4081,
+            height: Height { revision: 0, height: 4081 },
             connection_id: Some(
                 ConnectionId(
                     "connection-8",
@@ -102,7 +102,7 @@ hermes create connection ibc-0 ibc-1
 🥂  ibc-1 => OpenConfirmConnection(
     OpenConfirm(
         Attributes {
-            height: revision: 1, height: 4073,
+            height: Height { revision: 1, height: 4073 },
             connection_id: Some(
                 ConnectionId(
                     "connection-8",

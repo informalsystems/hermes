@@ -29,12 +29,12 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     Success: CreateClient(
        CreateClient(
            Attributes {
-               height: revision: 1, height: 9,
+               height: Height { revision: 1, height: 9 },
                client_id: ClientId(
                    "07-tendermint-0",
                ),
                client_type: Tendermint,
-               consensus_height: revision: 0, height: 18,
+               consensus_height: Height { revision: 0, height: 18 },
            },
        ),
     )
@@ -142,13 +142,13 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 
  5. Vote on the proposal
 
-    The parameter `1` should match the `proposal_id:` from the upgrade proposal submitted at step 3. 
+    The parameter `1` should match the `proposal_id:` from the upgrade proposal submitted at step 3.
     This command must be issued while the proposal status is `PROPOSAL_STATUS_VOTING_PERIOD`. Confirm transaction when prompted.
 
     ```shell
     $ gaiad tx gov vote 1 yes --home data/ibc-0/data/ --keyring-backend test --keyring-dir data/ibc-0/ --chain-id ibc-0 --from validator
     confirm transaction before signing and broadcasting [y/N]: y
-    
+
     {"height":"85","txhash":"AC24D80B1BFE0832769DECFDD3B3DF999A363D5E4390B0B673344FFDED9150B2","codespace":"","code":0,"data":"0A060A04766F7465","raw_log":"[{\"events\":[{\"type\":\"message\",\"attributes\":[{\"key\":\"action\",\"value\":\"vote\"},{\"key\":\"module\",\"value\":\"governance\"},{\"key\":\"sender\",\"value\":\"cosmos1srfzw0jkyyn7wf0ps4zy0tuvdaclfj2ufgp6w3\"}]},{\"type\":\"proposal_vote\",\"attributes\":[{\"key\":\"option\",\"value\":\"VOTE_OPTION_YES\"},{\"key\":\"proposal_id\",\"value\":\"1\"}]}]}]","logs":[{"msg_index":0,"log":"","events":[{"type":"message","attributes":[{"key":"action","value":"vote"},{"key":"module","value":"governance"},{"key":"sender","value":"cosmos1srfzw0jkyyn7wf0ps4zy0tuvdaclfj2ufgp6w3"}]},{"type":"proposal_vote","attributes":[{"key":"option","value":"VOTE_OPTION_YES"},{"key":"proposal_id","value":"1"}]}]}],"info":"","gas_wanted":"200000","gas_used":"43716","tx":null,"timestamp":""}
     ```
 
@@ -158,7 +158,7 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     ```shell
     gaiad query gov proposal 1 --home data/ibc-0/
     ```
-    
+
     ```
     content:
       '@type': /cosmos.upgrade.v1beta1.SoftwareUpgradeProposal
@@ -192,12 +192,12 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
         UpdateClient(
             UpdateClient {
                 common: Attributes {
-                    height: revision: 1, height: 438,
+                    height: Height { revision: 1, height: 438 },
                     client_id: ClientId(
                         "07-tendermint-0",
                     ),
                     client_type: Tendermint,
-                    consensus_height: revision: 0, height: 440,
+                    consensus_height: Height { revision: 0, height: 440 },
                 },
                 header: Some(
                     Tendermint(..)
@@ -207,12 +207,12 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
         UpgradeClient(
             UpgradeClient(
                 Attributes {
-                    height: revision: 1, height: 438,
+                    height: Height { revision: 1, height: 438 },
                     client_id: ClientId(
                         "07-tendermint-0",
                     ),
                     client_type: Tendermint,
-                    consensus_height: revision: 0, height: 441,
+                    consensus_height: Height { revision: 0, height: 441 },
                 },
             ),
         ),

@@ -33,12 +33,12 @@ hermes tx raw create-client ibc-0 ibc-1
     Success: CreateClient(
         CreateClient(
             Attributes {
-                height: revision: 0, height: 43,
+                height: Height { revision: 0, height: 43 },
                 client_id: ClientId(
                     "07-tendermint-0",
                 ),
                 client_type: Tendermint,
-                consensus_height: revision: 1, height: 32,
+                consensus_height: Height { revision: 1, height: 32 },
             },
         ),
     )
@@ -79,12 +79,12 @@ hermes tx raw update-client ibc-0 07-tendermint-0
 Success: UpdateClient(
     UpdateClient {
         common: Attributes {
-            height: revision: 0, height: 110,
+            height: Height { revision: 0, height: 110 },
             client_id: ClientId(
                 "07-tendermint-0",
             ),
             client_type: Tendermint,
-            consensus_height: revision: 1, height: 109,
+            consensus_height: Height { revision: 1, height: 109 },
         },
         header: Some(
             Tendermint(...),

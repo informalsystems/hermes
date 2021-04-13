@@ -42,7 +42,7 @@ hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unorder
 🥂  ibc-0 => OpenInitConnection(
     OpenInit(
         Attributes {
-            height: revision: 0, height: 66,
+            height: Height { revision: 0, height: 66 },
             connection_id: Some(
                 ConnectionId(
                     "connection-0",
@@ -62,7 +62,7 @@ hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unorder
 🥂  ibc-1 => OpenTryConnection(
     OpenTry(
         Attributes {
-            height: revision: 1, height: 64,
+            height: Height { revision: 1, height: 64 },
             connection_id: Some(
                 ConnectionId(
                     "connection-0",
@@ -86,7 +86,7 @@ hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unorder
 🥂  ibc-0 => OpenAckConnection(
     OpenAck(
         Attributes {
-            height: revision: 0, height: 76,
+            height: Height { revision: 0, height: 76 },
             connection_id: Some(
                 ConnectionId(
                     "connection-0",
@@ -110,7 +110,7 @@ hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unorder
 🥂  ibc-1 => OpenConfirmConnection(
     OpenConfirm(
         Attributes {
-            height: revision: 1, height: 68,
+            height: Height { revision: 1, height: 68 },
             connection_id: Some(
                 ConnectionId(
                     "connection-0",
@@ -165,13 +165,13 @@ hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unorder
     },
 }]
 
-🥳  ibc-0 => OpenInitChannel(OpenInit(Attributes { height: revision: 0, height: 78, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-0")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: None }))
+🥳  ibc-0 => OpenInitChannel(OpenInit(Attributes { height: Height { revision: 0, height: 78 }, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-0")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: None }))
 
-🥳  ibc-1 => OpenTryChannel(OpenTry(Attributes { height: revision: 1, height: 70, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-0")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-0")) }))
+🥳  ibc-1 => OpenTryChannel(OpenTry(Attributes { height: Height { revision: 1, height: 70 }, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-0")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-0")) }))
 
-🥳  ibc-0 => OpenAckChannel(OpenAck(Attributes { height: revision: 0, height: 81, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-0")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-0")) }))
+🥳  ibc-0 => OpenAckChannel(OpenAck(Attributes { height: Height { revision: 0, height: 81 }, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-0")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-0")) }))
 
-🥳  ibc-1 => OpenConfirmChannel(OpenConfirm(Attributes { height: revision: 1, height: 73, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-0")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-0")) }))
+🥳  ibc-1 => OpenConfirmChannel(OpenConfirm(Attributes { height: Height { revision: 1, height: 73 }, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-0")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-0")) }))
 
 🥳  🥳  🥳  Channel handshake finished for Channel {
     ordering: Unordered,
@@ -287,7 +287,7 @@ figure it out by looking up the given connection on `ibc-0`.
 🥳  ibc-0 => OpenInitChannel(
     OpenInit(
         Attributes {
-            height: revision: 0, height: 129,
+            height: Height { revision: 0, height: 129 },
             port_id: PortId("transfer"),
             channel_id: Some(ChannelId("channel-1")),
             connection_id: ConnectionId("connection-0"),
@@ -300,7 +300,7 @@ figure it out by looking up the given connection on `ibc-0`.
 🥳  ibc-1 => OpenTryChannel(
     OpenTry(
         Attributes {
-            height: revision: 1, height: 126,
+            height: Height { revision: 1, height: 126 },
             port_id: PortId("transfer"),
             channel_id: Some(ChannelId("channel-1")),
             connection_id: ConnectionId("connection-0"),
@@ -313,7 +313,7 @@ figure it out by looking up the given connection on `ibc-0`.
 🥳  ibc-0 => OpenAckChannel(
     OpenAck(
         Attributes {
-            height: revision: 0, height: 137,
+            height: Height { revision: 0, height: 137 },
             port_id: PortId("transfer"),
             channel_id: Some(ChannelId("channel-1")),
             connection_id: ConnectionId("connection-0"),
@@ -326,7 +326,7 @@ figure it out by looking up the given connection on `ibc-0`.
 🥳  ibc-1 => OpenConfirmChannel(
     OpenConfirm(
         Attributes {
-            height: revision: 1, height: 129,
+            height: Height { revision: 1, height: 129 },
             port_id: PortId("transfer"),
             channel_id: Some(ChannelId("channel-1")),
             connection_id: ConnectionId("connection-0"),

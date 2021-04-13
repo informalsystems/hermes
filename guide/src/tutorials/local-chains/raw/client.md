@@ -17,12 +17,12 @@ if the command is successful a message similar to the one below will be displaye
     Success: CreateClient(
         CreateClient(
             Attributes {
-                height: revision: 0, height: 43,
+                height: Height { revision: 0, height: 43 },
                 client_id: ClientId(
                     "07-tendermint-0",
                 ),
                 client_type: Tendermint,
-                consensus_height: revision: 1, height: 32,
+                consensus_height: Height { revision: 1, height: 32 },
             },
         ),
     )
