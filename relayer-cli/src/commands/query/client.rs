@@ -146,7 +146,6 @@ impl Runnable for QueryClientConsensusCmd {
     }
 }
 
-/// Query client header command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientHeaderCmd {
     #[options(free, required, help = "identifier of the chain to query")]
