@@ -284,13 +284,57 @@ Notice that one can omit the destination chain parameter, as Hermes will automat
 figure it out by looking up the given connection on `ibc-0`.
 
 ```rust
-🥳  ibc-0 => OpenInitChannel(OpenInit(Attributes { height: revision: 0, height: 129, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-1")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: None }))
+🥳  ibc-0 => OpenInitChannel(
+    OpenInit(
+        Attributes {
+            height: revision: 0, height: 129,
+            port_id: PortId("transfer"),
+            channel_id: Some(ChannelId("channel-1")),
+            connection_id: ConnectionId("connection-0"),
+            counterparty_port_id: PortId("transfer"),
+            counterparty_channel_id: None
+        }
+    )
+)
 
-🥳  ibc-1 => OpenTryChannel(OpenTry(Attributes { height: revision: 1, height: 126, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-1")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-1")) }))
+🥳  ibc-1 => OpenTryChannel(
+    OpenTry(
+        Attributes {
+            height: revision: 1, height: 126,
+            port_id: PortId("transfer"),
+            channel_id: Some(ChannelId("channel-1")),
+            connection_id: ConnectionId("connection-0"),
+            counterparty_port_id: PortId("transfer"),
+            counterparty_channel_id: Some(ChannelId("channel-1"))
+        }
+    )
+)
 
-🥳  ibc-0 => OpenAckChannel(OpenAck(Attributes { height: revision: 0, height: 137, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-1")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-1")) }))
+🥳  ibc-0 => OpenAckChannel(
+    OpenAck(
+        Attributes {
+            height: revision: 0, height: 137,
+            port_id: PortId("transfer"),
+            channel_id: Some(ChannelId("channel-1")),
+            connection_id: ConnectionId("connection-0"),
+            counterparty_port_id: PortId("transfer"),
+            counterparty_channel_id: Some(ChannelId("channel-1"))
+        }
+    )
+)
 
-🥳  ibc-1 => OpenConfirmChannel(OpenConfirm(Attributes { height: revision: 1, height: 129, port_id: PortId("transfer"), channel_id: Some(ChannelId("channel-1")), connection_id: ConnectionId("connection-0"), counterparty_port_id: PortId("transfer"), counterparty_channel_id: Some(ChannelId("channel-1")) }))
+🥳  ibc-1 => OpenConfirmChannel(
+    OpenConfirm(
+        Attributes {
+            height: revision: 1, height: 129,
+            port_id: PortId("transfer"),
+            channel_id: Some(ChannelId("channel-1")),
+            connection_id: ConnectionId("connection-0"),
+            counterparty_port_id: PortId("transfer"),
+            counterparty_channel_id: Some(ChannelId("channel-1"))
+        }
+    )
+)
 
 🥳  🥳  🥳  Channel handshake finished for Channel {
     ordering: Unordered,
