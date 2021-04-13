@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
+use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -18,6 +18,12 @@ use ibc_relayer::config::{ChainConfig, Config};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
+
+#[derive(Serialize, Debug)]
+struct PacketSeqs {
+    height: Height,
+    seqs: Vec<u64>,
+}
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketCommitmentsCmd {
@@ -79,11 +85,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
             Ok((packet_states, height)) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
                 let seqs: Vec<u64> = packet_states.iter().map(|ps| ps.sequence).collect();
-                Output::success(json!({
-                    "seqs": seqs,
-                    "height": height
-                }))
-                .exit();
+                Output::success(PacketSeqs { height, seqs }).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -151,6 +153,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         );
 
         match res {
+            Ok((bytes, _proofs)) if bytes.is_empty() => Output::success_msg("None").exit(),
             Ok((bytes, _proofs)) => {
                 let hex = Hex::upper_case().encode_to_string(bytes).unwrap();
                 Output::success(hex).exit()
@@ -377,11 +380,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             Ok((packet_state, height)) => {
                 // Transform the raw packet state into the list of sequence numbers
                 let seqs: Vec<u64> = packet_state.iter().map(|ps| ps.sequence).collect();
-                Output::success(json!({
-                    "height": height,
-                    "seqs": seqs
-                }))
-                .exit();
+                Output::success(PacketSeqs { height, seqs }).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
