@@ -2,16 +2,24 @@ use std::convert::TryFrom;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
+use subtle_encoding::{Encoding, Hex};
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::error::{Error, Kind};
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
 pub struct CommitmentRoot {
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     bytes: Vec<u8>,
+}
+
+impl fmt::Debug for CommitmentRoot {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hex = Hex::upper_case().encode_to_string(&self.bytes).unwrap();
+        f.debug_tuple("CommitmentRoot").field(&hex).finish()
+    }
 }
 
 impl CommitmentRoot {
