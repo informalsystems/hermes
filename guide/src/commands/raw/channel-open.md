@@ -56,23 +56,32 @@ __Example__
 First, let's initialize the channel on `ibc-0` using an existing connection identified by `connection-0`:
 
 ```shell
-hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer | jq
+hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "OpenInitChannel": {
-      "channel_id": "channel-0",
-      "connection_id": "connection-0",
-      "counterparty_channel_id": null,
-      "counterparty_port_id": "transfer",
-      "height": "1",
-      "port_id": "transfer"
-    }
-  }
-}
+```rust
+Success: OpenInitChannel(
+    OpenInit(
+        Attributes {
+            height: revision: 0, height: 3091,
+            port_id: PortId(
+                "transfer",
+            ),
+            channel_id: Some(
+                ChannelId(
+                    "channel-0",
+                ),
+            ),
+            connection_id: ConnectionId(
+                "connection-0",
+            ),
+            counterparty_port_id: PortId(
+                "transfer",
+            ),
+            counterparty_channel_id: None,
+        },
+    ),
+)
 ```
 
 A new channel has been initialized on `ibc-1` with identifier `channel-0`.
@@ -107,23 +116,36 @@ __Example__
 Let's now create the counterparty to `channel-0` on chain `ibc-1`:
 
 ```shell
-hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channel-0 | jq
+hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channel-0
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "OpenTryChannel": {
-      "channel_id": "channel-1",
-      "connection_id": "connection-1",
-      "counterparty_channel_id": "channel-0",
-      "counterparty_port_id": "transfer",
-      "height": "1",
-      "port_id": "transfer"
-    }
-  }
-}
+```rust
+Success: OpenTryChannel(
+    OpenTry(
+        Attributes {
+            height: revision: 1, height: 3213,
+            port_id: PortId(
+                "transfer",
+            ),
+            channel_id: Some(
+                ChannelId(
+                    "channel-1",
+                ),
+            ),
+            connection_id: ConnectionId(
+                "connection-1",
+            ),
+            counterparty_port_id: PortId(
+                "transfer",
+            ),
+            counterparty_channel_id: Some(
+                ChannelId(
+                    "channel-0",
+                ),
+            ),
+        },
+    ),
+)
 ```
 
 A new channel has been created on `ibc-1` with identifier `channel-1`.
@@ -159,23 +181,36 @@ __Example__
 We can now acknowledge on `ibc-0` that `ibc-1` has accepted the opening of the channel:
 
 ```shell
-hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
+hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "OpenAckChannel": {
-      "channel_id": "channel-0",
-      "connection_id": "connection-0",
-      "counterparty_channel_id": "channel-1",
-      "counterparty_port_id": "transfer",
-      "height": "1",
-      "port_id": "transfer"
-    }
-  }
-}
+```rust
+Success: OpenAckChannel(
+    OpenAck(
+        Attributes {
+            height: revision: 0, height: 3301,
+            port_id: PortId(
+                "transfer",
+            ),
+            channel_id: Some(
+                ChannelId(
+                    "channel-0",
+                ),
+            ),
+            connection_id: ConnectionId(
+                "connection-0",
+            ),
+            counterparty_port_id: PortId(
+                "transfer",
+            ),
+            counterparty_channel_id: Some(
+                ChannelId(
+                    "channel-1",
+                ),
+            ),
+        },
+    ),
+)
 ```
 
 > Note that the field `counterparty_channel_id` now points to the channel on `ibc-1`.
@@ -211,23 +246,35 @@ Confirm on `ibc-1` that `ibc-0` has accepted the opening of the channel,
 after which the channel is open on both chains.
 
 ```shell
-hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0 | jq
+hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "OpenConfirmChannel": {
-      "channel_id": "channel-1",
-      "connection_id": "connection-1",
-      "counterparty_channel_id": "channel-0",
-      "counterparty_port_id": "transfer",
-      "height": "1",
-      "port_id": "transfer"
-    }
-  }
-}
+```rust
+    OpenConfirm(
+        Attributes {
+            height: revision: 1, height: 3483,
+            port_id: PortId(
+                "transfer",
+            ),
+            channel_id: Some(
+                ChannelId(
+                    "channel-1",
+                ),
+            ),
+            connection_id: ConnectionId(
+                "connection-1",
+            ),
+            counterparty_port_id: PortId(
+                "transfer",
+            ),
+            counterparty_channel_id: Some(
+                ChannelId(
+                    "channel-0",
+                ),
+            ),
+        },
+    ),
+)
 ```
 
 We have now successfully opened a channel over an existing connection between the two chains.
