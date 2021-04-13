@@ -18,7 +18,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::{
     chain::handle::ChainHandle,
@@ -265,17 +265,31 @@ impl Worker {
             },
         )?;
 
-        while let Ok(cmd) = self.rx.recv() {
-            match cmd {
-                WorkerCmd::PacketEvents { batch } => link.a_to_b.update_schedule(batch)?,
-                WorkerCmd::NewBlocks {
-                    height,
-                    new_blocks: _,
-                } => link.a_to_b.clear_packets(height)?,
-            }
+        if link.is_closed()? {
+            warn!("channel is closed, exiting");
+            return Ok(());
         }
 
-        Ok(())
+        loop {
+            if let Ok(cmd) = self.rx.try_recv() {
+                match cmd {
+                    WorkerCmd::PacketEvents { batch } => {
+                        link.a_to_b.update_schedule(batch)?;
+                        // Refresh the scheduled batches and execute any outstanding ones.
+                    }
+                    WorkerCmd::NewBlocks {
+                        height,
+                        new_blocks: _,
+                    } => link.a_to_b.clear_packets(height)?,
+                }
+            }
+
+            // Refresh the scheduled batches and execute any outstanding ones.
+            link.a_to_b.refresh_schedule()?;
+            link.a_to_b.execute_schedule()?;
+
+            thread::sleep(Duration::from_millis(100))
+        }
     }
 }
 
