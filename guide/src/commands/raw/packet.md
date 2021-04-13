@@ -35,100 +35,52 @@ __Example__
 Send two transfer packets from the `transfer` module and `channel-0` of `ibc-0` to `ibc-1`. Each transfer if for `9999` samoleans (default denomination) and a timeout offset of `10` blocks. The transfer fee is paid by the relayer account on `ibc-1`.
 
 ```shell
-hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 10 -n 2 | jq
+hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
 ```
 
-```json
-{
-  "status": "success",
-  "result": [
-    {
-      "SendPacketChannel": {
-        "height": "1",
-        "packet": {
-          "data": "7B22616...",
-          "destination_channel": "channel-1",
-          "destination_port": "transfer",
-          "sequence": 7,
-          "source_channel": "channel-0",
-          "source_port": "transfer",
-          "timeout_height": {
-            "revision_height": 25041,
-            "revision_number": 1
-          },
-          "timeout_timestamp": 0
-        }
-      }
-    },
-    {
-      "SendPacketChannel": {
-        "height": "1",
-        "packet": {
-          "data": "7B22616...",
-          "destination_channel": "channel-1",
-          "destination_port": "transfer",
-          "sequence": 8,
-          "source_channel": "channel-0",
-          "source_port": "transfer",
-          "timeout_height": {
-            "revision_height": 25041,
-            "revision_number": 1
-          },
-          "timeout_timestamp": 0
-        }
-      }
-    }
-  ]
-}
+```rust
+Success: [
+    SendPacket(
+        SendPacket {
+            height: Height {
+                revision: 0,
+                height: 431,
+            },
+            packet: PortId("transfer") ChannelId("channel-0") Sequence(4),
+        },
+    ),
+    SendPacket(
+        SendPacket {
+            height: Height {
+                revision: 0,
+                height: 431,
+            },
+            packet: PortId("transfer") ChannelId("channel-0") Sequence(5),
+        },
+    ),
+]
 ```
 
 The transfer packets are stored on `ibc-0` and can be relayed.
 
-To send transfer packets with a custom receiver address use the `--receiver | -r` flag.
+> To send transfer packets with a custom receiver address use the `--receiver | -r` flag.
 
 ```shell
-hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -r board:1938586739 | jq
+hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -r board:1938586739
 ```
 
-```json
-{
-  "result": [
-    {
-      "SendPacket": {
-        "height": {
-          "revision_height": 88,
-          "revision_number": 0
+```rust
+Success: [
+    SendPacket(
+        SendPacket {
+            height: Height {
+                revision: 0,
+                height: 546,
+            },
+            packet: PortId("transfer") ChannelId("channel-0") Sequence(7),
         },
-        "packet": {
-          "data": "7B22616D6F756E74223A2239393939222C2264656E6F6D223A2273616D6F6C65616E73222C227265636569766572223A22626F6172643A31393338353836373339222C2273656E646572223A22636F736D6F7331646C6A6468736C6339787377713664337A7A3271387537363674346767667934766377636333227D",
-          "destination_channel": "channel-1",
-          "destination_port": "transfer",
-          "sequence": 2,
-          "source_channel": "channel-0",
-          "source_port": "transfer",
-          "timeout_height": {
-            "revision_height": 1077,
-            "revision_number": 1
-          },
-          "timeout_timestamp": 0
-        }
-      }
-    }
-  ],
-  "status": "success"
-}
-```
-
-```shell
-echo 7B22616D6F756E74223A2239393939222C2264656E6F6D223A2273616D6F6C65616E73222C227265636569766572223A22626F6172643A31393338353836373339222C2273656E646572223A22636F736D6F7331646C6A6468736C6339787377713664337A7A3271387537363674346767667934766377636333227D | xxd -r -p | jq
-```
-```json
-{
-  "amount": "9999",
-  "denom": "samoleans",
-  "receiver": "board:1938586739",
-  "sender": "cosmos1dljdhslc9xswq6d3zz2q8u766t4ggfy4vcwcc3"
-}
+    ),
+]
 ```
 
 ## Relay receive and timeout packets
@@ -156,64 +108,89 @@ Send the two transfer packets to the `ibc-1` module bound to the `transfer` port
 __NOTE__: The relayer prepends a client update message before the receive messages.
 
 ```shell
-hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
+hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 ```
 
-```json
-{
-  "status": "success",
-  "result": [
-    {
-      "UpdateClient": {
-        "client_id": "07-tendermint-1",
-        "client_type": "Tendermint",
-        "consensus_height": {
-          "revision_height": 25049,
-          "revision_number": 0
+```rust
+Success: [
+    UpdateClient(
+        UpdateClient {
+            common: Attributes {
+                height: Height {
+                    revision: 1,
+                    height: 439,
+                },
+                client_id: ClientId(
+                    "07-tendermint-1",
+                ),
+                client_type: Tendermint,
+                consensus_height: Height {
+                    revision: 0,
+                    height: 449,
+                },
+            },
+            header: Some(
+                Tendermint(...),
+            ),
         },
-        "height": "1"
-      }
-    },
-    {
-      "WriteAcknowledgementChannel": {
-        "ack": "7B22726573756C74223A2241513D3D227D",
-        "height": "1",
-        "packet": {
-          "data": "7B22616...",
-          "destination_channel": "channel-1",
-          "destination_port": "transfer",
-          "sequence": 7,
-          "source_channel": "channel-0",
-          "source_port": "transfer",
-          "timeout_height": {
-            "revision_height": 25041,
-            "revision_number": 1
-          },
-          "timeout_timestamp": 0
-        }
-      }
-    },
-    {
-      "WriteAcknowledgementChannel": {
-        "ack": "7B22726573756C74223A2241513D3D227D",
-        "height": "1",
-        "packet": {
-          "data": "7B22616...",
-          "destination_channel": "channel-1",
-          "destination_port": "transfer",
-          "sequence": 8,
-          "source_channel": "channel-0",
-          "source_port": "transfer",
-          "timeout_height": {
-            "revision_height": 25041,
-            "revision_number": 1
-          },
-          "timeout_timestamp": 0
-        }
-      }
-    }
-  ]
-}
+    ),
+    WriteAcknowledgement(
+        WriteAcknowledgement {
+            height: Height {
+                revision: 1,
+                height: 439,
+            },
+            packet: PortId("transfer") ChannelId("channel-0") Sequence(4),
+            ack: [
+                123,
+                34,
+                114,
+                101,
+                115,
+                117,
+                108,
+                116,
+                34,
+                58,
+                34,
+                65,
+                81,
+                61,
+                61,
+                34,
+                125,
+            ],
+        },
+    ),
+    WriteAcknowledgement(
+        WriteAcknowledgement {
+            height: Height {
+                revision: 1,
+                height: 439,
+            },
+            packet: PortId("transfer") ChannelId("channel-0") Sequence(5),
+            ack: [
+                123,
+                34,
+                114,
+                101,
+                115,
+                117,
+                108,
+                116,
+                34,
+                58,
+                34,
+                65,
+                81,
+                61,
+                61,
+                34,
+                125,
+            ],
+        },
+    ),
+]
 ```
 
 Both packets have been relayed to `ibc-1` and acknowledged.
@@ -224,10 +201,10 @@ Use the `tx raw packet-ack` command to relay acknowledgments to the original sou
 
 ```shell
 USAGE:
-    hermes tx raw packet-recv <OPTIONS>
+    hermes tx raw packet-ack <OPTIONS>
 
 DESCRIPTION:
-    Relay receive or timeout packets
+    Relay acknowledgment packets
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -243,62 +220,51 @@ Send the acknowledgments to the `ibc-0` module bound to the `transfer` port and 
 __NOTE__: The relayer prepends a client update message before the acknowledgments.
 
 ```shell
-hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
+hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": [
-    {
-      "UpdateClient": {
-        "client_id": "07-tendermint-0",
-        "client_type": "Tendermint",
-        "consensus_height": {
-          "revision_height": 25673,
-          "revision_number": 1
+```rust
+Success: [
+    UpdateClient(
+        UpdateClient {
+            common: Attributes {
+                height: Height {
+                    revision: 0,
+                    height: 495,
+                },
+                client_id: ClientId(
+                    "07-tendermint-0",
+                ),
+                client_type: Tendermint,
+                consensus_height: Height {
+                    revision: 1,
+                    height: 483,
+                },
+            },
+            header: Some(
+                Tendermint(...),
+            ),
         },
-        "height": "1"
-      }
-    },
-    {
-      "AcknowledgePacketChannel": {
-        "height": "1",
-        "packet": {
-          "data": "",
-          "destination_channel": "channel-1",
-          "destination_port": "transfer",
-          "sequence": 7,
-          "source_channel": "channel-0",
-          "source_port": "transfer",
-          "timeout_height": {
-            "revision_height": 25041,
-            "revision_number": 1
-          },
-          "timeout_timestamp": 0
-        }
-      }
-    },
-    {
-      "AcknowledgePacketChannel": {
-        "height": "1",
-        "packet": {
-          "data": "",
-          "destination_channel": "channel-1",
-          "destination_port": "transfer",
-          "sequence": 8,
-          "source_channel": "channel-0",
-          "source_port": "transfer",
-          "timeout_height": {
-            "revision_height": 25041,
-            "revision_number": 1
-          },
-          "timeout_timestamp": 0
-        }
-      }
-    }
-  ]
-}
+    ),
+    AcknowledgePacket(
+        AcknowledgePacket {
+            height: Height {
+                revision: 0,
+                height: 495,
+            },
+            packet: PortId("transfer") ChannelId("channel-0") Sequence(4),
+        },
+    ),
+    AcknowledgePacket(
+        AcknowledgePacket {
+            height: Height {
+                revision: 0,
+                height: 495,
+            },
+            packet: PortId("transfer") ChannelId("channel-0") Sequence(5),
+        },
+    ),
+]
 ```
 
 Both acknowledgments have been received on `ibc-0`.
