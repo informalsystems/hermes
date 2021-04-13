@@ -12,12 +12,12 @@ DESCRIPTION:
     Query information about packets
 
 SUBCOMMANDS:
-    commitments query packet commitments
-    commitment query packet commitment
-    acks       query packet acknowledgments
-    ack        query packet acknowledgment
-    unreceived-packets query unreceived packets
-    unreceived-acks query unreceived acknowledgments
+    commitments          Query packet commitments
+    commitment           Query packet commitment
+    acks                 Query packet acknowledgments
+    ack                  Query packet acknowledgment
+    unreceived-packets   Query unreceived packets
+    unreceived-acks      Query unreceived acknowledgments
 ```
 
 ## Table of Contents
@@ -47,23 +47,20 @@ __Example__
 Query `ibc-0` for the sequence numbers of packets that still have commitments on `ibc-0` and that were sent on `transfer` port and `channel-0`:
 
 ```shell
-hermes query packet commitments ibc-0 transfer channel-0 | jq
+hermes query packet commitments ibc-0 transfer channel-0
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "height": {
-      "revision_height": 139,
-      "revision_number": 0
+```rust
+Success: PacketSeqs {
+    height: Height {
+        revision: 0,
+        height: 9154,
     },
-    "seqs": [
-      1,
-      2,
-      3
-    ]
-  }
+    seqs: [
+        1,
+        2,
+        3
+    ],
 }
 ```
 
@@ -93,14 +90,11 @@ __Example__
 Query `ibc-0` for the commitment of packet with sequence `3` sent on `transfer` port and `channel-0`:
 
 ```shell
-hermes query packet commitment ibc-0 transfer channel-0 3 | jq
+hermes query packet commitment ibc-0 transfer channel-0 3
 ```
 
-```json
-{
-  "status": "success",
-  "result": "F9458DC7EBEBCD6D18E983FCAB5BD752CC2A74532BBD50B812DB229997739EFC"
-}
+```rust
+Success: "F9458DC7EBEBCD6D18E983FCAB5BD752CC2A74532BBD50B812DB229997739EFC"
 ```
 
 ## Packet Acknowledgments
@@ -125,23 +119,20 @@ __Example__
 Query `ibc-1` for the sequence numbers of packets acknowledged that were received on `transfer` port and `channel-1`:
 
 ```shell
-hermes query packet acks ibc-1 transfer channel-1 | jq
+hermes query packet acks ibc-1 transfer channel-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "height": {
-      "revision_height": 397,
-      "revision_number": 1
+```rust
+Success: PacketSeqs {
+    height: Height {
+        revision: 1,
+        height: 9547,
     },
-    "seqs": [
-      1,
-      2,
-      3
-    ]
-  }
+    seqs: [
+        1,
+        2,
+        3
+    ],
 }
 ```
 
@@ -171,14 +162,11 @@ __Example__
 Query `ibc-1` for the acknowledgment of packet with sequence `2` received on `transfer` port and `channel-1`:
 
 ```shell
-hermes query packet ack ibc-1 transfer channel-1 2 | jq
+hermes query packet ack ibc-1 transfer channel-1 2
 ```
 
-```json
-{
-  "status": "success",
-  "result": "08F7557ED51826FE18D84512BF24EC75001EDBAF2123A477DF72A0A9F3640A7C"
-}
+```rust
+Success: "08F7557ED51826FE18D84512BF24EC75001EDBAF2123A477DF72A0A9F3640A7C"
 ```
 
 ## Unreceived Packets
@@ -204,18 +192,15 @@ __Example__
 Query `ibc-1` for the sequence numbers of packets sent on `ibc-0` on `transfer` port and `channel-0` but not yet received:
 
 ```shell
-hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0 | jq
+hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
 ```
 
 ```json
-{
-  "status": "success",
-  "result": [
+Success: [
     1,
     2,
     3
-  ]
-}
+]
 ```
 
 ## Unreceived Acknowledgments
@@ -241,16 +226,13 @@ __Example__
 Query `ibc-0` for the sequence numbers of packets received on `ibc-1` on `transfer` port and `channel-1` but not yet acknowledged on `ibc-0`:
 
 ```shell
-hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1 | jq
+hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
 ```
 
 ```json
-{
-  "status": "success",
-  "result": [
+Success: [
     1,
     2,
     3
-  ]
-}
+]
 ```
