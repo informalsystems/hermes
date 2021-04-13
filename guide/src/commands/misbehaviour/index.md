@@ -56,27 +56,31 @@ The `hermes misbehaviour` outputs an error message displaying `MISBEHAVIOUR DETE
 hermes misbehaviour ibc-0 07-tendermint-0
 ```
 
-```json
-{"timestamp":"Apr 12 12:30:42.686","level":"INFO","fields":{"message":"checking misbehaviour for consensus state heights [Height { revision_number: 1, revision_height: 16 }, Height { revision_number: 1, revision_height: 8 }]"},"target":"ibc_relayer::foreign_client"}
-{"timestamp":"Apr 12 12:30:43.776","level":"ERROR","fields":{"message":"MISBEHAVIOUR DETECTED ClientId(\"07-tendermint-0\") h1: Height { revision_number: 1, revision_height: 16 }-Height { revision_number: 1, revision_height: 8 } h2: Height { revision_number: 1, revision_height: 16 }-Height { revision_number: 1, revision_height: 8 }, sending evidence"},"target":"ibc_relayer::foreign_client"}
-{"timestamp":"Apr 12 12:30:44.031","level":"INFO","fields":{"message":"evidence submission result [ClientMisbehaviour(ClientMisbehaviour(Attributes { height: Height { revision_number: 0, revision_height: 51 }, client_id: ClientId(\"07-tendermint-0\"), client_type: Tendermint, consensus_height: Height { revision_number: 1, revision_height: 16 } }))]"},"target":"ibc_relayer_cli::commands::misbehaviour"}
-{
-  "result": {
-    "ClientMisbehaviour": {
-      "client_id": "07-tendermint-0",
-      "client_type": "Tendermint",
-      "consensus_height": {
-        "revision_height": 16,
-        "revision_number": 1
-      },
-      "height": {
-        "revision_height": 51,
-        "revision_number": 0
-      }
-    }
-  },
-  "status": "success"
-}
+```rust
+Apr 13 20:04:03.347  INFO ibc_relayer::foreign_client: checking misbehaviour for consensus state heights [Height { revision: 1, height: 195 }, Height { revision: 1, height: 85 }, Height { revision: 1, height: 28 }]
+Apr 13 20:04:04.425 ERROR ibc_relayer::foreign_client: MISBEHAVIOUR DETECTED ClientId("07-tendermint-0") h1: Height { revision: 1, height: 195 }-Height { revision: 1, height: 85 } h2: Height { revision: 1, height: 195 }-Height { revision: 1, height: 85 }, sending evidence
+Apr 13 20:04:05.070  INFO ibc_relayer_cli::commands::misbehaviour: evidence submission result [ClientMisbehaviour(ClientMisbehaviour(Attributes { height: Height { revision: 0, height: 1521 }, client_id: ClientId("07-tendermint-0"), client_type: Tendermint, consensus_height: Height { revision: 1, height: 195 } }))]
+
+Success: Some(
+    ClientMisbehaviour(
+        ClientMisbehaviour(
+            Attributes {
+                height: Height {
+                    revision: 0,
+                    height: 1521,
+                },
+                client_id: ClientId(
+                    "07-tendermint-0",
+                ),
+                client_type: Tendermint,
+                consensus_height: Height {
+                    revision: 1,
+                    height: 195,
+                },
+            },
+        ),
+    ),
+)
 ```
 
 Querying client state from this point will show the client is in frozen state, with `frozen_height` indicating the height at which the client was frozen:
