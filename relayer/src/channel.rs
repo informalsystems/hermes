@@ -189,7 +189,7 @@ impl Channel {
 
     /// Executes the channel handshake protocol (ICS004)
     fn handshake(&mut self) -> Result<(), ChannelError> {
-        let done = '\u{1F973}';
+        let done = '🥳';
 
         let a_chain = self.src_chain();
         let b_chain = self.dst_chain();
@@ -206,7 +206,7 @@ impl Channel {
                 }
                 Ok(event) => {
                     self.a_side.channel_id = extract_channel_id(&event)?.clone();
-                    println!("{}  {} => {:?}\n", done, a_chain.id(), event);
+                    println!("{}  {} => {:#?}\n", done, a_chain.id(), event);
                     init_success = true;
                     break;
                 }
@@ -233,7 +233,7 @@ impl Channel {
                 }
                 Ok(event) => {
                     self.b_side.channel_id = extract_channel_id(&event)?.clone();
-                    println!("{}  {} => {:?}\n", done, b_chain.id(), event);
+                    println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
                     try_success = true;
                     break;
                 }
@@ -271,21 +271,21 @@ impl Channel {
                     // Ack to a_chain
                     match self.flipped().build_chan_open_ack_and_send() {
                         Err(e) => error!("Failed ChanAck {:?}: {}", self.a_side, e),
-                        Ok(event) => println!("{}  {} => {:?}\n", done, a_chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:#?}\n", done, a_chain.id(), event),
                     }
                 }
                 (State::Open, State::TryOpen) => {
                     // Confirm to b_chain
                     match self.build_chan_open_confirm_and_send() {
                         Err(e) => error!("Failed ChanConfirm {:?}: {}", self.b_side, e),
-                        Ok(event) => println!("{}  {} => {:?}\n", done, b_chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:#?}\n", done, b_chain.id(), event),
                     }
                 }
                 (State::TryOpen, State::Open) => {
                     // Confirm to a_chain
                     match self.flipped().build_chan_open_confirm_and_send() {
                         Err(e) => error!("Failed ChanConfirm {:?}: {}", self.a_side, e),
-                        Ok(event) => println!("{}  {} => {:?}\n", done, a_chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:#?}\n", done, a_chain.id(), event),
                     }
                 }
                 (State::Open, State::Open) => {
