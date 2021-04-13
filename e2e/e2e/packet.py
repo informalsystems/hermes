@@ -23,13 +23,13 @@ class TxPacketSendRes:
 @cmd("tx raw ft-transfer")
 @dataclass
 class TxPacketSend(Cmd[TxPacketSendRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
+    src_chain_id: ChainId
     src_port: PortId
     src_channel: ChannelId
 
     def args(self) -> List[str]:
-        return [self.src_chain_id, self.dst_chain_id, self.src_port, self.src_channel, "9999", "1000"]
+        return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel, "9999", "1000"]
 
     def process(self, result: Any) -> TxPacketSendRes:
         entry = find_entry(result, 'SendPacket')
@@ -90,7 +90,7 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
 
 
 def packet_send(c: Config, src: ChainId, dst: ChainId, src_port: PortId, src_channel: ChannelId) -> Packet:
-    cmd = TxPacketSend(src_chain_id=src, dst_chain_id=dst,
+    cmd = TxPacketSend(dst_chain_id=dst, src_chain_id=src,
                        src_port=src_port, src_channel=src_channel)
 
     res = cmd.run(c).success()

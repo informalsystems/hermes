@@ -18,11 +18,11 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxIcs20MsgTransferCmd {
-    #[options(free, required, help = "identifier of the source chain")]
-    src_chain_id: ChainId,
-
     #[options(free, required, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,

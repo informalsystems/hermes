@@ -23,7 +23,7 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
 - start the transfer of 9999 samoleans from `ibc-0` to `ibc-1`. This sends a `MsgTransfer` in a transaction to `ibc-0`
 
     ```shell
-    hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
+    hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d samoleans
     ```
 
 - query packet commitments on `ibc-0`
@@ -53,13 +53,13 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
 - send acknowledgement to `ibc-0`
 
     ```shell
-    hermes tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
+    hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1
     ```
 
 - send 1 packet with low timeout height offset to ibc-0
 
     ```shell
-    hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
+    hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 2 -n 1
     ```
 
 - send timeout to `ibc-0`
@@ -68,10 +68,10 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
     hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
     ```
 
-Send those samoleans back, from `ibc-1` to `ibc-1`.
+Send those samoleans back, from `ibc-1` to `ibc-0`.
 
 ```shell
-hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 1 -d ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC
+hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 1000 -n 1 -d ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC
 hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
 hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 ```

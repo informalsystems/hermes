@@ -17,8 +17,8 @@ DESCRIPTION:
     Send a fungible token transfer test transaction (ICS20 MsgTransfer)
 
 POSITIONAL ARGUMENTS:
-    src_chain_id              identifier of the source chain
     dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
     src_port_id               identifier of the source port
     src_channel_id            identifier of the source channel
     amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
@@ -35,7 +35,7 @@ __Example__
 Send two transfer packets from the `transfer` module and `channel-0` of `ibc-0` to `ibc-1`. Each transfer if for `9999` samoleans (default denomination) and a timeout offset of `10` blocks. The transfer fee is paid by the relayer account on `ibc-1`.
 
 ```shell
-hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 10 -n 2 | jq
+hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 10 -n 2 | jq
 ```
 
 ```json
@@ -87,7 +87,7 @@ The transfer packets are stored on `ibc-0` and can be relayed.
 To send transfer packets with a custom receiver address use the `--receiver | -r` flag.
 
 ```shell
-hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -r board:1938586739 | jq
+hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -r board:1938586739 | jq
 ```
 
 ```json

@@ -213,8 +213,8 @@ To relay packets over multiple channels, one can instead use the `start-multi` c
     - two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
 
     ```shell
-    hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
-    hermes -c config.toml tx raw ft-transfer ibc-1 ibc-2 transfer channel-1 9999 1000 -n 2
+    hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+    hermes -c config.toml tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 1000 -n 2
     ```
 
 5. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packet`s are sent out.
