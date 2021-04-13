@@ -62,7 +62,7 @@ hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 Success: OpenInitConnection(
     OpenInit(
         Attributes {
-            height: revision: 0, height: 1993,
+            height: height: Height { revision: 0, height: 1993 },
             connection_id: Some(
                 ConnectionId(
                     "connection-0",
@@ -118,7 +118,7 @@ hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection
 Success: OpenTryConnection(
     OpenTry(
         Attributes {
-            height: revision: 1, height: 2097,
+            height: height: Height { revision: 1, height: 2097 },
             connection_id: Some(
                 ConnectionId(
                     "connection-1",
@@ -179,7 +179,7 @@ hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection
 Success: OpenAckConnection(
     OpenAck(
         Attributes {
-            height: revision: 0, height: 2181,
+            height: height: Height { revision: 0, height: 2181 },
             connection_id: Some(
                 ConnectionId(
                     "connection-0",
@@ -239,7 +239,7 @@ hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connec
 Success: OpenConfirmConnection(
     OpenConfirm(
         Attributes {
-            height: revision: 1, height: 2244,
+            height: height: Height { revision: 1, height: 2244 },
             connection_id: Some(
                 ConnectionId(
                     "connection-1",
