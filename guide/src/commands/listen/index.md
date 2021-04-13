@@ -4,7 +4,7 @@ The relayer can be started in `listen` mode to display the events emitted by a g
 
 ```shell
 USAGE:
-    ibc-relayer-cli listen <OPTIONS>
+    hermes listen <OPTIONS>
 
 DESCRIPTION:
     Listen to and display IBC events emitted by a chain
@@ -21,11 +21,11 @@ __Example__
 Start the relayer in listen mode for all `ibc-0` events and observe the output:
 
 ```shell
-$ hermes listen ibc-0
+hermes listen ibc-0
 ```
 
-```
-[relayer-cli/src/commands/listen.rs:45] event_batch = EventBatch {
+```rust
+EventBatch {
     chain_id: ChainId {
         id: "ibc-0",
         version: 0,
@@ -39,7 +39,7 @@ $ hermes listen ibc-0
         ),
     ],
 }
-[relayer-cli/src/commands/listen.rs:45] event_batch = EventBatch {
+EventBatch {
     chain_id: ChainId {
         id: "ibc-0",
         version: 0,
@@ -69,7 +69,7 @@ $ hermes listen ibc-0
 
 ...
 
-[relayer-cli/src/commands/listen.rs:45] event_batch = EventBatch {
+EventBatch {
     chain_id: ChainId {
         id: "ibc-0",
         version: 0,
@@ -85,16 +85,18 @@ $ hermes listen ibc-0
                     ),
                     client_type: Tendermint,
                     consensus_height: Height {
-                        revision_number: 1,
-                        revision_height: 10907,
+                        revision: 1,
+                        height: 10907,
                     },
                 },
             ),
         ),
     ],
 }
+
 ...
-[relayer-cli/src/commands/listen.rs:45] event_batch = EventBatch {
+
+EventBatch {
     chain_id: ChainId {
         id: "ibc-0",
         version: 0,
@@ -110,8 +112,8 @@ $ hermes listen ibc-0
                     ),
                     client_type: Tendermint,
                     consensus_height: Height {
-                        revision_number: 1,
-                        revision_height: 10912,
+                        revision: 1,
+                        height: 10912,
                     },
                 },
             ),

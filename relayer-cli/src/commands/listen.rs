@@ -63,7 +63,7 @@ pub fn listen(config: &ChainConfig, events: &[EventType]) -> Result<(), BoxError
     thread::spawn(|| event_monitor.run());
 
     while let Ok(event_batch) = rx.recv() {
-        dbg!(event_batch);
+        println!("{:#?}", event_batch);
     }
 
     Ok(())
