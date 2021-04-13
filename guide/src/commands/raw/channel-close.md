@@ -32,23 +32,39 @@ FLAGS:
 __Example__
 
 ```shell
-hermes tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
+hermes tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "CloseInitChannel": {
-      "channel_id": "channel-0",
-      "connection_id": "connection-0",
-      "counterparty_channel_id": "channel-1",
-      "counterparty_port_id": "transfer",
-      "height": "1",
-      "port_id": "transfer"
-    }
-  }
-}
+```rust
+Success: CloseInitChannel(
+    CloseInit(
+        Attributes {
+            height: Height {
+                revision: 0,
+                height: 77,
+            },
+            port_id: PortId(
+                "transfer",
+            ),
+            channel_id: Some(
+                ChannelId(
+                    "channel-0",
+                ),
+            ),
+            connection_id: ConnectionId(
+                "connection-0",
+            ),
+            counterparty_port_id: PortId(
+                "transfer",
+            ),
+            counterparty_channel_id: Some(
+                ChannelId(
+                    "channel-1",
+                ),
+            ),
+        },
+    ),
+)
 ```
 
 ## Channel Close Confirm
@@ -77,26 +93,42 @@ FLAGS:
 __Example__
 
 ```shell
-hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0 | jq
+hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "CloseConfirmChannel": {
-      "channel_id": "channel-1",
-      "connection_id": "connection-1",
-      "counterparty_channel_id": "channel-0",
-      "counterparty_port_id": "transfer",
-      "height": "1",
-      "port_id": "transfer"
-    }
-  }
-}
+```rust
+Success: CloseConfirmChannel(
+    CloseConfirm(
+        Attributes {
+            height: Height {
+                revision: 1,
+                height: 551,
+            },
+            port_id: PortId(
+                "transfer",
+            ),
+            channel_id: Some(
+                ChannelId(
+                    "channel-1",
+                ),
+            ),
+            connection_id: ConnectionId(
+                "connection-1",
+            ),
+            counterparty_port_id: PortId(
+                "transfer",
+            ),
+            counterparty_channel_id: Some(
+                ChannelId(
+                    "channel-0",
+                ),
+            ),
+        },
+    ),
+)
 ```
 
-__NOTE__: The cosmos-sdk implementation does not allow the relayer to initiate the closing of channels.
-Therefore, when using the Gaia release image, the `chan-close-init` command will
-fail as the `cosmos-sdk` transfer module will reject the `MsgChannelCloseInit` message included in the transaction.
-To be able to test channel closure, you will need to [patch](../../help.md#patching-gaia) your gaia deployments.
+__NOTE__: The `cosmos-sdk` transfer module implementation does not allow the user (`hermes` in this case) to initiate the closing of channels.
+Therefore, when using the Gaia release image, the `chan-close-init` command
+fails as the `MsgChannelCloseInit` message included in the transaction is rejected.
+To be able to test channel closure, you need to [patch](../../help.md#patching-gaia) your gaia deployments.
