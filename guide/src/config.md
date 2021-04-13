@@ -93,7 +93,7 @@ trusting_period = '14days'
 
 ### Adding Private Keys
 
-For each chain configured you need to add a private key for that chain in order to submit [transactions](./transactions.md), please refer to the [Keys](./keys.md) sections in order to learn how to add the private keys that are used by the relayer.
+For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/raw/index.md), please refer to the [Keys](./commands/keys/index.md) sections in order to learn how to add the private keys that are used by the relayer.
 
 ### Example configuration file
 
@@ -145,6 +145,6 @@ denominator = '3'
 
 ### Next Steps
 
-Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./two_chains.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
+Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
 [log-level]: ./help.html#parametrizing-the-log-output-level

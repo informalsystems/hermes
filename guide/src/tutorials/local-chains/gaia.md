@@ -4,7 +4,7 @@ The script to start the chains requires gaia to be installed.
 
 > __NOTE__: This assumes you have `Golang` programming language installed on 
 > your machine. If not, please ensure you install before proceeding. See 
-> more details in the [Pre-requisites](pre_requisites.html#2-golang) section.
+> more details in the [Pre-requisites](../../pre_requisites.md#2-golang) section.
 
 #### Clone gaia
 
@@ -36,4 +36,4 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 
 ## Next Steps
 
-In the next section you will learn how to [start two local chains](./local_chains.md)
+In the next section you will learn how to [start two local chains](./start.md)

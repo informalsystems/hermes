@@ -172,7 +172,7 @@ hermes query client consensus ibc-0 07-tendermint-0 -s | jq
 ```
 
 Query `ibc-0` at height `200` for the consensus state for height `181`:
-```shell script
+```shell
 hermes query client consensus ibc-0 07-tendermint-0 -c 181 -h 200 | jq
 ```
 ```json

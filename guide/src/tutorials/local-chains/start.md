@@ -18,7 +18,7 @@ killall gaiad
 
 ### Configuration file
 
-In order to run the script, you will need a `TOML` configuration file to be passed as a parameter. Please check the [`Configuration`](./config.md) section for more information about the relayer configuration file.
+In order to run the script, you will need a `TOML` configuration file to be passed as a parameter. Please check the [`Configuration`](../../config.md) section for more information about the relayer configuration file.
 
 The following configuration file in the `ibc-rs` repository folder can be used for running the local chains:
 
@@ -184,9 +184,9 @@ data
 
 ### $HOME/.hermes directory
 
-By the default `hermes` expects the configuration file to be in the __`$HOME/.hermes`__ folder. 
+By the default `hermes` expects the configuration file to be in the __`$HOME/.hermes`__ folder.
 
-It also stores the private keys for each chain in this folder as outlined in the [Keys](./keys.md) section. 
+It also stores the private keys for each chain in this folder as outlined in the [Keys](../../commands/keys/index.md) section.
 
 After executing the __`dev-env`__ script, this is how the folder should look like:
 
@@ -206,7 +206,7 @@ $HOME/.hermes/
 
 Following sections describe the commands to connect and relay packets between two chains. High level you can:
 
-1. use a [simplified approach](./tutorial_relay_paths.html) for managing relaying paths, or
-2. use [individual (raw) transactions](./tutorial_raw.html) to create 
+1. use a [simplified approach](./relay-paths/index.md) for managing relaying paths, or
+2. use [individual (raw) transactions](./raw/index.md) to create
    all the necessary chain objects (clients, connections, channels) and relay packets.
 

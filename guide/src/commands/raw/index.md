@@ -6,21 +6,21 @@ The `tx raw` command provides the following sub-commands:
 
 | CLI name               | Description                                                                                                     |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `create-client`        | [Create a client for source chain on destination chain](./tx_client.html#create-client)                         |
-| `update-client`        | [Update the specified client on destination chain](./tx_client.html#update-client)                              |
-| `conn-init`            | [Initialize a connection (ConnectionOpenInit)](./tx_connection.html#connection-init)                            |
-| `conn-try`             | [Relay the connection attempt (ConnectionOpenTry)](./tx_connection.html#connection-try)                         |
-| `conn-ack`             | [Relay acknowledgment of a connection attempt (ConnectionOpenAck)](./tx_connection.html#connection-ack)         |
-| `conn-confirm`         | [Confirm opening of a connection (ConnectionOpenConfirm)](./tx_connection.html#connection-confirm)              |
-| `chan-open-init`       | [Initialize a channel (ChannelOpenInit)](./tx_channel_open.html#channel-open-init)                              |
-| `chan-open-try`        | [Relay the channel attempt (ChannelOpenTry)](./tx_channel_open.html#channel-open-try)                           |
-| `chan-open-ack`        | [Relay acknowledgment of a channel attempt (ChannelOpenAck)](./tx_channel_open.html#channel-open-ack)           |
-| `chan-open-close`      | [Confirm opening of a channel (ChannelOpenConfirm)](./tx_channel_open.html#channel-open-close)                  |
-| `chan-close-init`      | [Initiate the closing of a channel (ChannelCloseInit)](./tx_channel_close.html#channel-close-init)              |
-| `chan-close-confirm`   | [Confirm the closing of a channel (ChannelCloseConfirm)](./tx_channel_close.html#channel-close-confirm)         |
-| `ft-transfer`          | [Send a fungible token transfer test transaction (ICS20 MsgTransfer)](./tx_packet.html#fungible-token-transfer) |
-| `packet-recv`          | [Relay receive or timeout packets](./tx_packet.html#relay-receive-and-timeout-packets)                          |
-| `packet-ack`           | [Relay acknowledgment packets](./tx_packet.html#relay-acknowledgment-packets)                                   |
+| `create-client`        | [Create a client for source chain on destination chain](./client.md#create-client)                         |
+| `update-client`        | [Update the specified client on destination chain](./client.md#update-client)                              |
+| `conn-init`            | [Initialize a connection (ConnectionOpenInit)](./connection.md#connection-init)                            |
+| `conn-try`             | [Relay the connection attempt (ConnectionOpenTry)](./connection.md#connection-try)                         |
+| `conn-ack`             | [Relay acknowledgment of a connection attempt (ConnectionOpenAck)](./connection.md#connection-ack)         |
+| `conn-confirm`         | [Confirm opening of a connection (ConnectionOpenConfirm)](./connection.md#connection-confirm)              |
+| `chan-open-init`       | [Initialize a channel (ChannelOpenInit)](./channel-open.md#channel-open-init)                              |
+| `chan-open-try`        | [Relay the channel attempt (ChannelOpenTry)](./channel-open.md#channel-open-try)                           |
+| `chan-open-ack`        | [Relay acknowledgment of a channel attempt (ChannelOpenAck)](./channel-open.md#channel-open-ack)           |
+| `chan-open-close`      | [Confirm opening of a channel (ChannelOpenConfirm)](./channel-open.md#channel-open-close)                  |
+| `chan-close-init`      | [Initiate the closing of a channel (ChannelCloseInit)](./channel-close.md#channel-close-init)              |
+| `chan-close-confirm`   | [Confirm the closing of a channel (ChannelCloseConfirm)](./channel-close.md#channel-close-confirm)         |
+| `ft-transfer`          | [Send a fungible token transfer test transaction (ICS20 MsgTransfer](./packet.md#fungible-token-transfer) |
+| `packet-recv`          | [Relay receive or timeout packets](./packet.md#relay-receive-and-timeout-packets)                          |
+| `packet-ack`           | [Relay acknowledgment packets](./packet.md#relay-acknowledgment-packets)                                   |
 
 The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters and they are explained in the individual sub-sections.
 
@@ -50,15 +50,15 @@ In the command template above:
 - `src-obj-id` - the identifier of an object on the source chain, required by the datagram, e.d. the `client-id` of the connection on source chain.
 
 - More details about the `tx raw` commands can be found in the following sections:
-     - [Client](./tx_client.md)
-     - [Connection](./tx_connection.md)
-     - [Channel Open](./tx_channel_open.md)
-     - [Channel Close](./tx_channel_close.md)
-     - [Packet](./tx_packet.md)
+     - [Client](./client.md)
+     - [Connection](./connection.md)
+     - [Channel Open](./channel-open.md)
+     - [Channel Close](./channel-close.md)
+     - [Packet](./packet.md)
 
 ## Usage
 
-```shell script
+```shell
 USAGE:
     hermes tx raw <SUBCOMMAND>
 

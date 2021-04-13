@@ -128,4 +128,4 @@ hermes tx raw update-client ibc-0 07-tendermint-1
 
 ## Next Steps
 
-In the next section, we'll establish the [Connection Handshake](./tutorial_conn_raw.md)
+In the next section, we'll establish the [Connection Handshake](./connection.md)

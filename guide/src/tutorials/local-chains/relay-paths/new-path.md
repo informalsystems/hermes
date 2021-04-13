@@ -1,4 +1,4 @@
-## Packet relaying on new path
+# Packet relaying on new path
 
 Hermes packet relaying can be done over a newly established path. It performs client creation, connection and channel handshake if a relay path is present in the configuration file.
 
@@ -16,7 +16,7 @@ Hermes packet relaying can be done over a newly established path. It performs cl
 
 2. From one terminal start hermes over this path:
 
-   ```shell script
+   ```shell
    hermes start ibc-0 ibc-1
    ```
 
@@ -26,12 +26,12 @@ Hermes packet relaying can be done over a newly established path. It performs cl
 
 3. in a separate terminal, use the transfer command to send 2 packets to `ibc-0` chain:
 
-    ```shell script
+    ```shell
     hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
     ```
 4. use the CLI to send 2 packets to `ibc-1` chain:
 
-    ```shell script
+    ```shell
     hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
     ```
 
@@ -39,7 +39,7 @@ Hermes packet relaying can be done over a newly established path. It performs cl
 
 6. Query the unreceived packets on `ibc-0` and `ibc-1` from a different terminal
 
-    ```shell script
+    ```shell
     hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
     hermes query packet unreceived-acks    ibc-0 ibc-1 transfer channel-1
     hermes query packet unreceived-packets ibc-0 ibc-1 transfer channel-1

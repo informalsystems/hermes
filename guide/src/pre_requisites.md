@@ -2,7 +2,7 @@
 
 ## 1. Rust
 
-The IBC Relayer is developed with the [Rust]() programming language. In order to build and run the relayer you need to install and configure `Rust` on your machine.
+The IBC Relayer is developed with the [Rust](https://www.rust-lang.org) programming language. In order to build and run the relayer you need to install and configure `Rust` on your machine.
 
 ### Fresh Rust installation
 
@@ -34,11 +34,10 @@ This should display the `cargo` version and confirm the proper installation.
 
 ## 2. Golang
 
-You will also need the __Go__ programming language installed and configured on your machine. This is a requirement for the the section [Installing Gaia](./gaia.md) in the [Two Local Chains](./two_chains.md) tutorial.
+You will also need the __Go__ programming language installed and configured on your machine. This is a requirement for the the section [Installing Gaia](./tutorials/local-chains/gaia.md) in the [Two Local Chains](./tutorials/local-chains/index.md) tutorial.
 
-To install and configure Golang on your machine please follow the [Golang official documentation](https://golang.org/doc/install)
+To install and configure Golang on your machine please follow the [Golang official documentation](https://golang.org/doc/install).
 
 ## Next Steps
 
-Next, go to the [Installation](./installation.md) section to learn how to build 
-Hermes.
+Next, go to the [Installation](./installation.md) section to learn how to build Hermes.

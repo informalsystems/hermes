@@ -32,14 +32,14 @@ To enable it, one must compile the `relayer-cli` crate with the `--features=prof
 
 a) One way is to build the `relayer` binary and update the `hermes` alias to point to the executable:
 
-```shell script
+```shell
 cd relayer-cli/
 cargo build --features=profiling
 ```
 
 b) Alternatively, one can use the `cargo run` command and update the alias accordingly:
 
-```shell script
+```shell
 alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
 ```
 
@@ -150,14 +150,13 @@ produced:
 ## Patching `gaia`
 
 The guide below refers specifically to patching your gaia chain so that the
-relayer can initiate the closing of channels by submitting a [`chan-close-init`
-transaction][chan-close].
+relayer can initiate the closing of channels by submitting a [`chan-close-init` transaction][chan-close].
 Without this modification, the transaction will be rejected.
 We also describe how to test the channel closing feature.
 
 - Clone the Cosmos SDK
 
-    ```shell script
+    ```shell
     git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/cosmos/cosmos-sdk
     cd ~/go/src/github.com/cosmos/cosmos-sdk
     ```
@@ -192,32 +191,32 @@ In order to test the correct operation during the channel close, perform the ste
   Make sure you're not relaying this packet (the relayer should not be running on
   this path).
 
-  ```shell script
+  ```shell
   hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
   ```
 
 - now do the first step of channel closing: the channel will transition
 to close-open:
 
-    ```shell script
+    ```shell
     hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
     ```
 
 - trigger timeout on close to ibc-1
 
-    ```shell script
+    ```shell
     hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
     ```
 
 - close-close
 
-    ```shell script
+    ```shell
     hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
     ```
 
 - verify that the two ends are in Close state:
 
-  ```shell script
+  ```shell
   hermes -c config.toml query channel end ibc-0 transfer channel-0
   hermes -c config.toml query channel end ibc-1 transfer channel-1
   ```
@@ -235,9 +234,9 @@ issue template.
 [twitter]: https://twitter.com/informalinc
 [twitter-image]: https://abs.twimg.com/errors/logo23x19.png
 [website]: https://informal.systems
-[log-level]: ./help.html#parametrizing-the-log-output-level
+[log-level]: ./help.md#parametrizing-the-log-output-level
 [issues]: https://github.com/informalsystems/ibc-rs/issues
 [profiling]: ./help.md#profiling
-[feature]: ./help.html#new-feature-request
-[patching]: ./help.html#patching-gaia
-[chan-close]: ./tx_channel_close.html#channel-close-init
+[feature]: ./help.md#new-feature-request
+[patching]: ./help.md#patching-gaia
+[chan-close]: ./commands/raw/channel-close.md#channel-close-init

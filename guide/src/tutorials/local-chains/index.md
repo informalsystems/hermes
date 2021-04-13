@@ -4,4 +4,4 @@ In this tutorial we will show how you can test the relayer against two chains, w
 
 The script starts two [`gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol.
 
-Follow the steps in this tutorial section starting with the [Install Gaia](./gaia.md) section.
+Follow the steps in this tutorial section starting with the [Install Gaia](./gaia.md) section.# Local chains

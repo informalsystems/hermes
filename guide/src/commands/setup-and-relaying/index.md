@@ -4,11 +4,11 @@ This section describes a number of commands that can be used to manage clients, 
 
 | CLI name               | Description                                                                                                     |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `create client`        | [Create a client for source chain on destination chain](./clients.html#create-client)                         |
-| `update client`        | [Update the specified client on destination chain](./clients.html#update-client)                              |
-| `create connection`    | [Establish a connection using existing or new clients](./connections.html#establish-connection)                            |
-| `create channel`       | [Establish a channel using existing or new connection](./channels.html#establish-channel)                            |
-| `start`                | [Relay packets over a new or exsiting channel](./packets.html#start)                            |
+| `create client`        | [Create a client for source chain on destination chain](./clients.md#create-client)                         |
+| `update client`        | [Update the specified client on destination chain](./clients.md#md-client)                              |
+| `create connection`    | [Establish a connection using existing or new clients](./connections.md#establish-connection)                            |
+| `create channel`       | [Establish a channel using existing or new connection](./channels.md#establish-channel)                            |
+| `start`                | [Relay packets over a new or exsiting channel](./packets.md#start)                            |
 
 
 ## Create 

@@ -6,13 +6,13 @@ The `query` command provides the following sub-commands:
 
 | CLI name               | Description                                                                    |
 | ---------------------- | ------------------------------------------------------------------------------ |
-| `client`               | [Query information about clients](./query_client.html)                         |
-| `clients`              | [Query all clients](./query_client.html)                                       |
-| `connection`           | [Query information about connections](./query_connection.html)                 |
-| `connections`          | [Query the identifiers of all connections on a chain](./query_connection.html) |
-| `channel`              | [Query information about channels](./query_channel.html)                       |
-| `channels`             | [Query the identifiers of all channels on a given chain](./query_channel.html) |
-| `packet`               | [Query information about packets](./query_packet.html)                         |
+| `client`               | [Query information about clients](./client.md)                         |
+| `clients`              | [Query all clients](./client.md)                                       |
+| `connection`           | [Query information about connections](./connection.md)                 |
+| `connections`          | [Query the identifiers of all connections on a chain](./connection.md) |
+| `channel`              | [Query information about channels](./channel.md)                       |
+| `channels`             | [Query the identifiers of all channels on a given chain](./channel.md) |
+| `packet`               | [Query information about packets](./packet.md)                         |
 
 ## Usage
 

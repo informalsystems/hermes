@@ -18,4 +18,4 @@ POSITIONAL ARGUMENTS:
 
 __Example__
 
-Here is [an example](./upgrade_test.md) of a chain upgrade proposal submission and client upgrade.
+Here is [an example](./test.md) of a chain upgrade proposal submission and client upgrade.

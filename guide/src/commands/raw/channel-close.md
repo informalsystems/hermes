@@ -99,4 +99,4 @@ hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d c
 __NOTE__: The cosmos-sdk implementation does not allow the relayer to initiate the closing of channels.
 Therefore, when using the Gaia release image, the `chan-close-init` command will
 fail as the `cosmos-sdk` transfer module will reject the `MsgChannelCloseInit` message included in the transaction.
-To be able to test channel closure, you will need to [patch](./help.html#patching-gaia) your gaia deployments.
+To be able to test channel closure, you will need to [patch](../../help.md#patching-gaia) your gaia deployments.
