@@ -63,7 +63,10 @@ hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer
 Success: OpenInitChannel(
     OpenInit(
         Attributes {
-            height: revision: 0, height: 3091,
+            height: Height {
+                revision: 0,
+                height: 3091
+            },
             port_id: PortId(
                 "transfer",
             ),
@@ -123,7 +126,10 @@ hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channe
 Success: OpenTryChannel(
     OpenTry(
         Attributes {
-            height: revision: 1, height: 3213,
+            height: Height {
+                revision: 1,
+                height: 3213
+            },
             port_id: PortId(
                 "transfer",
             ),
@@ -188,7 +194,10 @@ hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channe
 Success: OpenAckChannel(
     OpenAck(
         Attributes {
-            height: revision: 0, height: 3301,
+            height: Height {
+                revision: 0,
+                height: 3301
+            },
             port_id: PortId(
                 "transfer",
             ),
@@ -252,7 +261,10 @@ hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer -d ch
 ```rust
     OpenConfirm(
         Attributes {
-            height: revision: 1, height: 3483,
+            height: Height {
+                revision: 1,
+                height: 3483
+            },
             port_id: PortId(
                 "transfer",
             ),
