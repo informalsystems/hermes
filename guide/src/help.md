@@ -82,27 +82,68 @@ and it's often not clear which of these are the culprit for low performance.
 With profiling enabled, `hermes` will output timing information for individual
 methods involved in a command.
 
-__NOTE__: To be able to see the profiling output, the
-[log level][log-level] should be `info`
-level or lower.
+__NOTE__: To be able to see the profiling output, the realyer needs to be compiled with
+the `profiling` feature and the [log level][log-level] should be `info` level or lower.
 
 #### Example output for `tx raw conn-init` command
 
-
 ```
 hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
-{"timestamp":"Feb 03 14:46:55.282","level":"INFO","fields":{"message":"⏳ init_light_client - start"},"target":"ibc_relayer::macros::profiling"}
-{"timestamp":"Feb 03 14:46:55.361","level":"INFO","fields":{"message":"⏳ init_light_client - elapsed: 75ms"},"target":"ibc_relayer::macros::profiling"}
-{"timestamp":"Feb 03 14:46:55.361","level":"INFO","fields":{"message":"⏳ init_event_monitor - start"},"target":"ibc_relayer::macros::profiling"}
-{"timestamp":"Feb 03 14:46:55.374","level":"INFO","fields":{"message":"⏳ init_event_monitor - elapsed: 12ms"},"target":"ibc_relayer::macros::profiling"}
-{"timestamp":"Feb 03 14:46:55.374","level":"INFO","fields":{"message":"running listener","chain.id":"ibc-1"},"target":"ibc_relayer::event::monitor"}
-{"timestamp":"Feb 03 14:46:55.375","level":"INFO","fields":{"message":"⏳ init_light_client - start"},"target":"ibc_relayer::macros::profiling"}
-{"timestamp":"Feb 03 14:46:55.405","level":"INFO","fields":{"message":"⏳ init_light_client - elapsed: 29ms"},"target":"ibc_relayer::macros::profiling"}
-{"timestamp":"Feb 03 14:46:55.405","level":"INFO","fields":{"message":"⏳ init_event_monitor - start"},"target":"ibc_relayer::macros::profiling"}
-{"timestamp":"Feb 03 14:46:55.408","level":"INFO","fields":{"message":"⏳ init_event_monitor - elapsed: 3ms"},"target":"ibc_relayer::macros::profiling"}
-{"timestamp":"Feb 03 14:46:55.408","level":"INFO","fields":{"message":"running listener","chain.id":"ibc-0"},"target":"ibc_relayer::event::monitor"}
-{"timestamp":"Feb 03 14:46:55.410","level":"INFO","fields":{"message":"Message ConnOpenInit: Connection { a_side: ConnectionSide { chain: ProdChainHandle { chain_id: ChainId { id: \"ibc-1\", version: 1 }, runtime_sender: Sender { .. } }, client_id: ClientId(\"07-tendermint-0\"), connection_id: ConnectionId(\"defaultConnection\") }, b_side: ConnectionSide { chain: ProdChainHandle { chain_id: ChainId { id: \"ibc-0\", version: 0 }, runtime_sender: Sender { .. } }, client_id: ClientId(\"07-tendermint-0\"), connection_id: ConnectionId(\"defaultConnection\") } }"},"target":"ibc_relayer_cli::commands::tx::connection"}
+```
 
+```
+Apr 13 20:58:21.225  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - start
+Apr 13 20:58:21.230  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - elapsed: 4ms
+Apr 13 20:58:21.230  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - start
+Apr 13 20:58:21.235  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - elapsed: 5ms
+Apr 13 20:58:21.235  INFO ibc_relayer::event::monitor: running listener chain.id=ibc-1
+Apr 13 20:58:21.236  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - start
+Apr 13 20:58:21.239  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - elapsed: 2ms
+Apr 13 20:58:21.239  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - start
+Apr 13 20:58:21.244  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - elapsed: 4ms
+Apr 13 20:58:21.244  INFO ibc_relayer::event::monitor: running listener chain.id=ibc-0
+Apr 13 20:58:21.244  INFO ibc_relayer::macros::profiling: ⏳ get_signer - start
+Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling: ⏳ get_signer - elapsed: 1ms
+Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling: ⏳ query_latest_height - start
+Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
+Apr 13 20:58:21.248  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 1ms
+Apr 13 20:58:21.249  INFO ibc_relayer::macros::profiling: ⏳ query_latest_height - elapsed: 3ms
+Apr 13 20:58:21.250  INFO ibc_relayer::macros::profiling: ⏳ unbonding_period - start
+Apr 13 20:58:21.250  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
+Apr 13 20:58:21.251  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 0ms
+Apr 13 20:58:21.270  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
+Apr 13 20:58:21.273  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 2ms
+Apr 13 20:58:21.273  INFO ibc_relayer::macros::profiling: ⏳ unbonding_period - elapsed: 23ms
+Apr 13 20:58:21.279  INFO ibc_relayer::macros::profiling: ⏳ build_consensus_state - start
+Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling: ⏳ build_consensus_state - elapsed: 0ms
+Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling: ⏳ send_msgs - start
+Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling:    ⏳ send_tx - start
+Apr 13 20:58:21.282  INFO ibc_relayer::macros::profiling:       ⏳ PK "03f17d2c094ee68cfcedb2c2f2b7dec6cd82ea158ac1c32d3de0ca8b288a3c8bfa" - start
+Apr 13 20:58:21.282  INFO ibc_relayer::macros::profiling:          ⏳ block_on - start
+Apr 13 20:58:21.285  INFO ibc_relayer::macros::profiling:          ⏳ block_on - elapsed: 3ms
+Apr 13 20:58:21.296  INFO ibc_relayer::macros::profiling:             ⏳ block_on - start
+Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:             ⏳ block_on - elapsed: 1367ms
+Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:       ⏳ PK "03f17d2c094ee68cfcedb2c2f2b7dec6cd82ea158ac1c32d3de0ca8b288a3c8bfa" - elapsed: 1382ms
+Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:    ⏳ send_tx - elapsed: 1384ms
+Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling: ⏳ send_msgs - elapsed: 1384ms
+Success: CreateClient(
+    CreateClient(
+        Attributes {
+            height: Height {
+                revision: 0,
+                height: 10675,
+            },
+            client_id: ClientId(
+                "07-tendermint-7",
+            ),
+            client_type: Tendermint,
+            consensus_height: Height {
+                revision: 1,
+                height: 10663,
+            },
+        },
+    ),
+)
 ```
 
 ## Parametrizing the log output level
@@ -120,16 +161,15 @@ log_level = 'error'
 ```
 
 Valid options for `log_level` are: 'error', 'warn', 'info', 'debug', 'trace'.
-These levels correspond to the tracing sub-component of the relayer-cli, [see
-here](https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html).
+These levels correspond to the tracing sub-component of the relayer-cli,
+[see here](https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html).
 
 The relayer will _always_ print a last line summarizing the result of its
 operation for queries of transactions. In addition to  this last line,
 arbitrary debug, info, or other outputs may be produced.  Example, with
-`log_level = 'debug'`:
+`log_level = 'debug'` and JSON output:
 
 ```bash
-Running `target/debug/relayer query client consensus ibc-0 07-tendermint-X -c 121`
 {"timestamp":"Jan 20 19:21:52.070","level":"DEBUG","fields":{"message":"registered component: abscissa_core::terminal::component::Terminal (v0.5.2)"},"target":"abscissa_core::component::registry"}
 {"timestamp":"Jan 20 19:21:52.071","level":"DEBUG","fields":{"message":"registered component: relayer_cli::components::Tracing (v0.0.6)"},"target":"abscissa_core::component::registry"}
 {"timestamp":"Jan 20 19:21:52.078","level":"INFO","fields":{"message":"Options QueryClientConsensusOptions { client_id: ClientId(\"07-tendermint-X\"), revision_number: 0, revision_height: 1, height: 0, proof: true }"},"target":"relayer_cli::commands::query::client"}
@@ -143,7 +183,6 @@ For the same command, with `log_level = 'error'`, just the last line will be
 produced:
 
 ```bash
-   Running `target/debug/relayer query client consensus ibc-0 07-tendermint-X 0 1`
 {"status":"error","result":["query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)"]}
 ```
 
