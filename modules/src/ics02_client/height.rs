@@ -126,8 +126,8 @@ impl From<Height> for RawHeight {
 impl std::fmt::Debug for Height {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("Height")
-            .field("revision", self.revision_number)
-            .field("height", self.revision_height)
+            .field("revision", &self.revision_number)
+            .field("height", &self.revision_height)
             .finish()
     }
 }
