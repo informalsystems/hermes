@@ -25,6 +25,19 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 
     ```shell
     $ hermes create client ibc-1 ibc-0
+
+    Success: CreateClient(
+       CreateClient(
+           Attributes {
+               height: revision: 1, height: 9,
+               client_id: ClientId(
+                   "07-tendermint-0",
+               ),
+               client_type: Tendermint,
+               consensus_height: revision: 0, height: 18,
+           },
+       ),
+    )
     ```
 
 3. Create and submit an upgrade plan for chain `ibc-0`:
@@ -174,41 +187,34 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     ```shell
     $ hermes upgrade client ibc-1 07-tendermint-0
     ```
-    ```json
-    {
-      "result": [
-        {
-          "UpdateClient": {
-            "common": {
-              "client_id": "07-tendermint-0",
-              "client_type": "Tendermint",
-              "consensus_height": {
-                "revision_height": 332,
-                "revision_number": 0
-              },
-              "height": {
-                "revision_height": 485,
-                "revision_number": 1
-              }
+    ```rust
+    Success: [
+        UpdateClient(
+            UpdateClient {
+                common: Attributes {
+                    height: revision: 1, height: 438,
+                    client_id: ClientId(
+                        "07-tendermint-0",
+                    ),
+                    client_type: Tendermint,
+                    consensus_height: revision: 0, height: 440,
+                },
+                header: Some(
+                    Tendermint(..)
+                ),
             },
-            "header": {...}
-          }
-        },
-        {
-          "UpgradeClient": {
-            "client_id": "07-tendermint-0",
-            "client_type": "Tendermint",
-            "consensus_height": {
-              "revision_height": 333,
-              "revision_number": 0
-            },
-            "height": {
-              "revision_height": 485,
-              "revision_number": 1
-            }
-          }
-        }
-      ],
-      "status": "success"
-    }
+        ),
+        UpgradeClient(
+            UpgradeClient(
+                Attributes {
+                    height: revision: 1, height: 438,
+                    client_id: ClientId(
+                        "07-tendermint-0",
+                    ),
+                    client_type: Tendermint,
+                    consensus_height: revision: 0, height: 441,
+                },
+            ),
+        ),
+    ]
     ```
