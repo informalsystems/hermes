@@ -22,19 +22,18 @@ __Example__
 Query all connections on `ibc-1`:
 
 ```shell
-hermes query connections ibc-1 | jq
+hermes query connections ibc-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": [
-    "connection-0",
-    "connection-1",
-    "connection-2",
-    "connection-3"
-  ]
-}
+```rust
+Success: [
+    ConnectionId(
+        "connection-0",
+    ),
+    ConnectionId(
+        "connection-1",
+    ),
+]
 ```
 
 # Query Connection Data
@@ -77,31 +76,36 @@ __Example__
 Query the connection end of connection `connection-1` on `ibc-1`:
 
 ```shell
-hermes query connection end ibc-1 connection-1 | jq
+hermes query connection end ibc-1 connection-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": {
-    "client_id": "07-tendermint-2",
-    "counterparty": {
-      "client_id": "07-tendermint-1",
-      "connection_id": "connection-0",
-      "prefix": "ibc"
+```rust
+Success: ConnectionEnd {
+    state: Open,
+    client_id: ClientId(
+        "07-tendermint-1",
+    ),
+    counterparty: Counterparty {
+        client_id: ClientId(
+            "07-tendermint-0",
+        ),
+        connection_id: Some(
+            ConnectionId(
+                "connection-0",
+            ),
+        ),
+        prefix: ibc,
     },
-    "delay_period": 0,
-    "state": "Open",
-    "versions": [
-      {
-        "features": [
-          "ORDER_ORDERED",
-          "ORDER_UNORDERED"
-        ],
-        "identifier": "1"
-      }
-    ]
-  }
+    versions: [
+        Version {
+            identifier: "1",
+            features: [
+                "ORDER_ORDERED",
+                "ORDER_UNORDERED",
+            ],
+        },
+    ],
+    delay_period: 0ns,
 }
 ```
 
@@ -126,15 +130,14 @@ __Example__
 Query the channels associated with connection `connection-1` on `ibc-1`:
 
 ```shell
-hermes query connection channels ibc-1 connection-1 | jq
+hermes query connection channels ibc-1 connection-1
 ```
 
-```json
-{
-  "status": "success",
-  "result": [
-    "channel-1"
-  ]
-}
+```rust
+Success: [
+    ChannelId(
+        "channel-1",
+    ),
+]
 ```
 
