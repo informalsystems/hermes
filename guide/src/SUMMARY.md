@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes
+# Hermes (v0.2.0)
 
 ---
 - [Introduction](./index.md)

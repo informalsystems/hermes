@@ -14,8 +14,8 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- MacOS: `hermes-v0.1.1-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-v0.1.1-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- MacOS: `hermes-v0.2.0-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-v0.2.0-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
  
@@ -103,10 +103,10 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `v0.1.1` then execute the command:
+Then checkout the release, for example if the most recent release is `v0.2.0` then execute the command:
 
 ```shell
-git checkout v0.1.1
+git checkout v0.2.0
 ```
 
 ### Building with `cargo build`
