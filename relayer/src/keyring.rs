@@ -131,13 +131,13 @@ impl KeyStore for Memory {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Disk {
+pub struct Test {
     key_name: String,
     account_prefix: String,
     store: PathBuf,
 }
 
-impl Disk {
+impl Test {
     pub fn new(key_name: String, account_prefix: String, store: PathBuf) -> Self {
         Self {
             key_name,
@@ -147,7 +147,7 @@ impl Disk {
     }
 }
 
-impl KeyStore for Disk {
+impl KeyStore for Test {
     fn get_key(&self) -> Result<KeyEntry, Error> {
         let mut filename = self.store.join(&self.key_name);
         filename.set_extension(KEYSTORE_FILE_EXTENSION);
@@ -182,13 +182,13 @@ impl KeyStore for Disk {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Store {
     Memory,
-    Disk,
+    Test,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum KeyRing {
     Memory(Memory),
-    Disk(Disk),
+    Test(Test),
 }
 
 impl KeyRing {
@@ -196,17 +196,17 @@ impl KeyRing {
         match store {
             Store::Memory => Ok(Self::Memory(Memory::new(chain_config.account_prefix, None))),
 
-            Store::Disk => {
+            Store::Test => {
                 let keys_folder = disk_store_path(chain_config.id.as_str()).map_err(|e| {
                     Kind::KeyStore.context(format!("failed to compute keys folder path: {:?}", e))
                 })?;
 
                 // Create keys folder if it does not exist
-                fs::create_dir_all(keys_folder.clone()).map_err(|e| {
+                fs::create_dir_all(&keys_folder).map_err(|e| {
                     Kind::KeyStore.context(format!("failed to create keys folder: {:?}", e))
                 })?;
 
-                Ok(Self::Disk(Disk::new(
+                Ok(Self::Test(Test::new(
                     chain_config.key_name,
                     chain_config.account_prefix,
                     keys_folder,
@@ -218,14 +218,14 @@ impl KeyRing {
     pub fn get_key(&self) -> Result<KeyEntry, Error> {
         match self {
             KeyRing::Memory(m) => m.get_key(),
-            KeyRing::Disk(d) => d.get_key(),
+            KeyRing::Test(d) => d.get_key(),
         }
     }
 
     pub fn add_key(&mut self, key_entry: KeyEntry) -> Result<(), Error> {
         match self {
             KeyRing::Memory(m) => m.add_key(key_entry),
-            KeyRing::Disk(d) => d.add_key(key_entry),
+            KeyRing::Test(d) => d.add_key(key_entry),
         }
     }
 
@@ -276,7 +276,7 @@ impl KeyRing {
     pub fn account_prefix(&self) -> &str {
         match self {
             KeyRing::Memory(m) => &m.account_prefix,
-            KeyRing::Disk(d) => &d.account_prefix,
+            KeyRing::Test(d) => &d.account_prefix,
         }
     }
 }

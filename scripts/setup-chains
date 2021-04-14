@@ -35,7 +35,7 @@ GAIA_DATA="$(pwd)/data"
 
 # Ensure user understands what will be deleted
 if [[ -d $GAIA_DATA ]] && [[ ! "$3" == "skip" ]]; then
-  echo "$0 will delete $(pwd)/data folder."
+  echo "WARNING: $0 will DELETE the '$(pwd)/data' folder."
   read -p "> Do you wish to continue? (y/n): " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -68,15 +68,19 @@ CHAIN_0_RPC_PORT=26657
 CHAIN_1_RPC_PORT=26557
 CHAIN_2_RPC_PORT=26457
 
+CHAIN_0_GRPC_PORT=9090
+CHAIN_1_GRPC_PORT=9091
+CHAIN_2_GRPC_PORT=9092
+
 CHAIN_0_SAMOLEANS=100000000000
 CHAIN_1_SAMOLEANS=100000000000
 CHAIN_2_SAMOLEANS=100000000000
 
-"$ONE_CHAIN" gaiad "$CHAIN_0_ID" ./data $CHAIN_0_RPC_PORT 26656 6060 9090 $CHAIN_0_SAMOLEANS
-"$ONE_CHAIN" gaiad "$CHAIN_1_ID" ./data $CHAIN_1_RPC_PORT 26556 6061 9091 $CHAIN_1_SAMOLEANS
+"$ONE_CHAIN" gaiad "$CHAIN_0_ID" ./data $CHAIN_0_RPC_PORT 26656 6060 $CHAIN_0_GRPC_PORT $CHAIN_0_SAMOLEANS
+"$ONE_CHAIN" gaiad "$CHAIN_1_ID" ./data $CHAIN_1_RPC_PORT 26556 6061 $CHAIN_1_GRPC_PORT $CHAIN_1_SAMOLEANS
 
 if [ -n "$CHAIN_2_ID" ]; then
-  "$ONE_CHAIN" gaiad "$CHAIN_2_ID" ./data $CHAIN_2_RPC_PORT 26456 6062 9092 $CHAIN_2_SAMOLEANS
+  "$ONE_CHAIN" gaiad "$CHAIN_2_ID" ./data $CHAIN_2_RPC_PORT 26456 6062 $CHAIN_2_GRPC_PORT $CHAIN_2_SAMOLEANS
 fi
 
 [ -f "$GAIA_DATA/$CHAIN_0_ID.log" ] && echo "$CHAIN_0_ID initialized. Watch file $GAIA_DATA/$CHAIN_0_ID.log to see its execution."

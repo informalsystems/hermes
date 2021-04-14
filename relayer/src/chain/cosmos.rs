@@ -327,7 +327,7 @@ impl Chain for CosmosSdkChain {
 
         // Initialize key store and load key
         let keybase =
-            KeyRing::new(Store::Disk, config.clone()).map_err(|e| Kind::KeyBase.context(e))?;
+            KeyRing::new(Store::Test, config.clone()).map_err(|e| Kind::KeyBase.context(e))?;
 
         let grpc_addr =
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;

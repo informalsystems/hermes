@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
+use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::info;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -19,6 +18,12 @@ use ibc_relayer::config::{ChainConfig, Config};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
+
+#[derive(Serialize, Debug)]
+struct PacketSeqs {
+    height: Height,
+    seqs: Vec<u64>,
+}
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketCommitmentsCmd {
@@ -60,7 +65,8 @@ impl Runnable for QueryPacketCommitmentsCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
@@ -79,11 +85,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
             Ok((packet_states, height)) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
                 let seqs: Vec<u64> = packet_states.iter().map(|ps| ps.sequence).collect();
-                Output::success(json!({
-                    "seqs": seqs,
-                    "height": height
-                }))
-                .exit();
+                Output::success(PacketSeqs { height, seqs }).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -135,7 +137,8 @@ impl Runnable for QueryPacketCommitmentCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         // cargo run --bin hermes -- query packet commitment ibc-0 transfer ibconexfer 3 --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
@@ -150,6 +153,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         );
 
         match res {
+            Ok((bytes, _proofs)) if bytes.is_empty() => Output::success_msg("None").exit(),
             Ok((bytes, _proofs)) => {
                 let hex = Hex::upper_case().encode_to_string(bytes).unwrap();
                 Output::success(hex).exit()
@@ -231,7 +235,8 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSdkChain::bootstrap(src_chain_config, rt.clone()).unwrap();
@@ -355,7 +360,8 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
@@ -374,11 +380,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             Ok((packet_state, height)) => {
                 // Transform the raw packet state into the list of sequence numbers
                 let seqs: Vec<u64> = packet_state.iter().map(|ps| ps.sequence).collect();
-                Output::success(json!({
-                    "height": height,
-                    "seqs": seqs
-                }))
-                .exit();
+                Output::success(PacketSeqs { height, seqs }).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -430,7 +432,8 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         // cargo run --bin hermes -- query packet acknowledgment ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
@@ -526,7 +529,8 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
+
+        debug!("Options: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSdkChain::bootstrap(src_chain_config, rt.clone()).unwrap();

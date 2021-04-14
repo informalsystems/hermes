@@ -69,7 +69,7 @@ impl Runnable for KeysAddCmd {
 }
 
 pub fn add_key(config: ChainConfig, file: &Path) -> Result<KeyEntry, BoxError> {
-    let mut keyring = KeyRing::new(Store::Disk, config)?;
+    let mut keyring = KeyRing::new(Store::Test, config)?;
 
     let key_contents = fs::read_to_string(file).map_err(|_| "error reading the key file")?;
     let key = keyring.key_from_seed_file(&key_contents)?;

@@ -150,7 +150,6 @@ USAGE:
 SUBCOMMANDS:
     help       Get usage information
     keys       Manage keys in the relayer for each chain
-    light      Basic functionality for managing the light clients
     start      Start the relayer
     channel    Channel functionality for managing channels
     query      Query state from chain

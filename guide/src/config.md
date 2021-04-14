@@ -9,7 +9,7 @@ By default, Hermes expects the configuration file to be located at `$HOME/.herme
 This can be overridden by supplying the `-c` flag when invoking `hermes`, before the
 name of the command to run, eg. `hermes -c my_config.toml query connection channels ibc-1 connection-1`.
 
-> With the exception of the light client configuration, current relayer does not support managing the configuration file programmatically.
+> The current version of Hermes does not support managing the configuration file programmatically.
 > You will need to use a text editor to create the file and add content to it.
 
 ```bash
@@ -26,8 +26,6 @@ The global section has parameters that apply globally to the relayer operation.
 
 #### Parameters
 
-* __timeout__: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is `10s` (10 seconds).
-
 * __strategy__: Specify the strategy to be used by the relayer. Currently only `naive` is supported.
 
 * __log_level__: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
@@ -38,22 +36,25 @@ Here is an example for the `global` section:
 
 ```toml
 [global]
-timeout = '10s'
 strategy = 'naive'
 log_level = 'info'
 ```
 
 ### `[[chains]]`
 
-A `chains` section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client peers configured for the chain.
+A `chains` section includes parameters related to a chain and the full node to which the relayer can send transactions and queries.
 
 #### Parameters
 
 * __id__: Specify the chain ID. For example `ibc-0`
 
-* __rpc_addr__: Specify the RPC address and port where the chain RPC server listens on. For example `tcp://localhost:26657`
+* __rpc_addr__: Specify the RPC address and port where the chain RPC server listens on. For example `http://localhost:26657`
 
-* __grpc_addr__: Specify the GRPC address and port where the chain GRPC server listens on. For example `tcp://localhost:9090`
+* __grpc_addr__: Specify the GRPC address and port where the chain GRPC server listens on. For example `http://localhost:9090`
+
+* __websocket_addr__: Specify the WebSocket address and port where the chain WebSocket server listens on. For example `ws://localhost:26657/websocket`
+
+* __rpc_timeout__: Specify the maximum amount of time (duration) that the RPC requests should take before timing out. Default value is `10s` (10 seconds).
 
 * __account_prefix__: Specify the prefix used by the chain. For example `cosmos`
 
@@ -78,29 +79,28 @@ For example if you want to add a configuration for a chain named `ibc-0`:
 id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26657/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
+fee_denom = 'stake'
+fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
 ```
 
-### Light clients
-
-The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the `relayer light add` command. Please see the [Light Clients](./light_clients.md) section to learn how to configure them.
-
 ### Adding Private Keys
 
-For each chain configured you need to add a private key for that chain in order to submit [transactions](./transactions.md), please refer to the [Keys](./keys.md) sections in order to learn how to add the private keys that are used by the relayer.
+For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/raw/index.md), please refer to the [Keys](./commands/keys/index.md) sections in order to learn how to add the private keys that are used by the relayer.
 
 ### Example configuration file
 
-Here is a full example of a configuration file with two chains configured and light client peers added:
+Here is a full example of a configuration file with two chains configured:
 
 ```toml
 [global]
-timeout = '10s'
 strategy = 'naive'
 log_level = 'error'
 
@@ -108,6 +108,8 @@ log_level = 'error'
 id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26657/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
@@ -120,36 +122,13 @@ trusting_period = '14days'
 [chains.trust_threshold]
 numerator = '1'
 denominator = '3'
-
-[chains.peers]
-primary = '66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
-
-[[chains.peers.light_clients]]
-peer_id = '66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
-address = 'http://127.0.0.1:26657'
-timeout = '10s'
-trusted_header_hash = 'A24F654188BC3FC9EFE589FB33D513CE9AC86BFA48B063BDBF1D769750713E09'
-trusted_height = '15'
-
-[chains.peers.light_clients.store]
-type = 'disk'
-path = '/ibc-rs/data/ibc-0/data/66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
-
-[[chains.peers.light_clients]]
-peer_id = '2427F8D914A6862279B3326FA64F76E3BC06DB2E'
-address = 'http://127.0.0.1:26657'
-timeout = '10s'
-trusted_header_hash = '44E7C90BFA53256AD72B84286BFDA70FE87BBC7C0D80A1DB199C72A4FBE88FB6'
-trusted_height = '16'
-
-[chains.peers.light_clients.store]
-type = 'disk'
-path = '/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
 
 [[chains]]
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
+websocket_addr = 'ws://localhost:26557/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
@@ -162,35 +141,10 @@ trusting_period = '14days'
 [chains.trust_threshold]
 numerator = '1'
 denominator = '3'
-
-[chains.peers]
-primary = '28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
-
-[[chains.peers.light_clients]]
-peer_id = '28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
-address = 'http://127.0.0.1:26557'
-timeout = '10s'
-trusted_header_hash = '66BD0E5ED1FA2022A036782F7D8444DB98DC0326B379BCA6BA75864295D1C910'
-trusted_height = '4'
-
-[chains.peers.light_clients.store]
-type = 'disk'
-path = '/ibc-rs/data/ibc-1/data/28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
-
-[[chains.peers.light_clients]]
-peer_id = 'A885BB3D3DFF6101188B462466AE926E7A6CD51E'
-address = 'http://127.0.0.1:26557'
-timeout = '10s'
-trusted_header_hash = '0325BFAA36407D1F11966AEC57D34131CB27B370D3698F284F09152ADE3423C4'
-trusted_height = '5'
-
-[chains.peers.light_clients.store]
-type = 'disk'
-path = '/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
 ```
 
 ### Next Steps
 
-Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./two_chains.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
+Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
 [log-level]: ./help.html#parametrizing-the-log-output-level

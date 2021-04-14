@@ -1,15 +1,22 @@
 # Changelog
 
 ## Unreleased Changes
+This release includes initial support for relaying over multiple paths from a single `hermes` instance.
+Adds support for relayer restart, where pending packets are cleared.
+Includes support for ordered channels, packet delay, misbehaviour detection and evidence submission, client upgrade after counterparty chain upgrades.
 
-> [TODO: high level summary]
+This release brings improvements to the relayer UX by providing new and updated commands for keys, client,
+connection and channel management.
+In addition, it simplifies the configuration of and integration with the light client.
+
+This release also finalizes initial implementation for all of ICS 004 handlers.
 
 ### FEATURES
 
 - Update to `tendermint-rs` v0.19.0 ([#798])
 
 - [ibc]
-  - Added handler(s) for sending packets ([#695]) and for recv. and ack. packets ([#736])
+  - Added handler(s) for sending packets ([#695]), recv. and ack. packets ([#736]), and timeouts ([#362])
 
 - [ibc-relayer]
   - Support for relayer restart ([#561])
@@ -77,6 +84,7 @@
 
 
 [#352]: https://github.com/informalsystems/ibc-rs/issues/352
+[#362]: https://github.com/informalsystems/ibc-rs/issues/362
 [#357]: https://github.com/informalsystems/ibc-rs/issues/357
 [#416]: https://github.com/informalsystems/ibc-rs/issues/416
 [#561]: https://github.com/informalsystems/ibc-rs/issues/561

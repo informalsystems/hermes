@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use prost_types::Any;
+use serde::Serialize;
 use thiserror::Error;
 use tracing::{error, warn};
 
@@ -57,7 +58,7 @@ impl ConnectionSide {
         chain: Box<dyn ChainHandle>,
         client_id: ClientId,
         connection_id: ConnectionId,
-    ) -> ConnectionSide {
+    ) -> Self {
         Self {
             chain,
             client_id,
@@ -66,7 +67,27 @@ impl ConnectionSide {
     }
 }
 
-#[derive(Clone, Debug)]
+impl Serialize for ConnectionSide {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Debug, Serialize)]
+        struct ConnectionSide<'a> {
+            client_id: &'a ClientId,
+            connection_id: &'a ConnectionId,
+        }
+
+        let value = ConnectionSide {
+            client_id: &self.client_id,
+            connection_id: &self.connection_id,
+        };
+
+        value.serialize(serializer)
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub struct Connection {
     pub delay_period: Duration,
     pub a_side: ConnectionSide,
@@ -223,7 +244,7 @@ impl Connection {
 
     /// Executes a connection handshake protocol (ICS 003) for this connection object
     fn handshake(&mut self) -> Result<(), ConnectionError> {
-        let done = '\u{1F942}'; // surprise emoji
+        let done = '🥂';
 
         let a_chain = self.a_side.chain.clone();
         let b_chain = self.b_side.chain.clone();
@@ -239,7 +260,7 @@ impl Connection {
                 }
                 Ok(result) => {
                     self.a_side.connection_id = extract_connection_id(&result)?.clone();
-                    println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), result);
+                    println!("🥂  {} => {:#?}\n", self.a_side.chain.id(), result);
                     break;
                 }
             }
@@ -256,7 +277,7 @@ impl Connection {
                 }
                 Ok(result) => {
                     self.b_side.connection_id = extract_connection_id(&result)?.clone();
-                    println!("{}  {} => {:?}\n", done, self.b_side.chain.id(), result);
+                    println!("{}  {} => {:#?}\n", done, self.b_side.chain.id(), result);
                     break;
                 }
             }
@@ -283,11 +304,9 @@ impl Connection {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                     // Ack to a_chain
                     match self.flipped().build_conn_ack_and_send() {
-                        Err(e) => {
-                            error!("Failed ConnAck {:?}: {}", self.a_side, e);
-                        }
+                        Err(e) => error!("Failed ConnAck {:?}: {}", self.a_side, e),
                         Ok(event) => {
-                            println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event)
+                            println!("{}  {} => {:#?}\n", done, self.a_side.chain.id(), event)
                         }
                     }
                 }
@@ -296,7 +315,7 @@ impl Connection {
                     match self.build_conn_confirm_and_send() {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.b_side, e),
                         Ok(event) => {
-                            println!("{}  {} => {:?}\n", done, self.b_side.chain.id(), event)
+                            println!("{}  {} => {:#?}\n", done, self.b_side.chain.id(), event)
                         }
                     }
                 }
@@ -305,14 +324,14 @@ impl Connection {
                     match self.flipped().build_conn_confirm_and_send() {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.a_side, e),
                         Ok(event) => {
-                            println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event)
+                            println!("{}  {} => {:#?}\n", done, self.a_side.chain.id(), event)
                         }
                     }
                 }
                 (State::Open, State::Open) => {
                     println!(
-                        "{}  {}  {}  Connection handshake finished for [{:#?}]\n",
-                        done, done, done, self
+                        "{0}{0}{0}  Connection handshake finished for [{1:#?}]\n",
+                        done, self
                     );
                     return Ok(());
                 }

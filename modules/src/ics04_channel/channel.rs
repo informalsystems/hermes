@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::fmt;
 use std::str::FromStr;
 
 use anomaly::fail;
@@ -262,9 +263,15 @@ impl Default for Order {
     }
 }
 
+impl fmt::Display for Order {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 impl Order {
     /// Yields the Order as a string
-    pub fn as_string(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Self::None => "UNINITIALIZED",
             Self::Unordered => "ORDER_UNORDERED",

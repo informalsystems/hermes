@@ -46,19 +46,19 @@ pub enum QueryCmd {
 #[derive(Command, Debug, Options, Runnable)]
 pub enum QueryClientCmds {
     /// The `query client state` subcommand
-    #[options(help = "Query client full state")]
+    #[options(help = "Query the client full state")]
     State(client::QueryClientStateCmd),
 
     /// The `query client consensus` subcommand
-    #[options(help = "Query client consensus state")]
+    #[options(help = "Query the client consensus state")]
     Consensus(client::QueryClientConsensusCmd),
 
     /// The `query client header` subcommand
-    #[options(help = "Query client header")]
+    #[options(help = "Query for the header used in a client update at a certain height")]
     Header(client::QueryClientHeaderCmd),
 
     /// The `query client connections` subcommand
-    #[options(help = "Query client connections")]
+    #[options(help = "Query the client connections")]
     Connections(client::QueryClientConnectionsCmd),
 }
 

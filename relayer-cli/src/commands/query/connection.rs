@@ -41,7 +41,7 @@ impl Runnable for QueryConnectionEndCmd {
             Some(chain_config) => chain_config,
         };
 
-        info!("Options {:?}", self);
+        debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
@@ -86,7 +86,7 @@ impl Runnable for QueryConnectionChannelsCmd {
             Some(chain_config) => chain_config,
         };
 
-        info!("Options {:?}", self);
+        debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();

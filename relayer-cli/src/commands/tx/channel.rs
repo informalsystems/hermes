@@ -61,11 +61,8 @@ pub struct TxRawChanOpenInitCmd {
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(
-        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
-        short = "o"
-    )]
-    ordering: Order,
+    #[options(help = "the channel ordering, valid options 'unordered' (default) and 'ordered'")]
+    order: Order,
 }
 
 impl Runnable for TxRawChanOpenInitCmd {
@@ -77,7 +74,7 @@ impl Runnable for TxRawChanOpenInitCmd {
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
                     connection_delay: Default::default(),
-                    ordering: self.ordering,
+                    ordering: self.order,
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -86,12 +83,13 @@ impl Runnable for TxRawChanOpenInitCmd {
                         ChannelId::default(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         ChannelId::default(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -142,12 +140,13 @@ impl Runnable for TxRawChanOpenTryCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         ChannelId::default(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -206,12 +205,13 @@ impl Runnable for TxRawChanOpenAckCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -270,12 +270,13 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -334,12 +335,13 @@ impl Runnable for TxRawChanCloseInitCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
                     ),
+                    version: None,
                 }
             }
         );
@@ -398,12 +400,13 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         self.src_chan_id.clone(),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst,
+                        chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_chan_id.clone(),
                     ),
+                    version: None,
                 }
             }
         );

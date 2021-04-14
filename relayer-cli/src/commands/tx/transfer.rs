@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
+use anomaly::BoxError;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::events::IbcEvent;
@@ -17,11 +18,11 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxIcs20MsgTransferCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
     #[options(free, required, help = "identifier of the source chain")]
     src_chain_id: ChainId,
-
-    #[options(free, required, help = "identifier of the destination chain")]
-    dest_chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
@@ -45,31 +46,34 @@ pub struct TxIcs20MsgTransferCmd {
     )]
     receiver: Option<String>,
 
-    #[options(help = "denomination of the coins to send", short = "d")]
-    denom: Option<String>,
+    #[options(
+        help = "denomination of the coins to send",
+        short = "d",
+        default = "samoleans"
+    )]
+    denom: String,
 
     #[options(help = "number of messages to send", short = "n")]
     number_msgs: Option<usize>,
 }
 
 impl TxIcs20MsgTransferCmd {
-    fn validate_options(&self, config: &Config) -> Result<TransferOptions, String> {
+    fn validate_options(&self, config: &Config) -> Result<TransferOptions, BoxError> {
         let src_chain_config = config
             .find_chain(&self.src_chain_id)
-            .ok_or_else(|| "missing src chain configuration".to_string())?;
+            .ok_or("missing src chain configuration")?;
 
         let dest_chain_config = config
-            .find_chain(&self.dest_chain_id)
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
+            .find_chain(&self.dst_chain_id)
+            .ok_or("missing destination chain configuration")?;
 
-        let denom = self
-            .denom
-            .clone()
-            .unwrap_or_else(|| "samoleans".to_string());
+        let denom = self.denom.clone();
+
         let number_msgs = self.number_msgs.unwrap_or(1);
         if number_msgs == 0 {
-            return Err("number of messages should be bigger than zero".to_string());
+            return Err("number of messages should be greater than zero".into());
         }
+
         let opts = TransferOptions {
             packet_src_chain_config: src_chain_config.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
@@ -94,13 +98,15 @@ impl Runnable for TxIcs20MsgTransferCmd {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        info!("Message {:?}", opts);
+
+        debug!("Message: {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
 
         let src_chain_res =
             CosmosSdkChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone())
                 .map_err(|e| Kind::Runtime.context(e));
+
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
             Err(e) => return Output::error(format!("{}", e)).exit(),
@@ -108,6 +114,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         let dst_chain_res = CosmosSdkChain::bootstrap(opts.packet_dst_chain_config.clone(), rt)
             .map_err(|e| Kind::Runtime.context(e));
+
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
             Err(e) => return Output::error(format!("{}", e)).exit(),

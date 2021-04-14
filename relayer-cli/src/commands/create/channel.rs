@@ -48,11 +48,11 @@ pub struct CreateChannelCommand {
     )]
     port_b: PortId,
 
-    #[options(help = "the channel ordering, valid options 'unordered' and 'ordered'")]
+    #[options(help = "the channel ordering, valid options 'unordered' (default) and 'ordered'")]
     order: Order,
 
     #[options(help = "the version for the new channel")]
-    version: String,
+    version: Option<String>,
 }
 
 impl Runnable for CreateChannelCommand {
@@ -80,9 +80,11 @@ impl CreateChannelCommand {
         let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
+        // let version = self.chain_a_id.version();
+
         info!(
-            "Creating new clients, new connection, and a new channel with order {:?} and version {}",
-            self.order, self.version
+            "Creating new clients, new connection, and a new channel with order {}",
+            self.order
         );
 
         let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
@@ -95,8 +97,14 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally create the channel.
-        let channel = Channel::new(con, self.order, self.port_a.clone(), self.port_b.clone())
-            .unwrap_or_else(exit_with_unrecoverable_error);
+        let channel = Channel::new(
+            con,
+            self.order,
+            self.port_a.clone(),
+            self.port_b.clone(),
+            self.version.clone(),
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
 
         Output::success(channel).exit();
     }
@@ -152,6 +160,7 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
+            self.version.clone(),
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
 

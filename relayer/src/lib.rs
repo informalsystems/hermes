@@ -1,7 +1,5 @@
 #![forbid(unsafe_code)]
 #![deny(
-    // warnings,
-    // missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
@@ -9,7 +7,11 @@
     rust_2018_idioms
 )]
 
-//! IBC Relayer implementation
+//! IBC Relayer implementation as a library.
+//!
+//! For the IBC relayer binary, please see [Hermes] (`ibc-relayer-cli` crate).
+//!
+//! [Hermes]: https://docs.rs/ibc-relayer-cli/0.1.1/
 
 pub mod chain;
 pub mod channel;

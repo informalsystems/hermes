@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::info;
 
 use ibc::events::IbcEventType;
 use ibc::ics02_client::client_consensus::QueryClientEventRequest;
@@ -99,7 +98,7 @@ impl Runnable for QueryClientConsensusCmd {
             Some(chain_config) => chain_config,
         };
 
-        info!("Options {:?}", self);
+        debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
@@ -147,7 +146,6 @@ impl Runnable for QueryClientConsensusCmd {
     }
 }
 
-/// Query client header command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientHeaderCmd {
     #[options(free, required, help = "identifier of the chain to query")]
@@ -180,7 +178,7 @@ impl Runnable for QueryClientHeaderCmd {
             Some(chain_config) => chain_config,
         };
 
-        info!("Options {:?}", self);
+        debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
@@ -243,7 +241,7 @@ impl Runnable for QueryClientConnectionsCmd {
             Some(chain_config) => chain_config,
         };
 
-        info!("Options {:?}", self);
+        debug!("Options: {:?}", self);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();

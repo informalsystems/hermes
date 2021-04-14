@@ -63,7 +63,7 @@ impl Runnable for KeyRestoreCmd {
 }
 
 pub fn restore_key(mnemonic: &str, config: ChainConfig) -> Result<KeyEntry, BoxError> {
-    let mut keyring = KeyRing::new(Store::Disk, config)?;
+    let mut keyring = KeyRing::new(Store::Test, config)?;
     let key_entry = keyring.key_from_mnemonic(mnemonic)?;
     keyring.add_key(key_entry.clone())?;
 

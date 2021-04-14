@@ -35,7 +35,7 @@ impl Runnable for MisbehaviourCmd {
 
         let res = monitor_misbehaviour(&self.chain_id, &self.client_id, &config);
         match res {
-            Ok(()) => Output::success(()).exit(),
+            Ok(some_event) => Output::success(some_event).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -45,9 +45,9 @@ pub fn monitor_misbehaviour(
     chain_id: &ChainId,
     client_id: &ClientId,
     config: &config::Reader<CliApp>,
-) -> Result<(), BoxError> {
+) -> Result<Option<IbcEvent>, BoxError> {
     let chain = spawn_chain_runtime(&config, chain_id)
-        .map_err(|e| format!("could not spawn the chain runtime for {}", chain_id))?;
+        .map_err(|e| format!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
 
     let subscription = chain.subscribe()?;
 
@@ -68,12 +68,13 @@ pub fn monitor_misbehaviour(
                     )?;
                 }
 
-                IbcEvent::CreateClient(create) => {
+                IbcEvent::CreateClient(_create) => {
                     // TODO - get header from full node, consensus state from chain, compare
                 }
 
-                IbcEvent::ClientMisbehaviour(misbehaviour) => {
+                IbcEvent::ClientMisbehaviour(_misbehaviour) => {
                     // TODO - submit misbehaviour to the witnesses (our full node)
+                    return Ok(Some(event.clone()));
                 }
 
                 _ => {}
@@ -81,7 +82,7 @@ pub fn monitor_misbehaviour(
         }
     }
 
-    Ok(())
+    Ok(None)
 }
 
 fn misbehaviour_handling(
@@ -92,17 +93,18 @@ fn misbehaviour_handling(
 ) -> Result<(), BoxError> {
     let client_state = chain
         .query_client_state(client_id, Height::zero())
-        .map_err(|e| format!("could not query client state for {}", client_id))?;
+        .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
 
     if client_state.is_frozen() {
-        // nothing to do
-        return Ok(());
+        return Err(format!("client {} is already frozen", client_id).into());
     }
+
     let counterparty_chain =
         spawn_chain_runtime(&config, &client_state.chain_id()).map_err(|e| {
             format!(
-                "could not spawn the chain runtime for {}",
-                client_state.chain_id()
+                "could not spawn the chain runtime for {}: {}",
+                client_state.chain_id(),
+                e
             )
         })?;
 

@@ -9,7 +9,7 @@ packets between two IBC enabled chains.
 
 - Explains what Hermes is about.
 
-**[Features](./features.html)**
+**[Features](./features.md)**
 
 - This section discusses what features to expect from Hermes, as well as a
   comparison between the Cosmos Go relayer and Hermes.
@@ -18,11 +18,11 @@ packets between two IBC enabled chains.
 
 - The getting started section can help you setup, configure, and run Hermes.
 
-**[Tutorials](./tutorials.md)**
+**[Tutorials](./tutorials/index.md)**
 
 - This section provides some tutorials on how to operate and test Hermes.
 
-**[Commands Reference](./commands.md)**
+**[Commands Reference](./commands/index.md)**
 
 - The commands let you interact with Hermes using its command line interface.
 

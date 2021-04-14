@@ -11,10 +11,12 @@ use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnab
 use tracing::info;
 
 use crate::config::Config;
+use crate::DEFAULT_CONFIG_PATH;
 
 use self::{
     create::CreateCmds, keys::KeysCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds, version::VersionCmd,
+    start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
+    version::VersionCmd,
 };
 use crate::commands::misbehaviour::MisbehaviourCmd;
 
@@ -28,12 +30,13 @@ mod start;
 mod start_multi;
 mod tx;
 mod update;
+mod upgrade;
 mod version;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
     info!("Using default configuration from: '.hermes/config.toml'");
-    dirs_next::home_dir().map(|home| home.join(".hermes/config.toml"))
+    dirs_next::home_dir().map(|home| home.join(DEFAULT_CONFIG_PATH))
 }
 
 // TODO: Re-add the `config` subcommand
@@ -61,6 +64,12 @@ pub enum CliCmd {
         help = "Update objects on chains. Currently this sub-commands serves only to update clients"
     )]
     Update(UpdateCmds),
+
+    /// The `upgrade` subcommand
+    #[options(
+        help = "Upgrade objects after chain upgrade. Currently this sub-commands serves only to upgrade clients"
+    )]
+    Upgrade(UpgradeCmds),
 
     /// The `start` subcommand
     #[options(help = "Start the relayer")]

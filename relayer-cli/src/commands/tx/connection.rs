@@ -23,7 +23,7 @@ macro_rules! conn_open_cmd {
 
         let connection = $conn(chains);
 
-        info!("Message {}: {:?}", $dbg_string, connection);
+        debug!("Message {}: {:?}", $dbg_string, connection);
 
         let res: Result<IbcEvent, Error> =
             connection.$func().map_err(|e| Kind::Tx.context(e).into());

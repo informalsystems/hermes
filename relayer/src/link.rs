@@ -1226,7 +1226,7 @@ impl RelayPath {
 
     /// Checks if there are any operational data items ready, and if so performs the relaying
     /// of corresponding packets to the target chain.
-    fn execute_schedule(&mut self) -> Result<(), LinkError> {
+    pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
         for od in src_ods {
             self.relay_from_operational_data(od)?;
@@ -1242,7 +1242,7 @@ impl RelayPath {
     /// Refreshes the scheduled batches.
     /// Verifies if any sendPacket messages timed-out. If so, moves them from destination op. data
     /// to source operational data, and adjusts the events and messages accordingly.
-    fn refresh_schedule(&mut self) -> Result<(), LinkError> {
+    pub fn refresh_schedule(&mut self) -> Result<(), LinkError> {
         let dst_current_height = self.dst_latest_height()?;
 
         // Intermediary data struct to help better manage the transfer from dst. operational data
@@ -1467,7 +1467,7 @@ impl Link {
 
         loop {
             if self.is_closed()? {
-                println!("channel is closed, exiting");
+                warn!("channel is closed, exiting");
                 return Ok(());
             }
 
@@ -1492,7 +1492,7 @@ impl Link {
         }
     }
 
-    fn is_closed(&self) -> Result<bool, LinkError> {
+    pub fn is_closed(&self) -> Result<bool, LinkError> {
         let a_channel = self
             .a_to_b
             .src_chain()
@@ -1607,6 +1607,7 @@ impl Link {
                 b_channel_id,
             ),
             connection_delay: a_connection.delay_period(),
+            version: None,
         };
 
         Ok(Link::new(channel))
