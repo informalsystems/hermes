@@ -209,9 +209,9 @@ To import the specification in the TLA+ toolbox and run TLC:
 
 #### Basic checks with TLC
 
-We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 59min and the property `IBCSafety` in 1h33min.
-As TLC usually takes longer to check liveness properties, we have not 
-conducted extensive experiments to check `IBCDelivery` with TLC yet.
+We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 14min and the invariant `IBCInv` in 11min.
+As TLC usually takes longer to check safety and liveness properties, we have not 
+conducted extensive experiments to check `IBCSafety` and `IBCDelivery` with TLC yet.
 
 #### Apalache
 
