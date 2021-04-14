@@ -1,14 +1,12 @@
 [package]
 name       = "ibc"
-version    = "0.1.1"
+version    = "0.2.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository = "https://github.com/informalsystems/ibc-rs"
-authors    = [
-  "Informal Systems <hello@informal.systems>"
-]
+authors    = ["Informal Systems <hello@informal.systems>"]
 
 description = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
@@ -22,7 +20,7 @@ mocks = [ "tendermint-testgen", "sha2" ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.7.1", path = "../proto" }
+ibc-proto = { version = "0.8.0", path = "../proto" }
 anomaly = "0.2.0"
 chrono = "0.4"
 thiserror = "1.0.24"

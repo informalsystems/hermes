@@ -1,15 +1,19 @@
 # Changelog
 
-## Unreleased Changes
+## Unreleased
+
+> Nothing yet.
+
+## v0.2.0 (2021-04-14)
+
 This release includes initial support for relaying over multiple paths from a single `hermes` instance.
 Adds support for relayer restart, where pending packets are cleared.
 Includes support for ordered channels, packet delay, misbehaviour detection and evidence submission, client upgrade after counterparty chain upgrades.
 
-This release brings improvements to the relayer UX by providing new and updated commands for keys, client,
-connection and channel management.
+This release brings improvements to the relayer UX by providing new and updated commands for keys, client, connection and channel management.
 In addition, it simplifies the configuration of and integration with the light client.
 
-This release also finalizes initial implementation for all of ICS 004 handlers.
+This release also finalizes the initial implementation of all the ICS 004 handlers.
 
 ### FEATURES
 

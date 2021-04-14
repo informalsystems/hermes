@@ -6,7 +6,7 @@
 //! For a comprehensive guide to using Hermes, the authoritative resource is
 //! at [hermes.informal.systems].
 //!
-//! [ibc-relayer]: https://docs.rs/ibc-relayer/0.1.1/
+//! [ibc-relayer]: https://docs.rs/ibc-relayer/0.2.0/
 //! [Abscissa]: https://github.com/iqlusioninc/abscissa
 //! [hermes.informal.systems]: https://hermes.informal.systems
 

@@ -1,14 +1,12 @@
 [package]
-name    = "ibc-relayer"
-version = "0.1.1"
-edition = "2018"
+name       = "ibc-relayer"
+version    = "0.2.0"
+edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository = "https://github.com/informalsystems/ibc-rs"
-authors = [
-  "Informal Systems <hello@informal.systems>"
-]
+authors    = ["Informal Systems <hello@informal.systems>"]
 
 description = """
     Implementation of an IBC Relayer in Rust, as a library.
@@ -18,8 +16,8 @@ description = """
 profiling = []
 
 [dependencies]
-ibc       = { version = "0.1.1", path = "../modules" }
-ibc-proto = { version = "0.7.1", path = "../proto" }
+ibc       = { version = "0.2.0", path = "../modules" }
+ibc-proto = { version = "0.8.0", path = "../proto" }
 
 subtle-encoding = "0.5"
 anomaly = "0.2.0"
@@ -71,7 +69,7 @@ version = "=0.19.0"
 
 [dev-dependencies]
 serial_test = "0.5.0"
-ibc = { version = "0.1.1", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.2.0", path = "../modules", features = ["mocks"] }
 
 # Needed for generating (synthetic) light blocks.
 tendermint-testgen = { version = "=0.19.0" }

@@ -47,7 +47,7 @@ hermes version
 ```
 
 ```
-hermes 0.1.1
+hermes 0.2.0
 ```
 
 ## Install via Cargo
@@ -81,7 +81,7 @@ hermes version
 ```
 
 ```
-hermes 0.1.1
+hermes 0.2.0
 ```
 
 ## Build from source
@@ -141,7 +141,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes 0.1.1
+hermes 0.2.0
 Informal Systems <hello@informal.systems>
 
 USAGE:
