@@ -35,7 +35,7 @@ GAIA_DATA="$(pwd)/data"
 
 # Ensure user understands what will be deleted
 if [[ -d $GAIA_DATA ]] && [[ ! "$3" == "skip" ]]; then
-  echo "$0 will delete $(pwd)/data folder."
+  echo "WARNING: $0 will DELETE the '$(pwd)/data' folder."
   read -p "> Do you wish to continue? (y/n): " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
