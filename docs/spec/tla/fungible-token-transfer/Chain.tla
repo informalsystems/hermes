@@ -9,25 +9,26 @@
  a chain has a dedicated datagram container for packet datagrams (given by a 
  queue of datagrams that models the order in which the datagrams were submitted 
  by some relayer).
- 
 ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCTokenTransferDefinitions, 
         ICS04PacketHandlers, ICS20FungibleTokenTransferHandlers
         
-CONSTANTS MaxHeight, \* maximal chain height
-          MaxPacketSeq, \* maximal packet sequence number
-          MaxBalance, \* maximal account balance
-          ChainID, \* a chain ID
-          NativeDenomination \* native denomination of tokens at ChainID 
+CONSTANTS 
+    MaxHeight, \* maximal chain height
+    MaxPacketSeq, \* maximal packet sequence number
+    MaxBalance, \* maximal account balance
+    ChainID, \* a chain ID
+    NativeDenomination \* native denomination of tokens at ChainID 
 
 
-VARIABLES chainStore, \* chain store, containing client heights, a channel end 
-          incomingPacketDatagrams, \* sequence of incoming packet datagrams
-          appPacketSeq, \* packet sequence number from the application on the chain
-          packetLog, \* packet log
-          accounts, \* a map from chainIDs and denominations to account balances
-          escrowAccounts \* a map from channelIDs and denominations to escrow account balances
+VARIABLES 
+    chainStore, \* chain store, containing client heights, a channel end 
+    incomingPacketDatagrams, \* sequence of incoming packet datagrams
+    appPacketSeq, \* packet sequence number from the application on the chain
+    packetLog, \* packet log
+    accounts, \* a map from chainIDs and denominations to account balances
+    escrowAccounts \* a map from channelIDs and denominations to escrow account balances
           
 
 vars == <<chainStore, incomingPacketDatagrams, appPacketSeq, 

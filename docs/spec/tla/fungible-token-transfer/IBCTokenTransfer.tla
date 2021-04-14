@@ -1,7 +1,6 @@
 ------------------------- MODULE IBCTokenTransfer -------------------------
 
 (***************************************************************************
- 
  A TLA+ specification of the IBC Fungible Token Transfer Protocol (ICS20).
  This module is the main module in the specification and models a   
  system of two chains, where each chain perofmrs a transaction that sends 
@@ -9,7 +8,6 @@
  
  The specification also contains type annotations for the model checker
  Apalache.
-  
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCTokenTransferDefinitions

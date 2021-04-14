@@ -1,7 +1,6 @@
 ------------------------------ MODULE IBCCore ------------------------------
 
 (***************************************************************************
- 
  A TLA+ specification of the IBC Core protocols (ICS02, ICS03, ICS04, ICS18).
  This module is the main module in the specification and models a   
  system consisting of two chains and two relayers. 
@@ -13,7 +12,6 @@
  
  The specification also contains type annotations for the model checker
  Apalache.
-  
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions

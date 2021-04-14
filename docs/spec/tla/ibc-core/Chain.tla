@@ -16,18 +16,20 @@ EXTENDS Integers, FiniteSets, IBCCoreDefinitions,
         ICS02ClientHandlers, ICS03ConnectionHandlers, 
         ICS04ChannelHandlers, ICS04PacketHandlers
         
-CONSTANTS MaxHeight, \* maximal chain height
-          ChainID, \* chain identifier
-          ChannelOrdering, \* indicate whether the channels are ordered or unordered  
-          MaxVersion, \* maximal connection / channel version (we assume versions are integers)
-          MaxPacketSeq \* maximal packet sequence number
+CONSTANTS 
+    MaxHeight, \* maximal chain height
+    ChainID, \* chain identifier
+    ChannelOrdering, \* indicate whether the channels are ordered or unordered  
+    MaxVersion, \* maximal connection / channel version (we assume versions are integers)
+    MaxPacketSeq \* maximal packet sequence number
 
-VARIABLES chainStore, \* chain store, containing client heights, a connection end, a channel end 
-          incomingDatagrams, \* set of incoming datagrams
-          incomingPacketDatagrams, \* sequence of incoming packet datagrams
-          history, \* history variable
-          packetLog, \* packet log
-          appPacketSeq \* packet sequence number from the application on the chain
+VARIABLES 
+    chainStore, \* chain store, containing client heights, a connection end, a channel end 
+    incomingDatagrams, \* set of incoming datagrams
+    incomingPacketDatagrams, \* sequence of incoming packet datagrams
+    history, \* history variable
+    packetLog, \* packet log
+    appPacketSeq \* packet sequence number from the application on the chain
 
 vars == <<chainStore, incomingDatagrams, incomingPacketDatagrams, 
            history, packetLog, appPacketSeq>>

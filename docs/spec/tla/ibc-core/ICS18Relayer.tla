@@ -17,20 +17,22 @@ ASSUME /\ GenerateClientDatagrams \in BOOLEAN
        /\ GenerateChannelDatagrams \in BOOLEAN
        /\ GeneratePacketDatagrams \in BOOLEAN
 
-CONSTANTS MaxHeight, \* set of possible heights of the chains in the system
-          MaxVersion, \* maximal connection / channel version (we assume versions are integers)
-          MaxPacketSeq  \* maximal packet sequence number
+CONSTANTS 
+    MaxHeight, \* set of possible heights of the chains in the system
+    MaxVersion, \* maximal connection / channel version (we assume versions are integers)
+    MaxPacketSeq  \* maximal packet sequence number
           
-VARIABLES chainAstore, \* store of ChainA
-          chainBstore, \* store of ChainB
-          outgoingDatagrams, \* a function that assigns a set of pending datagrams 
-                             \* outgoing from the relayer to each chainID
-          outgoingPacketDatagrams, \* a dedicated datagrams channel for packet datagrams 
-          relayerHeights, \* a function that assigns a height to each chainID
-          closeChannelA, \* flag that triggers closing of the channel end at ChainA
-          closeChannelB,  \* flag that triggers closing of the channel end at ChainB
-          packetLog \* packet log
-          
+VARIABLES 
+    chainAstore, \* store of ChainA
+    chainBstore, \* store of ChainB
+    outgoingDatagrams, \* a function that assigns a set of pending datagrams 
+                        \* outgoing from the relayer to each chainID
+    outgoingPacketDatagrams, \* a dedicated datagrams channel for packet datagrams 
+    relayerHeights, \* a function that assigns a height to each chainID
+    closeChannelA, \* flag that triggers closing of the channel end at ChainA
+    closeChannelB,  \* flag that triggers closing of the channel end at ChainB
+    packetLog \* packet log
+    
 vars == <<chainAstore, chainBstore, outgoingDatagrams, outgoingPacketDatagrams, relayerHeights, packetLog>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system
 Versions == 1..MaxVersion \* set of possible connection versions                     

@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- packet datagrams,
+ packet datagrams.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions    
