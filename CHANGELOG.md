@@ -4,7 +4,8 @@
 
 > Nothing yet.
 
-## v0.2.0 (2021-04-14)
+## v0.2.0
+*April 14th, 2021*
 
 This release includes initial support for relaying over multiple paths from a single `hermes` instance.
 Adds support for relayer restart, where pending packets are cleared.
