@@ -1227,7 +1227,6 @@ dependencies = [
  "dirs-next",
  "dyn-clonable",
  "dyn-clone",
- "funty",
  "futures",
  "hdpath",
  "hex",
