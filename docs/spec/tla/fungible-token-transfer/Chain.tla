@@ -1,5 +1,17 @@
 ------------------------------- MODULE Chain -------------------------------
 
+(***************************************************************************
+ This module models the behavior of a chain running the IBC Token Transfer 
+ Protocol.
+ 
+ The chain state is represented by a chain store, which is a snapshot of the
+ provable and private stores, to the extent necessary for ICS20. Additionally, 
+ a chain has a dedicated datagram container for packet datagrams (given by a 
+ queue of datagrams that models the order in which the datagrams were submitted 
+ by some relayer).
+ 
+***************************************************************************)
+
 EXTENDS Integers, FiniteSets, Sequences, IBCTokenTransferDefinitions, 
         ICS04PacketHandlers, ICS20FungibleTokenTransferHandlers
         
@@ -10,7 +22,7 @@ CONSTANTS MaxHeight, \* maximal chain height
           NativeDenomination \* native denomination of tokens at ChainID 
 
 
-VARIABLES chainStore, \* chain store, containing client heights, a connection end, a channel end 
+VARIABLES chainStore, \* chain store, containing client heights, a channel end 
           incomingPacketDatagrams, \* sequence of incoming packet datagrams
           appPacketSeq, \* packet sequence number from the application on the chain
           packetLog, \* packet log
@@ -186,5 +198,5 @@ TypeOK ==
         
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 19:31:22 CET 2021 by ilinastoilkovska
+\* Last modified Wed Apr 14 15:33:11 CEST 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:03 CEST 2020 by ilinastoilkovska

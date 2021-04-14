@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- packet datagrams
+ packet datagrams.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, IBCTokenTransferDefinitions, 
@@ -211,9 +211,17 @@ LogAcknowledgement(chainID, chain, log, packetToAck) ==
     \* packetToAck is a pair of a packet and its acknowledgement
     LET packet == packetToAck[1] IN
     LET ack == packetToAck[2] IN
+
+    \* create a packet acknowledgement for this packet
+    LET packetAcknowledgement == [
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    sequence |-> packet.sequence,
+                                    acknowledgement |-> ack
+                                 ] IN
     
     \* if the acknowledgement for the packet has not been written
-    IF packet \notin chain.packetAcknowledgements
+    IF packetAcknowledgement \notin chain.packetAcknowledgements
     THEN \* append a "WriteAck" log entry to the log
          LET packetLogEntry == [
                                     type |-> "WriteAck",
@@ -347,5 +355,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 11:49:35 CET 2021 by ilinastoilkovska
+\* Last modified Wed Apr 14 15:36:57 CEST 2021 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska

@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains the specification of a relayer, which is an off-chain 
- process running a relayer algorithm 
+ process running a relayer algorithm. 
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
@@ -378,43 +378,24 @@ RelayPacketDatagram(srcChainID, dstChainID) ==
                                    packetDatagram)]
        /\ packetLog' = Tail(packetLog)
        /\ UNCHANGED <<chainAstore, chainBstore>>
-       /\ UNCHANGED <<outgoingDatagrams, relayerHeights>>
-    
-\*    
-\*    \* get dstChainID
-\*    LET dstChainID == GetCounterpartyChainID(packetLogEntry.srcChainID) IN
-\*    \* create a packet datagram from packet log entry
-\*    LET packetDatagram == PacketDatagram(packetLogEntry) IN 
-\*    
-\*    IF packetDatagram /= NullDatagram
-\*    THEN [outgoingPacketDatagrams EXCEPT 
-\*            ![dstChainID] = Append(outgoingPacketDatagrams[dstChainID], 
-\*                                   AsPacketDatagram(packetDatagram))]
-\*    ELSE outgoingPacketDatagrams      
+       /\ UNCHANGED <<outgoingDatagrams, relayerHeights>>   
 
 \* update the relayer client heights
 UpdateClient ==
     \E chainID \in ChainIDs : UpdateRelayerClientHeight(chainID)
     
-\* create client, connection, channel, packet datagrams    
+\* create client, connection, channel datagrams    
 CreateDatagrams ==
     \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : 
-        \* client, connection, channel datagrams
+        \* relay client, connection, channel datagrams
         Relay(srcChainID, dstChainID)
-        
-\*        /\ \/ /\ packetLog /= AsPacketLog(<<>>)
-\*              /\ Head(packetLog).srcChainID = srcChainID
-\*              /\ GeneratePacketDatagrams
-\*              \* packet datagrams   
-\*              /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
-\*              /\ packetLog' = Tail(packetLog)
-\*           \/ /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
 
+\* create packet datagrams
 CreatePacketDatagrams ==
     \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs :
+        \* relay packet datagrams
         RelayPacketDatagram(srcChainID, dstChainID)
-    
-    
+   
 
 (***************************************************************************
  Specification
@@ -441,9 +422,6 @@ Next ==
        
 \* Fairness constraints
 Fairness ==
-\*    WF_vars(Next)
-\*    /\ WF_vars(CreateDatagrams)
-\*    /\ WF_vars(CreatePacketDatagrams)
     /\ \A chainID \in ChainIDs : 
             WF_vars(UpdateRelayerClientHeight(chainID))
     /\ \A srcChainID \in ChainIDs : \A dstChainID \in ChainIDs : 
@@ -464,5 +442,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Feb 02 09:58:43 CET 2021 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:30:40 CEST 2021 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

@@ -1,5 +1,17 @@
 ------------------------- MODULE IBCTokenTransfer -------------------------
 
+(***************************************************************************
+ 
+ A TLA+ specification of the IBC Fungible Token Transfer Protocol (ICS20).
+ This module is the main module in the specification and models a   
+ system of two chains, where each chain perofmrs a transaction that sends 
+ 1 token to the respective counterparty. 
+ 
+ The specification also contains type annotations for the model checker
+ Apalache.
+  
+ ***************************************************************************)
+
 EXTENDS Integers, FiniteSets, Sequences, IBCTokenTransferDefinitions
 
 CONSTANTS 
@@ -238,26 +250,31 @@ Spec == Init /\ [][Next]_vars /\ Fairness
 
 RECURSIVE Sum(_)
 
+\* sum of elements in a set
 Sum(S) ==
   IF S = {}
   THEN 0
   ELSE LET x == CHOOSE y \in S: TRUE IN
     x + Sum(S \ {x})
-
+    
+\* get the native denomination based on chainID
 GetNativeDenomination(chainID) ==
     IF chainID = "chainA"
     THEN NativeDenominationChainA
     ELSE NativeDenominationChainB
 
+\* set of prefixed denominations given a native denomination 
 \* @type: (Str) => Set(Seq(Str));    
 PrefixedDenoms(nativeDenomination) ==
     {<<portID, channelID, nativeDenomination>> : portID \in PortIDs, channelID \in ChannelIDs}    
-    
+
+\* set of escrow account IDs 
 \* @type: Set(<<Str, Seq(Str)>>);
 EscrowAccountsDomain ==
     {<<GetCounterpartyChannelID(chainID), <<GetNativeDenomination(chainID)>>>> : 
             chainID \in ChainIDs}    
-    
+
+\* set of all denominations
 Denominations ==
     {<<NativeDenominationChainA>>, <<NativeDenominationChainB>>}
     \union
@@ -409,15 +426,17 @@ NonPreservationOfFungibility ==
     \A accountID \in EscrowAccountsDomain :
         [](escrowAccounts[accountID] > 0 
             => [](escrowAccounts[accountID] > 0))
-         
+
+\* ICS20Inv invariant: conjunction of invariants         
 ICS20Inv ==
     /\ PreservationOfTotalSupplyLocal
     /\ PreservationOfTotalSupplyGlobal
     
+\* ICS20Prop property: conjunction of properties  
 ICS20Prop == 
     NonPreservationOfFungibility    
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 19:31:30 CET 2021 by ilinastoilkovska
+\* Last modified Wed Apr 14 15:24:26 CEST 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:00:24 CEST 2020 by ilinastoilkovska

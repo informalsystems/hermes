@@ -1,5 +1,17 @@
 ---------------------------- MODULE Chain ----------------------------
 
+(***************************************************************************
+ This module models the behavior of a chain running the IBC Core Protocols.
+ 
+ The chain state is represented by a chain store, which is a snapshot of the
+ provable and private stores, to the extent necessary for IBC. Additionally, 
+ a chain has dedicated datagram containers for: 
+    1. client, connection, and channel datagrams (given by a set of datagrams),
+    2. packet datagrams (given by a queue of datagrams that models the order 
+       in which the datagrams were submitted by the relayer).
+ 
+***************************************************************************)
+
 EXTENDS Integers, FiniteSets, IBCCoreDefinitions, 
         ICS02ClientHandlers, ICS03ConnectionHandlers, 
         ICS04ChannelHandlers, ICS04PacketHandlers

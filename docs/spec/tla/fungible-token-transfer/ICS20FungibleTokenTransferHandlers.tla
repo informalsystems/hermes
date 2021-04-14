@@ -1,11 +1,11 @@
 ----------------- MODULE ICS20FungibleTokenTransferHandlers ----------------
 
-EXTENDS Integers, FiniteSets, Sequences, Bank, IBCTokenTransferDefinitions
-
 (***************************************************************************
  This module contains definitions of operators that are used to handle 
- ICS20 packet datagrams
+ ICS20 packet datagrams.
  ***************************************************************************)
+
+EXTENDS Integers, FiniteSets, Sequences, Bank, IBCTokenTransferDefinitions
 
 \* create outgoing packet data
 \*      - accounts is the map of bank accounts
@@ -196,5 +196,5 @@ OnTimeoutPacket(accounts, escrowAccounts, packet, maxBalance) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 12:24:28 CET 2020 by ilinastoilkovska
+\* Last modified Wed Apr 14 15:37:37 CEST 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:02:01 CEST 2020 by ilinastoilkovska

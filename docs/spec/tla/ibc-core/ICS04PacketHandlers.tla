@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- packet datagrams
+ packet datagrams,
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions    
@@ -188,7 +188,6 @@ WritePacketCommitment(chain, packet) ==
 \* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WriteAcknowledgement(chain, packet) ==
     \* create a packet acknowledgement for this packet
-    \* @type: PACKETACK;
     LET packetAcknowledgement == [
                                     portID |-> packet.dstPortID,
                                     channelID |-> packet.dstChannelID,
@@ -214,8 +213,16 @@ WriteAcknowledgement(chain, packet) ==
 \* log acknowledgements to packet Log
 \* @type: (Str, CHAINSTORE, Seq(LOGENTRY), PACKET) => Seq(LOGENTRY);
 LogAcknowledgement(chainID, chain, log, packet) ==
+    \* create a packet acknowledgement for this packet
+    LET packetAcknowledgement == [
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    sequence |-> packet.sequence,
+                                    acknowledgement |-> TRUE
+                                 ] IN
+                                 
     \* if the acknowledgement for the packet has not been written
-    IF packet \notin chain.packetAcknowledgements
+    IF packetAcknowledgement \notin chain.packetAcknowledgements
     THEN \* append a "WriteAck" log entry to the log
          LET packetLogEntry == [
                                 type |-> "WriteAck",
@@ -357,5 +364,5 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Jan 29 15:44:44 CET 2021 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:22:40 CEST 2021 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska

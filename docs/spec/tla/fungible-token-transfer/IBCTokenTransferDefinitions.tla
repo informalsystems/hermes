@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are shared between the 
- different modules, and which are relevant for ICS20
+ different modules, and which are relevant for ICS20.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences
@@ -148,8 +148,14 @@ Max(S) == CHOOSE x \in S: \A y \in S: y <= x
         
         * for ICS20 we require that the channels are unordered
       
+    - portID -- a port identifier
+      Stores the port identifier of this channel end.  
+        
     - channelID -- a channel identifier
       Stores the channel identifier of this channel end.  
+      
+    - counterpartyPortID -- a port identifier
+      Stores the port identifier of the counterparty channel end.     
     
     - counterpartyChannelID -- a channel identifier
       Stores the channel identifier of the counterparty channel end. 
@@ -184,9 +190,8 @@ FungibleTokenPacketData(maxBalance, Denominations) ==
         receiver : ChainIDs
     ]
     
-(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
- Sets of packet commitments, packet receipts, packet acknowledgements.
- ***************************************************************************)
+(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********)
+\* Set of packet commitments
 \* @type: (Set(Int), Int, Int, Set(Seq(Str))) => Set(PACKETCOMM);
 PacketCommitments(Heights, maxPacketSeq, maxBalance, Denominations) ==
     [
@@ -197,6 +202,7 @@ PacketCommitments(Heights, maxPacketSeq, maxBalance, Denominations) ==
         timeoutHeight : Heights
     ] 
 
+\* Set of packet receipts
 \* @type: (Int) => Set(PACKETREC);
 PacketReceipts(maxPacketSeq) ==
     [
@@ -204,7 +210,8 @@ PacketReceipts(maxPacketSeq) ==
         portID : PortIDs, 
         sequence : 1..maxPacketSeq
     ] 
-    
+
+\* Set of packet acknowledgements    
 \* @type: (Int) => Set(PACKETACK);
 PacketAcknowledgements(maxPacketSeq) ==
     [
@@ -214,9 +221,8 @@ PacketAcknowledgements(maxPacketSeq) ==
         acknowledgement : BOOLEAN
     ] 
     
-(********************************* Packets *********************************
- A set of packets.
- ***************************************************************************)
+(********************************* Packets *********************************)
+\* Set of packets
 \* @type: (Set(Int), Int, Int, Set(Seq(Str))) => Set(PACKET);
 Packets(Heights, maxPacketSeq, maxBalance, Denominations) ==
     [
@@ -235,12 +241,20 @@ Packets(Heights, maxPacketSeq, maxBalance, Denominations) ==
     
     - height : an integer between nullHeight and MaxHeight. 
       Stores the current height of the chain.
+      
+    - counterpartyClientHeights : a set of integers between 1 and MaxHeight
+      Stores the heights of the client for the counterparty chain.  
     
-    - channelEnd : a channel end.
+    - channelEnd : a channel end
+      Stores data about the channel with the counterparty chain.    
     
     - packetCommitments : a set of packet commitments
       A packet commitment is added to this set when a chain sends a packet 
-      to the counterparty
+      to the counterparty.
+
+    - packetReceipts : a set of packet receipts
+      A packet receipt is added to this set when a chain received a packet 
+      from the counterparty chain.
 
     - packetAcknowledgements : a set of packet acknowledgements
       A packet acknowledgement is added to this set when a chain writes an 
@@ -252,8 +266,6 @@ Packets(Heights, maxPacketSeq, maxBalance, Denominations) ==
       datagram      
     
     A chain store is the combination of the provable and private stores.
-    We do not keep track of packet receipts in the specification of ICS20, 
-    these are specified in the IBC Core specification.
       
  ***************************************************************************)
 \* @type: (Set(Int), Int, Int, Set(Str)) => Set(CHAINSTORE);
@@ -273,10 +285,8 @@ ChainStores(Heights, maxPacketSeq, maxBalance, NativeDenominations) ==
                                    BOOLEAN)
     ] 
     
-(******************************** Datagrams ********************************
- A set of datagrams.
- For ICS20, we need only packet datagrams
- ***************************************************************************)
+(******************************** Datagrams ********************************)
+\* Set of datagrams
 Datagrams(Heights, maxPacketSeq, maxBalance, NativeDenominations) ==
     [type : {"PacketRecv"}, 
      packet : Packets(Heights, maxPacketSeq, maxBalance, 
@@ -289,13 +299,12 @@ Datagrams(Heights, maxPacketSeq, maxBalance, NativeDenominations) ==
      acknowledgement : BOOLEAN, 
      proofHeight : Heights]
           
-
+\* Null datagram
 NullDatagram == 
     [type |-> "null"] 
     
-(**************************** PacketLogEntries *****************************
- A set of packet log entries.
- ***************************************************************************)
+(**************************** PacketLogEntries *****************************)
+\* Set of packet log entries
 PacketLogEntries(Heights, maxPacketSeq, maxBalance, NativeDenominations) == 
     [
         type : {"PacketSent"},
@@ -383,14 +392,15 @@ GetLatestHeight(chain) ==
 \*      - order is "UNORDERED" (requirement of ICS20)
 \*      - channelID, counterpartyChannelID 
 InitUnorderedChannelEnd(ChainID) ==
-    [state |-> "OPEN",
-     order |-> "UNORDERED",
-     portID |-> GetPortID(ChainID),
-     channelID |-> GetChannelID(ChainID),
-     counterpartyPortID |-> GetCounterpartyPortID(ChainID),
-     counterpartyChannelID |-> GetCounterpartyChannelID(ChainID),
-     version |-> "ics20-1"] 
-  
+    [
+        state |-> "OPEN",
+        order |-> "UNORDERED",
+        portID |-> GetPortID(ChainID),
+        channelID |-> GetChannelID(ChainID),
+        counterpartyPortID |-> GetCounterpartyPortID(ChainID),
+        counterpartyChannelID |-> GetCounterpartyChannelID(ChainID),
+        version |-> "ics20-1"
+    ] 
 
 \* A set of initial values of the chain store for ICS20: 
 \*      - height is initialized to 1
@@ -412,5 +422,5 @@ ICS20InitChainStore(ChainID) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 12:31:21 CET 2021 by ilinastoilkovska
+\* Last modified Wed Apr 14 15:27:35 CEST 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:38 CEST 2020 by ilinastoilkovska

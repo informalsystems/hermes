@@ -1,7 +1,19 @@
 ------------------------------ MODULE IBCCore ------------------------------
 
 (***************************************************************************
- This is the main module in the specification of the IBC core protocols. 
+ 
+ A TLA+ specification of the IBC Core protocols (ICS02, ICS03, ICS04, ICS18).
+ This module is the main module in the specification and models a   
+ system consisting of two chains and two relayers. 
+ 
+ The model allows to express concurrency aspects of a system with multiple 
+ (correct) relayers. The specification is written in a modular way, in order 
+ to facilitate future formal verification of properties and invariants in 
+ an adversarial setting.
+ 
+ The specification also contains type annotations for the model checker
+ Apalache.
+  
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
@@ -163,12 +175,8 @@ SubmitDatagrams ==
     /\ incomingDatagramsChainA' = incomingDatagramsChainA \union outgoingDatagrams["chainA"]
     /\ incomingDatagramsChainB' = incomingDatagramsChainB \union outgoingDatagrams["chainB"]
     /\ outgoingDatagrams' = [chainID \in ChainIDs |-> {}]
-    /\ incomingPacketDatagramsChainA' = incomingPacketDatagramsChainA 
-                                                             \o
-                                                             outgoingPacketDatagrams["chainA"]
-    /\ incomingPacketDatagramsChainB' = incomingPacketDatagramsChainB
-                                                             \o
-                                                             outgoingPacketDatagrams["chainB"]
+    /\ incomingPacketDatagramsChainA' = incomingPacketDatagramsChainA \o outgoingPacketDatagrams["chainA"]
+    /\ incomingPacketDatagramsChainB' = incomingPacketDatagramsChainB \o outgoingPacketDatagrams["chainB"]
     /\ outgoingPacketDatagrams' = [chainID \in ChainIDs |-> <<>>]                                                          
     /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
     /\ UNCHANGED <<closeChannelA, closeChannelB>>
@@ -600,5 +608,5 @@ IBCDelivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Tue Feb 02 10:20:20 CET 2021 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:05:32 CEST 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

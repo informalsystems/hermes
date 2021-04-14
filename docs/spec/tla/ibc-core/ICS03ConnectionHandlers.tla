@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- connection datagrams
+ connection handshake datagrams.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, IBCCoreDefinitions     
@@ -163,5 +163,5 @@ HandleConnOpenConfirm(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 30 13:56:55 CET 2020 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:22:53 CEST 2021 by ilinastoilkovska
 \* Created Tue Apr 07 16:09:26 CEST 2020 by ilinastoilkovska

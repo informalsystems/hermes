@@ -115,6 +115,7 @@ EXTENDS Integers, FiniteSets, Sequences
         chanClosed: Bool
     ];
 *)            
+
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"} 
 ClientIDs == {"clA", "clB"}
@@ -194,9 +195,8 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
          ] 
     
     
-(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
- Sets of packet commitments, packet receipts, packet acknowledgements.
- ***************************************************************************)
+(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********)
+\* Set of packet commitments
 PacketCommitments(Heights, maxPacketSeq) ==
     [
         portID : PortIDs,
@@ -205,6 +205,7 @@ PacketCommitments(Heights, maxPacketSeq) ==
         timeoutHeight : Heights
     ] 
     
+\* Set of packet receipts
 PacketReceipts(maxPacketSeq) ==
     [
         portID : PortIDs,
@@ -212,6 +213,7 @@ PacketReceipts(maxPacketSeq) ==
         sequence : 1..maxPacketSeq
     ] 
     
+\* Set of packet acknowledgements    
 PacketAcknowledgements(maxPacketSeq) ==
     [
         portID : PortIDs,
@@ -258,9 +260,8 @@ ConnectionEnds(channelOrdering, maxPacketSeq, Versions) ==
         channelEnd : ChannelEnds(channelOrdering, maxPacketSeq)
     ] 
     
-(********************************* Packets *********************************
- A set of packets.
- ***************************************************************************)
+(********************************* Packets *********************************)
+\* Set of packets
 Packets(Heights, maxPacketSeq) ==
     [
         sequence : 1..maxPacketSeq,
@@ -272,8 +273,8 @@ Packets(Heights, maxPacketSeq) ==
     ] 
 
 (******************************** ChainStores ******************************
-    A set of chain records. 
-    A chain record contains the following fields:
+    A set of chain store records. 
+    A chain store record contains the following fields:
     
     - height : an integer between nullHeight and MaxHeight. 
       Stores the current height of the chain.
@@ -282,22 +283,25 @@ Packets(Heights, maxPacketSeq) ==
       Stores the heights of the client for the counterparty chain.
 
     - connectionEnd : a connection end record 
-      Stores data about the connection with the counterparty chain
+      Stores data about the connection with the counterparty chain.
 
     - packetCommitments : a set of packet commitments
       A packet commitment is added to this set when a chain sends a packet 
-      to the counterparty
+      to the counterparty.
 
     - packetReceipts : a set of packet receipts
       A packet receipt is added to this set when a chain received a packet 
-      from the counterparty
-
+      from the counterparty chain.
+    
+    - packetsToAcknowledge : a sequence of packets
+      A packet is added to this sequence when a chain receives it and is used 
+      later for the receiver chain to write an acknowledgement for the packet. 
+    
     - packetAcknowledgements : a set of packet acknowledgements
       A packet acknowledgement is added to this set when a chain writes an 
-      acknowledgement for a packet it received from the counterparty
-
-    - packetsToAcknowledge : a sequence of packets 
-      
+      acknowledgement for a packet it received from the counterparty.
+        
+    A chain store is the combination of the provable and private stores.
  ***************************************************************************)
 ChainStores(Heights, channelOrdering, maxPacketSeq, Versions) ==    
     [
@@ -306,13 +310,12 @@ ChainStores(Heights, channelOrdering, maxPacketSeq, Versions) ==
         connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq, Versions),
         packetCommitments : SUBSET(PacketCommitments(Heights, maxPacketSeq)),
         packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)), 
-        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
-        packetsToAcknowledge : Seq(Packets(Heights, maxPacketSeq))
+        packetsToAcknowledge : Seq(Packets(Heights, maxPacketSeq)),
+        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq))
     ] 
 
-(******************************** Datagrams ********************************
- A set of datagrams.
- ***************************************************************************)
+(******************************** Datagrams ********************************)
+\* Set of datagrams
 Datagrams(Heights, maxPacketSeq, Versions) ==
     [
         type : {"ClientCreate"}, 
@@ -389,13 +392,13 @@ Datagrams(Heights, maxPacketSeq, Versions) ==
         acknowledgement : BOOLEAN, 
         proofHeight : Heights
     ]
-    
+  
+\* Null datagram  
 NullDatagram == 
     [type |-> "null"] 
     
-(**************************** PacketLogEntries *****************************
- A set of packet log entries.
- ***************************************************************************)
+(**************************** PacketLogEntries *****************************)
+\* Set of packet log entries
 PacketLogEntries(Heights, maxPacketSeq) == 
     [
         type : {"PacketSent"},
@@ -419,9 +422,12 @@ PacketLogEntries(Heights, maxPacketSeq) ==
         acknowledgement : BOOLEAN
     ]
 
+\* Null packet log entry
 NullPacketLogEntry ==
     [type |-> "null"] 
 
+(******************************* Histories ********************************)
+\* Set of history variable records
 Histories ==
     [
         connInit : BOOLEAN,
@@ -472,7 +478,7 @@ InitOrderedChannelEnd ==
 \*      - state is "UNINIT"
 \*      - connectionID, counterpartyConnectionID are uninitialized
 \*      - clientID, counterpartyClientID are uninitialized  
-\*      - versions is an arbitrary subset of the set {1, .., maxVersion}   
+\*      - versions is an arbitrary (non-empty) subset of the set {1, .., maxVersion}   
 \*      - channelEnd is initialized based on channelOrdering      
 InitConnectionEnds(Versions, channelOrdering) ==
     IF channelOrdering = "ORDERED"
@@ -499,6 +505,8 @@ InitConnectionEnds(Versions, channelOrdering) ==
 \*      - height is initialized to 1
 \*      - the counterparty light client is uninitialized
 \*      - the connection end is initialized to InitConnectionEnd 
+\*      - the packet committments, receipts, acknowledgements, and 
+\*        packets to acknowledge are empty  
 InitChainStore(Versions, channelOrdering) == 
     [
         height : {1},
@@ -691,5 +699,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 07 15:36:08 CEST 2021 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:26:47 CEST 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

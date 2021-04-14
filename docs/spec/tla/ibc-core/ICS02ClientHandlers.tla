@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- client datagrams
+ client create and update datagrams.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, IBCCoreDefinitions
@@ -71,5 +71,5 @@ HandleClientUpdate(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Feb 02 10:47:00 CET 2021 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:23:14 CEST 2021 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

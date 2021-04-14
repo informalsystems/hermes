@@ -1,7 +1,7 @@
 # TLA+ specification of the IBC Core protocols
 
 A TLA+ specification of the IBC Core protocols ([ICS02](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-002-client-semantics), [ICS03](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-003-connection-semantics), [ICS04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics), [ICS18](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-018-relayer-algorithms)).
-In particular, the main module is [IBCCore.tla](IBCCore.tla) and models the 
+In particular, the main module is [IBCCore.tla](IBCCore.tla) and models a 
 system consisting of two chains and two relayers. 
 The model allows to express concurrency aspects of a system with multiple (correct) relayers.
 The specification is written in a modular way, in order to facilitate future 
@@ -209,7 +209,7 @@ To import the specification in the TLA+ toolbox and run TLC:
 
 #### Basic checks with TLC
 
-We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 3 minutes and the property `IBCSafety` in 5 minutes.
+We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 59min and the property `IBCSafety` in 1h33min.
 As TLC usually takes longer to check liveness properties, we have not 
 conducted extensive experiments to check `IBCDelivery` with TLC yet.
 

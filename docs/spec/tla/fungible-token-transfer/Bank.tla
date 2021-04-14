@@ -1,5 +1,10 @@
 -------------------------------- MODULE Bank --------------------------------
 
+(***************************************************************************
+ This module contains definitions of operators that model the behavior of 
+ the bank module.
+ ***************************************************************************)
+
 EXTENDS Integers, FiniteSets
 
 \* subtract coins from account
@@ -31,7 +36,9 @@ AddCoins(accounts, accountID, amount) ==
 \*        to account balances
 \*      - receiverAccounts is a map from receiver addresses and denominations 
 \*        to account balances
-\* @type: (ACCOUNT -> Int, Str, ACCOUNT -> Int, Str, Seq(Str), Int) => [senderAccounts: ACCOUNT -> Int, receiverAccounts: ACCOUNT -> Int, error: Bool];
+(* @type: (ACCOUNT -> Int, Str, ACCOUNT -> Int, Str, Seq(Str), Int) => 
+            [senderAccounts: ACCOUNT -> Int, receiverAccounts: ACCOUNT -> Int, error: Bool];
+*)
 TransferCoins(senderAccounts, senderAddr, 
               receiverAccounts, receiverAddr, 
               denomination, amount) ==
@@ -102,9 +109,7 @@ MintCoins(accounts, address, denomination, amount, maxBalance) ==
             error |-> TRUE
          ]
 
-    
-
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 19 18:54:36 CET 2020 by ilinastoilkovska
+\* Last modified Wed Apr 14 14:50:41 CEST 2021 by ilinastoilkovska
 \* Created Thu Oct 28 19:49:56 CET 2020 by ilinastoilkovska

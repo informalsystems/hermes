@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- channel datagrams
+ channel handshake datagrams.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, IBCCoreDefinitions         
@@ -271,5 +271,5 @@ HandleChanCloseConfirm(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Feb 02 10:51:07 CET 2021 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:22:44 CEST 2021 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska
