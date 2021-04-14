@@ -1,26 +1,41 @@
 # Features
 
 This section includes a summary of the supported and planned features.
-More details and feature comparison between the Rust and Go relayer implementations can be found in the [Feature Matrix](./features/matrix.md)
+A feature matrix and comparison between the Rust and Go relayer implementations can be found in the [Feature Matrix](./features/matrix.md)
 
 ## Supported Features
-- Create and update clients
-- Establish connections with new or existing clients
-- Establish channels with new or existing connection
-- Relay packets, acknowledgments, timeout and timeout-on-close packets, with zero or non-zero delay.
-- Relay packets over multiple paths
-- Clear packets on relayer restart when started for a single path
-- Upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
-- Monitor and submit misbehaviour for clients
 
+- Basic features
+    - create and update clients
+    - establish connections with new or existing clients
+    - establish channels with new or existing connection
+    - channel closing handshake
+    - relay packets, acknowledgments, timeout and timeout-on-close packets, with zero or non-zero delay.
+    - queries for all objects
+- Packet relaying over:
+    - new path
+    - single specified path
+    - multiple paths configured in `config.toml`
+- Restart support
+    - clear packets on relayer restart when started for a single path
+    > clear packets in multi-path mode not fully supported yet
+- Client upgrade
+    - upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
+- Packet delay:
+    - establish path over non-zero delay connection
+    - relay all packets with the specified delay
+- Monitor and submit misbehaviour for clients
+    - monitor client updates for misbehaviour (fork and BFT time violation)
+    - submit misbehaviour evidence to the on-chain IBC client.
+    > misbehaviour submission to full node not yet supported
 - Individual commands that build and send transactions for:
-    - Creating and updating IBC Tendermint light clients
-    - Sending connection open handshake datagrams
-    - Sending channel open handshake datagrams
-    - Sending channel closing handshake datagrams
-    - Initiating a cross chain transfer (mainly for testing)
-    - Relaying sent packets, acknowledgments and timeouts
-    - Client upgrade
+    - creating and updating IBC Tendermint light clients
+    - aending connection open handshake datagrams
+    - sending channel open handshake datagrams
+    - sending channel closing handshake datagrams
+    - initiating a cross chain transfer (mainly for testing)
+    - relaying sent packets, acknowledgments and timeouts
+    - client upgrade
 
 ## Upcoming / Unsupported Features
 
@@ -29,7 +44,6 @@ Planned features:
 - Channel handshake for existing channel that is not in `Open` state
 - Clear pending packets in multi path mode
 - Full Passive mode: relay from all IBC events
-- Close-to-0 configuration relayer
 - Relayer support for management application (add RPC server)
 
 Not planned:
