@@ -4,7 +4,7 @@ There are two main approaches for obtaining Hermes:
 
 1. Installation:
    1. If you are running on a Unix machine (Linux/MacOS), then the simplest
-      option is to [download the latest binary](#Install-by-downloading).
+      option is to [download the latest binary](#install-by-downloading).
    2. You can also install via [Cargo](#install-via-cargo).
 
 2. Alternatively, [build Hermes directly from source](#build-from-source).
