@@ -11,7 +11,7 @@
 //!
 //! For the IBC relayer binary, please see [Hermes] (`ibc-relayer-cli` crate).
 //!
-//! [Hermes]: https://docs.rs/ibc-relayer-cli/0.1.1/
+//! [Hermes]: https://docs.rs/ibc-relayer-cli/0.2.0/
 
 pub mod chain;
 pub mod channel;

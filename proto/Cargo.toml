@@ -1,14 +1,14 @@
 [package]
-name    = "ibc-proto"
-version = "0.7.1"
-authors = ["Greg Szabo <greg@informal.systems>"]
-edition = "2018"
-license = "Apache-2.0"
+name       = "ibc-proto"
+version    = "0.8.0"
+authors    = ["Greg Szabo <greg@informal.systems>"]
+edition    = "2018"
+license    = "Apache-2.0"
 repository = "https://github.com/informalsystems/ibc-proto/tree/master/ibc_proto"
 readme     = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "database"]
 keywords   = ["blockchain", "cosmos", "tendermint", "ibc", "proto"]
-exclude = ["definitions"]
+exclude    = ["definitions"]
 
 description = """
     ibc-proto is a Rust implementation of the Cosmos SDK & IBC proto structs.

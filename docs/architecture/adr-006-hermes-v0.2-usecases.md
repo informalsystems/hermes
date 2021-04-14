@@ -242,23 +242,6 @@ will be in JSON.
 
 Partially implemented.
 
-## Limitations
-
-### Light client security parameters
-
-There are currently certain limitations on how a light client can be
-instantiated, which can pose issues to the "client create" use-case that has
-parametrized trust options.
-(The discussion in [#673] provides further context on this.)
-Consequently, the parametrized client create use-case may involve more complex
-discussions and may not be handled within v0.2.0.
-
-### Connection `delay_period` parameter
-
-The present version v0.1.1 of Hermes as well as the planned v0.2.0 will __not__
-include mechanism to obey the `delay_period` option of connections.
-(Issue [#640] tracks this feature.)
-
 ## Consequences
 ### Positive
 
