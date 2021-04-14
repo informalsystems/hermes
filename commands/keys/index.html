@@ -1,0 +1,339 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Keys - Hermes (IBC Relayer CLI) Documentation</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="../../favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="../../favicon.png">
+        
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../highlight.css">
+        <link rel="stylesheet" href="../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes</li><li class="spacer"></li><li class="chapter-item expanded "><a href="../../index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../relayer.html"><strong aria-hidden="true">1.1.</strong> What is Hermes?</a></li></ol></li><li class="chapter-item expanded "><a href="../../features.html"><strong aria-hidden="true">2.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../features/matrix.html"><strong aria-hidden="true">2.1.</strong> Feature matrix</a></li></ol></li><li class="chapter-item expanded "><a href="../../getting_started.html"><strong aria-hidden="true">3.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../pre_requisites.html"><strong aria-hidden="true">3.1.</strong> Pre-requisites</a></li><li class="chapter-item expanded "><a href="../../installation.html"><strong aria-hidden="true">3.2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="../../config.html"><strong aria-hidden="true">3.3.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/index.html"><strong aria-hidden="true">4.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/local-chains/index.html"><strong aria-hidden="true">4.1.</strong> Local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/local-chains/gaia.html"><strong aria-hidden="true">4.1.1.</strong> Install Gaia</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/start.html"><strong aria-hidden="true">4.1.2.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/identifiers.html"><strong aria-hidden="true">4.1.3.</strong> Identifiers</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/relay-paths/index.html"><strong aria-hidden="true">4.1.4.</strong> Connect the chains using relay paths</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/local-chains/relay-paths/create-new-path.html"><strong aria-hidden="true">4.1.4.1.</strong> Create a new path</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/relay-paths/existing-path.html"><strong aria-hidden="true">4.1.4.2.</strong> Packet relaying on existing path</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/relay-paths/new-path.html"><strong aria-hidden="true">4.1.4.3.</strong> Packet relaying on new path</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/relay-paths/multiple-paths.html"><strong aria-hidden="true">4.1.4.4.</strong> Concurrent packet relaying on multiple paths</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/raw/index.html"><strong aria-hidden="true">4.1.5.</strong> Connect the chains using raw transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/local-chains/raw/client.html"><strong aria-hidden="true">4.1.5.1.</strong> Configure clients</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/raw/connection.html"><strong aria-hidden="true">4.1.5.2.</strong> Connection handshake</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/raw/channel.html"><strong aria-hidden="true">4.1.5.3.</strong> Channel handshake</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/raw/packet.html"><strong aria-hidden="true">4.1.5.4.</strong> Relay packets</a></li></ol></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../commands/index.html"><strong aria-hidden="true">5.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../commands/global.html"><strong aria-hidden="true">5.1.</strong> Global options and JSON output</a></li><li class="chapter-item expanded "><a href="../../commands/keys/index.html" class="active"><strong aria-hidden="true">5.2.</strong> Keys</a></li><li class="chapter-item expanded "><a href="../../commands/setup-and-relaying/index.html"><strong aria-hidden="true">5.3.</strong> Path setup and streaming</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../commands/setup-and-relaying/clients.html"><strong aria-hidden="true">5.3.1.</strong> Clients</a></li><li class="chapter-item expanded "><a href="../../commands/setup-and-relaying/connections.html"><strong aria-hidden="true">5.3.2.</strong> Connections</a></li><li class="chapter-item expanded "><a href="../../commands/setup-and-relaying/channels.html"><strong aria-hidden="true">5.3.3.</strong> Channels</a></li><li class="chapter-item expanded "><a href="../../commands/setup-and-relaying/packets.html"><strong aria-hidden="true">5.3.4.</strong> Packet relaying</a></li></ol></li><li class="chapter-item expanded "><a href="../../commands/listen/index.html"><strong aria-hidden="true">5.4.</strong> Listen mode</a></li><li class="chapter-item expanded "><a href="../../commands/upgrade/index.html"><strong aria-hidden="true">5.5.</strong> Client upgrade</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../commands/upgrade/test.html"><strong aria-hidden="true">5.5.1.</strong> Testing client upgrade</a></li></ol></li><li class="chapter-item expanded "><a href="../../commands/misbehaviour/index.html"><strong aria-hidden="true">5.6.</strong> Misbehaviour</a></li><li class="chapter-item expanded "><a href="../../commands/queries/index.html"><strong aria-hidden="true">5.7.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../commands/queries/client.html"><strong aria-hidden="true">5.7.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="../../commands/queries/connection.html"><strong aria-hidden="true">5.7.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../../commands/queries/channel.html"><strong aria-hidden="true">5.7.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="../../commands/queries/packet.html"><strong aria-hidden="true">5.7.4.</strong> Packet</a></li></ol></li><li class="chapter-item expanded "><a href="../../commands/raw/index.html"><strong aria-hidden="true">5.8.</strong> Raw transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../commands/raw/client.html"><strong aria-hidden="true">5.8.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="../../commands/raw/connection.html"><strong aria-hidden="true">5.8.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../../commands/raw/channel-open.html"><strong aria-hidden="true">5.8.3.</strong> Channel Open</a></li><li class="chapter-item expanded "><a href="../../commands/raw/channel-close.html"><strong aria-hidden="true">5.8.4.</strong> Channel Close</a></li><li class="chapter-item expanded "><a href="../../commands/raw/packet.html"><strong aria-hidden="true">5.8.5.</strong> Packet</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../help.html"><strong aria-hidden="true">6.</strong> Help</a></li><li class="chapter-item expanded "><a href="../../glossary.html"><strong aria-hidden="true">7.</strong> Glossary</a></li><li class="spacer"></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Hermes (IBC Relayer CLI) Documentation</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#adding-keys-to-the-relayer" id="adding-keys-to-the-relayer">Adding Keys to the Relayer</a></h1>
+<blockquote>
+<p><strong>WARNING</strong>: Currently the relayer does NOT support a <code>keyring</code> store to securely
+store the private key file. The key file will be stored on the local file system
+in the user <strong>$HOME</strong> folder under <code>$HOME/.rrly</code></p>
+</blockquote>
+<blockquote>
+<p><strong>BREAKING</strong>: As of Hermes v0.2.0, the format of the keys stored on disk has changed, and
+keys which had been previously configured must now be re-imported using either the <code>keys add</code>
+or the <code>keys restore</code> commands.</p>
+</blockquote>
+<hr />
+<p>Using the <code>keys</code> command you can add and list keys. </p>
+<h4><a class="header" href="#show-usage" id="show-usage">Show usage</a></h4>
+<p>To see the available sub-commands for the <code>keys</code> command run:</p>
+<pre><code class="language-shell">hermes help keys
+</code></pre>
+<p>Currently there are two sub-commands supported <code>add</code> and <code>list</code>:</p>
+<pre><code class="language-shell">USAGE:
+    hermes-cli keys &lt;SUBCOMMAND&gt;
+
+DESCRIPTION:
+    Manage keys in the relayer for each chain
+
+SUBCOMMANDS:
+    help       Get usage information
+    add        adds a key to a configured chain
+    list       list keys configured on a chain
+</code></pre>
+<h3><a class="header" href="#key-seed-file-private-key" id="key-seed-file-private-key">Key Seed file (Private Key)</a></h3>
+<p>In order to execute the command below you need a private key file (JSON). The relayer uses the private key file to sign the transactions submitted to the chain.</p>
+<p>The private key file can be obtained by using the <code>keys add</code> on a Cosmos chain, for example for a <code>gaia</code> chain the command is:</p>
+<pre><code class="language-shell">gaiad keys add ...
+</code></pre>
+<p>The command outputs a JSON similar to the one below. You can save this file (e.g. <code>key_seed.json</code>) and use it to add to the relayer</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;user&quot;,
+  &quot;type&quot;: &quot;local&quot;,
+  &quot;address&quot;: &quot;cosmos1tc3vcuxyyac0dmayf887t95tdg7qpyql48w7gj&quot;,
+  &quot;pubkey&quot;: &quot;cosmospub1addwnpepqgg7ng4ycm60pdxfzdfh4hjvkwcr3da59mr8k883vsstx60ruv7kur4525u&quot;,
+  &quot;mnemonic&quot;: &quot;[24 words mnemonic]&quot;
+}
+</code></pre>
+<h3><a class="header" href="#adding-keys" id="adding-keys">Adding Keys</a></h3>
+<h4><a class="header" href="#add-a-private-key-to-a-chain-from-a-key-file" id="add-a-private-key-to-a-chain-from-a-key-file">Add a private key to a chain from a key file</a></h4>
+<pre><code class="language-shell">USAGE:
+    hermes keys add &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Adds a key to a configured chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+
+FLAGS:
+    -f, --file FILE           the path to the key file (conflicts with --mnemonic)
+</code></pre>
+<p>To add a private key file to a chain:</p>
+<pre><code class="language-shell">hermes -c config keys add [CHAIN_ID] -f [PRIVATE_KEY_FILE]
+</code></pre>
+<p>If the command is successful a message similar to the one below will be displayed:</p>
+<pre><code class="language-json">Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
+</code></pre>
+<h4><a class="header" href="#restore-a-private-key-to-a-chain-from-a-mnemonic" id="restore-a-private-key-to-a-chain-from-a-mnemonic">Restore a private key to a chain from a mnemonic</a></h4>
+<pre><code class="language-shell">USAGE:
+    hermes keys restore &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    restore a key to a configured chain using a mnemonic
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+
+FLAGS:
+    -n, --name NAME           key name
+    -m, --mnemonic MNEMONIC   mnemonic to restore the key from
+</code></pre>
+<p>To restore a key from its mnemonic:</p>
+<pre><code class="language-shell">hermes -c config keys restore [CHAIN_ID] -m &quot;[MNEMONIC]&quot;
+</code></pre>
+<p>If the command is successful a message similar to the one below will be displayed:</p>
+<pre><code class="language-json">Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
+</code></pre>
+<h3><a class="header" href="#list-keys" id="list-keys">List keys</a></h3>
+<p>In order to list the private keys added to chains use the <code>keys list</code> command</p>
+<pre><code class="language-shell">USAGE:
+    hermes keys list &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    List keys configured on a chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+</code></pre>
+<h4><a class="header" href="#listing-the-private-key-that-was-added-to-a-chain" id="listing-the-private-key-that-was-added-to-a-chain">Listing the private key that was added to a chain</a></h4>
+<p>To list the private key file that was added to a chain:</p>
+<pre><code class="language-shell">hermes -c config keys list [CHAIN_ID]
+</code></pre>
+<p>If the command is successful a message similar to the one below will be displayed:</p>
+<pre><code class="language-json">[CHAIN_ID] -&gt; [KEY_NAME] ([ADDRESS])
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="../../commands/global.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="../../commands/setup-and-relaying/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="../../commands/global.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="../../commands/setup-and-relaying/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="../../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="../../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+        <script type="text/javascript" src="../../mermaid.min.js"></script>
+        
+        <script type="text/javascript" src="../../mermaid-init.js"></script>
+        
+
+        
+
+    </body>
+</html>
