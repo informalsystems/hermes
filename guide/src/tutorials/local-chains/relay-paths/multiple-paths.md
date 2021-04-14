@@ -238,7 +238,7 @@ the `start-multi` command.
     - two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
 
       ```shell
-      hermes -c multi-config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+      hermes -c multi-config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
       ```
 
       ```rust
@@ -261,7 +261,7 @@ the `start-multi` command.
     - two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
 
       ```shell
-      hermes -c multi-config.toml tx raw ft-transfer ibc-1 ibc-2 transfer channel-1 9999 1000 -n 2
+      hermes -c multi-config.toml tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 1000 -n 2
       ```
 
       ```rust
