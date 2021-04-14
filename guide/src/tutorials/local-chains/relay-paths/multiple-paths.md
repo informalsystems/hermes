@@ -66,7 +66,7 @@ the `start-multi` command.
     fee_amount = 10
     clock_drift = '5s'
     trusting_period = '14days'
-   
+
     [chains.trust_threshold]
     numerator = '1'
     denominator = '3'
@@ -87,6 +87,10 @@ the `start-multi` command.
     a_port = 'transfer'
     b_port = 'transfer'
     ```
+
+    This configuration three chains `ibc-0`, `ibc-1` and `ibc-2` as well
+    as two connections: one between `ibc-0` and `ibc-1`, and another
+    between `ibc-1` and `ibc-2`, both using the `transfer` ports.
 
 2. Run the `dev-env` script with the parameters below to start three chains:
 

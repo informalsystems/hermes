@@ -17,7 +17,7 @@ For example `07-tendermint-0` is assigned to the first client created on `ibc-1`
 hermes tx raw create-client ibc-1 ibc-0
  ```
 
- ```json
+ ```rust
 Success: CreateClient(
     CreateClient(
         Attributes {
@@ -50,7 +50,7 @@ For example `connection-0` is assigned to the first connection created on `ibc-1
 hermes tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0
 ```
 
-```json
+```rust
 Success: OpenInitConnection(
     OpenInit(
         Attributes {
@@ -86,7 +86,7 @@ For example `channel-0` is assigned to the first channel created on `ibc-1`:
 hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer
 ```
 
-```json
+```rust
 Success: OpenInitChannel(
     OpenInit(
         Attributes {
@@ -119,3 +119,12 @@ In the following tutorials the __`ibc-0`__ and __`ibc-1`__ chains are setup and 
 For clarity, the tutorials run on a setup where the identifiers allocated to the client, connection and channel on __`ibc-0`__ are __`07-tendermint-0`__, __`connection-0`__ and __`channel-0`__ respectively. Identifiers allocated to the client, connection and channel on __`ibc-1`__ are __`07-tendermint-1`__, __`connection-1`__ and __`channel-1`__ respectively.
 
 Before going over the next sections, please ensure the commands above are executed.
+
+### Next Steps
+
+The following sections describe the commands to connect and relay packets between two chains. You can:
+
+1. use a [simplified approach](./relay-paths/index.md) for managing relaying paths, or
+2. use [individual (raw) transactions](./raw/index.md) to create
+   all the necessary chain objects (clients, connections, channels) and relay packets.
+

@@ -166,9 +166,6 @@ $HOME/.hermes/
 
 #### Next Steps
 
-Following sections describe the commands to connect and relay packets between two chains. High level you can:
-
-1. use a [simplified approach](./relay-paths/index.md) for managing relaying paths, or
-2. use [individual (raw) transactions](./raw/index.md) to create
-   all the necessary chain objects (clients, connections, channels) and relay packets.
-
+[The next section](./identifiers.md) describes how identifers for clients, connections and channels
+are allocated, and will walk you through how to pre-allocate some identifers
+to help matching them with their corresponding chains for the purpose of this tutorial.
