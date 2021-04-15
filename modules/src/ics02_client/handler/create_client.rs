@@ -1,11 +1,14 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientEvent, ClientResult};
+use crate::ics02_client::events::Attributes;
+use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
@@ -25,58 +28,66 @@ pub fn process(
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    if ctx.client_state(&msg.client_id()).is_some() {
-        return Err(Kind::ClientAlreadyExists(msg.client_id()).into());
-    }
+    // Construct this client's identifier
+    let id_counter = ctx.client_counter();
+    let client_id = ClientId::new(msg.client_state().client_type(), id_counter).map_err(|e| {
+        Kind::ClientIdentifierConstructor(msg.client_state().client_type(), id_counter).context(e)
+    })?;
 
-    output.log("success: no client state found");
+    output.log(format!(
+        "success: generated new client identifier: {}",
+        client_id
+    ));
 
-    output.emit(ClientEvent::ClientCreated(msg.client_id()));
-
-    Ok(output.with_result(ClientResult::Create(Result {
-        client_id: msg.client_id(),
+    let result = ClientResult::Create(Result {
+        client_id: client_id.clone(),
         client_type: msg.client_state().client_type(),
         client_state: msg.client_state(),
         consensus_state: msg.consensus_state(),
-    })))
+    });
+
+    let event_attributes = Attributes {
+        client_id,
+        ..Default::default()
+    };
+    output.emit(IbcEvent::CreateClient(event_attributes.into()));
+
+    Ok(output.with_result(result))
 }
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use std::convert::TryInto;
     use std::time::Duration;
 
-    use tendermint_light_client::types::TrustThreshold;
+    use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
+    use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+    use crate::ics02_client::client_consensus::AnyConsensusState;
+    use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::client_type::ClientType;
-    use crate::ics02_client::error::Kind;
-    use crate::ics02_client::handler::{dispatch, ClientEvent, ClientResult};
+    use crate::ics02_client::handler::{dispatch, ClientResult};
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
     use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
+    use crate::test_utils::get_dummy_account_id;
     use crate::Height;
-
-    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::test_utils::{default_consensus_params, get_dummy_account_id};
-    use std::convert::TryInto;
 
     #[test]
     fn test_create_client_ok() {
-        let client_id = ClientId::from_str("mockclient").unwrap();
         let ctx = MockContext::default();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 42);
 
         let msg = MsgCreateAnyClient::new(
-            client_id,
-            MockClientState(MockHeader(height)).into(),
-            MockConsensusState(MockHeader(height)).into(),
+            MockClientState(MockHeader::new(height)).into(),
+            MockConsensusState(MockHeader::new(height)).into(),
             signer,
         )
         .unwrap();
@@ -85,22 +96,26 @@ mod tests {
 
         match output {
             Ok(HandlerOutput {
-                result,
-                events,
-                log,
-            }) => match result {
-                ClientResult::Create(create_result) => {
-                    assert_eq!(create_result.client_type, ClientType::Mock);
-                    assert_eq!(
-                        events,
-                        vec![ClientEvent::ClientCreated(msg.client_id()).into()]
-                    );
-                    assert_eq!(log, vec!["success: no client state found".to_string(),]);
+                result, mut events, ..
+            }) => {
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
+                assert!(
+                    matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                );
+                match result {
+                    ClientResult::Create(create_result) => {
+                        assert_eq!(create_result.client_type, ClientType::Mock);
+                        assert_eq!(create_result.client_id, expected_client_id);
+                        assert_eq!(create_result.client_state, msg.client_state());
+                        assert_eq!(create_result.consensus_state, msg.consensus_state());
+                    }
+                    _ => {
+                        panic!("unexpected result type: expected ClientResult::CreateResult!");
+                    }
                 }
-                _ => {
-                    panic!("unexpected result type: expected ClientResult::CreateResult!");
-                }
-            },
+            }
             Err(err) => {
                 panic!("unexpected error: {}", err);
             }
@@ -108,47 +123,8 @@ mod tests {
     }
 
     #[test]
-    fn test_create_client_existing_client_state() {
-        let client_id = ClientId::from_str("mockclient").unwrap();
-        let signer = get_dummy_account_id();
-        let height = Height::new(0, 30);
-
-        let ctx = MockContext::default().with_client_parametrized(
-            &client_id,
-            height,
-            Some(ClientType::Mock),
-            Some(height),
-        );
-        let height = Height::new(0, 30);
-
-        let msg = MsgCreateAnyClient::new(
-            client_id,
-            MockClientState(MockHeader(Height {
-                version_height: 42,
-                ..height
-            }))
-            .into(),
-            MockConsensusState(MockHeader(Height {
-                version_height: 42,
-                ..height
-            }))
-            .into(),
-            signer,
-        )
-        .unwrap();
-
-        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
-
-        if let Err(err) = output {
-            assert_eq!(err.kind(), &Kind::ClientAlreadyExists(msg.client_id()));
-        } else {
-            panic!("expected an error");
-        }
-    }
-
-    #[test]
     fn test_create_client_ok_multiple() {
-        let existing_client_id = ClientId::from_str("existingmockclient").unwrap();
+        let existing_client_id = ClientId::default();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 80);
 
@@ -156,44 +132,41 @@ mod tests {
 
         let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
-                "newmockclient1".parse().unwrap(),
-                MockClientState(MockHeader(Height {
-                    version_height: 42,
+                MockClientState(MockHeader::new(Height {
+                    revision_height: 42,
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader(Height {
-                    version_height: 42,
+                MockConsensusState(MockHeader::new(Height {
+                    revision_height: 42,
                     ..height
                 }))
                 .into(),
-                signer,
+                signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                "newmockclient2".parse().unwrap(),
-                MockClientState(MockHeader(Height {
-                    version_height: 42,
+                MockClientState(MockHeader::new(Height {
+                    revision_height: 42,
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader(Height {
-                    version_height: 42,
+                MockConsensusState(MockHeader::new(Height {
+                    revision_height: 42,
                     ..height
                 }))
                 .into(),
-                signer,
+                signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                "newmockclient3".parse().unwrap(),
-                MockClientState(MockHeader(Height {
-                    version_height: 50,
+                MockClientState(MockHeader::new(Height {
+                    revision_height: 50,
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader(Height {
-                    version_height: 50,
+                MockConsensusState(MockHeader::new(Height {
+                    revision_height: 50,
                     ..height
                 }))
                 .into(),
@@ -204,27 +177,35 @@ mod tests {
         .into_iter()
         .collect();
 
+        // The expected client id that will be generated will be identical to "9999-mock-0" for all
+        // tests. This is because we're not persisting any client results (which is done via the
+        // tests for `ics26_routing::dispatch`.
+        let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
+
         for msg in create_client_msgs {
             let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {
-                    result,
-                    events,
-                    log,
-                }) => match result {
-                    ClientResult::Create(create_res) => {
-                        assert_eq!(create_res.client_type, msg.client_state().client_type());
-                        assert_eq!(
-                            events,
-                            vec![ClientEvent::ClientCreated(msg.client_id()).into()]
-                        );
-                        assert_eq!(log, vec!["success: no client state found".to_string(),]);
+                    result, mut events, ..
+                }) => {
+                    assert_eq!(events.len(), 1);
+                    let event = events.pop().unwrap();
+                    assert!(
+                        matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                    );
+                    match result {
+                        ClientResult::Create(create_res) => {
+                            assert_eq!(create_res.client_type, msg.client_state().client_type());
+                            assert_eq!(create_res.client_id, expected_client_id);
+                            assert_eq!(create_res.client_state, msg.client_state());
+                            assert_eq!(create_res.consensus_state, msg.consensus_state());
+                        }
+                        _ => {
+                            panic!("expected result of type ClientResult::CreateResult");
+                        }
                     }
-                    _ => {
-                        panic!("expected result of type ClientResult::CreateResult");
-                    }
-                },
+                }
                 Err(err) => {
                     panic!("unexpected error: {}", err);
                 }
@@ -234,14 +215,14 @@ mod tests {
 
     #[test]
     fn test_tm_create_client_ok() {
-        let client_id = ClientId::from_str("Tendermint").unwrap();
         let signer = get_dummy_account_id();
 
         let ctx = MockContext::default();
 
         let tm_header = get_dummy_tendermint_header();
+
         let tm_client_state = AnyClientState::Tendermint(ClientState {
-            chain_id: tm_header.chain_id.to_string(),
+            chain_id: tm_header.chain_id.clone().into(),
             trust_level: TrustThreshold {
                 numerator: 1,
                 denominator: 3,
@@ -250,15 +231,13 @@ mod tests {
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
             latest_height: Height::new(0, u64::from(tm_header.height)),
-            consensus_params: default_consensus_params(),
             frozen_height: Height::zero(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
-            upgrade_path: "".to_string(),
+            upgrade_path: vec!["".to_string()],
         });
 
         let msg = MsgCreateAnyClient::new(
-            client_id,
             tm_client_state,
             AnyConsensusState::Tendermint(tm_header.try_into().unwrap()),
             signer,
@@ -269,22 +248,26 @@ mod tests {
 
         match output {
             Ok(HandlerOutput {
-                result,
-                events,
-                log,
-            }) => match result {
-                ClientResult::Create(create_res) => {
-                    assert_eq!(create_res.client_type, ClientType::Tendermint);
-                    assert_eq!(
-                        events,
-                        vec![ClientEvent::ClientCreated(msg.client_id()).into()]
-                    );
-                    assert_eq!(log, vec!["success: no client state found".to_string(),]);
+                result, mut events, ..
+            }) => {
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                let expected_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+                assert!(
+                    matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                );
+                match result {
+                    ClientResult::Create(create_res) => {
+                        assert_eq!(create_res.client_type, ClientType::Tendermint);
+                        assert_eq!(create_res.client_id, expected_client_id);
+                        assert_eq!(create_res.client_state, msg.client_state());
+                        assert_eq!(create_res.consensus_state, msg.consensus_state());
+                    }
+                    _ => {
+                        panic!("expected result of type ClientResult::CreateResult");
+                    }
                 }
-                _ => {
-                    panic!("expected result of type ClientResult::CreateResult");
-                }
-            },
+            }
             Err(err) => {
                 panic!("unexpected error: {}", err);
             }

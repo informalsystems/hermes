@@ -1,17 +1,18 @@
 //! Host chain types and methods, used by context mock.
 
-use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
+use std::convert::TryFrom;
+
+use tendermint::chain::Id as TMChainId;
+use tendermint_testgen::light_block::TmLightBlock;
+use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
+
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::header::AnyHeader;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use crate::ics07_tendermint::header::Header as TMHeader;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::Height;
-
-use tendermint::chain::Id as TMChainId;
-use tendermint_testgen::light_block::TMLightBlock;
-use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
-
-use std::convert::TryFrom;
 
 /// Defines the different types of host chains that a mock context can emulate.
 /// The variants are as follows:
@@ -29,7 +30,7 @@ pub enum HostType {
 #[derive(Clone, Debug)]
 pub enum HostBlock {
     Mock(MockHeader),
-    SyntheticTendermint(Box<TMLightBlock>),
+    SyntheticTendermint(Box<TmLightBlock>),
 }
 
 impl HostBlock {
@@ -47,14 +48,17 @@ impl HostBlock {
     /// Generates a new block at `height` for the given chain identifier and chain type.
     pub fn generate_block(chain_id: ChainId, chain_type: HostType, height: u64) -> HostBlock {
         match chain_type {
-            HostType::Mock => HostBlock::Mock(MockHeader(Height::new(chain_id.version(), height))),
+            HostType::Mock => HostBlock::Mock(MockHeader {
+                height: Height::new(chain_id.version(), height),
+                timestamp: 1,
+            }),
             HostType::SyntheticTendermint => {
                 HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))
             }
         }
     }
 
-    pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TMLightBlock {
+    pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
         let mut block = TestgenLightBlock::new_default(height).generate().unwrap();
         block.signed_header.header.chain_id = TMChainId::try_from(chain_id.to_string()).unwrap();
 
@@ -62,8 +66,8 @@ impl HostBlock {
     }
 }
 
-impl From<TMLightBlock> for AnyConsensusState {
-    fn from(light_block: TMLightBlock) -> Self {
+impl From<TmLightBlock> for AnyConsensusState {
+    fn from(light_block: TmLightBlock) -> Self {
         let cs = TMConsensusState::from(light_block.signed_header.header);
         AnyConsensusState::Tendermint(cs)
     }
@@ -90,8 +94,8 @@ impl From<HostBlock> for AnyHeader {
     }
 }
 
-impl From<TMLightBlock> for TMHeader {
-    fn from(light_block: TMLightBlock) -> Self {
+impl From<TmLightBlock> for TMHeader {
+    fn from(light_block: TmLightBlock) -> Self {
         // TODO: This conversion is incorrect for `trusted_height` and `trusted_validator_set`.
         TMHeader {
             signed_header: light_block.signed_header,

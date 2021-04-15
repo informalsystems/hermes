@@ -1,19 +1,17 @@
 [global]
-timeout = '10s'
 strategy = 'naive'
+log_level = 'error' # valid options: 'error', 'warn', 'info', 'debug', 'trace'
 
 [[chains]]
 id = 'ibc-0'
-rpc_addr = 'tcp://localhost:26657'
-grpc_addr = 'tcp://localhost:9090'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://127.0.0.1:26657/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-
-client_ids = [
-    'cla1',
-    'cla2',
-]
+client_ids = ['cla1', 'cla2']
 gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'
@@ -22,22 +20,12 @@ trusting_period = '14days'
 numerator = '1'
 denominator = '3'
 
-[chains.peers]
-primary = 'E0DE6C540C65FC9059660A7A8535F70048A94539'
-
-[[chains.peers.light_clients]]
-peer_id = 'E0DE6C540C65FC9059660A7A8535F70048A94539'
-address = 'tcp://localhost:26657'
-trusted_header_hash = '169F8F6318B8FAABDBA128AD1689E238566B69DDBD2B36F1911C0DFCA73FD401'
-trusted_height = '7806'
-
-[chains.peers.light_clients.store]
-type = 'memory'
-
 [[chains]]
 id = 'ibc-1'
-rpc_addr = 'tcp://localhost:26557'
-grpc_addr = 'tcp://localhost:9091'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://127.0.0.1:26657/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
@@ -49,15 +37,3 @@ trusting_period = '14days'
 [chains.trust_threshold]
 numerator = '1'
 denominator = '3'
-
-[chains.peers]
-primary = '356DB878F398BA707DBE69950067C8E6471D8948'
-
-[[chains.peers.light_clients]]
-peer_id = '356DB878F398BA707DBE69950067C8E6471D8948'
-address = 'tcp://localhost:26557'
-trusted_header_hash = 'CC291E79B2E2068984EB13BBF420B4F4AE95357E25B9BA0A30CA26FF27AF3C75'
-trusted_height = '7741'
-
-[chains.peers.light_clients.store]
-type = 'memory'

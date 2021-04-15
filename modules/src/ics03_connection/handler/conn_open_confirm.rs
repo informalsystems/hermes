@@ -1,12 +1,13 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::verify_proofs;
-use crate::ics03_connection::handler::ConnectionEvent::ConnOpenConfirm;
-use crate::ics03_connection::handler::ConnectionResult;
+use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 
 pub(crate) fn process(
@@ -47,16 +48,11 @@ pub(crate) fn process(
             ctx.commitment_prefix(),          // Local commitment prefix.
         ),
         new_conn_end.versions(),
-    )?;
+        new_conn_end.delay_period(),
+    );
+
     // 2. Pass the details to the verification function.
-    verify_proofs(
-        ctx,
-        msg.connection_id(),
-        None,
-        &new_conn_end,
-        &expected_conn,
-        msg.proofs(),
-    )?;
+    verify_proofs(ctx, None, &new_conn_end, &expected_conn, msg.proofs())?;
 
     output.log("success: connection verification passed");
 
@@ -65,9 +61,15 @@ pub(crate) fn process(
 
     let result = ConnectionResult {
         connection_id: msg.connection_id().clone(),
+        connection_id_state: ConnectionIdState::Reused,
         connection_end: new_conn_end,
     };
-    output.emit(ConnOpenConfirm(result.clone()));
+
+    let event_attributes = Attributes {
+        connection_id: Some(result.connection_id.clone()),
+        ..Default::default()
+    };
+    output.emit(IbcEvent::OpenConfirmConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -76,12 +78,13 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
+    use std::time::Duration;
 
-    use crate::handler::EventType;
+    use crate::events::IbcEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
+    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_raw_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
@@ -100,7 +103,7 @@ mod tests {
 
         let client_id = ClientId::from_str("mock_clientid").unwrap();
         let msg_confirm =
-            MsgConnectionOpenConfirm::try_from(get_dummy_msg_conn_open_confirm()).unwrap();
+            MsgConnectionOpenConfirm::try_from(get_dummy_raw_msg_conn_open_confirm()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
             Some(msg_confirm.connection_id().clone()),
@@ -114,8 +117,8 @@ mod tests {
             client_id.clone(),
             counterparty,
             context.get_compatible_versions(),
-        )
-        .unwrap();
+            Duration::from_secs(0),
+        );
 
         let mut correct_conn_end = incorrect_conn_end_state.clone();
         correct_conn_end.set_state(State::TryOpen);
@@ -168,14 +171,10 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have OPEN state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, msg_confirm.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(
-                            e.tpe,
-                            EventType::Custom("connection_open_confirm".to_string())
-                        );
+                        assert!(matches!(e, &IbcEvent::OpenConfirmConnection(_)));
                     }
                 }
                 Err(e) => {

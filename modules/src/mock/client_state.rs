@@ -1,17 +1,19 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+use serde::Serialize;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
+use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::error::Kind;
-use crate::ics02_client::state::{ClientState, ConsensusState};
+use crate::ics02_client::error::Kind as ClientKind;
 use crate::ics23_commitment::commitment::CommitmentRoot;
+use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::Height;
 
@@ -32,14 +34,14 @@ pub struct MockClientRecord {
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
 // TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct MockClientState(pub MockHeader);
 
 impl Protobuf<RawMockClientState> for MockClientState {}
 
 impl MockClientState {
     pub fn latest_height(&self) -> Height {
-        (self.0).0
+        (self.0).height
     }
 }
 
@@ -62,13 +64,14 @@ impl From<MockClientState> for RawMockClientState {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
+                timestamp: (value.0).timestamp,
             }),
         }
     }
 }
 
 impl ClientState for MockClientState {
-    fn chain_id(&self) -> String {
+    fn chain_id(&self) -> ChainId {
         todo!()
     }
 
@@ -96,8 +99,14 @@ impl From<MockConsensusState> for MockClientState {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct MockConsensusState(pub MockHeader);
+
+impl MockConsensusState {
+    pub fn timestamp(&self) -> u64 {
+        (self.0).timestamp
+    }
+}
 
 impl Protobuf<RawMockConsensusState> for MockConsensusState {}
 
@@ -107,7 +116,7 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
     fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
         let raw_header = raw
             .header
-            .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing header"))?;
+            .ok_or_else(|| ClientKind::InvalidRawConsensusState.context("missing header"))?;
 
         Ok(Self(MockHeader::try_from(raw_header)?))
     }
@@ -118,6 +127,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
+                timestamp: (value.0).timestamp,
             }),
         }
     }

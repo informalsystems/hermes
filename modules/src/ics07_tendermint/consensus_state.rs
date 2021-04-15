@@ -1,19 +1,21 @@
-use chrono::{TimeZone, Utc};
 use std::convert::TryFrom;
+use std::time::SystemTime;
+
+use chrono::{TimeZone, Utc};
+use prost_types::Timestamp;
+use serde::Serialize;
+use tendermint::{hash::Algorithm, time::Time, Hash};
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
-use tendermint::time::Time;
-use tendermint::Hash;
-use tendermint_proto::Protobuf;
-
-use crate::ics02_client::{client_def::AnyConsensusState, client_type::ClientType};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::CommitmentRoot;
-use tendermint::hash::Algorithm;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusState {
     pub timestamp: Time,
     pub root: CommitmentRoot,
@@ -30,7 +32,7 @@ impl ConsensusState {
     }
 }
 
-impl crate::ics02_client::state::ConsensusState for ConsensusState {
+impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
@@ -76,8 +78,10 @@ impl TryFrom<RawConsensusState> for ConsensusState {
 impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
         RawConsensusState {
-            timestamp: Some(value.timestamp.to_system_time().unwrap().into()),
-            root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot { hash: value.root.0 }),
+            timestamp: Some(Timestamp::from(SystemTime::from(value.timestamp))),
+            root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot {
+                hash: value.root.into_vec(),
+            }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
         }
     }
@@ -101,8 +105,9 @@ impl From<Header> for ConsensusState {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::test_serialization_roundtrip;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
+
+    use crate::test::test_serialization_roundtrip;
 
     #[test]
     fn serialization_roundtrip_no_proof() {

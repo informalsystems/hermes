@@ -1,16 +1,17 @@
 ----------------- MODULE ICS20FungibleTokenTransferHandlers ----------------
 
-EXTENDS Integers, FiniteSets, Sequences, Bank, IBCTokenTransferDefinitions
-
 (***************************************************************************
  This module contains definitions of operators that are used to handle 
- ICS20 packet datagrams
+ ICS20 packet datagrams.
  ***************************************************************************)
+
+EXTENDS Integers, FiniteSets, Sequences, Bank, IBCTokenTransferDefinitions
 
 \* create outgoing packet data
 \*      - accounts is the map of bank accounts
 \*      - escrowAccounts is the map of escrow accounts
 \*      - sender, receiver are chain IDs (used as addresses)
+\* @type: (ACCOUNT -> Int, ACCOUNT -> Int, Seq(Str), Int, Str, Str) => [denomination: Seq(Str), amount: Int, sender: Str, receiver: Str];
 CreateOutgoingPacketData(accounts, escrowAccounts, denomination, amount, sender, receiver) ==
     \* sending chain is source if the denomination is of length 1  
     \* or if the denomination is not prefixed by the sender's port and channel ID  
@@ -63,6 +64,9 @@ CreateOutgoingPacketData(accounts, escrowAccounts, denomination, amount, sender,
               ] 
 
 \* receive an ICS20 packet
+(* @type: (CHAINSTORE, ACCOUNT -> Int, ACCOUNT -> Int, PACKET, Int) => 
+            [packetAck: Bool, accounts: ACCOUNT -> Int, escrowAccounts: ACCOUNT -> Int, error: Bool];
+*)
 OnPacketRecv(chain, accounts, escrowAccounts, packet, maxBalance) ==
     \* get packet data and denomination
     LET data == packet.data IN
@@ -124,6 +128,9 @@ OnPacketRecv(chain, accounts, escrowAccounts, packet, maxBalance) ==
               ]    
                 
 \* refund tokens on unsuccessful ack
+(* @type: (ACCOUNT -> Int, ACCOUNT -> Int, PACKET, Int) => 
+            [accounts: ACCOUNT -> Int, escrowAccounts: ACCOUNT -> Int];
+*)
 RefundTokens(accounts, escrowAccounts, packet, maxBalance) ==
     \* get packet data and denomination
     LET data == packet.data IN
@@ -189,5 +196,5 @@ OnTimeoutPacket(accounts, escrowAccounts, packet, maxBalance) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 12:24:28 CET 2020 by ilinastoilkovska
+\* Last modified Wed Apr 14 15:37:37 CEST 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:02:01 CEST 2020 by ilinastoilkovska

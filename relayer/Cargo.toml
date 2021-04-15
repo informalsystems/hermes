@@ -1,58 +1,74 @@
 [package]
-name = "relayer"
-version = "0.0.5"
-edition = "2018"
-authors = [
-  "Informal Systems <hello@informal.systems>"
-]
+name       = "ibc-relayer"
+version    = "0.2.0"
+edition    = "2018"
+license    = "Apache-2.0"
+readme     = "README.md"
+keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository = "https://github.com/informalsystems/ibc-rs"
+authors    = ["Informal Systems <hello@informal.systems>"]
+
+description = """
+    Implementation of an IBC Relayer in Rust, as a library.
+"""
+
+[features]
+profiling = []
 
 [dependencies]
-ibc = { path = "../modules" }
-ibc-proto = { version = "0.5.0", path = "../proto" }
+ibc       = { version = "0.2.0", path = "../modules" }
+ibc-proto = { version = "0.8.0", path = "../proto" }
+
+subtle-encoding = "0.5"
 anomaly = "0.2.0"
-async-trait = "0.1.24"
+async-trait = "0.1.48"
 humantime-serde = "1.0.0"
-serde = "1.0.97"
+serde = "1.0.125"
 serde_cbor = "0.11.1"
 serde_derive = "1.0"
 sled = { version = "0.34.4", features = ["no_metrics", "no_logs"] }
-thiserror = "1.0.11"
+thiserror = "1.0.24"
 toml = "0.5"
 tracing = "0.1.13"
-tokio = { version = "0.2", features = ["rt-core", "time", "stream", "sync"] }
+tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
-bytes = "0.6.0"
-prost = "0.6.1"
-prost-types = { version = "0.6.1" }
-futures = "0.3.5"
+bytes = "1.0.0"
+prost = "0.7"
+prost-types = "0.7"
+futures = "0.3.14"
 retry = "1.1.0"
-crossbeam-channel = "0.5.0"
-k256 = { version = "0.5.6", features = ["ecdsa-core", "ecdsa", "sha256"]}
+crossbeam-channel = "0.5.1"
+k256 = { version = "0.7.1", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
-bitcoin = { version= "0.25"}
-bitcoin-wallet = "1.1.0"
+bitcoin = { version = "=0.26", features = ["use-serde"] }
+tiny-bip39 = "0.8.0"
 hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
-rust-crypto = "0.2.36"
-bech32 = "0.7.2"
-itertools = "0.9.0"
+sha2 = "0.9.3"
+ripemd160 = "0.9.1"
+bech32 = "0.8.0"
+itertools = "0.10.0"
 dyn-clonable = "0.9.0"
-tonic = "0.3.1"
+tonic = "0.4"
 dirs-next = "2.0.0"
+dyn-clone = "1.0.3"
 
 [dependencies.tendermint]
-version = "=0.17.0-rc3"
+version = "=0.19.0"
 
 [dependencies.tendermint-rpc]
-version = "=0.17.0-rc3"
+version = "=0.19.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.17.0-rc3"
+version = "=0.19.0"
+features = ["unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.17.0-rc3"
+version = "=0.19.0"
 
 [dev-dependencies]
 serial_test = "0.5.0"
-ibc = { path = "../modules", features = [ "mocks" ] }
-tendermint-testgen = { version = "0.17.0-rc3" }
+ibc = { version = "0.2.0", path = "../modules", features = ["mocks"] }
+
+# Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "=0.19.0" }

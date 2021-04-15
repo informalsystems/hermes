@@ -1,66 +1,62 @@
 use std::convert::{TryFrom, TryInto};
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
+
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
 ///
 /// Message definition for packet acknowledgements.
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgAcknowledgement {
-    packet: Packet,
-    acknowledgement: Vec<u8>,
-    proofs: Proofs,
-    signer: AccountId,
+    pub packet: Packet,
+    pub acknowledgement: Vec<u8>, // TODO(romac): Introduce a newtype for this
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgAcknowledgement {
-    // todo: Constructor not used yet.
-    #[allow(dead_code, unreachable_code, unused_variables)]
-    fn new(
+    pub fn new(
         packet: Packet,
         acknowledgement: Vec<u8>,
-        proof: CommitmentProof,
-        proof_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgAcknowledgement, Error> {
-        if acknowledgement.len() > 100 {
-            return Err(Kind::AcknowledgementTooLong.into());
-        }
-
-        Ok(Self {
-            packet: todo!(),
+        proofs: Proofs,
+        signer: Signer,
+    ) -> MsgAcknowledgement {
+        Self {
+            packet,
             acknowledgement,
-            proofs: Proofs::new(proof, None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+            proofs,
             signer,
-        })
+        }
+    }
+
+    pub fn acknowledgement(&self) -> &Vec<u8> {
+        &self.acknowledgement
+    }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
     }
 }
 
 impl Msg for MsgAcknowledgement {
     type ValidationError = Error;
+    type Raw = RawMsgAcknowledgement;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -70,11 +66,9 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgAcknowledgement) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
-            raw_msg.proof.into(),
+            raw_msg.proof_acked.into(),
+            None,
             None,
             None,
             raw_msg
@@ -92,7 +86,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement: raw_msg.acknowledgement,
-            signer,
+            signer: raw_msg.signer.into(),
             proofs,
         })
     }
@@ -103,15 +97,15 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
         RawMsgAcknowledgement {
             packet: Some(domain_msg.packet.into()),
             acknowledgement: domain_msg.acknowledgement,
-            proof: domain_msg.proofs.object_proof().clone().into(),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
             proof_height: Some(domain_msg.proofs.height().into()),
+            proof_acked: domain_msg.proofs.object_proof().clone().into(),
         }
     }
 }
 
 #[cfg(test)]
-mod test_util {
+pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
@@ -122,12 +116,12 @@ mod test_util {
     /// The `height` parametrizes both the proof height as well as the timeout height.
     pub fn get_dummy_raw_msg_acknowledgement(height: u64) -> RawMsgAcknowledgement {
         RawMsgAcknowledgement {
-            packet: Some(get_dummy_raw_packet(height)),
+            packet: Some(get_dummy_raw_packet(height, 1)),
             acknowledgement: get_dummy_proof(),
-            proof: get_dummy_proof(),
+            proof_acked: get_dummy_proof(),
             proof_height: Some(RawHeight {
-                version_number: 0,
-                version_height: height,
+                revision_number: 0,
+                revision_height: height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -136,7 +130,7 @@ mod test_util {
 
 #[cfg(test)]
 mod test {
-    use std::convert::{TryFrom, TryInto};
+    use std::convert::TryInto;
 
     use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 
@@ -170,14 +164,6 @@ mod test {
                 want_pass: false,
             },
             Test {
-                name: "Missing proof".to_string(),
-                raw: RawMsgAcknowledgement {
-                    proof: vec![],
-                    ..default_raw_msg.clone()
-                },
-                want_pass: false,
-            },
-            Test {
                 name: "Missing proof height".to_string(),
                 raw: RawMsgAcknowledgement {
                     proof_height: None,
@@ -186,9 +172,17 @@ mod test {
                 want_pass: false,
             },
             Test {
-                name: "Missing signer".to_string(),
+                name: "Empty signer".to_string(),
                 raw: RawMsgAcknowledgement {
                     signer: "".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Empty proof acked".to_string(),
+                raw: RawMsgAcknowledgement {
+                    proof_acked: vec![],
                     ..default_raw_msg
                 },
                 want_pass: false,
@@ -207,15 +201,5 @@ mod test {
                 res_msg.err()
             );
         }
-    }
-
-    #[test]
-    fn to_and_from() {
-        let raw = get_dummy_raw_msg_acknowledgement(15);
-        let msg = MsgAcknowledgement::try_from(raw.clone()).unwrap();
-        let raw_back = RawMsgAcknowledgement::from(msg.clone());
-        let msg_back = MsgAcknowledgement::try_from(raw_back.clone()).unwrap();
-        assert_eq!(raw, raw_back);
-        assert_eq!(msg, msg_back);
     }
 }

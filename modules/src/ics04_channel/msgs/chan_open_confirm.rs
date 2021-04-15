@@ -1,11 +1,10 @@
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
@@ -21,52 +20,43 @@ pub struct MsgChannelOpenConfirm {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub proofs: Proofs,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
 impl MsgChannelOpenConfirm {
-    #[allow(dead_code)]
-    // TODO: Not in use (yet), hence private.
-    fn new(
-        port_id: String,
-        channel_id: String,
-        proof_ack: CommitmentProof,
-        proofs_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgChannelOpenConfirm, Error> {
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_ack, None, None, proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+    pub fn new(port_id: PortId, channel_id: ChannelId, proofs: Proofs, signer: Signer) -> Self {
+        Self {
+            port_id,
+            channel_id,
+            proofs,
             signer,
-        })
+        }
+    }
+}
+
+impl MsgChannelOpenConfirm {
+    /// Getter: borrow the `port_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
     }
 }
 
 impl Msg for MsgChannelOpenConfirm {
     type ValidationError = Error;
+    type Raw = RawMsgChannelOpenConfirm;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -76,11 +66,9 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelOpenConfirm) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_ack.into(),
+            None,
             None,
             None,
             raw_msg
@@ -101,7 +89,7 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs,
-            signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -113,7 +101,7 @@ impl From<MsgChannelOpenConfirm> for RawMsgChannelOpenConfirm {
             channel_id: domain_msg.channel_id.to_string(),
             proof_ack: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
@@ -122,18 +110,19 @@ impl From<MsgChannelOpenConfirm> for RawMsgChannelOpenConfirm {
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 
+    use crate::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
 
     /// Returns a dummy `RawMsgChannelOpenConfirm`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_confirm(proof_height: u64) -> RawMsgChannelOpenConfirm {
         RawMsgChannelOpenConfirm {
-            port_id: "port".to_string(),
-            channel_id: "testchannel".to_string(),
+            port_id: PortId::default().to_string(),
+            channel_id: ChannelId::default().to_string(),
             proof_ack: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 1,
-                version_height: proof_height,
+                revision_number: 0,
+                revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -218,8 +207,8 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 raw: RawMsgChannelOpenConfirm {
                     proof_height: Some(Height {
-                        version_number: 0,
-                        version_height: 0,
+                        revision_number: 0,
+                        revision_height: 0,
                     }),
                     ..default_raw_msg.clone()
                 },

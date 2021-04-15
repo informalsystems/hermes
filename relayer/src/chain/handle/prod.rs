@@ -2,51 +2,67 @@ use std::fmt::Debug;
 
 use crossbeam_channel as channel;
 
+use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::query::QueryTxRequest;
 use ibc::{
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+    events::IbcEvent,
+    ics02_client::header::AnyHeader,
     ics03_connection::connection::ConnectionEnd,
+    ics03_connection::version::Version,
     ics04_channel::channel::ChannelEnd,
     ics23_commitment::commitment::CommitmentPrefix,
-    ics23_commitment::merkle::MerkleProof,
     ics24_host::identifier::ChainId,
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::{ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    signer::Signer,
     Height,
 };
-
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::{
-    chain::QueryResponse,
     connection::ConnectionMsgType,
     error::{Error, Kind},
-    keyring::store::KeyEntry,
+    keyring::KeyEntry,
 };
 
-use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
+use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
+    /// Chain identifier
     chain_id: ChainId,
-    sender: channel::Sender<HandleInput>,
+
+    /// The handle's channel for sending requests to the runtime
+    runtime_sender: channel::Sender<ChainRequest>,
 }
 
 impl ProdChainHandle {
-    pub fn new(chain_id: ChainId, sender: channel::Sender<HandleInput>) -> Self {
-        Self { chain_id, sender }
+    pub fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+        Self {
+            chain_id,
+            runtime_sender: sender,
+        }
     }
 
     fn send<F, O>(&self, f: F) -> Result<O, Error>
     where
-        F: FnOnce(ReplyTo<O>) -> HandleInput,
+        F: FnOnce(ReplyTo<O>) -> ChainRequest,
         O: Debug,
     {
         let (sender, receiver) = reply_channel();
         let input = f(sender);
 
-        self.sender
+        self.runtime_sender
             .send(input)
             .map_err(|e| Kind::Channel.context(e))?;
 
@@ -59,67 +75,38 @@ impl ChainHandle for ProdChainHandle {
         self.chain_id.clone()
     }
 
-    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, Error> {
-        self.send(|reply_to| HandleInput::Subscribe { reply_to })
+    fn subscribe(&self) -> Result<Subscription, Error> {
+        self.send(|reply_to| ChainRequest::Subscribe { reply_to })
     }
 
-    fn query(
-        &self,
-        path: ibc::ics24_host::Path,
-        height: Height,
-        prove: bool,
-    ) -> Result<QueryResponse, Error> {
-        self.send(|reply_to| HandleInput::Query {
-            path,
-            height,
-            prove,
-            reply_to,
-        })
-    }
-
-    fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error> {
-        self.send(|reply_to| HandleInput::SendTx {
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error> {
+        self.send(|reply_to| ChainRequest::SendMsgs {
             proto_msgs,
             reply_to,
         })
     }
 
-    // fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
-    //     self.send(|reply_to| HandleInput::GetHeader { height, reply_to })
-    // }
-
-    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {
-        self.send(|reply_to| HandleInput::GetMinimalSet { from, to, reply_to })
-    }
-
-    fn get_signer(&self) -> Result<AccountId, Error> {
-        self.send(|reply_to| HandleInput::Signer { reply_to })
+    fn get_signer(&self) -> Result<Signer, Error> {
+        self.send(|reply_to| ChainRequest::Signer { reply_to })
     }
 
     fn get_key(&self) -> Result<KeyEntry, Error> {
-        self.send(|reply_to| HandleInput::Key { reply_to })
+        self.send(|reply_to| ChainRequest::Key { reply_to })
     }
 
     fn module_version(&self, port_id: &PortId) -> Result<String, Error> {
-        self.send(|reply_to| HandleInput::ModuleVersion {
+        self.send(|reply_to| ChainRequest::ModuleVersion {
             port_id: port_id.clone(),
             reply_to,
         })
     }
 
-    // fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error> {
-    //     self.send(|reply_to| HandleInput::Submit {
-    //         transaction,
-    //         reply_to,
-    //     })
-    // }
-
-    // fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error> {
-    //     self.send(|reply_to| HandleInput::CreatePacket { event, reply_to })
-    // }
-
     fn query_latest_height(&self) -> Result<Height, Error> {
-        self.send(|reply_to| HandleInput::QueryLatestHeight { reply_to })
+        self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
+    }
+
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+        self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })
     }
 
     fn query_client_state(
@@ -127,26 +114,40 @@ impl ChainHandle for ProdChainHandle {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| HandleInput::QueryClientState {
+        self.send(|reply_to| ChainRequest::QueryClientState {
             client_id: client_id.clone(),
             height,
             reply_to,
         })
     }
 
-    // fn query_channel(
-    //     &self,
-    //     port_id: &PortId,
-    //     channel_id: &ChannelId,
-    //     height: ICSHeight,
-    // ) -> Result<ChannelEnd, Error>;
-
-    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        self.send(|reply_to| HandleInput::QueryCommitmentPrefix { reply_to })
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConsensusStates { request, reply_to })
     }
 
-    fn query_compatible_versions(&self) -> Result<Vec<String>, Error> {
-        self.send(|reply_to| HandleInput::QueryCompatibleVersions { reply_to })
+    fn query_upgraded_client_state(
+        &self,
+        height: Height,
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
+        self.send(|reply_to| ChainRequest::QueryUpgradedClientState { height, reply_to })
+    }
+
+    fn query_upgraded_consensus_state(
+        &self,
+        height: Height,
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
+        self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState { height, reply_to })
+    }
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        self.send(|reply_to| ChainRequest::QueryCommitmentPrefix { reply_to })
+    }
+
+    fn query_compatible_versions(&self) -> Result<Vec<Version>, Error> {
+        self.send(|reply_to| ChainRequest::QueryCompatibleVersions { reply_to })
     }
 
     fn query_connection(
@@ -154,11 +155,18 @@ impl ChainHandle for ProdChainHandle {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error> {
-        self.send(|reply_to| HandleInput::QueryConnection {
+        self.send(|reply_to| ChainRequest::QueryConnection {
             connection_id: connection_id.clone(),
             height,
             reply_to,
         })
+    }
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error> {
+        self.send(|reply_to| ChainRequest::QueryNextSequenceReceive { request, reply_to })
     }
 
     fn query_channel(
@@ -167,7 +175,7 @@ impl ChainHandle for ProdChainHandle {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<ChannelEnd, Error> {
-        self.send(|reply_to| HandleInput::QueryChannel {
+        self.send(|reply_to| ChainRequest::QueryChannel {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             height,
@@ -180,7 +188,7 @@ impl ChainHandle for ProdChainHandle {
         client_id: &ClientId,
         height: Height,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.send(|reply_to| HandleInput::ProvenClientState {
+        self.send(|reply_to| ChainRequest::ProvenClientState {
             client_id: client_id.clone(),
             height,
             reply_to,
@@ -192,7 +200,7 @@ impl ChainHandle for ProdChainHandle {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.send(|reply_to| HandleInput::ProvenConnection {
+        self.send(|reply_to| ChainRequest::ProvenConnection {
             connection_id: connection_id.clone(),
             height,
             reply_to,
@@ -205,7 +213,7 @@ impl ChainHandle for ProdChainHandle {
         consensus_height: Height,
         height: Height,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.send(|reply_to| HandleInput::ProvenClientConsensus {
+        self.send(|reply_to| ChainRequest::ProvenClientConsensus {
             client_id: client_id.clone(),
             consensus_height,
             height,
@@ -217,20 +225,44 @@ impl ChainHandle for ProdChainHandle {
         &self,
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
     ) -> Result<AnyHeader, Error> {
-        self.send(|reply_to| HandleInput::BuildHeader {
+        self.send(|reply_to| ChainRequest::BuildHeader {
             trusted_height,
             target_height,
+            client_state,
             reply_to,
         })
     }
 
     fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| HandleInput::BuildClientState { height, reply_to })
+        self.send(|reply_to| ChainRequest::BuildClientState { height, reply_to })
     }
 
-    fn build_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| HandleInput::BuildConsensusState { height, reply_to })
+    fn build_consensus_state(
+        &self,
+        trusted: Height,
+        target: Height,
+        client_state: AnyClientState,
+    ) -> Result<AnyConsensusState, Error> {
+        self.send(|reply_to| ChainRequest::BuildConsensusState {
+            trusted,
+            target,
+            client_state,
+            reply_to,
+        })
+    }
+
+    fn check_misbehaviour(
+        &self,
+        update_event: UpdateClient,
+        client_state: AnyClientState,
+    ) -> Result<Option<AnyMisbehaviour>, Error> {
+        self.send(|reply_to| ChainRequest::BuildMisbehaviour {
+            client_state,
+            update_event,
+            reply_to,
+        })
     }
 
     fn build_connection_proofs_and_client_state(
@@ -241,7 +273,7 @@ impl ChainHandle for ProdChainHandle {
         height: Height,
     ) -> Result<(Option<AnyClientState>, Proofs), Error> {
         self.send(
-            |reply_to| HandleInput::BuildConnectionProofsAndClientState {
+            |reply_to| ChainRequest::BuildConnectionProofsAndClientState {
                 message_type,
                 connection_id: connection_id.clone(),
                 client_id: client_id.clone(),
@@ -257,11 +289,61 @@ impl ChainHandle for ProdChainHandle {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<Proofs, Error> {
-        self.send(|reply_to| HandleInput::BuildChannelProofs {
+        self.send(|reply_to| ChainRequest::BuildChannelProofs {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             height,
             reply_to,
         })
+    }
+
+    fn build_packet_proofs(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        height: Height,
+    ) -> Result<(Vec<u8>, Proofs), Error> {
+        self.send(|reply_to| ChainRequest::BuildPacketProofs {
+            packet_type,
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+            height,
+            reply_to,
+        })
+    }
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketCommitments { request, reply_to })
+    }
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error> {
+        self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })
+    }
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })
+    }
+
+    fn query_unreceived_acknowledgement(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error> {
+        self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
+    }
+
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
     }
 }

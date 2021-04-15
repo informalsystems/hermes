@@ -1,12 +1,15 @@
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
-use crate::ics02_client::header::Header as ICS2Header;
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_def::ClientDef;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics04_channel::channel::ChannelEnd;
+use crate::ics04_channel::packet::Sequence;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::header::Header;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
-use crate::ics24_host::identifier::ClientId;
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::ConnectionId;
+use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,7 +45,7 @@ impl ClientDef for TendermintClient {
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProof,
+        _proof: &CommitmentProofBytes,
         _client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
@@ -55,9 +58,22 @@ impl ClientDef for TendermintClient {
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProof,
-        _connection_id: &ConnectionId,
+        _proof: &CommitmentProofBytes,
+        _connection_id: Option<&ConnectionId>,
         _expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_channel_state(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _expected_channel_end: &ChannelEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }
@@ -69,9 +85,59 @@ impl ClientDef for TendermintClient {
         _root: &CommitmentRoot,
         _prefix: &CommitmentPrefix,
         _client_id: &ClientId,
-        _proof: &CommitmentProof,
+        _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()
+    }
+
+    fn verify_packet_data(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+        _data: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_packet_acknowledgement(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+        _data: Vec<u8>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_next_sequence_recv(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_packet_receipt_absence(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: &Sequence,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
     }
 }

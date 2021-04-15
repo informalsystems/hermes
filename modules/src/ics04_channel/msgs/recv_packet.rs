@@ -1,65 +1,47 @@
 use std::convert::{TryFrom, TryInto};
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
+
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 
 ///
 /// Message definition for the "packet receiving" datagram.
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgRecvPacket {
-    packet: Packet,
-    proofs: Proofs,
-    signer: AccountId,
+    pub packet: Packet,
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgRecvPacket {
-    // todo: Constructor not used yet.
-    #[allow(dead_code, unreachable_code, unused_variables)]
-    fn new(
-        packet: Packet,
-        proof: CommitmentProof,
-        proof_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgRecvPacket, Error> {
-        Ok(Self {
-            packet: todo!(),
-            proofs: Proofs::new(proof, None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+    pub fn new(packet: Packet, proofs: Proofs, signer: Signer) -> MsgRecvPacket {
+        Self {
+            packet,
+            proofs,
             signer,
-        })
-    }
-
-    // returns the base64-encoded bytes used for the
-    // data field when signing the packet
-    pub fn get_data_bytes() -> Vec<u8> {
-        todo!()
+        }
     }
 }
 
 impl Msg for MsgRecvPacket {
     type ValidationError = Error;
+    type Raw = RawMsgRecvPacket;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -69,11 +51,9 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgRecvPacket) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
-            raw_msg.proof.into(),
+            raw_msg.proof_commitment.into(),
+            None,
             None,
             None,
             raw_msg
@@ -91,7 +71,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             proofs,
-            signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -100,15 +80,15 @@ impl From<MsgRecvPacket> for RawMsgRecvPacket {
     fn from(domain_msg: MsgRecvPacket) -> Self {
         RawMsgRecvPacket {
             packet: Some(domain_msg.packet.into()),
-            proof: domain_msg.proofs.object_proof().clone().into(),
+            proof_commitment: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
 
 #[cfg(test)]
-mod test_util {
+pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
@@ -119,11 +99,11 @@ mod test_util {
     /// proof height as well as the timeout height.
     pub fn get_dummy_raw_msg_recv_packet(height: u64) -> RawMsgRecvPacket {
         RawMsgRecvPacket {
-            packet: Some(get_dummy_raw_packet(height)),
-            proof: get_dummy_proof(),
+            packet: Some(get_dummy_raw_packet(height, 9)),
+            proof_commitment: get_dummy_proof(),
             proof_height: Some(RawHeight {
-                version_number: 0,
-                version_height: height,
+                revision_number: 0,
+                revision_height: height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -159,7 +139,7 @@ mod test {
             Test {
                 name: "Missing proof".to_string(),
                 raw: RawMsgRecvPacket {
-                    proof: vec![],
+                    proof_commitment: vec![],
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -173,12 +153,12 @@ mod test {
                 want_pass: false,
             },
             Test {
-                name: "Missing signer".to_string(),
+                name: "Empty signer".to_string(),
                 raw: RawMsgRecvPacket {
                     signer: "".to_string(),
                     ..default_raw_msg
                 },
-                want_pass: false,
+                want_pass: true,
             },
         ];
 

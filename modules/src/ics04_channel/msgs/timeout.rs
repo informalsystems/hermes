@@ -1,62 +1,54 @@
 use std::convert::{TryFrom, TryInto};
 
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::{Packet, Sequence};
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
+
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 
 ///
 /// Message definition for packet timeout domain type.
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgTimeout {
-    packet: Packet,
-    next_sequence_recv: Sequence,
-    proofs: Proofs,
-    signer: AccountId,
+    pub packet: Packet,
+    pub next_sequence_recv: Sequence,
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgTimeout {
-    // todo: Constructor not used yet.
-    #[allow(dead_code, unreachable_code, unused_variables)]
-    fn new(
+    pub fn new(
         packet: Packet,
-        next_sequence_recv: Option<u64>,
-        proof: CommitmentProof,
-        proof_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgTimeout, Error> {
-        Ok(Self {
-            packet: todo!(),
-            next_sequence_recv: todo!(),
-            proofs: Proofs::new(proof, None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+        next_sequence_recv: Sequence,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> MsgTimeout {
+        Self {
+            packet,
+            next_sequence_recv,
+            proofs,
             signer,
-        })
+        }
     }
 }
 
 impl Msg for MsgTimeout {
     type ValidationError = Error;
+    type Raw = RawMsgTimeout;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -66,11 +58,9 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgTimeout) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
-            raw_msg.proof.into(),
+            raw_msg.proof_unreceived.into(),
+            None,
             None,
             None,
             raw_msg
@@ -90,7 +80,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),
-            signer,
+            signer: raw_msg.signer.into(),
             proofs,
         })
     }
@@ -100,16 +90,16 @@ impl From<MsgTimeout> for RawMsgTimeout {
     fn from(domain_msg: MsgTimeout) -> Self {
         RawMsgTimeout {
             packet: Some(domain_msg.packet.into()),
-            proof: domain_msg.proofs.object_proof().clone().into(),
+            proof_unreceived: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             next_sequence_recv: domain_msg.next_sequence_recv.into(),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
 
 #[cfg(test)]
-mod test_util {
+pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
@@ -118,15 +108,15 @@ mod test_util {
 
     /// Returns a dummy `RawMsgTimeout`, for testing only!
     /// The `height` parametrizes both the proof height as well as the timeout height.
-    pub fn get_dummy_raw_msg_timeout(height: u64) -> RawMsgTimeout {
+    pub fn get_dummy_raw_msg_timeout(height: u64, timeout_timestamp: u64) -> RawMsgTimeout {
         RawMsgTimeout {
-            packet: Some(get_dummy_raw_packet(height)),
-            proof: get_dummy_proof(),
+            packet: Some(get_dummy_raw_packet(height, timeout_timestamp)),
+            proof_unreceived: get_dummy_proof(),
             proof_height: Some(RawHeight {
-                version_number: 0,
-                version_height: height,
+                revision_number: 0,
+                revision_height: height,
             }),
-            next_sequence_recv: 0,
+            next_sequence_recv: 1,
             signer: get_dummy_bech32_account(),
         }
     }
@@ -151,7 +141,8 @@ mod test {
         }
 
         let height = 50;
-        let default_raw_msg = get_dummy_raw_msg_timeout(height);
+        let timeout_timestamp = 0;
+        let default_raw_msg = get_dummy_raw_msg_timeout(height, timeout_timestamp);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -170,7 +161,7 @@ mod test {
             Test {
                 name: "Missing proof".to_string(),
                 raw: RawMsgTimeout {
-                    proof: vec![],
+                    proof_unreceived: vec![],
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -184,12 +175,12 @@ mod test {
                 want_pass: false,
             },
             Test {
-                name: "Missing signer".to_string(),
+                name: "Empty signer".to_string(),
                 raw: RawMsgTimeout {
                     signer: "".to_string(),
                     ..default_raw_msg
                 },
-                want_pass: false,
+                want_pass: true,
             },
         ];
 
@@ -209,7 +200,7 @@ mod test {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_raw_msg_timeout(15);
+        let raw = get_dummy_raw_msg_timeout(15, 0);
         let msg = MsgTimeout::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgTimeout::from(msg.clone());
         let msg_back = MsgTimeout::try_from(raw_back.clone()).unwrap();

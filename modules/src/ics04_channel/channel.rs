@@ -1,22 +1,40 @@
-use crate::ics04_channel::error::{self, Error, Kind};
-use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-
-use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
-
-use tendermint_proto::Protobuf;
-
-use anomaly::fail;
 use std::convert::{TryFrom, TryInto};
+use std::fmt;
 use std::str::FromStr;
 
-#[derive(Clone, Debug, PartialEq)]
+use anomaly::fail;
+use serde::{Deserialize, Serialize};
+use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel, Counterparty as RawCounterparty};
+
+use crate::events::IbcEventType;
+use crate::ics02_client::height::Height;
+use crate::ics04_channel::{
+    error::{self, Error, Kind},
+    packet::Sequence,
+};
+use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ChannelEnd {
-    state: State,
-    ordering: Order,
-    remote: Counterparty,
-    connection_hops: Vec<ConnectionId>,
-    version: String,
+    pub state: State,
+    pub ordering: Order,
+    pub remote: Counterparty,
+    pub connection_hops: Vec<ConnectionId>,
+    pub version: String,
+}
+
+impl Default for ChannelEnd {
+    fn default() -> Self {
+        ChannelEnd {
+            state: State::Uninitialized,
+            ordering: Default::default(),
+            remote: Counterparty::default(),
+            connection_hops: vec![],
+            version: "".to_string(),
+        }
+    }
 }
 
 impl Protobuf<RawChannel> for ChannelEnd {}
@@ -26,10 +44,13 @@ impl TryFrom<RawChannel> for ChannelEnd {
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         // Parse the ordering type. Propagate the error, if any, to our caller.
+        let chan_state: State = State::from_i32(value.state)?;
+
+        if chan_state == State::Uninitialized {
+            return Ok(ChannelEnd::default());
+        }
+
         let chan_ordering = Order::from_i32(value.ordering)?;
-
-        let chan_state = State::from_i32(value.state)?;
-
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = value
             .counterparty
@@ -61,7 +82,7 @@ impl From<ChannelEnd> for RawChannel {
         RawChannel {
             state: value.state.clone() as i32,
             ordering: value.ordering as i32,
-            counterparty: Some(value.counterparty().into()),
+            counterparty: Some(value.counterparty().clone().into()),
             connection_hops: value
                 .connection_hops
                 .iter()
@@ -95,6 +116,14 @@ impl ChannelEnd {
         self.state = s;
     }
 
+    pub fn set_version(&mut self, v: String) {
+        self.version = v;
+    }
+
+    pub fn set_counterparty_channel_id(&mut self, c: ChannelId) {
+        self.remote.channel_id = Some(c);
+    }
+
     pub fn state(&self) -> &State {
         &self.state
     }
@@ -103,12 +132,12 @@ impl ChannelEnd {
         &self.ordering
     }
 
-    pub fn counterparty(&self) -> Counterparty {
-        self.remote.clone()
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.remote
     }
 
-    pub fn connection_hops(&self) -> Vec<ConnectionId> {
-        self.connection_hops.clone()
+    pub fn connection_hops(&self) -> &Vec<ConnectionId> {
+        &self.connection_hops
     }
 
     pub fn version(&self) -> String {
@@ -117,9 +146,11 @@ impl ChannelEnd {
 
     pub fn validate_basic(&self) -> Result<(), Error> {
         if self.connection_hops.len() != 1 {
-            return Err(Kind::InvalidConnectionHopsLength
-                .context("validate channel")
-                .into());
+            return Err(
+                Kind::InvalidConnectionHopsLength(1, self.connection_hops.len())
+                    .context("validate channel")
+                    .into(),
+            );
         }
         if self.version().trim() == "" {
             return Err(Kind::InvalidVersion.context("empty version string").into());
@@ -131,12 +162,39 @@ impl ChannelEnd {
     pub fn state_matches(&self, other: &State) -> bool {
         self.state.eq(other)
     }
+
+    /// Helper function to compare the order of this end with another order.
+    pub fn order_matches(&self, other: &Order) -> bool {
+        self.ordering.eq(other)
+    }
+
+    #[allow(clippy::ptr_arg)]
+    pub fn connection_hops_matches(&self, other: &Vec<ConnectionId>) -> bool {
+        self.connection_hops.eq(other)
+    }
+
+    pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
+        self.counterparty().eq(other)
+    }
+
+    pub fn version_matches(&self, other: &str) -> bool {
+        self.version().eq(other)
+    }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
+}
+
+impl Default for Counterparty {
+    fn default() -> Self {
+        Counterparty {
+            port_id: Default::default(),
+            channel_id: None,
+        }
+    }
 }
 
 impl Counterparty {
@@ -192,7 +250,7 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Order {
     None = 0,
     Unordered,
@@ -205,13 +263,19 @@ impl Default for Order {
     }
 }
 
+impl fmt::Display for Order {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 impl Order {
     /// Yields the Order as a string
-    pub fn as_string(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Self::None => "UNINITIALIZED",
-            Self::Unordered => "UNORDERED",
-            Self::Ordered => "ORDERED",
+            Self::Unordered => "ORDER_UNORDERED",
+            Self::Ordered => "ORDER_ORDERED",
         }
     }
 
@@ -230,17 +294,18 @@ impl FromStr for Order {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "UNINITIALIZED" => Ok(Self::None),
-            "UNORDERED" => Ok(Self::Unordered),
-            "ORDERED" => Ok(Self::Ordered),
+        match s.to_lowercase().as_str() {
+            "uninitialized" => Ok(Self::None),
+            "unordered" => Ok(Self::Unordered),
+            "ordered" => Ok(Self::Ordered),
             _ => fail!(error::Kind::UnknownOrderType, s),
         }
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Eq)]
 pub enum State {
+    Uninitialized = 0,
     Init = 1,
     TryOpen = 2,
     Open = 3,
@@ -251,6 +316,7 @@ impl State {
     /// Yields the state as a string
     pub fn as_string(&self) -> &'static str {
         match self {
+            Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
@@ -261,6 +327,7 @@ impl State {
     // Parses the State out from a i32.
     pub fn from_i32(s: i32) -> Result<Self, Error> {
         match s {
+            0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
@@ -268,6 +335,25 @@ impl State {
             _ => fail!(error::Kind::UnknownState, s),
         }
     }
+}
+
+/// Provides a `to_string` method.
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.as_string())
+    }
+}
+
+/// Used for queries and not yet standardized in channel's query.proto
+#[derive(Clone, Debug)]
+pub struct QueryPacketEventDataRequest {
+    pub event_id: IbcEventType,
+    pub source_channel_id: ChannelId,
+    pub source_port_id: PortId,
+    pub destination_channel_id: ChannelId,
+    pub destination_port_id: PortId,
+    pub sequences: Vec<Sequence>,
+    pub height: Height,
 }
 
 /// Version validation, specific for channel (ICS4) opening handshake protocol.
@@ -279,14 +365,17 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 
 #[cfg(test)]
 pub mod test_util {
+
+    use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
     /// Returns a dummy `RawCounterparty`, for testing only!
+    /// Can be optionally parametrized with a specific channel identifier.
     pub fn get_dummy_raw_counterparty() -> RawCounterparty {
         RawCounterparty {
-            port_id: "0123456789".into(),
-            channel_id: "0987654321".into(),
+            port_id: PortId::default().to_string(),
+            channel_id: ChannelId::default().to_string(),
         }
     }
 
@@ -294,23 +383,23 @@ pub mod test_util {
     pub fn get_dummy_raw_channel_end() -> RawChannel {
         RawChannel {
             state: 1,
-            ordering: 0,
+            ordering: 1,
             counterparty: Some(get_dummy_raw_counterparty()),
-            connection_hops: vec![],
-            version: "".to_string(), // The version is not validated.
+            connection_hops: vec![ConnectionId::default().to_string()],
+            version: "ics20".to_string(), // The version is not validated.
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
     use std::str::FromStr;
+
+    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::ics04_channel::channel::ChannelEnd;
-
-    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-    use std::convert::TryFrom;
 
     #[test]
     fn channel_end_try_from_raw() {

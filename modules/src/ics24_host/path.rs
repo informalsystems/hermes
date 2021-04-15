@@ -2,14 +2,28 @@
 /// https://github.com/cosmos/ics/tree/master/spec/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
-use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use std::fmt::{Display, Formatter, Result};
 
-/// IBC Query Path is hard-coded
+use crate::ics04_channel::packet::Sequence;
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+
+/// ABCI Query path for the IBC sub-store
 pub const IBC_QUERY_PATH: &str = "store/ibc/key";
 
+/// ABCI Query path for the upgrade sub-store
+/// ## Note: This is SDK/Tendermint specific!
+pub const SDK_UPGRADE_QUERY_PATH: &str = "store/upgrade/key";
+
+/// ABCI client upgrade keys
+/// - The key identifying the upgraded IBC state within the upgrade sub-store
+const UPGRADED_IBC_STATE: &str = "upgradedIBCState";
+///- The key identifying the upgraded client state
+const UPGRADED_CLIENT_STATE: &str = "upgradedClient";
+/// - The key identifying the upgraded consensus state
+const UPGRADED_CLIENT_CONSENSUS_STATE: &str = "upgradedConsState";
+
 /// The Path enum abstracts out the different sub-paths
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Path {
     ClientType(ClientId),
     ClientState(ClientId),
@@ -28,23 +42,32 @@ pub enum Path {
     Commitments {
         port_id: PortId,
         channel_id: ChannelId,
-        sequence: u64,
+        sequence: Sequence,
     },
     Acks {
         port_id: PortId,
         channel_id: ChannelId,
-        sequence: u64,
+        sequence: Sequence,
     },
+    Receipts {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+    },
+    Upgrade(ClientUpgradePath),
+}
+
+/// Paths that are specific for client upgrades.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ClientUpgradePath {
+    UpgradedClientState(u64),
+    UpgradedClientConsensusState(u64),
 }
 
 impl Path {
     /// Indication if the path is provable.
     pub fn is_provable(&self) -> bool {
-        match &self {
-            Path::ClientConnections(_) => false,
-            Path::Ports(_) => false,
-            _ => true,
-        }
+        !matches!(&self, Path::ClientConnections(_) | Path::Ports(_))
     }
 
     /// into_bytes implementation
@@ -66,7 +89,7 @@ impl Display for Path {
                 height,
             } => write!(
                 f,
-                "clients/{}/consensusState/{}-{}",
+                "clients/{}/consensusStates/{}-{}",
                 client_id, epoch, height
             ),
             Path::ClientConnections(client_id) => write!(f, "clients/{}/connections", client_id),
@@ -77,17 +100,17 @@ impl Display for Path {
             }
             Path::SeqSends(port_id, channel_id) => write!(
                 f,
-                "seqSends/ports/{}/channels/{}/nextSequenceSend",
+                "nextSequenceSend/ports/{}/channels/{}",
                 port_id, channel_id
             ),
             Path::SeqRecvs(port_id, channel_id) => write!(
                 f,
-                "seqRecvs/ports/{}/channels/{}/nextSequenceRecv",
+                "nextSequenceRecv/ports/{}/channels/{}",
                 port_id, channel_id
             ),
             Path::SeqAcks(port_id, channel_id) => write!(
                 f,
-                "seqAcks/ports/{}/channels/{}/nextSequenceAck",
+                "nextSequenceAck/ports/{}/channels/{}",
                 port_id, channel_id
             ),
             Path::Commitments {
@@ -96,7 +119,7 @@ impl Display for Path {
                 sequence,
             } => write!(
                 f,
-                "commitments/ports/{}/channels/{}/packets/{}",
+                "commitments/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
             ),
             Path::Acks {
@@ -105,8 +128,27 @@ impl Display for Path {
                 sequence,
             } => write!(
                 f,
-                "acks/ports/{}/channels/{}/acknowledgements/{}",
+                "acks/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
+            ),
+            Path::Receipts {
+                port_id,
+                channel_id,
+                sequence,
+            } => write!(
+                f,
+                "receipts/ports/{}/channels/{}/sequences/{}",
+                port_id, channel_id, sequence
+            ),
+            Path::Upgrade(ClientUpgradePath::UpgradedClientState(height)) => write!(
+                f,
+                "{}/{}/{}",
+                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_STATE
+            ),
+            Path::Upgrade(ClientUpgradePath::UpgradedClientConsensusState(height)) => write!(
+                f,
+                "{}/{}/{}",
+                UPGRADED_IBC_STATE, height, UPGRADED_CLIENT_CONSENSUS_STATE
             ),
         }
     }

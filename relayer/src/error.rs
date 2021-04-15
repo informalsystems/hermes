@@ -1,8 +1,12 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
-use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
 use thiserror::Error;
+
+use ibc::{
+    ics02_client::client_type::ClientType,
+    ics24_host::identifier::{ChannelId, ConnectionId},
+};
 
 /// An error that can be raised by the relayer.
 pub type Error = anomaly::Error<Kind>;
@@ -18,25 +22,25 @@ pub enum Kind {
     #[error("I/O error")]
     Io,
 
-    /// Poisoned mutex
-    #[error("poisoned mutex")]
-    PoisonedMutex,
-
     /// Invalid configuration
     #[error("Invalid configuration")]
     Config,
 
     /// RPC error (typically raised by the RPC client or the RPC requester)
-    #[error("RPC error")]
-    Rpc,
+    #[error("RPC error to endpoint {0}")]
+    Rpc(tendermint_rpc::Url),
+
+    /// Websocket error (typically raised by the Websocket client)
+    #[error("Websocket error to endpoint {0}")]
+    Websocket(tendermint_rpc::Url),
 
     /// GRPC error (typically raised by the GRPC client or the GRPC requester)
     #[error("GRPC error")]
     Grpc,
 
-    /// Light client error, typically raised by a `Client`
-    #[error("Light client error")]
-    LightClient,
+    /// Light client instance error, typically raised by a `Client`
+    #[error("Light client error for RPC address {0}")]
+    LightClient(String),
 
     /// Trusted store error, raised by instances of `Store`
     #[error("Store error")]
@@ -45,6 +49,10 @@ pub enum Kind {
     /// Event error (raised by the event monitor)
     #[error("Bad Notification")]
     Event,
+
+    /// Missing ClientState in the upgrade CurrentPlan
+    #[error("The upgrade plan specifies no upgraded client state")]
+    EmptyUpgradedClientState,
 
     /// Response does not contain data
     #[error("Empty response value")]
@@ -67,16 +75,20 @@ pub enum Kind {
     BuildClientStateFailure,
 
     /// Create client failure
-    #[error("Failed to create client {0}: {1}")]
-    CreateClient(ClientId, String),
+    #[error("Failed to create client {0}")]
+    CreateClient(String),
+
+    /// Common failures to all connection messages
+    #[error("Failed to build conn open message {0}: {1}")]
+    ConnOpen(ConnectionId, String),
 
     /// Connection open init failure
-    #[error("Failed to build conn open init {0}: {1}")]
-    ConnOpenInit(ConnectionId, String),
+    #[error("Failed to build conn open init {0}")]
+    ConnOpenInit(String),
 
     /// Connection open try failure
-    #[error("Failed to build conn open try {0}: {1}")]
-    ConnOpenTry(ConnectionId, String),
+    #[error("Failed to build conn open try {0}")]
+    ConnOpenTry(String),
 
     /// Connection open ack failure
     #[error("Failed to build conn open ack {0}: {1}")]
@@ -86,13 +98,17 @@ pub enum Kind {
     #[error("Failed to build conn open confirm {0}: {1}")]
     ConnOpenConfirm(ConnectionId, String),
 
+    /// Common failures to all channel messages
+    #[error("Failed to build chan open msg {0}: {1}")]
+    ChanOpen(ChannelId, String),
+
     /// Channel open init failure
-    #[error("Failed to build channel open init {0}: {1}")]
-    ChanOpenInit(ChannelId, String),
+    #[error("Failed to build channel open init {0}")]
+    ChanOpenInit(String),
 
     /// Channel open try failure
-    #[error("Failed to build channel open try {0}: {1}")]
-    ChanOpenTry(ChannelId, String),
+    #[error("Failed to build channel open try {0}")]
+    ChanOpenTry(String),
 
     /// Channel open ack failure
     #[error("Failed to build channel open ack {0}: {1}")]
@@ -102,13 +118,29 @@ pub enum Kind {
     #[error("Failed to build channel open confirm {0}: {1}")]
     ChanOpenConfirm(ChannelId, String),
 
+    /// Packet build failure
+    #[error("Failed to build packet {0}: {1}")]
+    Packet(ChannelId, String),
+
+    /// Packet recv  failure
+    #[error("Failed to build recv packet {0}: {1}")]
+    RecvPacket(ChannelId, String),
+
+    /// Packet acknowledgement failure
+    #[error("Failed to build acknowledge packet {0}: {1}")]
+    AckPacket(ChannelId, String),
+
+    /// Packet timeout  failure
+    #[error("Failed to build timeout packet {0}: {1}")]
+    TimeoutPacket(ChannelId, String),
+
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]
     MessageTransaction(String),
 
     /// Failed query
-    #[error("Bad parameter")]
-    Query,
+    #[error("Query error occurred (failed to finish query for {0})")]
+    Query(String),
 
     /// Keybase related error
     #[error("Keybase error")]
@@ -130,6 +162,21 @@ pub enum Kind {
 
     #[error("the input header is not recognized as a header for this chain")]
     InvalidInputHeader,
+
+    #[error("error raised while submitting the misbehaviour evidence: {0}")]
+    Misbehaviour(String),
+
+    #[error("invalid key address: {0}")]
+    InvalidKeyAddress(String),
+
+    #[error("bech32 encoding failed")]
+    Bech32Encoding(#[from] bech32::Error),
+
+    #[error("client type mismatch: expected '{expected}', got '{got}'")]
+    ClientTypeMismatch {
+        expected: ClientType,
+        got: ClientType,
+    },
 }
 
 impl Kind {

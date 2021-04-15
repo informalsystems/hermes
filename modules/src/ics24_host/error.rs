@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub type ValidationError = anomaly::Error<ValidationKind>;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum ValidationKind {
     #[error("identifier {id} cannot contain separator '/'")]
     ContainsSeparator { id: String },
@@ -24,6 +24,9 @@ pub enum ValidationKind {
 
     #[error("chain identifiers are expected to be in epoch format {id}")]
     ChainIdInvalidFormat { id: String },
+
+    #[error("Invalid channel id in counterparty")]
+    InvalidCounterpartyChannelId,
 }
 
 impl ValidationKind {

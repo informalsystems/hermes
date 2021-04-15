@@ -1,7 +1,7 @@
 # TLA+ specification of the IBC Core protocols
 
 A TLA+ specification of the IBC Core protocols ([ICS02](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-002-client-semantics), [ICS03](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-003-connection-semantics), [ICS04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics), [ICS18](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-018-relayer-algorithms)).
-In particular, the main module is [IBCCore.tla](IBCCore.tla) and models the 
+In particular, the main module is [IBCCore.tla](IBCCore.tla) and models a 
 system consisting of two chains and two relayers. 
 The model allows to express concurrency aspects of a system with multiple (correct) relayers.
 The specification is written in a modular way, in order to facilitate future 
@@ -85,8 +85,6 @@ modules.
 We specify three kinds of properties for the IBC core protocols in the module [IBCCore.tla](IBCCore.tla):
 
 - `IBCSafety`: Bad datagrams are not used to update the chain stores.
-
-- `IBCValidity`: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
 
 - `IBCDelivery`: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
 
@@ -187,24 +185,37 @@ The module `IBCCore.tla` is parameterized by the constants:
  - `ClientDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates client datagrams, 
  - `ConnectionDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates connection datagrams,
  - `ChannelDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates channel datagrams,
+ - `PacketDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates packet datagrams,
  - `MaxHeight`, a natural number denoting the maximal height of the chains,
+ - `MaxVersion`, a natural number denoting the maximal connection / channel version supported,
  - `MaxPacketSeq`, a natural number denoting the maximal packet sequence number,
  - `ChannelOrdering`, a string indicating whether the channels are ordered or unordered 
 
+#### Assigning values to the constants
 
-## Importing the specification into TLA+ toolbox
+The Boolean flags, defined as constants in the module `IBCCore.tla`, allow us to run experiments in different settings. For example, if we set both `ClientDatagramsRelayer1` and `ClientDatagramsRelayer2` to `TRUE` in a TLC model, then the two relayers in the system concurrently create datagrams related to client creation and client update, and the model checker will check the temporal properties related to client datagrams.
+
+Observe that the setting where, for example, `ClientDatagramsRelayer1 = TRUE`, `ConnectionDatagramsRelayer2 = TRUE`, `ChannelDatagramsRelayer1 = TRUE`, `PacketDatagramsRelayer1 = TRUE`, and the remaining boolean flags are `FALSE`, is equivalent to having a single relayer.
+
+### Importing the specification into TLA+ toolbox
 
 To import the specification in the TLA+ toolbox and run TLC:
   - add a new spec in TLA+ toolbox with the root-module file `IBCCore.tla` 
   - create a model
-  - assign a value to the constants
+  - assign a value to the constants (example values can be found in `IBCCore.cfg`)
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
   - add the properties `IBCSafety` and `IBCDelivery`
   - run TLC on the model
-  
-#### Assigning values to the constants in a TLC model
 
-The Boolean flags, defined as constants in the module `IBCCore.tla`, allow us to run experiments in different settings. For example, if we set both `ClientDatagramsRelayer_1` and `ClientDatagramsRelayer_2` to `TRUE` in a TLC model, then the two relayers in the system concurrently create datagrams related to client creation and client update, and the model checker will check the temporal properties related to client datagrams. 
+#### Basic checks with TLC
 
-Observe that the setting where, for example,  `ClientDatagramsRelayer_1 = TRUE`, `ConnectionDatagramsRelayer_2 = TRUE`, `ChannelDatagramsRelayer_1 = TRUE`, and the remaining flags are `FALSE`, is equivalent to  a single relayer, as there is no concurrency in the creation of datagrams between the two relayers. 
+We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 14min and the invariant `IBCInv` in 11min.
+As TLC usually takes longer to check safety and liveness properties, we have not 
+conducted extensive experiments to check `IBCSafety` and `IBCDelivery` with TLC yet.
 
+#### Apalache
+
+The specification contains type annotations for the 
+model checker [Apalache](https://github.com/informalsystems/apalache).
+The specification passes the type check using the type checker [Snowcat](https://apalache.informal.systems/docs/apalache/typechecker-snowcat.html) 
+integrated in Apalache.  

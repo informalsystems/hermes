@@ -1,5 +1,8 @@
-use super::error;
+use std::fmt;
+
 use serde_derive::{Deserialize, Serialize};
+
+use super::error;
 
 /// Type of the client, depending on the specific consensus algorithm.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -14,11 +17,17 @@ impl ClientType {
     /// Yields the identifier of this client type as a string
     pub fn as_string(&self) -> &'static str {
         match self {
-            Self::Tendermint => "Tendermint",
+            Self::Tendermint => "07-tendermint",
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock => "mock",
+            Self::Mock => "9999-mock",
         }
+    }
+}
+
+impl fmt::Display for ClientType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ClientType({})", self.as_string())
     }
 }
 
@@ -27,7 +36,7 @@ impl std::str::FromStr for ClientType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Tendermint" => Ok(Self::Tendermint),
+            "07-tendermint" => Ok(Self::Tendermint),
 
             #[cfg(any(test, feature = "mocks"))]
             "mock" => Ok(Self::Mock),
@@ -39,12 +48,13 @@ impl std::str::FromStr for ClientType {
 
 #[cfg(test)]
 mod tests {
-    use super::ClientType;
     use std::str::FromStr;
+
+    use super::ClientType;
 
     #[test]
     fn parse_tendermint_client_type() {
-        let client_type = ClientType::from_str("Tendermint");
+        let client_type = ClientType::from_str("07-tendermint");
 
         match client_type {
             Ok(ClientType::Tendermint) => (),

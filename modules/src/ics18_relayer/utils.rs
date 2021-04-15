@@ -1,20 +1,19 @@
-use crate::ics02_client::client_def::AnyHeader;
-use crate::ics02_client::header::Header;
+use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics02_client::msgs::ClientMsg;
-use crate::ics18_relayer::context::ICS18Context;
+use crate::ics18_relayer::context::Ics18Context;
 use crate::ics18_relayer::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 
-/// Creates a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
+/// Builds a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
 /// context, assuming that the latest header on the source context is `src_header`.
-pub fn create_client_update_datagram<Ctx>(
+pub fn build_client_update_datagram<Ctx>(
     dest: &Ctx,
     client_id: &ClientId,
     src_header: AnyHeader,
 ) -> Result<ClientMsg, Error>
 where
-    Ctx: ICS18Context,
+    Ctx: Ics18Context,
 {
     // Check if client for ibc0 on ibc1 has been updated to latest height:
     // - query client state on destination chain
@@ -52,21 +51,18 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ics18_relayer::context::ICS18Context;
-    use crate::ics18_relayer::utils::create_client_update_datagram;
+    use crate::ics02_client::client_type::ClientType;
+    use crate::ics02_client::header::Header;
+    use crate::ics18_relayer::context::Ics18Context;
+    use crate::ics18_relayer::utils::build_client_update_datagram;
     use crate::ics24_host::identifier::{ChainId, ClientId};
-    use crate::ics26_routing::msgs::ICS26Envelope;
-
+    use crate::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::context::MockContext;
     use crate::mock::host::HostType;
     use crate::Height;
 
-    use crate::ics02_client::client_type::ClientType;
-    use crate::ics02_client::header::Header;
-    use std::str::FromStr;
-
     #[test]
-    /// Serves to test both ICS 26 `dispatch` & `create_client_update_datagram` function.
+    /// Serves to test both ICS 26 `dispatch` & `build_client_update_datagram` functions.
     /// Implements a "ping pong" of client update messages, so that two chains repeatedly
     /// process a client update message and update their height in succession.
     fn client_update_ping_pong() {
@@ -76,8 +72,8 @@ mod tests {
         let client_on_a_for_b_height = Height::new(1, 20); // Should be smaller than `chain_b_start_height`
         let num_iterations = 4;
 
-        let client_on_a_for_b = ClientId::from_str("ibconeclient").unwrap();
-        let client_on_b_for_a = ClientId::from_str("ibczeroclient").unwrap();
+        let client_on_a_for_b = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_on_b_for_a = ClientId::new(ClientType::Mock, 0).unwrap();
 
         // Create two mock contexts, one for each chain.
         let mut ctx_a = MockContext::new(
@@ -118,7 +114,7 @@ mod tests {
             );
 
             let client_msg_b_res =
-                create_client_update_datagram(&ctx_b, &client_on_b_for_a, a_latest_header);
+                build_client_update_datagram(&ctx_b, &client_on_b_for_a, a_latest_header);
             assert_eq!(
                 client_msg_b_res.is_ok(),
                 true,
@@ -130,7 +126,7 @@ mod tests {
 
             // - send the message to B. We bypass ICS18 interface and call directly into
             // MockContext `recv` method (to avoid additional serialization steps).
-            let dispatch_res_b = ctx_b.deliver(ICS26Envelope::ICS2Msg(client_msg_b));
+            let dispatch_res_b = ctx_b.deliver(Ics26Envelope::Ics2Msg(client_msg_b));
             let validation_res = ctx_b.validate();
             assert!(
                 validation_res.is_ok(),
@@ -163,7 +159,7 @@ mod tests {
             );
 
             let client_msg_a_res =
-                create_client_update_datagram(&ctx_a, &client_on_a_for_b, b_latest_header);
+                build_client_update_datagram(&ctx_a, &client_on_a_for_b, b_latest_header);
             assert_eq!(
                 client_msg_a_res.is_ok(),
                 true,
@@ -174,7 +170,7 @@ mod tests {
             let client_msg_a = client_msg_a_res.unwrap();
 
             // - send the message to A
-            let dispatch_res_a = ctx_a.deliver(ICS26Envelope::ICS2Msg(client_msg_a));
+            let dispatch_res_a = ctx_a.deliver(Ics26Envelope::Ics2Msg(client_msg_a));
             let validation_res = ctx_a.validate();
             assert!(
                 validation_res.is_ok(),

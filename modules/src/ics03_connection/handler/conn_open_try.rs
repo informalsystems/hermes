@@ -1,13 +1,15 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
 
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
-use crate::ics03_connection::handler::ConnectionEvent::ConnOpenTry;
-use crate::ics03_connection::handler::ConnectionResult;
+use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use crate::ics24_host::identifier::ConnectionId;
 
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
@@ -18,41 +20,52 @@ pub(crate) fn process(
     // Check that consensus height (for client proof) in message is not too advanced nor too old.
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
-    if let Some(chosen_id) = msg.counterparty_chosen_connection_id() {
-        if chosen_id != msg.connection_id().clone() {
-            return Err(Into::<Error>::into(Kind::ConnectionIdMismatch(
-                chosen_id,
-                msg.connection_id().clone(),
-            )));
-        }
-    }
+    // Unwrap the old connection end (if any) and its identifier.
+    let (mut new_connection_end, conn_id) = match msg.previous_connection_id() {
+        // A connection with this id should already exist. Search & validate.
+        Some(prev_id) => {
+            let old_connection_end = ctx
+                .connection_end(prev_id)
+                .ok_or_else(|| Kind::ConnectionNotFound(prev_id.clone()))?;
 
-    // Unwrap the old connection end (if any) and validate it against the message.
-    let mut new_connection_end = match ctx.connection_end(msg.connection_id()) {
-        Some(old_conn_end) => {
-            // TODO - change validation to take into account the new `counterparty_chosen_connection_id`
             // Validate that existing connection end matches with the one we're trying to establish.
-            if old_conn_end.state_matches(&State::Init)
-                && old_conn_end.counterparty_matches(&msg.counterparty())
-                && old_conn_end.client_id_matches(msg.client_id())
+            if old_connection_end.state_matches(&State::Init)
+                && old_connection_end.counterparty_matches(&msg.counterparty())
+                && old_connection_end.client_id_matches(msg.client_id())
+                && old_connection_end.delay_period() == msg.delay_period
             {
                 // A ConnectionEnd already exists and all validation passed.
-                Ok(old_conn_end)
+                output.log(format!(
+                    "success: `previous_connection_id` {} validation passed",
+                    prev_id
+                ));
+                Ok((old_connection_end, prev_id.clone()))
             } else {
                 // A ConnectionEnd already exists and validation failed.
-                Err(Into::<Error>::into(
-                    Kind::ConnectionMismatch(msg.connection_id().clone())
-                        .context(old_conn_end.client_id().to_string()),
-                ))
+                Err(Into::<Error>::into(Kind::ConnectionMismatch(
+                    prev_id.clone(),
+                )))
             }
         }
-        // No ConnectionEnd exists for this ConnectionId. Create & return a new one.
-        None => Ok(ConnectionEnd::new(
-            State::Init,
-            msg.client_id().clone(),
-            msg.counterparty(),
-            msg.counterparty_versions(),
-        )?),
+        // No prev. connection id was supplied, create a new connection end and conn id.
+        None => {
+            // Build a new connection end as well as an identifier.
+            let conn_end = ConnectionEnd::new(
+                State::Init,
+                msg.client_id().clone(),
+                msg.counterparty(),
+                msg.counterparty_versions(),
+                msg.delay_period,
+            );
+            let id_counter = ctx.connection_counter();
+            let conn_id = ConnectionId::new(id_counter);
+
+            output.log(format!(
+                "success: new connection end and identifier {} generated",
+                conn_id
+            ));
+            Ok((conn_end, conn_id))
+        }
     }?;
 
     // Proof verification in two steps:
@@ -60,18 +73,14 @@ pub(crate) fn process(
     let expected_conn = ConnectionEnd::new(
         State::Init,
         msg.counterparty().client_id().clone(),
-        Counterparty::new(
-            msg.client_id().clone(),
-            msg.counterparty_chosen_connection_id(),
-            ctx.commitment_prefix(),
-        ),
+        Counterparty::new(msg.client_id().clone(), None, ctx.commitment_prefix()),
         msg.counterparty_versions(),
-    )?;
+        msg.delay_period,
+    );
 
     // 2. Pass the details to the verification function.
     verify_proofs(
         ctx,
-        msg.connection_id(),
         msg.client_state(),
         &new_connection_end,
         &expected_conn,
@@ -82,17 +91,30 @@ pub(crate) fn process(
     new_connection_end.set_state(State::TryOpen);
 
     // Pick the version.
-    new_connection_end
-        .set_version(ctx.pick_version(ctx.get_compatible_versions(), msg.counterparty_versions())?);
+    new_connection_end.set_version(
+        ctx.pick_version(ctx.get_compatible_versions(), msg.counterparty_versions())
+            .ok_or(Kind::NoCommonVersion)?,
+    );
+
+    assert_eq!(new_connection_end.versions().len(), 1);
 
     output.log("success: connection verification passed");
 
     let result = ConnectionResult {
-        connection_id: msg.connection_id().clone(),
+        connection_id: conn_id.clone(),
+        connection_id_state: if matches!(msg.previous_connection_id, None) {
+            ConnectionIdState::Generated
+        } else {
+            ConnectionIdState::Reused
+        },
         connection_end: new_connection_end,
     };
 
-    output.emit(ConnOpenTry(result.clone()));
+    let event_attributes = Attributes {
+        connection_id: Some(conn_id),
+        ..Default::default()
+    };
+    output.emit(IbcEvent::OpenTryConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -101,11 +123,10 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
 
-    use crate::handler::EventType;
-    use crate::ics03_connection::connection::{ConnectionEnd, State};
-    use crate::ics03_connection::context::ConnectionReader;
+    use crate::events::IbcEvent;
+    use crate::ics03_connection::connection::State;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics24_host::identifier::ChainId;
@@ -122,53 +143,46 @@ mod tests {
             want_pass: bool,
         }
 
-        let host_chain_height = Height::new(1, 35);
+        let host_chain_height = Height::new(0, 35);
+        let max_history_size = 5;
         let context = MockContext::new(
-            ChainId::new("mockgaia".to_string(), 1),
+            ChainId::new("mockgaia".to_string(), 0),
             HostType::Mock,
-            5,
+            max_history_size,
             host_chain_height,
         );
-        let pruning_window = context.host_chain_history_size() as u64;
         let client_consensus_state_height = 10;
 
-        let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+        let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
-            host_chain_height.version_height,
+            host_chain_height.revision_height,
         ))
         .unwrap();
 
         // The proof targets a height that does not exist (i.e., too advanced) on destination chain.
-        let msg_height_advanced = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+        let msg_height_advanced = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
-            host_chain_height.increment().version_height,
+            host_chain_height.increment().revision_height,
         ))
         .unwrap();
         let pruned_height = host_chain_height
-            .sub(pruning_window + 1)
+            .sub(max_history_size as u64 + 1)
             .unwrap()
-            .version_height;
+            .revision_height;
         // The consensus proof targets a missing height (pruned) on destination chain.
-        let msg_height_old = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+        let msg_height_old = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
             pruned_height,
         ))
         .unwrap();
 
         // The proofs in this message are created at a height which the client on destination chain does not have.
-        let msg_proof_height_missing = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
-            client_consensus_state_height - 1,
-            host_chain_height.version_height,
-        ))
-        .unwrap();
-
-        let try_conn_end = &ConnectionEnd::new(
-            State::TryOpen,
-            msg_conn_try.client_id().clone(),
-            msg_conn_try.counterparty(),
-            context.get_compatible_versions(),
-        )
-        .unwrap();
+        let msg_proof_height_missing =
+            MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
+                client_consensus_state_height - 1,
+                host_chain_height.revision_height,
+            ))
+            .unwrap();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -196,18 +210,15 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because the connection exists in the store already"
-                    .to_string(),
-                ctx: context
-                    .clone()
-                    .with_connection(msg_conn_try.connection_id().clone(), try_conn_end.clone()),
+                name: "Good parameters but has previous_connection_id".to_string(),
+                ctx: context.clone().with_client(msg_conn_try.client_id(), Height::new(0, client_consensus_state_height)),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters".to_string(),
                 ctx: context.with_client(msg_conn_try.client_id(), Height::new(0, client_consensus_state_height)),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.with_previous_connection_id(None))),
                 want_pass: true,
             },
         ]
@@ -231,11 +242,10 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have TryOpen state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, msg_conn_try.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::TryOpen);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(e.tpe, EventType::Custom("connection_open_try".to_string()));
+                        assert!(matches!(e, &IbcEvent::OpenTryConnection(_)));
                     }
                 }
                 Err(e) => {

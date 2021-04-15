@@ -1,59 +1,54 @@
-use crate::address::{account_to_string, string_to_account};
-use crate::ics04_channel::error::{Error, Kind};
-use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::tx_msg::Msg;
+use std::convert::TryFrom;
 
-use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
-use std::convert::TryFrom;
+use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
+
+use crate::ics04_channel::error::{Error, Kind};
+use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
+
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseInit";
 
 ///
 /// Message definition for the first step in the channel close handshake (`ChanCloseInit` datagram).
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelCloseInit {
-    port_id: PortId,
-    channel_id: ChannelId,
-    signer: AccountId,
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub signer: Signer,
 }
 
 impl MsgChannelCloseInit {
-    // todo: Constructor not used yet.
-    #[allow(dead_code)]
-    fn new(
-        port_id: String,
-        channel_id: String,
-        signer: AccountId,
-    ) -> Result<MsgChannelCloseInit, Error> {
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+    pub fn new(port_id: PortId, channel_id: ChannelId, signer: Signer) -> Self {
+        Self {
+            port_id,
+            channel_id,
             signer,
-        })
+        }
+    }
+
+    /// Getter: borrow the `port_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
     }
 }
 
 impl Msg for MsgChannelCloseInit {
     type ValidationError = Error;
+    type Raw = RawMsgChannelCloseInit;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -63,9 +58,6 @@ impl TryFrom<RawMsgChannelCloseInit> for MsgChannelCloseInit {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelCloseInit) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         Ok(MsgChannelCloseInit {
             port_id: raw_msg
                 .port_id
@@ -75,7 +67,7 @@ impl TryFrom<RawMsgChannelCloseInit> for MsgChannelCloseInit {
                 .channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -85,7 +77,7 @@ impl From<MsgChannelCloseInit> for RawMsgChannelCloseInit {
         RawMsgChannelCloseInit {
             port_id: domain_msg.port_id.to_string(),
             channel_id: domain_msg.channel_id.to_string(),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
@@ -94,13 +86,14 @@ impl From<MsgChannelCloseInit> for RawMsgChannelCloseInit {
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
+    use crate::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy `RawMsgChannelCloseInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_close_init() -> RawMsgChannelCloseInit {
         RawMsgChannelCloseInit {
-            port_id: "port".to_string(),
-            channel_id: "testchannel".to_string(),
+            port_id: PortId::default().to_string(),
+            channel_id: ChannelId::default().to_string(),
             signer: get_dummy_bech32_account(),
         }
     }
@@ -108,11 +101,12 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
     use crate::ics04_channel::msgs::chan_close_init::test_util::get_dummy_raw_msg_chan_close_init;
     use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-    use std::convert::TryFrom;
 
     #[test]
     fn parse_channel_close_init_msg() {

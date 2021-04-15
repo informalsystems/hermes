@@ -1,65 +1,80 @@
-use crate::application::app_config;
-use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
-use crate::error::{Error, Kind};
-use crate::prelude::*;
-use relayer::keys::add::{add_key, KeysAddOptions};
+use abscissa_core::{Command, Options, Runnable};
+use anomaly::BoxError;
+
+use ibc::ics24_host::identifier::ChainId;
+use ibc_relayer::{
+    config::{ChainConfig, Config},
+    keyring::{KeyEntry, KeyRing, Store},
+};
+
+use crate::application::app_config;
+use crate::conclude::Output;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysAddCmd {
-    #[options(free, help = "identifier of the chain")]
-    chain_id: Option<String>,
+    #[options(free, required, help = "identifier of the chain")]
+    chain_id: ChainId,
 
-    #[options(free, help = "the key path and filename")]
-    file: Option<String>,
+    #[options(short = "f", required, help = "path to the key file")]
+    file: PathBuf,
 }
 
 impl KeysAddCmd {
-    fn validate_options(&self, config: &Config) -> Result<KeysAddOptions, String> {
-        let chain_id = self
-            .chain_id
-            .clone()
-            .ok_or_else(|| "missing chain identifier".to_string())?;
-
+    fn options(&self, config: &Config) -> Result<KeysAddOptions, BoxError> {
         let chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
-            })?;
-
-        let key_filename = self
-            .file
-            .clone()
-            .ok_or_else(|| "missing signer key file".to_string())?;
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         Ok(KeysAddOptions {
             name: chain_config.key_name.clone(),
-            file: key_filename,
-            chain_config: chain_config.clone(),
+            config: chain_config.clone(),
+            file: self.file.clone(),
         })
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct KeysAddOptions {
+    pub name: String,
+    pub config: ChainConfig,
+    pub file: PathBuf,
 }
 
 impl Runnable for KeysAddCmd {
     fn run(&self) {
         let config = app_config();
 
-        let opts = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
+        let opts = match self.options(&config) {
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
 
-        let res: Result<String, Error> = add_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let chain_id = opts.config.id.clone();
+        let key = add_key(opts.config, &opts.file);
 
-        match res {
-            Ok(r) => status_info!("key add result: ", "{:?}", r),
-            Err(e) => status_info!("key add failed: ", "{}", e),
+        match key {
+            Ok(key) => Output::success_msg(format!(
+                "Added key '{}' ({}) on chain {}",
+                opts.name, key.account, chain_id
+            ))
+            .exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
+}
+
+pub fn add_key(config: ChainConfig, file: &Path) -> Result<KeyEntry, BoxError> {
+    let mut keyring = KeyRing::new(Store::Test, config)?;
+
+    let key_contents = fs::read_to_string(file).map_err(|_| "error reading the key file")?;
+    let key = keyring.key_from_seed_file(&key_contents)?;
+
+    keyring.add_key(key.clone())?;
+
+    Ok(key)
 }

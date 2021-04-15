@@ -1,0 +1,97 @@
+use thiserror::Error;
+use tracing::error;
+
+use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use ibc::events::IbcEvent;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc::tx_msg::Msg;
+
+use crate::chain::{Chain, CosmosSdkChain};
+use crate::config::ChainConfig;
+use crate::error::Error;
+
+#[derive(Debug, Error)]
+pub enum PacketError {
+    #[error("failed with underlying cause: {0}")]
+    Failed(String),
+
+    #[error("key error with underlying cause: {0}")]
+    KeyError(Error),
+
+    #[error(
+        "failed during a transaction submission step to chain id {0} with underlying error: {1}"
+    )]
+    SubmitError(ChainId, Error),
+}
+
+#[derive(Clone, Debug)]
+pub struct TransferOptions {
+    pub packet_src_chain_config: ChainConfig,
+    pub packet_dst_chain_config: ChainConfig,
+    pub packet_src_port_id: PortId,
+    pub packet_src_channel_id: ChannelId,
+    pub amount: u64,
+    pub denom: String,
+    pub receiver: Option<String>,
+    pub height_offset: u64,
+    pub number_msgs: usize,
+}
+
+pub fn build_and_send_transfer_messages(
+    mut packet_src_chain: CosmosSdkChain, // the chain whose account is debited
+    mut packet_dst_chain: CosmosSdkChain, // the chain where the transfer is sent
+    opts: &TransferOptions,
+) -> Result<Vec<IbcEvent>, PacketError> {
+    let receiver = match &opts.receiver {
+        None => packet_dst_chain.get_signer(),
+        Some(r) => Ok(r.clone().into()),
+    }
+    .map_err(PacketError::KeyError)?;
+
+    let sender = packet_src_chain
+        .get_signer()
+        .map_err(PacketError::KeyError)?;
+
+    let latest_height = packet_dst_chain
+        .query_latest_height()
+        .map_err(|_| PacketError::Failed("Height error".to_string()))?;
+
+    let msg = MsgTransfer {
+        source_port: opts.packet_src_port_id.clone(),
+        source_channel: opts.packet_src_channel_id.clone(),
+        token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
+            denom: opts.denom.clone(),
+            amount: opts.amount.to_string(),
+        }),
+        sender,
+        receiver,
+        timeout_height: latest_height.add(opts.height_offset),
+        timeout_timestamp: 0,
+    };
+
+    let raw_msg = msg.to_any();
+    let msgs = vec![raw_msg; opts.number_msgs];
+
+    let events = packet_src_chain
+        .send_msgs(msgs)
+        .map_err(|e| PacketError::SubmitError(packet_src_chain.id().clone(), e))?;
+
+    // Check if the chain rejected the transaction
+    let result = events
+        .iter()
+        .find(|event| matches!(event, IbcEvent::ChainError(_)));
+
+    match result {
+        None => Ok(events),
+        Some(err) => {
+            if let IbcEvent::ChainError(err) = err {
+                Err(PacketError::Failed(err.to_string()))
+            } else {
+                panic!(
+                    "internal error, expected IBCEvent::ChainError, got {:?}",
+                    err
+                )
+            }
+        }
+    }
+}

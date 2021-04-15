@@ -1,11 +1,14 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_def::{AnyClient, ClientDef};
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientEvent, ClientResult};
-
+use crate::ics02_client::events::Attributes;
+use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
@@ -53,24 +56,31 @@ pub fn process(
         .check_header_and_update_state(client_state, header)
         .map_err(|e| Kind::HeaderVerificationFailure.context(e.to_string()))?;
 
-    output.emit(ClientEvent::ClientUpdated(client_id.clone()));
-
-    Ok(output.with_result(ClientResult::Update(Result {
-        client_id,
+    let result = ClientResult::Update(Result {
+        client_id: client_id.clone(),
         client_state: new_client_state,
         consensus_state: new_consensus_state,
-    })))
+    });
+
+    let event_attributes = Attributes {
+        client_id,
+        ..Default::default()
+    };
+    output.emit(IbcEvent::UpdateClient(event_attributes.into()));
+
+    Ok(output.with_result(result))
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
+    use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::ics02_client::client_def::AnyClientState;
+    use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::error::Kind;
-    use crate::ics02_client::handler::ClientResult::{Create, Update};
-    use crate::ics02_client::handler::{dispatch, ClientEvent};
+    use crate::ics02_client::handler::dispatch;
+    use crate::ics02_client::handler::ClientResult::Update;
     use crate::ics02_client::header::Header;
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
@@ -83,14 +93,13 @@ mod tests {
 
     #[test]
     fn test_update_client_ok() {
-        let client_id = ClientId::from_str("mockclient").unwrap();
+        let client_id = ClientId::default();
         let signer = get_dummy_account_id();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
-
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader(Height::new(0, 46)).into(),
+            header: MockHeader::new(Height::new(0, 46)).into(),
             signer,
         };
 
@@ -99,12 +108,13 @@ mod tests {
         match output {
             Ok(HandlerOutput {
                 result,
-                events,
+                mut events,
                 log,
             }) => {
-                assert_eq!(
-                    events,
-                    vec![ClientEvent::ClientUpdated(msg.client_id).into()]
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                assert!(
+                    matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
                 );
                 assert!(log.is_empty());
                 // Check the result
@@ -113,10 +123,12 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(MockHeader(msg.header.height())))
+                            AnyClientState::Mock(MockClientState(MockHeader::new(
+                                msg.header.height()
+                            )))
                         )
                     }
-                    Create(_) => panic!("update handler result has type CreateResult"),
+                    _ => panic!("update handler result has incorrect type"),
                 }
             }
             Err(err) => {
@@ -134,7 +146,7 @@ mod tests {
 
         let msg = MsgUpdateAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
-            header: MockHeader(Height::new(0, 46)).into(),
+            header: MockHeader::new(Height::new(0, 46)).into(),
             signer,
         };
 
@@ -170,8 +182,8 @@ mod tests {
         for cid in &client_ids {
             let msg = MsgUpdateAnyClient {
                 client_id: cid.clone(),
-                header: MockHeader(update_height).into(),
-                signer,
+                header: MockHeader::new(update_height).into(),
+                signer: signer.clone(),
             };
 
             let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
@@ -179,12 +191,13 @@ mod tests {
             match output {
                 Ok(HandlerOutput {
                     result: _,
-                    events,
+                    mut events,
                     log,
                 }) => {
-                    assert_eq!(
-                        events,
-                        vec![ClientEvent::ClientUpdated(msg.client_id).into()]
+                    assert_eq!(events.len(), 1);
+                    let event = events.pop().unwrap();
+                    assert!(
+                        matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
                     );
                     assert!(log.is_empty());
                 }

@@ -1,12 +1,11 @@
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::channel::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
@@ -21,58 +20,61 @@ pub struct MsgChannelOpenAck {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub counterparty_channel_id: ChannelId,
-    pub counterparty_version: String,
+    pub counterparty_version: String, // FIXME(romac): Introduce newtype for versions
     pub proofs: Proofs,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
 impl MsgChannelOpenAck {
-    #[allow(dead_code, unreachable_code, unused_variables)]
-    // TODO: Not used (yet). Also missing `counterparty_channel_id` value.
-    fn new(
-        port_id: String,
-        channel_id: String,
+    pub fn new(
+        port_id: PortId,
+        channel_id: ChannelId,
+        counterparty_channel_id: ChannelId,
         counterparty_version: String,
-        proof_try: CommitmentProof,
-        proofs_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgChannelOpenAck, Error> {
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_channel_id: todo!(),
-            counterparty_version: validate_version(counterparty_version)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proofs: Proofs::new(proof_try, None, None, proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            port_id,
+            channel_id,
+            counterparty_channel_id,
+            counterparty_version,
+            proofs,
             signer,
-        })
+        }
+    }
+
+    /// Getter: borrow the `port_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+
+    pub fn counterparty_channel_id(&self) -> &ChannelId {
+        &self.counterparty_channel_id
+    }
+
+    pub fn counterparty_version(&self) -> &String {
+        &self.counterparty_version
+    }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
     }
 }
 
 impl Msg for MsgChannelOpenAck {
     type ValidationError = Error;
+    type Raw = RawMsgChannelOpenAck;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
     }
 }
 
@@ -82,11 +84,9 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_try.into(),
+            None,
             None,
             None,
             raw_msg
@@ -112,7 +112,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
-            signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -126,7 +126,7 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
             counterparty_version: domain_msg.counterparty_version.to_string(),
             proof_try: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
@@ -135,20 +135,21 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
+    use crate::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
 
     /// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
         RawMsgChannelOpenAck {
-            port_id: "port".to_string(),
-            channel_id: "testchannel".to_string(),
-            counterparty_channel_id: "cpartychannel".to_string(),
-            counterparty_version: "v1".to_string(),
+            port_id: PortId::default().to_string(),
+            channel_id: ChannelId::default().to_string(),
+            counterparty_channel_id: ChannelId::default().to_string(),
+            counterparty_version: "".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 1,
-                version_height: proof_height,
+                revision_number: 0,
+                revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -273,8 +274,8 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 raw: RawMsgChannelOpenAck {
                     proof_height: Some(Height {
-                        version_number: 0,
-                        version_height: 0,
+                        revision_number: 0,
+                        revision_height: 0,
                     }),
                     ..default_raw_msg.clone()
                 },

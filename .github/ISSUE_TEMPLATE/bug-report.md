@@ -26,6 +26,10 @@ v    Please also ensure that this is not a duplicate issue :)
 
 <!-- What commands in order should someone run to reproduce your problem? -->
 
+## Acceptance Criteria
+
+<!-- What's the definition of "done" for this issue? -->
+
 ____
 
 ## For Admin Use

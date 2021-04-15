@@ -1,23 +1,39 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
+use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
 };
-use tendermint_proto::Protobuf;
 
-use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::version::validate_versions;
+use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
     counterparty: Counterparty,
-    versions: Vec<String>,
+    versions: Vec<Version>,
+    delay_period: Duration,
+}
+
+impl Default for ConnectionEnd {
+    fn default() -> Self {
+        Self {
+            state: State::Uninitialized,
+            client_id: Default::default(),
+            counterparty: Default::default(),
+            versions: vec![],
+            delay_period: Duration::from_secs(0),
+        }
+    }
 }
 
 impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
@@ -25,8 +41,16 @@ impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
+        if value.client_id.is_empty() {
+            return Err(Kind::EmptyProtoConnectionEnd.into());
+        }
+
+        let state = value.state.try_into()?;
+        if state == State::Uninitialized {
+            return Ok(ConnectionEnd::default());
+        }
         Ok(Self::new(
-            value.state.try_into()?,
+            state,
             value
                 .client_id
                 .parse()
@@ -35,8 +59,14 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
                 .counterparty
                 .ok_or(Kind::MissingCounterparty)?
                 .try_into()?,
-            value.versions,
-        )?)
+            value
+                .versions
+                .into_iter()
+                .map(Version::try_from)
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            Duration::from_secs(value.delay_period),
+        ))
     }
 }
 
@@ -44,9 +74,14 @@ impl From<ConnectionEnd> for RawConnectionEnd {
     fn from(value: ConnectionEnd) -> Self {
         RawConnectionEnd {
             client_id: value.client_id.to_string(),
-            versions: value.versions,
+            versions: value
+                .versions
+                .iter()
+                .map(|v| From::from(v.clone()))
+                .collect(),
             state: value.state as i32,
             counterparty: Some(value.counterparty.into()),
+            delay_period: value.delay_period.as_secs(),
         }
     }
 }
@@ -56,14 +91,16 @@ impl ConnectionEnd {
         state: State,
         client_id: ClientId,
         counterparty: Counterparty,
-        versions: Vec<String>, // TODO: Use Newtype for aliasing the version to a string
-    ) -> Result<Self, Error> {
-        Ok(Self {
+        versions: Vec<Version>,
+        delay_period: Duration,
+    ) -> Self {
+        Self {
             state,
             client_id,
             counterparty,
-            versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
-        })
+            versions,
+            delay_period,
+        }
     }
 
     /// Getter for the state of this connection end.
@@ -76,10 +113,14 @@ impl ConnectionEnd {
         self.state = new_state;
     }
 
+    /// Setter for the `counterparty` field.
+    pub fn set_counterparty(&mut self, new_cparty: Counterparty) {
+        self.counterparty = new_cparty;
+    }
+
     /// Setter for the `version` field.
-    /// TODO: A ConnectionEnd should only store one version.
-    pub fn set_version(&mut self, new_version: String) {
-        self.versions.insert(0, new_version)
+    pub fn set_version(&mut self, new_version: Version) {
+        self.versions = vec![new_version];
     }
 
     /// Helper function to compare the counterparty of this end with another counterparty.
@@ -103,7 +144,7 @@ impl ConnectionEnd {
     }
 
     /// Getter for the list of versions in this connection end.
-    pub fn versions(&self) -> Vec<String> {
+    pub fn versions(&self) -> Vec<Version> {
         self.versions.clone()
     }
 
@@ -112,17 +153,56 @@ impl ConnectionEnd {
         self.counterparty.clone()
     }
 
+    /// Getter for the delay_period field. This represents the duration, at minimum,
+    /// to delay the sending of a packet after the client update for that packet has been submitted.
+    pub fn delay_period(&self) -> Duration {
+        self.delay_period
+    }
+
     /// TODO: Clean this up, probably not necessary.
     pub fn validate_basic(&self) -> Result<(), ValidationError> {
         self.counterparty.validate_basic()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct IdentifiedConnectionEnd {
+    connection_id: ConnectionId,
+    connection_end: ConnectionEnd,
+}
+
+impl IdentifiedConnectionEnd {
+    pub fn new(connection_id: ConnectionId, connection_end: ConnectionEnd) -> Self {
+        IdentifiedConnectionEnd {
+            connection_id,
+            connection_end,
+        }
+    }
+
+    pub fn id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    pub fn end(&self) -> &ConnectionEnd {
+        &self.connection_end
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
     prefix: CommitmentPrefix,
+}
+
+impl Default for Counterparty {
+    fn default() -> Self {
+        Counterparty {
+            client_id: Default::default(),
+            connection_id: None,
+            prefix: Default::default(),
+        }
+    }
 }
 
 // Converts from the wire format RawCounterparty. Typically used from the relayer side
@@ -159,7 +239,7 @@ impl From<Counterparty> for RawCounterparty {
                 .connection_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             prefix: Some(ibc_proto::ibc::core::commitment::v1::MerklePrefix {
-                key_prefix: value.prefix.0,
+                key_prefix: value.prefix.into_vec(),
             }),
         }
     }
@@ -197,8 +277,9 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum State {
+    Uninitialized = 0,
     Init = 1,
     TryOpen = 2,
     Open = 3,
@@ -208,6 +289,7 @@ impl State {
     /// Yields the State as a string.
     pub fn as_string(&self) -> &'static str {
         match self {
+            Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
@@ -219,6 +301,7 @@ impl TryFrom<i32> for State {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
+            0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),

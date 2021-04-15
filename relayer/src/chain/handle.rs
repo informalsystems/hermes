@@ -1,33 +1,43 @@
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use crossbeam_channel as channel;
+use dyn_clone::DynClone;
+use serde::{Serialize, Serializer};
 
+use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::{
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-    ics03_connection::connection::ConnectionEnd,
-    ics04_channel::channel::ChannelEnd,
-    ics24_host::identifier::{ChannelId, ConnectionId, PortId},
+    events::IbcEvent,
+    ics02_client::header::AnyHeader,
+    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics04_channel::{
+        channel::ChannelEnd,
+        packet::{PacketMsgType, Sequence},
+    },
+    ics23_commitment::commitment::CommitmentPrefix,
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    signer::Signer,
+    Height,
 };
-use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
-use ibc::{
-    ics23_commitment::merkle::MerkleProof,
-    ics24_host::{identifier::ChainId, identifier::ClientId, Path},
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+pub use prod::ProdChainHandle;
 
 use crate::connection::ConnectionMsgType;
+use crate::keyring::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
-// use crate::foreign_client::ForeignClient;
-
-use crate::keyring::store::KeyEntry;
-
-use super::QueryResponse;
+use ibc::query::QueryTxRequest;
 
 mod prod;
-pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
 
@@ -38,9 +48,10 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
     channel::bounded(1)
 }
 
-/// Inputs that a Handle may send to a Runtime.
+/// Requests that a `ChainHandle` may send to a `ChainRuntime`.
 #[derive(Clone, Debug)]
-pub enum HandleInput {
+#[allow(clippy::large_enum_variant)]
+pub enum ChainRequest {
     Terminate {
         reply_to: ReplyTo<()>,
     },
@@ -49,34 +60,13 @@ pub enum HandleInput {
         reply_to: ReplyTo<Subscription>,
     },
 
-    Query {
-        path: Path,
-        height: Height,
-        prove: bool,
-        reply_to: ReplyTo<QueryResponse>,
-    },
-
-    SendTx {
+    SendMsgs {
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<String>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     },
 
-    // GetHeader {
-    //     height: Height,
-    //     reply_to: ReplyTo<AnyHeader>,
-    // },
-    GetMinimalSet {
-        from: Height,
-        to: Height,
-        reply_to: ReplyTo<Vec<AnyHeader>>,
-    },
-
-    // Submit {
-    //     transaction: EncodedTransaction,
-    //     reply_to: ReplyTo<()>,
-    // },
     Signer {
-        reply_to: ReplyTo<AccountId>,
+        reply_to: ReplyTo<Signer>,
     },
 
     Key {
@@ -92,13 +82,10 @@ pub enum HandleInput {
         reply_to: ReplyTo<Height>,
     },
 
-    // CreatePacket {
-    //     event: IBCEvent,
-    //     reply_to: ReplyTo<Packet>,
-    // },
     BuildHeader {
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyHeader>,
     },
 
@@ -108,8 +95,16 @@ pub enum HandleInput {
     },
 
     BuildConsensusState {
-        height: Height,
+        trusted: Height,
+        target: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
+    },
+
+    BuildMisbehaviour {
+        client_state: AnyClientState,
+        update_event: UpdateClient,
+        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
     },
 
     BuildConnectionProofsAndClientState {
@@ -120,10 +115,30 @@ pub enum HandleInput {
         reply_to: ReplyTo<(Option<AnyClientState>, Proofs)>,
     },
 
+    QueryClients {
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<ClientId>>,
+    },
+
     QueryClientState {
         client_id: ClientId,
         height: Height,
         reply_to: ReplyTo<AnyClientState>,
+    },
+
+    QueryConsensusStates {
+        request: QueryConsensusStatesRequest,
+        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
+    },
+
+    QueryUpgradedClientState {
+        height: Height,
+        reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
+    },
+
+    QueryUpgradedConsensusState {
+        height: Height,
+        reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
     },
 
     QueryCommitmentPrefix {
@@ -131,7 +146,7 @@ pub enum HandleInput {
     },
 
     QueryCompatibleVersions {
-        reply_to: ReplyTo<Vec<String>>,
+        reply_to: ReplyTo<Vec<Version>>,
     },
 
     QueryConnection {
@@ -145,6 +160,11 @@ pub enum HandleInput {
         channel_id: ChannelId,
         height: Height,
         reply_to: ReplyTo<ChannelEnd>,
+    },
+
+    QueryNextSequenceReceive {
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
     },
 
     ProvenClientState {
@@ -172,21 +192,54 @@ pub enum HandleInput {
         height: Height,
         reply_to: ReplyTo<Proofs>,
     },
+
+    BuildPacketProofs {
+        packet_type: PacketMsgType,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+        height: Height,
+        reply_to: ReplyTo<(Vec<u8>, Proofs)>,
+    },
+
+    QueryPacketCommitments {
+        request: QueryPacketCommitmentsRequest,
+        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+    },
+
+    QueryUnreceivedPackets {
+        request: QueryUnreceivedPacketsRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    },
+
+    QueryPacketAcknowledgement {
+        request: QueryPacketAcknowledgementsRequest,
+        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+    },
+
+    QueryUnreceivedAcknowledgement {
+        request: QueryUnreceivedAcksRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    },
+
+    QueryPacketEventData {
+        request: QueryTxRequest,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
+    },
 }
 
-pub trait ChainHandle: Clone + Send + Sync {
+// Make `clone` accessible to a ChainHandle object
+dyn_clone::clone_trait_object!(ChainHandle);
+
+pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn id(&self) -> ChainId;
 
-    fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;
-
-    fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, Error>;
+    fn subscribe(&self) -> Result<Subscription, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error>;
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error>;
 
-    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
-
-    fn get_signer(&self) -> Result<AccountId, Error>;
+    fn get_signer(&self) -> Result<Signer, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
@@ -194,21 +247,43 @@ pub trait ChainHandle: Clone + Send + Sync {
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+
     fn query_client_state(
         &self,
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error>;
 
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
+
+    fn query_upgraded_client_state(
+        &self,
+        height: Height,
+    ) -> Result<(AnyClientState, MerkleProof), Error>;
+
+    fn query_upgraded_consensus_state(
+        &self,
+        height: Height,
+    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
+
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
-    fn query_compatible_versions(&self) -> Result<Vec<String>, Error>;
+    fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
 
     fn query_connection(
         &self,
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error>;
 
     fn query_channel(
         &self,
@@ -240,13 +315,25 @@ pub trait ChainHandle: Clone + Send + Sync {
         &self,
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
     ) -> Result<AnyHeader, Error>;
 
     /// Constructs a client state at the given height
     fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error>;
 
     /// Constructs a consensus state at the given height
-    fn build_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn build_consensus_state(
+        &self,
+        trusted: Height,
+        target: Height,
+        client_state: AnyClientState,
+    ) -> Result<AnyConsensusState, Error>;
+
+    fn check_misbehaviour(
+        &self,
+        update: UpdateClient,
+        client_state: AnyClientState,
+    ) -> Result<Option<AnyMisbehaviour>, Error>;
 
     fn build_connection_proofs_and_client_state(
         &self,
@@ -262,4 +349,44 @@ pub trait ChainHandle: Clone + Send + Sync {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<Proofs, Error>;
+
+    fn build_packet_proofs(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        height: Height,
+    ) -> Result<(Vec<u8>, Proofs), Error>;
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error>;
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error>;
+
+    fn query_unreceived_acknowledgement(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+}
+
+impl Serialize for dyn ChainHandle {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.id().serialize(serializer)
+    }
 }

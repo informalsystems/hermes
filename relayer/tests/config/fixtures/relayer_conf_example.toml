@@ -1,19 +1,21 @@
 [global]
-timeout = '10s'
 strategy = 'naive'
+log_level = 'error'
 
 [[chains]]
 id = 'chain_A'
-rpc_addr = 'tcp://localhost:26657'
-grpc_addr = 'tcp://localhost:9090'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26657/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-client_ids = [
-    'clA1',
-    'clA2',
-]
 gas = 200000
+fee_denom = 'stake'
+fee_amount = 10
+max_msg_num = 4
+max_tx_size = 1048576
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -23,13 +25,15 @@ denominator = '3'
 
 [[chains]]
 id = 'chain_B'
-rpc_addr = 'tcp://localhost:26557'
-grpc_addr = 'tcp://localhost:9090'
+rpc_addr = 'http://127.0.0.1:26557'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://localhost:26557/websocket'
+rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-client_ids = ['clB1']
-gas = 200000
+fee_denom = 'stake'
+fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -38,30 +42,11 @@ numerator = '1'
 denominator = '3'
 
 [[connections]]
-[connections.a_end]
-chain_id = 'chain_A'
-client_id = 'clB1'
-connection_id = 'connAtoB'
-
-[connections.b_end]
-chain_id = 'chain_B'
-client_id = 'clA1'
-connection_id = 'connBtoA'
+a_chain = 'chain_A'
+b_chain = 'chain_B'
 
 [[connections.paths]]
 a_port = 'transfer'
 b_port = 'transfer'
-direction = 'unidirectional'
 
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
-direction = 'bidirectional'
-
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
-a_channel = 'chan3onA'
-b_channel = 'chan3onB'
-direction = 'bidirectional'
 

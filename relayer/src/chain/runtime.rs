@@ -1,85 +1,100 @@
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
-
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::{
+    events::IbcEvent,
     ics02_client::{
-        client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-        header::Header,
-        state::{ClientState, ConsensusState},
+        client_consensus::{AnyConsensusState, ConsensusState},
+        client_state::{AnyClientState, ClientState},
+        header::{AnyHeader, Header},
     },
     ics03_connection::connection::ConnectionEnd,
+    ics03_connection::version::Version,
     ics04_channel::channel::ChannelEnd,
-    ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-    ics24_host::identifier::ChannelId,
-    ics24_host::identifier::PortId,
-    ics24_host::identifier::{ClientId, ConnectionId},
-    ics24_host::Path,
+    ics04_channel::packet::{PacketMsgType, Sequence},
+    ics23_commitment::commitment::CommitmentPrefix,
+    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    query::QueryTxRequest,
+    signer::Signer,
     Height,
 };
-
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::{
+    channel::v1::{
+        PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    },
+    commitment::v1::MerkleProof,
+};
 
 use crate::{
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::{Error, Kind},
     event::{bus::EventBus, monitor::EventBatch},
-    keyring::store::KeyEntry,
+    keyring::KeyEntry,
     light_client::LightClient,
 };
 
 use super::{
-    handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
-    Chain, QueryResponse,
+    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
+    Chain,
 };
 
 pub struct Threads {
-    pub light_client: Option<thread::JoinHandle<()>>,
     pub chain_runtime: thread::JoinHandle<()>,
     pub event_monitor: Option<thread::JoinHandle<()>>,
 }
 
 pub struct ChainRuntime<C: Chain> {
+    /// The specific chain this runtime runs against
     chain: C,
-    sender: channel::Sender<HandleInput>,
-    receiver: channel::Receiver<HandleInput>,
+
+    /// The sender side of a channel to this runtime. Any `ChainHandle` can use this to send
+    /// chain requests to this runtime
+    request_sender: channel::Sender<ChainRequest>,
+
+    /// The receiving side of a channel to this runtime. The runtime consumes chain requests coming
+    /// in through this channel.
+    request_receiver: channel::Receiver<ChainRequest>,
+
+    /// An event bus, for broadcasting events that this runtime receives (via `event_receiver`) to subscribers
     event_bus: EventBus<Arc<EventBatch>>,
+
+    /// Receiver channel from the event bus
     event_receiver: channel::Receiver<EventBatch>,
+
+    /// A handle to the light client
     light_client: Box<dyn LightClient<C>>,
 
     #[allow(dead_code)]
-    rt: Arc<Mutex<TokioRuntime>>, // Making this future-proof, so we keep the runtime around.
+    rt: Arc<TokioRuntime>, // Making this future-proof, so we keep the runtime around.
 }
 
 impl<C: Chain + Send + 'static> ChainRuntime<C> {
     /// Spawns a new runtime for a specific Chain implementation.
-    pub fn spawn(config: ChainConfig) -> Result<(impl ChainHandle, Threads), Error> {
-        let rt = Arc::new(Mutex::new(
-            TokioRuntime::new().map_err(|e| Kind::Io.context(e))?,
-        ));
+    pub fn spawn(config: ChainConfig) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
+        let rt = Arc::new(TokioRuntime::new().map_err(|e| Kind::Io.context(e))?);
 
         // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
 
         // Start the light client
-        let (light_client_handler, light_client_thread) = chain.init_light_client()?;
+        let light_client = chain.init_light_client()?;
 
         // Start the event monitor
         let (event_receiver, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
 
         // Instantiate & spawn the runtime
-        let (handle, runtime_thread) = Self::init(chain, light_client_handler, event_receiver, rt);
+        let (handle, runtime_thread) = Self::init(chain, light_client, event_receiver, rt);
 
         let threads = Threads {
-            light_client: light_client_thread,
             chain_runtime: runtime_thread,
             event_monitor: event_monitor_thread,
         };
@@ -92,8 +107,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: channel::Receiver<EventBatch>,
-        rt: Arc<Mutex<TokioRuntime>>,
-    ) -> (impl ChainHandle, thread::JoinHandle<()>) {
+        rt: Arc<TokioRuntime>,
+    ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
         let chain_runtime = Self::new(chain, light_client, event_receiver, rt);
 
         // Get a handle to the runtime
@@ -110,26 +125,26 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: channel::Receiver<EventBatch>,
-        rt: Arc<Mutex<TokioRuntime>>,
+        rt: Arc<TokioRuntime>,
     ) -> Self {
-        let (sender, receiver) = channel::unbounded::<HandleInput>();
+        let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
 
         Self {
             rt,
             chain,
-            sender,
-            receiver,
+            request_sender,
+            request_receiver,
             event_bus: EventBus::new(),
             event_receiver,
             light_client,
         }
     }
 
-    pub fn handle(&self) -> impl ChainHandle {
+    pub fn handle(&self) -> Box<dyn ChainHandle> {
         let chain_id = self.chain.id().clone();
-        let sender = self.sender.clone();
+        let sender = self.request_sender.clone();
 
-        ProdChainHandle::new(chain_id, sender)
+        Box::new(ProdChainHandle::new(chain_id, sender))
     }
 
     fn run(mut self) -> Result<(), Error> {
@@ -144,102 +159,135 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                         // TODO: Handle error
                     }
                 },
-                recv(self.receiver) -> event => {
+                recv(self.request_receiver) -> event => {
                     match event {
-                        Ok(HandleInput::Terminate { reply_to }) => {
+                        Ok(ChainRequest::Terminate { reply_to }) => {
                             reply_to.send(Ok(())).map_err(|_| Kind::Channel)?;
                             break;
                         }
 
-                        Ok(HandleInput::Subscribe { reply_to }) => {
+                        Ok(ChainRequest::Subscribe { reply_to }) => {
                             self.subscribe(reply_to)?
                         },
 
-                        Ok(HandleInput::Query { path, height, prove, reply_to, }) => {
-                            self.query(path, height, prove, reply_to)?
+                        Ok(ChainRequest::SendMsgs { proto_msgs, reply_to }) => {
+                            self.send_msgs(proto_msgs, reply_to)?
                         },
 
-                        Ok(HandleInput::SendTx { proto_msgs, reply_to }) => {
-                            self.send_tx(proto_msgs, reply_to)?
-                        },
-
-                        Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
-                            self.get_minimal_set(from, to, reply_to)?
-                        }
-
-                        // Ok(HandleInput::GetHeader { height, reply_to }) => {
-                        //     self.get_header(height, reply_to)?
-                        // }
-                        //
-                        // Ok(HandleInput::Submit { transaction, reply_to, }) => {
-                        //     self.submit(transaction, reply_to)?
-                        // },
-                        //
-                        // Ok(HandleInput::CreatePacket { event, reply_to }) => {
-                        //     self.create_packet(event, reply_to)?
-                        // }
-
-                        Ok(HandleInput::Signer { reply_to }) => {
+                        Ok(ChainRequest::Signer { reply_to }) => {
                             self.get_signer(reply_to)?
                         }
 
-                        Ok(HandleInput::Key { reply_to }) => {
+                        Ok(ChainRequest::Key { reply_to }) => {
                             self.get_key(reply_to)?
                         }
 
-                        Ok(HandleInput::ModuleVersion { port_id, reply_to }) => {
+                        Ok(ChainRequest::ModuleVersion { port_id, reply_to }) => {
                             self.module_version(port_id, reply_to)?
                         }
 
-                        Ok(HandleInput::BuildHeader { trusted_height, target_height, reply_to }) => {
-                            self.build_header(trusted_height, target_height, reply_to)?
+                        Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
+                            self.build_header(trusted_height, target_height, client_state, reply_to)?
                         }
-                        Ok(HandleInput::BuildClientState { height, reply_to }) => {
+
+                        Ok(ChainRequest::BuildClientState { height, reply_to }) => {
                             self.build_client_state(height, reply_to)?
                         }
-                        Ok(HandleInput::BuildConsensusState { height, reply_to }) => {
-                            self.build_consensus_state(height, reply_to)?
+
+                        Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
+                            self.build_consensus_state(trusted, target, client_state, reply_to)?
                         }
-                        Ok(HandleInput::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
+
+                       Ok(ChainRequest::BuildMisbehaviour { client_state, update_event, reply_to }) => {
+                            self.check_misbehaviour(update_event, client_state, reply_to)?
+                        }
+
+                        Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
                             self.build_connection_proofs_and_client_state(message_type, connection_id, client_id, height, reply_to)?
                         },
-                        Ok(HandleInput::BuildChannelProofs { port_id, channel_id, height, reply_to }) => {
+
+                        Ok(ChainRequest::BuildChannelProofs { port_id, channel_id, height, reply_to }) => {
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryLatestHeight { reply_to }) => {
+                        Ok(ChainRequest::QueryLatestHeight { reply_to }) => {
                             self.query_latest_height(reply_to)?
                         }
-                        Ok(HandleInput::QueryClientState { client_id, height, reply_to }) => {
+
+                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
+                            self.query_clients(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryCommitmentPrefix { reply_to }) => {
+                        Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
+                            self.query_consensus_states(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryUpgradedClientState { height, reply_to }) => {
+                            self.query_upgraded_client_state(height, reply_to)?
+                        }
+
+                       Ok(ChainRequest::QueryUpgradedConsensusState { height, reply_to }) => {
+                            self.query_upgraded_consensus_state(height, reply_to)?
+                        }
+
+                        Ok(ChainRequest::QueryCommitmentPrefix { reply_to }) => {
                             self.query_commitment_prefix(reply_to)?
                         },
 
-                        Ok(HandleInput::QueryCompatibleVersions { reply_to }) => {
+                        Ok(ChainRequest::QueryCompatibleVersions { reply_to }) => {
                             self.query_compatible_versions(reply_to)?
                         },
 
-                        Ok(HandleInput::QueryConnection { connection_id, height, reply_to }) => {
+                        Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
                             self.query_connection(connection_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryChannel { port_id, channel_id, height, reply_to }) => {
+                        Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
                             self.query_channel(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::ProvenClientState { client_id, height, reply_to }) => {
+                        Ok(ChainRequest::ProvenClientState { client_id, height, reply_to }) => {
                             self.proven_client_state(client_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::ProvenConnection { connection_id, height, reply_to }) => {
+                        Ok(ChainRequest::ProvenConnection { connection_id, height, reply_to }) => {
                             self.proven_connection(connection_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
+                        Ok(ChainRequest::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::BuildPacketProofs { packet_type, port_id, channel_id, sequence, height, reply_to }) => {
+                            self.build_packet_proofs(packet_type, port_id, channel_id, sequence, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryPacketCommitments { request, reply_to }) => {
+                            self.query_packet_commitments(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryUnreceivedPackets { request, reply_to }) => {
+                            self.query_unreceived_packets(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryPacketAcknowledgement { request, reply_to }) => {
+                            self.query_packet_acknowledgements(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to }) => {
+                            self.query_unreceived_acknowledgement(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryNextSequenceReceive { request, reply_to }) => {
+                            self.query_next_sequence_receive(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
+                            self.query_txs(request, reply_to)?
                         },
 
                         Err(_e) => todo!(), // TODO: Handle error?
@@ -261,41 +309,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn query(
-        &self,
-        path: Path,
-        height: Height,
-        prove: bool,
-        reply_to: ReplyTo<QueryResponse>,
-    ) -> Result<(), Error> {
-        if !path.is_provable() & prove {
-            reply_to
-                .send(Err(Kind::NonProvableData.into()))
-                .map_err(|e| Kind::Channel.context(e))?;
-
-            return Ok(());
-        }
-
-        let response = self.chain.query(path, height, prove);
-
-        // Verify response proof, if requested.
-        if prove {
-            dbg!("TODO: implement proof verification."); // TODO: Verify proof
-        }
-
-        reply_to
-            .send(response)
-            .map_err(|e| Kind::Channel.context(e))?;
-
-        Ok(())
-    }
-
-    fn send_tx(
+    fn send_msgs(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<String>,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_tx(proto_msgs);
+        let result = self.chain.send_msgs(proto_msgs);
 
         reply_to
             .send(result)
@@ -314,35 +333,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    // fn get_header(&self, height: Height, reply_to: ReplyTo<AnyHeader>) -> Result<(), Error> {
-    //     let light_block = self.light_client.verify_to_target(height);
-    //     let header: Result<AnyHeader, _> = todo!(); // light_block.map(|lb| lb.signed_header().wrap_any());
-
-    //     reply_to
-    //         .send(header)
-    //         .map_err(|e| Kind::Channel.context(e))?;
-
-    //     Ok(())
-    // }
-
-    fn get_minimal_set(
-        &self,
-        _from: Height,
-        _to: Height,
-        _reply_to: ReplyTo<Vec<AnyHeader>>,
-    ) -> Result<(), Error> {
-        todo!()
-    }
-
-    // fn submit(&self, transaction: EncodedTransaction, reply_to: ReplyTo<()>) -> Result<(), Error> {
-    //     todo!()
-    // }
-
-    // fn create_packet(&self, event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
-    //     todo!()
-    // }
-
-    fn get_signer(&mut self, reply_to: ReplyTo<AccountId>) -> Result<(), Error> {
+    fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
 
         reply_to
@@ -363,7 +354,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     fn module_version(&self, port_id: PortId, reply_to: ReplyTo<String>) -> Result<(), Error> {
-        let result = self.chain.module_version(&port_id);
+        let result = self.chain.query_module_version(&port_id);
 
         reply_to
             .send(Ok(result))
@@ -373,24 +364,29 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     fn build_header(
-        &self,
+        &mut self,
         trusted_height: Height,
         target_height: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyHeader>,
     ) -> Result<(), Error> {
         let header = {
-            // Get the light block at trusted_height from the chain.
-            // TODO - it is possible that trusted_height is smaller than the current latest trusted
-            // height and this results in error here.
-            // Note: This happens if there are multiple on-chain clients at different latest heights
-            let trusted_light_block = self.light_client.verify_to_target(trusted_height)?;
+            // Get the light block at trusted_height + 1 from chain.
+            //
+            // TODO: This is tendermint specific and needs to be refactored during
+            //       the relayer light client refactoring.
+            // NOTE: This is needed to get the next validator set. While there is a next validator set
+            //       in the light block at trusted height, the proposer is not known/set in this set.
+            let trusted_light_block = self.light_client.fetch(trusted_height.increment())?;
 
             // Get the light block at target_height from chain.
-            let target_light_block = self.light_client.verify_to_target(target_height)?;
+            let target_light_block =
+                self.light_client
+                    .verify(trusted_height, target_height, &client_state)?;
 
-            let header = self
-                .chain
-                .build_header(trusted_light_block, target_light_block)?;
+            let header =
+                self.chain
+                    .build_header(trusted_height, trusted_light_block, target_light_block)?;
 
             Ok(header.wrap_any())
         };
@@ -422,19 +418,39 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
     /// Constructs a consensus state for the given height
     fn build_consensus_state(
-        &self,
-        height: Height,
+        &mut self,
+        trusted: Height,
+        target: Height,
+        client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let latest_light_block = self.light_client.verify_to_target(height)?;
+        let light_block = self.light_client.verify(trusted, target, &client_state)?;
 
         let consensus_state = self
             .chain
-            .build_consensus_state(latest_light_block)
+            .build_consensus_state(light_block)
             .map(|cs| cs.wrap_any());
 
         reply_to
             .send(consensus_state)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    /// Constructs AnyMisbehaviour for the update event
+    fn check_misbehaviour(
+        &mut self,
+        update_event: UpdateClient,
+        client_state: AnyClientState,
+        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+    ) -> Result<(), Error> {
+        let misbehaviour = self
+            .light_client
+            .check_misbehaviour(update_event, &client_state)?;
+
+        reply_to
+            .send(Ok(misbehaviour))
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
@@ -483,6 +499,68 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<ClientId>>,
+    ) -> Result<(), Error> {
+        let clients = self.chain.query_clients(request);
+
+        reply_to
+            .send(clients)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_upgraded_client_state(
+        &self,
+        height: Height,
+        reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .query_upgraded_client_state(height)
+            .map(|(cl, proof)| (cl.wrap_any(), proof));
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+        reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
+    ) -> Result<(), Error> {
+        let consensus_states = self.chain.query_consensus_states(request);
+
+        reply_to
+            .send(consensus_states)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_upgraded_consensus_state(
+        &self,
+        height: Height,
+        reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .query_upgraded_consensus_state(height)
+            .map(|(cs, proof)| (cs.wrap_any(), proof));
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn query_commitment_prefix(&self, reply_to: ReplyTo<CommitmentPrefix>) -> Result<(), Error> {
         let prefix = self.chain.query_commitment_prefix();
 
@@ -493,7 +571,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn query_compatible_versions(&self, reply_to: ReplyTo<Vec<String>>) -> Result<(), Error> {
+    fn query_compatible_versions(&self, reply_to: ReplyTo<Vec<Version>>) -> Result<(), Error> {
         let versions = self.chain.query_compatible_versions();
 
         reply_to
@@ -596,6 +674,110 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let result = self
             .chain
             .build_channel_proofs(&port_id, &channel_id, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn build_packet_proofs(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+        height: Height,
+        reply_to: ReplyTo<(Vec<u8>, Proofs)>,
+    ) -> Result<(), Error> {
+        let result =
+            self.chain
+                .build_packet_proofs(packet_type, port_id, channel_id, sequence, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_packet_commitments(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_unreceived_packets(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_packet_acknowledgements(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_unreceived_acknowledgement(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_unreceived_acknowledgements(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_next_sequence_receive(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_txs(
+        &self,
+        request: QueryTxRequest,
+        reply_to: ReplyTo<Vec<IbcEvent>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_txs(request);
 
         reply_to
             .send(result)

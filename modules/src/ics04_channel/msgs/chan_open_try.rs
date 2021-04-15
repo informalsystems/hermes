@@ -1,11 +1,13 @@
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::channel::{validate_version, ChannelEnd};
 use crate::ics04_channel::error::{Error, Kind};
+use crate::ics24_host::error::ValidationError;
+use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
@@ -19,31 +21,66 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenTry";
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenTry {
     pub port_id: PortId,
-    pub channel_id: ChannelId, // Labeled `desired_channel_id` in raw types.
-    pub counterparty_chosen_channel_id: Option<ChannelId>,
+    pub previous_channel_id: Option<ChannelId>,
     pub channel: ChannelEnd,
-    pub counterparty_version: String,
+    pub counterparty_version: String, // TODO(romac): newtype this
     pub proofs: Proofs,
-    pub signer: AccountId,
+    pub signer: Signer,
 }
 
+impl MsgChannelOpenTry {
+    pub fn new(
+        port_id: PortId,
+        previous_channel_id: Option<ChannelId>,
+        channel: ChannelEnd,
+        counterparty_version: String,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            port_id,
+            previous_channel_id,
+            channel,
+            counterparty_version,
+            proofs,
+            signer,
+        }
+    }
+
+    /// Getter: borrow the `port_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn previous_channel_id(&self) -> &Option<ChannelId> {
+        &self.previous_channel_id
+    }
+    pub fn counterparty_version(&self) -> &String {
+        &self.counterparty_version
+    }
+    pub fn channel(&self) -> &ChannelEnd {
+        &self.channel
+    }
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
+}
 impl Msg for MsgChannelOpenTry {
     type ValidationError = Error;
+    type Raw = RawMsgChannelOpenTry;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
-    }
-
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        self.channel.validate_basic()
     }
 
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        match self.channel().counterparty().channel_id() {
+            None => Err(ValidationKind::InvalidCounterpartyChannelId.into()),
+            Some(_c) => Ok(()),
+        }
     }
 }
 
@@ -53,11 +90,9 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelOpenTry) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_init.into(),
+            None,
             None,
             None,
             raw_msg
@@ -68,27 +103,28 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
         )
         .map_err(|e| Kind::InvalidProof.context(e))?;
 
-        let counterparty_chosen_channel_id = Some(raw_msg.counterparty_chosen_channel_id)
+        let previous_channel_id = Some(raw_msg.previous_channel_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
             .map_err(|e| Kind::IdentifierError.context(e))?;
 
-        Ok(MsgChannelOpenTry {
+        let msg = MsgChannelOpenTry {
             port_id: raw_msg
                 .port_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: raw_msg
-                .desired_channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_chosen_channel_id,
+            previous_channel_id,
             channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
-            signer,
-        })
+            signer: raw_msg.signer.into(),
+        };
+
+        match msg.validate_basic() {
+            Err(_e) => Err(Kind::InvalidCounterpartyChannelId.into()),
+            Ok(()) => Ok(msg),
+        }
     }
 }
 
@@ -96,15 +132,14 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
     fn from(domain_msg: MsgChannelOpenTry) -> Self {
         RawMsgChannelOpenTry {
             port_id: domain_msg.port_id.to_string(),
-            desired_channel_id: domain_msg.channel_id.to_string(),
-            counterparty_chosen_channel_id: domain_msg
-                .counterparty_chosen_channel_id
-                .map_or_else(|| "".to_string(), |id| id.to_string()),
+            previous_channel_id: domain_msg
+                .previous_channel_id
+                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             channel: Some(domain_msg.channel.into()),
             counterparty_version: domain_msg.counterparty_version,
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
@@ -114,21 +149,21 @@ pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
+    use crate::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
 
     /// Returns a dummy `RawMsgChannelOpenTry`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_try(proof_height: u64) -> RawMsgChannelOpenTry {
         RawMsgChannelOpenTry {
-            port_id: "port".to_string(),
-            desired_channel_id: "testchannel".to_string(),
-            counterparty_chosen_channel_id: "".to_string(),
+            port_id: PortId::default().to_string(),
+            previous_channel_id: ChannelId::default().to_string(),
             channel: Some(get_dummy_raw_channel_end()),
             counterparty_version: "".to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 1,
-                version_height: proof_height,
+                revision_number: 0,
+                revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -187,7 +222,7 @@ mod tests {
             Test {
                 name: "Correct channel identifier".to_string(),
                 raw: RawMsgChannelOpenTry {
-                    desired_channel_id: "channelid34".to_string(),
+                    previous_channel_id: "channelid34".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
@@ -195,7 +230,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too short".to_string(),
                 raw: RawMsgChannelOpenTry {
-                    desired_channel_id: "chshort".to_string(),
+                    previous_channel_id: "chshort".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -203,39 +238,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 raw: RawMsgChannelOpenTry {
-                    desired_channel_id: "abcdefghijkasdfasdfasdfasgdasdgasdfasdfadflmnoasdasdasdfasdfasdfasdfadadgadgadsfpqrstu".to_string(),
-                    ..default_raw_msg.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Empty counterparty chosen channel id (valid choice)".to_string(),
-                raw: RawMsgChannelOpenTry {
-                    counterparty_chosen_channel_id: "".to_string(),
-                    ..default_raw_msg.clone()
-                },
-                want_pass: true,
-            },
-            Test {
-                name: "[Counterparty] Correct channel identifier".to_string(),
-                raw: RawMsgChannelOpenTry {
-                    counterparty_chosen_channel_id: "cpartyid34".to_string(),
-                    ..default_raw_msg.clone()
-                },
-                want_pass: true,
-            },
-            Test {
-                name: "[Counterparty] Bad channel, name too short".to_string(),
-                raw: RawMsgChannelOpenTry {
-                    counterparty_chosen_channel_id: "cparty".to_string(),
-                    ..default_raw_msg.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "[Counterparty] Bad channel, name too long".to_string(),
-                raw: RawMsgChannelOpenTry {
-                    counterparty_chosen_channel_id: "cpartydefghijkasdfasdfasdfasgdasdgasdfasdfadflmnoasdasdasdfasdfasdfasdfadadgadgadsfpqrstu".to_string(),
+                    previous_channel_id: "abcdefghijkasdfasdfasdfasgdasdgasdfasdfadflmnoasdasdasdfasdfasdfasdfadadgadgadsfpqrstu".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -260,8 +263,8 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 raw: RawMsgChannelOpenTry {
                     proof_height: Some(Height {
-                        version_number: 0,
-                        version_height: 0,
+                        revision_number: 0,
+                        revision_height: 0,
                     }),
                     ..default_raw_msg.clone()
                 },

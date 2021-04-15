@@ -5,86 +5,108 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
-mod config;
-mod keys;
-mod light;
-mod listen;
-mod query;
-mod start;
-mod tx;
-mod v0;
-mod version;
-
-use self::{
-    config::ConfigCmd, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
-    start::StartCmd, tx::TxCmd, v0::V0Cmd, version::VersionCmd,
-};
-
-use crate::config::Config;
-use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
 use std::path::PathBuf;
 
-/// Cli Configuration Filename
-pub const CONFIG_FILE: &str = "relayer.toml";
+use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
+use tracing::info;
+
+use crate::config::Config;
+use crate::DEFAULT_CONFIG_PATH;
+
+use self::{
+    create::CreateCmds, keys::KeysCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
+    start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
+    version::VersionCmd,
+};
+use crate::commands::misbehaviour::MisbehaviourCmd;
+
+mod config;
+mod create;
+mod keys;
+mod listen;
+mod misbehaviour;
+mod query;
+mod start;
+mod start_multi;
+mod tx;
+mod update;
+mod upgrade;
+mod version;
+
+/// Default configuration file path
+pub fn default_config_file() -> Option<PathBuf> {
+    info!("Using default configuration from: '.hermes/config.toml'");
+    dirs_next::home_dir().map(|home| home.join(DEFAULT_CONFIG_PATH))
+}
+
+// TODO: Re-add the `config` subcommand
+// /// The `config` subcommand
+// #[options(help = "manipulate the relayer configuration")]
+// Config(ConfigCmd),
 
 /// Cli Subcommands
 #[derive(Command, Debug, Options, Runnable)]
 pub enum CliCmd {
     /// The `help` subcommand
-    #[options(help = "get usage information")]
+    #[options(help = "Get usage information")]
     Help(Help<Self>),
 
-    /// The `v0` subcommand
-    #[options(help = "start the v0 relayer")]
-    V0(V0Cmd),
+    /// The `keys` subcommand
+    #[options(help = "Manage keys in the relayer for each chain")]
+    Keys(KeysCmd),
+
+    /// The `create` subcommand
+    #[options(help = "Create objects (client, connection, or channel) on chains")]
+    Create(CreateCmds),
+
+    /// The `update` subcommand
+    #[options(
+        help = "Update objects on chains. Currently this sub-commands serves only to update clients"
+    )]
+    Update(UpdateCmds),
+
+    /// The `upgrade` subcommand
+    #[options(
+        help = "Upgrade objects after chain upgrade. Currently this sub-commands serves only to upgrade clients"
+    )]
+    Upgrade(UpgradeCmds),
 
     /// The `start` subcommand
-    #[options(help = "start the relayer")]
+    #[options(help = "Start the relayer")]
     Start(StartCmd),
 
-    /// The `listen` subcommand
-    #[options(help = "listen to IBC events")]
-    Listen(ListenCmd),
-
-    /// The `config` subcommand
-    #[options(help = "manipulate the relayer configuration")]
-    Config(ConfigCmd),
-
-    /// The `version` subcommand
-    #[options(help = "display version information")]
-    Version(VersionCmd),
+    /// The `start-multi` subcommand
+    #[options(help = "Start the relayer in multi-channel mode. \
+                      Omit the options to pick up connections from the configuration.")]
+    StartMulti(StartMultiCmd),
 
     /// The `query` subcommand
-    #[options(help = "query state from chain")]
+    #[options(help = "Query objects from the chain")]
     Query(QueryCmd),
 
     /// The `tx` subcommand
-    #[options(help = "create IBC transactions on configured chains")]
+    #[options(help = "Create and send IBC transactions")]
     Tx(TxCmd),
 
-    /// The `light` subcommand
-    #[options(help = "basic functionality for managing the lite clients")]
-    Light(LightCmd),
+    /// The `listen` subcommand
+    #[options(help = "Listen to and display IBC events emitted by a chain")]
+    Listen(ListenCmd),
 
-    /// The `keys` subcommand
-    #[options(help = "manage keys in the relayer for each chain")]
-    Keys(KeysCmd),
+    /// The `misbehaviour` subcommand
+    #[options(help = "Listen to client update IBC events and handles misbehaviour")]
+    Misbehaviour(MisbehaviourCmd),
+
+    /// The `version` subcommand
+    #[options(help = "Display version information")]
+    Version(VersionCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.
 impl Configurable<Config> for CliCmd {
     /// Location of the configuration file
     fn config_path(&self) -> Option<PathBuf> {
-        // Check if the config file exists, and if it does not, ignore it.
-        // If you'd like for a missing configuration file to be a hard error
-        // instead, always return `Some(CONFIG_FILE)` here.
-        let filename = PathBuf::from(CONFIG_FILE);
-
-        if filename.exists() {
-            Some(filename)
-        } else {
-            None
-        }
+        let filename = default_config_file();
+        filename.filter(|f| f.exists())
     }
 
     /// Apply changes to the config after it's been loaded, e.g. overriding

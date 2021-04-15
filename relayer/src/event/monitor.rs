@@ -1,34 +1,47 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use anomaly::BoxError;
 use crossbeam_channel as channel;
+use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
+use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
 use tokio::runtime::Runtime as TokioRuntime;
-use tokio::stream::StreamExt;
-
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 
-use ibc::{events::IBCEvent, ics24_host::identifier::ChainId};
-use tendermint::{block::Height, net};
-use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
+use ibc::{events::IbcEvent, ics24_host::identifier::ChainId};
 
 use crate::error::{Error, Kind};
+use ibc::ics02_client::height::Height;
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
 pub struct EventBatch {
     pub chain_id: ChainId,
     pub height: Height,
-    pub events: Vec<IBCEvent>,
+    pub events: Vec<IbcEvent>,
+}
+
+impl EventBatch {
+    pub fn unwrap_or_clone(self: Arc<Self>) -> Self {
+        Arc::try_unwrap(self).unwrap_or_else(|batch| batch.as_ref().clone())
+    }
 }
 
 type SubscriptionResult = Result<tendermint_rpc::event::Event, tendermint_rpc::Error>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
-/// Connect to a TM node, receive push events over a websocket and filter them for the
+/// Connect to a Tendermint node, subscribe to a set of queries,
+/// receive push events over a websocket, and filter them for the
 /// event handler.
+///
+/// The default events that are queried are:
+/// - [`EventType::NewBlock`]
+/// - [`EventType::Tx`]
+///
+/// Those can be extending or overriden using
+/// [`EventMonitor::add_query`] and [`EventMonitor::set_queries`].
 pub struct EventMonitor {
     chain_id: ChainId,
     /// WebSocket to collect events from
@@ -38,38 +51,32 @@ pub struct EventMonitor {
     /// Channel to handler where the monitor for this chain sends the events
     tx_batch: channel::Sender<EventBatch>,
     /// Node Address
-    node_addr: net::Address,
+    node_addr: tendermint_rpc::Url,
     /// Queries
     event_queries: Vec<Query>,
     /// All subscriptions combined in a single stream
     subscriptions: Box<SubscriptionStream>,
     /// Tokio runtime
-    rt: Arc<Mutex<TokioRuntime>>,
+    rt: Arc<TokioRuntime>,
 }
 
 impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
         chain_id: ChainId,
-        rpc_addr: net::Address,
-        rt: Arc<Mutex<TokioRuntime>>,
+        node_addr: tendermint_rpc::Url,
+        rt: Arc<TokioRuntime>,
     ) -> Result<(Self, channel::Receiver<EventBatch>), Error> {
         let (tx, rx) = channel::unbounded();
 
-        let websocket_addr = rpc_addr.clone();
-        let (websocket_client, websocket_driver) = rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .block_on(async move {
-                WebSocketClient::new(websocket_addr)
-                    .await
-                    .map_err(|e| Kind::Rpc.context(e))
-            })?;
+        let ws_addr = node_addr.clone();
+        let (websocket_client, websocket_driver) = rt.block_on(async move {
+            WebSocketClient::new(ws_addr.clone())
+                .await
+                .map_err(|e| Kind::Websocket(ws_addr).context(e))
+        })?;
 
-        let websocket_driver_handle = rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .spawn(websocket_driver.run());
+        let websocket_driver_handle = rt.spawn(websocket_driver.run());
 
         // TODO: move them to config file(?)
         let event_queries = vec![Query::from(EventType::Tx), Query::from(EventType::NewBlock)];
@@ -81,11 +88,27 @@ impl EventMonitor {
             websocket_driver_handle,
             event_queries,
             tx_batch: tx,
-            node_addr: rpc_addr,
+            node_addr,
             subscriptions: Box::new(futures::stream::empty()),
         };
 
         Ok((monitor, rx))
+    }
+
+    /// Set the queries to subscribe to.
+    ///
+    /// ## Note
+    /// For this change to take effect, one has to [`subscribe`] again.
+    pub fn set_queries(&mut self, queries: Vec<Query>) {
+        self.event_queries = queries;
+    }
+
+    /// Add a new query to subscribe to.
+    ///
+    /// ## Note
+    /// For this change to take effect, one has to [`subscribe`] again.
+    pub fn add_query(&mut self, query: Query) {
+        self.event_queries.push(query);
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
@@ -95,8 +118,6 @@ impl EventMonitor {
         for query in &self.event_queries {
             let subscription = self
                 .rt
-                .lock()
-                .map_err(|_| Kind::PoisonedMutex)?
                 .block_on(self.websocket_client.subscribe(query.clone()))?;
 
             subscriptions.push(subscription);
@@ -111,15 +132,9 @@ impl EventMonitor {
         // Try to reconnect
         let (mut websocket_client, websocket_driver) = self
             .rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
             .block_on(WebSocketClient::new(self.node_addr.clone()))?;
 
-        let mut websocket_driver_handle = self
-            .rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .spawn(websocket_driver.run());
+        let mut websocket_driver_handle = self.rt.spawn(websocket_driver.run());
 
         // Swap the new client with the previous one which failed,
         // so that we can shut the latter down gracefully.
@@ -138,16 +153,12 @@ impl EventMonitor {
             error!("Previous websocket client closing failure {}", e);
         }
 
-        self.rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .block_on(websocket_driver_handle)
-            .map_err(|e| {
-                tendermint_rpc::Error::client_internal_error(format!(
-                    "failed to terminate previous WebSocket client driver: {}",
-                    e
-                ))
-            })??;
+        self.rt.block_on(websocket_driver_handle).map_err(|e| {
+            tendermint_rpc::Error::client_internal_error(format!(
+                "failed to terminate previous WebSocket client driver: {}",
+                e
+            ))
+        })??;
 
         Ok(())
     }
@@ -185,34 +196,31 @@ impl EventMonitor {
 
     /// Collect the IBC events from the subscriptions
     fn collect_events(&mut self) -> Result<(), BoxError> {
-        let event = self
-            .rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .block_on(self.subscriptions.next());
+        let event = self.rt.block_on(self.subscriptions.next());
 
         match event {
-            Some(Ok(event)) => match ibc::events::get_all_events(event.clone()) {
-                Ok(ibc_events) => {
-                    let events_by_height = ibc_events.into_iter().into_group_map();
+            Some(Ok(event)) => {
+                match crate::event::rpc::get_all_events(&self.chain_id, event.clone()) {
+                    Ok(ibc_events) => {
+                        let events_by_height = ibc_events.into_iter().into_group_map();
 
-                    for (height, events) in events_by_height {
-                        let batch = EventBatch {
-                            chain_id: self.chain_id.clone(),
-                            height,
-                            events,
-                        };
-
-                        self.tx_batch.send(batch)?;
+                        for (height, events) in events_by_height {
+                            let batch = EventBatch {
+                                chain_id: self.chain_id.clone(),
+                                height,
+                                events,
+                            };
+                            self.tx_batch.send(batch)?;
+                        }
+                    }
+                    Err(err) => {
+                        error!(
+                            "Error {} when extracting IBC events from {:?}: ",
+                            err, event
+                        );
                     }
                 }
-                Err(err) => {
-                    error!(
-                        "Error {} when extracting IBC events from {:?}: ",
-                        err, event
-                    );
-                }
-            },
+            }
             Some(Err(err)) => {
                 error!("Error on collecting events from subscriptions: {}", err);
             }

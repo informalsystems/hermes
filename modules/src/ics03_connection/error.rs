@@ -1,12 +1,12 @@
-// TODO: Update error types for Connection!!
 use anomaly::{BoxError, Context};
 use thiserror::Error;
-pub type Error = anomaly::Error<Kind>;
 
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
-#[derive(Clone, Debug, Error)]
+pub type Error = anomaly::Error<Kind>;
+
+#[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
     #[error("connection state unknown")]
     InvalidState(i32),
@@ -23,16 +23,22 @@ pub enum Kind {
     #[error("consensus height claimed by the client on the other party is too advanced: {0} (host chain current height: {1})")]
     InvalidConsensusHeight(Height, Height),
 
-    #[error("consensus height claimed by the client on the other party falls outside of trusting period: {0} (host chain current height: {1})")]
+    #[error("consensus height claimed by the client on the other party has been pruned: {0} (host chain oldest height: {1})")]
     StaleConsensusHeight(Height, Height),
 
     #[error("identifier error")]
     IdentifierError,
 
+    #[error("ConnectionEnd domain object could not be constructed out of empty proto object")]
+    EmptyProtoConnectionEnd,
+
     #[error("invalid version")]
     InvalidVersion,
 
-    #[error("no commong version")]
+    #[error("empty supported versions")]
+    EmptyVersions,
+
+    #[error("no common version")]
     NoCommonVersion,
 
     #[error("invalid address")]
@@ -50,8 +56,8 @@ pub enum Kind {
     #[error("invalid signer")]
     InvalidSigner,
 
-    #[error("queried for a non-existing connection")]
-    ConnectionNotFound,
+    #[error("no connection was found for the previous connection id provided {0}")]
+    ConnectionNotFound(ConnectionId),
 
     #[error("invalid counterparty")]
     InvalidCounterparty,
@@ -71,14 +77,14 @@ pub enum Kind {
     #[error("client proof must be present")]
     NullClientProof,
 
-    #[error("the client is frozen")]
-    FrozenClient,
+    #[error("the client {0} running locally is frozen")]
+    FrozenClient(ClientId),
 
     #[error("the connection proof verification failed")]
     ConnectionVerificationFailure,
 
-    #[error("the expected consensus state could not be retrieved")]
-    MissingClientConsensusState,
+    #[error("the consensus state at height {0} for client id {1} could not be retrieved")]
+    MissingClientConsensusState(Height, ClientId),
 
     #[error("the local consensus state could not be retrieved")]
     MissingLocalConsensusState,
@@ -86,8 +92,8 @@ pub enum Kind {
     #[error("the consensus proof verification failed (height: {0})")]
     ConsensusStateVerificationFailure(Height),
 
-    #[error("the client state proof verification failed")]
-    ClientStateVerificationFailure,
+    #[error("the client state proof verification failed for client id: {0}")]
+    ClientStateVerificationFailure(ClientId),
 }
 
 impl Kind {

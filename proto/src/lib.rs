@@ -6,7 +6,7 @@
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.4.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.7.0")]
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
 pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
@@ -37,20 +37,21 @@ pub mod cosmos {
             pub mod v1beta1 {
                 include!("prost/cosmos.base.query.v1beta1.rs");
             }
+
+            pub mod pagination {
+                use super::v1beta1::PageRequest;
+
+                pub fn all() -> Option<PageRequest> {
+                    Some(PageRequest {
+                        limit: u64::MAX,
+                        ..Default::default()
+                    })
+                }
+            }
         }
         pub mod reflection {
             pub mod v1beta1 {
                 include!("prost/cosmos.base.reflection.v1beta1.rs");
-            }
-        }
-        pub mod simulate {
-            pub mod v1beta1 {
-                include!("prost/cosmos.base.simulate.v1beta1.rs");
-            }
-        }
-        pub mod snapshots {
-            pub mod v1beta1 {
-                include!("prost/cosmos.base.snapshots.v1beta1.rs");
             }
         }
         pub mod store {
@@ -79,10 +80,20 @@ pub mod cosmos {
             include!("prost/cosmos.tx.v1beta1.rs");
         }
     }
+    pub mod upgrade {
+        pub mod v1beta1 {
+            include!("prost/cosmos.upgrade.v1beta1.rs");
+        }
+    }
+    pub mod gov {
+        pub mod v1beta1 {
+            include!("prost/cosmos.gov.v1beta1.rs");
+        }
+    }
 }
 
 pub mod ibc {
-    pub mod applications {
+    pub mod apps {
         pub mod transfer {
             pub mod v1 {
                 include!("prost/ibc.applications.transfer.v1.rs");

@@ -1,23 +1,20 @@
 //! Protocol logic specific to ICS3 messages of type `MsgConnectionOpenInit`.
 
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::handler::ConnectionEvent::ConnOpenInit;
-use crate::ics03_connection::handler::ConnectionResult;
+use crate::ics03_connection::events::Attributes;
+use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use crate::ics24_host::identifier::ConnectionId;
 
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenInit,
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();
-
-    // No connection should exist.
-    if ctx.connection_end(msg.connection_id()).is_some() {
-        return Err(Kind::ConnectionExistsAlready(msg.connection_id().clone()).into());
-    }
 
     // An IBC client running on the local (host) chain should exist.
     if ctx.client_state(msg.client_id()).is_none() {
@@ -29,16 +26,29 @@ pub(crate) fn process(
         msg.client_id().clone(),
         msg.counterparty().clone(),
         ctx.get_compatible_versions(),
-    )?;
+        msg.delay_period,
+    );
 
-    output.log("success: no connection found");
+    // Construct the identifier for the new connection.
+    let id_counter = ctx.connection_counter();
+    let conn_id = ConnectionId::new(id_counter);
+
+    output.log(format!(
+        "success: generated new connection identifier: {}",
+        conn_id
+    ));
 
     let result = ConnectionResult {
-        connection_id: msg.connection_id().clone(),
+        connection_id: conn_id.clone(),
+        connection_id_state: ConnectionIdState::Generated,
         connection_end: new_connection_end,
     };
 
-    output.emit(ConnOpenInit(result.clone()));
+    let event_attributes = Attributes {
+        connection_id: Some(conn_id),
+        ..Default::default()
+    };
+    output.emit(IbcEvent::OpenInitConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -47,11 +57,10 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
 
-    use crate::handler::EventType;
-    use crate::ics03_connection::connection::{ConnectionEnd, State};
-    use crate::ics03_connection::context::ConnectionReader;
+    use crate::events::IbcEvent;
+    use crate::ics03_connection::connection::State;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::mock::context::MockContext;
@@ -67,27 +76,10 @@ mod tests {
         }
 
         let msg_conn_init =
-            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+            MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
         let context = MockContext::default();
 
-        let init_conn_end = &ConnectionEnd::new(
-            State::Init,
-            msg_conn_init.client_id().clone(),
-            msg_conn_init.counterparty().clone(),
-            context.get_compatible_versions(),
-        )
-        .unwrap();
-
         let tests: Vec<Test> = vec![
-            Test {
-                name: "Processing fails because the connection exists in the store already"
-                    .to_string(),
-                ctx: context
-                    .clone()
-                    .with_connection(msg_conn_init.connection_id().clone(), init_conn_end.clone()),
-                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
-                want_pass: false,
-            },
             Test {
                 name: "Processing fails because no client exists in the context".to_string(),
                 ctx: context.clone(),
@@ -121,11 +113,10 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have init state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, msg_conn_init.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::Init);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(e.tpe, EventType::Custom("connection_open_init".to_string()));
+                        assert!(matches!(e, &IbcEvent::OpenInitConnection(_)));
                     }
                 }
                 Err(e) => {

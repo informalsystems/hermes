@@ -1,117 +1,414 @@
+use abscissa_core::{Command, Options, Runnable};
+
+use ibc::events::IbcEvent;
+use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics04_channel::channel::Order;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::Height;
+use ibc_relayer::channel::{Channel, ChannelSide};
+
+use crate::cli_utils::ChainHandlePair;
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
 use crate::prelude::*;
 
-use abscissa_core::{Command, Options, Runnable};
-use ibc::ics04_channel::channel::Order;
-use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+macro_rules! tx_chan_cmd {
+    ($dbg_string:literal, $func:ident, $self:expr, $chan:expr) => {
+        let config = app_config();
 
-use crate::error::{Error, Kind};
-use relayer::channel::{
-    build_chan_ack_and_send, build_chan_confirm_and_send, build_chan_init_and_send,
-    build_chan_try_and_send,
-};
+        let chains = match ChainHandlePair::spawn(&config, &$self.src_chain_id, &$self.dst_chain_id)
+        {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
-use relayer::chain::runtime::ChainRuntime;
-use relayer::chain::CosmosSDKChain;
-use relayer::channel::{ChannelConfig, ChannelConfigSide};
+        // Retrieve the connection
+        let dst_connection = match chains
+            .dst
+            .query_connection(&$self.dst_conn_id, Height::default())
+        {
+            Ok(connection) => connection,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
-macro_rules! chan_open_cmd {
-    ($chan_open_cmd:ident, $dbg_string:literal, $func:ident) => {
-        #[derive(Clone, Command, Debug, Options)]
-        pub struct $chan_open_cmd {
-            #[options(free, help = "identifier of the destination chain")]
-            dst_chain_id: String,
+        let channel = $chan(chains, dst_connection);
 
-            #[options(free, help = "identifier of the source chain")]
-            src_chain_id: String,
+        info!("Message {}: {:?}", $dbg_string, channel);
 
-            #[options(free, help = "identifier of the destination connection")]
-            dst_connection_id: ConnectionId,
+        let res: Result<IbcEvent, Error> = channel.$func().map_err(|e| Kind::Tx.context(e).into());
 
-            #[options(free, help = "identifier of the destination port")]
-            dst_port_id: PortId,
-
-            #[options(free, help = "identifier of the source port")]
-            src_port_id: PortId,
-
-            #[options(free, help = "identifier of the destination channel")]
-            dst_channel_id: ChannelId,
-
-            #[options(free, help = "identifier of the source channel")]
-            src_channel_id: ChannelId,
-
-            #[options(help = "the channel order", short = "o")]
-            ordering: Order,
-        }
-
-        impl Runnable for $chan_open_cmd {
-            fn run(&self) {
-                let config = app_config();
-
-                let src_config = config
-                    .chains
-                    .iter()
-                    .find(|c| c.id == self.src_chain_id.parse().unwrap())
-                    .ok_or_else(|| "missing src chain configuration".to_string());
-
-                let dst_config = config
-                    .chains
-                    .iter()
-                    .find(|c| c.id == self.dst_chain_id.parse().unwrap())
-                    .ok_or_else(|| "missing src chain configuration".to_string());
-
-                let (src_chain_config, dst_chain_config) = match (src_config, dst_config) {
-                    (Ok(s), Ok(d)) => (s, d),
-                    (_, _) => {
-                        status_err!("invalid options");
-                        return;
-                    }
-                };
-
-                let opts = ChannelConfig {
-                    ordering: self.ordering,
-                    a_config: ChannelConfigSide::new(
-                        &src_chain_config.id,
-                        &ConnectionId::default(),
-                        &ClientId::default(),
-                        &self.src_port_id,
-                        &self.src_channel_id,
-                    ),
-                    b_config: ChannelConfigSide::new(
-                        &dst_chain_config.id,
-                        &self.dst_connection_id,
-                        &ClientId::default(),
-                        &self.dst_port_id,
-                        &self.dst_channel_id,
-                    ),
-                };
-
-                status_info!("Message ", "{}: {:#?}", $dbg_string, opts);
-
-                let (src_chain, _) =
-                    ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone()).unwrap();
-                let (dst_chain, _) =
-                    ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone()).unwrap();
-
-                let res: Result<String, Error> =
-                    $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
-
-                match res {
-                    Ok(receipt) => status_ok!("Result: ", "{:?} - {:?}", $dbg_string, receipt),
-                    Err(e) => status_err!("Failed with Error: {:?} - {:?}", $dbg_string, e),
-                }
-            }
+        match res {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     };
 }
 
-chan_open_cmd!(TxRawChanInitCmd, "ChanOpenInit", build_chan_init_and_send);
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawChanOpenInitCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
 
-chan_open_cmd!(TxRawChanTryCmd, "ChanOpenTry", build_chan_try_and_send);
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
-chan_open_cmd!(TxRawChanAckCmd, "ChanOpenAck", build_chan_ack_and_send);
+    #[options(free, required, help = "identifier of the destination connection")]
+    dst_conn_id: ConnectionId,
 
-chan_open_cmd!(
-    TxRawChanConfirmCmd,
-    "ChanOpenConfirm",
-    build_chan_confirm_and_send
-);
+    #[options(free, required, help = "identifier of the destination port")]
+    dst_port_id: PortId,
+
+    #[options(free, required, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(help = "the channel ordering, valid options 'unordered' (default) and 'ordered'")]
+    order: Order,
+}
+
+impl Runnable for TxRawChanOpenInitCmd {
+    fn run(&self) {
+        tx_chan_cmd!(
+            "ChanOpenInit",
+            build_chan_open_init_and_send,
+            self,
+            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+                Channel {
+                    connection_delay: Default::default(),
+                    ordering: self.order,
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        ChannelId::default(),
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst.clone(),
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        ChannelId::default(),
+                    ),
+                    version: None,
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawChanOpenTryCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination connection")]
+    dst_conn_id: ConnectionId,
+
+    #[options(free, required, help = "identifier of the destination port")]
+    dst_port_id: PortId,
+
+    #[options(free, required, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(
+        required,
+        help = "identifier of the source channel (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_chan_id: ChannelId,
+}
+
+impl Runnable for TxRawChanOpenTryCmd {
+    fn run(&self) {
+        tx_chan_cmd!(
+            "ChanOpenTry",
+            build_chan_open_try_and_send,
+            self,
+            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+                Channel {
+                    connection_delay: Default::default(),
+                    ordering: Order::default(),
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        self.src_chan_id.clone(),
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst.clone(),
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        ChannelId::default(),
+                    ),
+                    version: None,
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawChanOpenAckCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination connection")]
+    dst_conn_id: ConnectionId,
+
+    #[options(free, required, help = "identifier of the destination port")]
+    dst_port_id: PortId,
+
+    #[options(free, required, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(
+        required,
+        help = "identifier of the destination channel (required)",
+        short = "d",
+        meta = "ID"
+    )]
+    dst_chan_id: ChannelId,
+
+    #[options(
+        required,
+        help = "identifier of the source channel (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_chan_id: ChannelId,
+}
+
+impl Runnable for TxRawChanOpenAckCmd {
+    fn run(&self) {
+        tx_chan_cmd!(
+            "ChanOpenAck",
+            build_chan_open_ack_and_send,
+            self,
+            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+                Channel {
+                    connection_delay: Default::default(),
+                    ordering: Order::default(),
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        self.src_chan_id.clone(),
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst.clone(),
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        self.dst_chan_id.clone(),
+                    ),
+                    version: None,
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawChanOpenConfirmCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination connection")]
+    dst_conn_id: ConnectionId,
+
+    #[options(free, required, help = "identifier of the destination port")]
+    dst_port_id: PortId,
+
+    #[options(free, required, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(
+        required,
+        help = "identifier of the destination channel (required)",
+        short = "d",
+        meta = "ID"
+    )]
+    dst_chan_id: ChannelId,
+
+    #[options(
+        required,
+        help = "identifier of the source channel (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_chan_id: ChannelId,
+}
+
+impl Runnable for TxRawChanOpenConfirmCmd {
+    fn run(&self) {
+        tx_chan_cmd!(
+            "ChanOpenConfirm",
+            build_chan_open_confirm_and_send,
+            self,
+            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+                Channel {
+                    connection_delay: Default::default(),
+                    ordering: Order::default(),
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        self.src_chan_id.clone(),
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst.clone(),
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        self.dst_chan_id.clone(),
+                    ),
+                    version: None,
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawChanCloseInitCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination connection")]
+    dst_conn_id: ConnectionId,
+
+    #[options(free, required, help = "identifier of the destination port")]
+    dst_port_id: PortId,
+
+    #[options(free, required, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(
+        required,
+        help = "identifier of the destination channel (required)",
+        short = "d",
+        meta = "ID"
+    )]
+    dst_chan_id: ChannelId,
+
+    #[options(
+        required,
+        help = "identifier of the source channel (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_chan_id: ChannelId,
+}
+
+impl Runnable for TxRawChanCloseInitCmd {
+    fn run(&self) {
+        tx_chan_cmd!(
+            "ChanCloseInit",
+            build_chan_close_init_and_send,
+            self,
+            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+                Channel {
+                    connection_delay: Default::default(),
+                    ordering: Order::default(),
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        self.src_chan_id.clone(),
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst.clone(),
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        self.dst_chan_id.clone(),
+                    ),
+                    version: None,
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawChanCloseConfirmCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination connection")]
+    dst_conn_id: ConnectionId,
+
+    #[options(free, required, help = "identifier of the destination port")]
+    dst_port_id: PortId,
+
+    #[options(free, required, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(
+        required,
+        help = "identifier of the destination channel (required)",
+        short = "d",
+        meta = "ID"
+    )]
+    dst_chan_id: ChannelId,
+
+    #[options(
+        required,
+        help = "identifier of the source channel (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_chan_id: ChannelId,
+}
+
+impl Runnable for TxRawChanCloseConfirmCmd {
+    fn run(&self) {
+        tx_chan_cmd!(
+            "ChanCloseConfirm",
+            build_chan_close_confirm_and_send,
+            self,
+            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
+                Channel {
+                    connection_delay: Default::default(),
+                    ordering: Order::default(),
+                    a_side: ChannelSide::new(
+                        chains.src,
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        self.src_chan_id.clone(),
+                    ),
+                    b_side: ChannelSide::new(
+                        chains.dst.clone(),
+                        dst_connection.client_id().clone(),
+                        self.dst_conn_id.clone(),
+                        self.dst_port_id.clone(),
+                        self.dst_chan_id.clone(),
+                    ),
+                    version: None,
+                }
+            }
+        );
+    }
+}

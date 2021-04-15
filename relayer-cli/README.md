@@ -1,78 +1,43 @@
-# Relayer (Rust)
+# Hermes: IBC Relayer CLI
 
-This is the repository for the IBC Relayer built in Rust.
+[![Crate][crate-image]][crate-link]
+[![Docs][docs-image]][docs-link]
+[![Build Status][build-image]][build-link]
+[![End to End testing][e2e-image]][e2e-link]
+[![Apache 2.0 Licensed][license-image]][license-link]
+![Rust Stable][rustc-image]
+![Rust 1.49+][rustc-version]
 
-For updates please check the [releases on the ibc-rs repository](https://github.com/informalsystems/ibc-rs/releases)
+This is the repository for the CLI of the IBC Relayer built in Rust, called 
+`hermes`.
 
-## Getting Started
-
-In order to run the Relayer please ensure you have [Rust installed on your machine](https://www.rust-lang.org/tools/install)
-
-### Submitting an IBC transaction
-
-There are a few `tx raw` commands that build IBC datagrams and submit them to the chains (`dest_chain_id` below).
-
-```shell script
-relayer-cli -c config.toml tx raw create-client dest_chain_id src_chain_id dest_client_id
-
-relayer-cli -c config.toml tx raw create-client dest_chain_id src_chain_id dest_client_id
-
-relayer-cli -c config.toml tx raw conn-init dest_chain_id src_chain_id dest_client_id src_client_id dest_connection_id -d src_connection_id
-
-relayer-cli -c config.toml tx raw conn-try dest_chain_id src_chain_id dest_client_id src_client_id dest_connection_id src_connection_id
-```
-Note: This is work in progress, more commands will be implemented and tested with gaia `cosmos-test-stargate` chains.
-
-#### Steps to testing the transactions:
-
-* Start two chains using the `/scripts/two-chainz` script from the [cosmos/relayer](https://github.com/cosmos/relayer) (make sure to checkout the latest release, currently 0.6.1)
-
-*  After you run the script, the Go relayer will create a `data` folder for the chains. Add the key seed file (shown below) `[GO RELAYER DATA FOLDER]/data/ibc-1/key_seed.json` for chain `ibc-1` to the relayer config folder ($HOME/.rrly) using the `keys add` command below
-
-        {    
-            "name":"user",
-            "type":"local",
-            "address":"cosmos1tqzwwr5hrnq2ceg5fg52m720m50xpfy08at7l9",
-            "pubkey":"cosmospub1addwnpepq08wntxejcla5hd93stgudw02htdpa9vu5a2ds8xkvmgrkrrpwlj6sdhkz6",
-            "mnemonic":"[MNEMONIC WORDS"}
-        }
-
-* Add the key using the `relayer-clie keys add` command. The key file will be added exactly the above (json format and unencrypted). Later when we have a proper keyring the key file will be safely stored but for now just ensure you're using this on non-production systems.
-    
-    `$ cargo run --bin relayer -- -c ./relayer-cli/tests/fixtures/two_chains.toml keys add ibc-1 [GO RELAYER DATA FOLDER]/data/ibc-1/key_seed.json`
-    
-* After you add the key, you can check if they were properly added using the command:
-
-    `$ cargo run --bin relayer -- -c ./relayer-cli/tests/fixtures/two_chains.toml keys list ibc-1`
-    
-*  Run the transaction command. In this example, it will try to initialize an `ibczeroconn2` connection on chain `ibc-1`
-
-   `$ cargo run --bin relayer -- -c ./relayer-cli/tests/fixtures/two_chains.toml tx raw conn-init ibc-1 ibc-0 ibczeroclient ibconeclient ibczeroconn2 -d ibconeconn`
-
-    If you get an empty response it means the tx worked
-
-    `conn init, result:  []`
-
-*  Check if the connection was created on `ibc-1`:
-
-     `$ cargo run --bin relayer -- -c ./relayer-cli/tests/fixtures/two_chains.toml query connection end ibc-1 ibczeroconn2 | jq .`
-
-    If you see an entry in the JSON file that points to the `ibczeroconn2` connection with state `STATE_INIT` it confirms that the transaction worked:
+For any information about the relayer binary, please read the comprehensive 
+guide available at [hermes.informal.systems](https://hermes.informal.systems).
 
 
-         {
-               "id": "ibczeroconn2",
-               "client_id": "ibczeroclient",
-               "versions": [
-                 "\n\u00011\u0012\rORDER_ORDERED\u0012\u000fORDER_UNORDERED"
-               ],
-               "state": "STATE_INIT",
-               "counterparty": {
-                 "client_id": "ibconeclient",
-                 "connection_id": "ibconeconn",
-                 "prefix": {
-                   "key_prefix": "aWJj"
-                 }
-               }
-         },
-     
+## License
+
+Copyright © 2021 Informal Systems Inc. and ibc-rs authors.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use the files in this repository except in compliance with the License. You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+[//]: # (badges)
+
+[crate-image]: https://img.shields.io/crates/v/ibc-relayer-cli.svg
+[crate-link]: https://crates.io/crates/ibc-relayer-cli
+[docs-image]: https://docs.rs/ibc-relayer-cli/badge.svg
+[docs-link]: https://docs.rs/ibc-relayer-cli/
+
+[build-image]: https://github.com/informalsystems/ibc-rs/workflows/Rust/badge.svg
+[build-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3ARust
+[e2e-image]: https://github.com/informalsystems/ibc-rs/workflows/End%20to%20End%20testing/badge.svg
+[e2e-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22
+
+[license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
+[license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
+[rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
+[rustc-version]: https://img.shields.io/badge/rustc-1.49+-blue.svg

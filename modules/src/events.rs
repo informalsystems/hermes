@@ -1,27 +1,45 @@
+use std::collections::HashMap;
+
+use anomaly::BoxError;
+use serde_derive::{Deserialize, Serialize};
+
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
-use crate::ics20_fungible_token_transfer::events as TransferEvents;
+use crate::Height;
+use prost::alloc::fmt::Formatter;
+use std::fmt;
 
-use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
+/// Events types
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum IbcEventType {
+    CreateClient,
+    UpdateClient,
+    SendPacket,
+    WriteAck,
+}
 
-use anomaly::BoxError;
-use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-use tendermint::block::Height;
-
-use tracing::warn;
+impl IbcEventType {
+    pub fn as_str(&self) -> &'static str {
+        match *self {
+            IbcEventType::CreateClient => "create_client",
+            IbcEventType::UpdateClient => "update_client",
+            IbcEventType::SendPacket => "send_packet",
+            IbcEventType::WriteAck => "write_acknowledgement",
+        }
+    }
+}
 
 /// Events created by the IBC component of a chain, destined for a relayer.
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum IBCEvent {
+pub enum IbcEvent {
     NewBlock(NewBlock),
 
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
-    ClientMisbehavior(ClientEvents::ClientMisbehavior),
+    UpgradeClient(ClientEvents::UpgradeClient),
+    ClientMisbehaviour(ClientEvents::ClientMisbehaviour),
 
     OpenInitConnection(ConnectionEvents::OpenInit),
     OpenTryConnection(ConnectionEvents::OpenTry),
@@ -35,20 +53,135 @@ pub enum IBCEvent {
     CloseInitChannel(ChannelEvents::CloseInit),
     CloseConfirmChannel(ChannelEvents::CloseConfirm),
 
-    SendPacketChannel(ChannelEvents::SendPacket),
-    ReceivePacketChannel(ChannelEvents::ReceivePacket),
-    AcknowledgePacketChannel(ChannelEvents::AcknowledgePacket),
-    CleanupPacketChannel(ChannelEvents::CleanupPacket),
-    TimeoutPacketChannel(ChannelEvents::TimeoutPacket),
+    SendPacket(ChannelEvents::SendPacket),
+    ReceivePacket(ChannelEvents::ReceivePacket),
+    WriteAcknowledgement(ChannelEvents::WriteAcknowledgement),
+    AcknowledgePacket(ChannelEvents::AcknowledgePacket),
+    TimeoutPacket(ChannelEvents::TimeoutPacket),
+    TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
-    TimeoutTransfer(TransferEvents::Timeout),
-    PacketTransfer(TransferEvents::Packet),
-    ChannelClosedTransfer(TransferEvents::ChannelClosed),
+    Empty(String),      // Special event, signifying empty response
+    ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
-impl IBCEvent {
+/// For use in debug messages
+pub struct VecIbcEvents(pub Vec<IbcEvent>);
+impl fmt::Display for VecIbcEvents {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "events:")?;
+        for v in &self.0 {
+            writeln!(f, "\t{}", v)?;
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Display for IbcEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            IbcEvent::NewBlock(ev) => write!(f, "NewBlock({})", ev.height),
+
+            IbcEvent::CreateClient(ev) => write!(f, "CreateClientEv({})", ev),
+            IbcEvent::UpdateClient(ev) => write!(f, "UpdateClientEv({})", ev),
+            IbcEvent::UpgradeClient(ev) => write!(f, "UpgradeClientEv({:?})", ev),
+            IbcEvent::ClientMisbehaviour(ev) => write!(f, "ClientMisbehaviourEv({:?})", ev),
+
+            IbcEvent::OpenInitConnection(ev) => write!(f, "OpenInitConnectionEv({:?})", ev),
+            IbcEvent::OpenTryConnection(ev) => write!(f, "OpenTryConnectionEv({:?})", ev),
+            IbcEvent::OpenAckConnection(ev) => write!(f, "OpenAckConnectionEv({:?})", ev),
+            IbcEvent::OpenConfirmConnection(ev) => write!(f, "OpenConfirmConnectionEv({:?})", ev),
+
+            IbcEvent::OpenInitChannel(ev) => write!(f, "OpenInitChannelEv({:?})", ev),
+            IbcEvent::OpenTryChannel(ev) => write!(f, "OpenTryChannelEv({:?})", ev),
+            IbcEvent::OpenAckChannel(ev) => write!(f, "OpenAckChannelEv({:?})", ev),
+            IbcEvent::OpenConfirmChannel(ev) => write!(f, "OpenConfirmChannelEv({:?})", ev),
+            IbcEvent::CloseInitChannel(ev) => write!(f, "CloseInitChannelEv({})", ev),
+            IbcEvent::CloseConfirmChannel(ev) => write!(f, "CloseConfirmChannelEv({:?})", ev),
+
+            IbcEvent::SendPacket(ev) => write!(f, "SendPacketEv({})", ev),
+            IbcEvent::ReceivePacket(ev) => write!(f, "ReceivePacketEv({})", ev),
+            IbcEvent::WriteAcknowledgement(ev) => write!(f, "WriteAcknowledgementEv({})", ev),
+            IbcEvent::AcknowledgePacket(ev) => write!(f, "AcknowledgePacketEv({})", ev),
+            IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacketEv({})", ev),
+            IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacketEv({})", ev),
+
+            IbcEvent::Empty(ev) => write!(f, "EmptyEv({})", ev),
+            IbcEvent::ChainError(ev) => write!(f, "ChainErrorEv({})", ev),
+        }
+    }
+}
+
+// This is tendermint specific
+pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IbcEvent> {
+    // Return the first hit we find
+    if let Some(mut client_res) = ClientEvents::try_from_tx(event) {
+        client_res.set_height(height);
+        Some(client_res)
+    } else if let Some(mut conn_res) = ConnectionEvents::try_from_tx(event) {
+        conn_res.set_height(height);
+        Some(conn_res)
+    } else if let Some(mut chan_res) = ChannelEvents::try_from_tx(event) {
+        chan_res.set_height(height);
+        Some(chan_res)
+    } else {
+        None
+    }
+}
+
+impl IbcEvent {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
+    }
+
+    pub fn height(&self) -> Height {
+        match self {
+            IbcEvent::NewBlock(bl) => bl.height(),
+            IbcEvent::CreateClient(ev) => ev.height(),
+            IbcEvent::UpdateClient(ev) => ev.height(),
+            IbcEvent::ClientMisbehaviour(ev) => ev.height(),
+            IbcEvent::OpenInitConnection(ev) => ev.height(),
+            IbcEvent::OpenTryConnection(ev) => ev.height(),
+            IbcEvent::OpenAckConnection(ev) => ev.height(),
+            IbcEvent::OpenConfirmConnection(ev) => ev.height(),
+            IbcEvent::OpenInitChannel(ev) => ev.height(),
+            IbcEvent::OpenTryChannel(ev) => ev.height(),
+            IbcEvent::OpenAckChannel(ev) => ev.height(),
+            IbcEvent::OpenConfirmChannel(ev) => ev.height(),
+            IbcEvent::CloseInitChannel(ev) => ev.height(),
+            IbcEvent::CloseConfirmChannel(ev) => ev.height(),
+            IbcEvent::SendPacket(ev) => ev.height(),
+            IbcEvent::ReceivePacket(ev) => ev.height(),
+            IbcEvent::WriteAcknowledgement(ev) => ev.height(),
+            IbcEvent::AcknowledgePacket(ev) => ev.height(),
+            IbcEvent::TimeoutPacket(ev) => ev.height(),
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn set_height(&mut self, height: Height) {
+        match self {
+            IbcEvent::NewBlock(ev) => ev.set_height(height),
+            IbcEvent::CreateClient(ev) => ev.set_height(height),
+            IbcEvent::UpdateClient(ev) => ev.set_height(height),
+            IbcEvent::UpgradeClient(ev) => ev.set_height(height),
+            IbcEvent::ClientMisbehaviour(ev) => ev.set_height(height),
+            IbcEvent::OpenInitConnection(ev) => ev.set_height(height),
+            IbcEvent::OpenTryConnection(ev) => ev.set_height(height),
+            IbcEvent::OpenAckConnection(ev) => ev.set_height(height),
+            IbcEvent::OpenConfirmConnection(ev) => ev.set_height(height),
+            IbcEvent::OpenInitChannel(ev) => ev.set_height(height),
+            IbcEvent::OpenTryChannel(ev) => ev.set_height(height),
+            IbcEvent::OpenAckChannel(ev) => ev.set_height(height),
+            IbcEvent::OpenConfirmChannel(ev) => ev.set_height(height),
+            IbcEvent::CloseInitChannel(ev) => ev.set_height(height),
+            IbcEvent::CloseConfirmChannel(ev) => ev.set_height(height),
+            IbcEvent::SendPacket(ev) => ev.set_height(height),
+            IbcEvent::ReceivePacket(ev) => ev.set_height(height),
+            IbcEvent::WriteAcknowledgement(ev) => ev.set_height(height),
+            IbcEvent::AcknowledgePacket(ev) => ev.set_height(height),
+            IbcEvent::TimeoutPacket(ev) => ev.set_height(height),
+            _ => unimplemented!(),
+        }
     }
 }
 
@@ -89,153 +222,18 @@ pub fn extract_events<S: ::std::hash::BuildHasher>(
     Err("Incorrect Event Type".into())
 }
 
-//Takes events in the form
-//  "events":{
-//      "connection_open_init.client_id":["testclient","testclientsec"],
-//      "connection_open_init.connection_id":["ancaconnonetest","ancaconnonetestsec"],
-//      "connection_open_init.counterparty_client_id":["testclientsec","testclientsecsec"],
-//      "create_client.client_id":["testclientthird"],
-//      "create_client.client_type":["tendermint"],
-//      "message.action":["connection_open_init","create_client","connection_open_init"],
-//      "message.module":["ibc_connection","ibc_client",ibc_connection"],
-//      "message.sender":["cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9","cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9","cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9","cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9"],"tm.event":["Tx"],"transfer.amount":["5000stake"],"transfer.recipient":["cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"],"tx.hash":["A9E18AE3909F22232F8DBDB1C48F2FECB260A308A2D157E8832E901D45950605"],
-//      "tx.height":["35"]
-// and returns:
-// [{"connection_open_init", 0}, {"create_client", 0}, {"connection_open_init", 1}]
-// where the number in each entry is the index in the matching events that should be used to build the event
-// e.g. for the last "connection_open_init" in the result
-//      "connection_open_init.client_id" -> "testclientsec"
-//      "connection_open_init.connection_id" -> "ancaconnonetestsec",
-//      "connection_open_init.counterparty_client_id" -> "testclientsec","testclientsecsec",
-fn extract_helper(events: &HashMap<String, Vec<String>>) -> Result<Vec<(String, u32)>, String> {
-    let message_action = events.get("message.action").ok_or("Incorrect Event Type")?;
-    let mut val_indeces = HashMap::new();
-    let mut result = Vec::new();
-
-    for action_string in message_action {
-        let idx = val_indeces
-            .entry(action_string.clone())
-            .or_insert_with(|| 0);
-        result.push((action_string.clone(), *idx));
-        *val_indeces.get_mut(action_string.as_str()).unwrap() += 1;
-    }
-    Ok(result)
-}
-
-pub fn get_all_events(result: RpcEvent) -> Result<Vec<(Height, IBCEvent)>, String> {
-    let mut vals: Vec<(Height, IBCEvent)> = vec![];
-
-    match &result.data {
-        RpcEventData::NewBlock { block, .. } => {
-            let block = block.as_ref().ok_or("missing block")?;
-            vals.push((
-                block.header.height,
-                NewBlock::new(block.header.height).into(),
-            ));
-        }
-
-        RpcEventData::Tx { .. } => {
-            let events = &result.events.ok_or("missing events")?;
-            let height_raw = events.get("tx.height").ok_or("tx.height")?[0]
-                .parse::<u64>()
-                .map_err(|e| e.to_string())?;
-            let height: Height = height_raw
-                .try_into()
-                .map_err(|_| "height parsing overflow")?;
-
-            let actions_and_indices = extract_helper(&events)?;
-            for action in actions_and_indices {
-                match build_event(RawObject::new(
-                    height,
-                    action.0,
-                    action.1 as usize,
-                    events.clone(),
-                )) {
-                    Ok(event) => vals.push((height, event)),
-                    Err(e) => warn!("error while building event {}", e.to_string()),
-                }
-            }
-        }
-        _ => {}
-    }
-
-    Ok(vals)
-}
-
-pub fn build_event(object: RawObject) -> Result<IBCEvent, BoxError> {
-    match object.action.as_str() {
-        "create_client" => Ok(IBCEvent::from(ClientEvents::CreateClient::try_from(
-            object,
-        )?)),
-        "update_client" => Ok(IBCEvent::from(ClientEvents::UpdateClient::try_from(
-            object,
-        )?)),
-
-        "connection_open_init" => Ok(IBCEvent::from(ConnectionEvents::OpenInit::try_from(
-            object,
-        )?)),
-        "connection_open_try" => Ok(IBCEvent::from(ConnectionEvents::OpenTry::try_from(object)?)),
-        "connection_open_ack" => Ok(IBCEvent::from(ConnectionEvents::OpenAck::try_from(object)?)),
-        "connection_open_confirm" => Ok(IBCEvent::from(ConnectionEvents::OpenConfirm::try_from(
-            object,
-        )?)),
-
-        "channel_open_init" => Ok(IBCEvent::from(ChannelEvents::OpenInit::try_from(object)?)),
-        "channel_open_try" => Ok(IBCEvent::from(ChannelEvents::OpenTry::try_from(object)?)),
-        "channel_open_ack" => Ok(IBCEvent::from(ChannelEvents::OpenAck::try_from(object)?)),
-        "channel_open_confirm" => Ok(IBCEvent::from(ChannelEvents::OpenConfirm::try_from(
-            object,
-        )?)),
-        "channel_close_init" => Ok(IBCEvent::from(ChannelEvents::CloseInit::try_from(object)?)),
-        "channel_close_confirm" => Ok(IBCEvent::from(ChannelEvents::CloseConfirm::try_from(
-            object,
-        )?)),
-
-        // send_packet
-        "transfer" => Ok(IBCEvent::from(ChannelEvents::SendPacket::try_from(object)?)),
-        // recv_packet
-        "ics04/opaque" => Ok(IBCEvent::from(ChannelEvents::ReceivePacket::try_from(
-            object,
-        )?)),
-        // acknowledge_packet
-        // needs these changes in cosmos-sdk
-        //        --- a/x/ibc/04-channel/types/msgs.go
-        //        +++ b/x/ibc/04-channel/types/msgs.go
-        //    @@ -511,5 +511,5 @@ func (msg MsgAcknowledgement) GetSigners() []sdk.AccAddress {
-        //
-        //        // Type implements sdk.Msg
-        //        func (msg MsgAcknowledgement) Type() string {
-        //            -       return "ics04/opaque"
-        //            +       return "ics04/acknowledge"
-        //        }
-        "ics04/acknowledge" => Ok(IBCEvent::from(ChannelEvents::AcknowledgePacket::try_from(
-            object,
-        )?)),
-        //timeout_packet
-        "ics04/timeout" => Ok(IBCEvent::from(ChannelEvents::TimeoutPacket::try_from(
-            object,
-        )?)),
-
-        // TODO not clear what the message.action for this is
-        "cleanup_packet" => Ok(IBCEvent::from(ChannelEvents::CleanupPacket::try_from(
-            object,
-        )?)),
-
-        _ => Err("Incorrect Event Type".into()),
-    }
-}
-
 #[macro_export]
 macro_rules! make_event {
     ($a:ident, $b:literal) => {
         #[derive(Debug, Deserialize, Serialize, Clone)]
         pub struct $a {
-            pub data: std::collections::HashMap<String, Vec<String>>,
+            pub data: ::std::collections::HashMap<String, Vec<String>>,
         }
-        impl TryFrom<RawObject> for $a {
-            type Error = BoxError;
-            fn try_from(result: RawObject) -> Result<Self, Self::Error> {
-                match crate::events::extract_events(&result.events, $b) {
+        impl ::std::convert::TryFrom<$crate::events::RawObject> for $a {
+            type Error = ::anomaly::BoxError;
+
+            fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
+                match $crate::events::extract_events(&result.events, $b) {
                     Ok(()) => Ok($a {
                         data: result.events.clone(),
                     }),
@@ -250,5 +248,12 @@ macro_rules! make_event {
 macro_rules! attribute {
     ($a:ident, $b:literal) => {
         $a.events.get($b).ok_or($b)?[$a.idx].parse()?
+    };
+}
+
+#[macro_export]
+macro_rules! some_attribute {
+    ($a:ident, $b:literal) => {
+        $a.events.get($b).ok_or($b)?[$a.idx].parse().ok()
     };
 }

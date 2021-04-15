@@ -1,14 +1,16 @@
-use crate::address::{account_to_string, string_to_account};
-use crate::ics04_channel::error::{Error, Kind};
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
-use std::convert::{TryFrom, TryInto};
+use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
+
+use crate::ics04_channel::error::{Error, Kind};
+use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::proofs::Proofs;
+use crate::signer::Signer;
+use crate::tx_msg::Msg;
+
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseConfirm";
 
 ///
 /// Message definition for the second step in the channel close handshake (the `ChanCloseConfirm`
@@ -16,51 +18,44 @@ use std::convert::{TryFrom, TryInto};
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelCloseConfirm {
-    port_id: PortId,
-    channel_id: ChannelId,
-    proofs: Proofs,
-    signer: AccountId,
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgChannelCloseConfirm {
-    // todo: Constructor not used yet.
-    #[allow(dead_code)]
-    fn new(
-        port_id: String,
-        channel_id: String,
-        proof_init: CommitmentProof,
-        proofs_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgChannelCloseConfirm, Error> {
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_init, None, None, proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+    pub fn new(port_id: PortId, channel_id: ChannelId, proofs: Proofs, signer: Signer) -> Self {
+        Self {
+            port_id,
+            channel_id,
+            proofs,
             signer,
-        })
+        }
+    }
+
+    /// Getter: borrow the `port_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
     }
 }
 
 impl Msg for MsgChannelCloseConfirm {
     type ValidationError = Error;
+    type Raw = RawMsgChannelCloseConfirm;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -70,11 +65,9 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgChannelCloseConfirm) -> Result<Self, Self::Error> {
-        let signer =
-            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
-
         let proofs = Proofs::new(
             raw_msg.proof_init.into(),
+            None,
             None,
             None,
             raw_msg
@@ -95,7 +88,7 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs,
-            signer,
+            signer: raw_msg.signer.into(),
         })
     }
 }
@@ -107,7 +100,7 @@ impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
             channel_id: domain_msg.channel_id.to_string(),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
-            signer: account_to_string(domain_msg.signer).unwrap(),
+            signer: domain_msg.signer.to_string(),
         }
     }
 }
@@ -115,19 +108,20 @@ impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
-
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
+
+    use crate::ics24_host::identifier::{ChannelId, PortId};
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
     /// Returns a dummy `RawMsgChannelCloseConfirm`, for testing only!
     pub fn get_dummy_raw_msg_chan_close_confirm(proof_height: u64) -> RawMsgChannelCloseConfirm {
         RawMsgChannelCloseConfirm {
-            port_id: "port".to_string(),
-            channel_id: "testchannel".to_string(),
+            port_id: PortId::default().to_string(),
+            channel_id: ChannelId::default().to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 1,
-                version_height: proof_height,
+                revision_number: 0,
+                revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -136,12 +130,13 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
 
     use crate::ics04_channel::msgs::chan_close_confirm::test_util::get_dummy_raw_msg_chan_close_confirm;
     use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-    use ibc_proto::ibc::core::client::v1::Height;
-    use std::convert::TryFrom;
 
     #[test]
     fn parse_channel_close_confirm_msg() {
@@ -216,8 +211,8 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 raw: RawMsgChannelCloseConfirm {
                     proof_height: Some(Height {
-                        version_number: 0,
-                        version_height: 0,
+                        revision_number: 0,
+                        revision_height: 0,
                     }),
                     ..default_raw_msg
                 },
