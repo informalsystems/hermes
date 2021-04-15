@@ -1,20 +1,22 @@
---------------------------- MODULE ICS02Chain ---------------------------
+----------------------------- MODULE Chain ------------------------------
 
-EXTENDS Integers, FiniteSets, ClientHandlers, ICS02Definitions
+EXTENDS Integers, FiniteSets, ICS02ClientHandlers, ICS02Definitions
         
-CONSTANTS MaxHeight, \* maximal chain height
-          ChainID, \* chain identifier
-          NrClients, \* number of clients that will be created on the chain
-          ClientIDs \* a set of counterparty client IDs   
+CONSTANTS 
+    MaxHeight, \* maximal chain height
+    ChainID, \* chain identifier
+    NrClients, \* number of clients that will be created on the chain
+    ClientIDs \* a set of counterparty client IDs   
 
-
-VARIABLES chainStore, \* chain store, containing client heights, a connection end, a channel end 
-          incomingDatagrams, \* set of incoming datagrams
-          history \* history variable
+VARIABLES 
+    chainStore, \* chain store, containing a client state for each client
+    incomingDatagrams, \* set of incoming datagrams
+    history \* history variable
 
 vars == <<chainStore, incomingDatagrams, history>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system       
 
+\* @type: (CHAINSTORE, Str) => Int;
 GetClientNr(store, clientID) ==
     IF \E clientNr \in DOMAIN chainStore.clientStates :
             store.clientStates[clientNr].clientID = clientID
@@ -30,9 +32,9 @@ GetClientNr(store, clientID) ==
 \* (Handler operators defined in ClientHandlers.tla)
 LightClientUpdate(chainID, store, clientID, datagrams) == 
     \* create client 
-    LET clientCreatedStore == AsChainStore(HandleCreateClient(store, clientID, datagrams)) IN
+    LET clientCreatedStore == HandleCreateClient(store, clientID, datagrams) IN
     \* update client
-    LET clientUpdatedStore == AsChainStore(HandleClientUpdate(clientCreatedStore, clientID, datagrams, MaxHeight)) IN
+    LET clientUpdatedStore == HandleClientUpdate(clientCreatedStore, clientID, datagrams, MaxHeight) IN
 
     clientUpdatedStore
 
@@ -47,7 +49,7 @@ AdvanceChain ==
 
 \* Handle the datagrams and update the chain state        
 HandleIncomingDatagrams ==
-    /\ incomingDatagrams /= AsSetDatagrams({})
+    /\ incomingDatagrams /= {}
     /\ \E clientID \in ClientIDs : 
         /\ chainStore' = LightClientUpdate(ChainID, chainStore, clientID, incomingDatagrams)
         /\ history' = [history EXCEPT ![clientID] =
@@ -76,7 +78,7 @@ HandleIncomingDatagrams ==
 \*  - the packetSeq is set to 1
 Init == 
     /\ chainStore = ICS02InitChainStore(NrClients, ClientIDs)
-    /\ incomingDatagrams = AsSetDatagrams({})
+    /\ incomingDatagrams = {}
     
 \* Next state action
 \* The chain either
@@ -126,5 +128,5 @@ HeightDoesntDecrease ==
         
 =============================================================================
 \* Modification History
-\* Last modified Mon Oct 19 17:49:32 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Apr 15 11:26:26 CEST 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

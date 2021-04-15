@@ -1,16 +1,31 @@
 -------------------- MODULE ICS02SingleChainEnvironment --------------------
 
+(***************************************************************************
+ A TLA+ specification of the IBC client protocol (ICS02). This module models 
+ a system consisting of one chain that can create multiple clients, and which 
+ operates in an environment that overapproximates the behavior of a correct 
+ relayer.    
+ ***************************************************************************)
+
 EXTENDS Integers, FiniteSets, Sequences, ICS02Definitions
 
-CONSTANTS MaxHeight, \* maximal height of all the chains in the system
-          NrClientsChainA, \* number of clients that will be created on the chain
-          ClientIDsChainA \* a set of counterparty client IDs for the chain
+CONSTANTS 
+    \* @type: Int;
+    MaxHeight, \* maximal height of all the chains in the system
+    \* @type: Int;
+    NrClientsChainA, \* number of clients that will be created on the chain
+    \* @type: Set(Str);
+    ClientIDsChainA \* a set of counterparty client IDs for the chain
 
 ASSUME MaxHeight < 10
 
-VARIABLES chainAstore, \* store of ChainA
-          datagramsChainA, \* set of datagrams incoming to ChainA
-          history \* history variable
+VARIABLES 
+    \* @type: CHAINSTORE;
+    chainAstore, \* store of ChainA
+    \* @type: Set(DATAGRAM);
+    datagramsChainA, \* set of datagrams incoming to ChainA
+    \* @type: Str -> [created: Bool, updated: Bool];
+    history \* history variable
 
 vars == <<chainAstore, datagramsChainA, history>>
           
@@ -18,9 +33,9 @@ vars == <<chainAstore, datagramsChainA, history>>
  Instances of ICS02Chain
  ***************************************************************************)
 
-\* We suppose there are two chains that communicate, ChainA and ChainB
+\* We suppose there is a single chain, ChainA
 \* ChainA -- Instance of Chain.tla
-ChainA == INSTANCE ICS02Chain
+ChainA == INSTANCE Chain
           WITH ChainID <- "chainA",
                NrClients <- NrClientsChainA,
                ClientIDs <- ClientIDsChainA,
@@ -82,5 +97,5 @@ Inv ==
     
 =============================================================================
 \* Modification History
-\* Last modified Tue Oct 20 10:12:52 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Apr 14 18:48:00 CEST 2021 by ilinastoilkovska
 \* Created Fri Oct 02 12:57:19 CEST 2020 by ilinastoilkovska

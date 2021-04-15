@@ -2,61 +2,31 @@
 
 (***************************************************************************
  This module contains definitions of operators that are shared between the 
- different modules, and which are relevant for ICS02
+ different modules, and which are relevant for ICS02.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences
 
-(********************* TYPE ANNOTATIONS FOR APALACHE ***********************)
-\* operator for type annotations
-a <: b == a
-
-\* client state type
-ClientStateType ==
+(************************ TYPE ALIASES FOR SNOWCAT *************************)
+(* @typeAlias: CLIENTSTATE = 
     [
-        clientID |-> STRING,
-        heights |-> {Int}
-    ]
-    
-\* chain store type 
-ChainStoreType ==  
+        clientID: Str,
+        heights: Set(Int)
+    ];
+*)
+(* @typeAlias: CHAINSTORE = 
     [
-        height |-> Int,
-        clientStates |-> [Int -> [clientID |-> STRING, heights |-> {Int}]]
-    ] 
-
-\* client datagram type
-ClientDatagramType ==
+        height: Int, 
+        clientStates: Int -> CLIENTSTATE
+    ]; 
+*) 
+(* @typeAlias: DATAGRAM =
     [
-        type |-> STRING,
-        clientID |-> STRING,
-        height |-> Int   
-    ]
-
-\* datagram type (record type containing fields of all datagrams)                  
-DatagramType ==
-    [
-        type |-> STRING,
-        height |-> Int,
-        clientID |-> STRING
-    ]
-
-AsID(ID) == ID <: STRING
-AsInt(n) == n <: Int
-AsSetID(S) == S <: {STRING}
-AsSetInt(S) == S <: {Int}
-AsString(s) == s <: STRING
-
-AsChainStore(chainStore) == chainStore <: ChainStoreType
-AsClientState(clientState) == clientState <: ClientStateType
-
-AsDatagram(dgr) == dgr <: DatagramType
-
-AsClientDatagram(dgr) == dgr <: ClientDatagramType
-AsSetClientDatagrams(Dgrs) == Dgrs <: {ClientDatagramType}
-
-AsSetDatagrams(Dgrs) == Dgrs <: {DatagramType}
-AsSeqDatagrams(Dgrs) == Dgrs <: Seq(DatagramType)
+        type: Str,
+        clientID: Str,
+        height: Int
+    ];
+*)
 
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"} 
@@ -78,14 +48,12 @@ ClientStates(ClientIDs, maxHeight) ==
         clientID : ClientIDs,
         heights : SUBSET(1..maxHeight)
     ] 
-    \* <: {ClientStateType}
     
 NullClientState ==
     [
-        clientID |-> AsID(nullClientID),
-        heights |-> AsSetInt({})
+        clientID |-> nullClientID,
+        heights |-> {}
     ] 
-    \* <: ClientStateType    
 
 (******************************** ChainStores ******************************
     A set of chain store records, with fields relevant for ICS02. 
@@ -103,17 +71,13 @@ ChainStores(NrClients, ClientIDs, maxHeight) ==
         height : 1..maxHeight,
         clientStates : [1..NrClients -> ClientStates(ClientIDs, maxHeight)]
     ] 
-    \* <: {ChainStoreType}
 
-(******************************** Datagrams ********************************
- A set of datagrams.
- ***************************************************************************)
+(******************************** Datagrams ********************************)
+\* Set of datagrams
 Datagrams(ClientIDs, maxHeight) ==
     [type : {"CreateClient"}, clientID : ClientIDs, height : 1..maxHeight]
     \union
     [type : {"ClientUpdate"}, clientID : ClientIDs, height : 1..maxHeight]   
-    \* <: {DatagramType}
-
 
 (***************************** ClientDatagrams *****************************
  A set of client datagrams for a specific set ClIDs of client IDs.
@@ -122,11 +86,10 @@ ClientDatagrams(ClientIDs, Heights) ==
     [type : {"CreateClient"}, clientID : ClientIDs, height : Heights]
     \union
     [type : {"ClientUpdate"}, clientID : ClientIDs, height : Heights]   
-    \* <: {DatagramType}
-    
+
+\* Null datagram    
 NullDatagram == 
     [type |-> "null"] 
-    <: DatagramType    
 
 (***************************************************************************
  Initial value of a chain store for ICS02
@@ -139,7 +102,6 @@ ICS02InitChainStore(NrClients, ClientIDs) ==
         height |-> 1,
         clientStates |-> [clientNr \in 1..NrClients |-> NullClientState]
     ] 
-    \* <: ChainStoreType
         
 (***************************************************************************
  Client helper operators
@@ -147,13 +109,14 @@ ICS02InitChainStore(NrClients, ClientIDs) ==
 
 \* get the ID of chainID's counterparty chain    
 GetCounterpartyChainID(chainID) ==
-    IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")    
+    IF chainID = "chainA" THEN "chainB" ELSE "chainA"
      
 \* get the latest height of chainID
+\* @type: (CHAINSTORE) => Int;
 GetLatestHeight(chain) ==
-    AsInt(chain.height)   
+    chain.height
 
 =========================================================================
 \* Modification History
-\* Last modified Mon Oct 19 18:35:08 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Apr 15 11:24:46 CEST 2021 by ilinastoilkovska
 \* Created Tue Oct 06 16:26:25 CEST 2020 by ilinastoilkovska

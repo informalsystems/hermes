@@ -1,8 +1,8 @@
--------------------------- MODULE ClientHandlers ---------------------------
+----------------------- MODULE ICS02ClientHandlers -------------------------
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- client datagrams
+ client create and update datagrams.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, ICS02Definitions
@@ -12,13 +12,14 @@ EXTENDS Integers, FiniteSets, ICS02Definitions
  ***************************************************************************)
     
 \* Handle "CreateClient" datagrams
+\* @type: (CHAINSTORE, Str, Set(DATAGRAM)) => CHAINSTORE;
 HandleCreateClient(chain, clientID, datagrams) == 
     \* get "CreateClient" datagrams with valid clientID
     LET createClientDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "CreateClient"
                             /\ dgr.clientID = clientID} IN
     \* get heights in datagrams with correct counterparty clientID for chainID
-    LET createClientHeights == AsSetInt({dgr.height : dgr \in createClientDgrs}) IN  
+    LET createClientHeights == {dgr.height : dgr \in createClientDgrs} IN  
     \* get next available client number where a client can be created  
     LET nextClientNr == 
             IF /\ \A clientNr \in DOMAIN chain.clientStates :
@@ -41,7 +42,7 @@ HandleCreateClient(chain, clientID, datagrams) ==
                     \* if the slot at nextClientNr is an empty slot
                     IF /\ chain.clientStates[nextClientNr].clientID = nullClientID
                     \* if the set of heights from datagrams is not empty
-                       /\ createClientHeights /= AsSetInt({}) 
+                       /\ createClientHeights /= {}
                     \* then create a client with clientID at the slot nextClientNr
                     THEN [clientID |-> clientID, 
                           heights |-> {Max(createClientHeights)}]
@@ -53,6 +54,7 @@ HandleCreateClient(chain, clientID, datagrams) ==
     clientCreateChain
 
 \* Handle "ClientUpdate" datagrams
+\* @type: (CHAINSTORE, Str, Set(DATAGRAM), Int) => CHAINSTORE;
 HandleClientUpdate(chain, clientID, datagrams, MaxHeight) ==     
     \* get the client number of the client with clientID
     LET clientNr == IF \E clientNr \in DOMAIN chain.clientStates : 
@@ -91,5 +93,5 @@ HandleClientUpdate(chain, clientID, datagrams, MaxHeight) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Oct 20 10:16:08 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Apr 14 18:46:39 CEST 2021 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

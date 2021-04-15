@@ -1,20 +1,39 @@
 ---------------------- MODULE ICS02TwoChainsEnvironment ----------------------
 
+(***************************************************************************
+ A TLA+ specification of the IBC client protocol (ICS02). This module models 
+ a system consisting of two chain that can create multiple clients, and which 
+ operate in an environment that overapproximates the behavior of a correct 
+ relayer.    
+ ***************************************************************************)
+
 EXTENDS Integers, FiniteSets, Sequences, ICS02Definitions
 
-CONSTANTS MaxHeight, \* maximal height of all the chains in the system
-          NrClientsChainA, \* number of clients that will be created on ChainA
-          NrClientsChainB, \* number of clients that will be created on ChainA
-          ClientIDsChainA, \* a set of counterparty client IDs for ChainA
-          ClientIDsChainB \* a set of counterparty client IDs for ChainB
+CONSTANTS 
+    \* @type: Int;
+    MaxHeight, \* maximal height of all the chains in the system
+    \* @type: Int;
+    NrClientsChainA, \* number of clients that will be created on ChainA
+    \* @type: Int;
+    NrClientsChainB, \* number of clients that will be created on ChainA
+    \* @type: Set(Str);
+    ClientIDsChainA, \* a set of counterparty client IDs for ChainA
+    \* @type: Set(Str);
+    ClientIDsChainB \* a set of counterparty client IDs for ChainB
 
 ASSUME MaxHeight < 10
 
-VARIABLES chainAstore, \* store of ChainA
-          chainBstore, \* store of ChainB
-          datagramsChainA, \* set of datagrams incoming to ChainA
-          datagramsChainB, \* set of datagrams incoming to ChainB
-          history \* history variable
+VARIABLES 
+    \* @type: CHAINSTORE;
+    chainAstore, \* store of ChainA
+    \* @type: CHAINSTORE;
+    chainBstore, \* store of ChainB
+    \* @type: Set(DATAGRAM);
+    datagramsChainA, \* set of datagrams incoming to ChainA
+    \* @type: Set(DATAGRAM);
+    datagramsChainB, \* set of datagrams incoming to ChainB
+    \* @type: Str -> [created: Bool, updated: Bool];
+    history \* history variable
 
 chainAvars == <<chainAstore, datagramsChainA>>
 chainBvars == <<chainBstore, datagramsChainB>>
@@ -28,7 +47,7 @@ vars == <<chainAstore, datagramsChainA,
 
 \* We suppose there are two chains that communicate, ChainA and ChainB
 \* ChainA -- Instance of Chain.tla
-ChainA == INSTANCE ICS02Chain
+ChainA == INSTANCE Chain
           WITH ChainID <- "chainA",
                NrClients <- NrClientsChainA,
                ClientIDs <- ClientIDsChainA,
@@ -36,7 +55,7 @@ ChainA == INSTANCE ICS02Chain
                incomingDatagrams <- datagramsChainA
 
 \* ChainB -- Instance of Chain.tla 
-ChainB == INSTANCE ICS02Chain
+ChainB == INSTANCE Chain
           WITH ChainID <- "chainB",
                NrClients <- NrClientsChainB,
                ClientIDs <- ClientIDsChainB,
@@ -47,7 +66,6 @@ GetChainByID(chainID) ==
     IF chainID = "chainA"
     THEN chainAstore
     ELSE chainBstore 
-    <: ChainStoreType   
     
 GetNrClientsByID(chainID) ==
     IF chainID = "chainA"
@@ -63,8 +81,8 @@ GetNrClientsByID(chainID) ==
 CreateDatagrams ==
     \* pick a sequence from the set of client datagrams non-deterministically
     \* for each chain     
-    /\ datagramsChainA = AsSetDatagrams({})
-    /\ datagramsChainB = AsSetDatagrams({})  
+    /\ datagramsChainA = {}
+    /\ datagramsChainB = {}
     /\ datagramsChainA' \in 
         SUBSET ClientDatagrams(
             ClientIDsChainA, 
@@ -122,7 +140,7 @@ Invariants
 ClientHeightsAreBelowCounterpartyHeight ==
     \A chainID \in ChainIDs :
         \A clientNr \in 1..GetNrClientsByID(chainID) :
-            (GetChainByID(chainID).clientStates[clientNr].heights /= AsSetInt({})
+            (GetChainByID(chainID).clientStates[clientNr].heights /= {}
                 => (Max(GetChainByID(chainID).clientStates[clientNr].heights) 
                      <= GetLatestHeight(GetChainByID(GetCounterpartyChainID(chainID)))))
 
@@ -132,10 +150,8 @@ Inv ==
     /\ ChainB!CreatedClientsHaveDifferentIDs
     /\ ChainB!UpdatedClientsAreCreated  
     /\ ClientHeightsAreBelowCounterpartyHeight
-    
-      
-        
+
 =============================================================================
 \* Modification History
-\* Last modified Mon Oct 19 18:34:24 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Apr 14 19:08:27 CEST 2021 by ilinastoilkovska
 \* Created Fri Oct 02 12:57:19 CEST 2020 by ilinastoilkovska
