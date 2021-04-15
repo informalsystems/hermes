@@ -1,4 +1,4 @@
-name: Typecheck TLA+ Specs
+name: TLA+ Specs
 on:
   pull_request:
     paths:
