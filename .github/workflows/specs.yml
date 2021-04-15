@@ -11,7 +11,7 @@ on:
 jobs:
   typecheck-specs:
     runs-on: ubuntu-latest
-    container: apalache/mc:latest
+    container: apalache/mc:0.15.2
     env:
       working-directory: docs/spec/tla
     steps:
