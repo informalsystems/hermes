@@ -1,0 +1,21 @@
+name: Typecheck TLA+ Specs
+on:
+  pull_request:
+    paths:
+      - docs/spec/tla/**
+  push:
+    branches: master
+    paths:
+      - docs/specs/tla/**
+
+jobs:
+  typecheck-specs:
+    runs-on: ubuntu-latest
+    container: apalache/mc:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: IBCCore.tla
+        run: apalache-mc typecheck docs/spec/tla/ibc-core/IBCCore.tla
+      - name: IBCTokenTransfer.tla
+        run: apalache-mc typecheck docs/spec/tla/ibc-core/IBCTokenTransfer.tla
+
