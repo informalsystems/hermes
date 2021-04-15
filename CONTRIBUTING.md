@@ -2,11 +2,11 @@
 
 Thank you for your interest in contributing. The goal
 of ibc-rs is to provide a high quality, formally verified implementation of
-the IBC protocol.
+the IBC protocol and relayer.
 
 All work on the code base should be motivated by a Github
-Issue. Search is a good place start when looking for places to contribute. If you
-would like to work on an issue which already exists, please indicate so
+Issue. Search is a good place to start when looking for places to contribute. 
+If you would like to work on an issue which already exists, please indicate so
 by leaving a comment. If you'd like to work on something else, open an Issue to
 start the discussion.
 
@@ -42,8 +42,6 @@ in the larger context. If you are not comfortable with writing an ADR,
 you can open a less-formal issue and the maintainers will help you
 turn it into an ADR. 
 
-TODO: ADR registration (eg. in an ADR registration issue)
-
 When the problem as well as proposed solution are well understood,
 changes should start with a [draft
 pull request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
@@ -56,8 +54,7 @@ of smaller incremental changes, in the form of small PRs that can be merged
 quickly. This helps manage the load for reviewers and reduces the likelihood
 that PRs will sit open for longer.
 
-![Contributing
-flow](https://github.com/tendermint/tendermint/blob/v0.33.6/docs/imgs/contributing.png)
+![Contributing flow](https://github.com/tendermint/tendermint/blob/v0.33.6/docs/imgs/contributing.png?raw=true)
 
 Each stage of the process is aimed at creating feedback cycles which align contributors and maintainers to make sure:
 
@@ -88,16 +85,17 @@ To pull in updates from the origin repo, run
 
 ## Changelog
 
-Every non-trivial PR must update the [CHANGELOG.md].
+Every non-trivial PR must update the [CHANGELOG.md](CHANGELOG.MD).
 
 The Changelog is *not* a record of what Pull Requests were merged;
-the commit history already shows that. The Changelog is a notice to the user
+the commit history already shows that. The Changelog is a notice to users
 about how their expectations of the software should be modified. 
 It is part of the UX of a release and is a *critical* user facing integration point.
 The Changelog must be clean, inviting, and readable, with concise, meaningful entries. 
 Entries must be semantically meaningful to users. If a change takes multiple
 Pull Requests to complete, it should likely have only a single entry in the
-Changelog describing the net effect to the user.
+Changelog describing the net effect to the user. Instead of linking PRs directly, we
+instead prefer to log issues, which tend to be higher-level, hence more relevant for users.
 
 When writing Changelog entries, ensure they are targeting users of the software,
 not fellow developers. Developers have much more context and care about more
@@ -110,26 +108,32 @@ and
 [Hashicorp Consul](http://github.com/hashicorp/consul/tree/master/CHANGELOG.md).
 See those changelogs for examples.
 
-Changes for a given release should be split between the five sections: Security, Breaking
+We currently split changes for a given release between these four sections: Breaking
 Changes, Features, Improvements, Bug Fixes.
+
+Entries in the changelog should initially be logged in the __Unreleased__ section, which
+represents a "staging area" for accumulating all the changes throughout a
+release (see [Pull Requests](#pull-requests) below). With each release,
+the entries then move from this section into their permanent place under a
+specific release number in Changelog.
 
 Changelog entries should be formatted as follows:
 
 ```
-- [pkg] \#xxx Some description about the change (@contributor)
+- [pkg] Some description about the change ([#xxx]) (optional @contributor)
 ```
 
 Here, `pkg` is the part of the code that changed (typically a
-top-level crate, but could be <crate>/<module>), `xxx` is the pull-request number, and `contributor`
+top-level crate, but could be <crate>/<module>), `xxx` is the issue number, and `contributor`
 is the author/s of the change.
 
-It's also acceptable for `xxx` to refer to the relevent issue number, but pull-request
+It's also acceptable for `xxx` to refer to the relevant pull request, but issue
 numbers are preferred.
-Note this means pull-requests should be opened first so the changelog can then
-be updated with the pull-request's number.
+Note this means issues (or pull-requests) should be opened first so the changelog can then
+be updated with the corresponding number.
 
 Changelog entries should be ordered alphabetically according to the
-`pkg`, and numerically according to the pull-request number.
+`pkg`, and numerically according to their issue/PR number.
 
 Changes with multiple classifications should be doubly included (eg. a bug fix
 that is also a breaking change should be recorded under both).
@@ -152,7 +156,7 @@ PRs must:
 
 - make reference to an issue outlining the context.
 - update any relevant documentation and include tests.
-- update the [changelog](#changelog) with a description of the change
+- update [CHANGELOG.md](CHANGELOG.md) with a description of the change in the __Unreleased__ section.
 
 Pull requests should aim to be small and self contained to facilitate quick
 review and merging. Larger change sets should be broken up across multiple PRs.

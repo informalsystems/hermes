@@ -1,10 +1,15 @@
 //! Cli Abscissa Application
 
-use crate::{commands::CliCmd, config::Config};
+use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
-    config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
+    component::Component,
+    config, Application, Configurable, FrameworkError, StandardPaths,
 };
+
+use crate::components::{JsonTracing, PrettyTracing};
+use crate::entry::EntryPoint;
+use crate::{commands::CliCmd, config::Config};
 
 /// Application state
 pub static APPLICATION: AppCell<CliApp> = AppCell::new();
@@ -36,6 +41,9 @@ pub struct CliApp {
 
     /// Application state.
     state: application::State<Self>,
+
+    /// Toggle json output on/off. Changed with the global config option `-j` / `--json`.
+    json_output: bool,
 }
 
 /// Initialize a new application instance.
@@ -47,7 +55,15 @@ impl Default for CliApp {
         Self {
             config: None,
             state: application::State::default(),
+            json_output: false,
         }
+    }
+}
+
+impl CliApp {
+    /// Whether or not JSON output is enabled
+    pub fn json_output(&self) -> bool {
+        self.json_output
     }
 }
 
@@ -82,11 +98,7 @@ impl Application for CliApp {
     /// beyond the default ones provided by the framework, this is the place
     /// to do so.
     fn register_components(&mut self, command: &Self::Cmd) -> Result<(), FrameworkError> {
-        use abscissa_tokio::TokioComponent;
-
-        let mut components = self.framework_components(command)?;
-        components.push(Box::new(TokioComponent::new()?));
-
+        let components = self.framework_components(command)?;
         self.state.components.register(components)
     }
 
@@ -102,12 +114,31 @@ impl Application for CliApp {
         Ok(())
     }
 
-    /// Get tracing configuration from command-line options
-    fn tracing_config(&self, command: &EntryPoint<CliCmd>) -> trace::Config {
-        if command.verbose {
-            trace::Config::verbose()
+    /// Overrides the default abscissa components, so that we can setup tracing on our own. See
+    /// also `register_components`.
+    fn framework_components(
+        &mut self,
+        command: &Self::Cmd,
+    ) -> Result<Vec<Box<dyn Component<Self>>>, FrameworkError> {
+        let terminal = Terminal::new(self.term_colors(command));
+
+        let config = command
+            .config_path()
+            .map(|path| self.load_config(&path))
+            .transpose()?
+            .unwrap_or_default();
+
+        // Update the `json_output` flag used by `conclude::Output`
+        self.json_output = command.json;
+
+        if command.json {
+            // Enable JSON by using the crate-level `Tracing`
+            let tracing = JsonTracing::new(config.global)?;
+            Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
-            trace::Config::default()
+            // Use abscissa's tracing, which pretty-prints to the terminal obeying log levels
+            let tracing = PrettyTracing::new(config.global)?;
+            Ok(vec![Box::new(terminal), Box::new(tracing)])
         }
     }
 }

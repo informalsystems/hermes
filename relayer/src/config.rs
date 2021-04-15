@@ -1,41 +1,76 @@
-//! Read the relayer configuration into the Config struct, in examples for now
-//! to support ADR validation..should move to relayer/src soon
+//! Relayer configuration
 
-use std::path::Path;
-use std::time::Duration;
+use std::{fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::{chain, net, node};
+use tendermint_light_client::types::TrustThreshold;
 
-use crate::client::TrustOptions;
+use ibc::ics24_host::identifier::{ChainId, PortId};
+
 use crate::error;
+use ibc::ics04_channel::channel::Order;
 
 /// Defaults for various fields
-mod default {
+pub mod default {
     use super::*;
 
-    pub fn timeout() -> Duration {
+    pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
     }
 
-    pub fn gas() -> u64 {
-        200_000
-    }
-
-    pub fn rpc_addr() -> net::Address {
-        "localhost:26657".parse().unwrap()
-    }
-
     pub fn trusting_period() -> Duration {
-        Duration::from_secs(336 * 60 * 60) // 336 hours
+        Duration::from_secs(336 * 60 * 60) // 336 hours ~ 14 days
+    }
+
+    pub fn clock_drift() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn connection_delay() -> Duration {
+        Duration::from_secs(0)
+    }
+
+    pub fn channel_ordering() -> Order {
+        Order::Unordered
     }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
     pub global: GlobalConfig,
+    #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub connections: Option<Vec<Connection>>, // use all for default
+}
+
+impl Config {
+    pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
+        self.chains.iter().find(|c| c.id == *id)
+    }
+
+    pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
+        self.chains.iter_mut().find(|c| c.id == *id)
+    }
+
+    pub fn first_matching_path(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+    ) -> Option<(&Connection, &RelayPath)> {
+        let connection = self.connections.as_ref()?.iter().find(|c| {
+            c.a_chain == *src_chain && c.b_chain == *dst_chain
+                || c.a_chain == *dst_chain && c.b_chain == *src_chain
+        });
+
+        connection.and_then(|conn| {
+            if let Some(ref paths) = conn.paths {
+                Some((conn, &paths[0]))
+            } else {
+                None
+            }
+        })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -52,78 +87,65 @@ impl Default for Strategy {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GlobalConfig {
-    #[serde(default = "default::timeout", with = "humantime_serde")]
-    pub timeout: Duration,
     #[serde(default)]
     pub strategy: Strategy,
+
+    /// All valid log levels, as defined in tracing:
+    /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
+    pub log_level: String,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
-            timeout: default::timeout(),
             strategy: Strategy::default(),
+            log_level: "info".to_string(),
         }
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
-    pub id: chain::Id,
-    #[serde(default = "default::rpc_addr")]
-    pub rpc_addr: net::Address,
+    pub id: ChainId,
+    pub rpc_addr: tendermint_rpc::Url,
+    pub websocket_addr: tendermint_rpc::Url,
+    pub grpc_addr: tendermint_rpc::Url,
+    #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
+    pub rpc_timeout: Duration,
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
-    pub client_ids: Vec<String>,
-    #[serde(default = "default::gas")]
-    pub gas: u64,
+    pub gas: Option<u64>,
+    pub fee_denom: String,
+    pub fee_amount: Option<u64>,
+    pub max_msg_num: Option<usize>,
+    pub max_tx_size: Option<usize>,
+    #[serde(default = "default::clock_drift", with = "humantime_serde")]
+    pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
+    #[serde(default)]
+    pub trust_threshold: TrustThreshold,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Connection {
-    pub src: Option<ConnectionEnd>,    // use any source
-    pub dest: Option<ConnectionEnd>,   // use any destination
-    pub paths: Option<Vec<RelayPath>>, // use any port, direction bidirectional
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ConnectionEnd {
-    pub chain_id: String,
-    pub client_id: String,
-    pub connection_id: Option<String>, // use all connections to this client
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum Direction {
-    #[serde(rename = "unidirectional")]
-    Unidirectional,
-    #[serde(rename = "bidirectional")]
-    Bidirectional,
-}
-
-impl Default for Direction {
-    fn default() -> Self {
-        Self::Bidirectional
-    }
+    pub a_chain: ChainId,
+    pub b_chain: ChainId,
+    #[serde(default = "default::connection_delay", with = "humantime_serde")]
+    pub delay: Duration,
+    pub paths: Option<Vec<RelayPath>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RelayPath {
-    pub src_port: Option<String>,     // default from any source port
-    pub dest_port: Option<String>,    // default from any dest port
-    pub src_channel: Option<String>,  // default from any source port
-    pub dest_channel: Option<String>, // default from any dest port
-    #[serde(default)]
-    pub direction: Direction, // default bidirectional
+    pub a_port: PortId,
+    pub b_port: PortId,
+    #[serde(default = "default::channel_ordering")]
+    pub ordering: Order,
 }
 
-/// Attempt to load and parse the config file into the Config struct.
-///
-/// TODO: If a file cannot be found, return a default Config allowing relayer
-///       to relay everything from any to any chain(?)
+/// Attempt to load and parse the TOML config file as a `Config`.
 pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     let config_toml =
         std::fs::read_to_string(&path).map_err(|e| error::Kind::ConfigIo.context(e))?;
@@ -134,9 +156,31 @@ pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     Ok(config)
 }
 
+/// Serialize the given `Config` as TOML to the given config file.
+pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error> {
+    let mut file = if path.as_ref().exists() {
+        fs::OpenOptions::new().write(true).truncate(true).open(path)
+    } else {
+        File::create(path)
+    }
+    .map_err(|e| error::Kind::Config.context(e))?;
+
+    store_writer(config, &mut file)
+}
+
+/// Serialize the given `Config` as TOML to the given writer.
+pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), error::Error> {
+    let toml_config =
+        toml::to_string_pretty(&config).map_err(|e| error::Kind::Config.context(e))?;
+
+    writeln!(writer, "{}", toml_config).map_err(|e| error::Kind::Config.context(e))?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::parse;
+    use super::{parse, store_writer};
 
     #[test]
     fn parse_valid_config() {
@@ -148,5 +192,19 @@ mod tests {
         let config = parse(path);
         println!("{:?}", config);
         assert!(config.is_ok());
+    }
+
+    #[test]
+    fn serialize_valid_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example.toml"
+        );
+
+        let config = parse(path).expect("could not parse config");
+        let mut buffer = Vec::new();
+
+        let result = store_writer(&config, &mut buffer);
+        assert!(result.is_ok());
     }
 }

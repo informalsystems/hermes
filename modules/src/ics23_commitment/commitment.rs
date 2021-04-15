@@ -1,67 +1,149 @@
-use serde_derive::{Deserialize, Serialize};
-
+use std::convert::TryFrom;
 use std::fmt;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CommitmentRoot(pub Vec<u8>); // Todo: write constructor
+use serde::{Deserialize, Serialize};
+use subtle_encoding::{Encoding, Hex};
+
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+
+use crate::ics23_commitment::error::{Error, Kind};
+
+#[derive(Clone, PartialEq, Eq, Serialize)]
+#[serde(transparent)]
+pub struct CommitmentRoot {
+    #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
+    bytes: Vec<u8>,
+}
+
+impl fmt::Debug for CommitmentRoot {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hex = Hex::upper_case().encode_to_string(&self.bytes).unwrap();
+        f.debug_tuple("CommitmentRoot").field(&hex).finish()
+    }
+}
+
 impl CommitmentRoot {
     pub fn from_bytes(bytes: &[u8]) -> Self {
         Self {
-            0: Vec::from(bytes),
+            bytes: Vec::from(bytes),
         }
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn into_vec(self) -> Vec<u8> {
+        self.bytes
     }
 }
 
 impl From<Vec<u8>> for CommitmentRoot {
-    fn from(v: Vec<u8>) -> Self {
-        Self { 0: v }
+    fn from(bytes: Vec<u8>) -> Self {
+        Self { bytes }
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CommitmentPath;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CommitmentProof(Vec<u8>);
-impl CommitmentProof {
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(transparent)]
+pub struct CommitmentProofBytes {
+    #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
+    bytes: Vec<u8>,
+}
+
+impl CommitmentProofBytes {
     pub fn is_empty(&self) -> bool {
-        self.0.len() == 0
+        self.bytes.len() == 0
     }
 }
 
-impl From<Vec<u8>> for CommitmentProof {
-    fn from(v: Vec<u8>) -> Self {
-        Self { 0: v }
+impl From<Vec<u8>> for CommitmentProofBytes {
+    fn from(bytes: Vec<u8>) -> Self {
+        Self { bytes }
     }
 }
 
-impl From<CommitmentProof> for Vec<u8> {
-    fn from(p: CommitmentProof) -> Vec<u8> {
-        p.0
+impl From<CommitmentProofBytes> for Vec<u8> {
+    fn from(p: CommitmentProofBytes) -> Vec<u8> {
+        p.bytes
+    }
+}
+//
+// impl From<MerkleProof> for CommitmentProofBytes {
+//     fn from(proof: MerkleProof) -> Self {
+//         let raw_proof: RawMerkleProof = proof.into();
+//         raw_proof.into()
+//     }
+// }
+
+impl From<RawMerkleProof> for CommitmentProofBytes {
+    fn from(proof: RawMerkleProof) -> Self {
+        let mut buf = Vec::new();
+        prost::Message::encode(&proof, &mut buf).unwrap();
+        buf.into()
     }
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
-pub struct CommitmentPrefix(pub Vec<u8>); // Todo: decent getter or DomainType trait implementation
+impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
+    type Error = Error;
+
+    fn try_from(value: CommitmentProofBytes) -> Result<Self, Self::Error> {
+        let value: Vec<u8> = value.into();
+        let res: RawMerkleProof = prost::Message::decode(value.as_ref())
+            .map_err(|e| Kind::InvalidRawMerkleProof.context(e))?;
+        Ok(res)
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Default)]
+pub struct CommitmentPrefix {
+    bytes: Vec<u8>,
+}
 
 impl CommitmentPrefix {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        Self {
+            bytes: Vec::from(bytes),
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
-        self.0.len() == 0
+        self.bytes.len() == 0
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn into_vec(self) -> Vec<u8> {
+        self.bytes
     }
 }
 
 impl From<Vec<u8>> for CommitmentPrefix {
-    fn from(v: Vec<u8>) -> Self {
-        Self { 0: v }
+    fn from(bytes: Vec<u8>) -> Self {
+        Self { bytes }
     }
 }
 
 impl fmt::Debug for CommitmentPrefix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let converted = std::str::from_utf8(&self.0);
+        let converted = std::str::from_utf8(self.as_bytes());
         match converted {
             Ok(s) => write!(f, "{}", s),
-            Err(_e) => write!(f, "{:?}", &self.0),
+            Err(_e) => write!(f, "<not valid UTF8: {:?}>", self.as_bytes()),
         }
+    }
+}
+
+impl Serialize for CommitmentPrefix {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        format!("{:?}", self).serialize(serializer)
     }
 }

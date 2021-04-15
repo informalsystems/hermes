@@ -1,83 +1,164 @@
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
-use relayer::tx::client::{create_client, CreateClientOptions};
+
+use ibc::events::IbcEvent;
+use ibc::ics02_client::client_state::ClientState;
+use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
+use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::{Error, Kind};
-use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
-    #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: Option<String>,
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
 
-    #[options(free, help = "identifier of the source chain")]
-    src_chain_id: Option<String>,
-
-    #[options(
-        free,
-        help = "identifier of the client to be created on destination chain"
-    )]
-    dest_client_id: Option<String>,
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 }
 
-impl TxCreateClientCmd {
-    fn validate_options(&self, config: &Config) -> Result<CreateClientOptions, String> {
-        let dest_chain_id = self
-            .dest_chain_id
-            .clone()
-            .ok_or_else(|| "missing destination chain identifier".to_string())?;
-
-        let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == dest_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
-
-        let src_chain_id = self
-            .src_chain_id
-            .clone()
-            .ok_or_else(|| "missing source chain identifier".to_string())?;
-
-        let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == src_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing source chain configuration".to_string())?;
-
-        let dest_client_id = self
-            .dest_client_id
-            .as_ref()
-            .ok_or_else(|| "missing destination client identifier".to_string())?
-            .parse()
-            .map_err(|_| "bad client identifier".to_string())?;
-
-        Ok(CreateClientOptions {
-            dest_client_id,
-            dest_chain_config: dest_chain_config.clone(),
-            src_chain_config: src_chain_config.clone(),
-        })
-    }
-}
-
+/// Sample to run this tx:
+///     `hermes tx raw create-client ibc-0 ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
-
-        let opts = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
-            Ok(result) => result,
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
-        status_info!("Message", "{:?}", opts);
 
-        let res: Result<(), Error> = create_client(opts).map_err(|e| Kind::Tx.context(e).into());
+        let client = ForeignClient {
+            dst_chain: chains.dst,
+            src_chain: chains.src,
+            id: ClientId::default(),
+        };
+
+        // Trigger client creation via the "build" interface, so that we obtain the resulting event
+        let res: Result<IbcEvent, Error> = client
+            .build_create_client_and_send()
+            .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("client created, result: ", "{:?}", receipt),
-            Err(e) => status_info!("client create failed, error: ", "{}", e),
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        }
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxUpdateClientCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(
+        free,
+        required,
+        help = "identifier of the client to be updated on destination chain"
+    )]
+    dst_client_id: ClientId,
+
+    #[options(help = "the target height of the client update", short = "h")]
+    target_height: Option<u64>,
+
+    #[options(help = "the trusted height of the client update", short = "t")]
+    trusted_height: Option<u64>,
+}
+
+impl Runnable for TxUpdateClientCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
+
+        let src_chain_id =
+            match dst_chain.query_client_state(&self.dst_client_id, ibc::Height::zero()) {
+                Ok(cs) => cs.chain_id(),
+                Err(e) => {
+                    return Output::error(format!(
+                        "Query of client '{}' on chain '{}' failed with error: {}",
+                        self.dst_client_id, self.dst_chain_id, e
+                    ))
+                    .exit()
+                }
+            };
+
+        let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
+
+        let height = match self.target_height {
+            Some(height) => ibc::Height::new(src_chain.id().version(), height),
+            None => ibc::Height::zero(),
+        };
+
+        let trusted_height = match self.trusted_height {
+            Some(height) => ibc::Height::new(src_chain.id().version(), height),
+            None => ibc::Height::zero(),
+        };
+
+        let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        let res: Result<IbcEvent, Error> = client
+            .build_update_client_and_send(height, trusted_height)
+            .map_err(|e| Kind::Tx.context(e).into());
+
+        match res {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        }
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxUpgradeClientCmd {
+    #[options(free, required, help = "identifier of the chain that hosts the client")]
+    chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the client to be upgraded")]
+    client_id: ClientId,
+}
+
+impl Runnable for TxUpgradeClientCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let dst_chain = match spawn_chain_runtime(&config, &self.chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
+
+        let src_chain_id = match dst_chain.query_client_state(&self.client_id, ibc::Height::zero())
+        {
+            Ok(cs) => cs.chain_id(),
+            Err(e) => {
+                return Output::error(format!(
+                    "Query of client '{}' on chain '{}' failed with error: {}",
+                    self.client_id, self.chain_id, e
+                ))
+                .exit()
+            }
+        };
+
+        let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
+
+        let client = ForeignClient::find(src_chain, dst_chain, &self.client_id)
+            .unwrap_or_else(exit_with_unrecoverable_error);
+
+        let outcome = client.upgrade();
+
+        match outcome {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

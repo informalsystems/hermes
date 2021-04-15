@@ -1,114 +1,236 @@
+use std::time::Duration;
+
+use abscissa_core::{Command, Options, Runnable};
+
+use ibc::events::IbcEvent;
+use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc_relayer::connection::{Connection, ConnectionSide};
+
+use crate::cli_utils::ChainHandlePair;
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
 use crate::prelude::*;
 
-use crate::error::{Error, Kind};
-use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
-use relayer::tx::connection::{conn_init, ConnectionOpenInitOptions};
+macro_rules! conn_open_cmd {
+    ($dbg_string:literal, $func:ident, $self:expr, $conn:expr) => {
+        let config = app_config();
+
+        let chains = match ChainHandlePair::spawn(&config, &$self.src_chain_id, &$self.dst_chain_id)
+        {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
+
+        let connection = $conn(chains);
+
+        debug!("Message {}: {:?}", $dbg_string, connection);
+
+        let res: Result<IbcEvent, Error> =
+            connection.$func().map_err(|e| Kind::Tx.context(e).into());
+
+        match res {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        }
+    };
+}
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnInitCmd {
-    #[options(free, help = "identifier of the source chain")]
-    src_chain_id: Option<String>,
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
 
-    #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: Option<String>,
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
-    #[options(free, help = "identifier of the source client")]
-    src_client_id: Option<String>,
+    #[options(free, required, help = "identifier of the destination client")]
+    dst_client_id: ClientId,
 
-    #[options(free, help = "identifier of the destination client")]
-    dest_client_id: Option<String>,
-
-    #[options(free, help = "identifier of the source connection")]
-    src_connection_id: Option<String>,
-
-    #[options(free, help = "identifier of the destination connection")]
-    dest_connection_id: Option<String>,
-}
-
-impl TxRawConnInitCmd {
-    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
-        let src_chain_id = self
-            .src_chain_id
-            .clone()
-            .ok_or_else(|| "missing source chain identifier".to_string())?;
-
-        let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == src_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing src chain configuration".to_string())?;
-
-        let dest_chain_id = self
-            .dest_chain_id
-            .clone()
-            .ok_or_else(|| "missing destination chain identifier".to_string())?;
-
-        let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == dest_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
-
-        let src_client_id = self
-            .src_client_id
-            .as_ref()
-            .ok_or_else(|| "missing source client identifier".to_string())?
-            .parse()
-            .map_err(|_| "bad source client identifier".to_string())?;
-
-        let src_connection_id = self
-            .src_connection_id
-            .as_ref()
-            .ok_or_else(|| "missing source connection identifier".to_string())?
-            .parse()
-            .map_err(|_| "bad source connection identifier".to_string())?;
-
-        let dest_client_id = self
-            .dest_client_id
-            .as_ref()
-            .ok_or_else(|| "missing destination client identifier".to_string())?
-            .parse()
-            .map_err(|_| "bad destination client identifier".to_string())?;
-
-        let dest_connection_id = self
-            .dest_connection_id
-            .as_ref()
-            .ok_or_else(|| "missing destination connection identifier".to_string())?
-            .parse()
-            .map_err(|_| "bad destination connection identifier".to_string())?;
-
-        let opts = ConnectionOpenInitOptions {
-            src_client_id,
-            dest_client_id,
-            src_connection_id,
-            dest_connection_id,
-            src_chain_config: src_chain_config.clone(),
-            dest_chain_config: dest_chain_config.clone(),
-        };
-
-        Ok(opts)
-    }
+    #[options(free, required, help = "identifier of the source client")]
+    src_client_id: ClientId,
 }
 
 impl Runnable for TxRawConnInitCmd {
     fn run(&self) {
-        let config = app_config();
-
-        let opts = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+        conn_open_cmd!(
+            "ConnOpenInit",
+            build_conn_init_and_send,
+            self,
+            |chains: ChainHandlePair| {
+                Connection {
+                    delay_period: Duration::from_secs(0),
+                    a_side: ConnectionSide::new(
+                        chains.src,
+                        self.src_client_id.clone(),
+                        ConnectionId::default(),
+                    ),
+                    b_side: ConnectionSide::new(
+                        chains.dst,
+                        self.dst_client_id.clone(),
+                        ConnectionId::default(),
+                    ),
+                }
             }
-            Ok(result) => result,
-        };
-        status_info!("Message", "{:?}", opts);
+        );
+    }
+}
 
-        let res: Result<(), Error> = conn_init(opts).map_err(|e| Kind::Tx.context(e).into());
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnTryCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
 
-        match res {
-            Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),
-            Err(e) => status_info!("conn init failed, error: ", "{}", e),
-        }
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination client")]
+    dst_client_id: ClientId,
+
+    #[options(free, required, help = "identifier of the source client")]
+    src_client_id: ClientId,
+
+    #[options(
+        required,
+        help = "identifier of the source connection (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_conn_id: ConnectionId,
+}
+
+impl Runnable for TxRawConnTryCmd {
+    fn run(&self) {
+        conn_open_cmd!(
+            "ConnOpenTry",
+            build_conn_try_and_send,
+            self,
+            |chains: ChainHandlePair| {
+                Connection {
+                    delay_period: Duration::from_secs(0),
+                    a_side: ConnectionSide::new(
+                        chains.src,
+                        self.src_client_id.clone(),
+                        self.src_conn_id.clone(),
+                    ),
+                    b_side: ConnectionSide::new(
+                        chains.dst,
+                        self.dst_client_id.clone(),
+                        ConnectionId::default(),
+                    ),
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnAckCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination client")]
+    dst_client_id: ClientId,
+
+    #[options(free, required, help = "identifier of the source client")]
+    src_client_id: ClientId,
+
+    #[options(
+        required,
+        help = "identifier of the destination connection (required)",
+        short = "d",
+        meta = "ID"
+    )]
+    dst_conn_id: ConnectionId,
+
+    #[options(
+        required,
+        help = "identifier of the source connection (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_conn_id: ConnectionId,
+}
+
+impl Runnable for TxRawConnAckCmd {
+    fn run(&self) {
+        conn_open_cmd!(
+            "ConnOpenAck",
+            build_conn_ack_and_send,
+            self,
+            |chains: ChainHandlePair| {
+                Connection {
+                    delay_period: Duration::from_secs(0),
+                    a_side: ConnectionSide::new(
+                        chains.src,
+                        self.src_client_id.clone(),
+                        self.src_conn_id.clone(),
+                    ),
+                    b_side: ConnectionSide::new(
+                        chains.dst,
+                        self.dst_client_id.clone(),
+                        self.dst_conn_id.clone(),
+                    ),
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnConfirmCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination client")]
+    dst_client_id: ClientId,
+
+    #[options(free, required, help = "identifier of the source client")]
+    src_client_id: ClientId,
+
+    #[options(
+        required,
+        help = "identifier of the destination connection (required)",
+        short = "d",
+        meta = "ID"
+    )]
+    dst_conn_id: ConnectionId,
+
+    #[options(
+        required,
+        help = "identifier of the source connection (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_conn_id: ConnectionId,
+}
+
+impl Runnable for TxRawConnConfirmCmd {
+    fn run(&self) {
+        conn_open_cmd!(
+            "ConnOpenConfirm",
+            build_conn_confirm_and_send,
+            self,
+            |chains: ChainHandlePair| {
+                Connection {
+                    delay_period: Duration::from_secs(0),
+                    a_side: ConnectionSide::new(
+                        chains.src,
+                        self.src_client_id.clone(),
+                        self.src_conn_id.clone(),
+                    ),
+                    b_side: ConnectionSide::new(
+                        chains.dst,
+                        self.dst_client_id.clone(),
+                        self.dst_conn_id.clone(),
+                    ),
+                }
+            }
+        );
     }
 }

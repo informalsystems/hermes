@@ -1,28 +1,25 @@
-use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::Proofs;
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
-use std::str::FromStr;
 
-/// Message type for the `MsgConnectionOpenConfirm` message.
-pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
+pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenConfirm";
 
 ///
 /// Message definition for `MsgConnectionOpenConfirm` (i.e., `ConnOpenConfirm` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenConfirm {
-    connection_id: ConnectionId,
-    proofs: Proofs,
-    signer: AccountId,
+    pub connection_id: ConnectionId,
+    pub proofs: Proofs,
+    pub signer: Signer,
 }
 
 impl MsgConnectionOpenConfirm {
@@ -39,29 +36,18 @@ impl MsgConnectionOpenConfirm {
 
 impl Msg for MsgConnectionOpenConfirm {
     type ValidationError = Error;
+    type Raw = RawMsgConnectionOpenConfirm;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CONNECTION_OPEN_CONFIRM.to_string()
-    }
-
-    fn validate_basic(&self) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        unimplemented!()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
-impl DomainType<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {}
+impl Protobuf<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {}
 
 impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
@@ -69,17 +55,17 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
         let proof_height = msg
             .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .ok_or(Kind::MissingProofHeight)?
+            .try_into() // Cast from the raw height type into the domain type.
+            .map_err(|e| Kind::InvalidProof.context(e))?;
         Ok(Self {
             connection_id: msg
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
+            proofs: Proofs::new(msg.proof_ack.into(), None, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer: msg.signer.into(),
         })
     }
 }
@@ -89,10 +75,7 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
             connection_id: ics_msg.connection_id.as_str().to_string(),
             proof_ack: ics_msg.proofs.object_proof().clone().into(),
-            proof_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: ics_msg.proofs.height().value(),
-            }),
+            proof_height: Some(ics_msg.proofs.height().into()),
             signer: ics_msg.signer.to_string(),
         }
     }
@@ -100,20 +83,20 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
-    pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
+    pub fn get_dummy_raw_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
             connection_id: "srcconnection".to_string(),
             proof_ack: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                revision_number: 0,
+                revision_height: 10,
             }),
-            signer: get_dummy_account_id_raw(),
+            signer: get_dummy_bech32_account(),
         }
     }
 }
@@ -122,10 +105,10 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
-    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
+    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_raw_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 
     #[test]
@@ -137,7 +120,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_ack_msg = get_dummy_msg_conn_open_confirm();
+        let default_ack_msg = get_dummy_raw_msg_conn_open_confirm();
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
@@ -156,8 +139,8 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenConfirm {
                     proof_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        revision_number: 1,
+                        revision_height: 0,
                     }),
                     ..default_ack_msg
                 },
@@ -183,7 +166,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_confirm();
+        let raw = get_dummy_raw_msg_conn_open_confirm();
         let msg = MsgConnectionOpenConfirm::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenConfirm::from(msg.clone());
         let msg_back = MsgConnectionOpenConfirm::try_from(raw_back.clone()).unwrap();

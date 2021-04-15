@@ -1,11 +1,12 @@
-## ibc-proto
+# ibc-proto
 
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 [![Build Status][build-image]][build-link]
-[![Audit Status][audit-image]][audit-link]
+[![End to End testing][e2e-image]][e2e-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
-![Rust 1.39+][rustc-image]
+![Rust Stable][rustc-image]
+![Rust 1.49+][rustc-version]
 
 Rust crate for interacting with Cosmos SDK
 [IBC structs](https://github.com/cosmos/cosmos-sdk/tree/master/proto/ibc).
@@ -14,13 +15,13 @@ Rust crate for interacting with Cosmos SDK
 
 ## Requirements
 
-- Rust 1.39+
-- make, curl
+- Rust 1.49+
+- `make`, `curl`
 - Cosmos SDK (downloaded automatically if you are using `make`)
 
 ## License
 
-Copyright © 2020 Informal Systems
+Copyright © 2021 Informal Systems
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use the files in this repository except in compliance with the License.
@@ -40,13 +41,16 @@ limitations under the License.
 [crate-link]: https://crates.io/crates/ibc-proto
 [docs-image]: https://docs.rs/ibc-proto/badge.svg
 [docs-link]: https://docs.rs/ibc-proto/
+
 [build-image]: https://github.com/informalsystems/ibc-rs/workflows/Rust/badge.svg
 [build-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3ARust
-[audit-image]: https://github.com/informalsystems/ibc-rs/workflows/Audit-Check/badge.svg
-[audit-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3AAudit-Check
+[e2e-image]: https://github.com/informalsystems/ibc-rs/workflows/End%20to%20End%20testing/badge.svg
+[e2e-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22
+
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
-[rustc-image]: https://img.shields.io/badge/rustc-1.39+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
+[rustc-version]: https://img.shields.io/badge/rustc-1.49+-blue.svg
 
 [//]: # (general links)
 

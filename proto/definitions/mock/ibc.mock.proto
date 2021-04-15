@@ -1,10 +1,11 @@
 syntax = "proto3";
 package ibc.mock;
 
-import "ibc/client/client.proto";
+import "ibc/core/client/v1/client.proto";
 
 message Header {
-  ibc.client.Height height = 1;
+  ibc.core.client.v1.Height height = 1;
+  uint64 timestamp = 2; 
 }
 
 message ClientState {
@@ -13,4 +14,10 @@ message ClientState {
 
 message ConsensusState {
   Header header = 1;
+}
+
+message Misbehaviour {
+  string client_id = 1;
+  Header header1 = 2;
+  Header header2 = 3;
 }

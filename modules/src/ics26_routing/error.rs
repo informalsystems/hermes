@@ -10,6 +10,12 @@ pub enum Kind {
 
     #[error("error raised by the keeper functionality in message handler")]
     KeeperRaisedError,
+
+    #[error("unknown type URL {0}")]
+    UnknownMessageTypeUrl(String),
+
+    #[error("the message is malformed and cannot be decoded")]
+    MalformedMessageBytes,
 }
 
 impl Kind {

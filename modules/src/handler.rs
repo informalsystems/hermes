@@ -1,48 +1,13 @@
+use crate::events::IbcEvent;
 use std::marker::PhantomData;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Attribute {
-    key: String,
-    value: String,
-}
-
-impl Attribute {
-    pub fn new(key: String, value: String) -> Self {
-        Self { key, value }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum EventType {
-    Message,
-    Custom(String),
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Event {
-    pub tpe: EventType,
-    pub attributes: Vec<Attribute>,
-}
-
-impl Event {
-    pub fn new(tpe: EventType, attrs: Vec<(String, String)>) -> Self {
-        Self {
-            tpe,
-            attributes: attrs
-                .into_iter()
-                .map(|(k, v)| Attribute::new(k, v))
-                .collect(),
-        }
-    }
-}
 
 pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct HandlerOutput<T> {
     pub result: T,
     pub log: Vec<String>,
-    pub events: Vec<Event>,
+    pub events: Vec<IbcEvent>,
 }
 
 impl<T> HandlerOutput<T> {
@@ -51,10 +16,10 @@ impl<T> HandlerOutput<T> {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default)]
 pub struct HandlerOutputBuilder<T> {
     log: Vec<String>,
-    events: Vec<Event>,
+    events: Vec<IbcEvent>,
     marker: PhantomData<T>,
 }
 
@@ -76,13 +41,13 @@ impl<T> HandlerOutputBuilder<T> {
         self.log.push(log.into());
     }
 
-    pub fn with_events(mut self, events: impl Into<Vec<Event>>) -> Self {
-        self.events.append(&mut events.into());
+    pub fn with_events(mut self, mut events: Vec<IbcEvent>) -> Self {
+        self.events.append(&mut events);
         self
     }
 
-    pub fn emit(&mut self, event: impl Into<Event>) {
-        self.events.push(event.into());
+    pub fn emit(&mut self, event: IbcEvent) {
+        self.events.push(event);
     }
 
     pub fn with_result(self, result: T) -> HandlerOutput<T> {

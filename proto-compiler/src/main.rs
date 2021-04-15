@@ -1,36 +1,28 @@
-use std::fs::remove_dir_all;
-use std::fs::{copy, create_dir_all};
-use walkdir::WalkDir;
+use argh::FromArgs;
 
-pub(crate) fn main() {
-    let ibc_proto_path = "../proto/src/prost";
+mod cmd;
+use cmd::clone::CloneCmd;
+use cmd::compile::CompileCmd;
 
-    // Remove old compiled files
-    remove_dir_all(ibc_proto_path).unwrap_or_default();
-    create_dir_all(ibc_proto_path).unwrap();
+#[derive(Debug, FromArgs)]
+/// App
+struct App {
+    #[argh(subcommand)]
+    cmd: Command,
+}
 
-    // Copy new compiled files (prost does not use folder structures)
-    let err: Vec<std::io::Error> = WalkDir::new(env!("OUT_DIR"))
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .map(|e| {
-            copy(
-                e.path(),
-                std::path::Path::new(&format!(
-                    "{}/{}",
-                    ibc_proto_path,
-                    &e.file_name().to_os_string().to_str().unwrap()
-                )),
-            )
-        })
-        .filter_map(|e| e.err())
-        .collect();
+#[derive(Debug, FromArgs)]
+#[argh(subcommand)]
+enum Command {
+    Clone(CloneCmd),
+    Compile(CompileCmd),
+}
 
-    if !err.is_empty() {
-        for e in err {
-            dbg!(e);
-        }
-        panic!("error while copying compiled files")
+fn main() {
+    let app: App = argh::from_env();
+
+    match app.cmd {
+        Command::Clone(clone) => clone.run(),
+        Command::Compile(compile) => compile.run(),
     }
 }

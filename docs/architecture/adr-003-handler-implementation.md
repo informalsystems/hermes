@@ -1,65 +1,51 @@
-# ADR 003: IBC protocol implementation
+# ADR 003: IBC handlers implementation
 
 ## Changelog
 * 2020-08-06: Initial proposal
 * 2020-08-10: Rename Handler to Message Processor
 * 2020-08-14: Revamp definition of chain-specific messages, readers and keepers
+* 2021-12-29: Consolidate ADR with the implementation.
 
-## Reader
+## Context
 
-> This section contains all the context one needs to understand the current state, and why there is a problem. It should be as succinct as possible and introduce the high level idea behind the solution.
-
-TODO
+In this ADR, we provide recommendations for implementing the IBC
+handlers within the `ibc` (modules) crate.
 
 ## Decision
 
-In this ADR, we provide recommendations for implementing the IBC message processing logic within the `ibc-rs` crate.
 Concepts are introduced in the order given by a topological sort of their dependencies on each other.
 
 ### Events
 
-IBC message processors must be able to emit events which will then be broadcasted via the node's pub/sub mechanism,
+IBC handlers must be able to emit events which will then be broadcasted via the node's pub/sub mechanism,
 and eventually picked up by the IBC relayer.
 
-A generic interface for events is provided below, where an event is represented
-as a pair of an event type and a list of attributes. An attribute is simply a pair
-of a key and a value, both represented as strings.
-
-Here is the [list of all IBB-related events][events], as seen by the relayer.
-Because the structure of these events do not match the ones which are emitted by the IBC message processors,
-each IBC submodule should defined its own event type and associated variants.
+An event has an arbitrary structure, depending on the handler that produces it.
+Here is the [list of all IBC-related events][events], as seen by the relayer.
+Note that the consumer of these events in production would not be the relayer directly 
+(instead the consumer is the node/SDK where the IBC module executes),
+but nevertheless handlers will reuse these event definitions.
 
 [events]: https://github.com/informalsystems/ibc-rs/blob/bf84a73ef7b3d5e9a434c9af96165997382dcc9d/modules/src/events.rs#L15-L43
 
 ```rust
-pub struct Attribute {
-    key: String,
-    value: String,
-}
+pub enum IBCEvent {
+    NewBlock(NewBlock),
 
-impl Attribute {
-    pub fn new(key: String, value: String) -> Self;
-}
+    CreateClient(ClientEvents::CreateClient),
+    UpdateClient(ClientEvents::UpdateClient),
+    ClientMisbehavior(ClientEvents::ClientMisbehavior),
 
-pub enum EventType {
-    Message,
-    Custom(String),
-}
-
-pub struct Event {
-    typ: EventType,
-    attributes: Vec<Attribute>,
-}
-
-impl Event {
-    pub fn new(typ: EventType, attrs: Vec<(String, String)>) -> Self;
-}
+    OpenInitConnection(ConnectionEvents::OpenInit),
+    OpenTryConnection(ConnectionEvents::OpenTry),
+    //     ...
+} 
 ```
 
 ### Logging
 
-IBC message processors must be able to log information for introspectability and ease of debugging.
-A message processor can output multiple log records, which are expressed as a pair of a status and a
+IBC handlers must be able to log information for introspectability and ease of debugging.
+A handler can output multiple log records, which are expressed as a pair of a status and a
 log line. The interface for emitting log records is described in the next section.
 
 ```rust
@@ -83,12 +69,12 @@ impl Log {
 }
 ```
 
-### Message processor output
+### Handler output
 
-IBC message processors must be able to return arbitrary data, together with events and log records, as descibed above.
-As a message processor may fail, it is necessary to keep track of errors.
+IBC handlers must be able to return arbitrary data, together with events and log records, as described above.
+As a handler may fail, it is necessary to keep track of errors.
 
-To this end, we introduce a type for the return value of a message processor:
+To this end, we introduce a type for the return value of a handler:
 
 ```rust
 pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
@@ -100,7 +86,7 @@ pub struct HandlerOutput<T> {
 }
 ```
 
-We introduce a builder interface to be used within the message processor implementation to incrementally build a `HandlerOutput` value.
+We introduce a builder interface to be used within the handler implementation to incrementally build a `HandlerOutput` value.
 
 ```rust
 impl<T> HandlerOutput<T> {
@@ -148,49 +134,21 @@ are split into a collection of submodules, each pertaining to a specific aspect 
 the IBC protocol, eg. client lifecycle management, connection lifecycle management,
 packet relay, etc.
 
-In this section we propose a general approach to implement the message processors for a submodule.
+In this section we propose a general approach to implement the handlers for a submodule.
 As a running example we will use a dummy submodule that deals with connections, which should not
 be mistaken for the actual ICS 003 Connection submodule.
 
-#### Events
-
-The events which may be emitted by the message processors of a submodule should be defined
-as an enumeration, while a way of converting those into the generic `Event` type
-defined in a previous section should be provided via the `From` trait.
-
-```rust
-pub enum ConnectionEvent {
-    ConnectionOpenInit(ConnectionId),
-    ConnectionOpenTry(ConnectionId),
-}
-
-impl From<ConnectionEvent> for Event {
-    fn from(ce: ConnectionEvent) -> Event {
-        match ce {
-            ConnectionEvent::ConnectionOpenInit(connection_id) => Event::new(
-                EventType::Custom("ConnectionOpenInit".to_string()),
-                vec![("connection_id".to_string(), connection_id.to_string())],
-            ),
-            ConnectionEvent::ConnectionOpenTry(connection_id) => Event::new(
-                EventType::Custom("ConnectionOpenTry".to_string()),
-                vec![("connection_id".to_string(), connection_id.to_string())],
-            ),
-        }
-    }
-}
-```
-
 #### Reader
 
-A typical message processor will need to read data from the chain state at the current height,
+A typical handler will need to read data from the chain state at the current height,
 via the private and provable stores.
 
-To avoid coupling between the message processor interface and the store API, we introduce an interface
-for accessing this data. This interface, called a `Reader`, is shared between all message processors
+To avoid coupling between the handler interface and the store API, we introduce an interface
+for accessing this data. This interface, called a `Reader`, is shared between all handlers
 in a submodule, as those typically access the same data.
 
 Having a high-level interface for this purpose helps avoiding coupling which makes
-writing unit tests for the message processors easier, as one does not need to provide a concrete
+writing unit tests for the handlers easier, as one does not need to provide a concrete
 store, or to mock one.
 
 ```rust
@@ -201,10 +159,10 @@ pub trait ConnectionReader
 ```
 
 A production implementation of this `Reader` would hold references to both the private and provable
-store at the current height where the message processor executes, but we omit the actual implementation as
+store at the current height where the handler executes, but we omit the actual implementation as
 the store interfaces are yet to be defined, as is the general IBC top-level module machinery.
 
-A mock implementation of the `ConnectionReader` trait could look as follows:
+A mock implementation of the `ConnectionReader` trait could looks as follows:
 
 ```rust
 struct MockConnectionReader {
@@ -226,7 +184,7 @@ impl ConnectionReader for MockConnectionReader {
 
 #### Keeper
 
-Once a message processor executes successfully, some data will typically need to be persisted in the chain state
+Once a handler executes successfully, some data will typically need to be persisted in the chain state
 via the private/provable store interfaces. In the same vein as for the reader defined in the previous section,
 a submodule should define a trait which provides operations to persist such data.
 The same considerations w.r.t. to coupling and unit-testing apply here as well.
@@ -249,15 +207,15 @@ pub trait ConnectionKeeper {
 
 #### Submodule implementation
 
-We now come to the actual definition of a message processor for a submodule.
+We now come to the actual definition of a handler for a submodule.
 
-We recommend each message processor to be defined within its own Rust module, named
-after the message processor itself. For example, the "Create Client" message processor of ICS 002 would
-be defined in `ibc_modules::ics02_client::handler::create_client`.
+We recommend each handler to be defined within its own Rust module, named
+after the handler itself. For example, the "Create Client" handler of ICS 002 would
+be defined in `modules::ics02_client::handler::create_client`.
 
 ##### Message type
 
-Each message processor must define a datatype which represent the message it can process.
+Each handler must define a datatype which represent the message it can process.
 
 ```rust
 pub struct MsgConnectionOpenInit {
@@ -267,18 +225,18 @@ pub struct MsgConnectionOpenInit {
 }
 ```
 
-##### Message processor implementation
+##### Handler implementation
 
-In this section we provide guidelines for implementating an actual message processor.
+In this section we provide guidelines for implementing an actual handler.
 
-We divide the message processor in two parts: processing and persistance.
+We divide the handler in two parts: processing and persistence.
 
 ###### Processing
 
-The actual logic of the message processor is expressed as a pure function, typically named
+The actual logic of the handler is expressed as a pure function, typically named
 `process`, which takes as arguments a `Reader` and the corresponding message, and returns
 a `HandlerOutput<T, E>`, where `T` is a concrete datatype and `E` is an error type which defines
-all potential errors yielded by the message processors of the current submodule.
+all potential errors yielded by the handlers of the current submodule.
 
 ```rust
 pub struct ConnectionMsgProcessingResult {
@@ -315,7 +273,7 @@ pub fn process(
 
     output.log("success: client found");
 
-    output.emit(ConnectionEvent::ConnectionOpenInit(connection_id.clone()));
+    output.emit(IBCEvent::ConnectionOpenInit(connection_id.clone()));
 
     Ok(output.with_result(ConnectionMsgProcessingResult {
         connection_id,
@@ -332,7 +290,7 @@ passed to a function named `keep`, which is responsible for persisting the objec
 by the processing function. This `keep` function takes the submodule's `Keeper` and the result
 type defined above, and performs side-effecting calls to the keeper's methods to persist the result.
 
-Below is given an implementation of the `keep` function for the "Create Connection" message processors:
+Below is given an implementation of the `keep` function for the "Create Connection" handlers:
 
 ```rust
 pub fn keep(
@@ -664,16 +622,14 @@ Proposed
 
 ## Consequences
 
-> This section describes the consequences, after applying the decision. All consequences should be summarized here, not just the "positive" ones.
-
 ### Positive
+- clear separation of message handlers logic (processing and persistence logic) from the store
+- provide support to mock the context of a handler and test the handler functionality in isolation
+
 
 ### Negative
+- data type system around submodule ICS02 is relatively complex
 
 ### Neutral
 
 ## References
-
-> Are there any relevant PR comments, issues that led up to this, or articles refernced for why we made the given design choice? If so link them here!
-
-* {reference link}

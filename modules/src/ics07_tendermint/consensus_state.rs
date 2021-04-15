@@ -1,20 +1,21 @@
-use chrono::{TimeZone, Utc};
-use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use std::time::SystemTime;
 
-use ibc_proto::ibc::tendermint::ConsensusState as RawConsensusState;
+use chrono::{TimeZone, Utc};
+use prost_types::Timestamp;
+use serde::Serialize;
+use tendermint::{hash::Algorithm, time::Time, Hash};
+use tendermint_proto::Protobuf;
 
-use tendermint::block::signed_header::SignedHeader;
-use tendermint::hash::Algorithm;
-use tendermint::time::Time;
-use tendermint::Hash;
-use tendermint_proto::DomainType;
+use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
+use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusState {
     pub timestamp: Time,
     pub root: CommitmentRoot,
@@ -31,7 +32,7 @@ impl ConsensusState {
     }
 }
 
-impl crate::ics02_client::state::ConsensusState for ConsensusState {
+impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
@@ -43,15 +44,17 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
     fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()
     }
+
+    fn wrap_any(self) -> AnyConsensusState {
+        AnyConsensusState::Tendermint(self)
+    }
 }
 
-impl DomainType<RawConsensusState> for ConsensusState {}
+impl Protobuf<RawConsensusState> for ConsensusState {}
 
 impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
 
-    // TODO: Fix height conversion below (which ignores epoch number, hence it's incorrect).
-    // Related: https://github.com/informalsystems/ibc-rs/issues/191.
     fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
         let proto_timestamp = raw
             .timestamp
@@ -66,7 +69,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
             timestamp: Utc
                 .timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32)
                 .into(),
-            next_validators_hash: Hash::new(Algorithm::Sha256, &raw.next_validators_hash)
+            next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
                 .map_err(|e| Kind::InvalidRawConsensusState.context(e.to_string()))?,
         })
     }
@@ -75,27 +78,36 @@ impl TryFrom<RawConsensusState> for ConsensusState {
 impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
         RawConsensusState {
-            timestamp: Some(value.timestamp.to_system_time().unwrap().into()),
-            root: Some(ibc_proto::ibc::commitment::MerkleRoot { hash: value.root.0 }),
+            timestamp: Some(Timestamp::from(SystemTime::from(value.timestamp))),
+            root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot {
+                hash: value.root.into_vec(),
+            }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
         }
     }
 }
 
-impl From<SignedHeader> for ConsensusState {
-    fn from(header: SignedHeader) -> Self {
+impl From<tendermint::block::Header> for ConsensusState {
+    fn from(header: tendermint::block::Header) -> Self {
         Self {
-            root: CommitmentRoot::from_bytes(&header.header.app_hash),
-            timestamp: header.header.time,
-            next_validators_hash: header.header.next_validators_hash,
+            root: CommitmentRoot::from_bytes(header.app_hash.as_ref()),
+            timestamp: header.time,
+            next_validators_hash: header.next_validators_hash,
         }
+    }
+}
+
+impl From<Header> for ConsensusState {
+    fn from(header: Header) -> Self {
+        Self::from(header.signed_header.header)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::test::test_serialization_roundtrip;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
+
+    use crate::test::test_serialization_roundtrip;
 
     #[test]
     fn serialization_roundtrip_no_proof() {

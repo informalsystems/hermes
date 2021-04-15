@@ -1,120 +1,400 @@
-use std::time::Duration;
+use std::{sync::Arc, thread};
 
-use anomaly::fail;
-use serde::{de::DeserializeOwned, Serialize};
-
+use crossbeam_channel as channel;
+use prost_types::Any;
 use tendermint::block::Height;
-use tendermint::chain::Id as ChainId;
-use tendermint_light_client::types::TrustThreshold;
-use tendermint_rpc::Client as RpcClient;
+use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics02_client::state::{ClientState, ConsensusState};
-use ibc::ics24_host::Path;
+pub use cosmos::CosmosSdkChain;
+use ibc::events::IbcEvent;
+use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
+use ibc::ics02_client::client_state::ClientState;
+use ibc::ics02_client::header::Header;
+use ibc::ics03_connection::connection::{ConnectionEnd, State};
+use ibc::ics03_connection::version::{get_compatible_versions, Version};
+use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::proofs::{ConsensusProof, Proofs};
+use ibc::query::QueryTxRequest;
+use ibc::signer::Signer;
+use ibc::Height as ICSHeight;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::{
+    QueryClientConnectionsRequest, QueryConnectionsRequest,
+};
 
-use crate::client::LightClient;
 use crate::config::ChainConfig;
-use crate::error;
-
-use std::error::Error;
+use crate::connection::ConnectionMsgType;
+use crate::error::{Error, Kind};
+use crate::event::monitor::EventBatch;
+use crate::keyring::{KeyEntry, KeyRing};
+use crate::light_client::LightClient;
 
 pub(crate) mod cosmos;
-pub use cosmos::CosmosSDKChain;
-use prost_types::Any;
+pub mod handle;
+pub mod runtime;
+
+#[cfg(test)]
+pub mod mock;
+
+/// Generic query response type
+/// TODO - will slowly move to GRPC protobuf specs for queries
+#[derive(Clone, Debug, PartialEq)]
+pub struct QueryResponse {
+    pub value: Vec<u8>,
+    pub proof: Option<MerkleProof>,
+    pub height: Height,
+}
+
+/// Packet query options
+#[derive(Debug)]
+pub struct QueryPacketOptions {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub height: u64,
+}
 
 /// Defines a blockchain as understood by the relayer
-pub trait Chain {
+pub trait Chain: Sized {
     /// Type of light blocks for this chain
-    type LightBlock: Send + Sync + Serialize + DeserializeOwned;
+    type LightBlock: Send + Sync;
 
-    /// Type of light client for this chain
-    type LightClient: LightClient<Self::LightBlock> + Send + Sync;
+    /// Type of headers for this chain
+    type Header: Header;
 
     /// Type of consensus state for this chain
-    type ConsensusState: ConsensusState + Send + Sync + Serialize + DeserializeOwned;
+    type ConsensusState: ConsensusState;
 
     /// Type of the client state for this chain
-    type ClientState: ClientState + Send + Sync + Serialize + DeserializeOwned;
+    type ClientState: ClientState;
 
-    /// Type of RPC requester (wrapper around low-level RPC client) for this chain
-    type RpcClient: RpcClient + Send + Sync;
+    /// Constructs the chain
+    fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
-    /// Error types defined by this chain
-    type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
+    #[allow(clippy::type_complexity)]
+    /// Initializes and returns the light client (if any) associated with this chain.
+    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error>;
 
-    /// Perform a generic `query`, and return the corresponding response data.
-    fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error>;
-
-    /// send a transaction with `msgs` to chain.
-    fn send(&self, _msgs: &[Any]) -> Result<(), Self::Error>;
+    /// Initializes and returns the event monitor (if any) associated with this chain.
+    fn init_event_monitor(
+        &self,
+        rt: Arc<TokioRuntime>,
+    ) -> Result<
+        (
+            channel::Receiver<EventBatch>,
+            Option<thread::JoinHandle<()>>,
+        ),
+        Error,
+    >;
 
     /// Returns the chain's identifier
-    fn id(&self) -> &ChainId {
-        &self.config().id
+    fn id(&self) -> &ChainId;
+
+    /// Returns the chain's keybase
+    fn keybase(&self) -> &KeyRing;
+
+    /// Returns the chain's keybase, mutably
+    fn keybase_mut(&mut self) -> &mut KeyRing;
+
+    /// Sends one or more transactions with `msgs` to chain.
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
+
+    fn get_signer(&mut self) -> Result<Signer, Error>;
+
+    fn get_key(&mut self) -> Result<KeyEntry, Error>;
+
+    // Queries
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
+
+    fn query_compatible_versions(&self) -> Result<Vec<Version>, Error> {
+        // TODO - do a real chain query
+        Ok(get_compatible_versions())
     }
 
-    /// Returns the chain's configuration
-    fn config(&self) -> &ChainConfig;
+    /// Query the latest height the chain is at
+    fn query_latest_height(&self) -> Result<ICSHeight, Error>;
 
-    /// Get a low-level RPC client for this chain
-    fn rpc_client(&self) -> &Self::RpcClient;
+    /// Performs a query to retrieve the identifiers of all clients associated with a chain.
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
 
-    /// Get a light client for this chain
-    fn light_client(&self) -> Option<&Self::LightClient>;
+    fn query_client_state(
+        &self,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<Self::ClientState, Error>;
 
-    /// Set a light client for this chain
-    fn set_light_client(&mut self, light_client: Self::LightClient);
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
-    /// The trusting period configured for this chain
-    fn trusting_period(&self) -> Duration;
+    fn query_upgraded_client_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ClientState, MerkleProof), Error>;
 
-    /// The unbonding period of this chain
-    /// TODO - this is a GRPC query, needs to be implemented
-    fn unbonding_period(&self) -> Duration;
+    fn query_upgraded_consensus_state(
+        &self,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
 
-    /// The trust threshold configured for this chain
-    fn trust_threshold(&self) -> TrustThreshold;
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error>;
 
-    /// Sign message
-    /// TODO - waiting for tendermint-rs upgrade to v0.16
-    fn sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Self::Error>;
-}
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_client_connections(
+        &self,
+        request: QueryClientConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error>;
 
-/// Query the latest height the chain is at via a RPC query
-pub async fn query_latest_height(chain: &impl Chain) -> Result<Height, error::Error> {
-    let status = chain
-        .rpc_client()
-        .status()
-        .await
-        .map_err(|e| error::Kind::Rpc.context(e))?;
+    fn query_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: ICSHeight,
+    ) -> Result<ConnectionEnd, Error>;
 
-    if status.sync_info.catching_up {
-        fail!(
-            error::Kind::LightClient,
-            "node at {} running chain {} not caught up",
-            chain.config().rpc_addr,
-            chain.config().id,
-        );
+    /// Performs a query to retrieve the identifiers of all channels associated with a connection.
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<ChannelId>, Error>;
+
+    /// Performs a query to retrieve the identifiers of all channels.
+    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
+
+    fn query_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<ChannelEnd, Error>;
+
+    // TODO: Introduce a newtype for the module version string
+    fn query_module_version(&self, port_id: &PortId) -> String {
+        // TODO - query the chain, currently hardcoded
+        if port_id.as_str() == "transfer" {
+            "ics20-1".to_string()
+        } else {
+            "".to_string()
+        }
     }
 
-    Ok(status.sync_info.latest_block_height)
-}
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
 
-/// Query the latest header
-pub async fn query_latest_header<C>(chain: &C) -> Result<C::LightBlock, error::Error>
-where
-    C: Chain,
-{
-    let h = query_latest_height(chain).await?;
-    Ok(query_header_at_height(chain, h).await?)
-}
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
 
-/// Query a header at the given height via the RPC requester
-pub async fn query_header_at_height<C>(
-    chain: &C,
-    height: Height,
-) -> Result<C::LightBlock, error::Error>
-where
-    C: Chain,
-{
-    todo!()
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
+
+    fn query_unreceived_acknowledgements(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error>;
+
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+
+    // Provable queries
+    fn proven_client_state(
+        &self,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<(Self::ClientState, MerkleProof), Error>;
+
+    fn proven_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: ICSHeight,
+    ) -> Result<(ConnectionEnd, MerkleProof), Error>;
+
+    fn proven_client_consensus(
+        &self,
+        client_id: &ClientId,
+        consensus_height: ICSHeight,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
+
+    fn proven_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<(ChannelEnd, MerkleProof), Error>;
+
+    fn proven_packet(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+        height: ICSHeight,
+    ) -> Result<(Vec<u8>, MerkleProof), Error>;
+
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
+
+    fn build_consensus_state(
+        &self,
+        light_block: Self::LightBlock,
+    ) -> Result<Self::ConsensusState, Error>;
+
+    fn build_header(
+        &self,
+        trusted_height: ICSHeight,
+        trusted_light_block: Self::LightBlock,
+        target_light_block: Self::LightBlock,
+    ) -> Result<Self::Header, Error>;
+
+    /// Builds the required proofs and the client state for connection handshake messages.
+    /// The proofs and client state must be obtained from queries at same height.
+    fn build_connection_proofs_and_client_state(
+        &self,
+        message_type: ConnectionMsgType,
+        connection_id: &ConnectionId,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
+        let (connection_end, connection_proof) = self.proven_connection(&connection_id, height)?;
+
+        // Check that the connection state is compatible with the message
+        match message_type {
+            ConnectionMsgType::OpenTry => {
+                if !connection_end.state_matches(&State::Init)
+                    && !connection_end.state_matches(&State::TryOpen)
+                {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+            ConnectionMsgType::OpenAck => {
+                if !connection_end.state_matches(&State::TryOpen)
+                    && !connection_end.state_matches(&State::Open)
+                {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+            ConnectionMsgType::OpenConfirm => {
+                if !connection_end.state_matches(&State::Open) {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+        }
+
+        let mut client_state = None;
+        let mut client_proof = None;
+        let mut consensus_proof = None;
+
+        match message_type {
+            ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
+                let (client_state_value, client_state_proof) =
+                    self.proven_client_state(&client_id, height)?;
+
+                client_proof = Some(CommitmentProofBytes::from(client_state_proof));
+
+                let consensus_state_proof = self
+                    .proven_client_consensus(
+                        &client_id,
+                        client_state_value.latest_height(),
+                        height,
+                    )?
+                    .1;
+
+                consensus_proof = Option::from(
+                    ConsensusProof::new(
+                        CommitmentProofBytes::from(consensus_state_proof),
+                        client_state_value.latest_height(),
+                    )
+                    .map_err(|e| {
+                        Kind::ConnOpenTry("failed to build consensus proof".to_string()).context(e)
+                    })?,
+                );
+
+                client_state = Some(client_state_value);
+            }
+            _ => {}
+        }
+
+        Ok((
+            client_state,
+            Proofs::new(
+                CommitmentProofBytes::from(connection_proof),
+                client_proof,
+                consensus_proof,
+                None,
+                height.increment(),
+            )
+            .map_err(|_| Kind::MalformedProof)?,
+        ))
+    }
+
+    /// Builds the proof for channel handshake messages.
+    fn build_channel_proofs(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<Proofs, Error> {
+        // Collect all proofs as required
+        let channel_proof =
+            CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, height)?.1);
+
+        Ok(
+            Proofs::new(channel_proof, None, None, None, height.increment())
+                .map_err(|_| Kind::MalformedProof)?,
+        )
+    }
+
+    /// Builds the proof for packet messages.
+    fn build_packet_proofs(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+        height: ICSHeight,
+    ) -> Result<(Vec<u8>, Proofs), Error> {
+        let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
+            Some(CommitmentProofBytes::from(
+                self.proven_channel(&port_id, &channel_id, height)?.1,
+            ))
+        } else {
+            None
+        };
+
+        let (bytes, packet_proof) =
+            self.proven_packet(packet_type, port_id, channel_id, sequence, height)?;
+
+        let proofs = Proofs::new(
+            CommitmentProofBytes::from(packet_proof),
+            None,
+            None,
+            channel_proof,
+            height.increment(),
+        )
+        .map_err(|_| Kind::MalformedProof)?;
+
+        Ok((bytes, proofs))
+    }
 }

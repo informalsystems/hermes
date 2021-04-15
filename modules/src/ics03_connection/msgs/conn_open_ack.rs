@@ -1,39 +1,41 @@
-use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
-use tendermint::block::Height;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-use crate::ics02_client::client_def::AnyClientState;
-use crate::ics03_connection::connection::validate_version;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::version::Version;
+use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
+use crate::signer::Signer;
 use crate::tx_msg::Msg;
-use std::str::FromStr;
+use crate::Height;
 
-/// Message type for the `MsgConnectionOpenAck` message.
-pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
+pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
 
-///
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
-///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenAck {
-    connection_id: ConnectionId,
-    client_state: Option<AnyClientState>,
-    proofs: Proofs,
-    version: String,
-    signer: AccountId,
+    pub connection_id: ConnectionId,
+    pub counterparty_connection_id: ConnectionId,
+    pub client_state: Option<AnyClientState>,
+    pub proofs: Proofs,
+    pub version: Version,
+    pub signer: Signer,
 }
 
 impl MsgConnectionOpenAck {
     /// Getter for accessing the connection identifier of this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
+    }
+
+    /// Getter for accessing the counterparty's connection identifier from this message.
+    pub fn counterparty_connection_id(&self) -> &ConnectionId {
+        &self.counterparty_connection_id
     }
 
     /// Getter for accessing the client state.
@@ -47,15 +49,15 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for the version field.
-    pub fn version(&self) -> &String {
+    pub fn version(&self) -> &Version {
         &self.version
     }
 
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
-    /// value `0` if this field is not set.
+    /// value `Height(0)` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => Height(0),
+            None => Height::zero(),
             Some(p) => p.height(),
         }
     }
@@ -63,53 +65,48 @@ impl MsgConnectionOpenAck {
 
 impl Msg for MsgConnectionOpenAck {
     type ValidationError = Error;
+    type Raw = RawMsgConnectionOpenAck;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CONNECTION_OPEN_ACK.to_string()
-    }
-
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        unimplemented!()
-    }
-
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
-impl DomainType<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {}
+impl Protobuf<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {}
 
 impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
-        let proof_height = msg
-            .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .ok_or(Kind::MissingConsensusHeight)?
+            .try_into() // Cast from the raw height type into the domain type.
+            .map_err(|e| Kind::InvalidProof.context(e))?;
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
-        let client_proof = match msg.client_state {
-            None => None,
-            Some(_) => Some(msg.proof_client.into()),
-        };
+        let proof_height = msg
+            .proof_height
+            .ok_or(Kind::MissingProofHeight)?
+            .try_into()
+            .map_err(|e| Kind::InvalidProof.context(e))?;
+
+        let client_proof = Some(msg.proof_client)
+            .filter(|x| !x.is_empty())
+            .map(CommitmentProofBytes::from);
 
         Ok(Self {
             connection_id: msg
                 .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_connection_id: msg
+                .counterparty_connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             client_state: msg
@@ -117,16 +114,20 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 .map(AnyClientState::try_from)
                 .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
+            version: msg
+                .version
+                .ok_or(Kind::InvalidVersion)?
+                .try_into()
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
             proofs: Proofs::new(
                 msg.proof_try.into(),
                 client_proof,
                 Option::from(consensus_proof_obj),
+                None,
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer: msg.signer.into(),
         })
     }
 }
@@ -135,14 +136,11 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
     fn from(ics_msg: MsgConnectionOpenAck) -> Self {
         RawMsgConnectionOpenAck {
             connection_id: ics_msg.connection_id.as_str().to_string(),
-            version: ics_msg.version,
+            counterparty_connection_id: ics_msg.counterparty_connection_id.as_str().to_string(),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
-            proof_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: ics_msg.proofs.height().value(),
-            }),
+            proof_height: Some(ics_msg.proofs.height().into()),
             proof_try: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
                 .proofs
@@ -153,15 +151,11 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .proofs
                 .consensus_proof()
                 .map_or_else(Vec::new, |v| v.proof().clone().into()),
-            consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
-                || None,
-                |h| {
-                    Some(ibc_proto::ibc::client::Height {
-                        epoch_number: 0,
-                        epoch_height: u64::from(h.height()),
-                    })
-                },
-            ),
+            consensus_height: ics_msg
+                .proofs
+                .consensus_proof()
+                .map_or_else(|| None, |h| Some(h.height().into())),
+            version: Some(ics_msg.version.into()),
             signer: ics_msg.signer.to_string(),
         }
     }
@@ -169,28 +163,34 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
+    use crate::ics03_connection::version::Version;
+    use crate::ics24_host::identifier::ConnectionId;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
-    pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
+    pub fn get_dummy_raw_msg_conn_open_ack(
+        proof_height: u64,
+        consensus_height: u64,
+    ) -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
-            connection_id: "srcconnection".to_string(),
-            version: "1.0.0".to_string(),
+            connection_id: ConnectionId::default().to_string(),
+            counterparty_connection_id: ConnectionId::default().to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                revision_number: 0,
+                revision_height: proof_height,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                revision_number: 0,
+                revision_height: consensus_height,
             }),
             client_state: None,
             proof_client: vec![],
-            signer: get_dummy_account_id_raw(),
+            version: Some(Version::default().into()),
+            signer: get_dummy_bech32_account(),
         }
     }
 }
@@ -199,10 +199,10 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
+    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 
     #[test]
@@ -214,7 +214,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_ack_msg = get_dummy_msg_conn_open_ack();
+        let default_ack_msg = get_dummy_raw_msg_conn_open_ack(5, 5);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -231,9 +231,9 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Bad version, empty version string".to_string(),
+                name: "Bad version, missing version".to_string(),
                 raw: RawMsgConnectionOpenAck {
-                    version: "".to_string(),
+                    version: None,
                     ..default_ack_msg.clone()
                 },
                 want_pass: false,
@@ -242,8 +242,8 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     proof_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        revision_number: 1,
+                        revision_height: 0,
                     }),
                     ..default_ack_msg.clone()
                 },
@@ -253,8 +253,8 @@ mod tests {
                 name: "Bad consensus height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     consensus_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        revision_number: 1,
+                        revision_height: 0,
                     }),
                     ..default_ack_msg
                 },
@@ -280,7 +280,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_ack();
+        let raw = get_dummy_raw_msg_conn_open_ack(5, 6);
         let msg = MsgConnectionOpenAck::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenAck::from(msg.clone());
         let msg_back = MsgConnectionOpenAck::try_from(raw_back.clone()).unwrap();

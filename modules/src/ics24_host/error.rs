@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub type ValidationError = anomaly::Error<ValidationKind>;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum ValidationKind {
     #[error("identifier {id} cannot contain separator '/'")]
     ContainsSeparator { id: String },
@@ -21,6 +21,12 @@ pub enum ValidationKind {
 
     #[error("identifier cannot be empty")]
     Empty,
+
+    #[error("chain identifiers are expected to be in epoch format {id}")]
+    ChainIdInvalidFormat { id: String },
+
+    #[error("Invalid channel id in counterparty")]
+    InvalidCounterpartyChannelId,
 }
 
 impl ValidationKind {
@@ -43,6 +49,10 @@ impl ValidationKind {
 
     pub fn empty() -> Self {
         Self::Empty
+    }
+
+    pub fn chain_id_invalid_format(id: String) -> Self {
+        Self::ChainIdInvalidFormat { id }
     }
 
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
