@@ -121,7 +121,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         };
 
         let res: Result<Vec<IbcEvent>, Error> =
-            build_and_send_transfer_messages(src_chain, dst_chain, &opts)
+            build_and_send_transfer_messages(src_chain, dst_chain, opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
