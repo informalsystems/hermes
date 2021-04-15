@@ -22,4 +22,9 @@ jobs:
       - name: Fungible Token Transfer
         run: apalache-mc typecheck IBCTokenTransfer.tla
         working-directory: ${{env.working-directory}}/fungible-token-transfer
-
+      - name: ICS 02 Client / Single Chain
+        run: apalache-mc typecheck ICS02SingleChainEnvironment.tla
+        working-directory: ${{env.working-directory}}/client
+      - name: ICS 02 Client / Two Chains
+        run: apalache-mc typecheck ICS02TwoChainsEnvironment.tla
+        working-directory: ${{env.working-directory}}/client
