@@ -71,6 +71,7 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
+use tendermint_rpc::endpoint::tx_search::ResultTx;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -954,50 +955,66 @@ impl Chain for CosmosSdkChain {
         Ok(Sequence::from(response.next_sequence_receive))
     }
 
-    /// Queries the packet data for all packets with sequences included in the request.
-    /// Note - there is no way to format the query such that it asks for Tx-es with either
-    /// sequence (the query conditions can only be AND-ed)
-    /// There is a possibility to include "<=" and ">=" conditions but it doesn't work with
-    /// string attributes (sequence is emmitted as a string).
-    /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
-    /// for all packets could be performed but it would return all packets ever sent.
+    /// This function queries transactions for events matching certain criteria.
+    /// 1. Client Update request - returns a vector with at most one update client event
+    /// 2. Packet event request - returns at most one packet event for each sequence specified
+    ///    in the request.
+    ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
+    ///    sequence (the query conditions can only be AND-ed).
+    ///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
+    ///    string attributes (sequence is emmitted as a string).
+    ///    Therefore, for packets we perform one tx_search for each sequence.
+    ///    Alternatively, a single query for all packets could be performed but it would return all
+    ///    packets ever sent.
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("query_txs");
 
         match request {
             QueryTxRequest::Packet(request) => {
-                crate::time!("query_txs");
+                crate::time!("query_txs: query packet events");
 
                 let mut result: Vec<IbcEvent> = vec![];
 
                 for seq in &request.sequences {
-                    // query all Tx-es that include events related to packet with given port, channel and sequence
+                    // query first (and only) Tx that includes the event specified in the query request
                     let response = self
                         .block_on(self.rpc_client.tx_search(
                             packet_query(&request, *seq),
                             false,
                             1,
-                            1,
+                            1, // get only the first Tx matching the query
                             Order::Ascending,
                         ))
                         .unwrap(); // todo
 
-                    let mut events =
-                        packet_from_tx_search_response(self.id(), &request, *seq, response)
-                            .map_or(vec![], |v| vec![v]);
+                    assert!(
+                        response.txs.len() <= 1,
+                        "packet_from_tx_search_response: unexpected number of txs"
+                    );
 
-                    result.append(&mut events);
+                    if let Some(event) = packet_from_tx_search_response(
+                        self.id(),
+                        &request,
+                        *seq,
+                        response.txs[0].clone(),
+                    ) {
+                        result.push(event);
+                    }
                 }
                 Ok(result)
             }
 
             QueryTxRequest::Client(request) => {
+                crate::time!("query_txs: single client update event");
+
+                // query the first Tx that include the event related to packet with given port,
+                // channel and sequence
                 let response = self
                     .block_on(self.rpc_client.tx_search(
                         header_query(&request),
                         false,
                         1,
-                        1,
+                        1, // get only the first Tx matching the query
                         Order::Ascending,
                     ))
                     .unwrap(); // todo
@@ -1006,9 +1023,21 @@ impl Chain for CosmosSdkChain {
                     return Ok(vec![]);
                 }
 
-                let events = update_client_from_tx_search_response(self.id(), &request, response);
+                // the response must include a single Tx as specified in the query.
+                assert!(
+                    response.txs.len() <= 1,
+                    "packet_from_tx_search_response: unexpected number of txs"
+                );
 
-                Ok(events)
+                if let Some(event) = update_client_from_tx_search_response(
+                    self.id(),
+                    &request,
+                    response.txs[0].clone(),
+                ) {
+                    Ok(vec![event])
+                } else {
+                    Ok(vec![])
+                }
             }
         }
     }
@@ -1257,109 +1286,103 @@ fn packet_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
-    mut response: tendermint_rpc::endpoint::tx_search::Response,
+    r: ResultTx,
 ) -> Option<IbcEvent> {
-    assert!(
-        response.txs.len() <= 1,
-        "packet_from_tx_search_response: unexpected number of txs"
-    );
-    if let Some(r) = response.txs.pop() {
-        let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
-        if height > request.height {
-            return None;
-        }
-
-        let mut matching = Vec::new();
-        for e in r.tx_result.events {
-            if e.type_str != request.event_id.as_str() {
-                continue;
-            }
-
-            let res = ChannelEvents::try_from_tx(&e);
-            if res.is_none() {
-                continue;
-            }
-            let event = res.unwrap();
-            let packet = match &event {
-                IbcEvent::SendPacket(send_ev) => Some(&send_ev.packet),
-                IbcEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
-                _ => None,
-            };
-
-            if packet.is_none() {
-                continue;
-            }
-
-            let packet = packet.unwrap();
-            if packet.source_port != request.source_port_id
-                || packet.source_channel != request.source_channel_id
-                || packet.destination_port != request.destination_port_id
-                || packet.destination_channel != request.destination_channel_id
-                || packet.sequence != seq
-            {
-                continue;
-            }
-
-            matching.push(event);
-        }
-
-        assert_eq!(
-            matching.len(),
-            1,
-            "packet_from_tx_search_response: unexpected number of matching packets"
-        );
-        matching.pop()
-    } else {
-        None
+    let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
+    if height > request.height {
+        return None;
     }
+
+    let mut matching = Vec::new();
+    for e in r.tx_result.events {
+        if e.type_str != request.event_id.as_str() {
+            continue;
+        }
+
+        let res = ChannelEvents::try_from_tx(&e);
+        if res.is_none() {
+            continue;
+        }
+        let event = res.unwrap();
+        let packet = match &event {
+            IbcEvent::SendPacket(send_ev) => Some(&send_ev.packet),
+            IbcEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
+            _ => None,
+        };
+
+        if packet.is_none() {
+            continue;
+        }
+
+        let packet = packet.unwrap();
+        if packet.source_port != request.source_port_id
+            || packet.source_channel != request.source_channel_id
+            || packet.destination_port != request.destination_port_id
+            || packet.destination_channel != request.destination_channel_id
+            || packet.sequence != seq
+        {
+            continue;
+        }
+
+        matching.push(event);
+    }
+
+    assert_eq!(
+        matching.len(),
+        1,
+        "packet_from_tx_search_response: unexpected number of matching packets"
+    );
+    matching.pop()
 }
 
-// Extract all update client events for the requested client and height from the query_txs RPC response.
+// Extracts from response the update client event for the requested client and height.
+// Note: in the Tx, there may have been multiple events, some of them may be
+// other update client events that are not relevant to the request.
+// For example, if we're querying for a transaction that includes the update for client X at
+// consensus height H, it is possible that the transaction also includes an update client
+// for client Y at consensus height H'. This is the reason the code iterates all events in the
+// returned Tx.
+// Returns `None` if no matching event was found.
 fn update_client_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryClientEventRequest,
-    response: tendermint_rpc::endpoint::tx_search::Response,
-) -> Vec<IbcEvent> {
-    crate::time!("update_client_from_tx_search_response");
-
+    response: ResultTx,
+) -> Option<IbcEvent> {
     let mut matching = Vec::new();
 
-    for r in response.txs {
-        let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
-        if request.height != ICSHeight::zero() && height > request.height {
-            return vec![];
-        }
-
-        for e in r.tx_result.events {
-            if e.type_str != request.event_id.as_str() {
-                continue;
-            }
-
-            let res = ClientEvents::try_from_tx(&e);
-            if res.is_none() {
-                continue;
-            }
-            let event = res.unwrap();
-            let update = match &event {
-                IbcEvent::UpdateClient(update) => Some(update),
-                _ => None,
-            };
-
-            if update.is_none() {
-                continue;
-            }
-
-            let update = update.unwrap();
-            if update.common.client_id != request.client_id
-                || update.common.consensus_height != request.consensus_height
-            {
-                continue;
-            }
-
-            matching.push(event);
-        }
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    if request.height != ICSHeight::zero() && height > request.height {
+        return None;
     }
-    matching
+
+    for e in response.tx_result.events {
+        if e.type_str != request.event_id.as_str() {
+            continue;
+        }
+
+        let res = ClientEvents::try_from_tx(&e);
+        if res.is_none() {
+            continue;
+        }
+        let event = res.unwrap();
+        let update = match &event {
+            IbcEvent::UpdateClient(update) => Some(update),
+            _ => None,
+        };
+
+        if update.is_none() {
+            continue;
+        }
+
+        let update = update.unwrap();
+        if update.common.client_id != request.client_id
+            || update.common.consensus_height != request.consensus_height
+        {
+            continue;
+        }
+        matching.push(event);
+    }
+    matching.pop()
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.

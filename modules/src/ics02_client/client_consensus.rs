@@ -166,6 +166,7 @@ impl ConsensusState for AnyConsensusState {
     }
 }
 
+/// Query request for a single client event, identified by `event_id`, for `client_id`.
 #[derive(Clone, Debug)]
 pub struct QueryClientEventRequest {
     pub height: crate::Height,
