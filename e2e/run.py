@@ -43,6 +43,10 @@ def run(c: Config):
 
     split()
 
+    packet.timeout(c, IBC_0, IBC_1, ibc0_chan_id, ibc1_chan_id)
+
+    split()
+
     # The ChannelCloseInit message is currently denied by Gaia,
     # and requires a patch to be accepted.
     # channel.close(c, IBC_0, IBC_1, ibc0_conn_id,
