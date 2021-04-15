@@ -982,7 +982,7 @@ impl Chain for CosmosSdkChain {
                             packet_query(&request, *seq),
                             false,
                             1,
-                            1, // get only the first Tx matching the query
+                            1, // get onw Tx matching the query
                             Order::Ascending,
                         ))
                         .unwrap(); // todo
@@ -1007,8 +1007,12 @@ impl Chain for CosmosSdkChain {
             QueryTxRequest::Client(request) => {
                 crate::time!("query_txs: single client update event");
 
-                // query the first Tx that include the event related to packet with given port,
-                // channel and sequence
+                // query the first Tx that includes the event matching the client request
+                // Note: it is possible to have multiple Tx-es for same client and consensus height.
+                // In this case it must be true that the client updates were performed with tha
+                // same header as the first one, otherwise a subsequent transaction would have
+                // failed on chain. Therefore only one Tx is of interest and current API returns
+                // the first one.
                 let response = self
                     .block_on(self.rpc_client.tx_search(
                         header_query(&request),
@@ -1335,13 +1339,13 @@ fn packet_from_tx_search_response(
     matching.pop()
 }
 
-// Extracts from response the update client event for the requested client and height.
+// Extracts from the Tx the update client event for the requested client and height.
 // Note: in the Tx, there may have been multiple events, some of them may be
-// other update client events that are not relevant to the request.
+// for update of other clients that are not relevant to the request.
 // For example, if we're querying for a transaction that includes the update for client X at
 // consensus height H, it is possible that the transaction also includes an update client
-// for client Y at consensus height H'. This is the reason the code iterates all events in the
-// returned Tx.
+// for client Y at consensus height H'. This is the reason the code iterates all event fields in the
+// returned Tx to retrieve the relevant ones.
 // Returns `None` if no matching event was found.
 fn update_client_from_tx_search_response(
     chain_id: &ChainId,
