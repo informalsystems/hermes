@@ -12,10 +12,14 @@ jobs:
   typecheck-specs:
     runs-on: ubuntu-latest
     container: apalache/mc:latest
+    env:
+      working-directory: docs/spec/tla
     steps:
       - uses: actions/checkout@v2
-      - name: IBCCore.tla
-        run: apalache-mc typecheck docs/spec/tla/ibc-core/IBCCore.tla
-      - name: IBCTokenTransfer.tla
-        run: apalache-mc typecheck docs/spec/tla/ibc-core/IBCTokenTransfer.tla
+      - name: IBC Core
+        run: apalache-mc typecheck IBCCore.tla
+        working-directory: ${{env.working-directory}}/ibc-core
+      - name: Fungible Token Transfer
+        run: apalache-mc typecheck IBCTokenTransfer.tla
+        working-directory: ${{env.working-directory}}/fungible-token-transfer
 
