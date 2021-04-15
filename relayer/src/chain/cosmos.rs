@@ -1173,12 +1173,12 @@ impl Chain for CosmosSdkChain {
             self.config.trust_threshold,
             self.config.trusting_period,
             self.unbonding_period()?,
-            Duration::from_millis(3000), // TODO - get it from src config when avail
+            self.config.clock_drift,
             height,
             ICSHeight::zero(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
-            false,
-            false,
+            true,
+            true,
         )
         .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
     }
