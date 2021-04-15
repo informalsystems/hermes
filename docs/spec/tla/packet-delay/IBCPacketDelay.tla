@@ -162,10 +162,7 @@ SubmitDatagramOrInstallClientHeight(chainID) ==
     \* then clientHeightTimestamp is the timestamp, denoting the time when this 
     \* height was installed on the chain;
     \* otherwise it is 0, denoting that this height is not installed on the chain
-    LET clientHeightTimestamp == 
-        IF packetDatagram.proofHeight \in DOMAIN chain.counterpartyClientHeights
-        THEN chain.counterpartyClientHeights[packetDatagram.proofHeight]
-        ELSE 0 IN   
+    LET clientHeightTimestamp == chain.counterpartyClientHeights[packetDatagram.proofHeight] IN   
    
    \* packetDatagram.proof height is installed on chain  
    IF clientHeightTimestamp /= 0  
@@ -193,25 +190,20 @@ SubmitDatagramOrInstallClientHeight(chainID) ==
               outgoingDatagrams |-> outgoingPacketDatagrams,
               chainA |-> chainAstore,
               chainB |-> chainBstore]
-   \* packetDatagram.proof height is not installed on chain, 
-   \* install it
+   \* packetDatagram.proof height is not installed on chain, install it
    ELSE LET chainA == IF chainID = "chainA"
                       THEN [chainAstore EXCEPT 
                               !.counterpartyClientHeights = 
-                                [h \in DOMAIN chainAstore.counterpartyClientHeights \union {packetDatagram.proofHeight} |->
-                                    IF h = packetDatagram.proofHeight
-                                    THEN chainAstore.timestamp
-                                    ELSE chainAstore.counterpartyClientHeights[h]],
+                                  [chainAstore.counterpartyClientHeights EXCEPT 
+                                    ![packetDatagram.proofHeight] = chainAstore.timestamp],
                               !.timestamp = chainAstore.timestamp + 1
                             ]
                       ELSE chainAstore IN
         LET chainB == IF chainID = "chainB"
                       THEN [chainBstore EXCEPT 
                               !.counterpartyClientHeights = 
-                                [h \in DOMAIN chainBstore.counterpartyClientHeights \union {packetDatagram.proofHeight} |->
-                                    IF h = packetDatagram.proofHeight
-                                    THEN chainBstore.timestamp
-                                    ELSE chainBstore.counterpartyClientHeights[h]],
+                                  [chainAstore.counterpartyClientHeights EXCEPT 
+                                    ![packetDatagram.proofHeight] = chainBstore.timestamp],
                               !.timestamp = chainBstore.timestamp + 1
                             ]
                       ELSE chainBstore IN
@@ -309,15 +301,21 @@ Spec == Init /\ [][Next]_vars
  Invariants
  ***************************************************************************)
 
+\* type invariant
+TypeOK ==
+    /\ ChainA!TypeOK
+    /\ ChainB!TypeOK
+
 \* each packet datagam is processed at time t (stored in packetDatagramTimestamp), 
-\* such that t > ht + delay, where 
+\* such that t >= ht + delay, where 
 \* ht is the time when the client height is installed  
 PacketDatagramsDelay ==
     \A chainID \in ChainIDs : 
-        \A h \in DOMAIN GetChainByID(chainID).counterpartyClientHeights :
-            <<chainID, h>> \in DOMAIN packetDatagramTimestamp
+        \A h \in 1..MaxHeight :
+            /\ GetChainByID(chainID).counterpartyClientHeights[h] /= 0
+            /\ <<chainID, h>> \in DOMAIN packetDatagramTimestamp
             =>
-            packetDatagramTimestamp[<<chainID, h>>] > GetChainByID(chainID).counterpartyClientHeights[h] + MaxDelay
+            packetDatagramTimestamp[<<chainID, h>>] >= GetChainByID(chainID).counterpartyClientHeights[h] + MaxDelay
 
 \* a conjnction of all invariants
 Inv ==
@@ -325,5 +323,5 @@ Inv ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Dec 16 17:41:19 CET 2020 by ilinastoilkovska
+\* Last modified Thu Apr 15 18:53:41 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 13:44:21 CET 2020 by ilinastoilkovska

@@ -83,7 +83,7 @@ EXTENDS Integers, FiniteSets, Sequences
 ChainIDs == {"chainA", "chainB"}
 ChannelIDs == {"chanAtoB", "chanBtoA"}
 PortIDs == {"portA", "portB"}
-ChannelStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED"}
+ChannelStates == {"OPEN", "CLOSED"}
 
 nullHeight == 0
 nullChannelID == "none"
@@ -92,14 +92,74 @@ nullEscrowAddress == "none"
 
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x
 
+(******************************* ChannelEnds *******************************
+    A set of channel end records. 
+    A channel end record contains the following fields:
+    
+    - state -- a string 
+      Stores the current state of this channel end. We assume that channel 
+      handshake has successfully finished, that is, the state is either 
+      "OPEN" or "CLOSED"
+      
+    - order -- a string
+      Stores whether the channel end is ordered or unordered. It has one 
+      of the following values: "UNORDERED", "ORDERED".
+        
+        * ordered channels have three additional packet sequence fields:
+           nextSendSeq -- stores the sequence number of the next packet that 
+           is going to be sent,
+           nextRcvSeq -- stores the sequence number of the next packet that 
+           is going to be received,
+           nextAckSeq -- stores the sequence number of the next packet that 
+           is going to be acknowledged.
+    
+    - portID -- a port identifier
+      Stores the port identifier of this channel end.  
+    
+    - channelID -- a channel identifier
+      Stores the channel identifier of this channel end.  
+    
+    - counterpartyPortID -- a port identifier
+      Stores the port identifier of the counterparty channel end.   
+    
+    - counterpartyChannelID -- a channel identifier
+      Stores the channel identifier of the counterparty channel end. 
+      
+    Note: we omit channel versions and connection hops.
+ ***************************************************************************)   
+ChannelEnds(channelOrdering, maxPacketSeq) ==
+    IF channelOrdering = "UNORDERED"
+    THEN \* set of unordered channels
+         [
+             state : ChannelStates,
+             order : {"UNORDERED"}, 
+             portID : PortIDs \union {nullPortID},
+             channelID : ChannelIDs \union {nullChannelID},
+             counterpartyPortID : PortIDs \union {nullPortID},
+             counterpartyChannelID : ChannelIDs \union {nullChannelID}
+         ] 
+    ELSE \* set of ordered channels
+         [
+             state : ChannelStates,
+             order : {"ORDERED"},
+             nextSendSeq : 0..maxPacketSeq,
+             nextRcvSeq : 0..maxPacketSeq,
+             nextAckSeq : 0..maxPacketSeq, 
+             portID : PortIDs \union {nullPortID},
+             channelID : ChannelIDs \union {nullChannelID},
+             counterpartyPortID : PortIDs \union {nullPortID},
+             counterpartyChannelID : ChannelIDs \union {nullChannelID}
+         ] 
+
+
 (******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********)
 \* Set of packet commitments
-PacketCommitments(maxHeight, maxPacketSeq) ==
+PacketCommitments(Heights, maxPacketSeq) ==
     [
         channelID : ChannelIDs,
         portID : PortIDs, 
         sequence : 1..maxPacketSeq,
-        timeoutHeight : 1..maxHeight
+        timeoutHeight : Heights
     ] 
 
 \* Set of packet receipts
@@ -121,32 +181,106 @@ PacketAcknowledgements(maxPacketSeq) ==
 
 (********************************* Packets *********************************)
 \* Set of packets
-Packets(maxHeight, maxPacketSeq) ==
+Packets(Heights, maxPacketSeq) ==
     [
         sequence : 1..maxPacketSeq,
-        timeoutHeight : 1..maxHeight,
+        timeoutHeight : Heights,
         srcPortID : PortIDs,
         srcChannelID : ChannelIDs,
         dstPortID : PortIDs,
         dstChannelID : ChannelIDs
     ]
- 
+    
+(******************************** ChainStores ******************************
+    A set of chain store records. 
+    A chain store record contains the following fields:
+    
+    - height : an integer between nullHeight and MaxHeight. 
+      Stores the current height of the chain.
+    
+    - counterpartyClientHeights : a set of integers between 1 and MaxHeight
+      Stores the heights of the client for the counterparty chain.
+
+    - connectionEnd : a connection end record 
+      Stores data about the connection with the counterparty chain.
+
+    - packetCommitments : a set of packet commitments
+      A packet commitment is added to this set when a chain sends a packet 
+      to the counterparty.
+
+    - packetReceipts : a set of packet receipts
+      A packet receipt is added to this set when a chain received a packet 
+      from the counterparty chain.
+    
+    - packetsToAcknowledge : a sequence of packets
+      A packet is added to this sequence when a chain receives it and is used 
+      later for the receiver chain to write an acknowledgement for the packet. 
+    
+    - packetAcknowledgements : a set of packet acknowledgements
+      A packet acknowledgement is added to this set when a chain writes an 
+      acknowledgement for a packet it received from the counterparty.
+        
+    A chain store is the combination of the provable and private stores.
+ ***************************************************************************)
+ChainStores(Heights, channelOrdering, maxPacketSeq) ==    
+    [
+        height : Heights,
+        timestamp : Int,
+        counterpartyClientHeights : [Heights -> Int],
+        channelEnd : ChannelEnds(channelOrdering, maxPacketSeq),
+        packetCommitments : SUBSET(PacketCommitments(Heights, maxPacketSeq)),
+        packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)), 
+        packetsToAcknowledge : Seq(Packets(Heights, maxPacketSeq)),
+        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq))
+    ] 
 
 (******************************** Datagrams ********************************)
 \* Set of datagrams (we consider only packet datagrams)
-Datagrams(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
-    [type : {"PacketRecv"}, 
-     packet : Packets(maxHeight, maxPacketSeq), 
-     proofHeight : 1..maxHeight]
-    \union 
-    [type : {"PacketAck"}, 
-     packet : Packets(maxHeight, maxPacketSeq), 
-     acknowledgement : BOOLEAN, 
-     proofHeight : 1..maxHeight]
+Datagrams(Heights, maxPacketSeq) ==
+    [
+        type : {"PacketRecv"}, 
+        packet : Packets(Heights, maxPacketSeq), 
+        proofHeight : Heights
+    ] \union [
+        type : {"PacketAck"}, 
+        packet : Packets(Heights, maxPacketSeq), 
+        acknowledgement : BOOLEAN, 
+        proofHeight : Heights
+    ]
      
 \* Null datagram
 NullDatagram == 
     [type |-> "null"]      
+    
+(**************************** PacketLogEntries *****************************)
+\* Set of packet log entries
+PacketLogEntries(Heights, maxPacketSeq) == 
+    [
+        type : {"PacketSent"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        timeoutHeight : Heights
+    ] \union [
+        type : {"PacketRecv"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        portID : PortIDs,
+        channelID : ChannelIDs,
+        timeoutHeight : Heights
+    ] \union [
+        type : {"WriteAck"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        portID : PortIDs,
+        channelID : ChannelIDs,
+        timeoutHeight : Heights,
+        acknowledgement : BOOLEAN
+    ]
+
+\* Null packet log entry
+NullPacketLogEntry ==
+    [type |-> "null"] 
+    
      
 (***************************************************************************
  Chain helper operators
@@ -248,11 +382,11 @@ InitChannelEnd(ChainID, ChannelOrdering) ==
 \*      - the channel end is initialized to InitChannelEnd 
 \*      - the packet committments, receipts, acknowledgements, and packets  
 \*        to acknowledge are empty
-InitChainStore(ChainID, ChannelOrdering, MaxDelay) == 
+InitChainStore(ChainID, Heights, ChannelOrdering, MaxDelay) == 
     [
         height |-> 1,
         timestamp |-> 1,
-        counterpartyClientHeights |-> [h \in {} |-> 0], 
+        counterpartyClientHeights |-> [h \in Heights |-> 0], 
         channelEnd |-> InitChannelEnd(ChainID, ChannelOrdering),
         
         packetCommitments |-> {},
@@ -265,5 +399,6 @@ InitChainStore(ChainID, ChannelOrdering, MaxDelay) ==
     
 =============================================================================
 \* Modification History
-\* Last modified Wed Dec 16 17:40:36 CET 2020 by ilinastoilkovska
+\* Last modified Thu Apr 15 18:50:37 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 14:06:33 CET 2020 by ilinastoilkovska
+    

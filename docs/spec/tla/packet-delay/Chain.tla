@@ -85,7 +85,7 @@ SendPacket ==
     \* Create packet  
     /\ LET packet == [
         sequence |-> appPacketSeq,
-        timeoutHeight |-> MaxHeight + 1,
+        timeoutHeight |-> MaxHeight,
         srcPortID |-> chainStore.channelEnd.portID,
         srcChannelID |-> chainStore.channelEnd.channelID,
         dstPortID |-> chainStore.channelEnd.counterpartyPortID,
@@ -125,7 +125,7 @@ AcknowledgePacket ==
 \*  - incomingPacketDatagrams is an empty sequence
 \*  - the appPacketSeq is set to 1
 Init == 
-    /\ chainStore = InitChainStore(ChainID, ChannelOrdering, MaxDelay)
+    /\ chainStore = InitChainStore(ChainID, Heights, ChannelOrdering, MaxDelay)
     /\ incomingPacketDatagrams = <<>>
     /\ appPacketSeq = 1
     
@@ -140,9 +140,19 @@ Next ==
     \/ HandlePacketDatagrams
     \/ SendPacket
     \/ AcknowledgePacket
-    \/ UNCHANGED vars     
+    \/ UNCHANGED vars   
+
+(***************************************************************************
+ Invariants
+ ***************************************************************************)
+
+\* type invariant
+TypeOK ==
+    /\ chainStore \in ChainStores(Heights, ChannelOrdering, MaxPacketSeq)  
+    /\ incomingPacketDatagrams \in Seq(Datagrams(Heights, MaxPacketSeq))
+    /\ appPacketSeq \in Int      
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Dec 16 13:36:59 CET 2020 by ilinastoilkovska
+\* Last modified Thu Apr 15 18:50:29 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 13:52:13 CET 2020 by ilinastoilkovska
