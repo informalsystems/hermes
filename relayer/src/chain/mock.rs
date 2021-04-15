@@ -15,7 +15,7 @@ use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics18_relayer::context::Ics18Context;
@@ -282,7 +282,7 @@ impl Chain for MockChain {
     }
 
     fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
-        let client_state = Self::ClientState::new(
+        let client_state = TendermintClientState::new(
             self.id().clone(),
             self.config.trust_threshold,
             self.config.trusting_period,
@@ -291,8 +291,10 @@ impl Chain for MockChain {
             height,
             Height::zero(),
             vec!["upgrade/upgradedClient".to_string()],
-            false,
-            false,
+            AllowUpdate {
+                after_expiry: false,
+                after_misbehaviour: false,
+            },
         )
         .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
 
