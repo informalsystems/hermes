@@ -69,7 +69,7 @@ NullClientState ==
 ChainStores(NrClients, ClientIDs, maxHeight) ==    
     [
         height : 1..maxHeight,
-        clientStates : [1..NrClients -> ClientStates(ClientIDs, maxHeight)]
+        clientStates : [1..NrClients -> ClientStates(ClientIDs, maxHeight) \union {NullClientState}]
     ] 
 
 (******************************** Datagrams ********************************)
@@ -79,9 +79,7 @@ Datagrams(ClientIDs, maxHeight) ==
     \union
     [type : {"ClientUpdate"}, clientID : ClientIDs, height : 1..maxHeight]   
 
-(***************************** ClientDatagrams *****************************
- A set of client datagrams for a specific set ClIDs of client IDs.
- ***************************************************************************)
+\* Set of client datagrams for a specific set ClientIDs of client IDs.
 ClientDatagrams(ClientIDs, Heights) ==
     [type : {"CreateClient"}, clientID : ClientIDs, height : Heights]
     \union
@@ -118,5 +116,5 @@ GetLatestHeight(chain) ==
 
 =========================================================================
 \* Modification History
-\* Last modified Thu Apr 15 11:24:46 CEST 2021 by ilinastoilkovska
+\* Last modified Thu Apr 15 12:17:55 CEST 2021 by ilinastoilkovska
 \* Created Tue Oct 06 16:26:25 CEST 2020 by ilinastoilkovska

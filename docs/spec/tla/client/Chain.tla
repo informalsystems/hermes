@@ -1,5 +1,10 @@
 ----------------------------- MODULE Chain ------------------------------
 
+(***************************************************************************
+ This module models the behavior of a chain running the IBC Core Client 
+ Protocol.
+****************************************************************************) 
+
 EXTENDS Integers, FiniteSets, ICS02ClientHandlers, ICS02Definitions
         
 CONSTANTS 
@@ -128,5 +133,5 @@ HeightDoesntDecrease ==
         
 =============================================================================
 \* Modification History
-\* Last modified Thu Apr 15 11:26:26 CEST 2021 by ilinastoilkovska
+\* Last modified Thu Apr 15 12:17:59 CEST 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

@@ -91,11 +91,17 @@ Spec == Init /\ [][Next]_vars
  Invariants
  ***************************************************************************)
 
-Inv ==
+\* type invariant
+TypeOK ==
+    /\ ChainA!TypeOK
+    /\ history \in [ClientIDsChainA -> [created : BOOLEAN, updated : BOOLEAN]]
+
+\* conjunction of invariants
+ICS02SingleChainInv ==
     /\ ChainA!CreatedClientsHaveDifferentIDs
     /\ ChainA!UpdatedClientsAreCreated
     
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 14 18:48:00 CEST 2021 by ilinastoilkovska
+\* Last modified Thu Apr 15 12:16:46 CEST 2021 by ilinastoilkovska
 \* Created Fri Oct 02 12:57:19 CEST 2020 by ilinastoilkovska

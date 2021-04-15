@@ -15,13 +15,14 @@ CONSTANTS
     \* @type: Int;
     NrClientsChainA, \* number of clients that will be created on ChainA
     \* @type: Int;
-    NrClientsChainB, \* number of clients that will be created on ChainA
+    NrClientsChainB, \* number of clients that will be created on ChainB
     \* @type: Set(Str);
     ClientIDsChainA, \* a set of counterparty client IDs for ChainA
     \* @type: Set(Str);
     ClientIDsChainB \* a set of counterparty client IDs for ChainB
 
 ASSUME MaxHeight < 10
+ASSUME ClientIDsChainA \intersect ClientIDsChainB = {}
 
 VARIABLES 
     \* @type: CHAINSTORE;
@@ -137,6 +138,14 @@ Spec == Init /\ [][Next]_vars
 Invariants
  ***************************************************************************)
 
+\* type invariant
+TypeOK ==
+    /\ ChainA!TypeOK
+    /\ ChainB!TypeOK
+    /\ history \in [ClientIDsChainA -> [created : BOOLEAN, updated : BOOLEAN]]
+
+\* the maximum client height is less than or equal to the current height of 
+\* the counterparty chain 
 ClientHeightsAreBelowCounterpartyHeight ==
     \A chainID \in ChainIDs :
         \A clientNr \in 1..GetNrClientsByID(chainID) :
@@ -144,7 +153,8 @@ ClientHeightsAreBelowCounterpartyHeight ==
                 => (Max(GetChainByID(chainID).clientStates[clientNr].heights) 
                      <= GetLatestHeight(GetChainByID(GetCounterpartyChainID(chainID)))))
 
-Inv ==
+\* conjunction of invariants
+ICS02TwoChainsInv ==
     /\ ChainA!CreatedClientsHaveDifferentIDs
     /\ ChainA!UpdatedClientsAreCreated
     /\ ChainB!CreatedClientsHaveDifferentIDs
