@@ -2,17 +2,19 @@
 
 EXTENDS Integers, FiniteSets, Sequences, ICS04PacketHandlers, IBCPacketDelayDefinitions
 
-CONSTANTS MaxHeight, \* maximal chain height
-          ChannelOrdering, \* indicate whether the channels are ordered or unordered
-          MaxPacketSeq, \* maximal packet sequence number
-          MaxDelay, \* maximal packet delay
-          ChainID \* a chain ID
+CONSTANTS 
+    MaxHeight, \* maximal chain height
+    ChannelOrdering, \* indicate whether the channels are ordered or unordered
+    MaxPacketSeq, \* maximal packet sequence number
+    MaxDelay, \* maximal packet delay
+    ChainID \* a chain ID
 
-VARIABLES chainStore, \* chain store, containing client heights, a connection end, a channel end 
-          incomingPacketDatagrams, \* sequence of incoming packet datagrams
-          appPacketSeq, \* packet sequence number from the application on the chain
-          packetLog, \* packet log
-          packetDatagramTimestamp \* history variable that tracks when packet datagrams were processed
+VARIABLES 
+    chainStore, \* chain store, containing client heights and a channel end 
+    incomingPacketDatagrams, \* sequence of incoming packet datagrams
+    appPacketSeq, \* packet sequence number from the application on the chain
+    packetLog, \* packet log
+    packetDatagramTimestamp \* history variable that tracks when packet datagrams were processed
           
 vars == <<chainStore, incomingPacketDatagrams, appPacketSeq, packetLog, packetDatagramTimestamp>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system  
@@ -21,6 +23,9 @@ Heights == 1..MaxHeight \* set of possible heights of the chains in the system
  Packet update operators
  ***************************************************************************)
 \* Update the chain store and packet log with packet datagrams 
+(* @type: (Str, DATAGRAM, Seq(LOGENTRY)) => 
+            [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY), datagramTimestamp: <<Str, Int>> -> Int];
+*)
 PacketUpdate(chainID, packetDatagram, log) ==
     
     LET packet == packetDatagram.packet IN

@@ -1,21 +1,42 @@
 --------------------------- MODULE IBCPacketDelay ---------------------------
 
+(***************************************************************************
+ A TLA+ specification of the IBC packet transmission with packet delays. 
+ Packet delays ensure that packet-related data should be accepted only 
+ after some delay has passed since the corresponding header is installed. 
+***************************************************************************)
+
 EXTENDS Integers, FiniteSets, Sequences, IBCPacketDelayDefinitions
 
-CONSTANTS MaxHeight, \* maximal height of all the chains in the system
-          ChannelOrdering, \* indicate whether the channels are ordered or unordered
-          MaxPacketSeq, \* maximal packet sequence number
-          MaxDelay \* maximal packet delay
+CONSTANTS 
+    \* @type: Int;
+    MaxHeight, \* maximal height of all the chains in the system
+    \* @type: Str;
+    ChannelOrdering, \* indicate whether the channels are ordered or unordered
+    \* @type: Int;
+    MaxPacketSeq, \* maximal packet sequence number
+    \* @type: Int;
+    MaxDelay \* maximal packet delay
 
-VARIABLES chainAstore, \* store of ChainA
-          chainBstore, \* store of ChainB
-          packetDatagramsChainA, \* sequence of packet datagrams incoming to ChainA
-          packetDatagramsChainB, \* sequence of packet datagrams incoming to ChainB
-          outgoingPacketDatagrams, \* packet datagrams created by the relayer but not submitted
-          packetLog, \* packet log
-          appPacketSeqChainA, \* packet sequence number from the application on ChainA
-          appPacketSeqChainB, \* packet sequence number from the application on ChainB
-          packetDatagramTimestamp \* history variable that tracks when packet datagrams were processed
+VARIABLES 
+    \* @type: CHAINSTORE;
+    chainAstore, \* store of ChainA
+    \* @type: CHAINSTORE;
+    chainBstore, \* store of ChainB
+    \* @type: Seq(DATAGRAM);
+    packetDatagramsChainA, \* sequence of packet datagrams incoming to ChainA
+    \* @type: Seq(DATAGRAM);
+    packetDatagramsChainB, \* sequence of packet datagrams incoming to ChainB
+    \* @type: Str -> Seq(DATAGRAM);
+    outgoingPacketDatagrams, \* packet datagrams created by the relayer but not submitted
+    \* @type: Seq(LOGENTRY);
+    packetLog, \* packet log
+    \* @type: Int;
+    appPacketSeqChainA, \* packet sequence number from the application on ChainA
+    \* @type: Int;
+    appPacketSeqChainB, \* packet sequence number from the application on ChainB
+    \* @type: <<Str, Int>> -> Int;
+    packetDatagramTimestamp \* history variable that tracks when packet datagrams were processed
            
 chainAvars == <<chainAstore, packetDatagramsChainA, appPacketSeqChainA>>
 chainBvars == <<chainBstore, packetDatagramsChainB, appPacketSeqChainB>>
@@ -24,6 +45,7 @@ vars == <<chainAstore, chainBstore,
           outgoingPacketDatagrams, packetLog, 
           appPacketSeqChainA, appPacketSeqChainB,
           packetDatagramTimestamp>>
+
 (***************************************************************************
  Instances of Chain
  ***************************************************************************)
@@ -84,6 +106,7 @@ UpdateClientHeights(chainID) ==
 
 
 \* Compute a packet datagram designated for dstChainID, based on the packetLogEntry
+\* @type: (Str, Str, LOGENTRY) => DATAGRAM;
 PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
     
     LET srcChannelID == GetChannelID(srcChainID) IN \* "chanAtoB" (if srcChainID = "chainA")
@@ -95,30 +118,38 @@ PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
     LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
     
     \* the source chain of the packet that is received by dstChainID is srcChainID
-    LET recvPacket(logEntry) == [sequence |-> logEntry.sequence, 
-                                 timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> srcChannelID,
-                                 srcPortID |-> srcPortID,
-                                 dstChannelID |-> dstChannelID,
-                                 dstPortID |-> dstPortID] IN
+    LET recvPacket == [
+                        sequence |-> packetLogEntry.sequence, 
+                        timeoutHeight |-> packetLogEntry.timeoutHeight,
+                        srcChannelID |-> srcChannelID,
+                        srcPortID |-> srcPortID,
+                        dstChannelID |-> dstChannelID,
+                        dstPortID |-> dstPortID
+                      ] IN
                                  
     \* the source chain of the packet that is acknowledged by srcChainID is dstChainID
-    LET ackPacket(logEntry) == [sequence |-> logEntry.sequence, 
-                                 timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> dstChannelID,
-                                 srcPortID |-> dstPortID,
-                                 dstChannelID |-> srcChannelID,
-                                 dstPortID |-> srcPortID] IN                                 
+    LET ackPacket == [
+                        sequence |-> packetLogEntry.sequence, 
+                        timeoutHeight |-> packetLogEntry.timeoutHeight,
+                        srcChannelID |-> dstChannelID,
+                        srcPortID |-> dstPortID,
+                        dstChannelID |-> srcChannelID,
+                        dstPortID |-> srcPortID
+                     ] IN 
     
     IF packetLogEntry.type = "PacketSent"
-    THEN [type |-> "PacketRecv",
-          packet |-> recvPacket(packetLogEntry),  
-          proofHeight |-> srcHeight]
+    THEN [
+            type |-> "PacketRecv",
+            packet |-> recvPacket,  
+            proofHeight |-> srcHeight
+         ]
     ELSE IF packetLogEntry.type = "WriteAck"
-         THEN [type |-> "PacketAck",
-                  packet |-> ackPacket(packetLogEntry),
-                  acknowledgement |-> packetLogEntry.acknowledgement,  
-                  proofHeight |-> srcHeight]
+         THEN [
+                type |-> "PacketAck",
+                packet |-> ackPacket,
+                acknowledgement |-> packetLogEntry.acknowledgement,  
+                proofHeight |-> srcHeight
+              ]
          ELSE NullDatagram 
                         
 \* submit a packet datagram if a delay has passed 
@@ -127,6 +158,10 @@ SubmitDatagramOrInstallClientHeight(chainID) ==
     LET packetDatagram == Head(outgoingPacketDatagrams[chainID]) IN
     LET chain == GetChainByID(chainID) IN
     
+    \* if the proof height of the packet datagram is installed on the chain, 
+    \* then clientHeightTimestamp is the timestamp, denoting the time when this 
+    \* height was installed on the chain;
+    \* otherwise it is 0, denoting that this height is not installed on the chain
     LET clientHeightTimestamp == 
         IF packetDatagram.proofHeight \in DOMAIN chain.counterpartyClientHeights
         THEN chain.counterpartyClientHeights[packetDatagram.proofHeight]
@@ -151,7 +186,8 @@ SubmitDatagramOrInstallClientHeight(chainID) ==
               outgoingDatagrams |-> outgoingDatagrams,
               chainA |-> chainAstore,
               chainB |-> chainBstore] 
-        \* otherwise do not submit and do not install any new heights
+        \* the client height is installed, but the delay has not passed
+        \* do not submit and do not install any new heights
         ELSE [datagramsChainA |-> packetDatagramsChainA,
               datagramsChainB |-> packetDatagramsChainB,
               outgoingDatagrams |-> outgoingPacketDatagrams,

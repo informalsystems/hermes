@@ -2,6 +2,83 @@
 
 EXTENDS Integers, FiniteSets, Sequences
 
+(************************ TYPE ALIASES FOR SNOWCAT *************************)
+(* @typeAlias: CHAN = 
+    [
+        state: Str, 
+        order: Str, 
+        portID: Str, 
+        channelID: Str, 
+        counterpartyPortID: Str, 
+        counterpartyChannelID: Str, 
+        nextSendSeq: Int, 
+        nextRcvSeq: Int, 
+        nextAckSeq: Int
+    ]; 
+*)
+(* @typeAlias: PACKET = 
+    [
+        sequence: Int,
+        timeoutHeight: Int,
+        srcPortID: Str,
+        srcChannelID: Str, 
+        dstPortID: Str,
+        dstChannelID: Str
+    ]; 
+*)
+(* @typeAlias: PACKETCOMM = 
+    [
+        portID: Str, 
+        channelID: Str,
+        sequence: Int,
+        timeoutHeight: Int
+    ]; 
+*)   
+(* @typeAlias: PACKETREC = 
+    [
+        portID: Str, 
+        channelID: Str,
+        sequence: Int
+    ]; 
+*)   
+(* @typeAlias: PACKETACK = 
+    [
+        portID: Str, 
+        channelID: Str,
+        sequence: Int,
+        acknowledgement: Bool
+    ]; 
+*)  
+(* @typeAlias: CHAINSTORE = 
+    [
+        height: Int, 
+        timestamp: Int,
+        counterpartyClientHeights: Int -> Int, 
+        channelEnd: CHAN, 
+        packetCommitments: Set(PACKETCOMM), 
+        packetsToAcknowledge: Seq(PACKET), 
+        packetReceipts: Set(PACKETREC),
+        packetAcknowledgements: Set(PACKETACK)
+    ]; 
+*) 
+(* @typeAlias: DATAGRAM = 
+    [
+        type: Str, 
+        packet: PACKET, 
+        proofHeight: Int, 
+        acknowledgement: Bool
+    ]; 
+*)
+(* @typeAlias: LOGENTRY = 
+    [
+        type: Str, 
+        srcChainID: Str, 
+        sequence: Int, 
+        timeoutHeight: Int, 
+        acknowledgement: Bool
+    ]; 
+*)
+
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"}
 ChannelIDs == {"chanAtoB", "chanBtoA"}
@@ -15,9 +92,8 @@ nullEscrowAddress == "none"
 
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x
 
-(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
- Sets of packet commitments, packet receipts, packet acknowledgements.
- ***************************************************************************)
+(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********)
+\* Set of packet commitments
 PacketCommitments(maxHeight, maxPacketSeq) ==
     [
         channelID : ChannelIDs,
@@ -25,7 +101,8 @@ PacketCommitments(maxHeight, maxPacketSeq) ==
         sequence : 1..maxPacketSeq,
         timeoutHeight : 1..maxHeight
     ] 
-    
+
+\* Set of packet receipts
 PacketReceipts(maxPacketSeq) ==
     [
         channelID : ChannelIDs, 
@@ -33,6 +110,7 @@ PacketReceipts(maxPacketSeq) ==
         sequence : 1..maxPacketSeq
     ]
     
+\* Set of packet acknowledgements
 PacketAcknowledgements(maxPacketSeq) ==
     [
         channelID : ChannelIDs, 
@@ -41,9 +119,8 @@ PacketAcknowledgements(maxPacketSeq) ==
         acknowledgement : BOOLEAN
     ] 
 
-(********************************* Packets *********************************
- A set of packets.
- ***************************************************************************)
+(********************************* Packets *********************************)
+\* Set of packets
 Packets(maxHeight, maxPacketSeq) ==
     [
         sequence : 1..maxPacketSeq,
@@ -55,10 +132,8 @@ Packets(maxHeight, maxPacketSeq) ==
     ]
  
 
-(******************************** Datagrams ********************************
- A set of datagrams.
- We consider client and packet datagrams
- ***************************************************************************)
+(******************************** Datagrams ********************************)
+\* Set of datagrams (we consider only packet datagrams)
 Datagrams(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
     [type : {"PacketRecv"}, 
      packet : Packets(maxHeight, maxPacketSeq), 
@@ -69,6 +144,7 @@ Datagrams(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
      acknowledgement : BOOLEAN, 
      proofHeight : 1..maxHeight]
      
+\* Null datagram
 NullDatagram == 
     [type |-> "null"]      
      
@@ -81,6 +157,7 @@ GetCounterpartyChainID(chainID) ==
     IF chainID = "chainA" THEN "chainB" ELSE "chainA"     
       
 \* get the maximal height of the client for chainID's counterparty chain
+\* @type: (CHAINSTORE) => Int;
 GetMaxCounterpartyClientHeight(chain) ==
     IF DOMAIN chain.counterpartyClientHeights /= {}
     THEN Max(DOMAIN chain.counterpartyClientHeights)
@@ -119,6 +196,7 @@ GetCounterpartyPortID(chainID) ==
          ELSE nullPortID 
          
 \* get the latest height of chain
+\* @type: (CHAINSTORE) => Int;
 GetLatestHeight(chain) ==
     chain.height          
          
@@ -157,6 +235,7 @@ InitOrderedChannelEnd(ChainID) ==
         counterpartyChannelID |-> GetCounterpartyChannelID(ChainID)
     ]      
 
+\* Initial value of a channel end, based on the channel ordering
 InitChannelEnd(ChainID, ChannelOrdering) ==
     IF ChannelOrdering = "ORDERED"
     THEN InitOrderedChannelEnd(ChainID)
@@ -164,9 +243,11 @@ InitChannelEnd(ChainID, ChannelOrdering) ==
 
 \* Initial value of the chain store: 
 \*      - height is initialized to 1
-\*      - timestamp is initialized to 0
-\*      - the counterparty client is created at timestamp 1
-\*      - the channel end is initialized to InitConnectionEnd 
+\*      - timestamp is initialized to 1
+\*      - there are no installed client heights
+\*      - the channel end is initialized to InitChannelEnd 
+\*      - the packet committments, receipts, acknowledgements, and packets  
+\*        to acknowledge are empty
 InitChainStore(ChainID, ChannelOrdering, MaxDelay) == 
     [
         height |-> 1,
@@ -179,6 +260,8 @@ InitChainStore(ChainID, ChannelOrdering, MaxDelay) ==
         packetAcknowledgements |-> {},
         packetsToAcknowledge |-> <<>>        
     ] 
+
+\* add ChainStore, ChannelEnds, write type invariant    
     
 =============================================================================
 \* Modification History

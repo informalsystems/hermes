@@ -7,6 +7,9 @@ EXTENDS Integers, FiniteSets, Sequences, IBCPacketDelayDefinitions
  ***************************************************************************)
 
 \* Handle "PacketRecv" datagrams
+(* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY), <<Str, Int>> -> Int) => 
+            [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY), datagramTimestamp: <<Str, Int>> -> Int];
+*)
 HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
@@ -26,48 +29,56 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
        \* if "PacketRecv" datagram can be verified
        /\ packetDatagram.proofHeight \in DOMAIN chain.counterpartyClientHeights           
     THEN \* construct log entry for packet log
-         LET logEntry == [type |-> "PacketRecv",
-                             srcChainID |-> chainID,
-                             sequence |-> packet.sequence,
-                             portID |-> packet.dstPortID,
-                             channelID |-> packet.dstChannelID,
-                             timeoutHeight |-> packet.timeoutHeight 
-                            ] IN
+         LET logEntry == [
+                            type |-> "PacketRecv",
+                            srcChainID |-> chainID,
+                            sequence |-> packet.sequence,
+                            portID |-> packet.dstPortID,
+                            channelID |-> packet.dstChannelID,
+                            timeoutHeight |-> packet.timeoutHeight 
+                         ] IN
     
          \* if the channel is unordered and the packet has not been received  
          IF /\ channelEnd.order = "UNORDERED"
-            /\ [portID |-> packet.dstPortID,    
-                channelID |-> packet.dstChannelID, 
-                sequence |-> packet.sequence
+            /\ [
+                    portID |-> packet.dstPortID,    
+                    channelID |-> packet.dstChannelID, 
+                    sequence |-> packet.sequence
                ] \notin chain.packetReceipts
          THEN LET newChainStore == [chain EXCEPT
                     \* record that the packet has been received
                     !.packetReceipts = 
                         chain.packetReceipts 
                         \union 
-                        {[channelID |-> packet.dstChannelID,
-                                          portID |-> packet.dstPortID, 
-                                          sequence |-> packet.sequence]},
+                        {[
+                            channelID |-> packet.dstChannelID,
+                            portID |-> packet.dstPortID, 
+                            sequence |-> packet.sequence
+                        ]},
                     \* add packet to the set of packets for which an acknowledgement should be written
                     !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN
               \* record the timestamp in the history variable
               LET newDatagramTimestamp == 
-                    [tID \in (DOMAIN datagramTimestamp \union {<<chainID, packetDatagram.proofHeight>>}) |->
-                        IF tID = <<chainID, packetDatagram.proofHeight>>
-                        THEN chain.timestamp
-                        ELSE datagramTimestamp[tID]] IN
+                    [
+                        tID \in (DOMAIN datagramTimestamp \union {<<chainID, packetDatagram.proofHeight>>}) |->
+                            IF tID = <<chainID, packetDatagram.proofHeight>>
+                            THEN chain.timestamp
+                            ELSE datagramTimestamp[tID]
+                    ] IN
                                       
-              [chainStore |-> newChainStore, 
-               packetLog |-> Append(log, logEntry), 
-               datagramTimestamp |-> newDatagramTimestamp] 
+              [
+                chainStore |-> newChainStore, 
+                packetLog |-> Append(log, logEntry), 
+                datagramTimestamp |-> newDatagramTimestamp
+              ] 
          
          ELSE \* if the channel is ordered and the packet sequence is nextRcvSeq 
               IF /\ channelEnd.order = "ORDERED"
                  /\ packet.sequence = channelEnd.nextRcvSeq
               THEN LET newChainStore == [chain EXCEPT 
                         \* increase the nextRcvSeq
-                        !.connectionEnd.channelEnd.nextRcvSeq = 
-                             chain.connectionEnd.channelEnd.nextRcvSeq + 1,
+                        !.channelEnd.nextRcvSeq = 
+                             channelEnd.nextRcvSeq + 1,
                         \* add packet to the set of packets for which an acknowledgement should be written
                         !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN             
                    \* record the timestamp in the history variable
@@ -77,9 +88,11 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                             THEN chain.timestamp
                             ELSE datagramTimestamp[tID]] IN
                                       
-                   [chainStore |-> newChainStore, 
-                    packetLog |-> Append(log, logEntry), 
-                    datagramTimestamp |-> newDatagramTimestamp] 
+                   [
+                        chainStore |-> newChainStore, 
+                        packetLog |-> Append(log, logEntry), 
+                        datagramTimestamp |-> newDatagramTimestamp
+                   ] 
  
     
     \* otherwise, do not update the chain store and the log               
@@ -88,6 +101,9 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
 
     
 \* Handle "PacketAck" datagrams    
+(* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY), <<Str, Int>> -> Int) => 
+            [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY), datagramTimestamp: <<Str, Int>> -> Int];
+*)
 HandlePacketAck(chainID, chain, packetDatagram, log, datagramTimestamp) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
@@ -133,15 +149,18 @@ HandlePacketAck(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                     THEN chain.timestamp
                     ELSE datagramTimestamp[tID]] IN
                                       
-        [chainStore |-> newChainStore, 
-         packetLog |-> log, 
-         datagramTimestamp |-> newDatagramTimestamp]          
+        [
+            chainStore |-> newChainStore, 
+            packetLog |-> log, 
+            datagramTimestamp |-> newDatagramTimestamp
+        ]          
 
     \* otherwise, do not update the chain store and the log
     ELSE [chainStore |-> chain, packetLog |-> log, datagramTimestamp |-> datagramTimestamp] 
     
     
 \* write packet committments to chain store
+\* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WritePacketCommitment(chain, packet) ==
     \* get channel end
     LET channelEnd == chain.channelEnd IN
@@ -191,13 +210,15 @@ WritePacketCommitment(chain, packet) ==
          ELSE chain
 
 \* write acknowledgements to chain store
+\* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WriteAcknowledgement(chain, packet) ==
     \* create a packet acknowledgement for this packet
-    LET packetAcknowledgement == 
-                    [portID |-> packet.dstPortID,
-                     channelID |-> packet.dstChannelID,
-                     sequence |-> packet.sequence,
-                     acknowledgement |-> TRUE] IN
+    LET packetAcknowledgement == [
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    sequence |-> packet.sequence,
+                                    acknowledgement |-> TRUE
+                                 ] IN
     
     \* if the acknowledgement for the packet has not been written
     IF packetAcknowledgement \notin chain.packetAcknowledgements
@@ -219,9 +240,18 @@ WriteAcknowledgement(chain, packet) ==
                             chain.timestamp + 1] 
 
 \* log acknowledgements to packet Log
+\* @type: (Str, CHAINSTORE, Seq(LOGENTRY), PACKET) => Seq(LOGENTRY);
 LogAcknowledgement(chainID, chain, log, packet) ==
+    \* create a packet acknowledgement for this packet
+    LET packetAcknowledgement == [
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    sequence |-> packet.sequence,
+                                    acknowledgement |-> TRUE
+                                 ] IN
+
     \* if the acknowledgement for the packet has not been written
-    IF packet \notin chain.packetAcknowledgements
+    IF packetAcknowledgement \notin chain.packetAcknowledgements
     THEN \* append a "WriteAck" log entry to the log
          LET packetLogEntry ==
                     [type |-> "WriteAck",
@@ -237,11 +267,10 @@ LogAcknowledgement(chainID, chain, log, packet) ==
     
 
 \* check if a packet timed out
+\* @type: (CHAINSTORE, CHAINSTORE, PACKET, Int) => CHAINSTORE;
 TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
-    \* get connection end 
-    LET connectionEnd == chain.connectionEnd IN
     \* get channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    LET channelEnd == chain.channelEnd IN
     \* get counterparty channel end
     LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
     
@@ -281,12 +310,10 @@ TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
                 !.state = IF channelEnd.order = "ORDERED"
                           THEN "CLOSED"
                           ELSE channelEnd.state] IN
-         LET updatedConnectionEnd == [connectionEnd EXCEPT
-                !.channelEnd = updatedChannelEnd] IN
          LET updatedChainStore == [chain EXCEPT 
+                !.channelEnd = updatedChannelEnd,
                 !.packetCommitments = 
-                    chain.packetCommitments \ {packetCommitment},
-                !.connectionEnd = updatedConnectionEnd] IN
+                    chain.packetCommitments \ {packetCommitment}] IN
                     
          updatedChainStore
           
@@ -294,13 +321,12 @@ TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
     ELSE chain
         
 \* check if a packet timed out on close
+\* @type: (CHAINSTORE, CHAINSTORE, PACKET, Int) => CHAINSTORE;
 TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
-    \* get connection end 
-    LET connectionEnd == chain.connectionEnd IN
     \* get channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    LET channelEnd == chain.channelEnd IN
     \* get counterparty channel end
-    LET counterpartyChannelEnd == counterpartyChain.connectionEnd.channelEnd IN
+    LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
     
     \* get packet committment that should be in chain store
     LET packetCommitment == [portID |-> packet.srcPortID,
@@ -337,12 +363,10 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
                 !.state = IF channelEnd.order = "ORDERED"
                           THEN "CLOSED"
                           ELSE channelEnd.state] IN
-         LET updatedConnectionEnd == [connectionEnd EXCEPT
-                !.channelEnd = updatedChannelEnd] IN
          LET updatedChainStore == [chain EXCEPT 
+                !.channelEnd = updatedChannelEnd,
                 !.packetCommitments = 
-                    chain.packetCommitments \ {packetCommitment},
-                !.connectionEnd = updatedConnectionEnd] IN
+                    chain.packetCommitments \ {packetCommitment}] IN
                     
          updatedChainStore
          
