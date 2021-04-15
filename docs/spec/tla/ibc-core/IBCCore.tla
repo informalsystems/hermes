@@ -1,7 +1,7 @@
 ------------------------------ MODULE IBCCore ------------------------------
 
 (***************************************************************************
- This is the main module in the specification of the IBC core protocols. 
+ This is the main module in the specification of the IBC core protocols.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
