@@ -1,7 +1,7 @@
 # TLA+ specification of the IBC Core protocols
 
 A TLA+ specification of the IBC Core protocols ([ICS02](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-002-client-semantics), [ICS03](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-003-connection-semantics), [ICS04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics), [ICS18](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-018-relayer-algorithms)).
-In particular, the main module is [IBCCore.tla](IBCCore.tla) and models the 
+In particular, the main module is [IBCCore.tla](IBCCore.tla) and models a 
 system consisting of two chains and two relayers. 
 The model allows to express concurrency aspects of a system with multiple (correct) relayers.
 The specification is written in a modular way, in order to facilitate future 
@@ -207,8 +207,15 @@ To import the specification in the TLA+ toolbox and run TLC:
   - add the properties `IBCSafety` and `IBCDelivery`
   - run TLC on the model
 
-#### Basic checks
+#### Basic checks with TLC
 
-We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 3 minutes and the property `IBCSafety` in 5 minutes.
-As TLC usually takes longer to check liveness properties, we have not 
-conducted extensive experiments to check `IBCDelivery` with TLC yet.
+We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 14min and the invariant `IBCInv` in 11min.
+As TLC usually takes longer to check safety and liveness properties, we have not 
+conducted extensive experiments to check `IBCSafety` and `IBCDelivery` with TLC yet.
+
+#### Apalache
+
+The specification contains type annotations for the 
+model checker [Apalache](https://github.com/informalsystems/apalache).
+The specification passes the type check using the type checker [Snowcat](https://apalache.informal.systems/docs/apalache/typechecker-snowcat.html) 
+integrated in Apalache.  

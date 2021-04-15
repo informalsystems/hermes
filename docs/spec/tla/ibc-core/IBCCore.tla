@@ -1,41 +1,82 @@
 ------------------------------ MODULE IBCCore ------------------------------
 
 (***************************************************************************
- This is the main module in the specification of the IBC core protocols. 
+ A TLA+ specification of the IBC Core protocols (ICS02, ICS03, ICS04, ICS18).
+ This module is the main module in the specification and models a   
+ system consisting of two chains and two relayers. 
+ 
+ The model allows to express concurrency aspects of a system with multiple 
+ (correct) relayers. The specification is written in a modular way, in order 
+ to facilitate future formal verification of properties and invariants in 
+ an adversarial setting.
+ 
+ The specification also contains type annotations for the model checker
+ Apalache.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
 
-CONSTANTS MaxHeight, \* maximal height of all the chains in the system
-          MaxVersion, \* maximal connection / channel version (we assume versions are integers) 
-          MaxPacketSeq, \* maximal packet sequence number
-          ClientDatagramsRelayer1, \* toggle generation of client datagrams for Relayer1 
-          ClientDatagramsRelayer2, \* toggle generation of client datagrams for Relayer2
-          ConnectionDatagramsRelayer1, \* toggle generation of connection datagrams for Relayer1
-          ConnectionDatagramsRelayer2, \* toggle generation of connection datagrams for Relayer2
-          ChannelDatagramsRelayer1, \* toggle generation of channel datagrams for Relayer1
-          ChannelDatagramsRelayer2, \* toggle generation of channel datagrams for Relayer2
-          PacketDatagramsRelayer1, \* toggle generation of packet datagrams for Relayer1
-          PacketDatagramsRelayer2, \* toggle generation of packet datagrams for Relayer2
-          ChannelOrdering \* indicate whether the channels are ordered or unordered
+CONSTANTS 
+    \* @type: Int;
+    MaxHeight, \* maximal height of all the chains in the system
+    \* @type: Int;
+    MaxVersion, \* maximal connection / channel version (we assume versions are integers) 
+    \* @type: Int;
+    MaxPacketSeq, \* maximal packet sequence number
+    \* @type: Bool;
+    ClientDatagramsRelayer1, \* toggle generation of client datagrams for Relayer1 
+    \* @type: Bool;
+    ClientDatagramsRelayer2, \* toggle generation of client datagrams for Relayer2
+    \* @type: Bool;
+    ConnectionDatagramsRelayer1, \* toggle generation of connection datagrams for Relayer1
+    \* @type: Bool;
+    ConnectionDatagramsRelayer2, \* toggle generation of connection datagrams for Relayer2
+    \* @type: Bool;
+    ChannelDatagramsRelayer1, \* toggle generation of channel datagrams for Relayer1
+    \* @type: Bool;
+    ChannelDatagramsRelayer2, \* toggle generation of channel datagrams for Relayer2
+    \* @type: Bool;
+    PacketDatagramsRelayer1, \* toggle generation of packet datagrams for Relayer1
+    \* @type: Bool;
+    PacketDatagramsRelayer2, \* toggle generation of packet datagrams for Relayer2
+    \* @type: Str;
+    ChannelOrdering \* indicate whether the channels are ordered or unordered
 
-VARIABLES chainAstore, \* chain store of ChainA
-          chainBstore, \* chain store of ChainB
-          incomingDatagramsChainA, \* set of (client, connection, channel) datagrams incoming to ChainA
-          incomingDatagramsChainB, \* set of (client, connection, channel) datagrams incoming to ChainB
-          incomingPacketDatagramsChainA, \* sequence of packet datagrams incoming to ChainA
-          incomingPacketDatagramsChainB, \* sequence of packet datagrams incoming to ChainB
-          relayer1Heights, \* the client heights of Relayer1
-          relayer2Heights, \* the client heights of Relayer2
-          outgoingDatagrams, \* sets of (client, connection, channel) datagrams outgoing of the relayers
-          outgoingPacketDatagrams, \* sequences of packet datagrams outgoing of the relayers
-          closeChannelA, \* flag that triggers closing of the channel end at ChainA
-          closeChannelB, \* flag that triggers closing of the channel end at ChainB
-          historyChainA, \* history variables for ChainA
-          historyChainB, \* history variables for ChainB
-          packetLog, \* packet log 
-          appPacketSeqChainA, \* packet sequence number from the application on ChainA
-          appPacketSeqChainB \* packet sequence number from the application on ChainB
+VARIABLES 
+    \* @type: CHAINSTORE;
+    chainAstore, \* chain store of ChainA
+    \* @type: CHAINSTORE;
+    chainBstore, \* chain store of ChainB
+    \* @type: Set(DATAGRAM);
+    incomingDatagramsChainA, \* set of (client, connection, channel) datagrams incoming to ChainA
+    \* @type: Set(DATAGRAM);
+    incomingDatagramsChainB, \* set of (client, connection, channel) datagrams incoming to ChainB
+    \* @type: Seq(DATAGRAM);
+    incomingPacketDatagramsChainA, \* sequence of packet datagrams incoming to ChainA
+    \* @type: Seq(DATAGRAM);
+    incomingPacketDatagramsChainB, \* sequence of packet datagrams incoming to ChainB
+    \* @type: Str -> Int;
+    relayer1Heights, \* the client heights of Relayer1
+    \* @type: Str -> Int;
+    relayer2Heights, \* the client heights of Relayer2
+    \* @type: Str -> Set(DATAGRAM);
+    outgoingDatagrams, \* sets of (client, connection, channel) datagrams outgoing of the relayers
+    \* @type: Str -> Seq(DATAGRAM);
+    outgoingPacketDatagrams, \* sequences of packet datagrams outgoing of the relayers
+    \* @type: Bool;
+    closeChannelA, \* flag that triggers closing of the channel end at ChainA
+    \* @type: Bool;
+    closeChannelB, \* flag that triggers closing of the channel end at ChainB
+    \* @type: HISTORY;
+    historyChainA, \* history variables for ChainA
+    \* @type: HISTORY;
+    historyChainB, \* history variables for ChainB
+    \* @type: Seq(LOGENTRY);
+    packetLog, \* packet log 
+    \* @type: Int;
+    appPacketSeqChainA, \* packet sequence number from the application on ChainA
+    \* @type: Int;
+    appPacketSeqChainB \* packet sequence number from the application on ChainB
           
 vars == <<chainAstore, chainBstore, 
           incomingDatagramsChainA, incomingDatagramsChainB,
@@ -129,16 +170,12 @@ ChainAction ==
  ***************************************************************************)
 \* Submit datagrams from relayers to chains
 SubmitDatagrams ==
-    /\ incomingDatagramsChainA' = AsSetDatagrams(incomingDatagramsChainA \union outgoingDatagrams["chainA"])
-    /\ incomingDatagramsChainB' = AsSetDatagrams(incomingDatagramsChainB \union outgoingDatagrams["chainB"])
-    /\ outgoingDatagrams' = [chainID \in ChainIDs |-> AsSetDatagrams({})]
-    /\ incomingPacketDatagramsChainA' = AsSeqPacketDatagrams(incomingPacketDatagramsChainA 
-                                                             \o
-                                                             outgoingPacketDatagrams["chainA"]) 
-    /\ incomingPacketDatagramsChainB' = AsSeqPacketDatagrams(incomingPacketDatagramsChainB
-                                                             \o
-                                                             outgoingPacketDatagrams["chainB"])
-    /\ outgoingPacketDatagrams' = [chainID \in ChainIDs |-> AsSeqPacketDatagrams(<<>>)]                                                          
+    /\ incomingDatagramsChainA' = incomingDatagramsChainA \union outgoingDatagrams["chainA"]
+    /\ incomingDatagramsChainB' = incomingDatagramsChainB \union outgoingDatagrams["chainB"]
+    /\ outgoingDatagrams' = [chainID \in ChainIDs |-> {}]
+    /\ incomingPacketDatagramsChainA' = incomingPacketDatagramsChainA \o outgoingPacketDatagrams["chainA"]
+    /\ incomingPacketDatagramsChainB' = incomingPacketDatagramsChainB \o outgoingPacketDatagrams["chainB"]
+    /\ outgoingPacketDatagrams' = [chainID \in ChainIDs |-> <<>>]                                                          
     /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
     /\ UNCHANGED <<closeChannelA, closeChannelB>>
     /\ UNCHANGED <<historyChainA, historyChainB>>
@@ -178,7 +215,7 @@ Init ==
     /\ Relayer2!Init
     /\ closeChannelA = FALSE
     /\ closeChannelB = FALSE
-    /\ packetLog = AsPacketLog(<<>>)
+    /\ packetLog = <<>>
     
 \* Next state action
 Next ==
@@ -186,7 +223,6 @@ Next ==
     \/ RelayerAction
     \/ EnvironmentAction
     \/ UNCHANGED vars
-    
    
 \* Fairness constraint
 Fairness ==
@@ -218,6 +254,7 @@ TypeOK ==
  Helper operators used in properties
  ***************************************************************************)
 \* get chain store by ID
+\* @type: (Str) => CHAINSTORE;
 GetChainByID(chainID) ==
     IF chainID = "chainA"
     THEN chainAstore
@@ -281,21 +318,21 @@ IsChanCloseInitInOutgoingDatagrams(chainID) ==
 \* once connInit is set to TRUE in the history variable, 
 \* the connection never goes to UNINIT         
 ConnectionInitInv ==
-    /\ historyChainA.connInit => ~IsConnectionUninit(GetChainByID("chainA"))
+    /\ historyChainA.connInit => ~IsConnectionUninit(chainAstore)
     /\ historyChainB.connInit => ~IsConnectionUninit(GetChainByID("chainB"))
 
 \* once connTryOpen is set to TRUE in the history variable, 
 \* the connection never goes to UNINIT         
 ConnectionTryOpenInv ==
-    /\ historyChainA.connTryOpen => ~IsConnectionUninit(GetChainByID("chainA"))
+    /\ historyChainA.connTryOpen => ~IsConnectionUninit(chainAstore)
     /\ historyChainB.connTryOpen => ~IsConnectionUninit(GetChainByID("chainB"))
 
 \* once connOpen is set to TRUE in the history variable, 
 \* the connection never goes to UNINIT, INIT, or TRYOPEN         
 ConnectionOpenInv ==
-    /\ historyChainA.connOpen => (/\ ~IsConnectionUninit(GetChainByID("chainA"))
-                                  /\ ~IsConnectionInit(GetChainByID("chainA"))
-                                  /\ ~IsConnectionTryOpen(GetChainByID("chainA")))
+    /\ historyChainA.connOpen => (/\ ~IsConnectionUninit(chainAstore)
+                                  /\ ~IsConnectionInit(chainAstore)
+                                  /\ ~IsConnectionTryOpen(chainAstore))
     /\ historyChainB.connOpen => (/\ ~IsConnectionUninit(GetChainByID("chainB"))
                                   /\ ~IsConnectionInit(GetChainByID("chainB"))
                                   /\ ~IsConnectionTryOpen(GetChainByID("chainB")))
@@ -306,36 +343,36 @@ ConnectionOpenInv ==
 \* once chanInit is set to TRUE in the history variable, 
 \* the channel never goes to UNINIT         
 ChannelInitInv ==
-    /\ historyChainA.chanInit => ~IsChannelUninit(GetChainByID("chainA"))
-    /\ historyChainB.chanInit => ~IsChannelUninit(GetChainByID("chainB"))
+    /\ historyChainA.chanInit => ~IsChannelUninit(chainAstore)
+    /\ historyChainB.chanInit => ~IsChannelUninit(chainBstore)
 
 \* once chanTryOpen is set to TRUE in the history variable, 
 \* the channel never goes to UNINIT         
 ChannelTryOpenInv ==
-    /\ historyChainA.chanTryOpen => ~IsChannelUninit(GetChainByID("chainA"))
-    /\ historyChainB.chanTryOpen => ~IsChannelUninit(GetChainByID("chainB"))
+    /\ historyChainA.chanTryOpen => ~IsChannelUninit(chainAstore)
+    /\ historyChainB.chanTryOpen => ~IsChannelUninit(chainBstore)
 
 \* once chanOpen is set to TRUE in the history variable, 
 \* the channel never goes to UNINIT, INIT, or TRYOPEN         
 ChannelOpenInv ==
-    /\ historyChainA.chanOpen => (/\ ~IsChannelUninit(GetChainByID("chainA"))
-                                  /\ ~IsChannelInit(GetChainByID("chainA"))
-                                  /\ ~IsChannelTryOpen(GetChainByID("chainA")))
-    /\ historyChainB.chanOpen => (/\ ~IsChannelUninit(GetChainByID("chainB"))
-                                  /\ ~IsChannelInit(GetChainByID("chainB"))
-                                  /\ ~IsChannelTryOpen(GetChainByID("chainB")))
+    /\ historyChainA.chanOpen => (/\ ~IsChannelUninit(chainAstore)
+                                  /\ ~IsChannelInit(chainAstore)
+                                  /\ ~IsChannelTryOpen(chainAstore))
+    /\ historyChainB.chanOpen => (/\ ~IsChannelUninit(chainBstore)
+                                  /\ ~IsChannelInit(chainBstore)
+                                  /\ ~IsChannelTryOpen(chainBstore))
 
 \* once chanClosed is set to TRUE in the history variable, 
 \* the channel never goes to UNINIT, INIT, TRYOPEN, or OPEN    
 ChannelCloseInv ==
-    /\ historyChainA.chanClosed => (/\ ~IsChannelUninit(GetChainByID("chainA"))
-                                    /\ ~IsChannelInit(GetChainByID("chainA"))
-                                    /\ ~IsChannelTryOpen(GetChainByID("chainA"))
-                                    /\ ~IsChannelOpen(GetChainByID("chainA")))
-    /\ historyChainB.chanClosed => (/\ ~IsChannelUninit(GetChainByID("chainB"))
-                                    /\ ~IsChannelInit(GetChainByID("chainB"))
-                                    /\ ~IsChannelTryOpen(GetChainByID("chainB"))
-                                    /\ ~IsChannelOpen(GetChainByID("chainB")))
+    /\ historyChainA.chanClosed => (/\ ~IsChannelUninit(chainAstore)
+                                    /\ ~IsChannelInit(chainAstore)
+                                    /\ ~IsChannelTryOpen(chainAstore)
+                                    /\ ~IsChannelOpen(chainAstore))
+    /\ historyChainB.chanClosed => (/\ ~IsChannelUninit(chainBstore)
+                                    /\ ~IsChannelInit(chainBstore)
+                                    /\ ~IsChannelTryOpen(chainBstore)
+                                    /\ ~IsChannelOpen(chainBstore))
     
 (***************************************************************************
  Invariant [IBCInv]
@@ -492,7 +529,7 @@ IBCSafety ==
 CreateClientDelivery == 
     [](\A chainID \in ChainIDs : 
         (GetCounterpartyClientHeights(GetChainByID(chainID)) = {})
-        => <>(IsCounterpartyClientOnChain(GetChainByID(chainID))))
+        => <>(IsCounterpartyClientOnChain(GetChainByID(chainID)))) 
 
 \* it ALWAYS holds that, for every chainID and every height h
 \*  - if 
@@ -569,5 +606,5 @@ IBCDelivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Tue Feb 02 10:20:20 CET 2021 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:05:32 CEST 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

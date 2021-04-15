@@ -9,7 +9,6 @@
 - [ibc-relayer]
   - Fix pagination in gRPC query for clients ([#811])
 
-
 ### BREAKING CHANGES
 
 > Nothing yet.
