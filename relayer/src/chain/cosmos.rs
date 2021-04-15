@@ -1352,41 +1352,27 @@ fn update_client_from_tx_search_response(
     request: &QueryClientEventRequest,
     response: ResultTx,
 ) -> Option<IbcEvent> {
-    let mut matching = Vec::new();
-
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
     if request.height != ICSHeight::zero() && height > request.height {
         return None;
     }
 
-    for e in response.tx_result.events {
-        if e.type_str != request.event_id.as_str() {
-            continue;
-        }
-
-        let res = ClientEvents::try_from_tx(&e);
-        if res.is_none() {
-            continue;
-        }
-        let event = res.unwrap();
-        let update = match &event {
+    response
+        .tx_result
+        .events
+        .into_iter()
+        .filter(|event| event.type_str == request.event_id.as_str())
+        .flat_map(|event| ClientEvents::try_from_tx(&event))
+        .flat_map(|event| match event {
             IbcEvent::UpdateClient(update) => Some(update),
             _ => None,
-        };
-
-        if update.is_none() {
-            continue;
-        }
-
-        let update = update.unwrap();
-        if update.common.client_id != request.client_id
-            || update.common.consensus_height != request.consensus_height
-        {
-            continue;
-        }
-        matching.push(event);
-    }
-    matching.pop()
+        })
+        .filter(|update| {
+            update.common.client_id == request.client_id
+                && update.common.consensus_height == request.consensus_height
+        })
+        .map(IbcEvent::UpdateClient)
+        .last()
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
