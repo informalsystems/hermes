@@ -982,10 +982,10 @@ impl Chain for CosmosSdkChain {
                             packet_query(&request, *seq),
                             false,
                             1,
-                            1, // get onw Tx matching the query
+                            1, // get only the first Tx matching the query
                             Order::Ascending,
                         ))
-                        .unwrap(); // todo
+                        .map_err(|e| Kind::Grpc.context(e))?;
 
                     assert!(
                         response.txs.len() <= 1,
@@ -1013,7 +1013,7 @@ impl Chain for CosmosSdkChain {
                 // same header as the first one, otherwise a subsequent transaction would have
                 // failed on chain. Therefore only one Tx is of interest and current API returns
                 // the first one.
-                let response = self
+                let mut response = self
                     .block_on(self.rpc_client.tx_search(
                         header_query(&request),
                         false,
@@ -1021,7 +1021,7 @@ impl Chain for CosmosSdkChain {
                         1, // get only the first Tx matching the query
                         Order::Ascending,
                     ))
-                    .unwrap(); // todo
+                    .map_err(|e| Kind::Grpc.context(e))?;
 
                 if response.txs.is_empty() {
                     return Ok(vec![]);
@@ -1033,15 +1033,10 @@ impl Chain for CosmosSdkChain {
                     "packet_from_tx_search_response: unexpected number of txs"
                 );
 
-                if let Some(event) = update_client_from_tx_search_response(
-                    self.id(),
-                    &request,
-                    response.txs[0].clone(),
-                ) {
-                    Ok(vec![event])
-                } else {
-                    Ok(vec![])
-                }
+                let tx = response.txs.remove(0);
+                let event = update_client_from_tx_search_response(self.id(), &request, tx);
+
+                Ok(event.into_iter().collect())
             }
         }
     }
@@ -1412,7 +1407,7 @@ async fn abci_query(
 
     let response = QueryResponse {
         value: response.value,
-        proof: convert_tm_to_ics_merkle_proof(raw_proof_ops).unwrap(),
+        proof: convert_tm_to_ics_merkle_proof(raw_proof_ops).unwrap(), // FIXME
         height: response.height,
     };
 
