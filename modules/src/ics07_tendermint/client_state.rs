@@ -29,8 +29,13 @@ pub struct ClientState {
     pub latest_height: Height,
     // pub proof_specs: ::std::vec::Vec<super::super::super::super::ics23::ProofSpec>,
     pub upgrade_path: Vec<String>,
-    pub allow_update_after_expiry: bool,
-    pub allow_update_after_misbehaviour: bool,
+    pub allow_update: AllowUpdate,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct AllowUpdate {
+    pub after_expiry: bool,
+    pub after_misbehaviour: bool,
 }
 
 impl Protobuf<RawClientState> for ClientState {}
@@ -46,8 +51,7 @@ impl ClientState {
         latest_height: Height,
         frozen_height: Height,
         upgrade_path: Vec<String>,
-        allow_update_after_expiry: bool,
-        allow_update_after_misbehaviour: bool, // proof_specs: Specs
+        allow_update: AllowUpdate,
     ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
@@ -88,8 +92,7 @@ impl ClientState {
             frozen_height,
             latest_height,
             upgrade_path,
-            allow_update_after_expiry,
-            allow_update_after_misbehaviour,
+            allow_update,
         })
     }
 
@@ -115,8 +118,8 @@ impl ClientState {
             numerator: 0,
             denominator: 0,
         };
-        client_state.allow_update_after_expiry = false;
-        client_state.allow_update_after_misbehaviour = false;
+        client_state.allow_update.after_expiry = false;
+        client_state.allow_update.after_misbehaviour = false;
         client_state.frozen_height = Height::zero();
         client_state.max_clock_drift = Duration::from_secs(0);
         client_state
@@ -188,8 +191,10 @@ impl TryFrom<RawClientState> for ClientState {
                 .try_into()
                 .map_err(|_| Kind::InvalidRawHeight)?,
             upgrade_path: raw.upgrade_path,
-            allow_update_after_expiry: raw.allow_update_after_expiry,
-            allow_update_after_misbehaviour: raw.allow_update_after_misbehaviour,
+            allow_update: AllowUpdate {
+                after_expiry: raw.allow_update_after_expiry,
+                after_misbehaviour: raw.allow_update_after_misbehaviour,
+            },
         })
     }
 }
@@ -222,7 +227,7 @@ mod tests {
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
-    use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::ics24_host::identifier::ChainId;
     use crate::test::test_serialization_roundtrip;
     use crate::Height;
@@ -254,8 +259,7 @@ mod tests {
             latest_height: Height,
             frozen_height: Height,
             upgrade_path: Vec<String>,
-            allow_update_after_expiry: bool,
-            allow_update_after_misbehaviour: bool,
+            allow_update: AllowUpdate,
         }
 
         // Define a "default" set of parameters to reuse throughout these tests.
@@ -271,8 +275,10 @@ mod tests {
             latest_height: Height::new(0, 10),
             frozen_height: Height::default(),
             upgrade_path: vec!["".to_string()],
-            allow_update_after_expiry: false,
-            allow_update_after_misbehaviour: false,
+            allow_update: AllowUpdate {
+                after_expiry: false,
+                after_misbehaviour: false,
+            },
         };
 
         struct Test {
@@ -336,8 +342,7 @@ mod tests {
                 p.latest_height,
                 p.frozen_height,
                 p.upgrade_path,
-                p.allow_update_after_expiry,
-                p.allow_update_after_misbehaviour,
+                p.allow_update,
             );
 
             assert_eq!(
@@ -360,7 +365,7 @@ pub mod test_util {
 
     use crate::ics02_client::client_state::AnyClientState;
     use crate::ics02_client::height::Height;
-    use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::ics24_host::identifier::ChainId;
 
     pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {
@@ -377,8 +382,10 @@ pub mod test_util {
                 ),
                 Height::zero(),
                 vec!["".to_string()],
-                false,
-                false,
+                AllowUpdate {
+                    after_expiry: false,
+                    after_misbehaviour: false,
+                },
             )
             .unwrap(),
         )
