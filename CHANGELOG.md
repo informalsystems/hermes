@@ -2,7 +2,20 @@
 
 ## Unreleased
 
+> [TODO: high level summary]
+
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix pagination in gRPC query for clients ([#811])
+
+
+### BREAKING CHANGES
+
 > Nothing yet.
+
+
+[#811]: https://github.com/informalsystems/ibc-rs/issues/811
 
 ## v0.2.0 (2021-04-14)
 
