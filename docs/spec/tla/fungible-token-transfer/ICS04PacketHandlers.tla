@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- packet datagrams
+ packet datagrams.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, IBCTokenTransferDefinitions, 
@@ -13,6 +13,9 @@ EXTENDS Integers, FiniteSets, IBCTokenTransferDefinitions,
  ***************************************************************************)
 
 \* Handle "PacketRecv" datagrams
+(* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY), ACCOUNT -> Int, ACCOUNT -> Int, Int) 
+            => [store: CHAINSTORE, log: Seq(LOGENTRY), accounts: ACCOUNT -> Int, escrowAccounts: ACCOUNT -> Int];
+*)
 HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, escrowAccounts, maxBalance) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
@@ -36,29 +39,31 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, escrowAccounts, 
          \* if OnPacketRecv is successful
          IF /\ ~OnPacketRecvOutcome.error
          \* if the packet has not been received  
-            /\ AsPacketReceipt([
+            /\ [
                 portID |-> packet.dstPortID, 
                 channelID |-> packet.dstChannelID, 
                 sequence |-> packet.sequence
-               ]) \notin chain.packetReceipts
+               ] \notin chain.packetReceipts
          THEN \* construct log entry for packet log
-              LET logEntry == AsPacketLogEntry(
-                            [type |-> "PacketRecv",
-                             srcChainID |-> chainID,
-                             sequence |-> packet.sequence,
-                             portID |-> packet.dstPortID,
-                             channelID |-> packet.dstChannelID,
-                             timeoutHeight |-> packet.timeoutHeight 
-                            ]) IN
+              LET logEntry == [
+                                type |-> "PacketRecv",
+                                srcChainID |-> chainID,
+                                sequence |-> packet.sequence,
+                                portID |-> packet.dstPortID,
+                                channelID |-> packet.dstChannelID,
+                                timeoutHeight |-> packet.timeoutHeight 
+                              ] IN
          
               LET updatedChainStore == [chain EXCEPT
                     \* record that the packet has been received 
                     !.packetReceipts = 
                         chain.packetReceipts 
                         \union 
-                        {AsPacketReceipt([channelID |-> packet.dstChannelID,
-                                          portID |-> packet.dstPortID, 
-                                          sequence |-> packet.sequence])},
+                        {[
+                            channelID |-> packet.dstChannelID,
+                            portID |-> packet.dstPortID, 
+                            sequence |-> packet.sequence
+                        ]},
                     \* add packet to the set of packets for which an acknowledgement 
                     \* should be written
                     !.packetsToAcknowledge = 
@@ -86,6 +91,9 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, escrowAccounts, 
     packetRecvUpdates
 
 \* Handle "PacketAck" datagrams    
+(* @type: (CHAINSTORE, DATAGRAM, Seq(LOGENTRY), ACCOUNT -> Int, ACCOUNT -> Int, Int) 
+            => [store: CHAINSTORE, log: Seq(LOGENTRY), accounts: ACCOUNT -> Int, escrowAccounts: ACCOUNT -> Int];
+*)
 HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
@@ -94,11 +102,12 @@ HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance
     \* get acknowledgement
     LET ack == packetDatagram.acknowledgement IN
     \* get packet committment that should be in chain store
-    LET packetCommitment == AsPacketCommitment(
-                             [portID |-> packet.srcPortID, 
-                              channelID |-> packet.srcChannelID, 
-                              sequence |-> packet.sequence,
-                              timeoutHeight |-> packet.timeoutHeight]) IN
+    LET packetCommitment == [
+                                portID |-> packet.srcPortID, 
+                                channelID |-> packet.srcChannelID, 
+                                sequence |-> packet.sequence,
+                                timeoutHeight |-> packet.timeoutHeight
+                            ] IN
     
     \* call application function OnPacketAck
     LET OnPacketAckOutcome == 
@@ -133,6 +142,7 @@ HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance
     
     
 \* write packet committments to chain store
+\* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WritePacketCommitment(chain, packet) ==
     \* get channel end
     LET channelEnd == chain.channelEnd IN
@@ -166,17 +176,19 @@ WritePacketCommitment(chain, packet) ==
          ELSE chain
 
 \* write acknowledgements to chain store
+\* @type: (CHAINSTORE, PACKETTOACK) => CHAINSTORE;
 WriteAcknowledgement(chain, packetToAck) ==
     \* packetToack is a pair of a packet and its acknowledgement
     LET packet == packetToAck[1] IN
     LET ack == packetToAck[2] IN
 
     \* create a packet acknowledgement for this packet
-    LET packetAcknowledgement == AsPacketAcknowledgement(
-                    [portID |-> packet.dstPortID,
-                     channelID |-> packet.dstChannelID,
-                     sequence |-> packet.sequence,
-                     acknowledgement |-> ack]) IN
+    LET packetAcknowledgement == [
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    sequence |-> packet.sequence,
+                                    acknowledgement |-> ack
+                                 ] IN
 
     \* if the acknowledgement for the packet has not been written
     IF packetAcknowledgement \notin chain.packetAcknowledgements
@@ -194,45 +206,59 @@ WriteAcknowledgement(chain, packetToAck) ==
                             Tail(chain.packetsToAcknowledge)] 
 
 \* log acknowledgements to packet Log
+\* @type: (Str, CHAINSTORE, Seq(LOGENTRY), PACKETTOACK) => Seq(LOGENTRY);
 LogAcknowledgement(chainID, chain, log, packetToAck) ==
     \* packetToAck is a pair of a packet and its acknowledgement
     LET packet == packetToAck[1] IN
     LET ack == packetToAck[2] IN
+
+    \* create a packet acknowledgement for this packet
+    LET packetAcknowledgement == [
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    sequence |-> packet.sequence,
+                                    acknowledgement |-> ack
+                                 ] IN
     
     \* if the acknowledgement for the packet has not been written
-    IF packet \notin chain.packetAcknowledgements
+    IF packetAcknowledgement \notin chain.packetAcknowledgements
     THEN \* append a "WriteAck" log entry to the log
-         LET packetLogEntry ==
-                AsPacketLogEntry(
-                    [type |-> "WriteAck",
-                     srcChainID |-> chainID,
-                     sequence |-> packet.sequence,
-                     portID |-> packet.dstPortID,
-                     channelID |-> packet.dstChannelID,
-                     timeoutHeight |-> packet.timeoutHeight,
-                     acknowledgement |-> ack,
-                     data |-> packet.data]) IN
+         LET packetLogEntry == [
+                                    type |-> "WriteAck",
+                                    srcChainID |-> chainID,
+                                    sequence |-> packet.sequence,
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    timeoutHeight |-> packet.timeoutHeight,
+                                    acknowledgement |-> ack,
+                                    data |-> packet.data
+                               ] IN
          Append(log, packetLogEntry)    
     \* do not add anything to the log
     ELSE log
     
 \* check if a packet timed out
+(* @type: (CHAINSTORE, CHAINSTORE, ACCOUNT -> Int, ACCOUNT -> Int, PACKET, Int, Int) 
+            => [store: CHAINSTORE, accounts: ACCOUNT -> Int, escrowAccounts: ACCOUNT -> Int];
+*)
 TimeoutPacket(chain, counterpartyChain, accounts, escrowAccounts, 
               packet, proofHeight, maxBalance) ==
     \* get channel end
     LET channelEnd == chain.channelEnd IN
     \* get packet committment that should be in chain store
-    LET packetCommitment == AsPacketCommitment(
-                             [portID |-> packet.srcPortID,
-                              channelID |-> packet.srcChannelID, 
-                              data |-> packet.data,
-                              sequence |-> packet.sequence,
-                              timeoutHeight |-> packet.timeoutHeight]) IN
+    LET packetCommitment == [
+                                portID |-> packet.srcPortID,
+                                channelID |-> packet.srcChannelID, 
+                                data |-> packet.data,
+                                sequence |-> packet.sequence,
+                                timeoutHeight |-> packet.timeoutHeight
+                            ] IN
     \* get packet receipt that should be absent in counterparty chain store
-    LET packetReceipt == AsPacketReceipt(
-                             [portID |-> packet.dstPortID,
-                              channelID |-> packet.dstChannelID,
-                              sequence |-> packet.sequence]) IN                              
+    LET packetReceipt == [
+                            portID |-> packet.dstPortID,
+                            channelID |-> packet.dstChannelID,
+                            sequence |-> packet.sequence
+                         ] IN
     
     \* call application function OnTimeoutPacket
     LET OnTimeoutPacketOutcome == 
@@ -267,6 +293,9 @@ TimeoutPacket(chain, counterpartyChain, accounts, escrowAccounts,
           escrowAccounts |-> escrowAccounts]
         
 \* check if a packet timed out on close
+(* @type: (CHAINSTORE, CHAINSTORE, ACCOUNT -> Int, ACCOUNT -> Int, PACKET, Int, Int) 
+            => [store: CHAINSTORE, accounts: ACCOUNT -> Int, escrowAccounts: ACCOUNT -> Int];
+*)
 TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts, 
                packet, proofHeight, maxBalance) ==
     \* get channel end
@@ -275,17 +304,19 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
     LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
     
     \* get packet committment that should be in chain store
-    LET packetCommitment == AsPacketCommitment(
-                             [portID |-> packet.srcPortID,
-                              channelID |-> packet.srcChannelID, 
-                              data |-> packet.data,
-                              sequence |-> packet.sequence,
-                              timeoutHeight |-> packet.timeoutHeight]) IN
+    LET packetCommitment == [
+                                portID |-> packet.srcPortID,
+                                channelID |-> packet.srcChannelID, 
+                                data |-> packet.data,
+                                sequence |-> packet.sequence,
+                                timeoutHeight |-> packet.timeoutHeight
+                            ] IN
      \* get packet receipt that should be absent in counterparty chain store
-    LET packetReceipt == AsPacketReceipt(
-                             [portID |-> packet.dstPortID,
-                              channelID |-> packet.dstChannelID,
-                              sequence |-> packet.sequence]) IN
+    LET packetReceipt == [
+                            portID |-> packet.dstPortID,
+                            channelID |-> packet.dstChannelID,
+                            sequence |-> packet.sequence
+                         ] IN
     
     \* call application function OnTimeoutPacket
     LET OnTimeoutPacketOutcome == 
@@ -324,5 +355,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 11:49:35 CET 2021 by ilinastoilkovska
+\* Last modified Wed Apr 14 15:36:57 CEST 2021 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska

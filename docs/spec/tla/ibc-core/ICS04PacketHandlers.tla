@@ -2,7 +2,7 @@
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
- packet datagrams
+ packet datagrams.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions    
@@ -12,9 +12,10 @@ EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
  ***************************************************************************)
 
 \* Handle "PacketRecv" datagrams
+\* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY)) => [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY)];
 HandlePacketRecv(chainID, chain, packetDatagram, log) ==
     \* get chainID's connection end
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get chainID's channel end
     LET channelEnd == connectionEnd.channelEnd IN
     \* get packet
@@ -34,30 +35,32 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
        \* if "PacketRecv" datagram can be verified
        /\ packetDatagram.proofHeight \in chain.counterpartyClientHeights           
     THEN \* construct log entry for packet log
-         LET logEntry == AsPacketLogEntry(
-                            [type |-> "PacketRecv",
-                             srcChainID |-> chainID,
-                             sequence |-> packet.sequence,
-                             portID |-> packet.dstPortID,
-                             channelID |-> packet.dstChannelID,
-                             timeoutHeight |-> packet.timeoutHeight 
-                            ]) IN
+         LET logEntry == [
+                            type |-> "PacketRecv",
+                            srcChainID |-> chainID,
+                            sequence |-> packet.sequence,
+                            portID |-> packet.dstPortID,
+                            channelID |-> packet.dstChannelID,
+                            timeoutHeight |-> packet.timeoutHeight 
+                        ] IN
     
          \* if the channel is unordered and the packet has not been received  
          IF /\ channelEnd.order = "UNORDERED"
-            /\ AsPacketReceipt([
+            /\ [
                 portID |-> packet.dstPortID,    
                 channelID |-> packet.dstChannelID, 
                 sequence |-> packet.sequence
-               ]) \notin chain.packetReceipts
+               ] \notin chain.packetReceipts
          THEN LET newChainStore == [chain EXCEPT
                     \* record that the packet has been received
                     !.packetReceipts = 
                         chain.packetReceipts 
                         \union 
-                        {AsPacketReceipt([channelID |-> packet.dstChannelID,
-                                          portID |-> packet.dstPortID, 
-                                          sequence |-> packet.sequence])},
+                        {[
+                            channelID |-> packet.dstChannelID,
+                            portID |-> packet.dstPortID, 
+                            sequence |-> packet.sequence
+                        ]},
                     \* add packet to the set of packets for which an acknowledgement should be written
                     !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN
                                       
@@ -82,19 +85,21 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
 
     
 \* Handle "PacketAck" datagrams    
+\* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY)) => [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY)];
 HandlePacketAck(chainID, chain, packetDatagram, log) ==
     \* get chainID's connection end
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get chainID's channel end
-    LET channelEnd == chain.connectionEnd.channelEnd IN
+    LET channelEnd == GetChannelEnd(chain) IN
     \* get packet
     LET packet == packetDatagram.packet IN
     \* get packet committment that should be in chain store
-    LET packetCommitment == AsPacketCommitment(
-                             [portID |-> packet.srcPortID,
-                              channelID |-> packet.srcChannelID, 
-                              sequence |-> packet.sequence,
-                              timeoutHeight |-> packet.timeoutHeight]) IN
+    LET packetCommitment == [
+                                portID |-> packet.srcPortID,
+                                channelID |-> packet.srcChannelID, 
+                                sequence |-> packet.sequence,
+                                timeoutHeight |-> packet.timeoutHeight
+                            ] IN
     
     IF \* if the channel and connection ends are open for packet transmission
        /\ channelEnd.state = "OPEN"
@@ -131,11 +136,12 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
     
     
 \* write packet committments to chain store
+\* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WritePacketCommitment(chain, packet) ==
-    \* get connection end 
-    LET connectionEnd == chain.connectionEnd IN
-    \* get channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    \* get chainID's connection end
+    LET connectionEnd == GetConnectionEnd(chain) IN
+    \* get chainID's channel end
+    LET channelEnd == GetChannelEnd(chain) IN
     \* get latest counterparty client height 
     LET latestClientHeight == GetMaxCounterpartyClientHeight(chain) IN
     
@@ -179,13 +185,15 @@ WritePacketCommitment(chain, packet) ==
     ELSE chain              
 
 \* write acknowledgements to chain store
+\* @type: (CHAINSTORE, PACKET) => CHAINSTORE;
 WriteAcknowledgement(chain, packet) ==
     \* create a packet acknowledgement for this packet
-    LET packetAcknowledgement == AsPacketAcknowledgement(
-                    [portID |-> packet.dstPortID,
-                     channelID |-> packet.dstChannelID,
-                     sequence |-> packet.sequence,
-                     acknowledgement |-> TRUE]) IN
+    LET packetAcknowledgement == [
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    sequence |-> packet.sequence,
+                                    acknowledgement |-> TRUE
+                                 ] IN
     
     \* if the acknowledgement for the packet has not been written
     IF packetAcknowledgement \notin chain.packetAcknowledgements
@@ -203,44 +211,56 @@ WriteAcknowledgement(chain, packet) ==
                             Tail(chain.packetsToAcknowledge)] 
 
 \* log acknowledgements to packet Log
+\* @type: (Str, CHAINSTORE, Seq(LOGENTRY), PACKET) => Seq(LOGENTRY);
 LogAcknowledgement(chainID, chain, log, packet) ==
+    \* create a packet acknowledgement for this packet
+    LET packetAcknowledgement == [
+                                    portID |-> packet.dstPortID,
+                                    channelID |-> packet.dstChannelID,
+                                    sequence |-> packet.sequence,
+                                    acknowledgement |-> TRUE
+                                 ] IN
+                                 
     \* if the acknowledgement for the packet has not been written
-    IF packet \notin chain.packetAcknowledgements
+    IF packetAcknowledgement \notin chain.packetAcknowledgements
     THEN \* append a "WriteAck" log entry to the log
-         LET packetLogEntry ==
-                AsPacketLogEntry(
-                    [type |-> "WriteAck",
-                     srcChainID |-> chainID,
-                     sequence |-> packet.sequence,
-                     portID |-> packet.dstPortID,
-                     channelID |-> packet.dstChannelID,
-                     timeoutHeight |-> packet.timeoutHeight,
-                     acknowledgement |-> TRUE]) IN
+         LET packetLogEntry == [
+                                type |-> "WriteAck",
+                                srcChainID |-> chainID,
+                                sequence |-> packet.sequence,
+                                portID |-> packet.dstPortID,
+                                channelID |-> packet.dstChannelID,
+                                timeoutHeight |-> packet.timeoutHeight,
+                                acknowledgement |-> TRUE
+                               ] IN
          Append(log, packetLogEntry)    
     \* do not add anything to the log
     ELSE log
     
 
 \* check if a packet timed out
+\* @type: (CHAINSTORE, CHAINSTORE, PACKET, Int) => CHAINSTORE;
 TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
     \* get connection end 
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    LET channelEnd == GetChannelEnd(chain) IN
     \* get counterparty channel end
-    LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
+    LET counterpartyChannelEnd == GetChannelEnd(counterpartyChain) IN
     
     \* get packet committment that should be in chain store
-    LET packetCommitment == AsPacketCommitment(
-                             [portID |-> packet.srcPortID,
-                              channelID |-> packet.srcChannelID, 
-                              sequence |-> packet.sequence,
-                              timeoutHeight |-> packet.timeoutHeight]) IN
+    LET packetCommitment == [
+                                portID |-> packet.srcPortID,
+                                channelID |-> packet.srcChannelID, 
+                                sequence |-> packet.sequence,
+                                timeoutHeight |-> packet.timeoutHeight
+                            ] IN
     \* get packet receipt that should be absent in counterparty chain store
-    LET packetReceipt == AsPacketReceipt(
-                             [portID |-> packet.dstPortID,
-                              channelID |-> packet.dstChannelID,
-                              sequence |-> packet.sequence]) IN                              
+    LET packetReceipt == [
+                            portID |-> packet.dstPortID,
+                            channelID |-> packet.dstChannelID,
+                            sequence |-> packet.sequence
+                         ] IN 
     
     \* if channel end is open
     IF /\ channelEnd.state = "OPEN"
@@ -281,25 +301,28 @@ TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
     ELSE chain
         
 \* check if a packet timed out on close
+\* @type: (CHAINSTORE, CHAINSTORE, PACKET, Int) => CHAINSTORE;
 TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
     \* get connection end 
-    LET connectionEnd == chain.connectionEnd IN
+    LET connectionEnd == GetConnectionEnd(chain) IN
     \* get channel end
-    LET channelEnd == connectionEnd.channelEnd IN
+    LET channelEnd == GetChannelEnd(chain) IN
     \* get counterparty channel end
-    LET counterpartyChannelEnd == counterpartyChain.connectionEnd.channelEnd IN
+    LET counterpartyChannelEnd == GetChannelEnd(counterpartyChain) IN
     
     \* get packet committment that should be in chain store
-    LET packetCommitment == AsPacketCommitment(
-                             [portID |-> packet.srcPortID,
-                              channelID |-> packet.srcChannelID, 
-                              sequence |-> packet.sequence,
-                              timeoutHeight |-> packet.timeoutHeight]) IN
+    LET packetCommitment == [
+                                portID |-> packet.srcPortID,
+                                channelID |-> packet.srcChannelID, 
+                                sequence |-> packet.sequence,
+                                timeoutHeight |-> packet.timeoutHeight
+                            ] IN
      \* get packet receipt that should be absent in counterparty chain store
-    LET packetReceipt == AsPacketReceipt(
-                             [portID |-> packet.dstPortID,
-                              channelID |-> packet.dstChannelID,
-                              sequence |-> packet.sequence]) IN
+    LET packetReceipt == [
+                            portID |-> packet.dstPortID,
+                            channelID |-> packet.dstChannelID,
+                            sequence |-> packet.sequence
+                         ] IN
     
  
     \* if srcChannelID and srcPortID match channel and port IDs
@@ -341,5 +364,5 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Jan 29 15:44:44 CET 2021 by ilinastoilkovska
+\* Last modified Mon Apr 12 14:22:40 CEST 2021 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska

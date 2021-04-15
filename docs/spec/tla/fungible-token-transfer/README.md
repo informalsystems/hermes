@@ -200,12 +200,19 @@ To import the specification in the TLA+ toolbox and run TLC:
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
   - run TLC on the model
 
-#### Basic checks
+#### Basic checks with TLC
 
-We ran TLC using the constants defined in `IBCTokenTransfer.cfg` and verified the invariants `TypeOK` and `ICS20Inv` in 2 minutes and the property `ICS20Prop` in 4 minutes.
+We ran TLC using the constants defined in `IBCTokenTransfer.cfg` and verified the invariants `TypeOK` and `ICS20Inv` in 1min21s and the property `ICS20Prop` in 9min34s.
 We note that the specification currently models two transfers: one from `ChainA` to `ChainB`, and vice versa, in their respective native denominations.  
 Both chains are correct, and there is no malicious relayer. 
 The relayer implements the logic from [ICS 18](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-018-relayer-algorithms), in particular, it does not 
 relay timeouts. 
 However, the packet timeout handlers are specified in [`ICS04PacketHandlers.tla`](ICS04PacketHandlers.tla)
 for future use.
+
+#### Apalache
+
+The specification contains type annotations for the 
+model checker [Apalache](https://github.com/informalsystems/apalache).
+The specification passes the type check using the type checker [Snowcat](https://apalache.informal.systems/docs/apalache/typechecker-snowcat.html) 
+integrated in Apalache.  
