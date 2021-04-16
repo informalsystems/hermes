@@ -180,11 +180,11 @@ pub fn test() {
         // you can also execute abstract actions against your system
         .action(ChainAction::create_client("chain1", 10, 20))
         // and require a particular outcome of the action
-        .outcome(ActionOutcome::OK)
+        .expect(ActionOutcome::OK)
         .check(|state: AbstractState| assert_eq!(state.chains["chain1"].clients.len(), 1))
         .action(ChainAction::update_client("chain1", 1, 30))
         // there is no client with id 1
-        .outcome(ActionOutcome::ICS02ClientNotFound)
+        .expect(ActionOutcome::ICS02ClientNotFound)
         .action(ChainAction::update_client("chain1", 0, 30))
         // debug-print the state again
         .check(|state: AbstractState| println!("{:?}", state))
@@ -192,7 +192,6 @@ pub fn test() {
             assert_eq!(state.chains["chain1"].clients[&0].heights, vec![10, 30])
         });
 
-    let mut system = IBCSystem::new();
-    let result = runner.run(&mut system, &mut events.into_iter());
-    assert!(matches!(result, TestResult::Success(_)))
+    let result = runner.run(&mut events.into_iter());
+    assert!(result.is_ok());
 }

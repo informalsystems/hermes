@@ -2,7 +2,6 @@ use std::error::Error;
 use std::{any::Any, collections::HashMap};
 use std::{
     fmt::{Debug, Display},
-    slice::Iter,
 };
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
@@ -29,14 +28,16 @@ pub struct IBCSystem {
     pub recipe: Recipe,
 }
 
-impl IBCSystem {
-    pub fn new() -> IBCSystem {
+impl Default for IBCSystem {
+    fn default() -> IBCSystem {
         IBCSystem {
             contexts: HashMap::new(),
             recipe: Self::make_recipe(),
         }
     }
+}
 
+impl IBCSystem {
     // Initialize the system for a set of chains with given ids and heights
     pub fn init(&mut self, chains: impl Iterator<Item = (String, u64)>) {
         self.contexts.clear();

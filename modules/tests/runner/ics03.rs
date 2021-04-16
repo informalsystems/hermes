@@ -19,7 +19,7 @@ use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use serde::{Deserialize, Deserializer, Serialize};
 
-use modelator::{event::Runner, tester::TestResult, ActionHandler, StateHandler};
+use modelator::{Runner, ActionHandler, StateHandler};
 
 use crate::{chain_action};
 
@@ -290,13 +290,13 @@ mod tests {
             // you can also execute abstract actions against your system
             .action(ChainAction::connection_open_init("chain1", 10, "chain2".to_string(), 30))
             // should fail because no client exist yet
-            .outcome(ActionOutcome::ICS03MissingClient)
+            .expect(ActionOutcome::ICS03MissingClient)
             // let's create the client
             .action(ClientAction::create_client("chain1", 10, 20))
             // and try again
             .action(ChainAction::connection_open_init("chain1", 0, "chain2".to_string(), 30))
             // should pass now
-            .outcome(ActionOutcome::OK)
+            .expect(ActionOutcome::OK)
             // debug-print the client state
             .check(|state: ClientState| println!("{:?}", state))
             // debug-print the connection state
@@ -309,8 +309,7 @@ mod tests {
             .with_state::<ClientState>()
             .with_action::<ClientAction>()
             ;
-        let mut system = IBCSystem::new();
-        let result = runner.run(&mut system, &mut events.into_iter());
-        assert!(matches!(result, TestResult::Success(_)))
+        let result = runner.run(&mut events.into_iter());
+        assert!(result.is_ok());
     }
 }
