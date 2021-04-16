@@ -1,9 +1,11 @@
-name: Deploy Guide
+name: Deploy Hermes Guide
 
 on:
   push:
     branches:
       - master
+    paths:
+      - guide/**
 
 jobs:
   deploy:

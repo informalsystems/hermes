@@ -40,7 +40,7 @@ pub struct TransferOptions {
 pub fn build_and_send_transfer_messages(
     mut packet_src_chain: CosmosSdkChain, // the chain whose account is debited
     mut packet_dst_chain: CosmosSdkChain, // the chain where the transfer is sent
-    opts: &TransferOptions,
+    opts: TransferOptions,
 ) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = match &opts.receiver {
         None => packet_dst_chain.get_signer(),

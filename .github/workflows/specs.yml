@@ -1,0 +1,30 @@
+name: TLA+ Specs
+on:
+  pull_request:
+    paths:
+      - docs/spec/tla/**
+  push:
+    branches: master
+    paths:
+      - docs/specs/tla/**
+
+jobs:
+  typecheck-specs:
+    runs-on: ubuntu-latest
+    container: apalache/mc:0.15.2
+    env:
+      working-directory: docs/spec/tla
+    steps:
+      - uses: actions/checkout@v2
+      - name: IBC Core
+        run: apalache-mc typecheck IBCCore.tla | grep -F 'Type checker [OK]'
+        working-directory: ${{env.working-directory}}/ibc-core
+      - name: Fungible Token Transfer
+        run: apalache-mc typecheck IBCTokenTransfer.tla | grep -F 'Type checker [OK]'
+        working-directory: ${{env.working-directory}}/fungible-token-transfer
+      - name: ICS 02 Client / Single Chain
+        run: apalache-mc typecheck ICS02SingleChainEnvironment.tla | grep -F 'Type checker [OK]'
+        working-directory: ${{env.working-directory}}/client
+      - name: ICS 02 Client / Two Chains
+        run: apalache-mc typecheck ICS02TwoChainsEnvironment.tla | grep -F 'Type checker [OK]'
+        working-directory: ${{env.working-directory}}/client

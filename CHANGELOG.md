@@ -1,8 +1,17 @@
-# Changelog
-
 ## Unreleased
 
+> [TODO: high level summary]
+
+### IMPROVEMENTS
+
+- [ibc-relayer]
+  - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour. ([#785])
+
+### BREAKING CHANGES
+
 > Nothing yet.
+
+[#785]: https://github.com/informalsystems/ibc-rs/issues/785
 
 ## v0.2.0
 *April 14th, 2021*

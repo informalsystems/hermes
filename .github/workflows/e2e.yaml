@@ -1,5 +1,24 @@
 name: End to End testing
-on: [pull_request]
+on:
+  pull_request:
+    paths:
+      - Cargo.toml
+      - ci/**
+      - e2e/**
+      - proto/**
+      - modules/**
+      - relayer/**
+      - relayer-cli/**
+  push:
+    branches: master
+    paths:
+      - Cargo.toml
+      - ci/**
+      - e2e/**
+      - proto/**
+      - modules/**
+      - relayer/**
+      - relayer-cli/**
 
 jobs:
   test-end-to-end:
