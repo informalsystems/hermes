@@ -1287,53 +1287,35 @@ fn packet_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
-    r: ResultTx,
+    response: ResultTx,
 ) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
-    if height > request.height {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    if request.height != ICSHeight::zero() && height > request.height {
         return None;
     }
 
-    let mut matching = Vec::new();
-    for e in r.tx_result.events {
-        if e.type_str != request.event_id.as_str() {
-            continue;
-        }
-
-        let res = ChannelEvents::try_from_tx(&e);
-        if res.is_none() {
-            continue;
-        }
-        let event = res.unwrap();
-        let packet = match &event {
-            IbcEvent::SendPacket(send_ev) => Some(&send_ev.packet),
-            IbcEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
-            _ => None,
-        };
-
-        if packet.is_none() {
-            continue;
-        }
-
-        let packet = packet.unwrap();
-        if packet.source_port != request.source_port_id
-            || packet.source_channel != request.source_channel_id
-            || packet.destination_port != request.destination_port_id
-            || packet.destination_channel != request.destination_channel_id
-            || packet.sequence != seq
-        {
-            continue;
-        }
-
-        matching.push(event);
-    }
-
-    assert_eq!(
-        matching.len(),
-        1,
-        "packet_from_tx_search_response: unexpected number of matching packets"
-    );
-    matching.pop()
+    response
+        .tx_result
+        .events
+        .into_iter()
+        .filter(|abci_event| abci_event.type_str == request.event_id.as_str())
+        .flat_map(|abci_event| ChannelEvents::try_from_tx(&abci_event))
+        .find(|event| {
+            let packet = match event {
+                IbcEvent::SendPacket(send_ev) => Some(&send_ev.packet),
+                IbcEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
+                _ => None,
+            };
+            if let Some(packet) = packet {
+                packet.source_port == request.source_port_id
+                    && packet.source_channel == request.source_channel_id
+                    && packet.destination_port == request.destination_port_id
+                    && packet.destination_channel == request.destination_channel_id
+                    && packet.sequence == seq
+            } else {
+                false
+            }
+        })
 }
 
 // Extracts from the Tx the update client event for the requested client and height.
@@ -1364,12 +1346,11 @@ fn update_client_from_tx_search_response(
             IbcEvent::UpdateClient(update) => Some(update),
             _ => None,
         })
-        .filter(|update| {
+        .find(|update| {
             update.common.client_id == request.client_id
                 && update.common.consensus_height == request.consensus_height
         })
         .map(IbcEvent::UpdateClient)
-        .last()
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
