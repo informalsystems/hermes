@@ -344,7 +344,8 @@ impl std::fmt::Display for State {
     }
 }
 
-/// Used for queries and not yet standardized in channel's query.proto
+/// Used to query a packet event, identified by `event_id`, for specific channel and sequences.
+/// The query is preformed for the chain context at `height`.
 #[derive(Clone, Debug)]
 pub struct QueryPacketEventDataRequest {
     pub event_id: IbcEventType,

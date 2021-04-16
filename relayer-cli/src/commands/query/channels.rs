@@ -37,7 +37,9 @@ impl Runnable for QueryChannelsCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
 
-        let req = QueryChannelsRequest { pagination: None };
+        let req = QueryChannelsRequest {
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        };
 
         let res = chain.query_channels(req);
 

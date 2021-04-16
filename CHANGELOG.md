@@ -6,12 +6,20 @@
 
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour. ([#785])
+  
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix pagination in gRPC query for clients ([#811])
 
 ### BREAKING CHANGES
 
 > Nothing yet.
 
+
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
+[#811]: https://github.com/informalsystems/ibc-rs/issues/811
+
 
 ## v0.2.0
 *April 14th, 2021*
