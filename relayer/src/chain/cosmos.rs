@@ -1306,15 +1306,14 @@ fn packet_from_tx_search_response(
                 IbcEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
                 _ => None,
             };
-            if let Some(packet) = packet {
+
+            packet.map_or(false, |packet| {
                 packet.source_port == request.source_port_id
                     && packet.source_channel == request.source_channel_id
                     && packet.destination_port == request.destination_port_id
                     && packet.destination_channel == request.destination_channel_id
                     && packet.sequence == seq
-            } else {
-                false
-            }
+            })
         })
 }
 
