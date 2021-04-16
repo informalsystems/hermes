@@ -10,11 +10,17 @@ EXTENDS Integers, FiniteSets, Sequences, IBCPacketDelayDefinitions
 (* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY), <<Str, Int>> -> Int) => 
             [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY), datagramTimestamp: <<Str, Int>> -> Int];
 *)
-HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
+HandlePacketRecv(chainID, chain, packetDatagram, delay, log, datagramTimestamp) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
     \* get packet
     LET packet == packetDatagram.packet IN
+    
+    \* if the proof height of the packet datagram is installed on the chain, 
+    \* then clientHeightTimestamp is the timestamp, denoting the time when this 
+    \* height was installed on the chain;
+    \* otherwise it is 0, denoting that this height is not installed on the chain
+    LET clientHeightTimestamp == chain.counterpartyClientHeights[packetDatagram.proofHeight] IN   
     
     IF \* if the channel end is open for packet transmission
        /\ channelEnd.state = "OPEN"
@@ -26,8 +32,10 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
        /\ packet.srcChannelID = channelEnd.counterpartyChannelID
        /\ packet.dstPortID = channelEnd.portID
        /\ packet.dstChannelID = channelEnd.channelID
-       \* if "PacketRecv" datagram can be verified
-       /\ packetDatagram.proofHeight \in DOMAIN chain.counterpartyClientHeights           
+       \* if "PacketRecv" datagram can be verified (i.e., proofHeight is installed)
+       /\ clientHeightTimestamp /= 0   
+       \* the "PacketRecv" datagram was received after packet delay
+       /\ clientHeightTimestamp + delay < chain.timestamp  
     THEN \* construct log entry for packet log
          LET logEntry == [
                             type |-> "PacketRecv",
@@ -58,12 +66,8 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                     \* add packet to the set of packets for which an acknowledgement should be written
                     !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN
               \* record the timestamp in the history variable
-              LET newDatagramTimestamp == 
-                    [
-                        tID \in (DOMAIN datagramTimestamp \union {<<chainID, packetDatagram.proofHeight>>}) |->
-                            IF tID = <<chainID, packetDatagram.proofHeight>>
-                            THEN chain.timestamp
-                            ELSE datagramTimestamp[tID]
+              LET newDatagramTimestamp == [datagramTimestamp EXCEPT 
+                        ![<<chainID, packetDatagram.proofHeight>>] = chain.timestamp
                     ] IN
                                       
               [
@@ -82,11 +86,9 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                         \* add packet to the set of packets for which an acknowledgement should be written
                         !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN             
                    \* record the timestamp in the history variable
-                   LET newDatagramTimestamp == 
-                       [tID \in (DOMAIN datagramTimestamp \union {<<chainID, packetDatagram.proofHeight>>}) |->
-                            IF tID = <<chainID, packetDatagram.proofHeight>>
-                            THEN chain.timestamp
-                            ELSE datagramTimestamp[tID]] IN
+                   LET newDatagramTimestamp == [datagramTimestamp EXCEPT 
+                            ![<<chainID, packetDatagram.proofHeight>>] = chain.timestamp
+                        ] IN
                                       
                    [
                         chainStore |-> newChainStore, 
@@ -104,7 +106,7 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
 (* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY), <<Str, Int>> -> Int) => 
             [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY), datagramTimestamp: <<Str, Int>> -> Int];
 *)
-HandlePacketAck(chainID, chain, packetDatagram, log, datagramTimestamp) ==
+HandlePacketAck(chainID, chain, packetDatagram, delay, log, datagramTimestamp) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
     \* get packet
@@ -115,6 +117,12 @@ HandlePacketAck(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                               sequence |-> packet.sequence,
                               timeoutHeight |-> packet.timeoutHeight] IN
     
+    \* if the proof height of the packet datagram is installed on the chain, 
+    \* then clientHeightTimestamp is the timestamp, denoting the time when this 
+    \* height was installed on the chain;
+    \* otherwise it is 0, denoting that this height is not installed on the chain
+    LET clientHeightTimestamp == chain.counterpartyClientHeights[packetDatagram.proofHeight] IN   
+    
     IF \* if the channel end is open for packet transmission
        /\ channelEnd.state = "OPEN"
        \* if the packet committment exists in the chain store
@@ -124,8 +132,10 @@ HandlePacketAck(chainID, chain, packetDatagram, log, datagramTimestamp) ==
        /\ packet.srcChannelID = channelEnd.channelID
        /\ packet.dstPortID = channelEnd.counterpartyPortID
        /\ packet.dstChannelID = channelEnd.counterpartyChannelID
-       \* if the "PacketAck" datagram can be verified 
-       /\ packetDatagram.proofHeight \in DOMAIN chain.counterpartyClientHeights 
+       \* if "PacketAck" datagram can be verified (i.e., proofHeight is installed)
+       /\ clientHeightTimestamp /= 0   
+       \* the "PacketAck" datagram was received after packet delay
+       /\ clientHeightTimestamp + delay < chain.timestamp  
     THEN \* if the channel is ordered and the packet sequence is nextAckSeq 
          LET newChainStore == 
              IF /\ channelEnd.order = "ORDERED"
@@ -143,11 +153,9 @@ HandlePacketAck(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                   ELSE chain IN
                   
          \* record the timestamp in the history variable
-         LET newDatagramTimestamp == 
-               [tID \in (DOMAIN datagramTimestamp \union {<<chainID, packetDatagram.proofHeight>>}) |->
-                    IF tID = <<chainID, packetDatagram.proofHeight>>
-                    THEN chain.timestamp
-                    ELSE datagramTimestamp[tID]] IN
+         LET newDatagramTimestamp == [datagramTimestamp EXCEPT 
+                ![<<chainID, packetDatagram.proofHeight>>] = chain.timestamp
+            ] IN
                                       
         [
             chainStore |-> newChainStore, 
@@ -375,5 +383,5 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Apr 15 18:54:38 CEST 2021 by ilinastoilkovska
+\* Last modified Fri Apr 16 11:52:20 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 15:12:41 CET 2020 by ilinastoilkovska

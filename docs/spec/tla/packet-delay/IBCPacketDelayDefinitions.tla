@@ -394,11 +394,9 @@ InitChainStore(ChainID, Heights, ChannelOrdering, MaxDelay) ==
         packetAcknowledgements |-> {},
         packetsToAcknowledge |-> <<>>        
     ] 
-
-\* add ChainStore, ChannelEnds, write type invariant    
     
 =============================================================================
 \* Modification History
-\* Last modified Thu Apr 15 18:50:37 CEST 2021 by ilinastoilkovska
+\* Last modified Fri Apr 16 10:39:11 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 14:06:33 CET 2020 by ilinastoilkovska
     

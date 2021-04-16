@@ -32,9 +32,9 @@ PacketUpdate(chainID, packetDatagram, log) ==
     \* get the new updated store, packet log
     LET packetUpdate == 
         IF packetDatagram.type = "PacketRecv"
-        THEN HandlePacketRecv(chainID, chainStore, packetDatagram, log, packetDatagramTimestamp)
+        THEN HandlePacketRecv(chainID, chainStore, packetDatagram, MaxDelay, log, packetDatagramTimestamp)
         ELSE IF packetDatagram.type = "PacketAck"
-             THEN HandlePacketAck(chainID, chainStore, packetDatagram, log, packetDatagramTimestamp)
+             THEN HandlePacketAck(chainID, chainStore, packetDatagram, MaxDelay, log, packetDatagramTimestamp)
              ELSE [chainStore |-> chainStore, 
                    packetLog |-> log,
                    datagramTimestamp |-> packetDatagramTimestamp]
@@ -151,8 +151,9 @@ TypeOK ==
     /\ chainStore \in ChainStores(Heights, ChannelOrdering, MaxPacketSeq)  
     /\ incomingPacketDatagrams \in Seq(Datagrams(Heights, MaxPacketSeq))
     /\ appPacketSeq \in Int      
+    /\ packetLog \in Seq(PacketLogEntries(Heights, MaxPacketSeq))
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Apr 15 18:50:29 CEST 2021 by ilinastoilkovska
+\* Last modified Fri Apr 16 11:49:19 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 13:52:13 CET 2020 by ilinastoilkovska

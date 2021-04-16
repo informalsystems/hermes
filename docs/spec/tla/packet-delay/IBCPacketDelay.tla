@@ -45,6 +45,8 @@ vars == <<chainAstore, chainBstore,
           outgoingPacketDatagrams, packetLog, 
           appPacketSeqChainA, appPacketSeqChainB,
           packetDatagramTimestamp>>
+          
+Heights == 1..MaxHeight
 
 (***************************************************************************
  Instances of Chain
@@ -79,24 +81,18 @@ GetChainByID(chainID) ==
 \* update the client height of the client for the counterparty chain of chainID
 UpdateClientHeights(chainID) ==
     /\ \/ /\ chainID = "chainA"
-          /\ chainBstore.height \notin DOMAIN chainAstore.counterpartyClientHeights
+          /\ chainAstore.counterpartyClientHeights[chainBstore.height] = 0
           /\ chainAstore' = [chainAstore EXCEPT 
-                              !.counterpartyClientHeights = 
-                                [h \in DOMAIN chainAstore.counterpartyClientHeights \union {chainBstore.height} |->
-                                    IF h = chainBstore.height
-                                    THEN chainAstore.timestamp
-                                    ELSE chainAstore.counterpartyClientHeights[h]],
+                              !.counterpartyClientHeights = [chainAstore.counterpartyClientHeights EXCEPT
+                                ![chainBstore.height] = chainAstore.timestamp], 
                               !.timestamp = chainAstore.timestamp + 1
                             ]
           /\ UNCHANGED chainBstore
        \/ /\ chainID = "chainB"
-          /\ chainAstore.height \notin DOMAIN chainBstore.counterpartyClientHeights
+          /\ chainBstore.counterpartyClientHeights[chainAstore.height] = 0  
           /\ chainBstore' = [chainBstore EXCEPT 
-                              !.counterpartyClientHeights = 
-                                [h \in DOMAIN chainBstore.counterpartyClientHeights \union {chainAstore.height} |->
-                                    IF h = chainAstore.height
-                                    THEN chainBstore.timestamp
-                                    ELSE chainBstore.counterpartyClientHeights[h]],
+                              !.counterpartyClientHeights = [chainBstore.counterpartyClientHeights EXCEPT
+                                ![chainAstore.height] = chainBstore.timestamp],
                               !.timestamp = chainBstore.timestamp + 1
                             ]
           /\ UNCHANGED chainAstore
@@ -202,7 +198,7 @@ SubmitDatagramOrInstallClientHeight(chainID) ==
         LET chainB == IF chainID = "chainB"
                       THEN [chainBstore EXCEPT 
                               !.counterpartyClientHeights = 
-                                  [chainAstore.counterpartyClientHeights EXCEPT 
+                                  [chainBstore.counterpartyClientHeights EXCEPT 
                                     ![packetDatagram.proofHeight] = chainBstore.timestamp],
                               !.timestamp = chainBstore.timestamp + 1
                             ]
@@ -287,7 +283,7 @@ Init ==
     /\ ChainB!Init
     /\ outgoingPacketDatagrams = [chainID \in ChainIDs |-> <<>>] 
     /\ packetLog = <<>>    
-    /\ packetDatagramTimestamp = [x \in {} |-> 0]
+    /\ packetDatagramTimestamp = [<<chainID, h>> \in ChainIDs \X Heights |-> 0]
     
 \* Next state action
 Next ==
@@ -305,15 +301,17 @@ Spec == Init /\ [][Next]_vars
 TypeOK ==
     /\ ChainA!TypeOK
     /\ ChainB!TypeOK
+    /\ outgoingPacketDatagrams \in [ChainIDs -> Seq(Datagrams(Heights, MaxPacketSeq))]
+    /\ packetDatagramTimestamp \in [ChainIDs \X Heights -> Int]   
 
 \* each packet datagam is processed at time t (stored in packetDatagramTimestamp), 
 \* such that t >= ht + delay, where 
 \* ht is the time when the client height is installed  
 PacketDatagramsDelay ==
     \A chainID \in ChainIDs : 
-        \A h \in 1..MaxHeight :
+        \A h \in Heights :
             /\ GetChainByID(chainID).counterpartyClientHeights[h] /= 0
-            /\ <<chainID, h>> \in DOMAIN packetDatagramTimestamp
+            /\ packetDatagramTimestamp[<<chainID, h>>] /= 0
             =>
             packetDatagramTimestamp[<<chainID, h>>] >= GetChainByID(chainID).counterpartyClientHeights[h] + MaxDelay
 
@@ -323,5 +321,5 @@ Inv ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Apr 15 18:53:41 CEST 2021 by ilinastoilkovska
+\* Last modified Fri Apr 16 11:24:33 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 13:44:21 CET 2020 by ilinastoilkovska
