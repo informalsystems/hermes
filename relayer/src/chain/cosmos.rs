@@ -31,7 +31,7 @@ use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics07_tendermint::client_state::ClientState;
+use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TmHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
@@ -1196,17 +1196,19 @@ impl Chain for CosmosSdkChain {
 
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
-        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
+        Ok(ClientState::new(
             self.id().clone(),
             self.config.trust_threshold,
             self.config.trusting_period,
             self.unbonding_period()?,
-            Duration::from_millis(3000), // TODO - get it from src config when avail
+            self.config.clock_drift,
             height,
             ICSHeight::zero(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
-            false,
-            false,
+            AllowUpdate {
+                after_expiry: true,
+                after_misbehaviour: true,
+            },
         )
         .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
     }

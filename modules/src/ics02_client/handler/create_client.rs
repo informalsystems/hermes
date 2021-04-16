@@ -70,7 +70,7 @@ mod tests {
     use crate::ics02_client::handler::{dispatch, ClientResult};
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
-    use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
@@ -232,8 +232,10 @@ mod tests {
             max_clock_drift: Duration::from_millis(3000),
             latest_height: Height::new(0, u64::from(tm_header.height)),
             frozen_height: Height::zero(),
-            allow_update_after_expiry: false,
-            allow_update_after_misbehaviour: false,
+            allow_update: AllowUpdate {
+                after_expiry: false,
+                after_misbehaviour: false,
+            },
             upgrade_path: vec!["".to_string()],
         });
 

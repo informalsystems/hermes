@@ -51,11 +51,14 @@ class TxUpdateClient(Cmd[ClientUpdated]):
 
 # -----------------------------------------------------------------------------
 
+@dataclass
+class AllowUpdate:
+    after_expiry: bool
+    after_misbehaviour: bool
+
 
 @dataclass
 class ClientState:
-    allow_update_after_expiry: bool
-    allow_update_after_misbehaviour: bool
     chain_id: ChainId
     frozen_height: Height
     latest_height: Height
@@ -64,6 +67,7 @@ class ClientState:
     trusting_period: Duration
     unbonding_period: Duration
     upgrade_path: List[str]
+    allow_update: AllowUpdate
 
 
 @dataclass
