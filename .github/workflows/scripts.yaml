@@ -1,5 +1,13 @@
-name: Scripts
-on: [pull_request]
+name: ShellCheck Scripts
+on:
+  pull_request:
+    paths:
+      - scripts/**
+  push:
+    branches: master
+    paths:
+      - scripts/**
+
 jobs:
   shellcheck:
     runs-on: ubuntu-latest
@@ -7,4 +15,5 @@ jobs:
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
       with:
-        additional_files: 'dev-env one-chain'
+        scandir: './scripts'
+        additional_files: 'scripts/dev-env scripts/one-chain scripts/init-hermes'

@@ -2,14 +2,14 @@
 
 (***************************************************************************
  A TLA+ specification of the IBC Core protocols (ICS02, ICS03, ICS04, ICS18).
- This module is the main module in the specification and models a   
- system consisting of two chains and two relayers. 
- 
- The model allows to express concurrency aspects of a system with multiple 
- (correct) relayers. The specification is written in a modular way, in order 
- to facilitate future formal verification of properties and invariants in 
+ This module is the main module in the specification and models a
+ system consisting of two chains and two relayers.
+
+ The model allows to express concurrency aspects of a system with multiple
+ (correct) relayers. The specification is written in a modular way, in order
+ to facilitate future formal verification of properties and invariants in
  an adversarial setting.
- 
+
  The specification also contains type annotations for the model checker
  Apalache.
  ***************************************************************************)

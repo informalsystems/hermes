@@ -4,7 +4,7 @@ This guide can help you setup, configure, and operate Hermes to transfer
 packets between two IBC enabled chains.
 
 ## Sections
----
+
 **[What is Hermes](./relayer.md)**
 
 - Explains what Hermes is about.
@@ -38,10 +38,12 @@ packets between two IBC enabled chains.
 ---
 
 **Other References and Useful Links:**
-* [Hermes Github repository](https://github.com/informalsystems/ibc-rs) — The
-  official Github repository for Hermes.
-* [IBC Github repository](https://github.com/cosmos/ics) - The official
-  repository for the Inter-blockchain protocol (IBC).
+
+* [Hermes Github repository](https://github.com/informalsystems/ibc-rs)
+  — The official Github repository for Hermes.
+* [IBC Github repository](https://github.com/cosmos/ics)
+  - The official repository for the Inter-blockchain protocol (IBC).
 
 ## Disclaimer
+
 This project is undergoing heavy development, use at your own risk.
