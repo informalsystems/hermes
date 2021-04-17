@@ -1,4 +1,4 @@
-name: Deploy Hermes Guide
+name: Hermes Guide
 
 on:
   push:
@@ -6,9 +6,12 @@ on:
       - master
     paths:
       - guide/**
+  pull_request:
+    paths:
+      - guide/**
 
 jobs:
-  deploy:
+  guide:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -35,8 +38,10 @@ jobs:
           cd guide
           mdbook build
 
+      # Only deploy guide when pushing to master
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./guide/book
