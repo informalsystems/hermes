@@ -128,7 +128,7 @@ Init ==
     /\ chainStore = InitChainStore(ChainID, Heights, ChannelOrdering, MaxDelay)
     /\ incomingPacketDatagrams = <<>>
     /\ appPacketSeq = 1
-    
+   
 \* Next state action
 \* The chain either
 \*  - advances its height
@@ -155,5 +155,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Apr 16 11:49:19 CEST 2021 by ilinastoilkovska
+\* Last modified Mon Apr 19 15:44:24 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 13:52:13 CET 2020 by ilinastoilkovska

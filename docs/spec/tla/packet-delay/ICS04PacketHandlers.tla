@@ -7,7 +7,7 @@ EXTENDS Integers, FiniteSets, Sequences, IBCPacketDelayDefinitions
  ***************************************************************************)
 
 \* Handle "PacketRecv" datagrams
-(* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY), <<Str, Int>> -> Int) => 
+(* @type: (Str, CHAINSTORE, DATAGRAM, Int, Seq(LOGENTRY), <<Str, Int>> -> Int) => 
             [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY), datagramTimestamp: <<Str, Int>> -> Int];
 *)
 HandlePacketRecv(chainID, chain, packetDatagram, delay, log, datagramTimestamp) ==
@@ -103,7 +103,7 @@ HandlePacketRecv(chainID, chain, packetDatagram, delay, log, datagramTimestamp) 
 
     
 \* Handle "PacketAck" datagrams    
-(* @type: (Str, CHAINSTORE, DATAGRAM, Seq(LOGENTRY), <<Str, Int>> -> Int) => 
+(* @type: (Str, CHAINSTORE, DATAGRAM, Int, Seq(LOGENTRY), <<Str, Int>> -> Int) => 
             [chainStore: CHAINSTORE, packetLog: Seq(LOGENTRY), datagramTimestamp: <<Str, Int>> -> Int];
 *)
 HandlePacketAck(chainID, chain, packetDatagram, delay, log, datagramTimestamp) ==
@@ -383,5 +383,5 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Apr 16 11:52:20 CEST 2021 by ilinastoilkovska
+\* Last modified Mon Apr 19 15:46:42 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 15:12:41 CET 2020 by ilinastoilkovska

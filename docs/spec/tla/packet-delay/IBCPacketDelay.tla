@@ -65,14 +65,14 @@ ChainB == INSTANCE Chain
           WITH ChainID <- "chainB",
                chainStore <- chainBstore,
                incomingPacketDatagrams <- packetDatagramsChainB,
-               appPacketSeq <- appPacketSeqChainB   
-               
+               appPacketSeq <- appPacketSeqChainB         
 
  (***************************************************************************
  Environment operators
  ***************************************************************************)
 
 \* get chain store by ID
+\* @type: (Str) => CHAINSTORE;
 GetChainByID(chainID) ==
     IF chainID = "chainA"
     THEN chainAstore
@@ -150,6 +150,13 @@ PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
                         
 \* submit a packet datagram if a delay has passed 
 \* or install the appropriate height if it is missing
+(* @type: (Str) => 
+[
+    datagramsChainA: Seq(DATAGRAM), datagramsChainB: Seq(DATAGRAM), 
+    outgoingDatagrams: Str -> Seq(DATAGRAM), 
+    chainA: CHAINSTORE, chainB: CHAINSTORE
+];
+*)
 SubmitDatagramOrInstallClientHeight(chainID) == 
     LET packetDatagram == Head(outgoingPacketDatagrams[chainID]) IN
     LET chain == GetChainByID(chainID) IN
@@ -315,11 +322,11 @@ PacketDatagramsDelay ==
             =>
             packetDatagramTimestamp[<<chainID, h>>] >= GetChainByID(chainID).counterpartyClientHeights[h] + MaxDelay
 
-\* a conjnction of all invariants
+\* a conjunction of all invariants
 Inv ==
     /\ PacketDatagramsDelay
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Apr 16 11:24:33 CEST 2021 by ilinastoilkovska
+\* Last modified Mon Apr 19 15:43:40 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 13:44:21 CET 2020 by ilinastoilkovska

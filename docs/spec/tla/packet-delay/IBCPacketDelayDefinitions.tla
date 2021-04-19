@@ -127,6 +127,7 @@ Max(S) == CHOOSE x \in S: \A y \in S: y <= x
       
     Note: we omit channel versions and connection hops.
  ***************************************************************************)   
+\* @type: (Str, Int) => Set(CHAN);
 ChannelEnds(channelOrdering, maxPacketSeq) ==
     IF channelOrdering = "UNORDERED"
     THEN \* set of unordered channels
@@ -154,6 +155,7 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
 
 (******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********)
 \* Set of packet commitments
+\* @type: (Set(Int), Int) => Set(PACKETCOMM);
 PacketCommitments(Heights, maxPacketSeq) ==
     [
         channelID : ChannelIDs,
@@ -163,6 +165,7 @@ PacketCommitments(Heights, maxPacketSeq) ==
     ] 
 
 \* Set of packet receipts
+\* @type: (Int) => Set(PACKETREC);
 PacketReceipts(maxPacketSeq) ==
     [
         channelID : ChannelIDs, 
@@ -171,6 +174,7 @@ PacketReceipts(maxPacketSeq) ==
     ]
     
 \* Set of packet acknowledgements
+\* @type: (Int) => Set(PACKETACK);
 PacketAcknowledgements(maxPacketSeq) ==
     [
         channelID : ChannelIDs, 
@@ -181,6 +185,7 @@ PacketAcknowledgements(maxPacketSeq) ==
 
 (********************************* Packets *********************************)
 \* Set of packets
+\* @type: (Set(Int), Int) => Set(PACKET);
 Packets(Heights, maxPacketSeq) ==
     [
         sequence : 1..maxPacketSeq,
@@ -222,6 +227,7 @@ Packets(Heights, maxPacketSeq) ==
         
     A chain store is the combination of the provable and private stores.
  ***************************************************************************)
+\* @type: (Set(Int), Str, Int) => Set(CHAINSTORE);
 ChainStores(Heights, channelOrdering, maxPacketSeq) ==    
     [
         height : Heights,
@@ -236,6 +242,7 @@ ChainStores(Heights, channelOrdering, maxPacketSeq) ==
 
 (******************************** Datagrams ********************************)
 \* Set of datagrams (we consider only packet datagrams)
+\* @type: (Set(Int), Int) => Set(DATAGRAM);
 Datagrams(Heights, maxPacketSeq) ==
     [
         type : {"PacketRecv"}, 
@@ -254,6 +261,7 @@ NullDatagram ==
     
 (**************************** PacketLogEntries *****************************)
 \* Set of packet log entries
+\* @type: (Set(Int), Int) => Set(LOGENTRY);
 PacketLogEntries(Heights, maxPacketSeq) == 
     [
         type : {"PacketSent"},
@@ -287,6 +295,7 @@ NullPacketLogEntry ==
  ***************************************************************************)
 
 \* get the ID of chainID's counterparty chain    
+\* @type: (Str) => Str;
 GetCounterpartyChainID(chainID) ==
     IF chainID = "chainA" THEN "chainB" ELSE "chainA"     
       
@@ -298,6 +307,7 @@ GetMaxCounterpartyClientHeight(chain) ==
     ELSE nullHeight     
      
 \* get the channel ID of the channel end at chainID
+\* @type: (Str) => Str;
 GetChannelID(chainID) ==
     IF chainID = "chainA"
     THEN "chanAtoB"
@@ -306,6 +316,7 @@ GetChannelID(chainID) ==
          ELSE nullChannelID
          
 \* get the channel ID of the channel end at chainID's counterparty chain
+\* @type: (Str) => Str;
 GetCounterpartyChannelID(chainID) ==
     IF chainID = "chainA"
     THEN "chanBtoA"
@@ -314,6 +325,7 @@ GetCounterpartyChannelID(chainID) ==
          ELSE nullChannelID 
      
 \* get the port ID at chainID
+\* @type: (Str) => Str;
 GetPortID(chainID) ==
     IF chainID = "chainA"
     THEN "portA"
@@ -322,6 +334,7 @@ GetPortID(chainID) ==
          ELSE nullPortID      
    
 \* get the port ID at chainID's counterparty chain
+\* @type: (Str) => Str;
 GetCounterpartyPortID(chainID) ==
     IF chainID = "chainA"
     THEN "portB"
@@ -341,6 +354,7 @@ GetLatestHeight(chain) ==
 \*      - state is "OPEN" (we assume channel handshake has successfully finished)
 \*      - order is "UNORDERED"
 \*      - portID, channelID, counterpartyPortID, counterpartyChannelID depend on ChainID
+\* @type: (Str) => CHAN;
 InitUnorderedChannelEnd(ChainID) ==
     [
         state |-> "OPEN",
@@ -356,6 +370,7 @@ InitUnorderedChannelEnd(ChainID) ==
 \*      - order is "ORDERED"
 \*      - nextSendSeq, nextRcvSeq, nextAckSeq are set to 0
 \*      - portID, channelID, counterpartyPortID, counterpartyChannelID depend on ChainID
+\* @type: (Str) => CHAN;
 InitOrderedChannelEnd(ChainID) ==
     [   
         state |-> "OPEN",
@@ -367,9 +382,10 @@ InitOrderedChannelEnd(ChainID) ==
         channelID |-> GetChannelID(ChainID),
         counterpartyPortID |-> GetCounterpartyPortID(ChainID),
         counterpartyChannelID |-> GetCounterpartyChannelID(ChainID)
-    ]      
+    ]     
 
 \* Initial value of a channel end, based on the channel ordering
+\* @type: (Str, Str) => CHAN;
 InitChannelEnd(ChainID, ChannelOrdering) ==
     IF ChannelOrdering = "ORDERED"
     THEN InitOrderedChannelEnd(ChainID)
@@ -382,6 +398,7 @@ InitChannelEnd(ChainID, ChannelOrdering) ==
 \*      - the channel end is initialized to InitChannelEnd 
 \*      - the packet committments, receipts, acknowledgements, and packets  
 \*        to acknowledge are empty
+\* @type: (Str, Set(Int), Str, Int) => CHAINSTORE;
 InitChainStore(ChainID, Heights, ChannelOrdering, MaxDelay) == 
     [
         height |-> 1,
@@ -397,6 +414,6 @@ InitChainStore(ChainID, Heights, ChannelOrdering, MaxDelay) ==
     
 =============================================================================
 \* Modification History
-\* Last modified Fri Apr 16 10:39:11 CEST 2021 by ilinastoilkovska
+\* Last modified Mon Apr 19 15:46:15 CEST 2021 by ilinastoilkovska
 \* Created Thu Dec 10 14:06:33 CET 2020 by ilinastoilkovska
     
