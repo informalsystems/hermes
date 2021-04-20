@@ -5,7 +5,7 @@
 ### FEATURES
 
 - [ibc-relayer]
-  - Support for ICS27 restart ([#794])
+  - Support for ICS27 ([#794])
 
 ### IMPROVEMENTS
 
