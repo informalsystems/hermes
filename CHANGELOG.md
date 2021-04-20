@@ -2,6 +2,11 @@
 
 > [TODO: high level summary]
 
+### FEATURES
+
+- [ibc-relayer]
+  - Support for ICS27 restart ([#794])
+
 ### IMPROVEMENTS
 
 - [ibc-relayer]
@@ -16,8 +21,8 @@
 
 > Nothing yet.
 
-
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
+[#794]: https://github.com/informalsystems/ibc-rs/issues/794
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
 
 
