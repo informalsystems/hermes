@@ -385,7 +385,7 @@ GetLatestHeight(chain) ==
     chain.height
 
 (***************************************************************************
- Initial values of a channel end, chain store, accounts for ICS02
+ Initial values of a channel end, chain store, accounts for ICS20
  ***************************************************************************)
 \* Initial value of a channel end:
 \*      - state is "OPEN" (we assume channel handshake has successfully finished)
