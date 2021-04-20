@@ -470,7 +470,7 @@ pub struct ChannelResult {
             )
         )
         && !msg.channel().version.is_empty())
-    .implies(match ret {
+    .implies(match &ret {
         Ok(output) => {
             output.result.channel_end.state.eq(&State::Init)
                 && matches!(
@@ -481,6 +481,9 @@ pub struct ChannelResult {
         }
         _ => false,
     })
+    && msg.channel().version.is_empty().implies(
+        matches!(&ret, Err(_))
+    )
 )]
 
 pub fn process(
