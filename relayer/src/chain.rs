@@ -186,6 +186,8 @@ pub trait Chain: Sized {
         // TODO - query the chain, currently hardcoded
         if port_id.as_str() == "transfer" {
             "ics20-1".to_string()
+        } else if port_id.as_str() == "ibcaccount" {
+            "ics27-1".to_string()
         } else {
             "".to_string()
         }

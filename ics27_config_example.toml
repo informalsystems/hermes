@@ -1,0 +1,51 @@
+[global]
+strategy = 'naive'
+log_level = 'trace'
+
+[[chains]]
+id = 'test-1'
+rpc_addr = 'http://127.0.0.1:16657'
+grpc_addr = 'http://127.0.0.1:8090'
+websocket_addr = 'ws://127.0.0.1:16657/websocket'
+rpc_timeout = '10s'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 3000000
+fee_denom = 'stake'
+fee_amount = 10
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[[chains]]
+id = 'test-2'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://127.0.0.1:26657/websocket'
+rpc_timeout = '10s'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 3000000
+fee_denom = 'stake'
+fee_amount = 10
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[[connections]]
+a_chain = 'test-1'
+b_chain = 'test-2'
+
+[[connections.paths]]
+a_port = 'ibcaccount'
+b_port = 'ibcaccount'
+ordering = 'Ordered'
+
