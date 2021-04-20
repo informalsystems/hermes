@@ -455,34 +455,32 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
-#[pre(
-  msg.channel().connection_hops().len() == 1 &&
-  matches!(
-    msg.channel().connection_hops().first(),
-    Option::Some(f) if f.eq(&ctx.connection_id)
-  ) &&
-  msg.port_id().eq(&ctx.port_id) &&
-  ctx.connection_end.versions.len() == 1 &&
-  matches!(
-    ctx.connection_end.versions.first(),
-    Option::Some(v) if v.is_supported_feature(
-        msg.channel().ordering().as_string().to_string()
-    )
-  ) &&
-  !msg.channel().version.is_empty()
-)]
 #[post(
-  match ret {
-    Ok(output) => {
-      output.result.channel_end.state.eq(&State::Init)
+    (msg.channel().connection_hops().len() == 1
         && matches!(
-          (output.result.channel_end.connection_hops().first(),
-            msg.channel().connection_hops().first()),
-          (Option::Some(o), Option::Some(m)) if o.eq(m)
+            msg.channel().connection_hops().first(),
+            Option::Some(f) if f.eq(&ctx.connection_id)
         )
-    }
-    _ => false,
-  }
+        && msg.port_id().eq(&ctx.port_id)
+        && ctx.connection_end.versions.len() == 1
+        && matches!(
+            ctx.connection_end.versions.first(),
+            Option::Some(v) if v.is_supported_feature(
+                msg.channel().ordering().as_string().to_string()
+            )
+        )
+        && !msg.channel().version.is_empty())
+    .implies(match ret {
+        Ok(output) => {
+            output.result.channel_end.state.eq(&State::Init)
+                && matches!(
+                  (output.result.channel_end.connection_hops().first(),
+                    msg.channel().connection_hops().first()),
+                  (Option::Some(o), Option::Some(m)) if o.eq(m)
+                )
+        }
+        _ => false,
+    })
 )]
 
 pub fn process(
