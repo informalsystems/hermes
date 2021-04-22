@@ -1385,11 +1385,9 @@ async fn abci_query(
         return Err(Kind::EmptyResponseProof.into());
     }
 
-    let raw_proof_ops = response.proof;
-
     let response = QueryResponse {
         value: response.value,
-        proof: convert_tm_to_ics_merkle_proof(raw_proof_ops).unwrap(), // FIXME
+        proof: convert_tm_to_ics_merkle_proof(response.proof).unwrap(), // FIXME
         height: response.height,
     };
 
