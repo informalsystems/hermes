@@ -3,7 +3,9 @@ on:
   pull_request:
     paths: Cargo.lock
   push:
-    branches: master
+    branches:
+      - master
+      - adi/ics23_reinstate
     paths: Cargo.lock
 #  schedule:
 #    - cron: '0 0 * * *'
