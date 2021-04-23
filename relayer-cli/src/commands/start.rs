@@ -66,7 +66,7 @@ impl Runnable for StartCmd {
                         }
                     }
                     None => {
-                        Output::error(format!("No connections configured for {:?}", self)).exit()
+                        Output::error(format!("No paths configured for {:?}", self)).exit()
                     }
                 }
             }
