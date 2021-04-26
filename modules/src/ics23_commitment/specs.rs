@@ -25,17 +25,19 @@ impl ProofSpecs {
     }
 }
 
-/// Converts from the domain-type (which is represented as an array of `ics23::ProofSpec` from
-/// crate `ics23`) to the corresponding proto type.
+/// Converts from the domain type (which is represented as a vector of `ics23::ProofSpec`
+/// to the corresponding proto type (vector of `ibc_proto::ProofSpec`).
+/// TODO: fix with https://github.com/informalsystems/ibc-rs/issues/853
 impl From<ProofSpecs> for Vec<ProtoProofSpec> {
     fn from(domain_specs: ProofSpecs) -> Self {
         let mut raw_specs = vec![];
         for ds in domain_specs.specs.iter() {
-            // Convert by encoding, then decoding into the destination type.
-            let mut b = Vec::new();
-            prost::Message::encode(ds, &mut b).unwrap(); // TODO(Adi): Fix unwraps.
-            let c: ProtoProofSpec = prost::Message::decode(&*b).unwrap();
-            raw_specs.push(c);
+            // Both `ProofSpec` types implement trait `prost::Message`. Convert by encoding, then
+            // decoding into the destination type.
+            let mut encoded = Vec::new();
+            prost::Message::encode(ds, &mut encoded).unwrap();
+            let decoded: ProtoProofSpec = prost::Message::decode(&*encoded).unwrap();
+            raw_specs.push(decoded);
         }
         raw_specs
     }
