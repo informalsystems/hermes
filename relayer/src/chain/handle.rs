@@ -24,17 +24,19 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
-use ibc_proto::ibc::core::client::v1::{IdentifiedClientState, QueryClientStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
 
 use crate::connection::ConnectionMsgType;
 use crate::keyring::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::query::QueryTxRequest;
 
 mod prod;
@@ -117,7 +119,7 @@ pub enum ChainRequest {
 
     QueryClients {
         request: QueryClientStatesRequest,
-        reply_to: ReplyTo<Vec<IdentifiedClientState>>,
+        reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
     },
 
     QueryClientState {
@@ -153,6 +155,11 @@ pub enum ChainRequest {
         connection_id: ConnectionId,
         height: Height,
         reply_to: ReplyTo<ConnectionEnd>,
+    },
+
+    QueryChannels {
+        request: QueryChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     },
 
     QueryChannel {
@@ -287,6 +294,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error>;
+
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
     fn query_channel(
         &self,

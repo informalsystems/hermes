@@ -24,9 +24,7 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::client::v1::{
-    IdentifiedClientState, QueryClientStatesRequest, QueryConsensusStatesRequest,
-};
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
@@ -48,6 +46,9 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
 };
+use ibc::ics02_client::client_state::IdentifiedAnyClientState;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
@@ -246,6 +247,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
                             self.query_connection(connection_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryChannels { request, reply_to }) => {
+                            self.query_channels(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
@@ -504,7 +509,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
-        reply_to: ReplyTo<Vec<IdentifiedClientState>>,
+        reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let clients = self.chain.query_clients(request);
 
@@ -593,6 +598,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(connection_end)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_channels(request);
+
+        reply_to
+            .send(result)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())

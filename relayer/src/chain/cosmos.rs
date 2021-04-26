@@ -25,10 +25,10 @@ use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
 };
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -56,9 +56,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{
-    IdentifiedClientState, QueryClientStatesRequest, QueryConsensusStatesRequest,
-};
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -492,7 +490,7 @@ impl Chain for CosmosSdkChain {
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
-    ) -> Result<Vec<IdentifiedClientState>, Error> {
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
         crate::time!("query_chain_clients");
 
         let mut client = self
@@ -509,7 +507,13 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        Ok(response.client_states)
+        let clients = response
+            .client_states
+            .into_iter()
+            .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
+            .collect();
+
+        Ok(clients)
     }
 
     fn query_client_state(
@@ -767,7 +771,10 @@ impl Chain for CosmosSdkChain {
         Ok(vec_ids)
     }
 
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -785,16 +792,12 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
-        let ids = response
+        let channels = response
             .channels
-            .iter()
-            .filter_map(|ch| ChannelId::from_str(ch.channel_id.as_str()).ok())
+            .into_iter()
+            .filter_map(|c| IdentifiedChannelEnd::try_from(c).ok())
             .collect();
-
-        Ok(ids)
+        Ok(channels)
     }
 
     fn query_channel(

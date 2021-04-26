@@ -11,9 +11,9 @@ use tokio::runtime::Runtime;
 use ibc::downcast;
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
@@ -32,9 +32,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{
-    IdentifiedClientState, QueryClientStatesRequest, QueryConsensusStatesRequest,
-};
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -133,7 +131,7 @@ impl Chain for MockChain {
     fn query_clients(
         &self,
         _request: QueryClientStatesRequest,
-    ) -> Result<Vec<IdentifiedClientState>, Error> {
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
         unimplemented!()
     }
 
@@ -189,7 +187,10 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_channels(&self, _request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
+    fn query_channels(
+        &self,
+        _request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         unimplemented!()
     }
 

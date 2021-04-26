@@ -8,11 +8,11 @@ use tokio::runtime::Runtime as TokioRuntime;
 pub use cosmos::CosmosSdkChain;
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
-use ibc::ics02_client::client_state::ClientState;
+use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::header::Header;
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -25,9 +25,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{
-    IdentifiedClientState, QueryClientStatesRequest, QueryConsensusStatesRequest,
-};
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -129,7 +127,7 @@ pub trait Chain: Sized {
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
-    ) -> Result<Vec<IdentifiedClientState>, Error>;
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
     fn query_client_state(
         &self,
@@ -177,7 +175,10 @@ pub trait Chain: Sized {
     ) -> Result<Vec<ChannelId>, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels.
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
     fn query_channel(
         &self,

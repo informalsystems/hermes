@@ -3,7 +3,7 @@ use std::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::{Chain, CosmosSdkChain};
 
@@ -50,7 +50,7 @@ impl Runnable for QueryAllClientsCmd {
 
         match res {
             Ok(cids) => {
-                let client_ids: Vec<String> = cids.into_iter().map(|cs| cs.client_id).collect();
+                let client_ids: Vec<ClientId> = cids.into_iter().map(|cs| cs.client_id).collect();
                 Output::success(client_ids).exit()
             }
             Err(e) => Output::error(format!("{}", e)).exit(),

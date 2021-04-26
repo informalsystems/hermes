@@ -125,26 +125,26 @@ impl Supervisor {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        for chain in [self.chains.a.clone(), self.chains.b.clone()].iter() {
-            let clients: Vec<IdentifiedAnyClientState> = chain
-                .query_clients(req.clone())?
+        for chains in [self.chains.clone(), self.chains.clone().swap()].iter() {
+            let all_clients: Vec<IdentifiedAnyClientState> = chains.a.query_clients(req.clone())?;
+
+            let clients: Vec<IdentifiedAnyClientState> = all_clients
                 .into_iter()
-                .filter(|c| c.client_state.chain_id() == self.chains.b.id())
+                .filter(|c| c.client_state.chain_id() == chains.b.id())
                 .collect();
 
             for client in clients {
                 let client_object = Object::Client(Client {
-                    dst_chain_id: chain.id(),
+                    dst_chain_id: chains.a.id(),
                     src_chain_id: client.client_state.chain_id(),
                     dst_client_id: client.client_id,
                 });
-                let worker = Worker::spawn(self.chains.clone(), client_object.clone());
+                let worker = Worker::spawn(chains.clone(), client_object.clone());
                 self.workers.entry(client_object).or_insert(worker);
             }
         }
         Ok(())
     }
-
 
     fn create_workers(&mut self) -> Result<(), BoxError> {
         self.create_client_workers()?;

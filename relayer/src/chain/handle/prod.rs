@@ -23,8 +23,9 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -36,7 +37,7 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
-use std::convert::TryFrom;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -110,13 +111,7 @@ impl ChainHandle for ProdChainHandle {
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-        let raw_clients = self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })?;
-        let clients = raw_clients
-            .into_iter()
-            .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
-            .collect();
-
-        Ok(clients)
+        self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })
     }
 
     fn query_client_state(
@@ -177,6 +172,13 @@ impl ChainHandle for ProdChainHandle {
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error> {
         self.send(|reply_to| ChainRequest::QueryNextSequenceReceive { request, reply_to })
+    }
+
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+        self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })
     }
 
     fn query_channel(
