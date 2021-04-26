@@ -1,5 +1,5 @@
 use core::marker::{Send, Sync};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use prost_types::Any;
 use serde::Serialize;
@@ -9,10 +9,11 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 
 use crate::ics07_tendermint::client_state;
-use crate::ics24_host::identifier::ChainId;
+use crate::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
 use crate::Height;
+use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
@@ -135,6 +136,41 @@ impl ClientState for AnyClientState {
 
     fn wrap_any(self) -> AnyClientState {
         self
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type")]
+pub struct IdentifiedAnyClientState {
+    pub client_id: ClientId,
+    pub client_state: AnyClientState,
+}
+
+impl Protobuf<IdentifiedClientState> for IdentifiedAnyClientState {}
+
+impl TryFrom<IdentifiedClientState> for IdentifiedAnyClientState {
+    type Error = Error;
+
+    fn try_from(raw: IdentifiedClientState) -> Result<Self, Self::Error> {
+        Ok(IdentifiedAnyClientState {
+            client_id: raw
+                .client_id
+                .parse()
+                .map_err(|_| Kind::InvalidRawClientId)?,
+            client_state: raw
+                .client_state
+                .ok_or(Kind::InvalidRawClientState)?
+                .try_into()?,
+        })
+    }
+}
+
+impl From<IdentifiedAnyClientState> for IdentifiedClientState {
+    fn from(value: IdentifiedAnyClientState) -> Self {
+        IdentifiedClientState {
+            client_id: value.client_id.to_string(),
+            client_state: Some(value.client_state.into()),
+        }
     }
 }
 

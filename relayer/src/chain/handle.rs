@@ -6,7 +6,7 @@ use dyn_clone::DynClone;
 use serde::{Serialize, Serializer};
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::{
@@ -27,8 +27,8 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
+use ibc_proto::ibc::core::client::v1::{IdentifiedClientState, QueryClientStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
 
@@ -117,7 +117,7 @@ pub enum ChainRequest {
 
     QueryClients {
         request: QueryClientStatesRequest,
-        reply_to: ReplyTo<Vec<ClientId>>,
+        reply_to: ReplyTo<Vec<IdentifiedClientState>>,
     },
 
     QueryClientState {
@@ -247,7 +247,10 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
     fn query_client_state(
         &self,

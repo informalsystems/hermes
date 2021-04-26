@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crossbeam_channel as channel;
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -36,6 +36,7 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
+use std::convert::TryFrom;
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -105,8 +106,17 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
     }
 
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
-        self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
+        let raw_clients = self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })?;
+        let clients = raw_clients
+            .into_iter()
+            .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
+            .collect();
+
+        Ok(clients)
     }
 
     fn query_client_state(

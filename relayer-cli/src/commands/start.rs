@@ -65,9 +65,7 @@ impl Runnable for StartCmd {
                             Err(e) => Output::error(e.to_string()).exit(),
                         }
                     }
-                    None => {
-                        Output::error(format!("No paths configured for {:?}", self)).exit()
-                    }
+                    None => Output::error(format!("No paths configured for {:?}", self)).exit(),
                 }
             }
             _ => Output::error(format!(

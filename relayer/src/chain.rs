@@ -25,7 +25,9 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::client::v1::{
+    IdentifiedClientState, QueryClientStatesRequest, QueryConsensusStatesRequest,
+};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -124,7 +126,10 @@ pub trait Chain: Sized {
     fn query_latest_height(&self) -> Result<ICSHeight, Error>;
 
     /// Performs a query to retrieve the identifiers of all clients associated with a chain.
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedClientState>, Error>;
 
     fn query_client_state(
         &self,

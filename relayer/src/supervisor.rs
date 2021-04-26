@@ -27,8 +27,10 @@ use crate::{
     link::{Link, LinkParameters},
 };
 use ibc::events::VecIbcEvents;
+use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics24_host::identifier::ClientId;
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use std::time::Instant;
 
 /// A command for a [`Worker`].
@@ -118,10 +120,43 @@ impl Supervisor {
         })
     }
 
+    fn create_client_workers(&mut self) -> Result<(), BoxError> {
+        let req = QueryClientStatesRequest {
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        };
+
+        for chain in [self.chains.a.clone(), self.chains.b.clone()].iter() {
+            let clients: Vec<IdentifiedAnyClientState> = chain
+                .query_clients(req.clone())?
+                .into_iter()
+                .filter(|c| c.client_state.chain_id() == self.chains.b.id())
+                .collect();
+
+            for client in clients {
+                let client_object = Object::Client(Client {
+                    dst_chain_id: chain.id(),
+                    src_chain_id: client.client_state.chain_id(),
+                    dst_client_id: client.client_id,
+                });
+                let worker = Worker::spawn(self.chains.clone(), client_object.clone());
+                self.workers.entry(client_object).or_insert(worker);
+            }
+        }
+        Ok(())
+    }
+
+
+    fn create_workers(&mut self) -> Result<(), BoxError> {
+        self.create_client_workers()?;
+        Ok(())
+    }
+
     /// Run the supervisor event loop.
     pub fn run(mut self) -> Result<(), BoxError> {
         let subscription_a = self.chains.a.subscribe()?;
         let subscription_b = self.chains.b.subscribe()?;
+
+        self.create_workers()?;
 
         loop {
             for batch in subscription_a.try_iter() {
@@ -658,8 +693,6 @@ fn get_counterparty_chain(
         "getting counterparty chain"
     );
 
-    use ibc::ics02_client::client_state::ClientState;
-
     let src_channel = src_chain.query_channel(src_port_id, src_channel_id, Height::zero())?;
     if src_channel.state_matches(&ChannelState::Uninitialized) {
         return Err(format!("missing channel '{}' on source chain", src_channel_id).into());
@@ -690,8 +723,6 @@ fn get_client_target_chain(
     host_chain: &dyn ChainHandle,
     client_id: &ClientId,
 ) -> Result<ChainId, BoxError> {
-    use ibc::ics02_client::client_state::ClientState;
-
     let client_state = host_chain.query_client_state(client_id, Height::zero())?;
 
     trace!(

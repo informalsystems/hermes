@@ -32,7 +32,9 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::client::v1::{
+    IdentifiedClientState, QueryClientStatesRequest, QueryConsensusStatesRequest,
+};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -128,7 +130,10 @@ impl Chain for MockChain {
         Ok(self.context.query_latest_height())
     }
 
-    fn query_clients(&self, _request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+    fn query_clients(
+        &self,
+        _request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedClientState>, Error> {
         unimplemented!()
     }
 

@@ -56,7 +56,9 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::client::v1::{
+    IdentifiedClientState, QueryClientStatesRequest, QueryConsensusStatesRequest,
+};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -487,7 +489,10 @@ impl Chain for CosmosSdkChain {
         })
     }
 
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedClientState>, Error> {
         crate::time!("query_chain_clients");
 
         let mut client = self
@@ -504,13 +509,7 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        let vec_ids = response
-            .client_states
-            .iter()
-            .filter_map(|ic| ClientId::from_str(ic.client_id.as_str()).ok())
-            .collect();
-
-        Ok(vec_ids)
+        Ok(response.client_states)
     }
 
     fn query_client_state(
