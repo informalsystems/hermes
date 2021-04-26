@@ -17,12 +17,16 @@ pub struct KeyRestoreCmd {
 
     #[options(short = "m", required, help = "mnemonic to restore the key from")]
     mnemonic: String,
+
+    #[options(short = "t", help = "coin-type to restore the key from")]
+    coin_type: Option<String>,
 }
 
 #[derive(Clone, Debug)]
 pub struct KeysRestoreOptions {
     pub mnemonic: String,
     pub config: ChainConfig,
+    pub coin_type: Option<String>,
 }
 
 impl KeyRestoreCmd {
@@ -34,6 +38,7 @@ impl KeyRestoreCmd {
         Ok(KeysRestoreOptions {
             mnemonic: self.mnemonic.clone(),
             config: chain_config.clone(),
+            coin_type: self.coin_type.clone(),
         })
     }
 }
@@ -49,7 +54,7 @@ impl Runnable for KeyRestoreCmd {
 
         let key_name = opts.config.key_name.clone();
         let chain_id = opts.config.id.clone();
-        let key = restore_key(&opts.mnemonic, opts.config);
+        let key = restore_key(&opts.mnemonic, &opts.coin_type.as_deref(), opts.config);
 
         match key {
             Ok(key) => Output::success_msg(format!(
@@ -62,9 +67,9 @@ impl Runnable for KeyRestoreCmd {
     }
 }
 
-pub fn restore_key(mnemonic: &str, config: ChainConfig) -> Result<KeyEntry, BoxError> {
+pub fn restore_key(mnemonic: &str, coin_type: &Option<&str>, config: ChainConfig) -> Result<KeyEntry, BoxError> {
     let mut keyring = KeyRing::new(Store::Test, config)?;
-    let key_entry = keyring.key_from_mnemonic(mnemonic)?;
+    let key_entry = keyring.key_from_mnemonic(mnemonic, coin_type)?;
     keyring.add_key(key_entry.clone())?;
 
     Ok(key_entry)

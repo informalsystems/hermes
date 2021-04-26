@@ -48,6 +48,7 @@ pub struct KeyFile {
     pub address: String,
     pub pubkey: String,
     pub mnemonic: String,
+    pub coin_type: Option<String>,
 }
 
 impl TryFrom<KeyFile> for KeyEntry {
@@ -61,7 +62,8 @@ impl TryFrom<KeyFile> for KeyEntry {
         let mut keyfile_pubkey_bytes = decode_bech32(&key_file.pubkey)?;
 
         // Decode the private key from the mnemonic
-        let private_key = private_key_from_mnemonic(&key_file.mnemonic)?;
+        let private_key =
+            private_key_from_mnemonic(&key_file.mnemonic, &key_file.coin_type.as_deref())?;
         let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
         let public_key_bytes = public_key.public_key.to_bytes();
 
@@ -238,9 +240,13 @@ impl KeyRing {
     }
 
     /// Add a key entry in the store using a mnemonic.
-    pub fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
+    pub fn key_from_mnemonic(
+        &self,
+        mnemonic_words: &str,
+        coin_type: &Option<&str>
+    ) -> Result<KeyEntry, Error> {
         // Get the private key from the mnemonic
-        let private_key = private_key_from_mnemonic(mnemonic_words)?;
+        let private_key = private_key_from_mnemonic(mnemonic_words, coin_type)?;
 
         // Get the public Key from the private key
         let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
@@ -282,14 +288,19 @@ impl KeyRing {
 }
 
 /// Decode an extended private key from a mnemonic
-fn private_key_from_mnemonic(mnemonic_words: &str) -> Result<ExtendedPrivKey, Error> {
+fn private_key_from_mnemonic(
+    mnemonic_words: &str,
+    coin_type: &Option<&str>
+) -> Result<ExtendedPrivKey, Error> {
     let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
         .map_err(|e| Kind::InvalidMnemonic.context(e))?;
 
     let seed = Seed::new(&mnemonic, "");
 
     // Get Private Key from seed and standard derivation path
-    let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
+    let coin_type = coin_type.unwrap_or("118");
+    let hd_path =
+        StandardHDPath::try_from(format!("m/44'/{}'/0'/0/0", coin_type).as_str()).unwrap();
     let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
         .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
         .map_err(|e| Kind::PrivateKey.context(e))?;
