@@ -4,6 +4,8 @@
 
 ### IMPROVEMENTS
 
+- [ibc]
+  - Reinstated `ics23` dependency ([#854])
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour. ([#785])
   
@@ -19,6 +21,7 @@
 
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
+[#854]: https://github.com/informalsystems/ibc-rs/issues/854
 
 
 ## v0.2.0
