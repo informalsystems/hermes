@@ -14,6 +14,7 @@ use crate::ics02_client::error::Error;
 use crate::ics02_client::error::Kind as ClientKind;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
+use crate::ics24_host::timestamp::Timestamp;
 use crate::mock::header::MockHeader;
 use crate::Height;
 
@@ -64,7 +65,7 @@ impl From<MockClientState> for RawMockClientState {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
-                timestamp: (value.0).timestamp,
+                timestamp: (value.0).timestamp.as_nanoseconds(),
             }),
         }
     }
@@ -103,7 +104,7 @@ impl From<MockConsensusState> for MockClientState {
 pub struct MockConsensusState(pub MockHeader);
 
 impl MockConsensusState {
-    pub fn timestamp(&self) -> u64 {
+    pub fn timestamp(&self) -> Timestamp {
         (self.0).timestamp
     }
 }
@@ -127,7 +128,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
-                timestamp: (value.0).timestamp,
+                timestamp: (value.0).timestamp.as_nanoseconds(),
             }),
         }
     }

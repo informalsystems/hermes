@@ -32,9 +32,6 @@ pub enum Kind {
     #[error("implementation specific")]
     ImplementationSpecific,
 
-    #[error("Negative timestamp in consensus state {0}; timestamp must be a positive value")]
-    NegativeConsensusStateTimestamp(String),
-
     #[error("header verification failed")]
     HeaderVerificationFailure,
 

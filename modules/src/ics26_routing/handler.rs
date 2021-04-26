@@ -268,6 +268,7 @@ mod tests {
     };
 
     use crate::ics24_host::identifier::ConnectionId;
+    use crate::ics24_host::timestamp::Timestamp;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
@@ -361,7 +362,8 @@ mod tests {
             MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
         msg_to_on_close.packet.sequence = 2.into();
         msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
-        msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
+        msg_to_on_close.packet.timeout_timestamp =
+            Timestamp::from_nanoseconds(msg_transfer_two.timeout_timestamp);
 
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 

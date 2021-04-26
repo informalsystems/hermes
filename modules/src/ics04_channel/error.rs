@@ -6,6 +6,7 @@ pub type Error = anomaly::Error<Kind>;
 use super::packet::Sequence;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::ics24_host::timestamp::Timestamp;
 use crate::{ics02_client, Height};
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
@@ -126,7 +127,7 @@ pub enum Kind {
     PacketTimeoutHeightNotReached(Height, Height),
 
     #[error("Packet timeout timestamp {0} > chain timestamp {1}")]
-    PacketTimeoutTimestampNotReached(u64, u64),
+    PacketTimeoutTimestampNotReached(Timestamp, Timestamp),
 
     #[error("Receiving chain block timestamp >= packet timeout timestamp")]
     LowPacketTimestamp,

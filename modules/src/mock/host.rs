@@ -11,6 +11,7 @@ use crate::ics02_client::header::AnyHeader;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use crate::ics07_tendermint::header::Header as TMHeader;
 use crate::ics24_host::identifier::ChainId;
+use crate::ics24_host::timestamp::Timestamp;
 use crate::mock::header::MockHeader;
 use crate::Height;
 
@@ -50,7 +51,7 @@ impl HostBlock {
         match chain_type {
             HostType::Mock => HostBlock::Mock(MockHeader {
                 height: Height::new(chain_id.version(), height),
-                timestamp: 1,
+                timestamp: Timestamp::from_nanoseconds(1),
             }),
             HostType::SyntheticTendermint => {
                 HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))

@@ -78,7 +78,11 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     // Check if packet timestamp is newer than the local host chain timestamp
     let latest_timestamp = ctx.host_timestamp();
-    if (packet.timeout_timestamp != 0) && (packet.timeout_timestamp <= latest_timestamp) {
+    if packet.timeout_timestamp.is_valid()
+        && packet
+            .timeout_timestamp
+            .is_before_or_same_as(&latest_timestamp)
+    {
         return Err(Kind::LowPacketTimestamp.into());
     }
 
@@ -147,6 +151,7 @@ mod tests {
     use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
     use crate::ics18_relayer::context::Ics18Context;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::ics24_host::timestamp::Timestamp;
     use crate::mock::context::MockContext;
     use crate::test_utils::get_dummy_account_id;
     use crate::{events::IbcEvent, ics04_channel::packet::Packet};
@@ -180,7 +185,7 @@ mod tests {
             destination_channel: ChannelId::default(),
             data: vec![],
             timeout_height: client_height,
-            timeout_timestamp: 1,
+            timeout_timestamp: Timestamp::from_nanoseconds(1),
         };
 
         let msg_packet_old =
@@ -245,7 +250,7 @@ mod tests {
                         1.into(),
                     )
                     .with_height(host_height)
-                    .with_timestamp(1)
+                    .with_timestamp(Timestamp::from_nanoseconds(1))
                     // This `with_recv_sequence` is required for ordered channels
                     .with_recv_sequence(
                         packet.destination_port.clone(),
@@ -264,7 +269,7 @@ mod tests {
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into())
                     .with_height(host_height)
-                    .with_timestamp(3),
+                    .with_timestamp(Timestamp::from_nanoseconds(3)),
                 msg: msg_packet_old,
                 want_pass: false,
             },
