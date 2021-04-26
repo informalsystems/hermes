@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - master
-    paths:
-      - guide/**
+    tags:
+      - v[0-9]+.*
   pull_request:
     paths:
       - guide/**
@@ -38,10 +38,10 @@ jobs:
           cd guide
           mdbook build
 
-      # Only deploy guide when pushing to master
+      # Only deploy guide when pushing a new tag starting with `v`
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./guide/book
