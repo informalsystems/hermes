@@ -11,8 +11,7 @@
 
 - [ibc-relayer]
   - Fix pagination in gRPC query for clients ([#811])
-  - Fix relayer crash when hermes starts in the same time as packets are being sent  in gRPC query for clients ([#851])
-
+  - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
 
 ### BREAKING CHANGES
 
