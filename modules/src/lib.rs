@@ -1,5 +1,3 @@
-#![forbid(unsafe_code)]
-#![deny(clippy::all)]
 #![allow(clippy::large_enum_variant)]
 #![deny(
     warnings,
@@ -10,6 +8,8 @@
     unused_qualifications,
     rust_2018_idioms
 )]
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
+#![forbid(unsafe_code)]
 
 //! Implementation of the following ICS modules:
 //!
