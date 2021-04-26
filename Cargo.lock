@@ -1237,7 +1237,6 @@ dependencies = [
  "k256",
  "prost",
  "prost-types",
- "retry",
  "ripemd160",
  "serde",
  "serde_cbor",
@@ -1991,15 +1990,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
 dependencies = [
  "winapi",
-]
-
-[[package]]
-name = "retry"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0ee4a654b43dd7e3768be7a1c0fc20e90f0a84b72a60ffb6c11e1cae2545c2e"
-dependencies = [
- "rand 0.7.3",
 ]
 
 [[package]]
