@@ -1,4 +1,3 @@
-use anomaly::{BoxError, Context};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::fmt::Display;
@@ -9,16 +8,40 @@ use thiserror::Error;
 use chrono::{offset::Utc, DateTime, TimeZone};
 
 /// A newtype wrapper over `Option<DateTime<Utc>>` to keep track of
-/// IBC packet timeout. In protocol buffer, the timestamp is represented
-/// as a `u64` value, with 0 representing the absence of timestamp. We use
-/// an explicit `Option` type to distinguish this when converting between
-/// a `u64` value and a raw timestamp.
+/// IBC packet timeout.
+///
+/// We use an explicit `Option` type to distinguish this when converting between
+/// a `u64` value and a raw timestamp. In protocol buffer, the timestamp is
+/// represented as a `u64` Unix timestamp in nanoseconds, with 0 representing the absence
+/// of timestamp.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Deserialize, Serialize, Hash)]
 pub struct Timestamp {
     time: Option<DateTime<Utc>>,
 }
 
+/// The expiry result when comparing two timestamps.
+/// - If either timestamp is invalid (0), the result is `InvalidTimestamp`.
+/// - If the left timestamp is strictly after the right timestamp, the result is `Expired`.
+/// - Otherwise, the result is `NotExpired`.
+///
+/// User of this result may want to determine whether error should be raised,
+/// when either of the timestamp being compared is invalid.
+pub enum Expiry {
+    Expired,
+    NotExpired,
+    InvalidTimestamp,
+}
+
 impl Timestamp {
+    /// When used in IBC, all raw timestamps are represented as u64 Unix timestamp in nanoseconds.
+    ///
+    /// A value is 0 indicates that the timestamp is not set, and result in the underlying
+    /// type being None.
+    ///
+    /// The underlying library [`chrono::DateTime`] allows conversion from nanoseconds only
+    /// from an `i64` value. In practice, `i64` still have sufficient precision for our purpose.
+    /// However we have to handle the case of `u64` overflowing in `i64`, to prevent
+    /// malicious packets from crashing the relayer.
     pub fn from_nanoseconds(nanoseconds: u64) -> Result<Timestamp, TryFromIntError> {
         if nanoseconds == 0 {
             Ok(Timestamp { time: None })
@@ -30,34 +53,40 @@ impl Timestamp {
         }
     }
 
+    /// Convert a `Timestamp` from [`chrono::DateTime<Utc>`].
     pub fn from_datetime(time: DateTime<Utc>) -> Timestamp {
         Timestamp { time: Some(time) }
     }
 
+    /// Convert a `Timestamp` to `u64` value in nanoseconds. If no timestamp
+    /// is set, the result is 0.
     pub fn as_nanoseconds(&self) -> u64 {
         self.time
             .map_or(0, |time| time.timestamp_nanos().try_into().unwrap())
     }
 
+    /// Convert a `Timestamp` to an optional [`chrono::DateTime<Utc>`]
     pub fn as_datetime(&self) -> Option<DateTime<Utc>> {
         self.time
     }
 
+    /// A timestamp is only valid if it is set, i.e. have non-zero raw value.
     pub fn is_valid(&self) -> bool {
         self.time.is_some()
     }
 
-    pub fn is_before_or_same_as(&self, other: &Timestamp) -> bool {
-        match (self.time, other.time) {
-            (Some(time1), Some(time2)) => time1 <= time2,
-            _ => false,
-        }
-    }
-
-    pub fn is_after(&self, other: &Timestamp) -> bool {
-        match (self.time, other.time) {
-            (Some(time1), Some(time2)) => time1 > time2,
-            _ => false,
+    /// Checks whether the left timestamp has expired when compared to the
+    /// right timestamp. Returns an [`Expiry`] result.
+    pub fn check_expiry(&self, expiry: &Timestamp) -> Expiry {
+        match (self.time, expiry.time) {
+            (Some(time1), Some(time2)) => {
+                if time1 > time2 {
+                    Expiry::Expired
+                } else {
+                    Expiry::NotExpired
+                }
+            }
+            _ => Expiry::InvalidTimestamp,
         }
     }
 }
@@ -84,12 +113,6 @@ pub enum ParseTimestampErrorKind {
     TryFromIntError(TryFromIntError),
 }
 
-impl ParseTimestampErrorKind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
-    }
-}
-
 impl FromStr for Timestamp {
     type Err = ParseTimestampError;
 
@@ -97,8 +120,8 @@ impl FromStr for Timestamp {
         let seconds =
             u64::from_str(s).map_err(|err| ParseTimestampErrorKind::ParseIntError(err))?;
 
-        Ok(Timestamp::from_nanoseconds(seconds)
-            .map_err(|err| ParseTimestampErrorKind::TryFromIntError(err))?)
+        Timestamp::from_nanoseconds(seconds)
+            .map_err(|err| ParseTimestampErrorKind::TryFromIntError(err).into())
     }
 }
 

@@ -10,6 +10,7 @@ use crate::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics24_host::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
 pub struct RecvPacketResult {
@@ -78,11 +79,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     // Check if packet timestamp is newer than the local host chain timestamp
     let latest_timestamp = ctx.host_timestamp();
-    if packet.timeout_timestamp.is_valid()
-        && packet
-            .timeout_timestamp
-            .is_before_or_same_as(&latest_timestamp)
-    {
+    if let Expiry::Expired = latest_timestamp.check_expiry(&packet.timeout_timestamp) {
         return Err(Kind::LowPacketTimestamp.into());
     }
 
