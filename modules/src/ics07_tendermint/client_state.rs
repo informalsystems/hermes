@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -13,10 +14,9 @@ use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
-use crate::ics23_commitment::merkle::cosmos_specs;
+use crate::ics23_commitment::specs::ProofSpecs;
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
-use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ClientState {
@@ -212,7 +212,7 @@ impl From<ClientState> for RawClientState {
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
-            proof_specs: cosmos_specs(),
+            proof_specs: ProofSpecs::cosmos().into(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
             upgrade_path: value.upgrade_path,

@@ -150,6 +150,10 @@ pub enum Kind {
     #[error("ICS 007 error")]
     Ics007,
 
+    /// ICS 023 error
+    #[error("ICS 023 error")]
+    Ics023(#[from] ibc::ics23_commitment::error::Error),
+
     /// Invalid chain identifier
     #[error("invalid chain identifier format: {0}")]
     ChainIdentifier(String),
