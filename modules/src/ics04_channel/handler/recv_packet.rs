@@ -10,7 +10,7 @@ use crate::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::ics24_host::timestamp::Expiry;
+use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
 pub struct RecvPacketResult {

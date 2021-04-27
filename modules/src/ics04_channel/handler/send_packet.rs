@@ -7,7 +7,7 @@ use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::ics24_host::timestamp::{Expiry, Timestamp};
+use crate::timestamp::{Expiry, Timestamp};
 use crate::Height;
 
 #[derive(Clone, Debug)]
