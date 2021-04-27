@@ -101,7 +101,7 @@ mod tests {
     use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
     #[test]
-    fn test_update_client_ok() {
+    fn test_upgrade_client_ok() {
         let client_id = ClientId::default();
         let signer = get_dummy_account_id();
 
@@ -186,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_client_low_height() {
+    fn test_upgrade_client_low_height() {
         let client_id = ClientId::default();
         let signer = get_dummy_account_id();
 
