@@ -1389,10 +1389,16 @@ async fn abci_query(
         return Err(Kind::EmptyResponseProof.into());
     }
 
+    let proof = response
+        .proof
+        .map(|p| convert_tm_to_ics_merkle_proof(&p))
+        .transpose()
+        .map_err(Kind::Ics023)?;
+
     let response = QueryResponse {
         value: response.value,
-        proof: convert_tm_to_ics_merkle_proof(response.proof),
         height: response.height,
+        proof,
     };
 
     Ok(response)

@@ -4,6 +4,7 @@ use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
+use crate::ics23_commitment::error::Error;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
@@ -15,6 +16,7 @@ pub fn apply_prefix(
 
     let mut result: Vec<String> = vec![format!("{:?}", prefix)];
     result.append(&mut path);
+
     Ok(MerklePath { key_path: result })
 }
 
@@ -75,18 +77,16 @@ pub struct MerkleProof {
 //     }
 // }
 
-pub fn convert_tm_to_ics_merkle_proof(tm_proof: Option<Proof>) -> Option<RawMerkleProof> {
-    match tm_proof {
-        Some(proof) => {
-            let mut mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![];
-            for op in proof.ops.iter() {
-                let data = op.clone().data;
-                let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
-                prost::Message::merge(&mut parsed, data.as_slice()).unwrap();
-                mproofs.append(&mut vec![parsed]);
-            }
-            Some(RawMerkleProof { proofs: mproofs })
-        }
-        None => None,
+pub fn convert_tm_to_ics_merkle_proof(tm_proof: &Proof) -> Result<RawMerkleProof, Error> {
+    let mut proofs = vec![];
+
+    for op in &tm_proof.ops {
+        let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
+        prost::Message::merge(&mut parsed, op.data.as_slice())
+            .map_err(Error::CommitmentProofDecodingFailed)?;
+
+        proofs.push(parsed);
     }
+
+    Ok(RawMerkleProof { proofs })
 }
