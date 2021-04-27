@@ -447,10 +447,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let misbehaviour = self
             .light_client
-            .check_misbehaviour(update_event, &client_state)?;
+            .check_misbehaviour(update_event, &client_state);
 
         reply_to
-            .send(Ok(misbehaviour))
+            .send(misbehaviour)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
