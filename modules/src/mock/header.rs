@@ -10,8 +10,8 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::header::Header;
-use crate::ics24_host::timestamp::Timestamp;
 use crate::mock::client_state::MockConsensusState;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 #[derive(Copy, Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]

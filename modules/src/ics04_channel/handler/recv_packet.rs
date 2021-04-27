@@ -148,9 +148,9 @@ mod tests {
     use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
     use crate::ics18_relayer::context::Ics18Context;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-    use crate::ics24_host::timestamp::Timestamp;
     use crate::mock::context::MockContext;
     use crate::test_utils::get_dummy_account_id;
+    use crate::timestamp::Timestamp;
     use crate::{events::IbcEvent, ics04_channel::packet::Packet};
 
     #[test]

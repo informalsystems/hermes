@@ -10,7 +10,7 @@ use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::{error::Error, packet::Receipt};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::ics24_host::timestamp::Timestamp;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 use super::packet::{PacketResult, Sequence};

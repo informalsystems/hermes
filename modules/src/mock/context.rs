@@ -29,7 +29,6 @@ use crate::ics18_relayer::context::Ics18Context;
 use crate::ics18_relayer::error::{Error as Ics18Error, Kind as Ics18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use crate::ics24_host::timestamp::Timestamp;
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::handler::{deliver, dispatch};
 use crate::ics26_routing::msgs::Ics26Envelope;
@@ -37,6 +36,7 @@ use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensus
 use crate::mock::header::MockHeader;
 use crate::mock::host::{HostBlock, HostType};
 use crate::signer::Signer;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// A context implementing the dependencies necessary for testing any IBC module.

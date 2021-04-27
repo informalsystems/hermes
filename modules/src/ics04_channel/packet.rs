@@ -6,7 +6,7 @@ use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::ics24_host::timestamp::Timestamp;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 use super::handler::{

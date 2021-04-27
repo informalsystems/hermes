@@ -268,13 +268,13 @@ mod tests {
     };
 
     use crate::ics24_host::identifier::ConnectionId;
-    use crate::ics24_host::timestamp::Timestamp;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
+    use crate::timestamp::Timestamp;
     use crate::Height;
 
     #[test]

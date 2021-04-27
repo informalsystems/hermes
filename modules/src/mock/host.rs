@@ -11,8 +11,8 @@ use crate::ics02_client::header::AnyHeader;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use crate::ics07_tendermint::header::Header as TMHeader;
 use crate::ics24_host::identifier::ChainId;
-use crate::ics24_host::timestamp::Timestamp;
 use crate::mock::header::MockHeader;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// Defines the different types of host chains that a mock context can emulate.

@@ -117,8 +117,7 @@ impl FromStr for Timestamp {
     type Err = ParseTimestampError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let seconds =
-            u64::from_str(s).map_err(|err| ParseTimestampErrorKind::ParseIntError(err))?;
+        let seconds = u64::from_str(s).map_err(ParseTimestampErrorKind::ParseIntError)?;
 
         Timestamp::from_nanoseconds(seconds)
             .map_err(|err| ParseTimestampErrorKind::TryFromIntError(err).into())

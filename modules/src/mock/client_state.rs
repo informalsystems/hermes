@@ -14,8 +14,8 @@ use crate::ics02_client::error::Error;
 use crate::ics02_client::error::Kind as ClientKind;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
-use crate::ics24_host::timestamp::Timestamp;
 use crate::mock::header::MockHeader;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// A mock of an IBC client record as it is stored in a mock context.
