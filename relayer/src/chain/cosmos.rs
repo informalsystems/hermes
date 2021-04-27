@@ -1387,7 +1387,7 @@ async fn abci_query(
 
     let response = QueryResponse {
         value: response.value,
-        proof: convert_tm_to_ics_merkle_proof(response.proof).unwrap(), // FIXME
+        proof: convert_tm_to_ics_merkle_proof(response.proof),
         height: response.height,
     };
 

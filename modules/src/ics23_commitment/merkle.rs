@@ -4,7 +4,6 @@ use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use crate::ics23_commitment::error::Error;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
@@ -76,9 +75,7 @@ pub struct MerkleProof {
 //     }
 // }
 
-pub fn convert_tm_to_ics_merkle_proof(
-    tm_proof: Option<Proof>,
-) -> Result<Option<RawMerkleProof>, Error> {
+pub fn convert_tm_to_ics_merkle_proof(tm_proof: Option<Proof>) -> Option<RawMerkleProof> {
     match tm_proof {
         Some(proof) => {
             let mut mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![];
@@ -88,8 +85,8 @@ pub fn convert_tm_to_ics_merkle_proof(
                 prost::Message::merge(&mut parsed, data.as_slice()).unwrap();
                 mproofs.append(&mut vec![parsed]);
             }
-            Ok(Some(RawMerkleProof { proofs: mproofs }))
+            Some(RawMerkleProof { proofs: mproofs })
         }
-        None => Ok(None),
+        None => None,
     }
 }
