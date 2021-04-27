@@ -132,6 +132,9 @@ pub enum Kind {
     #[error("Receiving chain block timestamp >= packet timeout timestamp")]
     LowPacketTimestamp,
 
+    #[error("Invalid packet timeout timestamp value")]
+    InvalidPacketTimestamp,
+
     #[error("Invalid timestamp in consensus state; timestamp must be a positive value")]
     ErrorInvalidConsensusState(ics02_client::error::Kind),
 

@@ -157,6 +157,9 @@ impl TryFrom<RawPacket> for Packet {
             return Err(Kind::ZeroPacketData.into());
         }
 
+        let timeout_timestamp = Timestamp::from_nanoseconds(raw_pkt.timeout_timestamp)
+            .map_err(|_| Kind::InvalidPacketTimestamp)?;
+
         Ok(Packet {
             sequence: Sequence::from(raw_pkt.sequence),
             source_port: raw_pkt
@@ -177,7 +180,7 @@ impl TryFrom<RawPacket> for Packet {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             data: raw_pkt.data,
             timeout_height: packet_timeout_height,
-            timeout_timestamp: Timestamp::from_nanoseconds(raw_pkt.timeout_timestamp),
+            timeout_timestamp,
         })
     }
 }

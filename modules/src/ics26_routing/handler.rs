@@ -363,7 +363,7 @@ mod tests {
         msg_to_on_close.packet.sequence = 2.into();
         msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
         msg_to_on_close.packet.timeout_timestamp =
-            Timestamp::from_nanoseconds(msg_transfer_two.timeout_timestamp);
+            Timestamp::from_nanoseconds(msg_transfer_two.timeout_timestamp).unwrap();
 
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 

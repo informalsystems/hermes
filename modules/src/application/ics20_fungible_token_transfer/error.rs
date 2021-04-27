@@ -23,6 +23,9 @@ pub enum Kind {
         "Destination channel not found in the counterparty of port_id {0} and channel_id {1} "
     )]
     DestinationChannelNotFound(PortId, ChannelId),
+
+    #[error("Invalid packet timeout timestamp value")]
+    InvalidPacketTimestamp,
 }
 
 impl Kind {

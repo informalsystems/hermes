@@ -185,7 +185,7 @@ mod tests {
             destination_channel: ChannelId::default(),
             data: vec![],
             timeout_height: client_height,
-            timeout_timestamp: Timestamp::from_nanoseconds(1),
+            timeout_timestamp: Timestamp::from_nanoseconds(1).unwrap(),
         };
 
         let msg_packet_old =
@@ -250,7 +250,7 @@ mod tests {
                         1.into(),
                     )
                     .with_height(host_height)
-                    .with_timestamp(Timestamp::from_nanoseconds(1))
+                    .with_timestamp(Timestamp::from_nanoseconds(1).unwrap())
                     // This `with_recv_sequence` is required for ordered channels
                     .with_recv_sequence(
                         packet.destination_port.clone(),
@@ -269,7 +269,7 @@ mod tests {
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into())
                     .with_height(host_height)
-                    .with_timestamp(Timestamp::from_nanoseconds(3)),
+                    .with_timestamp(Timestamp::from_nanoseconds(3).unwrap()),
                 msg: msg_packet_old,
                 want_pass: false,
             },
