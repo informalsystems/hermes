@@ -1,12 +1,20 @@
+use std::time::Instant;
 use std::{
     collections::HashMap,
+    fmt,
     thread::{self, JoinHandle},
     time::Duration,
 };
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
+use tracing::{debug, info, trace, warn};
 
+use ibc::events::VecIbcEvents;
+use ibc::ics02_client::client_state::ClientState;
+use ibc::ics02_client::events::UpdateClient;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::ics24_host::identifier::ClientId;
 use ibc::{
     events::IbcEvent,
     ics02_client::events::NewBlock,
@@ -18,7 +26,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
-use tracing::{debug, info, trace, warn};
+use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 use crate::foreign_client::ForeignClient;
 use crate::{
@@ -26,12 +34,6 @@ use crate::{
     event::monitor::EventBatch,
     link::{Link, LinkParameters},
 };
-use ibc::events::VecIbcEvents;
-use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics24_host::identifier::ClientId;
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
-use std::time::Instant;
 
 /// A command for a [`Worker`].
 pub enum WorkerCmd {
@@ -103,6 +105,12 @@ pub struct Supervisor {
     workers: HashMap<Object, WorkerHandle>,
 }
 
+impl fmt::Display for Supervisor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{} <-> {}]", self.chains.a.id(), self.chains.b.id(),)
+    }
+}
+
 impl Supervisor {
     /// Spawn a supervisor which listens for events on the two given chains.
     pub fn spawn(
@@ -120,34 +128,69 @@ impl Supervisor {
         })
     }
 
-    fn create_client_workers(&mut self) -> Result<(), BoxError> {
-        let req = QueryClientStatesRequest {
+    fn create_workers(&mut self) -> Result<(), BoxError> {
+        let req = QueryChannelsRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
+        // For each opened channel spawn:
+        // - the path worker for AtoB (used to clear packets) and
+        // - the client worker for the A side client of the channel's connection (used for refresh)
+        // TODO - we should move to one supervisor, operating on a set of chains:
+        // `for chain_a in self.chains.clone().iter() {`, lookup chain b in registry based
+        // on the client chain_id, etc.
         for chains in [self.chains.clone(), self.chains.clone().swap()].iter() {
-            let all_clients: Vec<IdentifiedAnyClientState> = chains.a.query_clients(req.clone())?;
+            let channels: Vec<IdentifiedChannelEnd> = chains.a.query_channels(req.clone())?;
+            for channel in channels.iter() {
+                // Only clear packets for opened channels
+                // TODO next - more thought needed here as optimistic sends will fail to clear
+                // maybe instead just check if there are pending packets...but the new problem
+                // will be the reference height for clear vs events, etc.
+                if !channel
+                    .channel_end
+                    .state_matches(&ibc::ics04_channel::channel::State::Open)
+                {
+                    continue;
+                }
 
-            let clients: Vec<IdentifiedAnyClientState> = all_clients
-                .into_iter()
-                .filter(|c| c.client_state.chain_id() == chains.b.id())
-                .collect();
+                // get the channel's connection
+                let connection_id =
+                    channel
+                        .channel_end
+                        .connection_hops()
+                        .first()
+                        .ok_or_else(|| {
+                            format!("no connection hops for channel '{}'", channel.channel_id)
+                        })?;
+                let connection = chains.a.query_connection(&connection_id, Height::zero())?;
 
-            for client in clients {
+                // get the client used by the connection and check that the other end is on chain b
+                let client_id = connection.client_id();
+                let client = chains.a.query_client_state(client_id, Height::zero())?;
+                if client.chain_id() != chains.b.id() {
+                    continue;
+                }
+
+                // create the client object and spawn worker
                 let client_object = Object::Client(Client {
+                    dst_client_id: client_id.clone(),
                     dst_chain_id: chains.a.id(),
-                    src_chain_id: client.client_state.chain_id(),
-                    dst_client_id: client.client_id,
+                    src_chain_id: client.chain_id(),
                 });
                 let worker = Worker::spawn(chains.clone(), client_object.clone());
                 self.workers.entry(client_object).or_insert(worker);
+
+                // create the path object and spawn worker
+                let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
+                    dst_chain_id: chains.b.id(),
+                    src_chain_id: chains.a.id(),
+                    src_channel_id: channel.channel_id.clone(),
+                    src_port_id: channel.port_id.clone(),
+                });
+                let worker = Worker::spawn(chains.clone(), path_object.clone());
+                self.workers.entry(path_object).or_insert(worker);
             }
         }
-        Ok(())
-    }
-
-    fn create_workers(&mut self) -> Result<(), BoxError> {
-        self.create_client_workers()?;
         Ok(())
     }
 
@@ -170,42 +213,6 @@ impl Supervisor {
             std::thread::sleep(Duration::from_millis(600));
         }
     }
-
-    //fn other_chain(&self, event_chain: &dyn ChainHandle) ->
-
-    // /// Collect the events we are interested in from an [`EventBatch`],
-    // /// and maps each [`IbcEvent`] to their corresponding [`Object`].
-    // pub fn collect_events(&self, event_chain: &dyn ChainHandle, batch: EventBatch) -> CollectedEvents {
-    //     let mut collected = CollectedEvents::new(batch.height, batch.chain_id);
-    //
-    //     for event in batch.events {
-    //         if let Some(object) = match event {
-    //             IbcEvent::UpdateClient(ref update) => Some(Object::for_update_client(update, event_chain)?),
-    //             IbcEvent::SendPacket(ref packet) => Some(Object::for_send_packet(packet, event_chain)?),
-    //             IbcEvent::TimeoutPacket(ref packet) => Some(Object::for_timeout_packet(packet, event_chain)?),
-    //             IbcEvent::WriteAcknowledgement(ref packet) => Some(Object::for_write_ack(packet, event_chain)?),
-    //             IbcEvent::CloseInitChannel(ref packet) => Some(Object::for_close_init_channel(packet, event_chain)?),
-    //             _ => None
-    //         } {
-    //             let valid_object = match object {
-    //                 Object::UnidirectionalChannelPath(p) => {},
-    //                 Object::Client(u) => {
-    //                     if event_chain.id() == self.chains.b.id() {
-    //                         u.dst_chain_id == self.chains.a.id()
-    //                     } else {
-    //                         assert_eq!(event_chain.id(), self.chains.a.id());
-    //                         u.dst_chain_id == self.chains.b.id()
-    //                     }
-    //
-    //                 }
-    //             }
-    //             collected.per_object.entry(object).or_default().push(event);
-    //
-    //         }
-    //     }
-    //
-    //     collected
-    // }
 
     /// Process a batch of events received from a chain.
     fn process_batch(
@@ -232,7 +239,14 @@ impl Supervisor {
                 continue;
             }
 
-            debug!("[{}] events: {}", chain_id, VecIbcEvents(events.clone()));
+            debug!(
+                "[{}] chain {} sent {} for object {:?}, direction {:?}",
+                self,
+                chain_id,
+                VecIbcEvents(events.clone()),
+                object,
+                direction
+            );
 
             if let Some(worker) = self.worker_for_object(object, direction) {
                 worker.send_events(height, events, chain_id.clone())?;
@@ -310,9 +324,11 @@ impl Worker {
         let (tx, rx) = crossbeam_channel::unbounded();
 
         debug!(
-            "[{}] Spawned worker for object {:#?}",
+            "[{}] Spawned worker with chains a:{} and b:{} for object {:#?} ",
             object.short_name(),
-            object
+            chains.a.id(),
+            chains.b.id(),
+            object,
         );
 
         let worker = Self { chains, rx };
@@ -438,17 +454,17 @@ pub struct Client {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
 
-    /// Source chain identifier.
-    pub src_chain_id: ChainId,
-
     /// Source channel identiier.
     pub dst_client_id: ClientId,
+
+    /// Source chain identifier.
+    pub src_chain_id: ChainId,
 }
 
 impl Client {
     pub fn short_name(&self) -> String {
         format!(
-            "{}->{}@{}",
+            "{} -> {}:{}",
             self.src_chain_id, self.dst_chain_id, self.dst_client_id
         )
     }
@@ -473,8 +489,8 @@ pub struct UnidirectionalChannelPath {
 impl UnidirectionalChannelPath {
     pub fn short_name(&self) -> String {
         format!(
-            "{}->{}@{}:{}",
-            self.src_chain_id, self.dst_chain_id, self.src_channel_id, self.src_port_id
+            "{}/{}:{} -> {}",
+            self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
 }
@@ -487,20 +503,21 @@ impl UnidirectionalChannelPath {
 /// for processing.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Object {
+    /// See [`Client`].
+    Client(Client),
     /// See [`UnidirectionalChannelPath`].
     UnidirectionalChannelPath(UnidirectionalChannelPath),
-    Client(Client),
-}
-
-impl From<UnidirectionalChannelPath> for Object {
-    fn from(p: UnidirectionalChannelPath) -> Self {
-        Self::UnidirectionalChannelPath(p)
-    }
 }
 
 impl From<Client> for Object {
     fn from(c: Client) -> Self {
         Self::Client(c)
+    }
+}
+
+impl From<UnidirectionalChannelPath> for Object {
+    fn from(p: UnidirectionalChannelPath) -> Self {
+        Self::UnidirectionalChannelPath(p)
     }
 }
 
@@ -529,14 +546,14 @@ impl Object {
     /// Build the object associated with the given [`UpdateClient`] event.
     pub fn for_update_client(
         e: &UpdateClient,
-        src_chain: &dyn ChainHandle,
+        dst_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id = get_client_target_chain(src_chain, &e.client_id())?;
+        let src_chain_id = get_client_host_chain(dst_chain, &e.client_id())?;
 
         Ok(Client {
-            dst_chain_id,
-            src_chain_id: src_chain.id(),
             dst_client_id: e.client_id().clone(),
+            dst_chain_id: dst_chain.id(),
+            src_chain_id,
         }
         .into())
     }
@@ -680,6 +697,20 @@ pub fn collect_events(src_chain: &dyn ChainHandle, batch: EventBatch) -> Collect
     collected
 }
 
+fn get_client_host_chain(
+    target_chain: &dyn ChainHandle,
+    client_id: &ClientId,
+) -> Result<ChainId, BoxError> {
+    let client_state = target_chain.query_client_state(client_id, Height::zero())?;
+
+    trace!(
+        chain_id = %target_chain.id(),
+        client_id = %client_id,
+        "client target chain: {}", client_state.chain_id()
+    );
+    Ok(client_state.chain_id())
+}
+
 // TODO: Memoize this result
 fn get_counterparty_chain(
     src_chain: &dyn ChainHandle,
@@ -716,19 +747,5 @@ fn get_counterparty_chain(
         "counterparty chain: {}", client_state.chain_id()
     );
 
-    Ok(client_state.chain_id())
-}
-
-fn get_client_target_chain(
-    host_chain: &dyn ChainHandle,
-    client_id: &ClientId,
-) -> Result<ChainId, BoxError> {
-    let client_state = host_chain.query_client_state(client_id, Height::zero())?;
-
-    trace!(
-        chain_id = %host_chain.id(),
-        client_id = %client_id,
-        "client target chain: {}", client_state.chain_id()
-    );
     Ok(client_state.chain_id())
 }

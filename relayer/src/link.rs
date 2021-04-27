@@ -395,6 +395,11 @@ impl RelayPath {
     /// Should not run more than once per execution.
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
+            info!(
+                "[{}] clearing pending packets from events before height {:?}",
+                self, above_height
+            );
+
             let clear_height = above_height.decrement().map_err(|e| LinkError::Failed(
                 format!("Cannot clear packets @height {}, because this height cannot be decremented: {}", above_height, e.to_string())))?;
             self.relay_pending_packets(clear_height)?;
