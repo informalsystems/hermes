@@ -34,6 +34,8 @@ impl From<ProofSpecs> for Vec<ProtoProofSpec> {
         for ds in domain_specs.specs.iter() {
             // Both `ProofSpec` types implement trait `prost::Message`. Convert by encoding, then
             // decoding into the destination type.
+            // Safety note: the source and target data structures are identical, hence the
+            // encode/decode conversion here should be infallible.
             let mut encoded = Vec::new();
             prost::Message::encode(ds, &mut encoded).unwrap();
             let decoded: ProtoProofSpec = prost::Message::decode(&*encoded).unwrap();
