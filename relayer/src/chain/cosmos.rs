@@ -992,6 +992,10 @@ impl Chain for CosmosSdkChain {
                         "packet_from_tx_search_response: unexpected number of txs"
                     );
 
+                    if response.txs.is_empty() {
+                        continue;
+                    }
+
                     if let Some(event) = packet_from_tx_search_response(
                         self.id(),
                         &request,
