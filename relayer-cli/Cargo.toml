@@ -25,7 +25,7 @@ ibc-relayer = { version = "0.2.0", path = "../relayer" }
 ibc-proto   = { version = "0.8.0", path = "../proto" }
 
 anomaly = "0.2.0"
-gumdrop = "0.7"
+gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
 thiserror = "1"
 tokio = { version = "1.0", features = ["full"] }
