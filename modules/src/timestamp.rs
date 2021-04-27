@@ -26,6 +26,7 @@ pub struct Timestamp {
 ///
 /// User of this result may want to determine whether error should be raised,
 /// when either of the timestamp being compared is invalid.
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Deserialize, Serialize, Hash)]
 pub enum Expiry {
     Expired,
     NotExpired,
@@ -127,5 +128,52 @@ impl FromStr for Timestamp {
 impl Default for Timestamp {
     fn default() -> Self {
         Timestamp { time: None }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Expiry, Timestamp};
+    use std::convert::TryInto;
+
+    #[test]
+    fn test_timestamp_comparisons() {
+        let nil_timestamp = Timestamp::from_nanoseconds(0).unwrap();
+        assert_eq!(nil_timestamp.time, None);
+        assert_eq!(nil_timestamp.as_nanoseconds(), 0);
+
+        let timestamp1 = Timestamp::from_nanoseconds(1).unwrap();
+        assert_eq!(timestamp1.time.unwrap().timestamp(), 0);
+        assert_eq!(timestamp1.time.unwrap().timestamp_millis(), 0);
+        assert_eq!(timestamp1.time.unwrap().timestamp_nanos(), 1);
+        assert_eq!(timestamp1.as_nanoseconds(), 1);
+
+        let timestamp2 = Timestamp::from_nanoseconds(1_000_000_000).unwrap();
+        assert_eq!(timestamp2.time.unwrap().timestamp(), 1);
+        assert_eq!(timestamp2.time.unwrap().timestamp_millis(), 1_000);
+        assert_eq!(timestamp2.as_nanoseconds(), 1_000_000_000);
+
+        assert_eq!(Timestamp::from_nanoseconds(u64::MAX).is_err(), true);
+        assert_eq!(
+            Timestamp::from_nanoseconds(i64::MAX.try_into().unwrap()).is_ok(),
+            true
+        );
+
+        assert_eq!(timestamp1.check_expiry(&timestamp2), Expiry::NotExpired);
+        assert_eq!(timestamp1.check_expiry(&timestamp1), Expiry::NotExpired);
+        assert_eq!(timestamp2.check_expiry(&timestamp2), Expiry::NotExpired);
+        assert_eq!(timestamp2.check_expiry(&timestamp1), Expiry::Expired);
+        assert_eq!(
+            timestamp1.check_expiry(&nil_timestamp),
+            Expiry::InvalidTimestamp
+        );
+        assert_eq!(
+            nil_timestamp.check_expiry(&timestamp2),
+            Expiry::InvalidTimestamp
+        );
+        assert_eq!(
+            nil_timestamp.check_expiry(&nil_timestamp),
+            Expiry::InvalidTimestamp
+        );
     }
 }
