@@ -342,8 +342,10 @@ fn private_key_from_mnemonic(
     let seed = Seed::new(&mnemonic, "");
 
     // Get Private Key from seed and standard derivation path
-    let hd_path =
-        StandardHDPath::try_from(format!("m/44'/{}'/0'/0/0", coin_type.num()).as_str()).unwrap();
+    let hd_path_format = format!("m/44'/{}'/0'/0/0", coin_type.num());
+    let hd_path = StandardHDPath::try_from(hd_path_format.as_str())
+        .map_err(|_| Kind::InvalidHdPath(hd_path_format))?;
+
     let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
         .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
         .map_err(|e| Kind::PrivateKey.context(e))?;
