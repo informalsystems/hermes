@@ -15,14 +15,14 @@ class Packet:
 
 
 @dataclass
-class TxFtTransferRes:
+class TxPacketSendRes:
     height: BlockHeight
     packet: Packet
 
 
 @cmd("tx raw ft-transfer")
 @dataclass
-class TxFtTransfer(Cmd[TxFtTransferRes]):
+class TxPacketSend(Cmd[TxPacketSendRes]):
     dst_chain_id: ChainId
     src_chain_id: ChainId
     src_port: PortId
@@ -42,9 +42,9 @@ class TxFtTransfer(Cmd[TxFtTransferRes]):
             '-n', str(self.number_msgs)
         ]
 
-    def process(self, result: Any) -> TxFtTransferRes:
+    def process(self, result: Any) -> TxPacketSendRes:
         entry = find_entry(result, 'SendPacket')
-        return from_dict(TxFtTransferRes, entry)
+        return from_dict(TxPacketSendRes, entry)
 
 # -----------------------------------------------------------------------------
 
@@ -185,11 +185,11 @@ def query_unreceived_acks(
 # =============================================================================
 
 
-def ft_transfer(c: Config, src: ChainId, dst: ChainId,
+def packet_send(c: Config, src: ChainId, dst: ChainId,
                 src_port: PortId, src_channel: ChannelId,
                 amount: int, height_offset: int, number_msgs: int) -> Packet:
 
-    cmd = TxFtTransfer(dst_chain_id=dst, src_chain_id=src,
+    cmd = TxPacketSend(dst_chain_id=dst, src_chain_id=src,
                        src_port=src_port, src_channel=src_channel,
                        amount=amount,
                        number_msgs=number_msgs,
@@ -240,7 +240,7 @@ def ping_pong(c: Config,
               a_chan: ChannelId, b_chan: ChannelId,
               port_id: PortId = PortId('transfer')):
 
-    pkt_send_a = ft_transfer(c, side_a, side_b, port_id,
+    pkt_send_a = packet_send(c, side_a, side_b, port_id,
                              a_chan, amount=10000, height_offset=1000, number_msgs=1)
 
     split()
@@ -262,7 +262,7 @@ def ping_pong(c: Config,
 
     split()
 
-    pkt_send_b = ft_transfer(c, side_b, side_a, port_id,
+    pkt_send_b = packet_send(c, side_b, side_a, port_id,
                              b_chan, amount=1000, height_offset=1000, number_msgs=1)
 
     split()
@@ -287,7 +287,7 @@ def timeout(c: Config,
             a_chan: ChannelId, b_chan: ChannelId,
             port_id: PortId = PortId('transfer')):
 
-    pkt_send_a = ft_transfer(c, side_a, side_b, port_id,
+    pkt_send_a = packet_send(c, side_a, side_b, port_id,
                              a_chan, amount=1, height_offset=1000, number_msgs=1)
 
     split()
@@ -300,7 +300,7 @@ def timeout(c: Config,
 
     split()
 
-    pkt_send_b = ft_transfer(c, side_b, side_a, port_id,
+    pkt_send_b = packet_send(c, side_b, side_a, port_id,
                              b_chan, amount=1, height_offset=1000, number_msgs=1)
 
     split()

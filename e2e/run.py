@@ -24,11 +24,11 @@ def loop(c: Config):
     # 1. create some unreceived acks
 
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 10000 1000 -n 2
-    packet.ft_transfer(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
+    packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
                        src_channel=CHANNEL, amount=10000, height_offset=1000, number_msgs=2)
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 2
-    packet.ft_transfer(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
+    packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
                        src_channel=CHANNEL, amount=10000, height_offset=1000, number_msgs=2)
 
     sleep(5.0)
@@ -44,11 +44,11 @@ def loop(c: Config):
     # 2. create some unreceived packets
 
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 10000 1000 -n 3
-    packet.ft_transfer(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
+    packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
                        src_channel=CHANNEL, amount=10000, height_offset=1000, number_msgs=3)
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
-    packet.ft_transfer(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
+    packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
                        src_channel=CHANNEL, amount=10000, height_offset=1000, number_msgs=4)
 
     sleep(5.0)
@@ -86,11 +86,11 @@ def loop(c: Config):
     # 5. wait a bit and make sure there are no pending packets
 
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 10000 1000 -n 3
-    packet.ft_transfer(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
+    packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
                        src_channel=CHANNEL, amount=10000, height_offset=1000, number_msgs=3)
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
-    packet.ft_transfer(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
+    packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
                        src_channel=CHANNEL, amount=10000, height_offset=1000, number_msgs=4)
 
     sleep(10.0)
