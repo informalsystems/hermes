@@ -19,7 +19,6 @@ jobs:
         with:
           path: ~/.cargo/bin
           key: ${{ runner.os }}-cargo-audit-v0.11.2
-      - uses: actions-rs/audit-check@v1
+      - uses: actions-rs/audit-check@v1.2.0
         with:
-          args: --ignore RUSTSEC-2019-0031
           token: ${{ secrets.GITHUB_TOKEN }}

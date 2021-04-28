@@ -4,6 +4,8 @@
 
 ### IMPROVEMENTS
 
+- [ibc]
+  - Reinstated `ics23` dependency ([#854])
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour. ([#785])
   
@@ -11,6 +13,7 @@
 
 - [ibc-relayer]
   - Fix pagination in gRPC query for clients ([#811])
+  - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
 
 ### BREAKING CHANGES
 
@@ -19,6 +22,8 @@
 
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
+[#854]: https://github.com/informalsystems/ibc-rs/issues/854
+[#851]: https://github.com/informalsystems/ibc-rs/issues/851
 
 
 ## v0.2.0

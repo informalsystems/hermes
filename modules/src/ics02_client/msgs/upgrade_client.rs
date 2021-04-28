@@ -80,9 +80,9 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
             consensus_state: AnyConsensusState::try_from(raw_consensus_state)
                 .map_err(|_| Kind::InvalidRawConsensusState)?,
             proof_upgrade_client: MerkleProof::try_from(c_bytes)
-                .map_err(|e| Kind::InvalidUpgradeClientProof(e.kind().clone()))?,
+                .map_err(Kind::InvalidUpgradeClientProof)?,
             proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes)
-                .map_err(|e| Kind::InvalidUpgradeConsensusStateProof(e.kind().clone()))?,
+                .map_err(Kind::InvalidUpgradeConsensusStateProof)?,
             signer: proto_msg.signer.into(),
         })
     }

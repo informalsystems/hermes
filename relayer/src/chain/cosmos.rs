@@ -992,6 +992,10 @@ impl Chain for CosmosSdkChain {
                         "packet_from_tx_search_response: unexpected number of txs"
                     );
 
+                    if response.txs.is_empty() {
+                        continue;
+                    }
+
                     if let Some(event) = packet_from_tx_search_response(
                         self.id(),
                         &request,
@@ -1385,12 +1389,16 @@ async fn abci_query(
         return Err(Kind::EmptyResponseProof.into());
     }
 
-    let raw_proof_ops = response.proof;
+    let proof = response
+        .proof
+        .map(|p| convert_tm_to_ics_merkle_proof(&p))
+        .transpose()
+        .map_err(Kind::Ics023)?;
 
     let response = QueryResponse {
         value: response.value,
-        proof: convert_tm_to_ics_merkle_proof(raw_proof_ops).unwrap(), // FIXME
         height: response.height,
+        proof,
     };
 
     Ok(response)
