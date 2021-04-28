@@ -35,7 +35,7 @@ Includes [TLA+ specifications](/docs/spec).
 
 ## Requirements 
 
-Developed with the latest stable version of Rust: `1.49.0`. 
+Developed with the latest stable version of Rust: `1.50.0`. 
 (May work with older versions.)
 
 ## Hermes Guide
