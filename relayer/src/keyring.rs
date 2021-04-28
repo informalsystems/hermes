@@ -48,6 +48,12 @@ impl CoinType {
     }
 }
 
+impl Default for CoinType {
+    fn default() -> Self {
+        Self::ATOM
+    }
+}
+
 impl FromStr for CoinType {
     type Err = std::num::ParseIntError;
 
@@ -70,6 +76,9 @@ pub struct KeyEntry {
 
     /// Address
     pub address: Vec<u8>,
+
+    /// Coin type
+    pub coin_type: CoinType,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -79,7 +88,7 @@ pub struct KeyFile {
     pub address: String,
     pub pubkey: String,
     pub mnemonic: String,
-    pub coin_type: CoinType,
+    pub coin_type: Option<CoinType>,
 }
 
 impl TryFrom<KeyFile> for KeyEntry {
@@ -92,8 +101,11 @@ impl TryFrom<KeyFile> for KeyEntry {
         // Decode the Bech32-encoded public key from the key file
         let mut keyfile_pubkey_bytes = decode_bech32(&key_file.pubkey)?;
 
+        // Use coin type if present or default coin type (ie. Atom).
+        let coin_type = key_file.coin_type.unwrap_or_default();
+
         // Decode the private key from the mnemonic
-        let private_key = private_key_from_mnemonic(&key_file.mnemonic, key_file.coin_type)?;
+        let private_key = private_key_from_mnemonic(&key_file.mnemonic, coin_type)?;
         let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
         let public_key_bytes = public_key.public_key.to_bytes();
 
@@ -120,6 +132,7 @@ impl TryFrom<KeyFile> for KeyEntry {
             private_key,
             account: key_file.address,
             address: keyfile_address_bytes,
+            coin_type,
         })
     }
 }
@@ -293,6 +306,7 @@ impl KeyRing {
             private_key,
             address,
             account,
+            coin_type,
         })
     }
 
