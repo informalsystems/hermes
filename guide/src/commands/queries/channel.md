@@ -27,11 +27,21 @@ hermes query channels ibc-1
 
 ```rust
 Success: [
-    ChannelId(
-        "channel-0",
+    (
+        ChannelId(
+            "channel-0",
+        ),
+        PortId(
+            "transfer",
+        ),
     ),
-    ChannelId(
-        "channel-1",
+    (
+        ChannelId(
+            "channel-2",
+        ),
+        PortId(
+            "transfer",
+        ),
     ),
 ]
 ```
@@ -76,7 +86,7 @@ __Example__
 Query the channel end of channel `channel-1` on port `transfer` on `ibc-1`:
 
 ```shell
-hermes query channel end ibc-1 channel-1
+hermes query channel end ibc-1 transfer channel-1
 ```
 
 ```rust
@@ -101,4 +111,3 @@ Success: ChannelEnd {
     version: "ics20-1",
 }
 ```
-
