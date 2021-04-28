@@ -36,7 +36,9 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TmHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
@@ -768,10 +770,7 @@ impl Chain for CosmosSdkChain {
         Ok(vec_ids)
     }
 
-    fn query_channels(
-        &self,
-        request: QueryChannelsRequest,
-    ) -> Result<Vec<(ChannelId, PortId)>, Error> {
+    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<PortChannelId>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -796,9 +795,12 @@ impl Chain for CosmosSdkChain {
             .channels
             .iter()
             .filter_map(|ch| {
-                let channel_id = ChannelId::from_str(ch.channel_id.as_str()).ok()?;
                 let port_id = PortId::from_str(ch.port_id.as_str()).ok()?;
-                Some((channel_id, port_id))
+                let channel_id = ChannelId::from_str(ch.channel_id.as_str()).ok()?;
+                Some(PortChannelId {
+                    port_id,
+                    channel_id,
+                })
             })
             .collect();
 

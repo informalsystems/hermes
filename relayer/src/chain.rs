@@ -15,7 +15,9 @@ use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+};
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
@@ -172,10 +174,7 @@ pub trait Chain: Sized {
     ) -> Result<Vec<ChannelId>, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels.
-    fn query_channels(
-        &self,
-        request: QueryChannelsRequest,
-    ) -> Result<Vec<(ChannelId, PortId)>, Error>;
+    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<PortChannelId>, Error>;
 
     fn query_channel(
         &self,
