@@ -16,6 +16,7 @@
 - [ibc-relayer]
   - Fix pagination in gRPC query for clients ([#811])
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
+  - Fix missing port information in `hermes query channels` ([#840])
 
 - [ibc-relayer-cli]
   - Fix for `ft-transfer` mismatching arguments ([#869])
