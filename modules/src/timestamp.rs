@@ -36,7 +36,7 @@ pub enum Expiry {
 impl Timestamp {
     /// When used in IBC, all raw timestamps are represented as u64 Unix timestamp in nanoseconds.
     ///
-    /// A value is 0 indicates that the timestamp is not set, and result in the underlying
+    /// A value of 0 indicates that the timestamp is not set, and result in the underlying
     /// type being None.
     ///
     /// The underlying library [`chrono::DateTime`] allows conversion from nanoseconds only
@@ -71,15 +71,10 @@ impl Timestamp {
         self.time
     }
 
-    /// A timestamp is only valid if it is set, i.e. have non-zero raw value.
-    pub fn is_valid(&self) -> bool {
-        self.time.is_some()
-    }
-
-    /// Checks whether the left timestamp has expired when compared to the
-    /// right timestamp. Returns an [`Expiry`] result.
-    pub fn check_expiry(&self, expiry: &Timestamp) -> Expiry {
-        match (self.time, expiry.time) {
+    /// Checks whether the timestamp has expired when compared to the
+    /// `other` timestamp. Returns an [`Expiry`] result.
+    pub fn check_expiry(&self, other: &Timestamp) -> Expiry {
+        match (self.time, other.time) {
             (Some(time1), Some(time2)) => {
                 if time1 > time2 {
                     Expiry::Expired

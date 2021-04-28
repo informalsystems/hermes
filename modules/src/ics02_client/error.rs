@@ -80,7 +80,7 @@ pub enum Kind {
     #[error("invalid proof for the upgraded consensus state")]
     InvalidUpgradeConsensusStateProof(Ics23Error),
 
-    #[error("Invalid packet timeout timestamp value")]
+    #[error("invalid packet timeout timestamp value")]
     InvalidPacketTimestamp,
 
     #[error("mismatch between client and arguments types, expected: {0:?}")]

@@ -36,7 +36,7 @@ where
         })?;
 
     let timeout_timestamp = Timestamp::from_nanoseconds(msg.timeout_timestamp)
-        .map_err(|_| Kind::InvalidPacketTimestamp)?;
+        .map_err(|_| Kind::InvalidPacketTimestamp(msg.timeout_timestamp))?;
 
     //TODO: Application LOGIC.
 
