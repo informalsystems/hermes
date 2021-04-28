@@ -121,7 +121,10 @@ impl Runnable for TxIcs20MsgTransferCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        // Double check that channels and chain identifiers match
+        // Double check that channels and chain identifiers match.
+        // To do this, fetch from the source chain the channel end, then the associated connection
+        // end, and then the underlying client state; finally, check that this client is verifying
+        // headers for the destination chain.
         let channel_end = src_chain
             .query_channel(
                 &opts.packet_src_port_id,
@@ -134,7 +137,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             None => {
                 return Output::error(format!(
                     "Could not retrieve the connection hop underlying channel end {:?} on chain {}",
-                    channel_end, opts.packet_src_channel_id
+                    channel_end, self.src_chain_id
                 ))
                 .exit()
             }
