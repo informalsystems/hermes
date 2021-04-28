@@ -154,6 +154,8 @@ def raw(c: Config):
 
     split()
 
+    sleep(5)
+
     packet.timeout(c, IBC_0, IBC_1, ibc0_chan_id, ibc1_chan_id)
 
     split()
