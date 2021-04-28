@@ -31,6 +31,9 @@ pub enum Kind {
 
     #[error("key store error")]
     KeyStore,
+
+    #[error("invalid HD path: {0}")]
+    InvalidHdPath(String),
 }
 
 impl Kind {
