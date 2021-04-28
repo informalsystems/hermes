@@ -172,7 +172,10 @@ pub trait Chain: Sized {
     ) -> Result<Vec<ChannelId>, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels.
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<(ChannelId, PortId)>, Error>;
 
     fn query_channel(
         &self,

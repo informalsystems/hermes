@@ -768,7 +768,10 @@ impl Chain for CosmosSdkChain {
         Ok(vec_ids)
     }
 
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<(ChannelId, PortId)>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -792,7 +795,11 @@ impl Chain for CosmosSdkChain {
         let ids = response
             .channels
             .iter()
-            .filter_map(|ch| ChannelId::from_str(ch.channel_id.as_str()).ok())
+            .filter_map(|ch| {
+                let channel_id = ChannelId::from_str(ch.channel_id.as_str()).ok()?;
+                let port_id = PortId::from_str(ch.port_id.as_str()).ok()?;
+                Some((channel_id, port_id))
+            })
             .collect();
 
         Ok(ids)

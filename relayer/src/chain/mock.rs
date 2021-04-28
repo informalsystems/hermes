@@ -184,7 +184,10 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_channels(&self, _request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
+    fn query_channels(
+        &self,
+        _request: QueryChannelsRequest,
+    ) -> Result<Vec<(ChannelId, PortId)>, Error> {
         unimplemented!()
     }
 
