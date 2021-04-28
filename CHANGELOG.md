@@ -15,6 +15,9 @@
   - Fix pagination in gRPC query for clients ([#811])
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
 
+- [ibc-relayer-cli]
+  - Fix for `ft-transfer` mismatching arguments ([#869])
+
 ### BREAKING CHANGES
 
 > Nothing yet.
@@ -24,6 +27,7 @@
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
+[#869]: https://github.com/informalsystems/ibc-rs/issues/869
 
 
 ## v0.2.0
