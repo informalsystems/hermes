@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .cmd import *
 from .common import *
 
@@ -29,18 +31,22 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
     src_channel: ChannelId
     amount: int
     height_offset: int
-    number_msgs: int
+    number_msgs: Optional[int]
 
     def args(self) -> List[str]:
-        return [
+        args = [
             self.dst_chain_id,
             self.src_chain_id,
             self.src_port,
             self.src_channel,
             str(self.amount),
             str(self.height_offset),
-            '-n', str(self.number_msgs)
         ]
+
+        if self.number_msgs != None:
+            args.extend(['-n', str(self.number_msgs)])
+
+        return args
 
     def process(self, result: Any) -> TxPacketSendRes:
         entry = find_entry(result, 'SendPacket')
@@ -187,7 +193,7 @@ def query_unreceived_acks(
 
 def packet_send(c: Config, src: ChainId, dst: ChainId,
                 src_port: PortId, src_channel: ChannelId,
-                amount: int, height_offset: int, number_msgs: int) -> Packet:
+                amount: int, height_offset: int, number_msgs: Optional[int] = None) -> Packet:
 
     cmd = TxPacketSend(dst_chain_id=dst, src_chain_id=src,
                        src_port=src_port, src_channel=src_channel,
@@ -241,7 +247,7 @@ def ping_pong(c: Config,
               port_id: PortId = PortId('transfer')):
 
     pkt_send_a = packet_send(c, side_a, side_b, port_id,
-                             a_chan, amount=9999, height_offset=1000, number_msgs=1)
+                             a_chan, amount=9999, height_offset=1000)
 
     split()
 
@@ -263,7 +269,7 @@ def ping_pong(c: Config,
     split()
 
     pkt_send_b = packet_send(c, side_b, side_a, port_id,
-                             b_chan, amount=9999, height_offset=1000, number_msgs=1)
+                             b_chan, amount=9999, height_offset=1000)
 
     split()
 
@@ -288,7 +294,7 @@ def timeout(c: Config,
             port_id: PortId = PortId('transfer')):
 
     pkt_send_a = packet_send(c, side_a, side_b, port_id,
-                             a_chan, amount=9999, height_offset=1, number_msgs=1)
+                             a_chan, amount=9999, height_offset=1)
 
     split()
 
@@ -301,7 +307,7 @@ def timeout(c: Config,
     split()
 
     pkt_send_b = packet_send(c, side_b, side_a, port_id,
-                             b_chan, amount=9999, height_offset=1, number_msgs=1)
+                             b_chan, amount=9999, height_offset=1)
 
     split()
 
