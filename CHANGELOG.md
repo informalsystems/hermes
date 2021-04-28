@@ -32,6 +32,7 @@
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#855]: https://github.com/informalsystems/ibc-rs/issues/855
+[#861]: https://github.com/informalsystems/ibc-rs/issues/861
 
 
 ## v0.2.0
