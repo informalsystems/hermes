@@ -6,12 +6,12 @@ use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
-use crate::attribute;
 use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
+use crate::{attribute, some_attribute};
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
@@ -222,9 +222,14 @@ impl From<Attributes> for UpdateClient {
 impl TryFrom<RawObject> for UpdateClient {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let header_str: String = attribute!(obj, "update_client.header");
-        let header_bytes = hex::decode(header_str).unwrap();
-        let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
+        let header_str: Option<String> = some_attribute!(obj, "update_client.header");
+        let header: Option<AnyHeader> = match header_str {
+            Some(str) => {
+                let header_bytes = hex::decode(str)?;
+                Some(Protobuf::decode(header_bytes.as_ref())?)
+            }
+            None => None,
+        };
         let consensus_height_str: String = attribute!(obj, "update_client.consensus_height");
         Ok(UpdateClient {
             common: Attributes {
@@ -233,7 +238,7 @@ impl TryFrom<RawObject> for UpdateClient {
                 client_type: attribute!(obj, "update_client.client_type"),
                 consensus_height: consensus_height_str.as_str().try_into()?,
             },
-            header: Some(header),
+            header,
         })
     }
 }

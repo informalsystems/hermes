@@ -41,7 +41,7 @@ pub enum ForeignClientError {
     #[error("failed while finding client {0}: expected chain_id in client state: {1}; actual chain_id: {2}")]
     ClientFind(ClientId, ChainId, ChainId),
 
-    #[error("error raised while submitting the misbehaviour evidence: {0}")]
+    #[error("error raised while checking for misbehaviour evidence: {0}")]
     Misbehaviour(String),
 
     #[error("failed while trying to upgrade client id {0} with error: {1}")]

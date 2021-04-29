@@ -6,7 +6,7 @@
 [![End to End testing][e2e-image]][e2e-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
-![Rust 1.49+][rustc-version]
+![Rust 1.51+][rustc-version]
 
 Rust crate for interacting with Cosmos SDK
 [IBC structs](https://github.com/cosmos/cosmos-sdk/tree/master/proto/ibc).
@@ -15,7 +15,7 @@ Rust crate for interacting with Cosmos SDK
 
 ## Requirements
 
-- Rust 1.49+
+- Rust 1.51+
 - `make`, `curl`
 - Cosmos SDK (downloaded automatically if you are using `make`)
 
@@ -50,7 +50,7 @@ limitations under the License.
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
-[rustc-version]: https://img.shields.io/badge/rustc-1.49+-blue.svg
+[rustc-version]: https://img.shields.io/badge/rustc-1.51+-blue.svg
 
 [//]: # (general links)
 

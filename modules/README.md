@@ -6,7 +6,7 @@
 [![End to End testing][e2e-image]][e2e-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
-![Rust 1.49+][rustc-version]
+![Rust 1.51+][rustc-version]
 
 
 See the [ibc-rs] repo root for more detailed information on how this crate can be used.
@@ -43,7 +43,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
-[rustc-version]: https://img.shields.io/badge/rustc-1.49+-blue.svg
+[rustc-version]: https://img.shields.io/badge/rustc-1.51+-blue.svg
 
 [//]: # (general links)
 
