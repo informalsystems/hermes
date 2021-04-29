@@ -27,22 +27,22 @@ hermes query channels ibc-1
 
 ```rust
 Success: [
-    (
-        ChannelId(
+    PortChannelId {
+        channel_id: ChannelId(
             "channel-0",
         ),
-        PortId(
+        port_id: PortId(
             "transfer",
         ),
-    ),
-    (
-        ChannelId(
-            "channel-2",
+    },
+    PortChannelId {
+        channel_id: ChannelId(
+            "channel-1",
         ),
-        PortId(
+        port_id: PortId(
             "transfer",
         ),
-    ),
+    },
 ]
 ```
 
