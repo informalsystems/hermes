@@ -12,6 +12,7 @@ use crate::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState
 use crate::ics07_tendermint::header::Header as TMHeader;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// Defines the different types of host chains that a mock context can emulate.
@@ -50,7 +51,7 @@ impl HostBlock {
         match chain_type {
             HostType::Mock => HostBlock::Mock(MockHeader {
                 height: Height::new(chain_id.version(), height),
-                timestamp: 1,
+                timestamp: Timestamp::from_nanoseconds(1).unwrap(),
             }),
             HostType::SyntheticTendermint => {
                 HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))

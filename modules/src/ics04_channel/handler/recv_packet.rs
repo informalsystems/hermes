@@ -10,6 +10,7 @@ use crate::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
 pub struct RecvPacketResult {
@@ -78,7 +79,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     // Check if packet timestamp is newer than the local host chain timestamp
     let latest_timestamp = ctx.host_timestamp();
-    if (packet.timeout_timestamp != 0) && (packet.timeout_timestamp <= latest_timestamp) {
+    if let Expiry::Expired = latest_timestamp.check_expiry(&packet.timeout_timestamp) {
         return Err(Kind::LowPacketTimestamp.into());
     }
 
@@ -149,6 +150,7 @@ mod tests {
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::test_utils::get_dummy_account_id;
+    use crate::timestamp::Timestamp;
     use crate::{events::IbcEvent, ics04_channel::packet::Packet};
 
     #[test]
@@ -180,7 +182,7 @@ mod tests {
             destination_channel: ChannelId::default(),
             data: vec![],
             timeout_height: client_height,
-            timeout_timestamp: 1,
+            timeout_timestamp: Timestamp::from_nanoseconds(1).unwrap(),
         };
 
         let msg_packet_old =
@@ -245,7 +247,7 @@ mod tests {
                         1.into(),
                     )
                     .with_height(host_height)
-                    .with_timestamp(1)
+                    .with_timestamp(Timestamp::from_nanoseconds(1).unwrap())
                     // This `with_recv_sequence` is required for ordered channels
                     .with_recv_sequence(
                         packet.destination_port.clone(),
@@ -264,7 +266,7 @@ mod tests {
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into())
                     .with_height(host_height)
-                    .with_timestamp(3),
+                    .with_timestamp(Timestamp::from_nanoseconds(3).unwrap()),
                 msg: msg_packet_old,
                 want_pass: false,
             },
