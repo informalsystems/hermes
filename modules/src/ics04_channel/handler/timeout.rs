@@ -10,6 +10,7 @@ use crate::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
 pub struct TimeoutPacketResult {
@@ -70,12 +71,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
         .client_consensus_state(&client_id, proof_height)
         .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), proof_height))?;
 
-    let proof_timestamp = consensus_state
-        .timestamp()
-        .map_err(Kind::ErrorInvalidConsensusState)?;
+    let proof_timestamp = consensus_state.timestamp();
 
     let packet_timestamp = packet.timeout_timestamp;
-    if packet.timeout_timestamp != 0 && packet_timestamp > proof_timestamp {
+    if let Expiry::Expired = packet_timestamp.check_expiry(&proof_timestamp) {
         return Err(
             Kind::PacketTimeoutTimestampNotReached(packet_timestamp, proof_timestamp).into(),
         );

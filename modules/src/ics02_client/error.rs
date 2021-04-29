@@ -32,9 +32,6 @@ pub enum Kind {
     #[error("implementation specific")]
     ImplementationSpecific,
 
-    #[error("Negative timestamp in consensus state {0}; timestamp must be a positive value")]
-    NegativeConsensusStateTimestamp(String),
-
     #[error("header verification failed")]
     HeaderVerificationFailure,
 
@@ -82,6 +79,9 @@ pub enum Kind {
 
     #[error("invalid proof for the upgraded consensus state")]
     InvalidUpgradeConsensusStateProof(Ics23Error),
+
+    #[error("invalid packet timeout timestamp value")]
+    InvalidPacketTimestamp,
 
     #[error("mismatch between client and arguments types, expected: {0:?}")]
     ClientArgsTypeMismatch(ClientType),

@@ -17,6 +17,7 @@ use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
+use crate::timestamp::Timestamp;
 
 pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
     "/ibc.lightclients.tendermint.v1.ConsensusState";
@@ -48,17 +49,15 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
-    pub fn timestamp(&self) -> Result<u64, Kind> {
+    pub fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(cs_state) => {
                 let date: DateTime<Utc> = cs_state.timestamp.into();
-                let value = date.timestamp();
-                u64::try_from(value)
-                    .map_err(|_| Kind::NegativeConsensusStateTimestamp(value.to_string()))
+                Timestamp::from_datetime(date)
             }
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => Ok(mock_state.timestamp()),
+            Self::Mock(mock_state) => mock_state.timestamp(),
         }
     }
 

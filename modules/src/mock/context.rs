@@ -36,6 +36,7 @@ use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensus
 use crate::mock::header::MockHeader;
 use crate::mock::host::{HostBlock, HostType};
 use crate::signer::Signer;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
@@ -54,7 +55,7 @@ pub struct MockContext {
     latest_height: Height,
 
     /// Highest timestamp, i.e., of the most recent block in the history.
-    timestamp: u64,
+    timestamp: Timestamp,
 
     /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
     /// blocks, ascending order by their height (latest block is on the last position).
@@ -304,7 +305,7 @@ impl MockContext {
         }
     }
 
-    pub fn with_timestamp(self, timestamp: u64) -> Self {
+    pub fn with_timestamp(self, timestamp: Timestamp) -> Self {
         Self { timestamp, ..self }
     }
 
@@ -517,7 +518,7 @@ impl ChannelReader for MockContext {
         self.latest_height
     }
 
-    fn host_timestamp(&self) -> u64 {
+    fn host_timestamp(&self) -> Timestamp {
         self.timestamp
     }
 
@@ -530,7 +531,7 @@ impl ChannelKeeper for MockContext {
     fn store_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        timeout_timestamp: u64,
+        timeout_timestamp: Timestamp,
         timeout_height: Height,
         data: Vec<u8>,
     ) -> Result<(), Ics4Error> {

@@ -11,12 +11,13 @@ use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 #[derive(Copy, Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct MockHeader {
     pub height: Height,
-    pub timestamp: u64,
+    pub timestamp: Timestamp,
 }
 
 impl Protobuf<RawMockHeader> for MockHeader {}
@@ -31,7 +32,8 @@ impl TryFrom<RawMockHeader> for MockHeader {
                 .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
                 .try_into()
                 .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
-            timestamp: raw.timestamp,
+            timestamp: Timestamp::from_nanoseconds(raw.timestamp)
+                .map_err(|_| error::Kind::InvalidPacketTimestamp)?,
         })
     }
 }

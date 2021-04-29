@@ -370,25 +370,27 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         client_state: AnyClientState,
         reply_to: ReplyTo<AnyHeader>,
     ) -> Result<(), Error> {
-        let header = {
-            // Get the light block at trusted_height + 1 from chain.
-            //
-            // TODO: This is tendermint specific and needs to be refactored during
-            //       the relayer light client refactoring.
-            // NOTE: This is needed to get the next validator set. While there is a next validator set
-            //       in the light block at trusted height, the proposer is not known/set in this set.
-            let trusted_light_block = self.light_client.fetch(trusted_height.increment())?;
+        // Get the light block at trusted_height + 1 from chain.
+        //
+        // TODO: This is tendermint specific and needs to be refactored during
+        //       the relayer light client refactoring.
+        // NOTE: This is needed to get the next validator set. While there is a next validator set
+        //       in the light block at trusted height, the proposer is not known/set in this set.
+        let trusted_light_block = self.light_client.fetch(trusted_height.increment());
 
-            // Get the light block at target_height from chain.
-            let target_light_block =
-                self.light_client
-                    .verify(trusted_height, target_height, &client_state)?;
+        // Get the light block at target_height from chain.
+        let target_light_block =
+            self.light_client
+                .verify(trusted_height, target_height, &client_state);
 
-            let header =
-                self.chain
-                    .build_header(trusted_height, trusted_light_block, target_light_block)?;
-
-            Ok(header.wrap_any())
+        // Try to build the header, return first error encountered.
+        let header = match (trusted_light_block, target_light_block) {
+            (Err(eta), _) => Err(eta),
+            (_, Err(etr)) => Err(etr),
+            (Ok(trusted_light_block), Ok(target_light_block)) => self
+                .chain
+                .build_header(trusted_height, trusted_light_block, target_light_block)
+                .map_or_else(Err, |header| Ok(header.wrap_any())),
         };
 
         reply_to
@@ -447,10 +449,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let misbehaviour = self
             .light_client
-            .check_misbehaviour(update_event, &client_state)?;
+            .check_misbehaviour(update_event, &client_state);
 
         reply_to
-            .send(Ok(misbehaviour))
+            .send(misbehaviour)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
