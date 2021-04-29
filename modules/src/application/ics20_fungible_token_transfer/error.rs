@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
@@ -16,17 +18,24 @@ pub enum Kind {
     #[error("Sending sequence number not found for port {0} and channel {1}")]
     SequenceSendNotFound(PortId, ChannelId),
 
-    #[error("Missing channel for port_id {0} and channel_id {1} ")]
+    #[error("Missing channel for port_id {0} and channel_id {1}")]
     ChannelNotFound(PortId, ChannelId),
 
-    #[error(
-        "Destination channel not found in the counterparty of port_id {0} and channel_id {1} "
-    )]
+    #[error("Destination channel not found in the counterparty of port_id {0} and channel_id {1}")]
     DestinationChannelNotFound(PortId, ChannelId),
+
+    #[error("Invalid MsgTransfer proto object: could not convert into a domain type")]
+    InvalidProtoMsgTransfer(String),
 }
 
 impl Kind {
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
+    }
+}
+
+impl From<Infallible> for Kind {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
     }
 }

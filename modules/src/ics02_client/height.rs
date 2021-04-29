@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::convert::TryFrom;
+use std::convert::{Infallible, TryFrom};
 use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
@@ -104,7 +104,7 @@ impl Ord for Height {
 impl Protobuf<RawHeight> for Height {}
 
 impl TryFrom<RawHeight> for Height {
-    type Error = anomaly::Error<Kind>;
+    type Error = Infallible;
 
     fn try_from(raw: RawHeight) -> Result<Self, Self::Error> {
         Ok(Height {

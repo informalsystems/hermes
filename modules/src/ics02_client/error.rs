@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
@@ -62,6 +64,9 @@ pub enum Kind {
     #[error("invalid raw client consensus state")]
     InvalidRawConsensusState,
 
+    #[error("invalid raw client consensus state: the height field is missing")]
+    MissingHeight,
+
     #[error("invalid client identifier: validation error: {0}")]
     InvalidClientIdentifier(ValidationKind),
 
@@ -96,5 +101,11 @@ pub enum Kind {
 impl Kind {
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
+    }
+}
+
+impl From<Infallible> for Kind {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
     }
 }

@@ -53,16 +53,25 @@ impl Msg for MsgTransfer {
 impl Protobuf<RawMsgTransfer> for MsgTransfer {}
 
 impl TryFrom<RawMsgTransfer> for MsgTransfer {
-    type Error = anomaly::Error<Kind>;
+    type Error = Kind;
 
     fn try_from(raw_msg: RawMsgTransfer) -> Result<Self, Self::Error> {
         Ok(MsgTransfer {
-            source_port: raw_msg.source_port.parse().unwrap(),
-            source_channel: raw_msg.source_channel.parse().unwrap(),
+            source_port: raw_msg.source_port.parse().map_err(|e| {
+                Kind::InvalidProtoMsgTransfer(format!("invalid source port: {}", e))
+            })?,
+            source_channel: raw_msg.source_channel.parse().map_err(|e| {
+                Kind::InvalidProtoMsgTransfer(format!("invalid source channel: {}", e))
+            })?,
             token: raw_msg.token,
             sender: raw_msg.sender.into(),
             receiver: raw_msg.receiver.into(),
-            timeout_height: raw_msg.timeout_height.unwrap().try_into().unwrap(),
+            timeout_height: raw_msg
+                .timeout_height
+                .ok_or(Kind::InvalidProtoMsgTransfer(
+                    "timeout_height is not specified".to_owned(),
+                ))?
+                .try_into()?,
             timeout_timestamp: raw_msg.timeout_timestamp,
         })
     }

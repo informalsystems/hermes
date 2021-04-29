@@ -122,18 +122,18 @@ pub struct AnyConsensusStateWithHeight {
 impl Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {}
 
 impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
-    type Error = Error;
+    type Error = Kind;
 
     fn try_from(value: ConsensusStateWithHeight) -> Result<Self, Self::Error> {
         let state = value
             .consensus_state
             .map(AnyConsensusState::try_from)
             .transpose()
-            .map_err(|e| Kind::InvalidRawConsensusState.context(e))?
+            .map_err(|_| Kind::InvalidRawConsensusState)?
             .ok_or(Kind::EmptyConsensusStateResponse)?;
 
         Ok(AnyConsensusStateWithHeight {
-            height: value.height.ok_or(Kind::InvalidHeightResult)?.try_into()?,
+            height: value.height.ok_or(Kind::MissingHeight)?.try_into()?,
             consensus_state: state,
         })
     }
