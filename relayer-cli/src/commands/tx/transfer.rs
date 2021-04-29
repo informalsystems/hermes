@@ -136,7 +136,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         let conn_id = match channel_end.connection_hops.first() {
             None => {
                 return Output::error(format!(
-                    "Could not retrieve the connection hop underlying channel end {:?} on chain {}",
+                    "could not retrieve the connection hop underlying channel end {:?} on chain {}",
                     channel_end, self.src_chain_id
                 ))
                 .exit()
@@ -146,17 +146,17 @@ impl Runnable for TxIcs20MsgTransferCmd {
         let conn_end = src_chain
             .query_connection(conn_id, Height::zero())
             .unwrap_or_else(exit_with_unrecoverable_error);
-        debug!("Connection hop underlying the channel: {:?}", conn_end);
+        debug!("connection hop underlying the channel: {:?}", conn_end);
         let src_chain_client_state = src_chain
             .query_client_state(conn_end.client_id(), Height::zero())
             .unwrap_or_else(exit_with_unrecoverable_error);
         debug!(
-            "Client state underlying the channel: {:?}",
+            "client state underlying the channel: {:?}",
             src_chain_client_state
         );
         if src_chain_client_state.chain_id != self.dst_chain_id {
             return Output::error(
-                format!("The requested port/channel ({}/{}) provides a path from chain '{}' to \
+                format!("the requested port/channel ({}/{}) provides a path from chain '{}' to \
                  chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
                         opts.packet_src_port_id, opts.packet_src_channel_id,
                         self.src_chain_id,
