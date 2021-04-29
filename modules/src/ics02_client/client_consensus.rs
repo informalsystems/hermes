@@ -15,6 +15,8 @@ use crate::ics02_client::height::Height;
 use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
+use crate::utils::UnwrapInfallible;
+
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
 
@@ -133,7 +135,11 @@ impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
             .ok_or(Kind::EmptyConsensusStateResponse)?;
 
         Ok(AnyConsensusStateWithHeight {
-            height: value.height.ok_or(Kind::MissingHeight)?.try_into()?,
+            height: value
+                .height
+                .ok_or(Kind::MissingHeight)?
+                .try_into()
+                .unwrap_infallible(),
             consensus_state: state,
         })
     }

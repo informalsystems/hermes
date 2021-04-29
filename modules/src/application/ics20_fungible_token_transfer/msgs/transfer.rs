@@ -11,6 +11,7 @@ use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+use crate::utils::UnwrapInfallible;
 
 pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
@@ -68,10 +69,11 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             receiver: raw_msg.receiver.into(),
             timeout_height: raw_msg
                 .timeout_height
-                .ok_or_else (|| Kind::InvalidProtoMsgTransfer(
-                    "timeout_height is not specified".to_owned(),
-                ))?
-                .try_into()?,
+                .ok_or_else(|| {
+                    Kind::InvalidProtoMsgTransfer("timeout_height is not specified".to_owned())
+                })?
+                .try_into()
+                .unwrap_infallible(),
             timeout_timestamp: raw_msg.timeout_timestamp,
         })
     }

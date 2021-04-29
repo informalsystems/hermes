@@ -132,7 +132,7 @@ impl IbcEvent {
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {
             Ok(value) => value,
-            Err(_) => format!("{:?}", self) // Fallback to debug printing
+            Err(_) => format!("{:?}", self), // Fallback to debug printing
         }
     }
 
