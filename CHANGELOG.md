@@ -6,7 +6,7 @@
 
 - [ibc]
   - Reinstated `ics23` dependency ([#854])
-  - Use proper Timestamp type to track time ([#855])
+  - Use proper Timestamp type to track time ([#758])
 
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
@@ -27,14 +27,14 @@
   - `hermes -j query channels` command now returns `result` array with the format `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]`.
 
 
+[#758]: https://github.com/informalsystems/ibc-rs/issues/758
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
-[#854]: https://github.com/informalsystems/ibc-rs/issues/854
-[#851]: https://github.com/informalsystems/ibc-rs/issues/851
-[#869]: https://github.com/informalsystems/ibc-rs/issues/869
-[#855]: https://github.com/informalsystems/ibc-rs/issues/855
-[#861]: https://github.com/informalsystems/ibc-rs/issues/861
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
+[#851]: https://github.com/informalsystems/ibc-rs/issues/851
+[#854]: https://github.com/informalsystems/ibc-rs/issues/854
+[#861]: https://github.com/informalsystems/ibc-rs/issues/861
+[#869]: https://github.com/informalsystems/ibc-rs/issues/869
 
 
 ## v0.2.0
