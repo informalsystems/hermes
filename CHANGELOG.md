@@ -7,14 +7,18 @@
 - [ibc]
   - Reinstated `ics23` dependency ([#854])
   - Use proper Timestamp type to track time ([#855])
+
 - [ibc-relayer]
-  - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour. ([#785])
+  - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
 
 ### BUG FIXES
 
 - [ibc-relayer]
   - Fix pagination in gRPC query for clients ([#811])
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
+
+- [ibc-relayer-cli]
+  - Fix for `ft-transfer` mismatching arguments ([#869])
 
 ### BREAKING CHANGES
 
@@ -25,6 +29,7 @@
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
+[#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#855]: https://github.com/informalsystems/ibc-rs/issues/855
 
 
