@@ -68,7 +68,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             receiver: raw_msg.receiver.into(),
             timeout_height: raw_msg
                 .timeout_height
-                .ok_or(Kind::InvalidProtoMsgTransfer(
+                .ok_or_else (|| Kind::InvalidProtoMsgTransfer(
                     "timeout_height is not specified".to_owned(),
                 ))?
                 .try_into()?,
@@ -85,7 +85,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             token: domain_msg.token,
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
-            timeout_height: Some(domain_msg.timeout_height.try_into().unwrap()),
+            timeout_height: Some(domain_msg.timeout_height.into()),
             timeout_timestamp: domain_msg.timeout_timestamp,
         }
     }
