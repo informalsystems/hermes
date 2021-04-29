@@ -128,7 +128,6 @@ impl ClientState {
     /// Get the refresh time to ensure the state does not expire
     pub fn refresh_time(&self) -> Option<Duration> {
         Some(self.trusting_period / 2)
-        //Some(Duration::from_secs(20))
     }
 }
 

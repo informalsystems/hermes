@@ -52,7 +52,7 @@ impl AnyConsensusState {
         match self {
             Self::Tendermint(cs_state) => {
                 let date: DateTime<Utc> = cs_state.timestamp.into();
-                let value = date.timestamp();
+                let value = date.timestamp_nanos();
                 u64::try_from(value)
                     .map_err(|_| Kind::NegativeConsensusStateTimestamp(value.to_string()))
             }

@@ -1,4 +1,3 @@
-use std::time::Instant;
 use std::{
     collections::HashMap,
     fmt,
@@ -384,7 +383,6 @@ impl Worker {
 
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
-                        client.last_update = Instant::now();
                         debug!("[{}] client updated", client);
                         let misbehaviour_detection_result = client
                             .detect_misbehaviour_and_send_evidence(Some(update))

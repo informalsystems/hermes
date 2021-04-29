@@ -7,7 +7,7 @@ use tracing::{debug, error, info, trace, warn};
 use ibc::downcast;
 use ibc::events::{IbcEvent, IbcEventType};
 use ibc::ics02_client::client_consensus::{
-    AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
+    AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
 };
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::events::UpdateClient;
@@ -25,7 +25,7 @@ use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 
 use crate::chain::handle::ChainHandle;
 use crate::relay::MAX_ITER;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -59,9 +59,6 @@ pub struct ForeignClient {
 
     /// A handle to the chain whose headers this client is verifying, aka the source chain.
     pub src_chain: Box<dyn ChainHandle>,
-
-    /// Last time the client was updated
-    pub last_update: Instant,
 }
 
 impl fmt::Display for ForeignClient {
@@ -97,7 +94,6 @@ impl ForeignClient {
             id: ClientId::default(),
             dst_chain: dst_chain.clone(),
             src_chain: src_chain.clone(),
-            last_update: Instant::now(), // TODO
         };
 
         client.create()?;
@@ -114,7 +110,6 @@ impl ForeignClient {
             id: client_id.clone(),
             dst_chain: dst_chain.clone(),
             src_chain: src_chain.clone(),
-            last_update: Instant::now(), // TODO
         }
     }
 
@@ -349,18 +344,38 @@ impl ForeignClient {
                 ))
             })?;
 
-        let refresh_time = client_state.refresh_time();
-        if refresh_time.is_none() || self.last_update.elapsed() < refresh_time.unwrap() {
-            return Ok(None);
-        }
-        info!("[{}] client refresh", self);
+        let last_update_time = self
+            .consensus_state(client_state.latest_height())?
+            .timestamp()
+            .map_err(|e| {
+                ForeignClientError::ClientUpdate(format!(
+                    "failed querying consensus state on dst chain {} for {} with error: {}",
+                    self.id,
+                    client_state.latest_height(),
+                    e
+                ))
+            })?;
 
-        match self.build_latest_update_client_and_send() {
-            Ok(ev) => {
-                self.last_update = Instant::now();
-                Ok(Some(ev))
+        // TODO use Timestamp when master is merged
+        match client_state.refresh_time() {
+            None => Ok(None),
+            Some(refresh_time) => {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_nanos();
+                if last_update_time as u128 + refresh_time.as_nanos() < now {
+                    match self.build_latest_update_client_and_send() {
+                        Ok(ev) => {
+                            info!("[{}] client refresh", self);
+                            Ok(Some(ev))
+                        }
+                        Err(e) => Err(e),
+                    }
+                } else {
+                    Ok(None)
+                }
             }
-            Err(e) => Err(e),
         }
     }
 
@@ -605,6 +620,24 @@ impl ForeignClient {
             })?;
         consensus_states.sort_by_key(|a| std::cmp::Reverse(a.height));
         Ok(consensus_states)
+    }
+
+    fn consensus_state(&self, height: Height) -> Result<AnyConsensusState, ForeignClientError> {
+        // TODO add single consensus state query to runtime
+        let res = self
+            .consensus_states()?
+            .iter()
+            .find(|cs| cs.height == height)
+            .ok_or_else(|| {
+                ForeignClientError::ClientUpdate(format!(
+                    "failed querying consensus state on chain {} for {}",
+                    self.id, height
+                ))
+            })?
+            .consensus_state
+            .clone();
+
+        Ok(res)
     }
 
     /// Retrieves all consensus heights for this client sorted in descending
