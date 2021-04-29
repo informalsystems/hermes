@@ -3743,12 +3743,22 @@ POSITIONAL ARGUMENTS:
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>Success: [
-    ChannelId(
-        &quot;channel-0&quot;,
-    ),
-    ChannelId(
-        &quot;channel-1&quot;,
-    ),
+    PortChannelId {
+        channel_id: ChannelId(
+            &quot;channel-0&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+    },
+    PortChannelId {
+        channel_id: ChannelId(
+            &quot;channel-1&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+    },
 ]
 <span class="boring">}
 </span></code></pre></pre>
@@ -3781,7 +3791,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query the channel end of channel <code>channel-1</code> on port <code>transfer</code> on <code>ibc-1</code>:</p>
-<pre><code class="language-shell">hermes query channel end ibc-1 channel-1
+<pre><code class="language-shell">hermes query channel end ibc-1 transfer channel-1
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
