@@ -357,6 +357,8 @@ impl Worker {
             self.chains.b.clone(),
         );
 
+        info!("running client worker for {:?}", client);
+
         // check evidence of misbehaviour for all updates
         // TODO - disable if connection delay not zero?
         let misbehaviour_detection_result = client
@@ -548,7 +550,17 @@ impl Object {
         e: &UpdateClient,
         dst_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let src_chain_id = get_client_host_chain(dst_chain, &e.client_id())?;
+        let client_state = dst_chain.query_client_state(e.client_id(), Height::zero())?;
+        if client_state.refresh_time().is_none() {
+            return Err(format!(
+                "client '{}' on chain {} does not require refresh",
+                e.client_id(),
+                dst_chain.id()
+            )
+            .into());
+        }
+
+        let src_chain_id = client_state.chain_id();
 
         Ok(Client {
             dst_client_id: e.client_id().clone(),
@@ -695,20 +707,6 @@ pub fn collect_events(src_chain: &dyn ChainHandle, batch: EventBatch) -> Collect
     }
 
     collected
-}
-
-fn get_client_host_chain(
-    target_chain: &dyn ChainHandle,
-    client_id: &ClientId,
-) -> Result<ChainId, BoxError> {
-    let client_state = target_chain.query_client_state(client_id, Height::zero())?;
-
-    trace!(
-        chain_id = %target_chain.id(),
-        client_id = %client_id,
-        "client target chain: {}", client_state.chain_id()
-    );
-    Ok(client_state.chain_id())
 }
 
 // TODO: Memoize this result

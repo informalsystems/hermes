@@ -14,6 +14,7 @@ use crate::ics24_host::identifier::{ChainId, ClientId};
 use crate::mock::client_state::MockClientState;
 use crate::Height;
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
+use std::time::Duration;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
@@ -62,6 +63,15 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(state) => state.client_type(),
+        }
+    }
+
+    pub fn refresh_time(&self) -> Option<Duration> {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.refresh_time(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
         }
     }
 }

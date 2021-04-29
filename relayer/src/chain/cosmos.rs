@@ -795,7 +795,7 @@ impl Chain for CosmosSdkChain {
         let channels = response
             .channels
             .into_iter()
-            .filter_map(|c| IdentifiedChannelEnd::try_from(c).ok())
+            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
             .collect();
         Ok(channels)
     }

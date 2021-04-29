@@ -60,6 +60,7 @@ pub struct ForeignClient {
     /// A handle to the chain whose headers this client is verifying, aka the source chain.
     pub src_chain: Box<dyn ChainHandle>,
 
+    /// Last time the client was updated
     pub last_update: Instant,
 }
 
@@ -338,7 +339,18 @@ impl ForeignClient {
     }
 
     pub fn refresh(&mut self) -> Result<Option<IbcEvent>, ForeignClientError> {
-        if self.last_update.elapsed() < Duration::from_secs(20) {
+        let client_state = self
+            .dst_chain
+            .query_client_state(self.id(), Height::zero())
+            .map_err(|e| {
+                ForeignClientError::ClientUpdate(format!(
+                    "failed querying client state on dst chain {} with error: {}",
+                    self.id, e
+                ))
+            })?;
+
+        let refresh_time = client_state.refresh_time();
+        if refresh_time.is_none() || self.last_update.elapsed() < refresh_time.unwrap() {
             return Ok(None);
         }
         info!("[{}] client refresh", self);

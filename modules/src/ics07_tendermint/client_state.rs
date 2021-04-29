@@ -124,6 +124,12 @@ impl ClientState {
         client_state.max_clock_drift = Duration::from_secs(0);
         client_state
     }
+
+    /// Get the refresh time to ensure the state does not expire
+    pub fn refresh_time(&self) -> Option<Duration> {
+        Some(self.trusting_period / 2)
+        //Some(Duration::from_secs(20))
+    }
 }
 
 impl crate::ics02_client::client_state::ClientState for ClientState {

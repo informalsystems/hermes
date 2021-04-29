@@ -16,6 +16,7 @@ use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::Height;
+use std::time::Duration;
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.
@@ -42,6 +43,10 @@ impl Protobuf<RawMockClientState> for MockClientState {}
 impl MockClientState {
     pub fn latest_height(&self) -> Height {
         (self.0).height
+    }
+
+    pub fn refresh_time(&self) -> Option<Duration> {
+        None
     }
 }
 

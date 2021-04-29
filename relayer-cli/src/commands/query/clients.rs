@@ -49,8 +49,9 @@ impl Runnable for QueryAllClientsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cids) => {
-                let client_ids: Vec<ClientId> = cids.into_iter().map(|cs| cs.client_id).collect();
+            Ok(clients) => {
+                let client_ids: Vec<ClientId> =
+                    clients.into_iter().map(|cs| cs.client_id).collect();
                 Output::success(client_ids).exit()
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
