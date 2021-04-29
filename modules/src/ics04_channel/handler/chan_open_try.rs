@@ -35,18 +35,8 @@ pub(crate) fn process(
                 // A ChannelEnd already exists and all validation passed.
                 Ok((old_channel_end, prev_id.clone()))
             } else {
-                // TODO(ADI) Fix this: no need for context!
                 // A ConnectionEnd already exists and validation failed.
-                Err(Into::<Error>::into(
-                    Kind::ChannelMismatch(prev_id.clone()).context(
-                        old_channel_end
-                            .counterparty()
-                            .channel_id()
-                            .clone()
-                            .unwrap()
-                            .to_string(),
-                    ),
-                ))
+                Err(Into::<Error>::into(Kind::ChannelMismatch(prev_id.clone())))
             }
         }
         // No previous channel id was supplied. Create a new channel end & an identifier.

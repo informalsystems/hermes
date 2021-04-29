@@ -64,6 +64,9 @@ pub enum Kind {
     #[error("invalid raw client consensus state")]
     InvalidRawConsensusState,
 
+    #[error("invalid client id in the update client message")]
+    InvalidMsgUpdateClientId,
+
     #[error("invalid raw client consensus state: the height field is missing")]
     MissingHeight,
 

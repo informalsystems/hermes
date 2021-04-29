@@ -88,13 +88,17 @@ impl From<AnyMisbehaviour> for Any {
         match value {
             AnyMisbehaviour::Tendermint(misbehaviour) => Any {
                 type_url: TENDERMINT_MISBEHAVIOR_TYPE_URL.to_string(),
-                value: misbehaviour.encode_vec().unwrap(),
+                value: misbehaviour
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyMisbehavior::Tendermint`"),
             },
 
             #[cfg(any(test, feature = "mocks"))]
             AnyMisbehaviour::Mock(misbehaviour) => Any {
                 type_url: MOCK_MISBEHAVIOUR_TYPE_URL.to_string(),
-                value: misbehaviour.encode_vec().unwrap(),
+                value: misbehaviour
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyMisbehavior::Mock`"),
             },
         }
     }
