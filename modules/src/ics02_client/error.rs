@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
@@ -76,6 +78,9 @@ pub enum Kind {
 
     #[error("invalid height result")]
     InvalidHeightResult,
+
+    #[error("cannot convert into a `Height` type from string {0}")]
+    HeightConversion(String, ParseIntError),
 
     #[error("invalid address")]
     InvalidAddress,

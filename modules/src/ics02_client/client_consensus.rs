@@ -104,12 +104,16 @@ impl From<AnyConsensusState> for Any {
         match value {
             AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
+                value: value
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
+                value: value
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
             },
         }
     }
