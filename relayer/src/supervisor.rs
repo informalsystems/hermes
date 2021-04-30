@@ -317,6 +317,12 @@ pub struct Worker {
     rx: Receiver<WorkerCmd>,
 }
 
+impl fmt::Display for Worker {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{} <-> {}]", self.chains.a.id(), self.chains.b.id(),)
+    }
+}
+
 impl Worker {
     /// Spawn a worker which relay events pertaining to `object` between two `chains`.
     pub fn spawn(chains: ChainHandlePair, object: Object) -> WorkerHandle {
@@ -338,14 +344,15 @@ impl Worker {
 
     /// Run the worker event loop.
     fn run(self, object: Object) {
-        let result = match object {
+        let result = match object.clone() {
             Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
             Object::Client(client) => self.run_client(client),
         };
 
         if let Err(e) = result {
-            eprintln!("worker error: {}", e);
+            eprintln!("[{}] worker error: {}", object.short_name(), e);
         }
+        info!("[{}] worker exits", object.short_name());
     }
 
     /// Run the event loop for events associated with a [`Client`].
@@ -356,27 +363,25 @@ impl Worker {
             self.chains.b.clone(),
         );
 
-        info!("running client worker for {:?}", client);
+        info!("[{}] running client worker for {}", self, client);
 
-        // check evidence of misbehaviour for all updates
-        // TODO - disable if connection delay not zero?
-        let misbehaviour_detection_result = client
-            .detect_misbehaviour_and_send_evidence(None)
-            .map_err(|e| {
-                format!(
-                    "could not run misbehaviour detection for {}: {}",
-                    client.id, e
-                )
-            })?;
+        info!(
+            "[{}] running initial misbehaviour detection for {}",
+            self, client
+        );
 
-        if !misbehaviour_detection_result.is_empty() {
-            info!(
-                "evidence submission result {:?}",
-                misbehaviour_detection_result
-            );
+        // initial check for evidence of misbehaviour for all updates
+        if !client
+            .detect_misbehaviour_and_submit_evidence(None)?
+            .is_empty()
+        {
             return Ok(());
         }
 
+        info!(
+            "[{}] running client worker (misbehaviour and refresh) for {}",
+            self, client
+        );
         loop {
             if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
                 trace!("[{}] client receives batch {:?}", client, batch);
@@ -384,20 +389,15 @@ impl Worker {
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
                         debug!("[{}] client updated", client);
-                        let misbehaviour_detection_result = client
-                            .detect_misbehaviour_and_send_evidence(Some(update))
+                        let result = client
+                            .detect_misbehaviour_and_submit_evidence(Some(update))
                             .map_err(|e| {
                                 format!(
-                                    "could not run misbehaviour detection for {}: {}",
-                                    client.id, e
+                                    "[{}] could not run misbehaviour detection for {}: {}",
+                                    self, client, e
                                 )
                             })?;
-
-                        if !misbehaviour_detection_result.is_empty() {
-                            info!(
-                                "evidence submission result {:?}",
-                                misbehaviour_detection_result
-                            );
+                        if result.is_empty() {
                             break;
                         }
                     }
