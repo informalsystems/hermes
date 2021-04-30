@@ -13,7 +13,7 @@ key_name = 'testkey'
 store_prefix = 'ibc'
 fee_denom = 'stake'
 fee_amount = 10
-gas = 200000
+gas = 300000
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -28,6 +28,6 @@ key_name = 'testkey'
 store_prefix = 'ibc'
 fee_denom = 'stake'
 fee_amount = 10
-gas = 200000
+gas = 300000
 clock_drift = '5s'
 trusting_period = '14days'
