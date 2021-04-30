@@ -5,7 +5,8 @@ use std::{
 };
 
 use anomaly::BoxError;
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{Receiver, Select, Sender};
+use tracing::{info, warn};
 
 use ibc::{
     events::IbcEvent,
@@ -18,12 +19,13 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
-use tracing::{info, warn};
 
 use crate::{
     chain::handle::ChainHandle,
+    config::Config,
     event::monitor::EventBatch,
     link::{Link, LinkParameters},
+    registry::Registry,
 };
 
 /// A command for a [`Worker`].
@@ -94,46 +96,65 @@ impl ChainHandlePair {
     }
 }
 
+fn recv_multiple<K, T>(rs: &[(K, Receiver<T>)]) -> Result<(&K, T), BoxError> {
+    // Build a list of operations.
+    let mut sel = Select::new();
+    for (_, r) in rs {
+        sel.recv(r);
+    }
+
+    // Complete the selected operation.
+    let oper = sel.select();
+    let index = oper.index();
+
+    let (k, r) = &rs[index];
+
+    let result = oper.recv(r)?;
+
+    Ok((k, result))
+}
+
 /// The supervisor listens for events on a pair of chains,
 /// and dispatches the events it receives to the appropriate
 /// worker, based on the [`Object`] associated with each event.
 pub struct Supervisor {
-    chains: ChainHandlePair,
+    config: Config,
+    registry: Registry,
     workers: HashMap<Object, WorkerHandle>,
 }
 
 impl Supervisor {
     /// Spawn a supervisor which listens for events on the two given chains.
-    pub fn spawn(
-        chain_a: Box<dyn ChainHandle>,
-        chain_b: Box<dyn ChainHandle>,
-    ) -> Result<Self, BoxError> {
-        let chains = ChainHandlePair {
-            a: chain_a,
-            b: chain_b,
-        };
+    pub fn spawn(config: Config) -> Result<Self, BoxError> {
+        let registry = Registry::new(config.clone());
 
         Ok(Self {
-            chains,
+            config,
+            registry,
             workers: HashMap::new(),
         })
     }
 
     /// Run the supervisor event loop.
     pub fn run(mut self) -> Result<(), BoxError> {
-        let subscription_a = self.chains.a.subscribe()?;
-        let subscription_b = self.chains.b.subscribe()?;
+        let subscriptions = Vec::with_capacity(self.config.chains.len());
+
+        for chain_config in &self.config.chains {
+            let chain = self.registry.get_or_spawn(&chain_config.id)?;
+            let subscription = chain.subscribe()?;
+            subscriptions.push((chain, subscription));
+        }
 
         loop {
-            for batch in subscription_a.try_iter() {
-                self.process_batch(self.chains.a.clone(), batch.unwrap_or_clone())?;
+            match recv_multiple(&subscriptions) {
+                Ok((chain, batch)) => {
+                    dbg!((chain, batch));
+                    self.process_batch(chain.clone(), batch.unwrap_or_clone())?;
+                }
+                Err(e) => {
+                    dbg!(e);
+                }
             }
-
-            for batch in subscription_b.try_iter() {
-                self.process_batch(self.chains.b.clone(), batch.unwrap_or_clone())?;
-            }
-
-            std::thread::sleep(Duration::from_millis(600));
         }
     }
 
@@ -148,6 +169,9 @@ impl Supervisor {
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
+        // FIXME: Don't use direction but instead infer from the batch what is the destination chain,
+        //        (assuming there is only a single destination chain per batch, otherwise
+        //        we have to split up the batch I guess) and give both handles to `worker_for_object`.
         let direction = if chain_id == self.chains.a.id() {
             Direction::AtoB
         } else {

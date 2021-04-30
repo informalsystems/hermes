@@ -5,10 +5,10 @@ use std::{fs, fs::File, io::Write, path::Path, time::Duration};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
+use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, PortId};
 
 use crate::error;
-use ibc::ics04_channel::channel::Order;
 
 /// Defaults for various fields
 pub mod default {
