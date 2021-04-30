@@ -33,6 +33,7 @@ pub mod macros;
 pub mod proofs;
 pub mod query;
 pub mod signer;
+pub mod timestamp;
 pub mod tx_msg;
 
 pub mod ics02_client;

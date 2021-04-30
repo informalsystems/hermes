@@ -7,6 +7,7 @@ use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::timestamp::{Expiry, Timestamp};
 use crate::Height;
 
 #[derive(Clone, Debug)]
@@ -16,7 +17,7 @@ pub struct SendPacketResult {
     pub seq: Sequence,
     pub seq_number: Sequence,
     pub timeout_height: Height,
-    pub timeout_timestamp: u64,
+    pub timeout_timestamp: Timestamp,
     pub data: Vec<u8>,
 }
 
@@ -77,12 +78,10 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .client_consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
 
-    let latest_timestamp = consensus_state
-        .timestamp()
-        .map_err(Kind::ErrorInvalidConsensusState)?;
+    let latest_timestamp = consensus_state.timestamp();
 
     let packet_timestamp = packet.timeout_timestamp;
-    if packet.timeout_timestamp != 0 && packet_timestamp <= latest_timestamp {
+    if let Expiry::Expired = latest_timestamp.check_expiry(&packet_timestamp) {
         return Err(Kind::LowPacketTimestamp.into());
     }
 

@@ -36,7 +36,6 @@ bytes = "1.0.0"
 prost = "0.7"
 prost-types = "0.7"
 futures = "0.3.14"
-retry = "1.1.0"
 crossbeam-channel = "0.5.1"
 k256 = { version = "0.7.3", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"

@@ -6,7 +6,7 @@ use subtle_encoding::{Encoding, Hex};
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
-use crate::ics23_commitment::error::{Error, Kind};
+use crate::ics23_commitment::error::Error;
 
 #[derive(Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
@@ -92,8 +92,8 @@ impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
 
     fn try_from(value: CommitmentProofBytes) -> Result<Self, Self::Error> {
         let value: Vec<u8> = value.into();
-        let res: RawMerkleProof = prost::Message::decode(value.as_ref())
-            .map_err(|e| Kind::InvalidRawMerkleProof.context(e))?;
+        let res: RawMerkleProof =
+            prost::Message::decode(value.as_ref()).map_err(Error::InvalidRawMerkleProof)?;
         Ok(res)
     }
 }

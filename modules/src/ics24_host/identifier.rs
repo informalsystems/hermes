@@ -372,3 +372,10 @@ impl PartialEq<str> for ChannelId {
         self.as_str().eq(other)
     }
 }
+
+/// A pair of [`PortId`] and [`ChannelId`] are used together for sending IBC packets.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct PortChannelId {
+    pub channel_id: ChannelId,
+    pub port_id: PortId,
+}
