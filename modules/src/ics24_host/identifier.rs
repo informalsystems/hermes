@@ -59,7 +59,7 @@ impl ChainId {
         }
 
         let split: Vec<_> = chain_id.split('-').collect();
-        split[1].parse().unwrap_or(0)
+        split.last().expect("get revision number from chain_id").parse().unwrap_or(0)
     }
 
     /// is_epoch_format() checks if a chain_id is in the format required for parsing epochs
