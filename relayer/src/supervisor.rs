@@ -169,15 +169,6 @@ impl Supervisor {
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
-        // FIXME: Don't use direction but instead infer from the batch what is the destination chain,
-        //        (assuming there is only a single destination chain per batch, otherwise
-        //        we have to split up the batch I guess) and give both handles to `worker_for_object`.
-        let direction = if chain_id == self.chains.a.id() {
-            Direction::AtoB
-        } else {
-            Direction::BtoA
-        };
-
         let mut collected = collect_events(src_chain.as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
@@ -187,13 +178,19 @@ impl Supervisor {
 
             println!("[{}] events: {:#?}", chain_id, events);
 
-            if let Some(worker) = self.worker_for_object(object, direction) {
+            // TODO: Infer from the batch what is the destination chain, and give both handles to `worker_for_object`.
+            let dst_chain = todo!();
+
+            if let Some(worker) = self.worker_for_object(object, src_chain, dst_chain) {
                 worker.send_packet_events(height, events, chain_id.clone())?;
             }
         }
 
         if collected.has_new_blocks() {
             for worker in self.workers.values() {
+                // TODO: Only send relevant NewBlocks event to the worker,
+                //       ie. if the NewBlocks event comes from one of the two
+                //       chains the worker is talking to.
                 worker.send_new_blocks(height, collected.new_blocks.clone())?;
             }
         }
@@ -208,7 +205,12 @@ impl Supervisor {
     ///
     /// The `direction` parameter indicates in which direction the worker should
     /// relay events.
-    fn worker_for_object(&mut self, object: Object, direction: Direction) -> Option<&WorkerHandle> {
+    fn worker_for_object(
+        &mut self,
+        object: Object,
+        src: Box<dyn ChainHandle>,
+        dst: Box<dyn ChainHandle>,
+    ) -> Option<&WorkerHandle> {
         if self.workers.contains_key(&object) {
             Some(&self.workers[&object])
         } else {
