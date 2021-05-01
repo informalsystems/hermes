@@ -51,16 +51,16 @@ pub enum LinkError {
     #[error("failed during query to chain id {0} with underlying error: {1}")]
     QueryError(ChainId, Error),
 
-    #[error("ConnectionError:")]
+    #[error("ConnectionError: {0}:")]
     ConnectionError(#[from] ConnectionError),
 
-    #[error("ChannelError:")]
+    #[error("ChannelError:  {0}:")]
     ChannelError(#[from] ChannelError),
 
     #[error("Failed during a client operation: {0}:")]
     ClientError(ForeignClientError),
 
-    #[error("PacketError:")]
+    #[error("PacketError: {0}:")]
     PacketError(#[from] Error),
 
     #[error("clearing of old packets failed")]

@@ -2,6 +2,11 @@
 
 > [TODO: high level summary]
 
+### FEATURES
+
+- [ibc-relayer]
+  - Support for ICS27 ([#794])
+
 ### IMPROVEMENTS
 
 - [ibc]
@@ -29,6 +34,7 @@
 
 [#758]: https://github.com/informalsystems/ibc-rs/issues/758
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
+[#794]: https://github.com/informalsystems/ibc-rs/issues/794
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
