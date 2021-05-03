@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .cmd import *
 from .common import *
 
@@ -27,10 +29,24 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
     src_chain_id: ChainId
     src_port: PortId
     src_channel: ChannelId
-    timeout_offset: int
+    amount: int
+    height_offset: int
+    number_msgs: Optional[int]
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel, "9999", str(self.timeout_offset)]
+        args = [
+            self.dst_chain_id,
+            self.src_chain_id,
+            self.src_port,
+            self.src_channel,
+            str(self.amount),
+            str(self.height_offset),
+        ]
+
+        if self.number_msgs != None:
+            args.extend(['-n', str(self.number_msgs)])
+
+        return args
 
     def process(self, result: Any) -> TxPacketSendRes:
         entry = find_entry(result, 'SendPacket')
@@ -110,15 +126,80 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
         entry = find_entry(result, 'AcknowledgePacket')
         return from_dict(TxPacketAckRes, entry)
 
-# =============================================================================
+
+# -----------------------------------------------------------------------------
+
+@cmd("query packet unreceived-packets")
+@dataclass
+class QueryUnreceivedPackets(Cmd[List[int]]):
+    dst_chain_id: ChainId
+    src_chain_id: ChainId
+    src_port: PortId
+    src_channel: ChannelId
+
+    def args(self) -> List[str]:
+        return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
+
+    def process(self, result: Any) -> List[int]:
+        return from_dict(List[int], result)
+
+
+def query_unreceived_packets(
+    c: Config,
+    dst: ChainId,
+    src: ChainId,
+    src_port: PortId,
+    src_channel: ChannelId,
+) -> List[int]:
+    cmd = QueryUnreceivedPackets(
+        dst_chain_id=dst, src_chain_id=src, src_port=src_port, src_channel=src_channel)
+
+    return cmd.run(c).success()
+
+# -----------------------------------------------------------------------------
+
+
+@cmd("query packet unreceived-acks")
+@dataclass
+class QueryUnreceivedAcks(Cmd[List[int]]):
+    dst_chain_id: ChainId
+    src_chain_id: ChainId
+    src_port: PortId
+    src_channel: ChannelId
+
+    def args(self) -> List[str]:
+        return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
+
+    def process(self, result: Any) -> List[int]:
+        return from_dict(List[int], result)
+
+
+def query_unreceived_acks(
+    c: Config,
+    dst: ChainId,
+    src: ChainId,
+    src_port: PortId,
+    src_channel: ChannelId,
+) -> List[int]:
+    cmd = QueryUnreceivedAcks(
+        dst_chain_id=dst, src_chain_id=src, src_port=src_port, src_channel=src_channel)
+
+    return cmd.run(c).success()
+
+
 # TRANSFER (packet send)
 # =============================================================================
 
 
-def packet_send(c: Config, src: ChainId, dst: ChainId, src_port: PortId, src_channel: ChannelId, timeout_offset: int) -> Packet:
+def packet_send(c: Config, src: ChainId, dst: ChainId,
+                src_port: PortId, src_channel: ChannelId,
+                amount: int, height_offset: int, number_msgs: Optional[int] = None) -> Packet:
+
     cmd = TxPacketSend(dst_chain_id=dst, src_chain_id=src,
                        src_port=src_port, src_channel=src_channel,
-                       timeout_offset=timeout_offset)
+                       amount=amount,
+                       number_msgs=number_msgs,
+                       height_offset=height_offset)
 
     res = cmd.run(c).success()
     l.info(
@@ -140,7 +221,7 @@ def packet_recv(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_cha
 
 def packet_timeout(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Packet:
     cmd = TxPacketTimeout(dst_chain_id=dst, src_chain_id=src,
-                       src_port=src_port, src_channel=src_channel)
+                          src_port=src_port, src_channel=src_channel)
 
     res = cmd.run(c).success()
     l.info(
@@ -165,7 +246,8 @@ def ping_pong(c: Config,
               a_chan: ChannelId, b_chan: ChannelId,
               port_id: PortId = PortId('transfer')):
 
-    pkt_send_a = packet_send(c, side_a, side_b, port_id, a_chan, 1000)
+    pkt_send_a = packet_send(c, side_a, side_b, port_id,
+                             a_chan, amount=9999, height_offset=1000)
 
     split()
 
@@ -186,7 +268,8 @@ def ping_pong(c: Config,
 
     split()
 
-    pkt_send_b = packet_send(c, side_b, side_a, port_id, b_chan, 1000)
+    pkt_send_b = packet_send(c, side_b, side_a, port_id,
+                             b_chan, amount=9999, height_offset=1000)
 
     split()
 
@@ -206,11 +289,12 @@ def ping_pong(c: Config,
 
 
 def timeout(c: Config,
-              side_a: ChainId, side_b: ChainId,
-              a_chan: ChannelId, b_chan: ChannelId,
-              port_id: PortId = PortId('transfer')):
+            side_a: ChainId, side_b: ChainId,
+            a_chan: ChannelId, b_chan: ChannelId,
+            port_id: PortId = PortId('transfer')):
 
-    pkt_send_a = packet_send(c, side_a, side_b, port_id, a_chan, 1)
+    pkt_send_a = packet_send(c, side_a, side_b, port_id,
+                             a_chan, amount=9999, height_offset=1)
 
     split()
 
@@ -222,7 +306,8 @@ def timeout(c: Config,
 
     split()
 
-    pkt_send_b = packet_send(c, side_b, side_a, port_id, b_chan, 1)
+    pkt_send_b = packet_send(c, side_b, side_a, port_id,
+                             b_chan, amount=9999, height_offset=1)
 
     split()
 
@@ -233,6 +318,7 @@ def timeout(c: Config,
             f'Mismatched sequence numbers for path {side_b} -> {side_a} : Sent={pkt_send_b.sequence} versus Timeout={pkt_timeout_b.sequence}')
 
     split()
+
 
 def find_entry(result: Any, key: str) -> Any:
     for entry in result:

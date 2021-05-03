@@ -274,6 +274,7 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
+    use crate::timestamp::Timestamp;
     use crate::Height;
 
     #[test]
@@ -361,7 +362,8 @@ mod tests {
             MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
         msg_to_on_close.packet.sequence = 2.into();
         msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
-        msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
+        msg_to_on_close.packet.timeout_timestamp =
+            Timestamp::from_nanoseconds(msg_transfer_two.timeout_timestamp).unwrap();
 
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
 
