@@ -6,7 +6,7 @@ use std::{
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Select, Sender};
-use tracing::{info, warn};
+use tracing::{info, trace, warn};
 
 use ibc::{
     events::IbcEvent,
@@ -114,7 +114,7 @@ fn recv_multiple<K, T>(rs: &[(K, Receiver<T>)]) -> Result<(&K, T), BoxError> {
     Ok((k, result))
 }
 
-/// The supervisor listens for events on a pair of chains,
+/// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
 /// worker, based on the [`Object`] associated with each event.
 pub struct Supervisor {
@@ -124,7 +124,7 @@ pub struct Supervisor {
 }
 
 impl Supervisor {
-    /// Spawn a supervisor which listens for events on the two given chains.
+    /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn spawn(config: Config) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
 
@@ -137,7 +137,7 @@ impl Supervisor {
 
     /// Run the supervisor event loop.
     pub fn run(mut self) -> Result<(), BoxError> {
-        let subscriptions = Vec::with_capacity(self.config.chains.len());
+        let mut subscriptions = Vec::with_capacity(self.config.chains.len());
 
         for chain_config in &self.config.chains {
             let chain = self.registry.get_or_spawn(&chain_config.id)?;
@@ -148,7 +148,7 @@ impl Supervisor {
         loop {
             match recv_multiple(&subscriptions) {
                 Ok((chain, batch)) => {
-                    dbg!((chain, batch));
+                    dbg!((chain, batch.clone()));
                     self.process_batch(chain.clone(), batch.unwrap_or_clone())?;
                 }
                 Err(e) => {
@@ -164,24 +164,25 @@ impl Supervisor {
         src_chain: Box<dyn ChainHandle>,
         batch: EventBatch,
     ) -> Result<(), BoxError> {
+        // TODO(ADI): Replace assert with simple equality check and return error upon mismatch.
         assert_eq!(src_chain.id(), batch.chain_id);
 
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
-        let mut collected = collect_events(src_chain.as_ref(), batch);
+        let mut collected = collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
             if events.is_empty() {
                 continue;
             }
 
-            println!("[{}] events: {:#?}", chain_id, events);
+            trace!("[{}] events: {:#?}", chain_id, events);
 
-            // TODO: Infer from the batch what is the destination chain, and give both handles to `worker_for_object`.
-            let dst_chain = todo!();
+            let src = self.registry.get_or_spawn(object.src_chain_id())?;
+            let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
 
-            if let Some(worker) = self.worker_for_object(object, src_chain, dst_chain) {
+            if let Some(worker) = self.worker_for_object(object, src, dst) {
                 worker.send_packet_events(height, events, chain_id.clone())?;
             }
         }
@@ -202,9 +203,8 @@ impl Supervisor {
     /// with the given [`Object`].
     ///
     /// This function will spawn a new [`Worker`] if one does not exists already.
-    ///
-    /// The `direction` parameter indicates in which direction the worker should
-    /// relay events.
+    // TODO(Adi): Investigate whether `Option` result is needed here.
+    #[allow(clippy::unnecessary_wraps)]
     fn worker_for_object(
         &mut self,
         object: Object,
@@ -214,23 +214,7 @@ impl Supervisor {
         if self.workers.contains_key(&object) {
             Some(&self.workers[&object])
         } else {
-            let chains = match direction {
-                Direction::AtoB => self.chains.clone(),
-                Direction::BtoA => self.chains.clone().swap(),
-            };
-
-            if object.src_chain_id() != &chains.a.id() || object.dst_chain_id() != &chains.b.id() {
-                info!(
-                    "object {:?} is not relevant to worker for chains {}/{}",
-                    object,
-                    chains.a.id(),
-                    chains.b.id()
-                );
-
-                return None;
-            }
-
-            let worker = Worker::spawn(chains, object.clone());
+            let worker = Worker::spawn(ChainHandlePair { a: src, b: dst }, object.clone());
             let worker = self.workers.entry(object).or_insert(worker);
             Some(worker)
         }
@@ -328,10 +312,10 @@ pub struct UnidirectionalChannelPath {
     /// Source chain identifier.
     pub src_chain_id: ChainId,
 
-    /// Source channel identiier.
+    /// Source channel identifier.
     pub src_channel_id: ChannelId,
 
-    /// Source port identiier.
+    /// Source port identifier.
     pub src_port_id: PortId,
 }
 
