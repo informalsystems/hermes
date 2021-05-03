@@ -125,7 +125,7 @@ pub trait Chain: Sized {
     /// Query the latest height the chain is at
     fn query_latest_height(&self) -> Result<ICSHeight, Error>;
 
-    /// Performs a query to retrieve the identifiers of all clients associated with a chain.
+    /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
@@ -142,7 +142,8 @@ pub trait Chain: Sized {
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
 
-    /// Performs a query to retrieve the identifiers of all connections.
+    /// Performs a query to retrieve the consensus state (for a specific height `consensus_height`)
+    /// that an on-chain client stores.
     fn query_consensus_state(
         &self,
         client_id: ClientId,

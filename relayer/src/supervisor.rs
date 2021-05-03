@@ -360,10 +360,8 @@ impl Worker {
             self.chains.b.clone(),
         );
 
-        info!("[{}] running client worker for {}", self, client);
-
         info!(
-            "[{}] running initial misbehaviour detection for {}",
+            "[{}] running client worker & initial misbehaviour detection for {}",
             self, client
         );
 

@@ -6,6 +6,7 @@ use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWi
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
 use ibc::{
@@ -37,7 +38,6 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::time::Duration;
 
 use serde::Serialize;
 use tendermint_proto::Protobuf;
@@ -17,7 +18,6 @@ use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use std::time::Duration;
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.

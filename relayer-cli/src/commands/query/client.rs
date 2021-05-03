@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::debug;
 
 use ibc::events::IbcEventType;
 use ibc::ics02_client::client_consensus::QueryClientEventRequest;
@@ -15,8 +16,8 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_relayer::chain::Chain;
 use ibc_relayer::chain::CosmosSdkChain;
 
+use crate::application::app_config;
 use crate::conclude::Output;
-use crate::prelude::*;
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]

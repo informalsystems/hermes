@@ -661,7 +661,6 @@ impl Chain for CosmosSdkChain {
         Ok(consensus_states)
     }
 
-    /// Performs a query to retrieve the identifiers of all connections.
     fn query_consensus_state(
         &self,
         client_id: ClientId,
@@ -676,7 +675,6 @@ impl Chain for CosmosSdkChain {
         Ok(AnyConsensusState::Tendermint(consensus_state))
     }
 
-    /// Performs a query to retrieve the identifiers of all connections.
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
