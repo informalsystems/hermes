@@ -376,9 +376,11 @@ impl Chain for CosmosSdkChain {
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
             rt,
-        )?;
+        )
+        .map_err(Kind::EventMonitor)?;
 
         event_monitor.subscribe().unwrap();
+
         let monitor_thread = thread::spawn(move || event_monitor.run());
 
         Ok((event_receiver, Some(monitor_thread)))

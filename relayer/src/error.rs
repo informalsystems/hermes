@@ -34,6 +34,10 @@ pub enum Kind {
     #[error("Websocket error to endpoint {0}")]
     Websocket(tendermint_rpc::Url),
 
+    /// Event monitor error
+    #[error("Event monitor")]
+    EventMonitor(crate::event::monitor::Error),
+
     /// GRPC error (typically raised by the GRPC client or the GRPC requester)
     #[error("GRPC error")]
     Grpc,

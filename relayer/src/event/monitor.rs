@@ -1,19 +1,34 @@
 use std::sync::Arc;
 
-use anomaly::BoxError;
 use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
 use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
+use thiserror::Error;
 use tokio::runtime::Runtime as TokioRuntime;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 
-use ibc::{events::IbcEvent, ics24_host::identifier::ChainId};
+use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
-use crate::error::{Error, Kind};
-use ibc::ics02_client::height::Height;
+#[derive(Debug, Clone, Error)]
+pub enum Error {
+    #[error("failed to create WebSocket client driver: {0}")]
+    ClientCreationFailed(tendermint_rpc::Error),
+
+    #[error("failed to terminate previous WebSocket client driver: {0}")]
+    ClientTerminationFailed(Arc<tokio::task::JoinError>),
+
+    #[error("failed to run previous WebSocket client driver to completion: {0}")]
+    ClientCompletionFailed(tendermint_rpc::Error),
+
+    #[error("failed to subscribe to events via WebSocket client: {0}")]
+    ClientSubscriptionFailed(tendermint_rpc::Error),
+
+    #[error("failed to send event batch through channel")]
+    ChannelSendFailed,
+}
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -70,11 +85,9 @@ impl EventMonitor {
         let (tx, rx) = channel::unbounded();
 
         let ws_addr = node_addr.clone();
-        let (websocket_client, websocket_driver) = rt.block_on(async move {
-            WebSocketClient::new(ws_addr.clone())
-                .await
-                .map_err(|e| Kind::Websocket(ws_addr).context(e))
-        })?;
+        let (websocket_client, websocket_driver) = rt
+            .block_on(async move { WebSocketClient::new(ws_addr.clone()).await })
+            .map_err(Error::ClientCreationFailed)?;
 
         let websocket_driver_handle = rt.spawn(websocket_driver.run());
 
@@ -112,13 +125,14 @@ impl EventMonitor {
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
-    pub fn subscribe(&mut self) -> Result<(), BoxError> {
+    pub fn subscribe(&mut self) -> Result<(), Error> {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
             let subscription = self
                 .rt
-                .block_on(self.websocket_client.subscribe(query.clone()))?;
+                .block_on(self.websocket_client.subscribe(query.clone()))
+                .map_err(Error::ClientSubscriptionFailed)?;
 
             subscriptions.push(subscription);
         }
@@ -128,11 +142,12 @@ impl EventMonitor {
         Ok(())
     }
 
-    fn try_reconnect(&mut self) -> Result<(), BoxError> {
+    fn try_reconnect(&mut self) -> Result<(), Error> {
         // Try to reconnect
         let (mut websocket_client, websocket_driver) = self
             .rt
-            .block_on(WebSocketClient::new(self.node_addr.clone()))?;
+            .block_on(WebSocketClient::new(self.node_addr.clone()))
+            .map_err(Error::ClientCreationFailed)?;
 
         let mut websocket_driver_handle = self.rt.spawn(websocket_driver.run());
 
@@ -150,21 +165,19 @@ impl EventMonitor {
         debug!("Gracefully shutting down previous client");
 
         if let Err(e) = websocket_client.close() {
-            error!("Previous websocket client closing failure {}", e);
+            error!("previous websocket client closing failure {}", e);
         }
 
-        self.rt.block_on(websocket_driver_handle).map_err(|e| {
-            tendermint_rpc::Error::client_internal_error(format!(
-                "failed to terminate previous WebSocket client driver: {}",
-                e
-            ))
-        })??;
+        let result = self
+            .rt
+            .block_on(websocket_driver_handle)
+            .map_err(|e| Error::ClientTerminationFailed(Arc::new(e)))?;
 
-        Ok(())
+        result.map_err(Error::ClientCompletionFailed)
     }
 
     /// Try to resubscribe to events
-    fn try_resubscribe(&mut self) -> Result<(), BoxError> {
+    fn try_resubscribe(&mut self) -> Result<(), Error> {
         self.subscribe()
     }
 
@@ -195,7 +208,7 @@ impl EventMonitor {
     }
 
     /// Collect the IBC events from the subscriptions
-    fn collect_events(&mut self) -> Result<(), BoxError> {
+    fn collect_events(&mut self) -> Result<(), Error> {
         let event = self.rt.block_on(self.subscriptions.next());
 
         match event {
@@ -210,19 +223,22 @@ impl EventMonitor {
                                 height,
                                 events,
                             };
-                            self.tx_batch.send(batch)?;
+
+                            self.tx_batch
+                                .send(batch)
+                                .map_err(|_| Error::ChannelSendFailed)?;
                         }
                     }
                     Err(err) => {
                         error!(
-                            "Error {} when extracting IBC events from {:?}: ",
+                            "error {} when extracting IBC events from {:?}: ",
                             err, event
                         );
                     }
                 }
             }
             Some(Err(err)) => {
-                error!("Error on collecting events from subscriptions: {}", err);
+                error!("error on collecting events from subscriptions: {}", err);
             }
             None => (), // no events available
         }
