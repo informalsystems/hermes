@@ -5,6 +5,7 @@ use anomaly::BoxError;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::events::IbcEvent;
+use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::{
     chain::{Chain, CosmosSdkChain},
@@ -12,7 +13,7 @@ use ibc_relayer::{
     transfer::{build_and_send_transfer_messages, TransferOptions},
 };
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
@@ -120,6 +121,49 @@ impl Runnable for TxIcs20MsgTransferCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
+        // Double check that channels and chain identifiers match.
+        // To do this, fetch from the source chain the channel end, then the associated connection
+        // end, and then the underlying client state; finally, check that this client is verifying
+        // headers for the destination chain.
+        let channel_end = src_chain
+            .query_channel(
+                &opts.packet_src_port_id,
+                &opts.packet_src_channel_id,
+                Height::zero(),
+            )
+            .unwrap_or_else(exit_with_unrecoverable_error);
+        // TODO: Support for multi-hop channels will impact this.
+        let conn_id = match channel_end.connection_hops.first() {
+            None => {
+                return Output::error(format!(
+                    "could not retrieve the connection hop underlying channel end {:?} on chain {}",
+                    channel_end, self.src_chain_id
+                ))
+                .exit()
+            }
+            Some(cid) => cid,
+        };
+        let conn_end = src_chain
+            .query_connection(conn_id, Height::zero())
+            .unwrap_or_else(exit_with_unrecoverable_error);
+        debug!("connection hop underlying the channel: {:?}", conn_end);
+        let src_chain_client_state = src_chain
+            .query_client_state(conn_end.client_id(), Height::zero())
+            .unwrap_or_else(exit_with_unrecoverable_error);
+        debug!(
+            "client state underlying the channel: {:?}",
+            src_chain_client_state
+        );
+        if src_chain_client_state.chain_id != self.dst_chain_id {
+            return Output::error(
+                format!("the requested port/channel ({}/{}) provides a path from chain '{}' to \
+                 chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
+                        opts.packet_src_port_id, opts.packet_src_channel_id,
+                        self.src_chain_id,
+                        src_chain_client_state.chain_id, self.dst_chain_id)).exit();
+        }
+
+        // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =
             build_and_send_transfer_messages(src_chain, dst_chain, opts)
                 .map_err(|e| Kind::Tx.context(e).into());
