@@ -85,8 +85,26 @@ fn start_all_connections(config: &Config) -> Result<Output, BoxError> {
                 conn.a_chain, conn.b_chain
             );
 
-            let chain_a = registry.get_or_spawn(&conn.a_chain)?;
-            let chain_b = registry.get_or_spawn(&conn.b_chain)?;
+            let chain_a = registry.get_or_spawn(&conn.a_chain);
+            let chain_b = registry.get_or_spawn(&conn.b_chain);
+
+            let (chain_a, chain_b) = match (chain_a, chain_b) {
+                (Err(err), _) => {
+                    error!(
+                        "failed to initialize runtime for chain '{}': {}",
+                        conn.a_chain, err
+                    );
+                    continue;
+                }
+                (_, Err(err)) => {
+                    error!(
+                        "failed to initialize runtime for chain '{}': {}",
+                        conn.a_chain, err
+                    );
+                    continue;
+                }
+                (Ok(a), Ok(b)) => (a, b),
+            };
 
             s.spawn(|_| {
                 let supervisor = Supervisor::spawn(chain_a, chain_b).unwrap();
