@@ -379,7 +379,7 @@ impl Chain for CosmosSdkChain {
         )
         .map_err(Kind::EventMonitor)?;
 
-        event_monitor.subscribe().unwrap();
+        event_monitor.subscribe().map_err(Kind::EventMonitor)?;
 
         let monitor_thread = thread::spawn(move || event_monitor.run());
 
