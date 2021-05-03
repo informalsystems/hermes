@@ -1,5 +1,8 @@
 ## Unreleased
 
+Special thanks to external contributors:
+Jongwhan Lee (@leejw51crypto) ([#878]).
+
 > [TODO: high level summary]
 
 ### FEATURES
@@ -17,6 +20,9 @@
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
 
 ### BUG FIXES
+
+- [ibc]
+  - Fix parsing in `chain_version` when chain identifier has multiple dashes ([#878])
 
 - [ibc-relayer]
   - Fix pagination in gRPC query for clients ([#811])
@@ -41,6 +47,7 @@
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
 [#861]: https://github.com/informalsystems/ibc-rs/issues/861
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
+[#878]: https://github.com/informalsystems/ibc-rs/issues/878
 
 
 ## v0.2.0
