@@ -22,7 +22,6 @@ ibc-proto = { version = "0.8.0", path = "../proto" }
 subtle-encoding = "0.5"
 anomaly = "0.2.0"
 async-trait = "0.1.50"
-chrono = "0.4"
 humantime-serde = "1.0.0"
 serde = "1.0.125"
 serde_cbor = "0.11.1"

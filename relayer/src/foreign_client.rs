@@ -1,7 +1,6 @@
 use std::time::Instant;
 use std::{fmt, thread, time::Duration};
 
-use chrono::Utc;
 use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
@@ -21,6 +20,7 @@ use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::query::QueryTxRequest;
+use ibc::timestamp::Timestamp;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
@@ -355,16 +355,15 @@ impl ForeignClient {
 
         let last_update_time = self
             .consensus_state(client_state.latest_height())?
-            .timestamp()
-            .as_datetime();
+            .timestamp();
 
-        let refresh_time = client_state.refresh_time();
+        let refresh_window = client_state.refresh_time();
+        let elapsed = Timestamp::now().subtract(&last_update_time);
 
-        match (last_update_time, refresh_time) {
+        match (elapsed, refresh_window) {
             (None, _) | (_, None) => Ok(None),
-            (Some(last_update_time), Some(refresh_time)) => {
-                let elapsed = Utc::now() - last_update_time;
-                if elapsed.num_seconds() > refresh_time.as_secs() as i64 {
+            (Some(elapsed), Some(refresh_window)) => {
+                if elapsed > refresh_window {
                     info!("[{}] client requires refresh", self);
                     self.build_latest_update_client_and_send()
                         .map_or_else(Err, |ev| Ok(Some(ev)))
