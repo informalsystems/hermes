@@ -20,9 +20,7 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensu
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
-};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::query::QueryTxRequest;
