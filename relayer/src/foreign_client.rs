@@ -365,13 +365,9 @@ impl ForeignClient {
             (Some(last_update_time), Some(refresh_time)) => {
                 let elapsed = Utc::now() - last_update_time;
                 if elapsed.num_seconds() > refresh_time.as_secs() as i64 {
-                    match self.build_latest_update_client_and_send() {
-                        Ok(ev) => {
-                            info!("[{}] client requires refresh", self);
-                            Ok(Some(ev))
-                        }
-                        Err(e) => Err(e),
-                    }
+                    info!("[{}] client requires refresh", self);
+                    self.build_latest_update_client_and_send()
+                        .map_or_else(Err, |ev| Ok(Some(ev)))
                 } else {
                     Ok(None)
                 }
@@ -625,19 +621,16 @@ impl ForeignClient {
     }
 
     fn consensus_state(&self, height: Height) -> Result<AnyConsensusState, ForeignClientError> {
-        // TODO add single consensus state query to runtime
         let res = self
-            .consensus_states()?
-            .iter()
-            .find(|cs| cs.height == height)
-            .ok_or_else(|| {
-                ForeignClientError::ClientUpdate(format!(
-                    "failed querying consensus state on chain {} for {}",
-                    self.id, height
-                ))
-            })?
-            .consensus_state
-            .clone();
+            .src_chain
+            .query_consensus_state(self.id.clone(), height, Height::zero())
+            .map_err(|e| {
+                ForeignClientError::ClientQuery(
+                    self.id.clone(),
+                    self.src_chain.id(),
+                    format!("failed querying consensus state with error {}", e),
+                )
+            })?;
 
         Ok(res)
     }

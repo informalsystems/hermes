@@ -10,7 +10,7 @@ use tokio::runtime::Runtime;
 
 use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
+use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
@@ -335,6 +335,16 @@ impl Chain for MockChain {
         Ok(self
             .context
             .consensus_states(&request.client_id.parse().unwrap()))
+    }
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_state(
+        &self,
+        _client_id: ClientId,
+        _consensus_height: Height,
+        _query_height: Height,
+    ) -> Result<AnyConsensusState, Error> {
+        unimplemented!()
     }
 
     fn query_upgraded_consensus_state(

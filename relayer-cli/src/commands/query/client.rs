@@ -116,11 +116,14 @@ impl Runnable for QueryClientConsensusCmd {
 
         match self.consensus_height {
             Some(cs_height) => {
-                let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
                 let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
-                let res = chain.proven_client_consensus(&self.client_id, consensus_height, height);
+                let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
+
+                let res =
+                    chain.query_consensus_state(self.client_id.clone(), consensus_height, height);
+
                 match res {
-                    Ok((cs, _)) => Output::success(cs).exit(),
+                    Ok(cs) => Output::success(cs).exit(),
                     Err(e) => Output::error(format!("{}", e)).exit(),
                 }
             }

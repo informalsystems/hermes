@@ -662,6 +662,21 @@ impl Chain for CosmosSdkChain {
     }
 
     /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: ICSHeight,
+        query_height: ICSHeight,
+    ) -> Result<AnyConsensusState, Error> {
+        crate::time!("query_chain_clients");
+
+        let consensus_state = self
+            .proven_client_consensus(&client_id, consensus_height, query_height)?
+            .0;
+        Ok(AnyConsensusState::Tendermint(consensus_state))
+    }
+
+    /// Performs a query to retrieve the identifiers of all connections.
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,

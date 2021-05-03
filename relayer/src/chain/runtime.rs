@@ -6,6 +6,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
@@ -24,7 +25,8 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
+use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
@@ -46,9 +48,6 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
 };
-use ibc::ics02_client::client_state::IdentifiedAnyClientState;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
@@ -217,16 +216,16 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_latest_height(reply_to)?
                         }
 
-                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
-                            self.query_clients(request, reply_to)?
-                        },
-
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
                             self.query_consensus_states(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConsensusState { client_id, consensus_height, query_height, reply_to }) => {
+                            self.query_consensus_state(client_id, consensus_height, query_height, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryUpgradedClientState { height, reply_to }) => {
@@ -508,20 +507,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn query_clients(
-        &self,
-        request: QueryClientStatesRequest,
-        reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
-    ) -> Result<(), Error> {
-        let clients = self.chain.query_clients(request);
-
-        reply_to
-            .send(clients)
-            .map_err(|e| Kind::Channel.context(e))?;
-
-        Ok(())
-    }
-
     fn query_upgraded_client_state(
         &self,
         height: Height,
@@ -548,6 +533,24 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(consensus_states)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: Height,
+        query_height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    ) -> Result<(), Error> {
+        let consensus_state =
+            self.chain
+                .query_consensus_state(client_id, consensus_height, query_height);
+
+        reply_to
+            .send(consensus_state)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())

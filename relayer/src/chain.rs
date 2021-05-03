@@ -7,7 +7,9 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
+use ibc::ics02_client::client_consensus::{
+    AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
+};
 use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::header::Header;
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
@@ -139,6 +141,14 @@ pub trait Chain: Sized {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: ICSHeight,
+        query_height: ICSHeight,
+    ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,

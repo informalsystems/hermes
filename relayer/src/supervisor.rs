@@ -141,10 +141,7 @@ impl Supervisor {
         for chains in [self.chains.clone(), self.chains.clone().swap()].iter() {
             let channels: Vec<IdentifiedChannelEnd> = chains.a.query_channels(req.clone())?;
             for channel in channels.iter() {
-                // Only clear packets for opened channels
-                // TODO next - more thought needed here as optimistic sends will fail to clear
-                // maybe instead just check if there are pending packets...but the new problem
-                // will be the reference height for clear vs events, etc.
+                // only clear packets and start client workers for opened channels
                 if !channel
                     .channel_end
                     .state_matches(&ibc::ics04_channel::channel::State::Open)

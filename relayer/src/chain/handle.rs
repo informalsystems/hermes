@@ -6,9 +6,11 @@ use dyn_clone::DynClone;
 use serde::{Serialize, Serializer};
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::query::QueryTxRequest;
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
@@ -28,7 +30,6 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
@@ -36,8 +37,6 @@ pub use prod::ProdChainHandle;
 use crate::connection::ConnectionMsgType;
 use crate::keyring::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::query::QueryTxRequest;
 
 mod prod;
 
@@ -117,11 +116,6 @@ pub enum ChainRequest {
         reply_to: ReplyTo<(Option<AnyClientState>, Proofs)>,
     },
 
-    QueryClients {
-        request: QueryClientStatesRequest,
-        reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
-    },
-
     QueryClientState {
         client_id: ClientId,
         height: Height,
@@ -131,6 +125,13 @@ pub enum ChainRequest {
     QueryConsensusStates {
         request: QueryConsensusStatesRequest,
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
+    },
+
+    QueryConsensusState {
+        client_id: ClientId,
+        consensus_height: Height,
+        query_height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
     },
 
     QueryUpgradedClientState {
@@ -254,11 +255,6 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 
-    fn query_clients(
-        &self,
-        request: QueryClientStatesRequest,
-    ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
-
     fn query_client_state(
         &self,
         client_id: &ClientId,
@@ -269,6 +265,13 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
+
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: Height,
+        query_height: Height,
+    ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
