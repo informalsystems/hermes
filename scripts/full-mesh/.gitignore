@@ -1,0 +1,6 @@
+docker-compose.gaiad.yml
+docker-compose.yml
+paths
+network*/
+.hermes/
+.gaia/
