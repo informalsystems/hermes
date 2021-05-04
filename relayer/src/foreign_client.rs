@@ -28,7 +28,7 @@ use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use crate::chain::handle::ChainHandle;
 use crate::relay::MAX_ITER;
 
-const MAX_MISBEHAVIOUR_CHECK_TIME: u64 = 120;
+const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -789,8 +789,7 @@ impl ForeignClient {
 
             // Exit the loop if the check was for a single update or if more than
             // MAX_MISBEHAVIOUR_CHECK_TIME was spent here.
-            if check_once || start_time.elapsed() > Duration::from_secs(MAX_MISBEHAVIOUR_CHECK_TIME)
-            {
+            if check_once || start_time.elapsed() > MAX_MISBEHAVIOUR_CHECK_DURATION {
                 trace!(
                     "[{}] finished misbehaviour verification after {:?}",
                     self,
