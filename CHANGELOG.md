@@ -10,6 +10,9 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 - [ibc-relayer]
   - Support for ICS27 ([#794])
 
+- [ibc-relayer-cli]
+  - Added packet clearing and client refresh capabilities for the `start-multi` command ([#784], [#786])
+
 ### IMPROVEMENTS
 
 - [ibc]
@@ -39,7 +42,9 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 
 
 [#758]: https://github.com/informalsystems/ibc-rs/issues/758
+[#784]: https://github.com/informalsystems/ibc-rs/issues/784
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
+[#786]: https://github.com/informalsystems/ibc-rs/issues/786
 [#794]: https://github.com/informalsystems/ibc-rs/issues/794
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
