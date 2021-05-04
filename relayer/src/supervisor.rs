@@ -140,7 +140,7 @@ impl Supervisor {
         // on the client chain_id, etc.
         for chains in [self.chains.clone(), self.chains.clone().swap()].iter() {
             let channels: Vec<IdentifiedChannelEnd> = chains.a.query_channels(req.clone())?;
-            for channel in channels.iter() {
+            for channel in channels {
                 // only clear packets and start client workers for opened channels
                 if !channel
                     .channel_end

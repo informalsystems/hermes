@@ -709,8 +709,8 @@ impl ForeignClient {
         // For chains that do support pruning, it is possible that the last consensus state
         // was installed by an `UpdateClient` and an event and header will be found.
         let consensus_state_heights = self.consensus_state_heights()?;
-        let ch = match update.clone() {
-            Some(u) => u.consensus_height(),
+        let ch = match update {
+            Some(ref u) => u.consensus_height(),
             None => Height::zero(),
         };
 
