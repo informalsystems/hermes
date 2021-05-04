@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::time::Duration;
 
 use serde::Serialize;
 use tendermint_proto::Protobuf;
@@ -43,6 +44,10 @@ impl Protobuf<RawMockClientState> for MockClientState {}
 impl MockClientState {
     pub fn latest_height(&self) -> Height {
         (self.0).height
+    }
+
+    pub fn refresh_time(&self) -> Option<Duration> {
+        None
     }
 }
 

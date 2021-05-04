@@ -306,11 +306,8 @@ impl Channel {
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ChannelError> {
-        let client = ForeignClient {
-            id: self.dst_client_id().clone(),
-            dst_chain: self.dst_chain(),
-            src_chain: self.src_chain(),
-        };
+        let client =
+            ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
 
         client.build_update_client(height).map_err(|e| {
             ChannelError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)

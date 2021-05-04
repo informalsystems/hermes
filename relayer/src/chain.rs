@@ -7,17 +7,17 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
-use ibc::ics02_client::client_state::ClientState;
+use ibc::ics02_client::client_consensus::{
+    AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
+};
+use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::header::Header;
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use ibc::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
-};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
@@ -125,8 +125,11 @@ pub trait Chain: Sized {
     /// Query the latest height the chain is at
     fn query_latest_height(&self) -> Result<ICSHeight, Error>;
 
-    /// Performs a query to retrieve the identifiers of all clients associated with a chain.
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+    /// Performs a query to retrieve the state of all clients that a chain hosts.
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
     fn query_client_state(
         &self,
@@ -138,6 +141,15 @@ pub trait Chain: Sized {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
+
+    /// Performs a query to retrieve the consensus state (for a specific height `consensus_height`)
+    /// that an on-chain client stores.
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: ICSHeight,
+        query_height: ICSHeight,
+    ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -174,7 +186,10 @@ pub trait Chain: Sized {
     ) -> Result<Vec<ChannelId>, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels.
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<PortChannelId>, Error>;
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
     fn query_channel(
         &self,

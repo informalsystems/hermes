@@ -6,7 +6,10 @@ use anomaly::fail;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel, Counterparty as RawCounterparty};
+use ibc_proto::ibc::core::channel::v1::{
+    Channel as RawChannel, Counterparty as RawCounterparty,
+    IdentifiedChannel as RawIdentifiedChannel,
+};
 
 use crate::events::IbcEventType;
 use crate::ics02_client::height::Height;
@@ -15,6 +18,57 @@ use crate::ics04_channel::{
     packet::Sequence,
 };
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct IdentifiedChannelEnd {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub channel_end: ChannelEnd,
+}
+
+impl Protobuf<RawIdentifiedChannel> for IdentifiedChannelEnd {}
+
+impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(value: RawIdentifiedChannel) -> Result<Self, Self::Error> {
+        let raw_channel_end = RawChannel {
+            state: value.state,
+            ordering: value.ordering,
+            counterparty: value.counterparty,
+            connection_hops: value.connection_hops,
+            version: value.version,
+        };
+
+        Ok(IdentifiedChannelEnd {
+            port_id: value.port_id.parse().map_err(|_| Kind::IdentifierError)?,
+            channel_id: value
+                .channel_id
+                .parse()
+                .map_err(|_| Kind::IdentifierError)?,
+            channel_end: raw_channel_end.try_into()?,
+        })
+    }
+}
+
+impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
+    fn from(value: IdentifiedChannelEnd) -> Self {
+        RawIdentifiedChannel {
+            state: value.channel_end.state.clone() as i32,
+            ordering: value.channel_end.ordering as i32,
+            counterparty: Some(value.channel_end.counterparty().clone().into()),
+            connection_hops: value
+                .channel_end
+                .connection_hops
+                .iter()
+                .map(|v| v.as_str().to_string())
+                .collect(),
+            version: value.channel_end.version,
+            port_id: value.port_id.to_string(),
+            channel_id: value.channel_id.to_string(),
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ChannelEnd {

@@ -1,11 +1,11 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::fmt::Display;
 use std::num::{ParseIntError, TryFromIntError};
 use std::str::FromStr;
-use thiserror::Error;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
+use serde_derive::{Deserialize, Serialize};
+use thiserror::Error;
 
 /// A newtype wrapper over `Option<DateTime<Utc>>` to keep track of
 /// IBC packet timeout.
@@ -51,6 +51,24 @@ impl Timestamp {
             Ok(Timestamp {
                 time: Some(Utc.timestamp_nanos(nanoseconds)),
             })
+        }
+    }
+
+    /// Returns a `Timestamp` representation of the current time.
+    pub fn now() -> Timestamp {
+        Timestamp {
+            time: Some(Utc::now()),
+        }
+    }
+
+    /// Computes the duration difference of another `Timestamp` from the current one.
+    /// Returns the difference in time as an [`std::time::Duration`].
+    /// Returns `None` if the other `Timestamp` is more advanced
+    /// than the current or if either of the `Timestamp`s is not set.
+    pub fn duration_since(&self, other: &Timestamp) -> Option<std::time::Duration> {
+        match (self.time, other.time) {
+            (Some(time1), Some(time2)) => time1.signed_duration_since(time2).to_std().ok(),
+            _ => None,
         }
     }
 
@@ -128,8 +146,11 @@ impl Default for Timestamp {
 
 #[cfg(test)]
 mod tests {
-    use super::{Expiry, Timestamp};
     use std::convert::TryInto;
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    use super::{Expiry, Timestamp};
 
     #[test]
     fn test_timestamp_comparisons() {
@@ -170,5 +191,20 @@ mod tests {
             nil_timestamp.check_expiry(&nil_timestamp),
             Expiry::InvalidTimestamp
         );
+    }
+
+    #[test]
+    fn subtract_compare() {
+        let sleep_duration = Duration::from_micros(100);
+
+        let start = Timestamp::now();
+        sleep(sleep_duration);
+        let end = Timestamp::now();
+
+        let res = end.duration_since(&start);
+        assert!(res.is_some());
+
+        let inner = res.unwrap();
+        assert!(inner > sleep_duration);
     }
 }

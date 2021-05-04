@@ -81,7 +81,7 @@ fn start_all_connections(config: &Config) -> Result<Output, BoxError> {
     let result = crossbeam_utils::thread::scope(|s| {
         for conn in connections {
             info!(
-                "spawning supervisor for chains {} and {}",
+                "spawning supervisor for connection between chains {} and {}",
                 conn.a_chain, conn.b_chain
             );
 

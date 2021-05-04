@@ -53,6 +53,9 @@ pub enum Kind {
     #[error("unknown misbehaviour type: {0}")]
     UnknownMisbehaviourType(String),
 
+    #[error("invalid raw client identifier {0} with underlying error: {1}")]
+    InvalidRawClientId(String, ValidationKind),
+
     #[error("invalid raw client state")]
     InvalidRawClientState,
 
