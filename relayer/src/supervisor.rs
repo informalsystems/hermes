@@ -6,6 +6,7 @@ use std::{
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
+use tracing::{error, error_span, info, warn};
 
 use ibc::{
     events::IbcEvent,
@@ -18,7 +19,6 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
-use tracing::{info, warn};
 
 use crate::{
     chain::handle::ChainHandle,
@@ -245,12 +245,15 @@ impl Worker {
 
     /// Run the worker event loop.
     fn run(self, object: Object) {
+        let span = error_span!("worker", path = %object.short_name());
+        let _guard = span.enter();
+
         let result = match object {
             Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
         };
 
         if let Err(e) = result {
-            eprintln!("worker error: {}", e);
+            error!("worker error: {}", e);
         }
     }
 
