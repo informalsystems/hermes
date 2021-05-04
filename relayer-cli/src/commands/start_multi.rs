@@ -89,6 +89,7 @@ fn start_all_connections(config: &Config) -> Result<Output, BoxError> {
             let chain_b = registry.get_or_spawn(&conn.b_chain);
 
             let (chain_a, chain_b) = match (chain_a, chain_b) {
+                (Ok(a), Ok(b)) => (a, b),
                 (Err(err), _) => {
                     error!(
                         "failed to initialize runtime for chain '{}': {}",
@@ -99,11 +100,10 @@ fn start_all_connections(config: &Config) -> Result<Output, BoxError> {
                 (_, Err(err)) => {
                     error!(
                         "failed to initialize runtime for chain '{}': {}",
-                        conn.a_chain, err
+                        conn.b_chain, err
                     );
                     continue;
                 }
-                (Ok(a), Ok(b)) => (a, b),
             };
 
             s.spawn(|_| {
