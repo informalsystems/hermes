@@ -6,6 +6,7 @@ use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWi
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
 use ibc::{
@@ -23,10 +24,11 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::{
@@ -105,10 +107,6 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
     }
 
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
-        self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })
-    }
-
     fn query_client_state(
         &self,
         client_id: &ClientId,
@@ -126,6 +124,20 @@ impl ChainHandle for ProdChainHandle {
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
         self.send(|reply_to| ChainRequest::QueryConsensusStates { request, reply_to })
+    }
+
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: Height,
+        query_height: Height,
+    ) -> Result<AnyConsensusState, Error> {
+        self.send(|reply_to| ChainRequest::QueryConsensusState {
+            client_id,
+            consensus_height,
+            query_height,
+            reply_to,
+        })
     }
 
     fn query_upgraded_client_state(
@@ -167,6 +179,13 @@ impl ChainHandle for ProdChainHandle {
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error> {
         self.send(|reply_to| ChainRequest::QueryNextSequenceReceive { request, reply_to })
+    }
+
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+        self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })
     }
 
     fn query_channel(

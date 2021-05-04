@@ -4,6 +4,7 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
@@ -26,12 +27,13 @@ use ibc::{
     Height,
 };
 
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
+    client::v1::QueryConsensusStatesRequest,
     commitment::v1::MerkleProof,
 };
 
@@ -217,16 +219,16 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_latest_height(reply_to)?
                         }
 
-                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
-                            self.query_clients(request, reply_to)?
-                        },
-
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
                             self.query_consensus_states(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConsensusState { client_id, consensus_height, query_height, reply_to }) => {
+                            self.query_consensus_state(client_id, consensus_height, query_height, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryUpgradedClientState { height, reply_to }) => {
@@ -247,6 +249,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
                             self.query_connection(connection_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryChannels { request, reply_to }) => {
+                            self.query_channels(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
@@ -504,20 +510,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn query_clients(
-        &self,
-        request: QueryClientStatesRequest,
-        reply_to: ReplyTo<Vec<ClientId>>,
-    ) -> Result<(), Error> {
-        let clients = self.chain.query_clients(request);
-
-        reply_to
-            .send(clients)
-            .map_err(|e| Kind::Channel.context(e))?;
-
-        Ok(())
-    }
-
     fn query_upgraded_client_state(
         &self,
         height: Height,
@@ -544,6 +536,24 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(consensus_states)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: Height,
+        query_height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    ) -> Result<(), Error> {
+        let consensus_state =
+            self.chain
+                .query_consensus_state(client_id, consensus_height, query_height);
+
+        reply_to
+            .send(consensus_state)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
@@ -596,6 +606,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(connection_end)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_channels(request);
+
+        reply_to
+            .send(result)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())

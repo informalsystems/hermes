@@ -83,7 +83,7 @@ pub fn extract_header_from_tx(event: &tendermint::abci::Event) -> Option<AnyHead
 
 /// NewBlock event signals the committing & execution of a new block.
 // TODO - find a better place for NewBlock
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct NewBlock {
     pub height: Height,
 }
@@ -129,7 +129,7 @@ impl std::fmt::Display for Attributes {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
-            "ev_h:{}, {}({}), ",
+            "h: {}, cs_h: {}({})",
             self.height, self.client_id, self.consensus_height
         )
     }
@@ -183,7 +183,7 @@ impl std::fmt::Display for CreateClient {
 }
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct UpdateClient {
     pub common: Attributes,
     pub header: Option<AnyHeader>,
@@ -252,6 +252,12 @@ impl From<UpdateClient> for IbcEvent {
 impl std::fmt::Display for UpdateClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.common)
+    }
+}
+
+impl std::fmt::Debug for UpdateClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self.common)
     }
 }
 
