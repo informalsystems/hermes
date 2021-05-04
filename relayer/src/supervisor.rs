@@ -149,6 +149,8 @@ impl Supervisor {
                     continue;
                 }
 
+                // TODO: Given a channel id, assert that it's open, get the underlying client
+                //  self.connection_client(channel: IdentifiedChannelEnd, dst_chain_handle: ChainHandle) -> ClientId
                 // get the channel's connection
                 let connection_id =
                     channel
@@ -162,6 +164,7 @@ impl Supervisor {
 
                 // get the client used by the connection and check that the other end is on chain b
                 let client_id = connection.client_id();
+                // TODO(Adi): The following check will go away with #881 (single supervisor PR).
                 let client = chains.a.query_client_state(client_id, Height::zero())?;
                 if client.chain_id() != chains.b.id() {
                     continue;

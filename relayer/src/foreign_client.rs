@@ -624,12 +624,12 @@ impl ForeignClient {
 
     fn consensus_state(&self, height: Height) -> Result<AnyConsensusState, ForeignClientError> {
         let res = self
-            .src_chain
+            .dst_chain
             .query_consensus_state(self.id.clone(), height, Height::zero())
             .map_err(|e| {
                 ForeignClientError::ClientQuery(
                     self.id.clone(),
-                    self.src_chain.id(),
+                    self.dst_chain.id(),
                     format!(
                         "failed querying consensus state @ height {} with error {}",
                         height, e
