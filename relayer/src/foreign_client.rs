@@ -38,6 +38,9 @@ pub enum ForeignClientError {
     #[error("error raised while updating client: {0}")]
     ClientUpdate(String),
 
+    #[error("error raised while trying to refresh client {0}: {1}")]
+    ClientRefresh(ClientId, String),
+
     #[error("failed while querying for client {0} on chain id: {1} with error: {2}")]
     ClientQuery(ClientId, ChainId, String),
 
@@ -358,7 +361,7 @@ impl ForeignClient {
             .timestamp();
 
         let refresh_window = client_state.refresh_time();
-        let elapsed = Timestamp::now().subtract(&last_update_time);
+        let elapsed = Timestamp::now().duration_since(&last_update_time);
 
         match (elapsed, refresh_window) {
             (None, _) | (_, None) => Ok(None),
@@ -627,7 +630,10 @@ impl ForeignClient {
                 ForeignClientError::ClientQuery(
                     self.id.clone(),
                     self.src_chain.id(),
-                    format!("failed querying consensus state with error {}", e),
+                    format!(
+                        "failed querying consensus state @ height {} with error {}",
+                        height, e
+                    ),
                 )
             })?;
 

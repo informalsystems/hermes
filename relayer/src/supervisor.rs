@@ -7,7 +7,7 @@ use std::{
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
-use tracing::{debug, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 use ibc::events::VecIbcEvents;
 use ibc::ics02_client::client_state::ClientState;
@@ -27,7 +27,7 @@ use ibc::{
 };
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
-use crate::foreign_client::ForeignClient;
+use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::{
     chain::handle::ChainHandle,
     event::monitor::EventBatch,
@@ -321,7 +321,7 @@ impl fmt::Display for Worker {
 }
 
 impl Worker {
-    /// Spawn a worker which relay events pertaining to `object` between two `chains`.
+    /// Spawn a worker which relay events pertaining to an [`Object`] between two `chains`.
     pub fn spawn(chains: ChainHandlePair, object: Object) -> WorkerHandle {
         let (tx, rx) = crossbeam_channel::unbounded();
 
@@ -347,7 +347,7 @@ impl Worker {
         };
 
         if let Err(e) = result {
-            eprintln!("[{}] worker error: {}", object.short_name(), e);
+            error!("[{}] worker error: {}", object.short_name(), e);
         }
         info!("[{}] worker exits", object.short_name());
     }
@@ -399,7 +399,9 @@ impl Worker {
                 }
             }
 
-            client.refresh()?;
+            client.refresh().map_err(|e| {
+                ForeignClientError::ClientRefresh(client.id.clone(), format!("{}", e))
+            })?;
             thread::sleep(Duration::from_millis(600))
         }
     }
@@ -449,7 +451,7 @@ pub struct Client {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
 
-    /// Source channel identiier.
+    /// Source channel identifier.
     pub dst_client_id: ClientId,
 
     /// Source chain identifier.
@@ -474,10 +476,10 @@ pub struct UnidirectionalChannelPath {
     /// Source chain identifier.
     pub src_chain_id: ChainId,
 
-    /// Source channel identiier.
+    /// Source channel identifier.
     pub src_channel_id: ChannelId,
 
-    /// Source port identiier.
+    /// Source port identifier.
     pub src_port_id: PortId,
 }
 

@@ -61,11 +61,11 @@ impl Timestamp {
         }
     }
 
-    /// Subtracts another `Timestamp` from the current one.
+    /// Computes the duration difference of another `Timestamp` from the current one.
     /// Returns the difference in time as an [`std::time::Duration`].
     /// Returns `None` if the other `Timestamp` is more advanced
     /// than the current or if either of the `Timestamp`s is not set.
-    pub fn subtract(&self, other: &Timestamp) -> Option<std::time::Duration> {
+    pub fn duration_since(&self, other: &Timestamp) -> Option<std::time::Duration> {
         match (self.time, other.time) {
             (Some(time1), Some(time2)) => time1.signed_duration_since(time2).to_std().ok(),
             _ => None,
@@ -201,7 +201,7 @@ mod tests {
         sleep(sleep_duration);
         let end = Timestamp::now();
 
-        let res = end.subtract(&start);
+        let res = end.duration_since(&start);
         assert!(res.is_some());
 
         let inner = res.unwrap();
