@@ -12,7 +12,9 @@ use tracing::{debug, error, error_span, info, trace, warn};
 use ibc::events::VecIbcEvents;
 use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::ics04_channel::events::Attributes;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::{
     events::IbcEvent,
@@ -30,12 +32,10 @@ use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 use crate::{
     chain::handle::ChainHandle,
-    event::monitor::EventBatch,
+    event::monitor::{EventBatch, UnwrapOrClone},
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
 };
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::ics04_channel::events::Attributes;
 
 /// A command for a [`Worker`].
 pub enum WorkerCmd {
@@ -251,11 +251,23 @@ impl Supervisor {
 
         loop {
             for batch in subscription_a.try_iter() {
-                self.process_batch(self.chains.a.clone(), batch.unwrap_or_clone())?;
+                let batch = batch.unwrap_or_clone();
+                match batch {
+                    Ok(batch) => self.process_batch(self.chains.a.clone(), batch)?,
+                    Err(e) => {
+                        dbg!(e);
+                    }
+                }
             }
 
             for batch in subscription_b.try_iter() {
-                self.process_batch(self.chains.b.clone(), batch.unwrap_or_clone())?;
+                let batch = batch.unwrap_or_clone();
+                match batch {
+                    Ok(batch) => self.process_batch(self.chains.b.clone(), batch)?,
+                    Err(e) => {
+                        dbg!(e);
+                    }
+                }
             }
 
             std::thread::sleep(Duration::from_millis(600));
