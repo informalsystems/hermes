@@ -35,6 +35,7 @@ use crate::{
     registry::Registry,
 };
 use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::events::Attributes;
 
 /// A command for a [`Worker`].
@@ -126,13 +127,6 @@ pub struct Supervisor {
     workers: HashMap<Object, WorkerHandle>,
 }
 
-// TODO(Adi): Safe to delete (brings zero information).
-impl fmt::Display for Supervisor {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[supervisor]")
-    }
-}
-
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn spawn(config: Config) -> Result<Self, BoxError> {
@@ -210,51 +204,66 @@ impl Supervisor {
         collected
     }
 
-
     // TODO(Adi): Integrate this with single supervisor.
     //     Method should be called from `Supervisor::run()`.
-    #[allow(dead_code, clippy::unnecessary_wraps)]
     fn create_workers(&mut self) -> Result<(), BoxError> {
-        let _req = QueryChannelsRequest {
+        let req = QueryChannelsRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        // For each opened channel spawn:
-        // - the path worker for AtoB (used to clear packets) and
-        // - the client worker for the A side client of the channel's connection (used for refresh)
-        // TODO - we should move to one supervisor, operating on a set of chains:
-        // `for chain_a in self.chains.clone().iter() {`, lookup chain b in registry based
-        // on the client chain_id, etc.
-        for chains in [self.chains.clone(), self.chains.clone().swap()].iter() {
-            let channels: Vec<IdentifiedChannelEnd> = chains.a.query_channels(req.clone())?;
+        for chain_config in &self.config.chains {
+            let chain = self.registry.get_or_spawn(&chain_config.id)?;
+            let channels: Vec<IdentifiedChannelEnd> = chain.query_channels(req.clone())?;
+
+            // For all open channels
             for channel in channels {
                 let client = channel_connection_client(
                     &channel.port_id,
                     &channel.channel_id,
-                    chains.a.as_ref(),
+                    chain.as_ref(),
                 )?
                 .client;
-                if client.client_state.chain_id() != chains.b.id() {
+                if self
+                    .config
+                    .find_chain(&client.client_state.chain_id())
+                    .is_none()
+                {
+                    // Ignore channel, since it does not correspond to any chain in the config file
                     continue;
                 }
+                let counterparty_chain = self
+                    .registry
+                    .get_or_spawn(&client.client_state.chain_id())?;
 
                 // create the client object and spawn worker
                 let client_object = Object::Client(Client {
                     dst_client_id: client.client_id.clone(),
-                    dst_chain_id: chains.a.id(),
+                    dst_chain_id: chain.id(),
                     src_chain_id: client.client_state.chain_id(),
                 });
-                let worker = Worker::spawn(chains.clone(), client_object.clone());
+                let worker = Worker::spawn(
+                    ChainHandlePair {
+                        a: chain.clone(),
+                        b: counterparty_chain.clone(),
+                    },
+                    client_object.clone(),
+                );
                 self.workers.entry(client_object).or_insert(worker);
 
                 // create the path object and spawn worker
                 let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
-                    dst_chain_id: chains.b.id(),
-                    src_chain_id: chains.a.id(),
+                    dst_chain_id: counterparty_chain.id(),
+                    src_chain_id: chain.id(),
                     src_channel_id: channel.channel_id.clone(),
                     src_port_id: channel.port_id.clone(),
                 });
-                let worker = Worker::spawn(chains.clone(), path_object.clone());
+                let worker = Worker::spawn(
+                    ChainHandlePair {
+                        a: chain.clone(),
+                        b: counterparty_chain,
+                    },
+                    path_object.clone(),
+                );
                 self.workers.entry(path_object).or_insert(worker);
             }
         }
@@ -270,6 +279,8 @@ impl Supervisor {
             let subscription = chain.subscribe()?;
             subscriptions.push((chain, subscription));
         }
+
+        self.create_workers()?;
 
         loop {
             match recv_multiple(&subscriptions) {
@@ -296,7 +307,6 @@ impl Supervisor {
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
-
         let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
@@ -305,8 +315,7 @@ impl Supervisor {
             }
 
             debug!(
-                "[{}] chain {} sent {} for object {:?}",
-                self,
+                "chain {} sent {} for object {:?}",
                 chain_id,
                 VecIbcEvents(events.clone()),
                 object,
@@ -336,6 +345,8 @@ impl Supervisor {
         Ok(())
     }
 
+    // TODO(Adi): cleanup if unnecessary.
+    #[allow(dead_code)]
     fn object_matches_chain_pair(&self, object: &Object, chains: &ChainHandlePair) -> bool {
         match object {
             Object::Client(_cl) => {
