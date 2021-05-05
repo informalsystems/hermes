@@ -149,8 +149,11 @@ impl Supervisor {
                     continue;
                 }
 
-                // TODO: Given a channel id, assert that it's open, get the underlying client
-                //  self.connection_client(channel: IdentifiedChannelEnd, dst_chain_handle: ChainHandle) -> ClientId
+                // TODO: Given a channel id, assert that it's open, get the underlying client using
+                // a helper like:
+                //  self.connection_client(
+                //      channel: IdentifiedChannelEnd, dst_chain_handle: ChainHandle
+                //  ) -> ClientId
                 // get the channel's connection
                 let connection_id =
                     channel
@@ -739,8 +742,8 @@ fn get_counterparty_chain(
     );
 
     let src_channel = src_chain.query_channel(src_port_id, src_channel_id, Height::zero())?;
-    if src_channel.state_matches(&ChannelState::Uninitialized) {
-        return Err(format!("missing channel '{}' on source chain", src_channel_id).into());
+    if !src_channel.state_matches(&ChannelState::Open) {
+        return Err(format!("channel '{}' on source chain not opened", src_channel_id).into());
     }
 
     let src_connection_id = src_channel
@@ -749,8 +752,12 @@ fn get_counterparty_chain(
         .ok_or_else(|| format!("no connection hops for channel '{}'", src_channel_id))?;
 
     let src_connection = src_chain.query_connection(&src_connection_id, Height::zero())?;
-    if src_connection.state_matches(&ConnectionState::Uninitialized) {
-        return Err(format!("missing connection '{}' on source chain", src_connection_id).into());
+    if !src_connection.state_matches(&ConnectionState::Open) {
+        return Err(format!(
+            "connection '{}' on source chain not opened",
+            src_connection_id
+        )
+        .into());
     }
 
     let client_id = src_connection.client_id();
