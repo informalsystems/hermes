@@ -19,7 +19,6 @@ use ibc::ics24_host::identifier::ClientId;
 use ibc::{
     events::IbcEvent,
     ics02_client::events::NewBlock,
-    ics03_connection::connection::State as ConnectionState,
     ics04_channel::events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
@@ -254,7 +253,7 @@ impl Supervisor {
                     chain.id(),
                     e
                 )
-                .into())
+                .into());
             }
         };
 
@@ -271,10 +270,6 @@ impl Supervisor {
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
-        let pairs = ChainHandlePair {
-            a: chain.clone(),
-            b: counterparty_chain.clone(),
-        };
 
         // create the client object and spawn worker
         let client_object = Object::Client(Client {
@@ -282,8 +277,7 @@ impl Supervisor {
             dst_chain_id: chain.id(),
             src_chain_id: client.client_state.chain_id(),
         });
-        let worker_client = Worker::spawn(pairs.clone(), client_object.clone());
-        self.workers.entry(client_object).or_insert(worker_client);
+        self.worker_for_object(client_object, chain.clone(), counterparty_chain.clone());
 
         // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
         //  https://github.com/informalsystems/ibc-rs/issues/901
@@ -294,8 +288,7 @@ impl Supervisor {
             src_channel_id: channel.channel_id.clone(),
             src_port_id: channel.port_id,
         });
-        let worker_path = Worker::spawn(pairs, path_object.clone());
-        self.workers.entry(path_object).or_insert(worker_path);
+        self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
 
         Ok(())
     }
@@ -850,7 +843,7 @@ fn channel_connection_client(
     let connection_end = chain
         .query_connection(&connection_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
-    if !connection_end.state_matches(&ConnectionState::Open) {
+    if !connection_end.is_open() {
         return Err(Error::ConnectionNotOpen(
             connection_id.clone(),
             channel_id.clone(),
