@@ -204,81 +204,80 @@ impl Supervisor {
         collected
     }
 
-    fn create_workers(&mut self) -> Result<(), BoxError> {
+    fn spawn_workers(&mut self) -> Result<(), BoxError> {
         let req = QueryChannelsRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        for chain_config in &self.config.chains {
+        for chain_config in &self.config.clone().chains {
             let chain = self.registry.get_or_spawn(&chain_config.id)?;
             let channels: Vec<IdentifiedChannelEnd> = chain.query_channels(req.clone())?;
 
-            // For all open channels
             for channel in channels {
-                trace!(
-                    "Fetching connection_client for channel {:?} of chain {}",
-                    channel,
-                    chain.id()
-                );
-
-                let client_res = channel_connection_client(
-                    &channel.port_id,
-                    &channel.channel_id,
-                    chain.as_ref(),
-                );
-
-                // todo
-                if client_res.is_err() {
-                    continue;
-                }
-                let client = client_res.unwrap().client;
-                trace!("Obtained client id {:?}", client.client_id);
-
-                if self
-                    .config
-                    .find_chain(&client.client_state.chain_id())
-                    .is_none()
-                {
-                    // Ignore channel, since it does not correspond to any chain in the config file
-                    continue;
-                }
-                let counterparty_chain = self
-                    .registry
-                    .get_or_spawn(&client.client_state.chain_id())?;
-
-                // create the client object and spawn worker
-                let client_object = Object::Client(Client {
-                    dst_client_id: client.client_id.clone(),
-                    dst_chain_id: chain.id(),
-                    src_chain_id: client.client_state.chain_id(),
-                });
-                let worker = Worker::spawn(
-                    ChainHandlePair {
-                        a: chain.clone(),
-                        b: counterparty_chain.clone(),
-                    },
-                    client_object.clone(),
-                );
-                self.workers.entry(client_object).or_insert(worker);
-
-                // TODO(Adi): Only start the Uni worker if there are outstanding packets or ACKs.
-                // create the path object and spawn worker
-                let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
-                    dst_chain_id: counterparty_chain.id(),
-                    src_chain_id: chain.id(),
-                    src_channel_id: channel.channel_id.clone(),
-                    src_port_id: channel.port_id.clone(),
-                });
-                let worker = Worker::spawn(
-                    ChainHandlePair {
-                        a: chain.clone(),
-                        b: counterparty_chain,
-                    },
-                    path_object.clone(),
-                );
-                self.workers.entry(path_object).or_insert(worker);
+                self.spawn_workers_for_channel(chain.clone(), channel)?;
             }
         }
+        Ok(())
+    }
+
+    /// Spawns all the [`Worker`] associated to a given channel on a given chain.
+    fn spawn_workers_for_channel(
+        &mut self,
+        chain: Box<dyn ChainHandle>,
+        channel: IdentifiedChannelEnd,
+    ) -> Result<(), BoxError> {
+        trace!(
+            "Fetching connection_client for channel {:?} of chain {}",
+            channel,
+            chain.id()
+        );
+
+        let client_res =
+            channel_connection_client(&channel.port_id, &channel.channel_id, chain.as_ref());
+
+        // TODO(Adi) Fix: propagate certain errors here.
+        if client_res.is_err() {
+            return Ok(());
+        }
+        let client = client_res.unwrap().client;
+        trace!("Obtained client id {:?}", client.client_id);
+
+        if self
+            .config
+            .find_chain(&client.client_state.chain_id())
+            .is_none()
+        {
+            // Ignore channel, since it does not correspond to any chain in the config file
+            return Ok(());
+        }
+        let counterparty_chain = self
+            .registry
+            .get_or_spawn(&client.client_state.chain_id())?;
+        let pairs = ChainHandlePair {
+            a: chain.clone(),
+            b: counterparty_chain.clone(),
+        };
+
+        // create the client object and spawn worker
+        let client_object = Object::Client(Client {
+            dst_client_id: client.client_id.clone(),
+            dst_chain_id: chain.id(),
+            src_chain_id: client.client_state.chain_id(),
+        });
+        let worker_client = Worker::spawn(pairs.clone(), client_object.clone());
+        self.workers.entry(client_object).or_insert(worker_client);
+
+        // TODO(Adi): Only start the Uni worker if there are outstanding packets or ACKs.
+        // create the path object and spawn worker
+        let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
+            dst_chain_id: counterparty_chain.id(),
+            src_chain_id: chain.id(),
+            src_channel_id: channel.channel_id.clone(),
+            src_port_id: channel.port_id.clone(),
+        });
+        let worker_path = Worker::spawn(pairs, path_object.clone());
+        self.workers.entry(path_object).or_insert(worker_path);
+
         Ok(())
     }
 
@@ -292,7 +291,7 @@ impl Supervisor {
             subscriptions.push((chain, subscription));
         }
 
-        self.create_workers()?;
+        self.spawn_workers()?;
 
         loop {
             match recv_multiple(&subscriptions) {
@@ -335,9 +334,8 @@ impl Supervisor {
             let src = self.registry.get_or_spawn(object.src_chain_id())?;
             let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
 
-            if let Some(worker) = self.worker_for_object(object, src, dst) {
-                worker.send_events(height, events, chain_id.clone())?;
-            }
+            let worker = self.worker_for_object(object, src, dst);
+            worker.send_events(height, events, chain_id.clone())?
         }
 
         if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
@@ -357,37 +355,23 @@ impl Supervisor {
         Ok(())
     }
 
-    // TODO(Adi): cleanup if unnecessary.
-    #[allow(dead_code)]
-    fn object_matches_chain_pair(&self, object: &Object, chains: &ChainHandlePair) -> bool {
-        match object {
-            Object::Client(_cl) => {
-                object.dst_chain_id() == &chains.a.id() && object.src_chain_id() == &chains.b.id()
-            }
-            Object::UnidirectionalChannelPath(_path) => {
-                object.src_chain_id() == &chains.a.id() && object.dst_chain_id() == &chains.b.id()
-            }
-        }
-    }
-
     /// Get a handle to the worker in charge of handling events associated
     /// with the given [`Object`].
     ///
     /// This function will spawn a new [`Worker`] if one does not exists already.
-    // TODO(Adi): Investigate whether `Option` result is needed here.
-    #[allow(clippy::unnecessary_wraps)]
+    // TODO(Adi): This had return type `Option`: was it necessary?
     fn worker_for_object(
         &mut self,
         object: Object,
         src: Box<dyn ChainHandle>,
         dst: Box<dyn ChainHandle>,
-    ) -> Option<&WorkerHandle> {
+    ) -> &WorkerHandle {
         if self.workers.contains_key(&object) {
-            Some(&self.workers[&object])
+            &self.workers[&object]
         } else {
             let worker = Worker::spawn(ChainHandlePair { a: src, b: dst }, object.clone());
             let worker = self.workers.entry(object).or_insert(worker);
-            Some(worker)
+            worker
         }
     }
 }
