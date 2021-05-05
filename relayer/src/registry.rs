@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 
 use anomaly::BoxError;
+use tracing::trace;
 
 use ibc::ics24_host::identifier::ChainId;
 
@@ -36,6 +37,7 @@ impl Registry {
         if !self.handles.contains_key(chain_id) {
             let handle = spawn_chain_runtime(&self.config, chain_id)?;
             self.handles.insert(chain_id.clone(), handle);
+            trace!("spawned chain runtime for chain identifier {}", chain_id);
         }
 
         let handle = self.handles.get(chain_id).unwrap();

@@ -1,15 +1,18 @@
 use core::marker::{Send, Sync};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
+use std::time::Duration;
 
 use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
+use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
+
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
-
 use crate::ics07_tendermint::client_state;
-use crate::ics24_host::identifier::ChainId;
+use crate::ics24_host::error::ValidationError;
+use crate::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
 use crate::Height;
@@ -61,6 +64,15 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(state) => state.client_type(),
+        }
+    }
+
+    pub fn refresh_time(&self) -> Option<Duration> {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.refresh_time(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
         }
     }
 }
@@ -135,6 +147,40 @@ impl ClientState for AnyClientState {
 
     fn wrap_any(self) -> AnyClientState {
         self
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type")]
+pub struct IdentifiedAnyClientState {
+    pub client_id: ClientId,
+    pub client_state: AnyClientState,
+}
+
+impl Protobuf<IdentifiedClientState> for IdentifiedAnyClientState {}
+
+impl TryFrom<IdentifiedClientState> for IdentifiedAnyClientState {
+    type Error = Error;
+
+    fn try_from(raw: IdentifiedClientState) -> Result<Self, Self::Error> {
+        Ok(IdentifiedAnyClientState {
+            client_id: raw.client_id.parse().map_err(|e: ValidationError| {
+                Kind::InvalidRawClientId(raw.client_id.clone(), e.kind().clone())
+            })?,
+            client_state: raw
+                .client_state
+                .ok_or_else(|| Kind::InvalidRawClientState.context("missing client state"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl From<IdentifiedAnyClientState> for IdentifiedClientState {
+    fn from(value: IdentifiedAnyClientState) -> Self {
+        IdentifiedClientState {
+            client_id: value.client_id.to_string(),
+            client_state: Some(value.client_state.into()),
+        }
     }
 }
 

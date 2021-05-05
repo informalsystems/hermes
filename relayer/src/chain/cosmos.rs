@@ -25,10 +25,10 @@ use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
 };
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -36,9 +36,7 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TmHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
-};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
@@ -489,7 +487,10 @@ impl Chain for CosmosSdkChain {
         })
     }
 
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
         crate::time!("query_chain_clients");
 
         let mut client = self
@@ -506,13 +507,13 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        let vec_ids = response
+        let clients = response
             .client_states
-            .iter()
-            .filter_map(|ic| ClientId::from_str(ic.client_id.as_str()).ok())
+            .into_iter()
+            .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
             .collect();
 
-        Ok(vec_ids)
+        Ok(clients)
     }
 
     fn query_client_state(
@@ -660,7 +661,20 @@ impl Chain for CosmosSdkChain {
         Ok(consensus_states)
     }
 
-    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: ICSHeight,
+        query_height: ICSHeight,
+    ) -> Result<AnyConsensusState, Error> {
+        crate::time!("query_chain_clients");
+
+        let consensus_state = self
+            .proven_client_consensus(&client_id, consensus_height, query_height)?
+            .0;
+        Ok(AnyConsensusState::Tendermint(consensus_state))
+    }
+
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
@@ -770,7 +784,10 @@ impl Chain for CosmosSdkChain {
         Ok(vec_ids)
     }
 
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<PortChannelId>, Error> {
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -788,23 +805,12 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
-        let ids = response
+        let channels = response
             .channels
-            .iter()
-            .filter_map(|ch| {
-                let port_id = PortId::from_str(ch.port_id.as_str()).ok()?;
-                let channel_id = ChannelId::from_str(ch.channel_id.as_str()).ok()?;
-                Some(PortChannelId {
-                    port_id,
-                    channel_id,
-                })
-            })
+            .into_iter()
+            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
             .collect();
-
-        Ok(ids)
+        Ok(channels)
     }
 
     fn query_channel(
