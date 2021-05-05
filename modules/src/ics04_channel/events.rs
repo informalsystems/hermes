@@ -159,6 +159,15 @@ pub struct Attributes {
     pub counterparty_channel_id: Option<ChannelId>,
 }
 
+impl Attributes {
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &Option<ChannelId> {
+        &self.channel_id
+    }
+}
+
 impl Default for Attributes {
     fn default() -> Self {
         Attributes {
@@ -264,6 +273,9 @@ impl From<OpenTry> for IbcEvent {
 pub struct OpenAck(Attributes);
 
 impl OpenAck {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
@@ -308,6 +320,9 @@ impl From<OpenAck> for IbcEvent {
 pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
