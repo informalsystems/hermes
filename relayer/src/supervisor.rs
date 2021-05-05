@@ -220,7 +220,7 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Spawns all the [`Worker`] associated to a given channel on a given chain.
+    /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
     fn spawn_workers_for_channel(
         &mut self,
         chain: Box<dyn ChainHandle>,
@@ -285,7 +285,8 @@ impl Supervisor {
         let worker_client = Worker::spawn(pairs.clone(), client_object.clone());
         self.workers.entry(client_object).or_insert(worker_client);
 
-        // TODO(Adi): Only start the Uni worker if there are outstanding packets or ACKs.
+        // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
+        //  https://github.com/informalsystems/ibc-rs/issues/901
         // create the path object and spawn worker
         let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
             dst_chain_id: counterparty_chain.id(),
@@ -329,7 +330,6 @@ impl Supervisor {
         src_chain: Box<dyn ChainHandle>,
         batch: EventBatch,
     ) -> Result<(), BoxError> {
-        // TODO(ADI): Replace assert with simple equality check and return error upon mismatch.
         assert_eq!(src_chain.id(), batch.chain_id);
 
         let height = batch.height;
@@ -377,7 +377,6 @@ impl Supervisor {
     /// with the given [`Object`].
     ///
     /// This function will spawn a new [`Worker`] if one does not exists already.
-    // TODO(Adi): This had return type `Option`: was it necessary?
     fn worker_for_object(
         &mut self,
         object: Object,
