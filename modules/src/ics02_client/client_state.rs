@@ -166,6 +166,15 @@ pub struct IdentifiedAnyClientState {
     pub client_state: AnyClientState,
 }
 
+impl IdentifiedAnyClientState {
+    pub fn new(client_id: ClientId, client_state: AnyClientState) -> Self {
+        IdentifiedAnyClientState {
+            client_id,
+            client_state,
+        }
+    }
+}
+
 impl Protobuf<IdentifiedClientState> for IdentifiedAnyClientState {}
 
 impl TryFrom<IdentifiedClientState> for IdentifiedAnyClientState {
