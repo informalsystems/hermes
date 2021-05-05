@@ -14,7 +14,7 @@ def start(c: Config, src: ChainId, dst: ChainId, src_port: Optional[PortId], src
     if src_channel != None:
         args.extend(['-c', str(src_channel)])
 
-    full_cmd = f'{c.relayer_cmd} -c {c.config_file} --json start'.split(' ')
+    full_cmd = f'{c.relayer_cmd} -c {c.config_file} -j start-multi'.split(' ')
     full_cmd.extend(args)
 
     l.debug(' '.join(full_cmd))
