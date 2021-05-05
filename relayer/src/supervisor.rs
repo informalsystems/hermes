@@ -7,7 +7,7 @@ use std::{
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Select, Sender};
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::events::VecIbcEvents;
 use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
@@ -349,17 +349,14 @@ impl Supervisor {
             worker.send_events(height, events, chain_id.clone())?
         }
 
+        // If there is a NewBlock event, forward the event to any workers affected by it.
         if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-            for (object, worker) in self.workers.iter() {
-                match object {
-                    // If there is a NewBlock event, forward it to certain workers.
-                    Object::UnidirectionalChannelPath(p) => {
-                        if p.src_chain_id == src_chain.id() {
-                            worker.send_new_block(height, new_block)?;
-                        }
-                    }
-                    Object::Client(_) => {}
-                }
+            for (_, worker) in self
+                .workers
+                .iter()
+                .filter(|(o, _)| o.notify_new_block(&src_chain.id()))
+            {
+                worker.send_new_block(height, new_block)?;
             }
         }
 
@@ -428,15 +425,19 @@ impl Worker {
 
     /// Run the worker event loop.
     fn run(self, object: Object) {
-        let result = match object.clone() {
+        let span = error_span!("worker loop", worker = %self);
+        let _guard = span.enter();
+
+        let result = match object {
             Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
             Object::Client(client) => self.run_client(client),
         };
 
         if let Err(e) = result {
-            error!("[{}] worker error: {}", object.short_name(), e);
+            error!("worker error: {}", e);
         }
-        info!("[{}] worker exits", object.short_name());
+
+        info!("worker exits");
     }
 
     fn run_client_misbehaviour(
@@ -609,6 +610,18 @@ pub enum Object {
     Client(Client),
     /// See [`UnidirectionalChannelPath`].
     UnidirectionalChannelPath(UnidirectionalChannelPath),
+}
+
+impl Object {
+    /// Returns `true` if this [`Object`] is for a [`Worker`] which is interested
+    /// in new block events originating from the chain with the given [`ChainId`].
+    /// Returns `false` otherwise.
+    fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
+        match self {
+            Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
+            Object::Client(_) => false,
+        }
+    }
 }
 
 impl From<Client> for Object {
