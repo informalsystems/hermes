@@ -204,8 +204,6 @@ impl Supervisor {
         collected
     }
 
-    // TODO(Adi): Integrate this with single supervisor.
-    //     Method should be called from `Supervisor::run()`.
     fn create_workers(&mut self) -> Result<(), BoxError> {
         let req = QueryChannelsRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
@@ -217,12 +215,25 @@ impl Supervisor {
 
             // For all open channels
             for channel in channels {
-                let client = channel_connection_client(
+                trace!(
+                    "Fetching connection_client for channel {:?} of chain {}",
+                    channel,
+                    chain.id()
+                );
+
+                let client_res = channel_connection_client(
                     &channel.port_id,
                     &channel.channel_id,
                     chain.as_ref(),
-                )?
-                .client;
+                );
+
+                // todo
+                if client_res.is_err() {
+                    continue;
+                }
+                let client = client_res.unwrap().client;
+                trace!("Obtained client id {:?}", client.client_id);
+
                 if self
                     .config
                     .find_chain(&client.client_state.chain_id())
@@ -250,6 +261,7 @@ impl Supervisor {
                 );
                 self.workers.entry(client_object).or_insert(worker);
 
+                // TODO(Adi): Only start the Uni worker if there are outstanding packets or ACKs.
                 // create the path object and spawn worker
                 let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
                     dst_chain_id: counterparty_chain.id(),
@@ -285,7 +297,6 @@ impl Supervisor {
         loop {
             match recv_multiple(&subscriptions) {
                 Ok((chain, batch)) => {
-                    dbg!((chain, batch.clone()));
                     self.process_batch(chain.clone(), batch.unwrap_or_clone())?;
                 }
                 Err(e) => {
@@ -332,6 +343,7 @@ impl Supervisor {
         if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
             for (object, worker) in self.workers.iter() {
                 match object {
+                    // If there is a NewBlock event, forward it to certain workers.
                     Object::UnidirectionalChannelPath(p) => {
                         if p.src_chain_id == src_chain.id() {
                             worker.send_new_block(height, new_block)?;
@@ -824,8 +836,8 @@ fn channel_connection_client(
     if !channel_end.state_matches(&ChannelState::Open) {
         return Err(format!(
             "channel '{}' on chain '{}' not opened",
+            channel_id,
             chain.id(),
-            channel_id
         )
         .into());
     }
