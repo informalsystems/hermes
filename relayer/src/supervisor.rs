@@ -12,15 +12,15 @@ use tracing::{debug, error, info, trace, warn};
 use ibc::events::VecIbcEvents;
 use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::ics04_channel::events::Attributes;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::{
     events::IbcEvent,
     ics02_client::events::NewBlock,
     ics03_connection::connection::State as ConnectionState,
-    ics04_channel::{
-        channel::State as ChannelState,
-        events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
-    },
+    ics04_channel::events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
@@ -34,9 +34,9 @@ use crate::{
     link::{Link, LinkParameters},
     registry::Registry,
 };
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::ics04_channel::events::Attributes;
+
+mod error;
+pub use error::Error;
 
 /// A command for a [`Worker`].
 pub enum WorkerCmd {
@@ -235,11 +235,29 @@ impl Supervisor {
         let client_res =
             channel_connection_client(&channel.port_id, &channel.channel_id, chain.as_ref());
 
-        // TODO(Adi) Fix: propagate certain errors here.
-        if client_res.is_err() {
-            return Ok(());
-        }
-        let client = client_res.unwrap().client;
+        let client = match client_res {
+            Ok(conn_client) => conn_client.client,
+            Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelNotOpen(..)) => {
+                // These errors are silent.
+                // Simply ignore the channel and return without spawning the workers.
+                warn!(
+                    "ignoring channel {} because it is not open (or its connection is not open)",
+                    channel.channel_id
+                );
+                return Ok(());
+            }
+            Err(e) => {
+                // Propagate errors.
+                return Err(format!(
+                    "unable to spawn workers for channel/chain pair '{}'/'{}' due to error: {:?}",
+                    channel.channel_id,
+                    chain.id(),
+                    e
+                )
+                .into())
+            }
+        };
+
         trace!("Obtained client id {:?}", client.client_id);
 
         if self
@@ -273,7 +291,7 @@ impl Supervisor {
             dst_chain_id: counterparty_chain.id(),
             src_chain_id: chain.id(),
             src_channel_id: channel.channel_id.clone(),
-            src_port_id: channel.port_id.clone(),
+            src_port_id: channel.port_id,
         });
         let worker_path = Worker::spawn(pairs, path_object.clone());
         self.workers.entry(path_object).or_insert(worker_path);
@@ -809,21 +827,18 @@ fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
     chain: &dyn ChainHandle,
-) -> Result<ChannelConnectionClient, BoxError> {
+) -> Result<ChannelConnectionClient, Error> {
     trace!(
         chain_id = %chain.id(),
         port_id = %port_id,
         channel_id = %channel_id,
         "getting counterparty chain"
     );
-    let channel_end = chain.query_channel(port_id, channel_id, Height::zero())?;
-    if !channel_end.state_matches(&ChannelState::Open) {
-        return Err(format!(
-            "channel '{}' on chain '{}' not opened",
-            channel_id,
-            chain.id(),
-        )
-        .into());
+    let channel_end = chain
+        .query_channel(port_id, channel_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+    if !channel_end.is_open() {
+        return Err(Error::ChannelNotOpen(channel_id.clone(), chain.id()));
     }
 
     let channel =
@@ -831,21 +846,24 @@ fn channel_connection_client(
     let connection_id = channel_end
         .connection_hops()
         .first()
-        .ok_or_else(|| format!("no connection hops for channel '{}'", channel_id))?;
+        .ok_or_else(|| Error::MissingConnectionHops(channel_id.clone(), chain.id()))?;
 
-    let connection_end = chain.query_connection(&connection_id, Height::zero())?;
+    let connection_end = chain
+        .query_connection(&connection_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
     if !connection_end.state_matches(&ConnectionState::Open) {
-        return Err(format!(
-            "connection '{}' on chain '{}' not opened",
-            connection_id,
+        return Err(Error::ConnectionNotOpen(
+            connection_id.clone(),
+            channel_id.clone(),
             chain.id(),
-        )
-        .into());
+        ));
     }
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end.clone());
 
     let client_id = connection_end.client_id();
-    let client_state = chain.query_client_state(client_id, Height::zero())?;
+    let client_state = chain
+        .query_client_state(client_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state.clone());
     trace!(
         chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
