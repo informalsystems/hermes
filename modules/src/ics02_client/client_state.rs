@@ -67,12 +67,21 @@ impl AnyClientState {
         }
     }
 
-    pub fn refresh_time(&self) -> Option<Duration> {
+    pub fn refresh_period(&self) -> Option<Duration> {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.refresh_time(),
 
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
+        }
+    }
+
+    pub fn expired(&self, elapsed_since_latest: Duration) -> bool {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
     }
 }

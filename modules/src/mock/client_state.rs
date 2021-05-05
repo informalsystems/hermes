@@ -49,6 +49,9 @@ impl MockClientState {
     pub fn refresh_time(&self) -> Option<Duration> {
         None
     }
+    pub fn expired(&self, _elapsed: Duration) -> bool {
+        false
+    }
 }
 
 impl From<MockClientState> for AnyClientState {

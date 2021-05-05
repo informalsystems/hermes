@@ -27,7 +27,7 @@ use ibc::{
 };
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
-use crate::foreign_client::{ForeignClient, ForeignClientError};
+use crate::foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults};
 use crate::{
     chain::handle::ChainHandle,
     event::monitor::EventBatch,
@@ -355,6 +355,31 @@ impl Worker {
         info!("[{}] worker exits", object.short_name());
     }
 
+    fn run_client_misbehaviour(
+        &self,
+        client: &ForeignClient,
+        update: Option<UpdateClient>,
+    ) -> bool {
+        let mut skip_misbehaviour = false;
+        let res = client.detect_misbehaviour_and_submit_evidence(update);
+        match res {
+            MisbehaviourResults::ValidClient => {}
+            MisbehaviourResults::VerificationError => {
+                // can retry in next call
+            }
+            MisbehaviourResults::EvidenceSubmitted(_events) => {
+                // if evidence was submitted successfully then exit
+                skip_misbehaviour = true;
+            }
+            MisbehaviourResults::CannotExecute => {
+                // skip misbehaviour checking if chain does not have support for it (i.e. client
+                // update event does not include the header)
+                skip_misbehaviour = true;
+            }
+        };
+        skip_misbehaviour
+    }
+
     /// Run the event loop for events associated with a [`Client`].
     fn run_client(self, client: Client) -> Result<(), BoxError> {
         let mut client = ForeignClient::restore(
@@ -364,48 +389,41 @@ impl Worker {
         );
 
         info!(
-            "[{}] running client worker & initial misbehaviour detection for {}",
+            "[{}] running client worker initial misbehaviour detection for {}",
             self, client
         );
-
         // initial check for evidence of misbehaviour for all updates
-        if !client
-            .detect_misbehaviour_and_submit_evidence(None)?
-            .is_empty()
-        {
-            return Ok(());
-        }
+        let skip_misbehaviour = self.run_client_misbehaviour(&client, None);
 
         info!(
-            "[{}] running client worker (misbehaviour and refresh) for {}",
+            "[{}] running client worker loop (misbehaviour and refresh) for {}",
             self, client
         );
         loop {
+            thread::sleep(Duration::from_millis(600));
+            // Run client refresh, exit only if expired or frozen
+            if let Err(ForeignClientError::ExpiredOrFrozen(client_id, chain_id)) = client.refresh()
+            {
+                return Err(Box::new(ForeignClientError::ExpiredOrFrozen(
+                    client_id, chain_id,
+                )));
+            }
+
+            if skip_misbehaviour {
+                continue;
+            }
             if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
                 trace!("[{}] client receives batch {:?}", client, batch);
 
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
                         debug!("[{}] client updated", client);
-                        let result = client
-                            .detect_misbehaviour_and_submit_evidence(Some(update))
-                            .map_err(|e| {
-                                format!(
-                                    "[{}] could not run misbehaviour detection for {}: {}",
-                                    self, client, e
-                                )
-                            })?;
-                        if result.is_empty() {
-                            break;
-                        }
+                        // Run misbehaviour. If evidence submitted the loop will exit in next
+                        // iteration with frozen client
+                        self.run_client_misbehaviour(&client, Some(update));
                     }
                 }
             }
-
-            client.refresh().map_err(|e| {
-                ForeignClientError::ClientRefresh(client.id.clone(), format!("{}", e))
-            })?;
-            thread::sleep(Duration::from_millis(600))
         }
     }
 
@@ -549,7 +567,7 @@ impl Object {
         dst_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
         let client_state = dst_chain.query_client_state(e.client_id(), Height::zero())?;
-        if client_state.refresh_time().is_none() {
+        if client_state.refresh_period().is_none() {
             return Err(format!(
                 "client '{}' on chain {} does not require refresh",
                 e.client_id(),

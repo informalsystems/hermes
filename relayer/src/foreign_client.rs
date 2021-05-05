@@ -50,6 +50,9 @@ pub enum ForeignClientError {
     #[error("failed while finding client {0}: expected chain_id in client state: {1}; actual chain_id: {2}")]
     ClientFind(ClientId, ChainId, ChainId),
 
+    #[error("client {0} on chain id {1} is expired or frozen")]
+    ExpiredOrFrozen(ClientId, ChainId),
+
     #[error("error raised while checking for misbehaviour evidence: {0}")]
     Misbehaviour(String),
 
@@ -360,8 +363,15 @@ impl ForeignClient {
             .consensus_state(client_state.latest_height())?
             .timestamp();
 
-        let refresh_window = client_state.refresh_time();
+        let refresh_window = client_state.refresh_period();
         let elapsed = Timestamp::now().duration_since(&last_update_time);
+
+        if client_state.is_frozen() || client_state.expired(elapsed.unwrap_or_default()) {
+            return Err(ForeignClientError::ExpiredOrFrozen(
+                self.id().clone(),
+                self.dst_chain.id(),
+            ));
+        }
 
         match (elapsed, refresh_window) {
             (None, _) | (_, None) => Ok(None),
@@ -622,6 +632,7 @@ impl ForeignClient {
         Ok(consensus_states)
     }
 
+    /// Returns the consensus state at `height` or error if not found.
     fn consensus_state(&self, height: Height) -> Result<AnyConsensusState, ForeignClientError> {
         let res = self
             .dst_chain
@@ -631,7 +642,7 @@ impl ForeignClient {
                     self.id.clone(),
                     self.dst_chain.id(),
                     format!(
-                        "failed querying consensus state @ height {} with error {}",
+                        "failed querying consensus state at height {} with error {}",
                         height, e
                     ),
                 )
@@ -840,11 +851,11 @@ impl ForeignClient {
     pub fn detect_misbehaviour_and_submit_evidence(
         &self,
         update_event: Option<UpdateClient>,
-    ) -> Result<Vec<IbcEvent>, ForeignClientError> {
+    ) -> MisbehaviourResults {
         // check evidence of misbehaviour for all updates or one
         let result = match self.detect_misbehaviour(update_event.clone()) {
             Err(e) => Err(e),
-            Ok(None) => Ok(vec![]),
+            Ok(None) => Ok(vec![]), // no evidence found
             Ok(Some(misbehaviour)) => {
                 error!(
                     "[{}] MISBEHAVIOUR DETECTED {}, sending evidence",
@@ -853,11 +864,6 @@ impl ForeignClient {
                 self.submit_evidence(misbehaviour)
             }
         };
-
-        // If the check was for a single update return the result.
-        if update_event.is_some() {
-            return result;
-        }
 
         // Filter the errors if the detection was run for all consensus states.
         // Even if some states may have failed to verify, e.g. if they were expired, just
@@ -868,7 +874,7 @@ impl ForeignClient {
                     "[{}] misbehaviour checking is being disabled: {:?}",
                     self, s
                 );
-                Err(ForeignClientError::MisbehaviourExit(s))
+                MisbehaviourResults::CannotExecute
             }
             Ok(misbehaviour_detection_result) => {
                 if !misbehaviour_detection_result.is_empty() {
@@ -876,15 +882,29 @@ impl ForeignClient {
                         "[{}] evidence submission result {:?}",
                         self, misbehaviour_detection_result
                     );
+                    MisbehaviourResults::EvidenceSubmitted(misbehaviour_detection_result)
+                } else {
+                    MisbehaviourResults::ValidClient
                 }
-                Ok(misbehaviour_detection_result)
             }
             Err(e) => {
-                warn!("[{}] misbehaviour checking result {:?}", self, e);
-                Ok(vec![])
+                if update_event.is_some() {
+                    MisbehaviourResults::CannotExecute
+                } else {
+                    warn!("[{}] misbehaviour checking result {:?}", self, e);
+                    MisbehaviourResults::ValidClient
+                }
             }
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub enum MisbehaviourResults {
+    CannotExecute,
+    EvidenceSubmitted(Vec<IbcEvent>),
+    ValidClient,
+    VerificationError,
 }
 
 pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientError> {
