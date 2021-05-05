@@ -67,12 +67,21 @@ impl AnyClientState {
         }
     }
 
-    pub fn refresh_time(&self) -> Option<Duration> {
+    pub fn refresh_period(&self) -> Option<Duration> {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.refresh_time(),
 
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
+        }
+    }
+
+    pub fn expired(&self, elapsed_since_latest: Duration) -> bool {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
     }
 }
@@ -155,6 +164,15 @@ impl ClientState for AnyClientState {
 pub struct IdentifiedAnyClientState {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
+}
+
+impl IdentifiedAnyClientState {
+    pub fn new(client_id: ClientId, client_state: AnyClientState) -> Self {
+        IdentifiedAnyClientState {
+            client_id,
+            client_state,
+        }
+    }
 }
 
 impl Protobuf<IdentifiedClientState> for IdentifiedAnyClientState {}

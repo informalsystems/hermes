@@ -26,6 +26,16 @@ pub struct IdentifiedChannelEnd {
     pub channel_end: ChannelEnd,
 }
 
+impl IdentifiedChannelEnd {
+    pub fn new(port_id: PortId, channel_id: ChannelId, channel_end: ChannelEnd) -> Self {
+        IdentifiedChannelEnd {
+            port_id,
+            channel_id,
+            channel_end,
+        }
+    }
+}
+
 impl Protobuf<RawIdentifiedChannel> for IdentifiedChannelEnd {}
 
 impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {

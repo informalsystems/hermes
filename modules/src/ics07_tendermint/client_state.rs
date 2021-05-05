@@ -127,7 +127,13 @@ impl ClientState {
 
     /// Get the refresh time to ensure the state does not expire
     pub fn refresh_time(&self) -> Option<Duration> {
-        Some(self.trusting_period / 2)
+        Some(2 * self.trusting_period / 3)
+    }
+
+    /// Check if the state is expired when `elapsed` time has passed since the latest consensus
+    /// state timestamp
+    pub fn expired(&self, elapsed: Duration) -> bool {
+        elapsed > self.trusting_period
     }
 }
 
