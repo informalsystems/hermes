@@ -1,6 +1,5 @@
 use std::{sync::Arc, thread};
 
-use crossbeam_channel as channel;
 use prost_types::Any;
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -34,12 +33,11 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
-use crate::event::monitor::EventBatch;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
+use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
 pub(crate) mod cosmos;
 pub mod counterparty;
@@ -91,13 +89,7 @@ pub trait Chain: Sized {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<
-        (
-            channel::Receiver<EventBatch>,
-            Option<thread::JoinHandle<()>>,
-        ),
-        Error,
-    >;
+    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;

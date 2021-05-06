@@ -32,7 +32,7 @@ use crate::{
         handle::ChainHandle,
     },
     config::Config,
-    event::monitor::EventBatch,
+    event::monitor::{EventBatch, UnwrapOrClone},
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
     registry::Registry,
@@ -207,7 +207,7 @@ impl Supervisor {
         collected
     }
 
-    fn spawn_workers(&mut self) -> Result<(), BoxError> {
+    fn spawn_workers(&mut self) {
         let req = QueryChannelsRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
@@ -227,7 +227,14 @@ impl Supervisor {
                     continue;
                 }
             };
-            let channels = chain.query_channels(req.clone())?;
+
+            let channels = match chain.query_channels(req.clone()) {
+                Ok(channels) => channels,
+                Err(e) => {
+                    error!("failed to query channels from {}: {}", chain_id, e);
+                    continue;
+                }
+            };
 
             for channel in channels {
                 match self.spawn_workers_for_channel(chain.clone(), channel.clone()) {
@@ -245,8 +252,6 @@ impl Supervisor {
                 }
             }
         }
-
-        Ok(())
     }
 
     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
@@ -332,21 +337,41 @@ impl Supervisor {
         let mut subscriptions = Vec::with_capacity(self.config.chains.len());
 
         for chain_config in &self.config.chains {
-            let chain = self.registry.get_or_spawn(&chain_config.id)?;
-            let subscription = chain.subscribe()?;
-            subscriptions.push((chain, subscription));
+            let chain = match self.registry.get_or_spawn(&chain_config.id) {
+                Ok(chain) => chain,
+                Err(e) => {
+                    error!(
+                        "failed to spawn chain runtime for {}: {}",
+                        chain_config.id, e
+                    );
+                    continue;
+                }
+            };
+
+            match chain.subscribe() {
+                Ok(subscription) => subscriptions.push((chain, subscription)),
+                Err(e) => error!(
+                    "failed to subscribe to events of {}: {}",
+                    chain_config.id, e
+                ),
+            }
         }
 
-        self.spawn_workers()?;
+        self.spawn_workers();
 
         loop {
             match recv_multiple(&subscriptions) {
                 Ok((chain, batch)) => {
-                    self.process_batch(chain.clone(), batch.unwrap_or_clone())?;
+                    let result = batch
+                        .unwrap_or_clone()
+                        .map_err(Into::into)
+                        .and_then(|batch| self.process_batch(chain.clone(), batch));
+
+                    if let Err(e) = result {
+                        error!("[{}] error during batch processing: {}", chain.id(), e);
+                    }
                 }
-                Err(e) => {
-                    dbg!(e);
-                }
+                Err(e) => error!("error when waiting for events: {}", e),
             }
         }
     }
@@ -450,7 +475,7 @@ impl Worker {
 
     /// Run the worker event loop.
     fn run(self, object: Object) {
-        let span = error_span!("worker loop", worker = %self);
+        let span = error_span!("worker loop", worker = %object.short_name());
         let _guard = span.enter();
 
         let result = match object {
@@ -476,7 +501,7 @@ impl Worker {
                 // can retry in next call
                 false
             }
-            MisbehaviourResults::EvidenceSubmitted(_events) => {
+            MisbehaviourResults::EvidenceSubmitted(_) => {
                 // if evidence was submitted successfully then exit
                 true
             }
@@ -511,12 +536,11 @@ impl Worker {
 
         loop {
             thread::sleep(Duration::from_millis(600));
+
             // Run client refresh, exit only if expired or frozen
-            if let Err(ForeignClientError::ExpiredOrFrozen(client_id, chain_id)) = client.refresh()
-            {
-                return Err(Box::new(ForeignClientError::ExpiredOrFrozen(
-                    client_id, chain_id,
-                )));
+            if let Err(e @ ForeignClientError::ExpiredOrFrozen(..)) = client.refresh() {
+                error!("failed to refresh client '{}': {}", client, e);
+                continue;
             }
 
             if skip_misbehaviour {
@@ -524,11 +548,11 @@ impl Worker {
             }
 
             if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
-                trace!("[{}] client worker receives batch {:?}", client, batch);
+                trace!("client '{}' worker receives batch {:?}", client, batch);
 
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
-                        debug!("[{}] client updated", client);
+                        debug!("client '{}' updated", client);
 
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
@@ -556,24 +580,35 @@ impl Worker {
         }
 
         loop {
+            thread::sleep(Duration::from_millis(200));
+
             if let Ok(cmd) = self.rx.try_recv() {
-                match cmd {
+                let result = match cmd {
                     WorkerCmd::IbcEvents { batch } => {
                         // Update scheduled batches.
-                        link.a_to_b.update_schedule(batch)?;
+                        link.a_to_b.update_schedule(batch)
                     }
                     WorkerCmd::NewBlock {
                         height,
                         new_block: _,
-                    } => link.a_to_b.clear_packets(height)?,
+                    } => link.a_to_b.clear_packets(height),
+                };
+
+                if let Err(e) = result {
+                    error!("{}", e);
+                    continue;
                 }
             }
 
             // Refresh the scheduled batches and execute any outstanding ones.
-            link.a_to_b.refresh_schedule()?;
-            link.a_to_b.execute_schedule()?;
+            let result = link
+                .a_to_b
+                .refresh_schedule()
+                .and_then(|_| link.a_to_b.execute_schedule());
 
-            thread::sleep(Duration::from_millis(100))
+            if let Err(e) = result {
+                error!("{}", e);
+            }
         }
     }
 }
@@ -594,7 +629,7 @@ pub struct Client {
 impl Client {
     pub fn short_name(&self) -> String {
         format!(
-            "{} -> {}:{}",
+            "{}->{}:{}",
             self.src_chain_id, self.dst_chain_id, self.dst_client_id
         )
     }
@@ -619,7 +654,7 @@ pub struct UnidirectionalChannelPath {
 impl UnidirectionalChannelPath {
     pub fn short_name(&self) -> String {
         format!(
-            "{}/{}:{} -> {}",
+            "{}/{}:{}->{}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }

@@ -41,7 +41,10 @@ use crate::{
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::{Error, Kind},
-    event::{bus::EventBus, monitor::EventBatch},
+    event::{
+        bus::EventBus,
+        monitor::{EventBatch, EventReceiver, Result as MonitorResult},
+    },
     keyring::KeyEntry,
     light_client::LightClient,
 };
@@ -69,10 +72,10 @@ pub struct ChainRuntime<C: Chain> {
     request_receiver: channel::Receiver<ChainRequest>,
 
     /// An event bus, for broadcasting events that this runtime receives (via `event_receiver`) to subscribers
-    event_bus: EventBus<Arc<EventBatch>>,
+    event_bus: EventBus<Arc<MonitorResult<EventBatch>>>,
 
     /// Receiver channel from the event bus
-    event_receiver: channel::Receiver<EventBatch>,
+    event_receiver: EventReceiver,
 
     /// A handle to the light client
     light_client: Box<dyn LightClient<C>>,
@@ -111,7 +114,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn init(
         chain: C,
         light_client: Box<dyn LightClient<C>>,
-        event_receiver: channel::Receiver<EventBatch>,
+        event_receiver: EventReceiver,
         rt: Arc<TokioRuntime>,
     ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
         let chain_runtime = Self::new(chain, light_client, event_receiver, rt);
@@ -120,7 +123,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let handle = chain_runtime.handle();
 
         // Spawn the runtime & return
-        let thread = thread::spawn(move || chain_runtime.run().unwrap());
+        let id = handle.id();
+        let thread = thread::spawn(move || {
+            if let Err(e) = chain_runtime.run() {
+                error!("failed to start runtime for chain '{}': {}", id, e);
+            }
+        });
 
         (handle, thread)
     }
@@ -129,7 +137,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn new(
         chain: C,
         light_client: Box<dyn LightClient<C>>,
-        event_receiver: channel::Receiver<EventBatch>,
+        event_receiver: EventReceiver,
         rt: Arc<TokioRuntime>,
     ) -> Self {
         let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
