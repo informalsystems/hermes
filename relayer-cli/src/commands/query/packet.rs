@@ -294,15 +294,15 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             };
 
         // ensure the channel connects the specified chain
-        if  chain_id != dst_chain.id() {
-                return Output::error(format!(
-                    "no channel/connection {}/{} between {} and {} exists",
-                    opts.channel_id,
-                    src_connection_id,
-                    src_chain.id(),
-                    dst_chain.id(),
-                ))
-                .exit()
+        if chain_id != dst_chain.id() {
+            return Output::error(format!(
+                "no channel/connection {}/{} between {} and {} exists",
+                opts.channel_id,
+                src_connection_id,
+                src_chain.id(),
+                dst_chain.id(),
+            ))
+            .exit();
         }
 
         debug!(
@@ -602,34 +602,39 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         let src_connection_id = match channel.connection_hops().first() {
             Some(id) => id,
             None => {
-                return Output::error(format!("no connection hops for channel '{}'", self.src_channel_id)).exit()
-            },
-        };
-
-        let chain_id = match get_counterparty_chain(
-            src_chain.as_ref(), &opts.channel_id, &opts.port_id) {
-            Ok(chain_id) => chain_id,
-            Err(e) => {
                 return Output::error(format!(
-                    "failed to find channel/connection ({}/{}/{}) client with error: {}",
-                    opts.channel_id,
-                    src_connection_id,
-                    src_chain.id(),
-                    e
-                )).exit();
-            },
-        };
-
-        // ensure the channel connects the specified chain
-        if  chain_id != dst_chain.id() {
-                return Output::error(format!(
-                    "no channel/connection {}/{} between {} and {} exists",
-                    opts.channel_id,
-                    src_connection_id,
-                    src_chain.id(),
-                    dst_chain.id(),
+                    "no connection hops for channel '{}'",
+                    self.src_channel_id
                 ))
                 .exit()
+            }
+        };
+
+        let chain_id =
+            match get_counterparty_chain(src_chain.as_ref(), &opts.channel_id, &opts.port_id) {
+                Ok(chain_id) => chain_id,
+                Err(e) => {
+                    return Output::error(format!(
+                        "failed to find channel/connection ({}/{}/{}) client with error: {}",
+                        opts.channel_id,
+                        src_connection_id,
+                        src_chain.id(),
+                        e
+                    ))
+                    .exit();
+                }
+            };
+
+        // ensure the channel connects the specified chain
+        if chain_id != dst_chain.id() {
+            return Output::error(format!(
+                "no channel/connection {}/{} between {} and {} exists",
+                opts.channel_id,
+                src_connection_id,
+                src_chain.id(),
+                dst_chain.id(),
+            ))
+            .exit();
         }
 
         debug!(
