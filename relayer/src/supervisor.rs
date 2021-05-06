@@ -64,9 +64,9 @@ impl WorkerHandle {
         chain_id: ChainId,
     ) -> Result<(), BoxError> {
         let batch = EventBatch {
+            chain_id,
             height,
             events,
-            chain_id,
         };
 
         trace!("supervisor sends {:?}", batch);

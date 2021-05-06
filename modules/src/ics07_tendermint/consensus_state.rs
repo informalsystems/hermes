@@ -25,8 +25,8 @@ pub struct ConsensusState {
 impl ConsensusState {
     pub fn new(root: CommitmentRoot, timestamp: Time, next_validators_hash: Hash) -> Self {
         Self {
-            root,
             timestamp,
+            root,
             next_validators_hash,
         }
     }

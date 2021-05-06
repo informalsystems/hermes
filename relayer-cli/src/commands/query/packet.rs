@@ -245,8 +245,10 @@ impl Runnable for QueryUnreceivedPacketsCmd {
 
         debug!("Options: {:?}", opts);
 
-        let (src_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config).unwrap();
-        let (dst_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let (src_chain, _) =
+            ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config, rt.clone()).unwrap();
+        let (dst_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config, rt).unwrap();
 
         // get the channel information from source chain
         let channel_res = src_chain
@@ -576,8 +578,10 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
 
         debug!("Options: {:?}", opts);
 
-        let (src_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config).unwrap();
-        let (dst_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let (src_chain, _) =
+            ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config, rt.clone()).unwrap();
+        let (dst_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config, rt).unwrap();
 
         // get the channel information from source chain
         let channel_res = src_chain
