@@ -221,7 +221,19 @@ impl Supervisor {
             let chain = self.registry.get_or_spawn(&chain_id)?;
             let channels = chain.query_channels(req.clone())?;
             for channel in channels {
-                self.spawn_workers_for_channel(chain.clone(), channel)?;
+                match self.spawn_workers_for_channel(chain.clone(), channel.clone()) {
+                    Ok(()) => debug!(
+                        "done spawning workers for channel {} on chain {}",
+                        chain.id(),
+                        channel.channel_id
+                    ),
+                    Err(e) => error!(
+                        "skipped workers for channel {} on chain {} due to error {}",
+                        chain.id(),
+                        channel.channel_id,
+                        e
+                    ),
+                }
             }
         }
 
@@ -235,7 +247,7 @@ impl Supervisor {
         channel: IdentifiedChannelEnd,
     ) -> Result<(), BoxError> {
         trace!(
-            "Fetching connection_client for channel {:?} of chain {}",
+            "fetching connection_client for channel {:?} of chain {}",
             channel,
             chain.id()
         );
