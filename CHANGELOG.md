@@ -36,6 +36,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 
 - [ibc-relayer-cli]
   - Fix for `ft-transfer` mismatching arguments ([#869])
+  - Fix channel destination chain mismatch on unreceived-packets or unreceived-acks ([#873])
 
 ### BREAKING CHANGES
 
