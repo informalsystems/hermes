@@ -6,6 +6,7 @@ use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
+
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
@@ -41,6 +42,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 pub(crate) mod cosmos;
+pub mod counterparty;
 pub mod handle;
 pub mod runtime;
 

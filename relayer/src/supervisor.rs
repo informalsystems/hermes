@@ -13,10 +13,9 @@ use tracing::{debug, error, error_span, info, trace, warn};
 use ibc::{
     events::{IbcEvent, VecIbcEvents},
     ics02_client::{
-        client_state::{ClientState, IdentifiedAnyClientState},
+        client_state::ClientState,
         events::{NewBlock, UpdateClient},
     },
-    ics03_connection::connection::IdentifiedConnectionEnd,
     ics04_channel::{
         channel::IdentifiedChannelEnd,
         events::{Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
@@ -28,7 +27,10 @@ use ibc::{
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 use crate::{
-    chain::handle::ChainHandle,
+    chain::{
+        counterparty::{channel_connection_client, get_counterparty_chain},
+        handle::ChainHandle,
+    },
     config::Config,
     event::monitor::EventBatch,
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
@@ -260,7 +262,7 @@ impl Supervisor {
         );
 
         let client_res =
-            channel_connection_client(&channel.port_id, &channel.channel_id, chain.as_ref());
+            channel_connection_client(chain.as_ref(), &channel.port_id, &channel.channel_id);
 
         let client = match client_res {
             Ok(conn_client) => conn_client.client,
@@ -718,7 +720,7 @@ impl Object {
             .as_ref()
             .ok_or_else(|| format!("channel_id missing in OpenAck event '{:?}'", e))?;
 
-        let client = channel_connection_client(e.port_id(), channel_id, dst_chain)?.client;
+        let client = channel_connection_client(dst_chain, e.port_id(), channel_id)?.client;
         if client.client_state.refresh_period().is_none() {
             return Err(format!(
                 "client '{}' on chain {} does not require refresh",
@@ -831,89 +833,4 @@ impl CollectedEvents {
     pub fn has_new_block(&self) -> bool {
         self.new_block.is_some()
     }
-}
-
-pub struct ChannelConnectionClient {
-    pub channel: IdentifiedChannelEnd,
-    pub connection: IdentifiedConnectionEnd,
-    pub client: IdentifiedAnyClientState,
-}
-
-impl ChannelConnectionClient {
-    pub fn new(
-        channel: IdentifiedChannelEnd,
-        connection: IdentifiedConnectionEnd,
-        client: IdentifiedAnyClientState,
-    ) -> Self {
-        ChannelConnectionClient {
-            channel,
-            connection,
-            client,
-        }
-    }
-}
-
-fn channel_connection_client(
-    port_id: &PortId,
-    channel_id: &ChannelId,
-    chain: &dyn ChainHandle,
-) -> Result<ChannelConnectionClient, Error> {
-    trace!(
-        chain_id = %chain.id(),
-        port_id = %port_id,
-        channel_id = %channel_id,
-        "getting counterparty chain"
-    );
-
-    let channel_end = chain
-        .query_channel(port_id, channel_id, Height::zero())
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
-
-    if !channel_end.is_open() {
-        return Err(Error::ChannelNotOpen(channel_id.clone(), chain.id()));
-    }
-
-    let connection_id = channel_end
-        .connection_hops()
-        .first()
-        .ok_or_else(|| Error::MissingConnectionHops(channel_id.clone(), chain.id()))?;
-
-    let connection_end = chain
-        .query_connection(&connection_id, Height::zero())
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
-
-    if !connection_end.is_open() {
-        return Err(Error::ConnectionNotOpen(
-            connection_id.clone(),
-            channel_id.clone(),
-            chain.id(),
-        ));
-    }
-
-    let client_id = connection_end.client_id().clone();
-
-    let client_state = chain
-        .query_client_state(&client_id, Height::zero())
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
-
-    trace!(
-        chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
-        "counterparty chain: {}", client_state.chain_id()
-    );
-
-    let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
-    let channel = IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end);
-    let client = IdentifiedAnyClientState::new(client_id, client_state);
-
-    Ok(ChannelConnectionClient::new(channel, connection, client))
-}
-
-fn get_counterparty_chain(
-    src_chain: &dyn ChainHandle,
-    src_channel_id: &ChannelId,
-    src_port_id: &PortId,
-) -> Result<ChainId, BoxError> {
-    channel_connection_client(src_port_id, src_channel_id, src_chain)
-        .map(|c| c.client.client_state.chain_id())
-        .map_err(Into::into)
 }
