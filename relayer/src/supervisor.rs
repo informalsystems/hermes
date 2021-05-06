@@ -205,7 +205,7 @@ impl Supervisor {
         collected
     }
 
-    fn spawn_workers(&mut self) -> Result<(), BoxError> {
+    fn spawn_workers(&mut self) {
         let req = QueryChannelsRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
@@ -225,7 +225,14 @@ impl Supervisor {
                     continue;
                 }
             };
-            let channels = chain.query_channels(req.clone())?;
+
+            let channels = match chain.query_channels(req.clone()) {
+                Ok(channels) => channels,
+                Err(e) => {
+                    error!("failed to query channels from {}: {}", chain_id, e);
+                    continue;
+                }
+            };
 
             for channel in channels {
                 match self.spawn_workers_for_channel(chain.clone(), channel.clone()) {
@@ -243,8 +250,6 @@ impl Supervisor {
                 }
             }
         }
-
-        Ok(())
     }
 
     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
@@ -330,12 +335,27 @@ impl Supervisor {
         let mut subscriptions = Vec::with_capacity(self.config.chains.len());
 
         for chain_config in &self.config.chains {
-            let chain = self.registry.get_or_spawn(&chain_config.id)?;
-            let subscription = chain.subscribe()?;
-            subscriptions.push((chain, subscription));
+            let chain = match self.registry.get_or_spawn(&chain_config.id) {
+                Ok(chain) => chain,
+                Err(e) => {
+                    error!(
+                        "failed to spawn chain runtime for {}: {}",
+                        chain_config.id, e
+                    );
+                    continue;
+                }
+            };
+
+            match chain.subscribe() {
+                Ok(subscription) => subscriptions.push((chain, subscription)),
+                Err(e) => error!(
+                    "failed to subscribe to events of {}: {}",
+                    chain_config.id, e
+                ),
+            }
         }
 
-        self.spawn_workers()?;
+        self.spawn_workers();
 
         loop {
             match recv_multiple(&subscriptions) {
