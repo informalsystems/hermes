@@ -12,7 +12,7 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_relayer::chain::{Chain, CosmosSdkChain, QueryPacketOptions};
+use ibc_relayer::chain::{Chain, CosmosSdkChain, QueryPacketOptions, get_counterparty_chain};
 use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
@@ -260,6 +260,39 @@ impl Runnable for QueryUnreceivedPacketsCmd {
                 .exit();
             }
         };
+
+        let src_connection_id = match channel.connection_hops().first() {
+            Some(id) => id,
+            None => {
+                return Output::error(format!("no connection hops for channel '{}'", self.src_channel_id)).exit()
+            },
+        };
+
+        let chain_id = match get_counterparty_chain(
+            &src_chain, &opts.channel_id, &opts.port_id) {
+            Ok(chain_id) => chain_id,
+            Err(e) => {
+                return Output::error(format!(
+                    "failed to find channel/connection ({}/{}/{}) client with error: {}",
+                    opts.channel_id,
+                    src_connection_id,
+                    src_chain.config().id,
+                    e
+                )).exit();
+            },
+        };
+
+        // ensure the channel connects the specified chain
+        if dst_chain.config().id != chain_id {
+                return Output::error(format!(
+                    "no channel/connection {}/{} between {} and {} exists",
+                    opts.channel_id,
+                    src_connection_id,
+                    src_chain.config().id,
+                    dst_chain.config().id,
+                ))
+                .exit()
+        }
 
         debug!(
             "Fetched from source chain {} the following channel {:?}",

@@ -3,7 +3,8 @@ use std::{
     time::Duration,
 };
 
-use anomaly::fail;
+use tracing::info;
+use anomaly::{fail, BoxError};
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use crossbeam_channel as channel;
@@ -20,6 +21,7 @@ use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClien
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 
+use ibc::Height as IBCHeight;
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
@@ -27,8 +29,8 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::events as ClientEvents;
-use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics03_connection::connection::{State as ConnectionState, ConnectionEnd};
+use ibc::ics04_channel::channel::{State as ChannelState, ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -1490,4 +1492,47 @@ fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error
         .map_err(Kind::Bech32Encoding)?;
 
     Ok(encoded)
+}
+
+// TODO: Memoize this result
+// XXX: this is a duplication of the supervisor::get_counter_party_chain function and should be
+// refactored
+pub fn get_counterparty_chain(
+    src_chain: &CosmosSdkChain,
+    src_channel_id: &ChannelId,
+    src_port_id: &PortId,
+) -> Result<ChainId, BoxError> {
+    info!(
+        chain_id = %src_chain.id(),
+        src_channel_id = %src_channel_id,
+        src_port_id = %src_port_id,
+        "getting counterparty chain"
+    );
+
+    use ibc::ics02_client::client_state::ClientState;
+
+    let src_channel = src_chain.query_channel(src_port_id, src_channel_id, IBCHeight::zero())?;
+    if src_channel.state_matches(&ChannelState::Uninitialized) {
+        return Err(format!("missing channel '{}' on source chain", src_channel_id).into());
+    }
+
+    let src_connection_id = src_channel
+        .connection_hops()
+        .first()
+        .ok_or_else(|| format!("no connection hops for channel '{}'", src_channel_id))?;
+
+    let src_connection = src_chain.query_connection(&src_connection_id, IBCHeight::zero())?;
+    if src_connection.state_matches(&ConnectionState::Uninitialized) {
+        return Err(format!("missing connection '{}' on source chain", src_connection_id).into());
+    }
+
+    let client_id = src_connection.client_id();
+    let client_state = src_chain.query_client_state(client_id, IBCHeight::zero())?;
+
+    info!(
+        chain_id=%src_chain.id(), src_channel_id=%src_channel_id, src_port_id=%src_port_id,
+        "counterparty chain: {}", client_state.chain_id()
+    );
+
+    Ok(client_state.chain_id())
 }

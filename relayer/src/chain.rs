@@ -6,6 +6,8 @@ use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
+pub use cosmos::get_counterparty_chain;
+
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
 use ibc::ics02_client::client_state::ClientState;
