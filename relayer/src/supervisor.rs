@@ -365,9 +365,8 @@ impl Supervisor {
                         .map_err(Into::into)
                         .and_then(|batch| self.process_batch(chain.clone(), batch));
 
-                    match result {
-                        Ok(()) => trace!("[{}] batch processing complete", chain.id()),
-                        Err(e) => error!("[{}] error during batch processing: {}", chain.id(), e),
+                    if let Err(e) = result {
+                        error!("[{}] error during batch processing: {}", chain.id(), e);
                     }
                 }
                 Err(e) => error!("error when waiting for events: {}", e),
