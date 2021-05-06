@@ -304,8 +304,8 @@ impl KeyRing {
         Ok(KeyEntry {
             public_key,
             private_key,
-            address,
             account,
+            address,
             coin_type,
         })
     }
