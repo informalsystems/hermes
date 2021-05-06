@@ -73,12 +73,12 @@ Example paths file for a five-network full mesh:
 * Creates a 5-network full-mesh. Use the `N=` parameter to change the number of networks.
 
 ### `make setup-network`
-* Set up the configuration for the gaiad blockchain networks and start them using docker-compose.
+* Set up the configuration for the gaiad blockchain networks and start them using docker compose.
 * Equals to `make config-files network-up`
 * Creates a 5-network full-mesh. Use the `N=` parameter to change the number of networks.
 
 ### `make setup-relay`
-* Set up the configuration for hermes and the relayer processes and start them using docker-compose.
+* Set up the configuration for hermes and the relayer processes and start them using docker compose.
 * Equals to `make config-onchain relay-up`
 * Uses the `paths` file to figure out which networks have connections.
 
@@ -105,13 +105,13 @@ Convenience function. There is another set of containers (the relayers) that are
 
 ### `make relay-up`
 * Start the hermes relayer services using `docker-compose.yml`.
-* Equals to `docker-compose up -d` (yay).
+* Equals to `docker compose up -d` (yay, easy).
 * Pairs with `make relay-down`.
 
 ### `make relay-down`
 * Stop the hermes relayer services using `docker-compose.yml`.
 * This does not delete the hermes configuration.
-* Equals to `docker-compose down`.
+* Equals to `docker compose down`.
 * Pairs with `make relay-up`.
 
 ### `make network-down`
@@ -119,6 +119,16 @@ Convenience function. There is another set of containers (the relayers) that are
 * This does not delete the blockchain configuration or database.
 * Equals to `docker compose -f docker-compose.gaiad.yml -p gaiad down -d`
 * Pairs with `make network-up`.
+
+### `make network-start`
+* Start an existing gaiad blockchain networks' docker containers that were previously stopped.
+* Equals to `docker compose -f docker-compose.gaiad.yml -p gaiad start`
+* Pairs with `make network-stop`.
+
+### `make network-stop`
+* Stop a running set of gaiad blockchain networks' docker containers.
+* Equals to `docker compose -f docker-compose.gaiad.yml -p gaiad stop`
+* Pairs with `make network-start`.
 
 ### `make clean`
 * Stop and delete all docker containers (gaiad and relayers).

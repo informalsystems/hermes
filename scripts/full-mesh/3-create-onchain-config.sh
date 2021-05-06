@@ -10,7 +10,7 @@ set -eu
 # Run in a subfolder, not in your $HOME (safeguard against accidental .hermes-deletions)
 test "$HOME" != "$(pwd)"
 # But if hermes was not run locally, we're going to overcome the issue of not having a --home parameter
-test -e $HOME/.hermes || ln -s $(pwd)/.hermes $HOME/.hermes
+ln -s $(pwd)/.hermes $HOME/.hermes || echo "$HOME/.hermes is already set, make sure you link it to .hermes here if you run things locally"
 
 EXPECTED_HERMES_VERSION=0.2.0
 DOCKER_IMAGE="informaldev/hermes:${EXPECTED_HERMES_VERSION}"

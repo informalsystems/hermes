@@ -22,6 +22,9 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
 
+- [scripts]
+  - Added "full-mesh" scripts to simulate multiple interconnected networks on a local machine ([#897])
+
 ### BUG FIXES
 
 - [ibc]
@@ -53,6 +56,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 [#861]: https://github.com/informalsystems/ibc-rs/issues/861
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#878]: https://github.com/informalsystems/ibc-rs/issues/878
+[#897]: https://github.com/informalsystems/ibc-rs/issues/897
 
 
 ## v0.2.0

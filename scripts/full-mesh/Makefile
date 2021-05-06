@@ -14,6 +14,12 @@ network-up:
 	docker compose -f docker-compose.gaiad.yml -p gaiad up -d
 	sleep 5
 
+network-start:
+	docker compose -f docker-compose.gaiad.yml -p gaiad start
+
+network-stop:
+	docker compose -f docker-compose.gaiad.yml -p gaiad stop
+
 network-down:
 	docker compose -f docker-compose.gaiad.yml -p gaiad down || true
 
@@ -21,21 +27,12 @@ config-onchain: paths
 	./3-create-onchain-config.sh
 	./4-create-relayer-config.sh
 
-
-# Todo: move the relay-* commands to `docker compose` when this is fixed:
-#  https://github.com/docker/compose-cli/issues/1637
-# Use docker-compose until then.
+# If this command fails with aliases, you need to upgrade Docker CLI to 1.0.14 or above.
 relay-up:
-	docker-compose up -d
-
-relay-start:
-	docker-compose start
-
-relay-stop:
-	docker-compose stop
+	docker compose up -d
 
 relay-down:
-	docker-compose down || true
+	docker compose down || true
 
 clean: relay-down network-down
 	@rm -rf gentxs network[0-9]* docker-compose.gaiad.yml docker-compose.yml paths .gaia .hermes
