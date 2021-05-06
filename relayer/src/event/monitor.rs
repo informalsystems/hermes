@@ -111,7 +111,7 @@ async fn run_driver(
 ) {
     if let Err(e) = driver.run().await {
         if tx.send(e).is_err() {
-            println!("failed to relay driver error to event monitor");
+            error!("failed to relay driver error to event monitor");
         }
     }
 }
@@ -241,13 +241,13 @@ impl EventMonitor {
 
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
-                println!("error on reconnecting: {}", e);
+                error!("error when reconnecting: {}", e);
                 continue;
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
-                println!("error on reconnecting: {}", e);
+                error!("error when reconnecting: {}", e);
                 continue;
             }
 
