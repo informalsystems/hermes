@@ -50,7 +50,6 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
-[#861]: https://github.com/informalsystems/ibc-rs/issues/861
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#878]: https://github.com/informalsystems/ibc-rs/issues/878
 
