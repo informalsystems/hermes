@@ -86,9 +86,10 @@ pub struct ChainRuntime<C: Chain> {
 
 impl<C: Chain + Send + 'static> ChainRuntime<C> {
     /// Spawns a new runtime for a specific Chain implementation.
-    pub fn spawn(config: ChainConfig) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
-        let rt = Arc::new(TokioRuntime::new().map_err(|e| Kind::Io.context(e))?);
-
+    pub fn spawn(
+        config: ChainConfig,
+        rt: Arc<TokioRuntime>,
+    ) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
         // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
 

@@ -333,11 +333,11 @@ impl Chain for CosmosSdkChain {
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
 
         Ok(Self {
-            rt,
             config,
-            keybase,
             rpc_client,
             grpc_addr,
+            rt,
+            keybase,
         })
     }
 

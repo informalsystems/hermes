@@ -924,6 +924,9 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
+    use std::sync::Arc;
+
+    use tokio::runtime::Runtime as TokioRuntime;
 
     use ibc::events::IbcEvent;
     use ibc::ics24_host::identifier::ClientId;
@@ -940,8 +943,9 @@ mod test {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
 
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let a_client =
             ForeignClient::restore(&Default::default(), a_chain.clone(), b_chain.clone());
 
@@ -977,8 +981,9 @@ mod test {
         // The number of ping-pong iterations
         let num_iterations = 3;
 
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let mut a_client = ForeignClient::restore(&a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
@@ -1077,8 +1082,9 @@ mod test {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
 
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
@@ -1124,8 +1130,9 @@ mod test {
         let mut _a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
         let mut _b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
 
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());
