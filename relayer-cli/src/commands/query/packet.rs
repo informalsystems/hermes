@@ -294,15 +294,15 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             };
 
         // ensure the channel connects the specified chain
-        if dst_chain.id() != chain_id {
-            return Output::error(format!(
-                "no channel/connection {}/{} between {} and {} exists",
-                opts.channel_id,
-                src_connection_id,
-                src_chain.id(),
-                dst_chain.id(),
-            ))
-            .exit();
+        if  chain_id != dst_chain.id() {
+                return Output::error(format!(
+                    "no channel/connection {}/{} between {} and {} exists",
+                    opts.channel_id,
+                    src_connection_id,
+                    src_chain.id(),
+                    dst_chain.id(),
+                ))
+                .exit()
         }
 
         debug!(
@@ -576,9 +576,8 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
 
         debug!("Options: {:?}", opts);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let src_chain = CosmosSdkChain::bootstrap(src_chain_config, rt.clone()).unwrap();
-        let dst_chain = CosmosSdkChain::bootstrap(dst_chain_config, rt).unwrap();
+        let (src_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config).unwrap();
+        let (dst_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config).unwrap();
 
         // get the channel information from source chain
         let channel_res = src_chain
@@ -592,16 +591,50 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
                     "failed to find the target channel ({}/{}) on src chain ({}) with error: {}",
                     opts.port_id,
                     opts.channel_id,
-                    src_chain.config().id,
+                    src_chain.id(),
                     e
                 ))
                 .exit();
             }
         };
 
+        // check the chain_id
+        let src_connection_id = match channel.connection_hops().first() {
+            Some(id) => id,
+            None => {
+                return Output::error(format!("no connection hops for channel '{}'", self.src_channel_id)).exit()
+            },
+        };
+
+        let chain_id = match get_counterparty_chain(
+            src_chain.as_ref(), &opts.channel_id, &opts.port_id) {
+            Ok(chain_id) => chain_id,
+            Err(e) => {
+                return Output::error(format!(
+                    "failed to find channel/connection ({}/{}/{}) client with error: {}",
+                    opts.channel_id,
+                    src_connection_id,
+                    src_chain.id(),
+                    e
+                )).exit();
+            },
+        };
+
+        // ensure the channel connects the specified chain
+        if  chain_id != dst_chain.id() {
+                return Output::error(format!(
+                    "no channel/connection {}/{} between {} and {} exists",
+                    opts.channel_id,
+                    src_connection_id,
+                    src_chain.id(),
+                    dst_chain.id(),
+                ))
+                .exit()
+        }
+
         debug!(
             "Fetched from src chain {} the following channel {:?}",
-            src_chain.config().id,
+            src_chain.id(),
             channel
         );
 
@@ -622,7 +655,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             Err(e) => {
                 return Output::error(format!(
                     "failed to fetch packet acknowledgements from src chain ({}) with error: {}",
-                    src_chain.config().id,
+                    src_chain.id(),
                     e
                 ))
                 .exit()
@@ -648,7 +681,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             packet_ack_sequences: sequences,
         };
 
-        let res = dst_chain.query_unreceived_acknowledgements(request);
+        let res = dst_chain.query_unreceived_acknowledgement(request);
 
         match res {
             Ok(seqs) => Output::success(seqs).exit(),
