@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tendermint::trust_threshold::{
     TrustThresholdFraction as TrustThreshold, TrustThresholdFraction,
 };
@@ -18,7 +18,7 @@ use crate::ics23_commitment::specs::ProofSpecs;
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: ChainId,
     pub trust_level: TrustThreshold,
@@ -32,7 +32,7 @@ pub struct ClientState {
     pub allow_update: AllowUpdate,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AllowUpdate {
     pub after_expiry: bool,
     pub after_misbehaviour: bool,

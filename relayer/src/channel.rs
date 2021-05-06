@@ -263,10 +263,7 @@ impl Channel {
                 continue;
             }
 
-            match (
-                a_channel.unwrap().state().clone(),
-                b_channel.unwrap().state().clone(),
-            ) {
+            match (a_channel.unwrap().state(), b_channel.unwrap().state()) {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                     // Ack to a_chain
                     match self.flipped().build_chan_open_ack_and_send() {
@@ -855,7 +852,7 @@ fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> {
 }
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ChannelMsgType {
     OpenTry,
     OpenAck,
@@ -871,14 +868,13 @@ fn check_destination_channel_state(
     let good_connection_hops =
         existing_channel.connection_hops() == expected_channel.connection_hops();
 
-    let good_state =
-        existing_channel.state().clone() as u32 <= expected_channel.state().clone() as u32;
-
+    // TODO: Refactor into a method
+    let good_state = *existing_channel.state() as u32 <= *expected_channel.state() as u32;
     let good_channel_ids = existing_channel.counterparty().channel_id().is_none()
         || existing_channel.counterparty().channel_id()
             == expected_channel.counterparty().channel_id();
 
-    // TODO check versions
+    // TODO: Check versions
 
     if good_state && good_connection_hops && good_channel_ids {
         Ok(())
