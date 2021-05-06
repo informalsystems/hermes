@@ -218,8 +218,15 @@ impl Supervisor {
             .collect_vec();
 
         for chain_id in chain_ids {
-            let chain = self.registry.get_or_spawn(&chain_id)?;
+            let chain = match self.registry.get_or_spawn(&chain_id) {
+                Ok(chain_handle) => chain_handle,
+                Err(e) => {
+                    error!("skipping workers for chain id {}. reason: failed to spawn chain runtime with error: {}", chain_id, e);
+                    continue;
+                }
+            };
             let channels = chain.query_channels(req.clone())?;
+
             for channel in channels {
                 match self.spawn_workers_for_channel(chain.clone(), channel.clone()) {
                     Ok(()) => debug!(
