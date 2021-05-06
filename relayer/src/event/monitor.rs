@@ -4,6 +4,7 @@ use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
+use retry::delay::Exponential;
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
@@ -18,11 +19,11 @@ use tendermint_rpc::{
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
+use crate::util::retry::Clamped;
+
 const MAX_RETRIES: usize = 1000;
 const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
 const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(2);
-const DEFAULT_RETRY_STRATEGY: RetryStrategy =
-    RetryStrategy::new(INITIAL_RETRY_DELAY, MAX_RETRY_DELAY, MAX_RETRIES);
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {
@@ -237,26 +238,35 @@ impl EventMonitor {
         self.subscribe()
     }
 
-    /// Attempt to restart the WebSocket client at most a given number of times.
-    fn restart(&mut self, strategy: RetryStrategy) {
-        use retry::{retry, OperationResult as TryResult};
+    /// Attempt to restart the WebSocket client using the given retry stragegy.
+    ///
+    /// See the [`retry`](https://docs.rs/retry) crate and the
+    /// [`crate::util::retry`] module for more information.
+    fn restart(&mut self) {
+        use retry::{retry_with_index, OperationResult as TryResult};
 
-        retry(strategy.iter(), || {
+        let strategy = Clamped::new(
+            Exponential::from_millis_with_factor(INITIAL_RETRY_DELAY.as_millis() as u64, 1.1),
+            MAX_RETRY_DELAY,
+            MAX_RETRIES,
+        );
+
+        retry_with_index(strategy.iter(), |index| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
                 error!("error when reconnecting: {}", e);
-                return TryResult::Retry(());
+                return TryResult::Retry(index);
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
                 error!("error when reconnecting: {}", e);
-                return TryResult::Retry(());
+                return TryResult::Retry(index);
             }
 
             TryResult::Ok(())
         })
-        .unwrap_or_else(|_| error!("failed to reconnect after {} retries", strategy.max_retries));
+        .unwrap_or_else(|retries| error!("failed to reconnect after {} retries", retries));
     }
 
     /// Event monitor loop
@@ -285,7 +295,7 @@ impl EventMonitor {
                     error!("failed to collect events: {}", e);
 
                     // Restart the event monitor
-                    self.restart(DEFAULT_RETRY_STRATEGY);
+                    self.restart();
                 }
             }
         }
@@ -318,28 +328,5 @@ impl EventMonitor {
             .collect();
 
         Ok(batches)
-    }
-}
-
-struct RetryStrategy {
-    initial_delay: Duration,
-    max_delay: Duration,
-    max_retries: usize,
-}
-
-impl RetryStrategy {
-    const fn new(initial_delay: Duration, max_delay: Duration, max_retries: usize) -> Self {
-        Self {
-            initial_delay,
-            max_delay,
-            max_retries,
-        }
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = Duration> {
-        let max_delay = self.max_delay;
-        retry::delay::Exponential::from(self.initial_delay)
-            .take(self.max_retries)
-            .map(move |delay| delay.min(max_delay))
     }
 }
