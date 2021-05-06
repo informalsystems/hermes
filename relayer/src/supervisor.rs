@@ -433,7 +433,7 @@ impl Worker {
         let (tx, rx) = crossbeam_channel::unbounded();
 
         debug!(
-            "[{}] Spawned worker with chains a:{} and b:{} for object {:#?} ",
+            "[{}] spawned worker with chains a:{} and b:{} for object {:#?} ",
             object.short_name(),
             chains.a.id(),
             chains.b.id(),
