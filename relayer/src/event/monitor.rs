@@ -18,8 +18,11 @@ use tendermint_rpc::{
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
-const DEFAULT_RETRIES: usize = 100;
-const DEFAULT_DELAY: Duration = Duration::from_secs(5);
+const MAX_RETRIES: usize = 1000;
+const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
+const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(2);
+const DEFAULT_RETRY_STRATEGY: RetryStrategy =
+    RetryStrategy::new(INITIAL_RETRY_DELAY, MAX_RETRY_DELAY, MAX_RETRIES);
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {
@@ -235,24 +238,25 @@ impl EventMonitor {
     }
 
     /// Attempt to restart the WebSocket client at most a given number of times.
-    fn restart(&mut self, max_retries: usize, delay: Duration) {
-        for _ in 0..max_retries {
-            std::thread::sleep(delay);
+    fn restart(&mut self, strategy: RetryStrategy) {
+        use retry::{retry, OperationResult as TryResult};
 
+        retry(strategy.iter(), || {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
                 error!("error when reconnecting: {}", e);
-                continue;
+                return TryResult::Retry(());
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
                 error!("error when reconnecting: {}", e);
-                continue;
+                return TryResult::Retry(());
             }
 
-            return;
-        }
+            TryResult::Ok(())
+        })
+        .unwrap_or_else(|_| error!("failed to reconnect after {} retries", strategy.max_retries));
     }
 
     /// Event monitor loop
@@ -281,7 +285,7 @@ impl EventMonitor {
                     error!("failed to collect events: {}", e);
 
                     // Restart the event monitor
-                    self.restart(DEFAULT_RETRIES, DEFAULT_DELAY);
+                    self.restart(DEFAULT_RETRY_STRATEGY);
                 }
             }
         }
@@ -314,5 +318,28 @@ impl EventMonitor {
             .collect();
 
         Ok(batches)
+    }
+}
+
+struct RetryStrategy {
+    initial_delay: Duration,
+    max_delay: Duration,
+    max_retries: usize,
+}
+
+impl RetryStrategy {
+    const fn new(initial_delay: Duration, max_delay: Duration, max_retries: usize) -> Self {
+        Self {
+            initial_delay,
+            max_delay,
+            max_retries,
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = Duration> {
+        let max_delay = self.max_delay;
+        retry::delay::Exponential::from(self.initial_delay)
+            .take(self.max_retries)
+            .map(move |delay| delay.min(max_delay))
     }
 }
