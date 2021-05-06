@@ -7,6 +7,7 @@ use std::{
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Select, Sender};
+use itertools::Itertools;
 use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{
@@ -209,14 +210,21 @@ impl Supervisor {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        for chain_config in &self.config.clone().chains {
-            let chain = self.registry.get_or_spawn(&chain_config.id)?;
-            let channels = chain.query_channels(req.clone())?;
+        let chain_ids = self
+            .config
+            .chains
+            .iter()
+            .map(|c| c.id.clone())
+            .collect_vec();
 
+        for chain_id in chain_ids {
+            let chain = self.registry.get_or_spawn(&chain_id)?;
+            let channels = chain.query_channels(req.clone())?;
             for channel in channels {
                 self.spawn_workers_for_channel(chain.clone(), channel)?;
             }
         }
+
         Ok(())
     }
 
