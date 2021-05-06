@@ -136,8 +136,8 @@ impl Runnable for TxIcs20MsgTransferCmd {
         let conn_id = match channel_end.connection_hops.first() {
             None => {
                 return Output::error(format!(
-                    "could not retrieve the connection hop underlying channel end {:?} on chain {}",
-                    channel_end, self.src_chain_id
+                    "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
+                    opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
                 ))
                 .exit()
             }

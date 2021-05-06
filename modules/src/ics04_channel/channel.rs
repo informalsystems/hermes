@@ -188,6 +188,11 @@ impl ChannelEnd {
         self.remote.channel_id = Some(c);
     }
 
+    /// Returns `true` if this `ChannelEnd` is in state [`State::Open`].
+    pub fn is_open(&self) -> bool {
+        self.state_matches(&State::Open)
+    }
+
     pub fn state(&self) -> &State {
         &self.state
     }
