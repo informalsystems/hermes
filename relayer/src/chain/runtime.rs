@@ -122,7 +122,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let handle = chain_runtime.handle();
 
         // Spawn the runtime & return
-        let thread = thread::spawn(move || chain_runtime.run().unwrap());
+        let id = handle.id();
+        let thread = thread::spawn(move || {
+            if let Err(e) = chain_runtime.run() {
+                error!("failed to start runtime for chain '{}': {}", id, e);
+            }
+        });
 
         (handle, thread)
     }
