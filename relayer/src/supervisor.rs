@@ -584,7 +584,7 @@ pub struct Client {
 impl Client {
     pub fn short_name(&self) -> String {
         format!(
-            "{} -> {}:{}",
+            "{}->{}:{}",
             self.src_chain_id, self.dst_chain_id, self.dst_client_id
         )
     }
@@ -609,7 +609,7 @@ pub struct UnidirectionalChannelPath {
 impl UnidirectionalChannelPath {
     pub fn short_name(&self) -> String {
         format!(
-            "{}/{}:{} -> {}",
+            "{}/{}:{}->{}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }

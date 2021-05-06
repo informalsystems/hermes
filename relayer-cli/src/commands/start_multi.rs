@@ -116,7 +116,7 @@ fn start_all_connections(config: &Config) -> Result<Output, BoxError> {
     });
 
     match result {
-        Ok(Ok(())) => Ok(Output::success_msg("ok")),
+        Ok(Ok(())) => Ok(Output::success_msg("supervisor shutdown")),
         Ok(Err(e)) => Err(e),
         Err(e) => std::panic::resume_unwind(e),
     }

@@ -480,9 +480,10 @@ impl ForeignClient {
         })?;
 
         debug!(
-            "[{}] MsgUpdateAnyClient for target {:?} trusted {:?}",
+            "[{}] MsgUpdateAnyClient for target height {} and trusted height {}",
             self, target_height, trusted_height
         );
+
         let new_msg = MsgUpdateAnyClient {
             client_id: self.id.clone(),
             header,
