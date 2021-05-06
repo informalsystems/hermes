@@ -238,7 +238,7 @@ impl EventMonitor {
         self.subscribe()
     }
 
-    /// Attempt to restart the WebSocket client using the given retry stragegy.
+    /// Attempt to restart the WebSocket client using the given retry strategy.
     ///
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.

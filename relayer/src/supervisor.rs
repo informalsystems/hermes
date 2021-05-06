@@ -8,6 +8,7 @@ use std::{
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Select, Sender};
 use itertools::Itertools;
+use retry::{delay::Fibonacci, retry_with_index, OperationResult as TryResult};
 use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{
@@ -36,10 +37,16 @@ use crate::{
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
     registry::Registry,
+    util::retry::Clamped,
 };
 
 mod error;
 pub use error::Error;
+
+// Parameters for the worker retrying mechanism
+const MAX_RETRIES: usize = 1000;
+const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
+const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
 
 /// A command for a [`Worker`].
 pub enum WorkerCmd {
@@ -574,31 +581,41 @@ impl Worker {
             },
         )?;
 
+        // TODO: Do periodical checks that the link is closed (upon every retry in the loop).
         if link.is_closed()? {
             warn!("channel is closed, exiting");
             return Ok(());
         }
 
+
         loop {
             thread::sleep(Duration::from_millis(200));
 
-            if let Ok(cmd) = self.rx.try_recv() {
-                let result = match cmd {
-                    WorkerCmd::IbcEvents { batch } => {
-                        // Update scheduled batches.
-                        link.a_to_b.update_schedule(batch)
-                    }
-                    WorkerCmd::NewBlock {
-                        height,
-                        new_block: _,
-                    } => link.a_to_b.clear_packets(height),
-                };
+            let strategy = Clamped::new(
+                Fibonacci::from(INITIAL_RETRY_DELAY),
+                MAX_RETRY_DELAY,
+                MAX_RETRIES,
+            );
+            retry_with_index(strategy.iter(), |index| {
+                if let Ok(cmd) = self.rx.try_recv() {
+                    let result = match cmd {
+                        WorkerCmd::IbcEvents { batch } => {
+                            // Update scheduled batches.
+                            link.a_to_b.update_schedule(batch)
+                        }
+                        WorkerCmd::NewBlock {
+                            height,
+                            new_block: _,
+                        } => link.a_to_b.clear_packets(height),
+                    };
 
-                if let Err(e) = result {
-                    error!("{}", e);
-                    continue;
+                    if let Err(e) = result {
+                        error!("{}", e);
+                        return TryResult::Retry(index);
+                    }
                 }
-            }
+                return TryResult::Ok(())
+            }).unwrap_or_else(|retries| error!("worker failed after {} retries", retries));
 
             // Refresh the scheduled batches and execute any outstanding ones.
             let result = link
