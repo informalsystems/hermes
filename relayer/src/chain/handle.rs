@@ -37,13 +37,13 @@ pub use prod::ProdChainHandle;
 use crate::{
     connection::ConnectionMsgType,
     error::Error,
-    event::monitor::{Error as EventMonitorError, EventBatch},
+    event::monitor::{EventBatch, Result as MonitorResult},
     keyring::KeyEntry,
 };
 
 mod prod;
 
-pub type Subscription = channel::Receiver<Arc<Result<EventBatch, EventMonitorError>>>;
+pub type Subscription = channel::Receiver<Arc<MonitorResult<EventBatch>>>;
 
 pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
 pub type Reply<T> = channel::Receiver<Result<T, Error>>;

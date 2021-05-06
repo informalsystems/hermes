@@ -1,7 +1,6 @@
 use std::{ops::Deref, sync::Arc, thread};
 
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
-use crossbeam_channel as channel;
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -10,7 +9,7 @@ use tendermint_rpc::query::{EventType, Query};
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::ChainConfig,
-    event::monitor::{Error as EventMonitorError, EventBatch, EventMonitor},
+    event::monitor::{EventMonitor, EventReceiver},
 };
 
 use crate::prelude::*;
@@ -76,13 +75,7 @@ fn subscribe(
     chain_config: &ChainConfig,
     queries: Vec<Query>,
     rt: Arc<TokioRuntime>,
-) -> Result<
-    (
-        EventMonitor,
-        channel::Receiver<Result<EventBatch, EventMonitorError>>,
-    ),
-    BoxError,
-> {
+) -> Result<(EventMonitor, EventReceiver), BoxError> {
     let (mut event_monitor, rx) = EventMonitor::new(
         chain_config.id.clone(),
         chain_config.websocket_addr.clone(),
