@@ -26,7 +26,6 @@ pub mod commands;
 pub mod config;
 pub mod error;
 pub mod prelude;
-pub mod registry;
 
 pub(crate) mod cli_utils;
 pub(crate) mod components;

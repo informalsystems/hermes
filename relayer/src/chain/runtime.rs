@@ -2,22 +2,23 @@ use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::error;
 
-use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
-        client_consensus::{AnyConsensusState, ConsensusState},
+        client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
         client_state::{AnyClientState, ClientState},
+        events::UpdateClient,
         header::{AnyHeader, Header},
+        misbehaviour::AnyMisbehaviour,
     },
-    ics03_connection::connection::ConnectionEnd,
-    ics03_connection::version::Version,
-    ics04_channel::channel::ChannelEnd,
-    ics04_channel::packet::{PacketMsgType, Sequence},
+    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics04_channel::{
+        channel::ChannelEnd,
+        packet::{PacketMsgType, Sequence},
+    },
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
@@ -25,13 +26,14 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
+
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
+    client::v1::QueryConsensusStatesRequest,
     commitment::v1::MerkleProof,
 };
 
@@ -39,7 +41,10 @@ use crate::{
     config::ChainConfig,
     connection::ConnectionMsgType,
     error::{Error, Kind},
-    event::{bus::EventBus, monitor::EventBatch},
+    event::{
+        bus::EventBus,
+        monitor::{EventBatch, EventReceiver, Result as MonitorResult},
+    },
     keyring::KeyEntry,
     light_client::LightClient,
 };
@@ -67,10 +72,10 @@ pub struct ChainRuntime<C: Chain> {
     request_receiver: channel::Receiver<ChainRequest>,
 
     /// An event bus, for broadcasting events that this runtime receives (via `event_receiver`) to subscribers
-    event_bus: EventBus<Arc<EventBatch>>,
+    event_bus: EventBus<Arc<MonitorResult<EventBatch>>>,
 
     /// Receiver channel from the event bus
-    event_receiver: channel::Receiver<EventBatch>,
+    event_receiver: EventReceiver,
 
     /// A handle to the light client
     light_client: Box<dyn LightClient<C>>,
@@ -81,9 +86,10 @@ pub struct ChainRuntime<C: Chain> {
 
 impl<C: Chain + Send + 'static> ChainRuntime<C> {
     /// Spawns a new runtime for a specific Chain implementation.
-    pub fn spawn(config: ChainConfig) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
-        let rt = Arc::new(TokioRuntime::new().map_err(|e| Kind::Io.context(e))?);
-
+    pub fn spawn(
+        config: ChainConfig,
+        rt: Arc<TokioRuntime>,
+    ) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
         // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
 
@@ -91,10 +97,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let light_client = chain.init_light_client()?;
 
         // Start the event monitor
-        let (event_receiver, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
+        let (event_batch_rx, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
 
         // Instantiate & spawn the runtime
-        let (handle, runtime_thread) = Self::init(chain, light_client, event_receiver, rt);
+        let (handle, runtime_thread) = Self::init(chain, light_client, event_batch_rx, rt);
 
         let threads = Threads {
             chain_runtime: runtime_thread,
@@ -108,7 +114,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn init(
         chain: C,
         light_client: Box<dyn LightClient<C>>,
-        event_receiver: channel::Receiver<EventBatch>,
+        event_receiver: EventReceiver,
         rt: Arc<TokioRuntime>,
     ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
         let chain_runtime = Self::new(chain, light_client, event_receiver, rt);
@@ -117,7 +123,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let handle = chain_runtime.handle();
 
         // Spawn the runtime & return
-        let thread = thread::spawn(move || chain_runtime.run().unwrap());
+        let id = handle.id();
+        let thread = thread::spawn(move || {
+            if let Err(e) = chain_runtime.run() {
+                error!("failed to start runtime for chain '{}': {}", id, e);
+            }
+        });
 
         (handle, thread)
     }
@@ -126,7 +137,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn new(
         chain: C,
         light_client: Box<dyn LightClient<C>>,
-        event_receiver: channel::Receiver<EventBatch>,
+        event_receiver: EventReceiver,
         rt: Arc<TokioRuntime>,
     ) -> Self {
         let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
@@ -153,12 +164,13 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         loop {
             channel::select! {
                 recv(self.event_receiver) -> event_batch => {
-                    if let Ok(event_batch) = event_batch {
-                        self.event_bus
-                            .broadcast(Arc::new(event_batch))
-                            .map_err(|e| Kind::Channel.context(e))?;
-                    } else {
-                        // TODO: Handle error
+                    match event_batch {
+                        Ok(event_batch) => {
+                            self.event_bus
+                                .broadcast(Arc::new(event_batch))
+                                .map_err(|e| Kind::Channel.context(e))?;
+                        },
+                        Err(e) => error!("received error via event bus: {}", e),
                     }
                 },
                 recv(self.request_receiver) -> event => {
@@ -296,7 +308,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_txs(request, reply_to)?
                         },
 
-                        Err(_e) => todo!(), // TODO: Handle error?
+                        Err(e) => error!("received error via chain request channel: {}", e),
                     }
                 },
             }

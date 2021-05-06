@@ -21,6 +21,8 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
+  - Use a single supervisor to subscribe to all configured chains ([#862])
+  - The relayer is now more resilient to a node not being up or going down, and will attempt to reconnect ([#871])
 
 ### BUG FIXES
 
@@ -31,9 +33,12 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
   - Fix pagination in gRPC query for clients ([#811])
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
   - Fix missing port information in `hermes query channels` ([#840])
+  - Fix crash during initialization of event monitor when node is down ([#863])
+  - Spawn a single Tokio runtime for the whole supervisor instead of one per chain ([#909])
 
 - [ibc-relayer-cli]
   - Fix for `ft-transfer` mismatching arguments ([#869])
+  - Fix channel destination chain mismatch on unreceived-packets or unreceived-acks ([#873])
 
 ### BREAKING CHANGES
 
@@ -50,9 +55,14 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
+[#861]: https://github.com/informalsystems/ibc-rs/issues/861
+[#862]: https://github.com/informalsystems/ibc-rs/issues/862
+[#863]: https://github.com/informalsystems/ibc-rs/issues/863
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
+[#873]: https://github.com/informalsystems/ibc-rs/issues/873
 [#878]: https://github.com/informalsystems/ibc-rs/issues/878
-
+[#909]: https://github.com/informalsystems/ibc-rs/issues/909
 
 ## v0.2.0
 *April 14th, 2021*

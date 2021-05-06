@@ -1,7 +1,11 @@
+use std::sync::Arc;
+use tokio::runtime::Runtime as TokioRuntime;
+
 use ibc::ics24_host::identifier::ChainId;
-use ibc_relayer::chain::runtime::ChainRuntime;
-use ibc_relayer::chain::CosmosSdkChain;
-use ibc_relayer::{chain::handle::ChainHandle, config::Config};
+use ibc_relayer::{
+    chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSdkChain},
+    config::Config,
+};
 
 use crate::error::{Error, Kind};
 
@@ -41,8 +45,9 @@ pub fn spawn_chain_runtime(
         .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))
         .map_err(|e| Kind::Config.context(e))?;
 
-    let chain_res =
-        ChainRuntime::<CosmosSdkChain>::spawn(chain_config).map_err(|e| Kind::Runtime.context(e));
+    let rt = Arc::new(TokioRuntime::new().unwrap());
+    let chain_res = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt)
+        .map_err(|e| Kind::Runtime.context(e));
 
     let handle = chain_res.map(|(handle, _)| handle)?;
 

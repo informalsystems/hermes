@@ -6,7 +6,6 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
-use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -65,7 +64,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::{EventBatch, EventMonitor};
+use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
@@ -334,11 +333,11 @@ impl Chain for CosmosSdkChain {
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
 
         Ok(Self {
-            rt,
             config,
-            keybase,
             rpc_client,
             grpc_addr,
+            rt,
+            keybase,
         })
     }
 
@@ -361,22 +360,18 @@ impl Chain for CosmosSdkChain {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<
-        (
-            channel::Receiver<EventBatch>,
-            Option<thread::JoinHandle<()>>,
-        ),
-        Error,
-    > {
+    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
         crate::time!("init_event_monitor");
 
         let (mut event_monitor, event_receiver) = EventMonitor::new(
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
             rt,
-        )?;
+        )
+        .map_err(Kind::EventMonitor)?;
 
-        event_monitor.subscribe().unwrap();
+        event_monitor.subscribe().map_err(Kind::EventMonitor)?;
+
         let monitor_thread = thread::spawn(move || event_monitor.run());
 
         Ok((event_receiver, Some(monitor_thread)))
