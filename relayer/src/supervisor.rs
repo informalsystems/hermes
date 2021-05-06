@@ -251,22 +251,36 @@ impl Supervisor {
 
         loop {
             for batch in subscription_a.try_iter() {
-                let batch = batch.unwrap_or_clone();
-                match batch {
-                    Ok(batch) => self.process_batch(self.chains.a.clone(), batch)?,
+                let result = batch
+                    .unwrap_or_clone()
+                    .map_err(Into::into)
+                    .and_then(|batch| self.process_batch(self.chains.a.clone(), batch));
+
+                match result {
+                    Ok(()) => trace!("[{}] batch processing complete", self.chains.a.id()),
                     Err(e) => {
-                        dbg!(e);
+                        error!(
+                            "[{}] error during batch processing: {}",
+                            self.chains.a.id(),
+                            e
+                        );
                     }
                 }
             }
 
             for batch in subscription_b.try_iter() {
-                let batch = batch.unwrap_or_clone();
-                match batch {
-                    Ok(batch) => self.process_batch(self.chains.b.clone(), batch)?,
-                    Err(e) => {
-                        dbg!(e);
-                    }
+                let result = batch
+                    .unwrap_or_clone()
+                    .map_err(Into::into)
+                    .and_then(|batch| self.process_batch(self.chains.b.clone(), batch));
+
+                match result {
+                    Ok(()) => trace!("[{}] batch processing complete", self.chains.b.id()),
+                    Err(e) => error!(
+                        "[{}] error during batch processing: {}",
+                        self.chains.b.id(),
+                        e
+                    ),
                 }
             }
 
@@ -415,7 +429,7 @@ impl Worker {
 
     /// Run the worker event loop.
     fn run(self, object: Object) {
-        let span = error_span!("worker loop", worker = %self);
+        let span = error_span!("worker loop", worker = %object.short_name());
         let _guard = span.enter();
 
         let result = match object {
@@ -467,6 +481,7 @@ impl Worker {
             "running client worker & initial misbehaviour detection for {}",
             client
         );
+
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.run_client_misbehaviour(&client, None);
 
@@ -477,23 +492,23 @@ impl Worker {
 
         loop {
             thread::sleep(Duration::from_millis(600));
+
             // Run client refresh, exit only if expired or frozen
-            if let Err(ForeignClientError::ExpiredOrFrozen(client_id, chain_id)) = client.refresh()
-            {
-                return Err(Box::new(ForeignClientError::ExpiredOrFrozen(
-                    client_id, chain_id,
-                )));
+            if let Err(e @ ForeignClientError::ExpiredOrFrozen(..)) = client.refresh() {
+                error!("failed to refresh client '{}': {}", client, e);
+                continue;
             }
 
             if skip_misbehaviour {
                 continue;
             }
+
             if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
-                trace!("[{}] client worker receives batch {:?}", client, batch);
+                trace!("client '{}' worker receives batch {:?}", client, batch);
 
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
-                        debug!("[{}] client updated", client);
+                        debug!("client '{}' updated", client);
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         self.run_client_misbehaviour(&client, Some(update));
@@ -520,24 +535,35 @@ impl Worker {
         }
 
         loop {
+            thread::sleep(Duration::from_millis(200));
+
             if let Ok(cmd) = self.rx.try_recv() {
-                match cmd {
+                let result = match cmd {
                     WorkerCmd::IbcEvents { batch } => {
                         // Update scheduled batches.
-                        link.a_to_b.update_schedule(batch)?;
+                        link.a_to_b.update_schedule(batch)
                     }
                     WorkerCmd::NewBlock {
                         height,
                         new_block: _,
-                    } => link.a_to_b.clear_packets(height)?,
+                    } => link.a_to_b.clear_packets(height),
+                };
+
+                if let Err(e) = result {
+                    error!("{}", e);
+                    continue;
                 }
             }
 
             // Refresh the scheduled batches and execute any outstanding ones.
-            link.a_to_b.refresh_schedule()?;
-            link.a_to_b.execute_schedule()?;
+            let result = link
+                .a_to_b
+                .refresh_schedule()
+                .and_then(|_| link.a_to_b.execute_schedule());
 
-            thread::sleep(Duration::from_millis(100))
+            if let Err(e) = result {
+                error!("{}", e);
+            }
         }
     }
 }
