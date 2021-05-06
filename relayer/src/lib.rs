@@ -24,6 +24,7 @@ pub mod keyring;
 pub mod light_client;
 pub mod link;
 pub mod macros;
+pub mod registry;
 pub mod relay;
 pub mod supervisor;
 pub mod transfer;

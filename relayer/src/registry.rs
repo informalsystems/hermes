@@ -2,23 +2,27 @@
 
 use std::collections::HashMap;
 
-use ibc::ics24_host::identifier::ChainId;
-use ibc_relayer::{chain::handle::ChainHandle, config::Config};
+use anomaly::BoxError;
 use tracing::trace;
 
-use crate::{cli_utils::spawn_chain_runtime, error::Error};
+use ibc::ics24_host::identifier::ChainId;
+
+use crate::{
+    chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSdkChain},
+    config::Config,
+};
 
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
-pub struct Registry<'a> {
-    config: &'a Config,
+pub struct Registry {
+    config: Config,
     handles: HashMap<ChainId, Box<dyn ChainHandle>>,
 }
 
-impl<'a> Registry<'a> {
+impl Registry {
     /// Construct a new [`Registry`] using the provided [`Config`]
-    pub fn new(config: &'a Config) -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
             config,
             handles: HashMap::new(),
@@ -29,7 +33,7 @@ impl<'a> Registry<'a> {
     ///
     /// If there is no handle yet, this will first spawn the runtime and then
     /// return its handle.
-    pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Box<dyn ChainHandle>, Error> {
+    pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Box<dyn ChainHandle>, BoxError> {
         if !self.handles.contains_key(chain_id) {
             let handle = spawn_chain_runtime(&self.config, chain_id)?;
             self.handles.insert(chain_id.clone(), handle);
@@ -37,6 +41,23 @@ impl<'a> Registry<'a> {
         }
 
         let handle = self.handles.get(chain_id).unwrap();
+
         Ok(handle.clone())
     }
+}
+
+/// Spawns a chain runtime from the configuration and given a chain identifier.
+/// Returns the corresponding handle if successful.
+pub fn spawn_chain_runtime(
+    config: &Config,
+    chain_id: &ChainId,
+) -> Result<Box<dyn ChainHandle>, BoxError> {
+    let chain_config = config
+        .find_chain(chain_id)
+        .cloned()
+        .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))?;
+
+    let (handle, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config)?;
+
+    Ok(handle)
 }
