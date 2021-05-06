@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use prost_types::Any;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
@@ -39,7 +39,7 @@ pub trait ClientState: Clone + std::fmt::Debug + Send + Sync {
     fn wrap_any(self) -> AnyClientState;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(client_state::ClientState),
@@ -159,7 +159,7 @@ impl ClientState for AnyClientState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub struct IdentifiedAnyClientState {
     pub client_id: ClientId,
