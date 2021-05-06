@@ -9,27 +9,28 @@ use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Select, Sender};
 use tracing::{debug, error, error_span, info, trace, warn};
 
-use ibc::events::VecIbcEvents;
-use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::ics04_channel::events::Attributes;
-use ibc::ics24_host::identifier::ClientId;
 use ibc::{
-    events::IbcEvent,
-    ics02_client::events::NewBlock,
-    ics04_channel::events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
+    events::{IbcEvent, VecIbcEvents},
+    ics02_client::{
+        client_state::{ClientState, IdentifiedAnyClientState},
+        events::{NewBlock, UpdateClient},
+    },
+    ics03_connection::connection::IdentifiedConnectionEnd,
+    ics04_channel::{
+        channel::IdentifiedChannelEnd,
+        events::{Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
+    },
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
     Height,
 };
+
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
-use crate::foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults};
 use crate::{
     chain::handle::ChainHandle,
     config::Config,
     event::monitor::EventBatch,
+    foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
     registry::Registry,
 };
@@ -210,7 +211,7 @@ impl Supervisor {
 
         for chain_config in &self.config.clone().chains {
             let chain = self.registry.get_or_spawn(&chain_config.id)?;
-            let channels: Vec<IdentifiedChannelEnd> = chain.query_channels(req.clone())?;
+            let channels = chain.query_channels(req.clone())?;
 
             for channel in channels {
                 self.spawn_workers_for_channel(chain.clone(), channel)?;
@@ -243,6 +244,7 @@ impl Supervisor {
                     "ignoring channel {} because it is not open (or its connection is not open)",
                     channel.channel_id
                 );
+
                 return Ok(());
             }
             Err(e) => {
@@ -267,6 +269,7 @@ impl Supervisor {
             // Ignore channel, since it does not correspond to any chain in the config file
             return Ok(());
         }
+
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
@@ -277,6 +280,7 @@ impl Supervisor {
             dst_chain_id: chain.id(),
             src_chain_id: client.client_state.chain_id(),
         });
+
         self.worker_for_object(client_object, chain.clone(), counterparty_chain.clone());
 
         // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
@@ -288,6 +292,7 @@ impl Supervisor {
             src_channel_id: channel.channel_id.clone(),
             src_port_id: channel.port_id,
         });
+
         self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
 
         Ok(())
@@ -383,15 +388,6 @@ impl Supervisor {
     }
 }
 
-/// The direction in which a [`Worker`] should relay events.
-#[derive(Copy, Clone, Debug)]
-pub enum Direction {
-    /// From chain A to chain B.
-    AtoB,
-    /// From chain B to chain A.
-    BtoA,
-}
-
 /// A worker processes batches of events associated with a given [`Object`].
 pub struct Worker {
     chains: ChainHandlePair,
@@ -445,24 +441,22 @@ impl Worker {
         client: &ForeignClient,
         update: Option<UpdateClient>,
     ) -> bool {
-        let mut skip_misbehaviour = false;
-        let res = client.detect_misbehaviour_and_submit_evidence(update);
-        match res {
-            MisbehaviourResults::ValidClient => {}
+        match client.detect_misbehaviour_and_submit_evidence(update) {
+            MisbehaviourResults::ValidClient => false,
             MisbehaviourResults::VerificationError => {
                 // can retry in next call
+                false
             }
             MisbehaviourResults::EvidenceSubmitted(_events) => {
                 // if evidence was submitted successfully then exit
-                skip_misbehaviour = true;
+                true
             }
             MisbehaviourResults::CannotExecute => {
                 // skip misbehaviour checking if chain does not have support for it (i.e. client
                 // update event does not include the header)
-                skip_misbehaviour = true;
+                true
             }
-        };
-        skip_misbehaviour
+        }
     }
 
     /// Run the event loop for events associated with a [`Client`].
@@ -477,6 +471,7 @@ impl Worker {
             "[{}] running client worker initial misbehaviour detection for {}",
             self, client
         );
+
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.run_client_misbehaviour(&client, None);
 
@@ -497,12 +492,14 @@ impl Worker {
             if skip_misbehaviour {
                 continue;
             }
+
             if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
                 trace!("[{}] client worker receives batch {:?}", client, batch);
 
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
                         debug!("[{}] client updated", client);
+
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         self.run_client_misbehaviour(&client, Some(update));
@@ -839,15 +836,15 @@ fn channel_connection_client(
         channel_id = %channel_id,
         "getting counterparty chain"
     );
+
     let channel_end = chain
         .query_channel(port_id, channel_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
     if !channel_end.is_open() {
         return Err(Error::ChannelNotOpen(channel_id.clone(), chain.id()));
     }
 
-    let channel =
-        IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end.clone());
     let connection_id = channel_end
         .connection_hops()
         .first()
@@ -856,6 +853,7 @@ fn channel_connection_client(
     let connection_end = chain
         .query_connection(&connection_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
     if !connection_end.is_open() {
         return Err(Error::ConnectionNotOpen(
             connection_id.clone(),
@@ -863,29 +861,31 @@ fn channel_connection_client(
             chain.id(),
         ));
     }
-    let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end.clone());
 
-    let client_id = connection_end.client_id();
+    let client_id = connection_end.client_id().clone();
+
     let client_state = chain
-        .query_client_state(client_id, Height::zero())
+        .query_client_state(&client_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
-    let client = IdentifiedAnyClientState::new(client_id.clone(), client_state.clone());
+
     trace!(
         chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
         "counterparty chain: {}", client_state.chain_id()
     );
 
+    let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
+    let channel = IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end);
+    let client = IdentifiedAnyClientState::new(client_id, client_state);
+
     Ok(ChannelConnectionClient::new(channel, connection, client))
 }
 
-// TODO: Memoize this result
 fn get_counterparty_chain(
     src_chain: &dyn ChainHandle,
     src_channel_id: &ChannelId,
     src_port_id: &PortId,
 ) -> Result<ChainId, BoxError> {
-    let client_state = channel_connection_client(src_port_id, src_channel_id, src_chain)?
-        .client
-        .client_state;
-    Ok(client_state.chain_id())
+    channel_connection_client(src_port_id, src_channel_id, src_chain)
+        .map(|c| c.client.client_state.chain_id())
+        .map_err(Into::into)
 }
