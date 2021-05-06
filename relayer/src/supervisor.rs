@@ -449,24 +449,22 @@ impl Worker {
         client: &ForeignClient,
         update: Option<UpdateClient>,
     ) -> bool {
-        let mut skip_misbehaviour = false;
-        let res = client.detect_misbehaviour_and_submit_evidence(update);
-        match res {
-            MisbehaviourResults::ValidClient => {}
+        match client.detect_misbehaviour_and_submit_evidence(update) {
+            MisbehaviourResults::ValidClient => false,
             MisbehaviourResults::VerificationError => {
                 // can retry in next call
+                false
             }
-            MisbehaviourResults::EvidenceSubmitted(_events) => {
+            MisbehaviourResults::EvidenceSubmitted(_) => {
                 // if evidence was submitted successfully then exit
-                skip_misbehaviour = true;
+                true
             }
             MisbehaviourResults::CannotExecute => {
                 // skip misbehaviour checking if chain does not have support for it (i.e. client
                 // update event does not include the header)
-                skip_misbehaviour = true;
+                true
             }
-        };
-        skip_misbehaviour
+        }
     }
 
     /// Run the event loop for events associated with a [`Client`].
