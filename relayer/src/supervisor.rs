@@ -7,7 +7,7 @@ use std::{
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::events::VecIbcEvents;
 use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
@@ -25,12 +25,13 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
+
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
-use crate::foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults};
 use crate::{
     chain::handle::ChainHandle,
     event::monitor::EventBatch,
+    foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
 };
 use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
@@ -402,15 +403,19 @@ impl Worker {
 
     /// Run the worker event loop.
     fn run(self, object: Object) {
-        let result = match object.clone() {
+        let span = error_span!("worker loop", worker = %self);
+        let _guard = span.enter();
+
+        let result = match object {
             Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
             Object::Client(client) => self.run_client(client),
         };
 
         if let Err(e) = result {
-            error!("[{}] worker error: {}", object.short_name(), e);
+            error!("worker error: {}", e);
         }
-        info!("[{}] worker exits", object.short_name());
+
+        info!("worker exits");
     }
 
     fn run_client_misbehaviour(
@@ -447,16 +452,17 @@ impl Worker {
         );
 
         info!(
-            "[{}] running client worker initial misbehaviour detection for {}",
-            self, client
+            "running client worker & initial misbehaviour detection for {}",
+            client
         );
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.run_client_misbehaviour(&client, None);
 
         info!(
-            "[{}] running client worker loop (misbehaviour and refresh) for {}",
-            self, client
+            "running client worker (misbehaviour and refresh) for {}",
+            client
         );
+
         loop {
             thread::sleep(Duration::from_millis(600));
             // Run client refresh, exit only if expired or frozen
@@ -505,8 +511,8 @@ impl Worker {
             if let Ok(cmd) = self.rx.try_recv() {
                 match cmd {
                     WorkerCmd::IbcEvents { batch } => {
+                        // Update scheduled batches.
                         link.a_to_b.update_schedule(batch)?;
-                        // Refresh the scheduled batches and execute any outstanding ones.
                     }
                     WorkerCmd::NewBlock {
                         height,
