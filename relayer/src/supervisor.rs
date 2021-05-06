@@ -468,17 +468,18 @@ impl Worker {
         );
 
         info!(
-            "[{}] running client worker initial misbehaviour detection for {}",
-            self, client
+            "running client worker & initial misbehaviour detection for {}",
+            client
         );
 
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.run_client_misbehaviour(&client, None);
 
         info!(
-            "[{}] running client worker loop (misbehaviour and refresh) for {}",
-            self, client
+            "running client worker (misbehaviour and refresh) for {}",
+            client
         );
+
         loop {
             thread::sleep(Duration::from_millis(600));
             // Run client refresh, exit only if expired or frozen
@@ -529,8 +530,8 @@ impl Worker {
             if let Ok(cmd) = self.rx.try_recv() {
                 match cmd {
                     WorkerCmd::IbcEvents { batch } => {
+                        // Update scheduled batches.
                         link.a_to_b.update_schedule(batch)?;
-                        // Refresh the scheduled batches and execute any outstanding ones.
                     }
                     WorkerCmd::NewBlock {
                         height,

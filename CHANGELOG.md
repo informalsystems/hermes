@@ -32,6 +32,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
   - Fix pagination in gRPC query for clients ([#811])
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
   - Fix missing port information in `hermes query channels` ([#840])
+  - Fix crash during initialization of event monitor when node is down ([#863])
 
 - [ibc-relayer-cli]
   - Fix for `ft-transfer` mismatching arguments ([#869])
@@ -53,6 +54,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
 [#861]: https://github.com/informalsystems/ibc-rs/issues/861
 [#862]: https://github.com/informalsystems/ibc-rs/issues/862
+[#863]: https://github.com/informalsystems/ibc-rs/issues/863
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#878]: https://github.com/informalsystems/ibc-rs/issues/878
 
