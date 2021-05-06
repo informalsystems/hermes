@@ -33,6 +33,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
   - Fix missing port information in `hermes query channels` ([#840])
   - Fix crash during initialization of event monitor when node is down ([#863])
+  - Spawn a single Tokio runtime for the whole supervisor instead of one per chain ([#909])
 
 - [ibc-relayer-cli]
   - Fix for `ft-transfer` mismatching arguments ([#869])
@@ -57,6 +58,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 [#863]: https://github.com/informalsystems/ibc-rs/issues/863
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#878]: https://github.com/informalsystems/ibc-rs/issues/878
+[#909]: https://github.com/informalsystems/ibc-rs/issues/909
 
 
 ## v0.2.0
