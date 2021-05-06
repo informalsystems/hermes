@@ -10,6 +10,9 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 - [ibc-relayer]
   - Support for ICS27 ([#794])
 
+- [ibc-relayer-cli]
+  - Added packet clearing and client refresh capabilities for the `start-multi` command ([#784], [#786])
+
 ### IMPROVEMENTS
 
 - [ibc]
@@ -18,6 +21,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
+  - Use a single supervisor to subscribe to all configured chains ([#862])
 
 ### BUG FIXES
 
@@ -28,6 +32,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
   - Fix pagination in gRPC query for clients ([#811])
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
   - Fix missing port information in `hermes query channels` ([#840])
+  - Fix crash during initialization of event monitor when node is down ([#863])
 
 - [ibc-relayer-cli]
   - Fix for `ft-transfer` mismatching arguments ([#869])
@@ -39,13 +44,17 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 
 
 [#758]: https://github.com/informalsystems/ibc-rs/issues/758
+[#784]: https://github.com/informalsystems/ibc-rs/issues/784
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
+[#786]: https://github.com/informalsystems/ibc-rs/issues/786
 [#794]: https://github.com/informalsystems/ibc-rs/issues/794
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
 [#861]: https://github.com/informalsystems/ibc-rs/issues/861
+[#862]: https://github.com/informalsystems/ibc-rs/issues/862
+[#863]: https://github.com/informalsystems/ibc-rs/issues/863
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#878]: https://github.com/informalsystems/ibc-rs/issues/878
 

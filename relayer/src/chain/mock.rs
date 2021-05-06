@@ -10,19 +10,17 @@ use tokio::runtime::Runtime;
 
 use ibc::downcast;
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
-};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::query::QueryTxRequest;
@@ -130,7 +128,10 @@ impl Chain for MockChain {
         Ok(self.context.query_latest_height())
     }
 
-    fn query_clients(&self, _request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+    fn query_clients(
+        &self,
+        _request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
         unimplemented!()
     }
 
@@ -186,7 +187,10 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_channels(&self, _request: QueryChannelsRequest) -> Result<Vec<PortChannelId>, Error> {
+    fn query_channels(
+        &self,
+        _request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         unimplemented!()
     }
 
@@ -331,6 +335,16 @@ impl Chain for MockChain {
         Ok(self
             .context
             .consensus_states(&request.client_id.parse().unwrap()))
+    }
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_state(
+        &self,
+        _client_id: ClientId,
+        _consensus_height: Height,
+        _query_height: Height,
+    ) -> Result<AnyConsensusState, Error> {
+        unimplemented!()
     }
 
     fn query_upgraded_consensus_state(

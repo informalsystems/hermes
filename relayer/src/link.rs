@@ -31,13 +31,13 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
-use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
+use crate::{chain::handle::ChainHandle, transfer::PacketError};
 use ibc::events::VecIbcEvents;
 
 #[derive(Debug, Error)]
@@ -45,23 +45,26 @@ pub enum LinkError {
     #[error("failed with underlying error: {0}")]
     Failed(String),
 
+    #[error("failed with underlying error: {0}")]
+    Generic(#[from] Error),
+
     #[error("failed to construct packet proofs for chain {0} with error: {1}")]
     PacketProofsConstructor(ChainId, Error),
 
     #[error("failed during query to chain id {0} with underlying error: {1}")]
     QueryError(ChainId, Error),
 
-    #[error("ConnectionError: {0}:")]
+    #[error("connection error: {0}:")]
     ConnectionError(#[from] ConnectionError),
 
-    #[error("ChannelError:  {0}:")]
+    #[error("channel error:  {0}:")]
     ChannelError(#[from] ChannelError),
 
-    #[error("Failed during a client operation: {0}:")]
+    #[error("failed during a client operation: {0}:")]
     ClientError(ForeignClientError),
 
-    #[error("PacketError: {0}:")]
-    PacketError(#[from] Error),
+    #[error("packet error: {0}:")]
+    PacketError(#[from] PacketError),
 
     #[error("clearing of old packets failed")]
     OldPacketClearingFailed,
@@ -305,24 +308,16 @@ impl RelayPath {
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
-        let client = ForeignClient {
-            id: self.dst_client_id().clone(),
-            dst_chain: self.dst_chain(),
-            src_chain: self.src_chain(),
-        };
-
+        let client =
+            ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
         client
             .build_update_client(height)
             .map_err(LinkError::ClientError)
     }
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
-        let client = ForeignClient {
-            id: self.src_client_id().clone(),
-            dst_chain: self.src_chain(),
-            src_chain: self.dst_chain(),
-        };
-
+        let client =
+            ForeignClient::restore(self.src_client_id(), self.src_chain(), self.dst_chain());
         client
             .build_update_client(height)
             .map_err(LinkError::ClientError)
@@ -403,6 +398,11 @@ impl RelayPath {
     /// Should not run more than once per execution.
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
+            info!(
+                "[{}] clearing pending packets from events before height {:?}",
+                self, above_height
+            );
+
             let clear_height = above_height.decrement().map_err(|e| LinkError::Failed(
                 format!("Cannot clear packets @height {}, because this height cannot be decremented: {}", above_height, e.to_string())))?;
             self.relay_pending_packets(clear_height)?;

@@ -62,8 +62,8 @@ under active development.
 ## Resources
 
 - [IBC Website](https://cosmos.network/ibc)
-- [IBC Specification](https://github.com/cosmos/ics) <!-- this will change to /ibc -->
-- [IBC Modules in Go](https://github.com/cosmos/cosmos-sdk/tree/master/x/ibc) <!-- this will change to a TBD repo, see https://github.com/cosmos/cosmos-sdk/issues/8501 -->
+- [IBC Specification](https://github.com/cosmos/ibc)
+- [IBC Modules in Go](https://github.com/cosmos/ibc-go)
 - [IBC Relayer in Go](https://github.com/cosmos/relayer)
 
 ## License

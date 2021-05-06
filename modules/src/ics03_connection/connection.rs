@@ -133,6 +133,10 @@ impl ConnectionEnd {
         self.client_id.eq(other)
     }
 
+    pub fn is_open(&self) -> bool {
+        self.state_matches(&State::Open)
+    }
+
     /// Helper function to compare the state of this end with another state.
     pub fn state_matches(&self, other: &State) -> bool {
         self.state.eq(other)

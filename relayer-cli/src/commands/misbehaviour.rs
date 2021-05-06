@@ -4,7 +4,7 @@ use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 
 use crate::application::CliApp;
 use crate::cli_utils::spawn_chain_runtime;
@@ -108,23 +108,10 @@ fn misbehaviour_handling(
             )
         })?;
 
-    let client =
-        ForeignClient::restore_client(chain.clone(), counterparty_chain.clone(), client_id);
-
-    let misbehaviour_detection_result = client
-        .detect_misbehaviour_and_send_evidence(update)
-        .map_err(|e| {
-            format!(
-                "could not run misbehaviour detection for {}: {}",
-                client_id, e
-            )
-        })?;
-
-    if !misbehaviour_detection_result.is_empty() {
-        info!(
-            "evidence submission result {:?}",
-            misbehaviour_detection_result
-        );
+    let client = ForeignClient::restore(client_id, chain.clone(), counterparty_chain.clone());
+    let result = client.detect_misbehaviour_and_submit_evidence(update);
+    if let MisbehaviourResults::EvidenceSubmitted(events) = result {
+        info!("evidence submission result {:?}", events);
     }
 
     Ok(())

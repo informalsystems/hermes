@@ -2,21 +2,23 @@ use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::error;
 
-use ibc::ics02_client::client_consensus::AnyConsensusStateWithHeight;
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
-        client_consensus::{AnyConsensusState, ConsensusState},
+        client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
         client_state::{AnyClientState, ClientState},
+        events::UpdateClient,
         header::{AnyHeader, Header},
+        misbehaviour::AnyMisbehaviour,
     },
-    ics03_connection::connection::ConnectionEnd,
-    ics03_connection::version::Version,
-    ics04_channel::channel::ChannelEnd,
-    ics04_channel::packet::{PacketMsgType, Sequence},
+    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics04_channel::{
+        channel::ChannelEnd,
+        packet::{PacketMsgType, Sequence},
+    },
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
@@ -24,12 +26,14 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
+    client::v1::QueryConsensusStatesRequest,
     commitment::v1::MerkleProof,
 };
 
@@ -89,10 +93,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let light_client = chain.init_light_client()?;
 
         // Start the event monitor
-        let (event_receiver, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
+        let (event_batch_rx, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
 
         // Instantiate & spawn the runtime
-        let (handle, runtime_thread) = Self::init(chain, light_client, event_receiver, rt);
+        let (handle, runtime_thread) = Self::init(chain, light_client, event_batch_rx, rt);
 
         let threads = Threads {
             chain_runtime: runtime_thread,
@@ -151,12 +155,13 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         loop {
             channel::select! {
                 recv(self.event_receiver) -> event_batch => {
-                    if let Ok(event_batch) = event_batch {
-                        self.event_bus
-                            .broadcast(Arc::new(event_batch))
-                            .map_err(|e| Kind::Channel.context(e))?;
-                    } else {
-                        // TODO: Handle error
+                    match event_batch {
+                        Ok(event_batch) => {
+                            self.event_bus
+                                .broadcast(Arc::new(event_batch))
+                                .map_err(|e| Kind::Channel.context(e))?;
+                        },
+                        Err(e) => error!("received error via event bus: {}", e),
                     }
                 },
                 recv(self.request_receiver) -> event => {
@@ -214,16 +219,16 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_latest_height(reply_to)?
                         }
 
-                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
-                            self.query_clients(request, reply_to)?
-                        },
-
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConsensusStates { request, reply_to }) => {
                             self.query_consensus_states(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConsensusState { client_id, consensus_height, query_height, reply_to }) => {
+                            self.query_consensus_state(client_id, consensus_height, query_height, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryUpgradedClientState { height, reply_to }) => {
@@ -244,6 +249,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
                             self.query_connection(connection_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryChannels { request, reply_to }) => {
+                            self.query_channels(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
@@ -290,7 +299,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_txs(request, reply_to)?
                         },
 
-                        Err(_e) => todo!(), // TODO: Handle error?
+                        Err(e) => error!("received error via chain request channel: {}", e),
                     }
                 },
             }
@@ -501,20 +510,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn query_clients(
-        &self,
-        request: QueryClientStatesRequest,
-        reply_to: ReplyTo<Vec<ClientId>>,
-    ) -> Result<(), Error> {
-        let clients = self.chain.query_clients(request);
-
-        reply_to
-            .send(clients)
-            .map_err(|e| Kind::Channel.context(e))?;
-
-        Ok(())
-    }
-
     fn query_upgraded_client_state(
         &self,
         height: Height,
@@ -541,6 +536,24 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(consensus_states)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: Height,
+        query_height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
+    ) -> Result<(), Error> {
+        let consensus_state =
+            self.chain
+                .query_consensus_state(client_id, consensus_height, query_height);
+
+        reply_to
+            .send(consensus_state)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
@@ -593,6 +606,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(connection_end)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_channels(request);
+
+        reply_to
+            .send(result)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())

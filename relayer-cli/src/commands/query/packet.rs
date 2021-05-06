@@ -8,12 +8,19 @@ use tokio::runtime::Runtime as TokioRuntime;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
+
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use ibc_relayer::chain::{Chain, CosmosSdkChain, QueryPacketOptions, get_counterparty_chain};
-use ibc_relayer::config::{ChainConfig, Config};
+
+use ibc_relayer::{
+    chain::{
+        counterparty::get_counterparty_chain, runtime::ChainRuntime, Chain, CosmosSdkChain,
+        QueryPacketOptions,
+    },
+    config::{ChainConfig, Config},
+};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -238,9 +245,8 @@ impl Runnable for QueryUnreceivedPacketsCmd {
 
         debug!("Options: {:?}", opts);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let src_chain = CosmosSdkChain::bootstrap(src_chain_config, rt.clone()).unwrap();
-        let dst_chain = CosmosSdkChain::bootstrap(dst_chain_config, rt).unwrap();
+        let (src_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config).unwrap();
+        let (dst_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config).unwrap();
 
         // get the channel information from source chain
         let channel_res = src_chain
@@ -254,7 +260,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
                     "failed to find channel ({}/{}) on chain ({}) with error: {}",
                     opts.port_id,
                     opts.channel_id,
-                    src_chain.config().id,
+                    src_chain.id(),
                     e
                 ))
                 .exit();
@@ -264,39 +270,44 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         let src_connection_id = match channel.connection_hops().first() {
             Some(id) => id,
             None => {
-                return Output::error(format!("no connection hops for channel '{}'", self.src_channel_id)).exit()
-            },
-        };
-
-        let chain_id = match get_counterparty_chain(
-            &src_chain, &opts.channel_id, &opts.port_id) {
-            Ok(chain_id) => chain_id,
-            Err(e) => {
                 return Output::error(format!(
-                    "failed to find channel/connection ({}/{}/{}) client with error: {}",
-                    opts.channel_id,
-                    src_connection_id,
-                    src_chain.config().id,
-                    e
-                )).exit();
-            },
-        };
-
-        // ensure the channel connects the specified chain
-        if dst_chain.config().id != chain_id {
-                return Output::error(format!(
-                    "no channel/connection {}/{} between {} and {} exists",
-                    opts.channel_id,
-                    src_connection_id,
-                    src_chain.config().id,
-                    dst_chain.config().id,
+                    "no connection hops for channel '{}'",
+                    self.src_channel_id
                 ))
                 .exit()
+            }
+        };
+
+        let chain_id =
+            match get_counterparty_chain(src_chain.as_ref(), &opts.channel_id, &opts.port_id) {
+                Ok(chain_id) => chain_id,
+                Err(e) => {
+                    return Output::error(format!(
+                        "failed to find channel/connection ({}/{}/{}) client with error: {}",
+                        opts.channel_id,
+                        src_connection_id,
+                        src_chain.id(),
+                        e
+                    ))
+                    .exit();
+                }
+            };
+
+        // ensure the channel connects the specified chain
+        if dst_chain.id() != chain_id {
+            return Output::error(format!(
+                "no channel/connection {}/{} between {} and {} exists",
+                opts.channel_id,
+                src_connection_id,
+                src_chain.id(),
+                dst_chain.id(),
+            ))
+            .exit();
         }
 
         debug!(
             "Fetched from source chain {} the following channel {:?}",
-            src_chain.config().id,
+            src_chain.id(),
             channel
         );
 
@@ -317,7 +328,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             Err(e) => {
                 return Output::error(format!(
                     "failed to fetch the packet commitments from src chain ({}) with error: {}",
-                    src_chain.config().id,
+                    src_chain.id(),
                     e
                 ))
                 .exit()
@@ -325,7 +336,8 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         };
 
         // Extract the channel identifier which the counterparty (dst chain) is using
-        let channel_id: String = match &channel.counterparty().channel_id {
+        let channel_id = match &channel.counterparty().channel_id {
+            Some(id) => id.to_string(),
             None => {
                 return Output::error(format!(
                     "The channel ({}/{}) has no counterparty (channel state is {:?})",
@@ -335,7 +347,6 @@ impl Runnable for QueryUnreceivedPacketsCmd {
                 ))
                 .exit()
             }
-            Some(id) => id.to_string(),
         };
 
         let request = QueryUnreceivedPacketsRequest {
