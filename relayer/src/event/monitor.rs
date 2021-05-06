@@ -4,7 +4,7 @@ use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
-use retry::delay::Exponential;
+use retry::delay::Fibonacci;
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
@@ -246,7 +246,7 @@ impl EventMonitor {
         use retry::{retry_with_index, OperationResult as TryResult};
 
         let strategy = Clamped::new(
-            Exponential::from_millis_with_factor(INITIAL_RETRY_DELAY.as_millis() as u64, 1.1),
+            Fibonacci::from(INITIAL_RETRY_DELAY),
             MAX_RETRY_DELAY,
             MAX_RETRIES,
         );
