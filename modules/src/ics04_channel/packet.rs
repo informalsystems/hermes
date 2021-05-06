@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -53,6 +54,22 @@ impl std::fmt::Display for PacketMsgType {
 /// The sequence number of a packet enforces ordering among packets from the same source.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, PartialOrd, Ord)]
 pub struct Sequence(u64);
+
+impl Default for Sequence {
+    fn default() -> Self {
+        Sequence(0)
+    }
+}
+
+impl FromStr for Sequence {
+    type Err = anomaly::Error<Kind>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::from(s.parse::<u64>().map_err(|_e| {
+            Kind::InvalidStringAsSequence(s.to_string())
+        })?))
+    }
+}
 
 impl Sequence {
     pub fn is_zero(&self) -> bool {
@@ -202,9 +219,10 @@ impl From<Packet> for RawPacket {
 
 #[cfg(test)]
 pub mod test_utils {
-    use crate::ics24_host::identifier::{ChannelId, PortId};
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+
+    use crate::ics24_host::identifier::{ChannelId, PortId};
 
     /// Returns a dummy `RawPacket`, for testing only!
     pub fn get_dummy_raw_packet(timeout_height: u64, timeout_timestamp: u64) -> RawPacket {

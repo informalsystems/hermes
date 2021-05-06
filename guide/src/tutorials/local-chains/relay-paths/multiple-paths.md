@@ -295,10 +295,10 @@ the `start-multi` command.
 5. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
 
     ```shell
-    hermes -c multi-config.toml query packet unreceived-packets ibc-0 ibc-1 transfer channel-0
-    hermes -c multi-config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
-    hermes -c multi-config.toml query packet unreceived-packets ibc-2 ibc-1 transfer channel-1
-    hermes -c multi-config.toml query packet unreceived-acks ibc-1 ibc-2 transfer channel-0
+    hermes -c multi-config.toml query packet unreceived-packets ibc-1 transfer channel-0
+    hermes -c multi-config.toml query packet unreceived-acks ibc-0 transfer channel-0
+    hermes -c multi-config.toml query packet unreceived-packets ibc-2 transfer channel-0
+    hermes -c multi-config.toml query packet unreceived-acks ibc-1 transfer channel-1
     ```
 
     If everything went well, each of these commands should result in:
