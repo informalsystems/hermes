@@ -1,0 +1,71 @@
+# shell support for gm
+
+alias gm="$HOME/.gm/bin/gm"
+
+__gm_get_nodes() {
+  if [ -f "$HOME/.gm/gm.toml" ]; then
+    #Simplified grepping of sections
+    local NODES=""
+    for i in $(grep '^\[.\+\]$' "$HOME/.gm/gm.toml")
+    do
+      if [ "$i" = "[global]" ]; then
+        continue
+      fi
+      o="${i##[}"
+      NODES="$NODES ${o%%]}"
+    done
+    echo "$NODES"
+  fi
+}
+
+_gm_nodes() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  local cmds="$(__gm_get_nodes)"
+  while read -r line; do COMPREPLY+=("$line"); done < <(compgen -W "$cmds" -- "$cur")
+}
+
+_gm_complete_commands() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  local cmds="help install keys log ports start status stop version"
+  while read -r line; do COMPREPLY+=("$line"); done < <(compgen -W "$cmds" -- "$cur")
+}
+
+_gm() {
+  local i=1 cmd
+
+  # find the subcommand
+  while [[ "$i" -lt "$COMP_CWORD" ]]
+  do
+    local s="${COMP_WORDS[i]}"
+    case "$s" in
+      --*)
+        cmd="$s"
+        break
+        ;;
+      -*)
+        ;;
+      *)
+        cmd="$s"
+        break
+        ;;
+    esac
+    (( i++ ))
+  done
+
+  if [[ "$i" -eq "$COMP_CWORD" ]]
+  then
+    _gm_complete_commands
+    return
+  fi
+
+  # subcommands have their own completion functions
+  case "$cmd" in
+    log) _gm_nodes ;;
+    start) _gm_nodes ;;
+    stop) _gm_nodes ;;
+    *) ;;
+  esac
+}
+
+complete -o bashdefault -o default -F _gm gm
+

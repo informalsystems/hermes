@@ -1,0 +1,105 @@
+#!/usr/bin/env sh
+
+set -eu
+
+# Load lib-gm either from the local folder or from the global $HOME/.gm/bin/lib-gm
+export SCRIPT_DIR="${0%%gm}"
+export LOCAL_LIB_GM="${SCRIPT_DIR}lib-gm"
+if [ -f "$LOCAL_LIB_GM" ]; then
+  source "$LOCAL_LIB_GM"
+elif [ -f "$HOME/.gm/bin/lib-gm" ]; then
+  source $HOME/.gm/bin/lib-gm
+else
+  echo "ERROR: could not find lib-gm, exiting..."
+  exit 1
+fi
+
+enforce_requirements
+
+usage() {
+  echo "Gaiad Manager $(version)"
+  echo
+  echo "Usage:"
+  echo "  gm <COMMAND> [[<PARAMS>]...]"
+  echo
+  echo "COMMANDS    DESCRIPTION"
+  echo
+  echo "help        print this help and exit"
+  echo "install     install the script for the local user"
+  echo "keys        print the keys of validator nodes"
+  echo "log         print the log of a node"
+  echo "ports       print the ports of a (running) node"
+  echo "start       start one or more nodes (starts all nodes if no parameter is given)"
+  echo "status      print the status of nodes"
+  echo "stop        stop one or more nodes (stops all nodes if no parameter is given)"
+  echo "version     print the application version"
+  echo
+}
+
+case "${1:-help}" in
+  help)
+    usage
+    exit 0
+    ;;
+  install)
+    install
+    ;;
+  keys)
+    load_config
+    echo "not implemented"
+    ;;
+  log)
+    load_config
+    shift
+    echo "not implemented"
+    ;;
+  ports)
+    load_config
+    echo "not implemented"
+    ;;
+  start)
+    load_config
+    if [ $# -eq 1 ]; then
+      NODES_TO_START="$ALL_NODES"
+    else
+      shift
+      NODES_TO_START="$@"
+    fi
+    for i in $NODES_TO_START
+    do
+      if [ ! -d "$(get_home_dir "$i")" ]; then
+        create "$i" || continue
+      fi
+      if get_auto_maintain_config "$i"; then
+        configure "$i"
+      fi
+      start "$i"
+    done
+    ;;
+  status)
+    load_config
+    status
+    ;;
+  stop)
+    load_config
+    if [ $# -eq 1 ]; then
+      NODES_TO_STOP="$ALL_NODES"
+    else
+      shift
+      NODES_TO_STOP="$@"
+    fi
+    for i in $NODES_TO_STOP
+    do
+      stop "$i"
+    done
+    ;;
+  version)
+    version
+    exit 0
+    ;;
+  *)
+    usage
+    exit_with_error "could not understand the command \"$1\""
+    ;;
+esac
+
