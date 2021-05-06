@@ -60,15 +60,11 @@ pub enum CliCmd {
     Create(CreateCmds),
 
     /// The `update` subcommand
-    #[options(
-        help = "Update objects on chains. Currently this sub-commands serves only to update clients"
-    )]
+    #[options(help = "Update objects (clients) on chains")]
     Update(UpdateCmds),
 
     /// The `upgrade` subcommand
-    #[options(
-        help = "Upgrade objects after chain upgrade. Currently this sub-commands serves only to upgrade clients"
-    )]
+    #[options(help = "Upgrade objects (clients) after chain upgrade")]
     Upgrade(UpgradeCmds),
 
     /// The `start` subcommand

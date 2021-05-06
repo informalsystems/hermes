@@ -7,10 +7,6 @@ the `start-multi` command.
 > __WARNING__: Relaying packets concurrently over multiple channels with the
 > `start-multi` command is currently __experimental__. Use at your own risk.
 
-> __Caveat__: At the moment, `start-multi` does not clear pending packets
-> when starting. It is therefore advised to only use it for channels which
-> do not have pending packets.
-
 1. Paste the following configuration in a file named __`multi-config.toml`__:
 
     ```toml
@@ -70,27 +66,9 @@ the `start-multi` command.
     [chains.trust_threshold]
     numerator = '1'
     denominator = '3'
-
-    [[connections]]
-    a_chain = 'ibc-0'
-    b_chain = 'ibc-1'
-
-    [[connections.paths]]
-    a_port = 'transfer'
-    b_port = 'transfer'
-
-    [[connections]]
-    a_chain = 'ibc-1'
-    b_chain = 'ibc-2'
-
-    [[connections.paths]]
-    a_port = 'transfer'
-    b_port = 'transfer'
     ```
 
-    This configuration three chains `ibc-0`, `ibc-1` and `ibc-2` as well
-    as two connections: one between `ibc-0` and `ibc-1`, and another
-    between `ibc-1` and `ibc-2`, both using the `transfer` ports.
+    This configuration has three chains `ibc-0`, `ibc-1` and `ibc-2`.
 
 2. Run the `dev-env` script with the parameters below to start three chains:
 
@@ -232,6 +210,9 @@ the `start-multi` command.
     ```shell
     hermes -c multi-config.toml start-multi
     ```
+
+   Hermes will first relay the pending packets that have not been relayed and then start passive relaying by listening
+    to and acting on packet events.
 
 4. In a separate terminal, use the `ft-transfer` command to send:
 

@@ -11,7 +11,7 @@ This section describes a number of commands that can be used to manage clients, 
 | `start`                | [Relay packets over a new or exsiting channel](./packets.md#start)                            |
 
 
-## Create 
+## Create
 Use the `create` commands to create a new clients, connections and channels.
 
 ```shell
@@ -26,6 +26,21 @@ SUBCOMMANDS:
     client     Create a new IBC client
     connection Create a new connection between two chains
     channel    Create a new channel between two chains
+```
+
+## Update
+Use the `update` commands to update a client.
+
+```shell
+USAGE:
+    hermes update <SUBCOMMAND>
+
+DESCRIPTION:
+    Update objects (clients) on chains
+
+SUBCOMMANDS:
+    help       Get usage information
+    client     Update an IBC client
 ```
 
 ## Relay 
