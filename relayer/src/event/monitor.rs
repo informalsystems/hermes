@@ -1,10 +1,9 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
-use retry::delay::Fibonacci;
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
@@ -20,10 +19,6 @@ use tendermint_rpc::{
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
 use crate::util::retry::Clamped;
-
-const MAX_RETRIES: usize = 1000;
-const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
-const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {
@@ -245,11 +240,7 @@ impl EventMonitor {
     fn restart(&mut self) {
         use retry::{retry_with_index, OperationResult as TryResult};
 
-        let strategy = Clamped::new(
-            Fibonacci::from(INITIAL_RETRY_DELAY),
-            MAX_RETRY_DELAY,
-            MAX_RETRIES,
-        );
+        let strategy = Clamped::default();
 
         retry_with_index(strategy.iter(), |index| {
             // Try to reconnect

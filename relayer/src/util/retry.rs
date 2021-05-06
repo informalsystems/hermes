@@ -1,5 +1,12 @@
 use std::time::Duration;
 
+use retry::delay::Fibonacci;
+
+// Default parameters for the retrying mechanism
+pub const MAX_RETRIES: usize = 5;
+pub const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
+pub const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
+
 #[derive(Copy, Clone, Debug)]
 pub struct ConstantGrowth {
     delay: Duration,
@@ -41,6 +48,16 @@ pub struct Clamped<S> {
     pub strategy: S,
     pub max_delay: Duration,
     pub max_retries: usize,
+}
+
+impl Default for Clamped<Fibonacci> {
+    fn default() -> Self {
+        Self::new(
+            Fibonacci::from(INITIAL_RETRY_DELAY),
+            MAX_RETRY_DELAY,
+            MAX_RETRIES,
+        )
+    }
 }
 
 impl<S> Clamped<S> {

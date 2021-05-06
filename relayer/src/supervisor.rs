@@ -8,7 +8,7 @@ use std::{
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Select, Sender};
 use itertools::Itertools;
-use retry::{delay::Fibonacci, retry_with_index, OperationResult as TryResult};
+use retry::{retry_with_index, OperationResult as TryResult};
 use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{
@@ -42,11 +42,6 @@ use crate::{
 
 mod error;
 pub use error::Error;
-
-// Parameters for the worker retrying mechanism
-const MAX_RETRIES: usize = 1000;
-const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
-const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
 
 /// A command for a [`Worker`].
 pub enum WorkerCmd {
@@ -587,16 +582,12 @@ impl Worker {
             return Ok(());
         }
 
-
         loop {
             thread::sleep(Duration::from_millis(200));
 
-            let strategy = Clamped::new(
-                Fibonacci::from(INITIAL_RETRY_DELAY),
-                MAX_RETRY_DELAY,
-                MAX_RETRIES,
-            );
-            retry_with_index(strategy.iter(), |index| {
+            let strategy = Clamped::default();
+
+            if let Err(retries) = retry_with_index(strategy.iter(), |index| {
                 if let Ok(cmd) = self.rx.try_recv() {
                     let result = match cmd {
                         WorkerCmd::IbcEvents { batch } => {
@@ -614,17 +605,25 @@ impl Worker {
                         return TryResult::Retry(index);
                     }
                 }
-                return TryResult::Ok(())
-            }).unwrap_or_else(|retries| error!("worker failed after {} retries", retries));
 
-            // Refresh the scheduled batches and execute any outstanding ones.
-            let result = link
-                .a_to_b
-                .refresh_schedule()
-                .and_then(|_| link.a_to_b.execute_schedule());
+                // Refresh the scheduled batches and execute any outstanding ones.
+                let result = link
+                    .a_to_b
+                    .refresh_schedule()
+                    .and_then(|_| link.a_to_b.execute_schedule());
+                if let Err(e) = result {
+                    error!("{}", e);
+                    return TryResult::Retry(index);
+                }
 
-            if let Err(e) = result {
-                error!("{}", e);
+                TryResult::Ok(())
+            }) {
+                // Give up the worker loop!
+                return Err(format!(
+                    "UnidirectionalChannelPath worker failed after {} retries",
+                    retries
+                )
+                .into());
             }
         }
     }
