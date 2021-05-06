@@ -3,13 +3,12 @@ use std::sync::Arc;
 use abscissa_core::{Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId, PortChannelId, PortId};
+use ibc::ics24_host::identifier::{ChainId, PortChannelId};
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 use ibc_relayer::chain::{Chain, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::prelude::*;
-use std::str::FromStr;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelsCmd {
@@ -47,17 +46,10 @@ impl Runnable for QueryChannelsCmd {
         match res {
             Ok(channels) => {
                 let ids: Vec<PortChannelId> = channels
-                    .iter()
-                    .filter_map(|ch| {
-                        let port_id = PortId::from_str(ch.port_id.as_str()).ok();
-                        let channel_id = ChannelId::from_str(ch.channel_id.as_str()).ok();
-                        match (port_id, channel_id) {
-                            (Some(port_id), Some(channel_id)) => Some(PortChannelId {
-                                port_id,
-                                channel_id,
-                            }),
-                            (_, _) => None,
-                        }
+                    .into_iter()
+                    .map(|identified_channel| PortChannelId {
+                        port_id: identified_channel.port_id,
+                        channel_id: identified_channel.channel_id,
                     })
                     .collect();
                 Output::success(ids).exit()
