@@ -79,9 +79,8 @@ def loop(c: Config):
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
 
-    # 4. start relaying on the channel - it should clear the unreceived packets
-    proc = relayer.start(c, src=IBC_0, dst=IBC_1,
-                         src_port=TRANSFER, src_channel=IBC_0_CHANNEL)
+    # 4. start relaying - it should clear the unreceived packets
+    proc = relayer.start(c)
 
     # 5. wait a bit and make sure there are no pending packets
 
