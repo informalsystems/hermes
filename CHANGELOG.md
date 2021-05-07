@@ -1,9 +1,21 @@
-## Unreleased
+[comment]: <> (## Unreleased)
 
-Special thanks to external contributors:
-Jongwhan Lee (@leejw51crypto) ([#878]).
 
-> [TODO: high level summary]
+## v0.3.0
+*May 7th, 2021*
+
+> Nothing yet.
+
+## v0.3.0
+*May 7h, 2021*
+
+Special thanks to Jongwhan Lee (@leejw51crypto) for his contributions ([#878]).
+
+This release mostly focuses on improving the UX and the experimental multi-paths relayer (`start-multi` command),
+which has been made more resilient against nodes going down, and is now able to clear pending packets
+and periodically refresh IBC clients. The relayer now also supports [ICS 027 (Interchain Accounts)][ics27].
+
+[ics27]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
 
 ### FEATURES
 
@@ -21,8 +33,8 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
-  - Use a single supervisor to subscribe to all configured chains ([#862])
-  - The relayer is now more resilient to a node not being up or going down, and will attempt to reconnect ([#871])
+  - Use a single supervisor in `start-multi` to subscribe to all configured chains ([#862])
+  - The `start-multi` command is now more resilient to a node not being up or going down, and will attempt to reconnect ([#871])
 
 ### BUG FIXES
 
@@ -43,7 +55,8 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 ### BREAKING CHANGES
 
 - [ibc-relayer]
-  - `hermes -j query channels` command now returns `result` array with the format `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]`.
+  - `hermes -j query channels` command now returns `result` array with the format
+    `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]` ([#840])
 
 
 [#758]: https://github.com/informalsystems/ibc-rs/issues/758
