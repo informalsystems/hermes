@@ -1,9 +1,16 @@
-## Unreleased
+[comment]: <> (## Unreleased)
+
+
+## v0.3.0
+*May 7th, 2021*
 
 Special thanks to external contributors:
 Jongwhan Lee (@leejw51crypto) ([#878]).
 
-> [TODO: high level summary]
+This release primarily brings stability and UX improvements in Hermes.
+Other notable changes include:
+- support for ICS27 (Interchain Accounts), and
+- stabilization of the `multi-start` command (it is no longer an experimental feature).
 
 ### FEATURES
 
