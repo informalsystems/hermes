@@ -4,11 +4,13 @@ This tool will create multiple chains and IBC connections among them with minima
 Tested on MacOS Mojave.
 
 ## Requirements
-* Docker
+* Docker (with Docker CLI v1.0.14 or above, released in 2021 April)
 * `make` for convenient command execution
 
 Note: the files are kept simple where possible. If `make` is not available, you can copy-paste the instructions from the
 Makefile fairly easily.
+
+Note: if you get startup issues with "network-scoped alias support" errors, you need to [upgrade your Docker CLI to v1.0.14 or above](https://github.com/docker/compose-cli/issues/1637).
 
 ## Quick start
 Run the below to create 5 blockchain networks with a full mesh of IBC connections.
