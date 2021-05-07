@@ -17,7 +17,7 @@ profiling = []
 
 [dependencies]
 ibc       = { version = "0.3.0", path = "../modules" }
-ibc-proto = { version = "0.9.0", path = "../proto" }
+ibc-proto = { version = "0.8.0", path = "../proto" }
 
 subtle-encoding = "0.5"
 anomaly = "0.2.0"
