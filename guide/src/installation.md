@@ -150,11 +150,15 @@ USAGE:
 SUBCOMMANDS:
     help       Get usage information
     keys       Manage keys in the relayer for each chain
+    create     Create objects (client, connection, or channel) on chains
+    update     Update objects (clients) on chains
+    upgrade    Upgrade objects (clients) after chain upgrade
     start      Start the relayer
-    channel    Channel functionality for managing channels
-    query      Query state from chain
+    start-multi Start the relayer in multi-chain mode. Handles packet relaying across all open channels between all chains in the config.
+    query      Query objects from the chain
     tx         Create and send IBC transactions
     listen     Listen to and display IBC events emitted by a chain
+    misbehaviour Listen to client update IBC events and handles misbehaviour
     version    Display version information
 ```
 
