@@ -6,6 +6,6 @@ from .cmd import Config
 
 
 def start(c: Config) -> Popen:
-    full_cmd = f'{c.relayer_cmd} -c {c.config_file} -j start-multi'
-    l.debug(full_cmd)
+    full_cmd = f'{c.relayer_cmd} -c {c.config_file} -j start-multi'.split(' ')
+    l.debug(' '.join(full_cmd))
     return Popen(full_cmd)
