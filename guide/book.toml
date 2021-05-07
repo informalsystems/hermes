@@ -16,4 +16,4 @@ renderer = ["html"]
 additional-js = ["mermaid.min.js", "mermaid-init.js"]
 
 # Uncomment to trigger the link check
-[output.linkcheck]
+# [output.linkcheck]
