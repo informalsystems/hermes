@@ -55,7 +55,8 @@ and periodically refresh IBC clients. The relayer now also supports [ICS 027 (In
 ### BREAKING CHANGES
 
 - [ibc-relayer]
-  - `hermes -j query channels` command now returns `result` array with the format `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]`.
+  - `hermes -j query channels` command now returns `result` array with the format
+    `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]` ([#840])
 
 
 [#758]: https://github.com/informalsystems/ibc-rs/issues/758
@@ -67,7 +68,6 @@ and periodically refresh IBC clients. The relayer now also supports [ICS 027 (In
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
-[#861]: https://github.com/informalsystems/ibc-rs/issues/861
 [#862]: https://github.com/informalsystems/ibc-rs/issues/862
 [#863]: https://github.com/informalsystems/ibc-rs/issues/863
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
