@@ -87,7 +87,9 @@ Success: UpdateClient(
             consensus_height: Height { revision: 1, height: 109 },
         },
         header: Some(
-            Tendermint(...),
+            Tendermint(
+                 Header {...},
+            ),
         ),
     },
 )

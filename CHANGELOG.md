@@ -55,14 +55,13 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
-[#861]: https://github.com/informalsystems/ibc-rs/issues/861
 [#862]: https://github.com/informalsystems/ibc-rs/issues/862
 [#863]: https://github.com/informalsystems/ibc-rs/issues/863
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#871]: https://github.com/informalsystems/ibc-rs/issues/871
+[#873]: https://github.com/informalsystems/ibc-rs/issues/873
 [#878]: https://github.com/informalsystems/ibc-rs/issues/878
 [#909]: https://github.com/informalsystems/ibc-rs/issues/909
-[#873]: https://github.com/informalsystems/ibc-rs/issues/873
 
 ## v0.2.0
 *April 14th, 2021*

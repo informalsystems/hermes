@@ -1,9 +1,9 @@
 # Global options
 
-The Hermes accepts global options which affect all commands.
+Hermes accepts global options which affect all commands.
 
 ```shell
-hermes 0.2.0
+hermes 0.3.0
 Informal Systems <hello@informal.systems>
 Implementation of `hermes`, an IBC Relayer developed in Rust.
 

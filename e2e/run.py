@@ -55,29 +55,31 @@ def loop(c: Config):
 
     # 3. verify the expected number of unreceived packets and acks on each channel end
 
-    # hermes query packet unreceived-packets ibc-0 ibc-1 transfer channel-1
+    # hermes query packet unreceived-packets ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
-        c, src=IBC_1, dst=IBC_0, src_port=TRANSFER, src_channel=IBC_1_CHANNEL)
+        c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
 
     assert (len(unreceived) == 3), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+    # hermes query packet unreceived-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
-        c, src=IBC_1, dst=IBC_0, src_port=TRANSFER, src_channel=IBC_1_CHANNEL)
+        c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+    # hermes query packet unreceived-packets ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_packets(
-        c, src=IBC_0, dst=IBC_1, src_port=TRANSFER, src_channel=IBC_0_CHANNEL)
+        c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
 
     assert (len(unreceived) == 4), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
+    # hermes query packet unreceived-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
-        c, src=IBC_0, dst=IBC_1, src_port=TRANSFER, src_channel=IBC_0_CHANNEL)
+        c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
+
+    sleep(5.0)
 
     # 4. start relaying on the channel - it should clear the unreceived packets
     proc = relayer.start(c, src=IBC_0, dst=IBC_1,
@@ -95,27 +97,27 @@ def loop(c: Config):
 
     sleep(10.0)
 
-    # hermes query packet unreceived-packets ibc-0 ibc-1 transfer channel-1
+    # hermes query packet unreceived-packets ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_packets(
-        c, src=IBC_1, dst=IBC_0, src_port=TRANSFER, src_channel=IBC_1_CHANNEL)
+        c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
 
     assert (len(unreceived) == 0), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+    # hermes query packet unreceived-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
-        c, src=IBC_1, dst=IBC_0, src_port=TRANSFER, src_channel=IBC_1_CHANNEL)
+        c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
 
     assert (len(unreceived) == 0), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+    # hermes query packet unreceived-packets ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
-        c, src=IBC_0, dst=IBC_1, src_port=TRANSFER, src_channel=IBC_0_CHANNEL)
+        c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
 
     assert (len(unreceived) == 0), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
+    # hermes query packet unreceived-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
-        c, src=IBC_0, dst=IBC_1, src_port=TRANSFER, src_channel=IBC_0_CHANNEL)
+        c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
 
     assert (len(unreceived) == 0), (unreceived, "unreceived packet mismatch")
 

@@ -117,6 +117,9 @@ pub enum Kind {
     #[error("Missing sequence number for send packets")]
     MissingNextSendSeq,
 
+    #[error("String {0} cannot be converted to packet sequence")]
+    InvalidStringAsSequence(String),
+
     #[error("Invalid packet sequence {0} ≠ next send sequence {1}")]
     InvalidPacketSequence(Sequence, Sequence),
 

@@ -16,12 +16,18 @@ use crate::Height;
 use std::cmp::Ordering;
 
 /// Tendermint consensus header
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)] // TODO: Add Eq bound once present in tendermint-rs
+#[derive(Clone, PartialEq, Deserialize, Serialize)] // TODO: Add Eq bound once present in tendermint-rs
 pub struct Header {
     pub signed_header: SignedHeader, // contains the commitment root
     pub validator_set: ValidatorSet, // the validator set that signed Header
     pub trusted_height: Height, // the height of a trusted header seen by client less than or equal to Header
     pub trusted_validator_set: ValidatorSet, // the last trusted validator set at trusted height
+}
+
+impl std::fmt::Debug for Header {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, " Header {{...}}")
+    }
 }
 
 impl Header {
