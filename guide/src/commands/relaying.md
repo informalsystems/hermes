@@ -76,7 +76,7 @@ For more information on the misbehavior detector see [the misbehaviour section](
 
 Unlike the `start` command which relay packets over a single path,
 the `start-multi` command can be used to relay packets over all
-existing channels between the configured chains.
+existing open channels between the configured chains.
 
 > __WARNING:__ The functionality is currently experimental.
 
@@ -94,8 +94,8 @@ present in the configuration.
 
 __Example__
 
-To start the relayer in multi-paths mode, invoke the `start-multi` commands. Note that
-it does not require any options.
+To start the relayer in multi-paths mode, invoke the `start-multi` commands.
+Note that it does not require any options.
 
 ```shell
 hermes start-multi
