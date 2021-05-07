@@ -1,6 +1,6 @@
 # Global options
 
-The Hermes accepts global options which affect all commands.
+Hermes accepts global options which affect all commands.
 
 ```shell
 hermes 0.3.0
