@@ -8,7 +8,7 @@ The `Commands` section presents the commands current available in Hermes
 
 Commands to manage keys (private keys) for each chain.
 
-**[Path Setup](./setup-and-relaying/index.md)**
+**[Path Setup](./path-setup/index.md)**
 
 Commands to manage clients, connections, channels.
 
