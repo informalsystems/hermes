@@ -101,3 +101,4 @@ it does not require any options.
 hermes start-multi
 ```
 
+See the [Concurrent Packet Relaying tutorial](../tutorials/local-chains/relay-paths/multiple-paths.md) for more information.
