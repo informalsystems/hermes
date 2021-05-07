@@ -5,10 +5,11 @@ gaiad_binary="$GOPATH/bin/gaiad"
 ports_start_at=27000
 home_dir="$HOME/.gm"
 auto_maintain_config=true
+comment="Please add comments to all node definitions. (Mandatory.)"
 
 [validator1]
-#auto_maintain_config=false
-fake_entry=""
+comment="This is a validator with global defaults."
 
 [node1]
+comment="This is a full node that attaches to validator1."
 network="validator1"

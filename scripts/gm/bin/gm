@@ -46,16 +46,16 @@ case "${1:-help}" in
     ;;
   keys)
     load_config
-    echo "not implemented"
+    echo "Todo: not implemented"
     ;;
   log)
     load_config
     shift
-    echo "not implemented"
+    echo "Todo: not implemented"
     ;;
   ports)
     load_config
-    echo "not implemented"
+    echo "Todo: not implemented"
     ;;
   start)
     load_config
