@@ -1,8 +1,6 @@
-[comment]: <> (## Unreleased)
+# Changelog
 
-
-## v0.3.0
-*May 7th, 2021*
+## Unreleased
 
 > Nothing yet.
 
