@@ -12,8 +12,12 @@ install() {
   chmod 755 "${HOME}/.gm/bin/gm"
   cp "${0%%gm}lib-gm" "${HOME}/.gm/bin/lib-gm"
   chmod 644 "${HOME}/.gm/bin/lib-gm"
+  cp "${0%%gm}shell-support" "${HOME}/.gm/bin/shell-support"
+  chmod 644 "${HOME}/.gm/bin/shell-support"
   CONFIG_FILE="${HOME}/.gm/gm.toml"
-  write_default_config
+  if [ ! -f "$CONFIG_FILE" ]; then
+    write_default_config
+  fi
   if [ -z "$(which stoml)" ]; then
     warn "missing mandatory stoml, install it from https://github.com/freshautomations/stoml/releases"
   fi
@@ -23,7 +27,7 @@ install() {
   if [ ! -d /usr/local/etc/bash_completion.d ]; then
     warn "run \"brew install bash-completion\" to install optional bash completion"
   fi
-  echo "Please add \"source $HOME/.gm/bin/shell-support\" to your .bash_profile to access the tool and restart your shell."
+  echo "Please add \"source $HOME/.gm/bin/shell-support\" to your .profile, .bash_profile or other startup script and restart your shell."
 }
 
 enforce_requirements() {
@@ -43,6 +47,13 @@ debug() {
 
 warn() {
   echo "WARNING: $*"
+}
+
+warn_unknown_node() {
+  if ! a_in_b "$1" "$ALL_NODES"; then
+    warn "unknown node $1, skipping..."
+    return 1
+  fi
 }
 
 exit_with_error() {
@@ -324,22 +335,30 @@ stop() {
 }
 
 print_header_line() {
-  echo "NODE    PID    RPC   APP  GRPC HOME_DIR"
+  echo "NODE               PID    RPC   APP  GRPC HOME_DIR"
 }
 
 print_status_line() {
-    I="${2:-}"
+    NAME="${2:-}$1"
+    NAME_LENGTH="${#NAME}"
+    NAME_PAD=""
+    if [ "$NAME_LENGTH" -lt 15 ]; then
+      for p in $(seq "$NAME_LENGTH" 15);
+      do
+        NAME_PAD="$NAME_PAD "
+      done
+    fi
     HOME_DIR="$(get_home_dir "$1")"
     GAIAD_PID_FILE="${HOME_DIR}/pid"
     if [ -f "$GAIAD_PID_FILE" ]; then
       GAIAD_PID="$(cat "$GAIAD_PID_FILE")"
       if [ "$(ps -p "$GAIAD_PID" -o pid | wc -l)" -eq 2 ]; then
-        echo "$I$1  $GAIAD_PID  $(get_rpc_port "$1") $(get_app_port "$1") $(get_grpc_port "$1") $HOME_DIR"
+        echo "${NAME}${NAME_PAD} $GAIAD_PID  $(get_rpc_port "$1") $(get_app_port "$1") $(get_grpc_port "$1") $HOME_DIR"
       else
-        echo "$I$1 ($GAIAD_PID)     -     -     - $HOME_DIR"
+        echo "${NAME}${NAME_PAD}($GAIAD_PID)     -     -     - $HOME_DIR"
       fi
     else
-       echo "$I$1      -      -     -     - $HOME_DIR"
+       echo "${NAME}${NAME_PAD}     -      -     -     - $HOME_DIR"
     fi
 }
 
@@ -360,3 +379,59 @@ status() {
   done
 }
 
+ports() {
+  P2P="$(get_p2p_port "$1")"
+  RPC="$(get_rpc_port "$1")"
+  APP="$(get_app_port "$1")"
+  GRPC="$(get_grpc_port "$1")"
+  PPROF="$(get_pprof_port "$1")"
+  echo "${1} RPC  : http://localhost:${RPC}"
+  echo "${1} APP  : http://localhost:${APP}"
+  echo "${1} GRPC : http://localhost:${GRPC}"
+  echo "${1} P2P  : http://localhost:${P2P}"
+  echo "${1} PPROF: http://localhost:${PPROF}"
+}
+
+list_keys() {
+  HOME_DIR="$(get_home_dir "$1")"
+  GAIAD_BINARY="$(get_gaiad_binary "$1")"
+  echo "\"$GAIAD_BINARY\" keys list --keyring-backend test --keyring-dir \"$HOME_DIR\""
+  KEY_NAME=""
+  "$GAIAD_BINARY" keys list --keyring-backend test --keyring-dir "$HOME_DIR" | while read -r line
+  do
+    NAME="${line##'- name: '}"
+    TYPE="${line##'type: '}"
+    MNEMONIC="${line##'mnemonic:'}"
+    THRESHOLD="${line##'threshold: '}"
+    PUBKEYS="${line##'pubkeys: '}"
+    if [ "$NAME" != "$line" ]; then
+      KEY_NAME="$NAME"
+      echo
+      echo "$line"
+    elif [ "$TYPE" != "$line" ]; then
+      if [ "$line" != "type: local" ]; then
+        echo "$line"
+      fi
+    elif [ "$MNEMONIC" != "$line" ]; then
+      if a_in_b "${KEY_NAME%%v0}" "$VALIDATORS"; then
+        echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
+      elif a_in_b "${KEY_NAME%%n0}" "$FULL_NODES"; then
+        echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
+      elif [ "${KEY_NAME}" = "wallet" ]; then
+        echo "mnemonic: \"$(stoml "${HOME_DIR}/wallet_seed.json" mnemonic)\""
+      else
+        echo "mnemonic: \"\""
+      fi
+    elif [ "$THRESHOLD" != "$line" ]; then
+      if [ "$line" != "threshold: 0" ]; then
+        echo "$line"
+      fi
+    elif [ "$PUBKEYS" != "$line" ]; then
+      if [ "$line" != "pubkeys: []" ]; then
+        echo "$line"
+      fi
+    else
+      echo "$line"
+    fi
+  done
+}

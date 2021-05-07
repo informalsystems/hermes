@@ -60,7 +60,9 @@ _gm() {
 
   # subcommands have their own completion functions
   case "$cmd" in
+    keys) _gm_nodes ;;
     log) _gm_nodes ;;
+    ports) _gm_nodes ;;
     start) _gm_nodes ;;
     stop) _gm_nodes ;;
     *) ;;

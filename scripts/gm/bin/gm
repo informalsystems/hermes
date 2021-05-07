@@ -6,9 +6,9 @@ set -eu
 export SCRIPT_DIR="${0%%gm}"
 export LOCAL_LIB_GM="${SCRIPT_DIR}lib-gm"
 if [ -f "$LOCAL_LIB_GM" ]; then
-  source "$LOCAL_LIB_GM"
+  . "$LOCAL_LIB_GM"
 elif [ -f "$HOME/.gm/bin/lib-gm" ]; then
-  source $HOME/.gm/bin/lib-gm
+  . "$HOME/.gm/bin/lib-gm"
 else
   echo "ERROR: could not find lib-gm, exiting..."
   exit 1
@@ -39,23 +39,55 @@ usage() {
 case "${1:-help}" in
   help)
     usage
-    exit 0
     ;;
   install)
     install
     ;;
   keys)
     load_config
-    echo "Todo: not implemented"
+    if [ $# -eq 1 ]; then
+      NODES="$ALL_NODES"
+    else
+      shift
+      NODES="$*"
+    fi
+    for i in $NODES
+    do
+      warn_unknown_node "$i" || continue
+      list_keys "$i"
+    done
     ;;
   log)
     load_config
     shift
-    echo "Todo: not implemented"
+    F_FLAG=""
+    while [ "$#" -gt 0 ];
+    do
+      case "$1" in
+        "-f")
+          F_FLAG="-f" ;;
+        *)
+          NODE="$1"
+      esac
+      shift
+    done
+    HOME_DIR="$(get_home_dir "$NODE")"
+    echo "tail $F_FLAG \"${HOME_DIR}/log\""
+    tail "$F_FLAG" "${HOME_DIR}/log"
     ;;
   ports)
     load_config
-    echo "Todo: not implemented"
+    if [ $# -eq 1 ]; then
+      NODES="$ALL_NODES"
+    else
+      shift
+      NODES="$*"
+    fi
+    for i in $NODES
+    do
+      warn_unknown_node "$i" || continue
+      ports "$i"
+    done
     ;;
   start)
     load_config
@@ -63,10 +95,11 @@ case "${1:-help}" in
       NODES_TO_START="$ALL_NODES"
     else
       shift
-      NODES_TO_START="$@"
+      NODES_TO_START="$*"
     fi
     for i in $NODES_TO_START
     do
+      warn_unknown_node "$i" || continue
       if [ ! -d "$(get_home_dir "$i")" ]; then
         create "$i" || continue
       fi
@@ -86,10 +119,11 @@ case "${1:-help}" in
       NODES_TO_STOP="$ALL_NODES"
     else
       shift
-      NODES_TO_STOP="$@"
+      NODES_TO_STOP="$*"
     fi
     for i in $NODES_TO_STOP
     do
+      warn_unknown_node "$i" || continue
       stop "$i"
     done
     ;;
@@ -102,4 +136,3 @@ case "${1:-help}" in
     exit_with_error "could not understand the command \"$1\""
     ;;
 esac
-
