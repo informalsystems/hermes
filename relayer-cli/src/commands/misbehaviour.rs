@@ -4,6 +4,7 @@ use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::event::monitor::UnwrapOrClone;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 
 use crate::application::CliApp;
@@ -52,32 +53,40 @@ pub fn monitor_misbehaviour(
     let subscription = chain.subscribe()?;
 
     // check previous updates that may have been missed
-    misbehaviour_handling(chain.clone(), config, client_id, None)?;
+    misbehaviour_handling(chain.clone(), config, client_id.clone(), None)?;
 
     // process update client events
     while let Ok(event_batch) = subscription.recv() {
-        for event in event_batch.events.iter() {
-            match event {
-                IbcEvent::UpdateClient(update) => {
-                    debug!("{:?}", update);
-                    misbehaviour_handling(
-                        chain.clone(),
-                        config,
-                        update.client_id(),
-                        Some(update.clone()),
-                    )?;
-                }
+        let event_batch = event_batch.unwrap_or_clone();
+        match event_batch {
+            Ok(event_batch) => {
+                for event in event_batch.events {
+                    match event {
+                        IbcEvent::UpdateClient(update) => {
+                            debug!("{:?}", update);
+                            misbehaviour_handling(
+                                chain.clone(),
+                                config,
+                                update.client_id().clone(),
+                                Some(update),
+                            )?;
+                        }
 
-                IbcEvent::CreateClient(_create) => {
-                    // TODO - get header from full node, consensus state from chain, compare
-                }
+                        IbcEvent::CreateClient(_create) => {
+                            // TODO - get header from full node, consensus state from chain, compare
+                        }
 
-                IbcEvent::ClientMisbehaviour(_misbehaviour) => {
-                    // TODO - submit misbehaviour to the witnesses (our full node)
-                    return Ok(Some(event.clone()));
-                }
+                        IbcEvent::ClientMisbehaviour(ref _misbehaviour) => {
+                            // TODO - submit misbehaviour to the witnesses (our full node)
+                            return Ok(Some(event));
+                        }
 
-                _ => {}
+                        _ => {}
+                    }
+                }
+            }
+            Err(e) => {
+                dbg!(e);
             }
         }
     }
@@ -88,11 +97,11 @@ pub fn monitor_misbehaviour(
 fn misbehaviour_handling(
     chain: Box<dyn ChainHandle>,
     config: &config::Reader<CliApp>,
-    client_id: &ClientId,
+    client_id: ClientId,
     update: Option<UpdateClient>,
 ) -> Result<(), BoxError> {
     let client_state = chain
-        .query_client_state(client_id, Height::zero())
+        .query_client_state(&client_id, Height::zero())
         .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
 
     if client_state.is_frozen() {
@@ -108,7 +117,7 @@ fn misbehaviour_handling(
             )
         })?;
 
-    let client = ForeignClient::restore(client_id, chain.clone(), counterparty_chain.clone());
+    let client = ForeignClient::restore(&client_id, chain.clone(), counterparty_chain.clone());
     let result = client.detect_misbehaviour_and_submit_evidence(update);
     if let MisbehaviourResults::EvidenceSubmitted(events) = result {
         info!("evidence submission result {:?}", events);

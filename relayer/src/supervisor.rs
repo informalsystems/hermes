@@ -6,35 +6,40 @@ use std::{
 };
 
 use anomaly::BoxError;
-use crossbeam_channel::{Receiver, Sender};
-use tracing::{debug, error, info, trace, warn};
+use crossbeam_channel::{Receiver, Select, Sender};
+use itertools::Itertools;
+use tracing::{debug, error, error_span, info, trace, warn};
 
-use ibc::events::VecIbcEvents;
-use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::ics24_host::identifier::ClientId;
 use ibc::{
-    events::IbcEvent,
-    ics02_client::events::NewBlock,
-    ics03_connection::connection::State as ConnectionState,
-    ics04_channel::{
-        channel::State as ChannelState,
-        events::{CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
+    events::{IbcEvent, VecIbcEvents},
+    ics02_client::{
+        client_state::ClientState,
+        events::{NewBlock, UpdateClient},
     },
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
+    ics04_channel::{
+        channel::IdentifiedChannelEnd,
+        events::{Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
+    },
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
     Height,
 };
+
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
-use crate::foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults};
 use crate::{
-    chain::handle::ChainHandle,
-    event::monitor::EventBatch,
+    chain::{
+        counterparty::{channel_connection_client, get_counterparty_chain},
+        handle::ChainHandle,
+    },
+    config::Config,
+    event::monitor::{EventBatch, UnwrapOrClone},
+    foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
+    registry::Registry,
 };
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::ics04_channel::events::Attributes;
+
+mod error;
+pub use error::Error;
 
 /// A command for a [`Worker`].
 pub enum WorkerCmd {
@@ -59,9 +64,9 @@ impl WorkerHandle {
         chain_id: ChainId,
     ) -> Result<(), BoxError> {
         let batch = EventBatch {
+            chain_id,
             height,
             events,
-            chain_id,
         };
 
         trace!("supervisor sends {:?}", batch);
@@ -98,33 +103,41 @@ impl ChainHandlePair {
     }
 }
 
-/// The supervisor listens for events on a pair of chains,
+fn recv_multiple<K, T>(rs: &[(K, Receiver<T>)]) -> Result<(&K, T), BoxError> {
+    // Build a list of operations.
+    let mut sel = Select::new();
+    for (_, r) in rs {
+        sel.recv(r);
+    }
+
+    // Complete the selected operation.
+    let oper = sel.select();
+    let index = oper.index();
+
+    let (k, r) = &rs[index];
+
+    let result = oper.recv(r)?;
+
+    Ok((k, result))
+}
+
+/// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
 /// worker, based on the [`Object`] associated with each event.
 pub struct Supervisor {
-    chains: ChainHandlePair,
+    config: Config,
+    registry: Registry,
     workers: HashMap<Object, WorkerHandle>,
 }
 
-impl fmt::Display for Supervisor {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[{} <-> {}]", self.chains.a.id(), self.chains.b.id(),)
-    }
-}
-
 impl Supervisor {
-    /// Spawn a supervisor which listens for events on the two given chains.
-    pub fn spawn(
-        chain_a: Box<dyn ChainHandle>,
-        chain_b: Box<dyn ChainHandle>,
-    ) -> Result<Self, BoxError> {
-        let chains = ChainHandlePair {
-            a: chain_a,
-            b: chain_b,
-        };
+    /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
+    pub fn spawn(config: Config) -> Result<Self, BoxError> {
+        let registry = Registry::new(config.clone());
 
         Ok(Self {
-            chains,
+            config,
+            registry,
             workers: HashMap::new(),
         })
     }
@@ -194,70 +207,172 @@ impl Supervisor {
         collected
     }
 
-    fn create_workers(&mut self) -> Result<(), BoxError> {
+    fn spawn_workers(&mut self) {
         let req = QueryChannelsRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        // For each opened channel spawn:
-        // - the path worker for AtoB (used to clear packets) and
-        // - the client worker for the A side client of the channel's connection (used for refresh)
-        // TODO - we should move to one supervisor, operating on a set of chains:
-        // `for chain_a in self.chains.clone().iter() {`, lookup chain b in registry based
-        // on the client chain_id, etc.
-        for chains in [self.chains.clone(), self.chains.clone().swap()].iter() {
-            let channels: Vec<IdentifiedChannelEnd> = chains.a.query_channels(req.clone())?;
-            for channel in channels {
-                let client = channel_connection_client(
-                    &channel.port_id,
-                    &channel.channel_id,
-                    chains.a.as_ref(),
-                )?
-                .client;
-                if client.client_state.chain_id() != chains.b.id() {
+        let chain_ids = self
+            .config
+            .chains
+            .iter()
+            .map(|c| c.id.clone())
+            .collect_vec();
+
+        for chain_id in chain_ids {
+            let chain = match self.registry.get_or_spawn(&chain_id) {
+                Ok(chain_handle) => chain_handle,
+                Err(e) => {
+                    error!("skipping workers for chain id {}. reason: failed to spawn chain runtime with error: {}", chain_id, e);
                     continue;
                 }
+            };
 
-                // create the client object and spawn worker
-                let client_object = Object::Client(Client {
-                    dst_client_id: client.client_id.clone(),
-                    dst_chain_id: chains.a.id(),
-                    src_chain_id: client.client_state.chain_id(),
-                });
-                let worker = Worker::spawn(chains.clone(), client_object.clone());
-                self.workers.entry(client_object).or_insert(worker);
+            let channels = match chain.query_channels(req.clone()) {
+                Ok(channels) => channels,
+                Err(e) => {
+                    error!("failed to query channels from {}: {}", chain_id, e);
+                    continue;
+                }
+            };
 
-                // create the path object and spawn worker
-                let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
-                    dst_chain_id: chains.b.id(),
-                    src_chain_id: chains.a.id(),
-                    src_channel_id: channel.channel_id.clone(),
-                    src_port_id: channel.port_id.clone(),
-                });
-                let worker = Worker::spawn(chains.clone(), path_object.clone());
-                self.workers.entry(path_object).or_insert(worker);
+            for channel in channels {
+                match self.spawn_workers_for_channel(chain.clone(), channel.clone()) {
+                    Ok(()) => debug!(
+                        "done spawning workers for channel {} on chain {}",
+                        chain.id(),
+                        channel.channel_id
+                    ),
+                    Err(e) => error!(
+                        "skipped workers for channel {} on chain {} due to error {}",
+                        chain.id(),
+                        channel.channel_id,
+                        e
+                    ),
+                }
             }
         }
+    }
+
+    /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+    fn spawn_workers_for_channel(
+        &mut self,
+        chain: Box<dyn ChainHandle>,
+        channel: IdentifiedChannelEnd,
+    ) -> Result<(), BoxError> {
+        trace!(
+            "fetching connection_client for channel {:?} of chain {}",
+            channel,
+            chain.id()
+        );
+
+        let client_res =
+            channel_connection_client(chain.as_ref(), &channel.port_id, &channel.channel_id);
+
+        let client = match client_res {
+            Ok(conn_client) => conn_client.client,
+            Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelNotOpen(..)) => {
+                // These errors are silent.
+                // Simply ignore the channel and return without spawning the workers.
+                warn!(
+                    "ignoring channel {} because it is not open (or its connection is not open)",
+                    channel.channel_id
+                );
+
+                return Ok(());
+            }
+            Err(e) => {
+                // Propagate errors.
+                return Err(format!(
+                    "unable to spawn workers for channel/chain pair '{}'/'{}' due to error: {:?}",
+                    channel.channel_id,
+                    chain.id(),
+                    e
+                )
+                .into());
+            }
+        };
+
+        trace!("Obtained client id {:?}", client.client_id);
+
+        if self
+            .config
+            .find_chain(&client.client_state.chain_id())
+            .is_none()
+        {
+            // Ignore channel, since it does not correspond to any chain in the config file
+            return Ok(());
+        }
+
+        let counterparty_chain = self
+            .registry
+            .get_or_spawn(&client.client_state.chain_id())?;
+
+        // create the client object and spawn worker
+        let client_object = Object::Client(Client {
+            dst_client_id: client.client_id.clone(),
+            dst_chain_id: chain.id(),
+            src_chain_id: client.client_state.chain_id(),
+        });
+
+        self.worker_for_object(client_object, chain.clone(), counterparty_chain.clone());
+
+        // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
+        //  https://github.com/informalsystems/ibc-rs/issues/901
+        // create the path object and spawn worker
+        let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
+            dst_chain_id: counterparty_chain.id(),
+            src_chain_id: chain.id(),
+            src_channel_id: channel.channel_id.clone(),
+            src_port_id: channel.port_id,
+        });
+
+        self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
+
         Ok(())
     }
 
     /// Run the supervisor event loop.
     pub fn run(mut self) -> Result<(), BoxError> {
-        let subscription_a = self.chains.a.subscribe()?;
-        let subscription_b = self.chains.b.subscribe()?;
+        let mut subscriptions = Vec::with_capacity(self.config.chains.len());
 
-        self.create_workers()?;
+        for chain_config in &self.config.chains {
+            let chain = match self.registry.get_or_spawn(&chain_config.id) {
+                Ok(chain) => chain,
+                Err(e) => {
+                    error!(
+                        "failed to spawn chain runtime for {}: {}",
+                        chain_config.id, e
+                    );
+                    continue;
+                }
+            };
+
+            match chain.subscribe() {
+                Ok(subscription) => subscriptions.push((chain, subscription)),
+                Err(e) => error!(
+                    "failed to subscribe to events of {}: {}",
+                    chain_config.id, e
+                ),
+            }
+        }
+
+        self.spawn_workers();
 
         loop {
-            for batch in subscription_a.try_iter() {
-                self.process_batch(self.chains.a.clone(), batch.unwrap_or_clone())?;
-            }
+            match recv_multiple(&subscriptions) {
+                Ok((chain, batch)) => {
+                    let result = batch
+                        .unwrap_or_clone()
+                        .map_err(Into::into)
+                        .and_then(|batch| self.process_batch(chain.clone(), batch));
 
-            for batch in subscription_b.try_iter() {
-                self.process_batch(self.chains.b.clone(), batch.unwrap_or_clone())?;
+                    if let Err(e) = result {
+                        error!("[{}] error during batch processing: {}", chain.id(), e);
+                    }
+                }
+                Err(e) => error!("error when waiting for events: {}", e),
             }
-
-            std::thread::sleep(Duration::from_millis(600));
         }
     }
 
@@ -272,14 +387,7 @@ impl Supervisor {
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
-        let direction = if chain_id == self.chains.a.id() {
-            Direction::AtoB
-        } else {
-            assert_eq!(chain_id, self.chains.b.id());
-            Direction::BtoA
-        };
-
-        let mut collected = self.collect_events(src_chain.as_ref(), batch);
+        let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
             if events.is_empty() {
@@ -287,86 +395,51 @@ impl Supervisor {
             }
 
             debug!(
-                "[{}] chain {} sent {} for object {:?}, direction {:?}",
-                self,
+                "chain {} sent {} for object {:?}",
                 chain_id,
                 VecIbcEvents(events.clone()),
                 object,
-                direction
             );
 
-            if let Some(worker) = self.worker_for_object(object, direction) {
-                worker.send_events(height, events, chain_id.clone())?;
-            }
+            let src = self.registry.get_or_spawn(object.src_chain_id())?;
+            let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
+
+            let worker = self.worker_for_object(object, src, dst);
+            worker.send_events(height, events, chain_id.clone())?
         }
 
+        // If there is a NewBlock event, forward the event to any workers affected by it.
         if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-            for (object, worker) in self.workers.iter() {
-                match object {
-                    Object::UnidirectionalChannelPath(p) => {
-                        if p.src_chain_id == src_chain.id() {
-                            worker.send_new_block(height, new_block)?;
-                        }
-                    }
-                    Object::Client(_) => {}
-                }
+            for (_, worker) in self
+                .workers
+                .iter()
+                .filter(|(o, _)| o.notify_new_block(&src_chain.id()))
+            {
+                worker.send_new_block(height, new_block)?;
             }
         }
 
         Ok(())
     }
 
-    fn object_matches_chain_pair(&self, object: &Object, chains: &ChainHandlePair) -> bool {
-        match object {
-            Object::Client(_cl) => {
-                object.dst_chain_id() == &chains.a.id() && object.src_chain_id() == &chains.b.id()
-            }
-            Object::UnidirectionalChannelPath(_path) => {
-                object.src_chain_id() == &chains.a.id() && object.dst_chain_id() == &chains.b.id()
-            }
-        }
-    }
-
     /// Get a handle to the worker in charge of handling events associated
     /// with the given [`Object`].
     ///
     /// This function will spawn a new [`Worker`] if one does not exists already.
-    ///
-    /// The `direction` parameter indicates in which direction the worker should
-    /// relay events.
-    fn worker_for_object(&mut self, object: Object, direction: Direction) -> Option<&WorkerHandle> {
+    fn worker_for_object(
+        &mut self,
+        object: Object,
+        src: Box<dyn ChainHandle>,
+        dst: Box<dyn ChainHandle>,
+    ) -> &WorkerHandle {
         if self.workers.contains_key(&object) {
-            Some(&self.workers[&object])
+            &self.workers[&object]
         } else {
-            let chains = match direction {
-                Direction::AtoB => self.chains.clone(),
-                Direction::BtoA => self.chains.clone().swap(),
-            };
-
-            if !self.object_matches_chain_pair(&object, &chains) {
-                trace!(
-                    "object {:?} is not relevant to worker for chains {}/{}",
-                    object,
-                    chains.a.id(),
-                    chains.b.id()
-                );
-                return None;
-            }
-
-            let worker = Worker::spawn(chains, object.clone());
+            let worker = Worker::spawn(ChainHandlePair { a: src, b: dst }, object.clone());
             let worker = self.workers.entry(object).or_insert(worker);
-            Some(worker)
+            worker
         }
     }
-}
-
-/// The direction in which a [`Worker`] should relay events.
-#[derive(Copy, Clone, Debug)]
-pub enum Direction {
-    /// From chain A to chain B.
-    AtoB,
-    /// From chain B to chain A.
-    BtoA,
 }
 
 /// A worker processes batches of events associated with a given [`Object`].
@@ -387,7 +460,7 @@ impl Worker {
         let (tx, rx) = crossbeam_channel::unbounded();
 
         debug!(
-            "[{}] Spawned worker with chains a:{} and b:{} for object {:#?} ",
+            "[{}] spawned worker with chains a:{} and b:{} for object {:#?} ",
             object.short_name(),
             chains.a.id(),
             chains.b.id(),
@@ -402,15 +475,19 @@ impl Worker {
 
     /// Run the worker event loop.
     fn run(self, object: Object) {
-        let result = match object.clone() {
+        let span = error_span!("worker loop", worker = %object.short_name());
+        let _guard = span.enter();
+
+        let result = match object {
             Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
             Object::Client(client) => self.run_client(client),
         };
 
         if let Err(e) = result {
-            error!("[{}] worker error: {}", object.short_name(), e);
+            error!("worker error: {}", e);
         }
-        info!("[{}] worker exits", object.short_name());
+
+        info!("worker exits");
     }
 
     fn run_client_misbehaviour(
@@ -418,24 +495,22 @@ impl Worker {
         client: &ForeignClient,
         update: Option<UpdateClient>,
     ) -> bool {
-        let mut skip_misbehaviour = false;
-        let res = client.detect_misbehaviour_and_submit_evidence(update);
-        match res {
-            MisbehaviourResults::ValidClient => {}
+        match client.detect_misbehaviour_and_submit_evidence(update) {
+            MisbehaviourResults::ValidClient => false,
             MisbehaviourResults::VerificationError => {
                 // can retry in next call
+                false
             }
-            MisbehaviourResults::EvidenceSubmitted(_events) => {
+            MisbehaviourResults::EvidenceSubmitted(_) => {
                 // if evidence was submitted successfully then exit
-                skip_misbehaviour = true;
+                true
             }
             MisbehaviourResults::CannotExecute => {
                 // skip misbehaviour checking if chain does not have support for it (i.e. client
                 // update event does not include the header)
-                skip_misbehaviour = true;
+                true
             }
-        };
-        skip_misbehaviour
+        }
     }
 
     /// Run the event loop for events associated with a [`Client`].
@@ -447,35 +522,38 @@ impl Worker {
         );
 
         info!(
-            "[{}] running client worker initial misbehaviour detection for {}",
-            self, client
+            "running client worker & initial misbehaviour detection for {}",
+            client
         );
+
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.run_client_misbehaviour(&client, None);
 
         info!(
-            "[{}] running client worker loop (misbehaviour and refresh) for {}",
-            self, client
+            "running client worker (misbehaviour and refresh) for {}",
+            client
         );
+
         loop {
             thread::sleep(Duration::from_millis(600));
+
             // Run client refresh, exit only if expired or frozen
-            if let Err(ForeignClientError::ExpiredOrFrozen(client_id, chain_id)) = client.refresh()
-            {
-                return Err(Box::new(ForeignClientError::ExpiredOrFrozen(
-                    client_id, chain_id,
-                )));
+            if let Err(e @ ForeignClientError::ExpiredOrFrozen(..)) = client.refresh() {
+                error!("failed to refresh client '{}': {}", client, e);
+                continue;
             }
 
             if skip_misbehaviour {
                 continue;
             }
+
             if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
-                trace!("[{}] client worker receives batch {:?}", client, batch);
+                trace!("client '{}' worker receives batch {:?}", client, batch);
 
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
-                        debug!("[{}] client updated", client);
+                        debug!("client '{}' updated", client);
+
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         self.run_client_misbehaviour(&client, Some(update));
@@ -502,24 +580,35 @@ impl Worker {
         }
 
         loop {
+            thread::sleep(Duration::from_millis(200));
+
             if let Ok(cmd) = self.rx.try_recv() {
-                match cmd {
+                let result = match cmd {
                     WorkerCmd::IbcEvents { batch } => {
-                        link.a_to_b.update_schedule(batch)?;
-                        // Refresh the scheduled batches and execute any outstanding ones.
+                        // Update scheduled batches.
+                        link.a_to_b.update_schedule(batch)
                     }
                     WorkerCmd::NewBlock {
                         height,
                         new_block: _,
-                    } => link.a_to_b.clear_packets(height)?,
+                    } => link.a_to_b.clear_packets(height),
+                };
+
+                if let Err(e) = result {
+                    error!("{}", e);
+                    continue;
                 }
             }
 
             // Refresh the scheduled batches and execute any outstanding ones.
-            link.a_to_b.refresh_schedule()?;
-            link.a_to_b.execute_schedule()?;
+            let result = link
+                .a_to_b
+                .refresh_schedule()
+                .and_then(|_| link.a_to_b.execute_schedule());
 
-            thread::sleep(Duration::from_millis(100))
+            if let Err(e) = result {
+                error!("{}", e);
+            }
         }
     }
 }
@@ -540,7 +629,7 @@ pub struct Client {
 impl Client {
     pub fn short_name(&self) -> String {
         format!(
-            "{} -> {}:{}",
+            "{}->{}:{}",
             self.src_chain_id, self.dst_chain_id, self.dst_client_id
         )
     }
@@ -565,7 +654,7 @@ pub struct UnidirectionalChannelPath {
 impl UnidirectionalChannelPath {
     pub fn short_name(&self) -> String {
         format!(
-            "{}/{}:{} -> {}",
+            "{}/{}:{}->{}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
@@ -583,6 +672,18 @@ pub enum Object {
     Client(Client),
     /// See [`UnidirectionalChannelPath`].
     UnidirectionalChannelPath(UnidirectionalChannelPath),
+}
+
+impl Object {
+    /// Returns `true` if this [`Object`] is for a [`Worker`] which is interested
+    /// in new block events originating from the chain with the given [`ChainId`].
+    /// Returns `false` otherwise.
+    fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
+        match self {
+            Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
+            Object::Client(_) => false,
+        }
+    }
 }
 
 impl From<Client> for Object {
@@ -654,7 +755,7 @@ impl Object {
             .as_ref()
             .ok_or_else(|| format!("channel_id missing in OpenAck event '{:?}'", e))?;
 
-        let client = channel_connection_client(e.port_id(), channel_id, dst_chain)?.client;
+        let client = channel_connection_client(dst_chain, e.port_id(), channel_id)?.client;
         if client.client_state.refresh_period().is_none() {
             return Err(format!(
                 "client '{}' on chain {} does not require refresh",
@@ -767,86 +868,4 @@ impl CollectedEvents {
     pub fn has_new_block(&self) -> bool {
         self.new_block.is_some()
     }
-}
-
-pub struct ChannelConnectionClient {
-    pub channel: IdentifiedChannelEnd,
-    pub connection: IdentifiedConnectionEnd,
-    pub client: IdentifiedAnyClientState,
-}
-
-impl ChannelConnectionClient {
-    pub fn new(
-        channel: IdentifiedChannelEnd,
-        connection: IdentifiedConnectionEnd,
-        client: IdentifiedAnyClientState,
-    ) -> Self {
-        ChannelConnectionClient {
-            channel,
-            connection,
-            client,
-        }
-    }
-}
-
-fn channel_connection_client(
-    port_id: &PortId,
-    channel_id: &ChannelId,
-    chain: &dyn ChainHandle,
-) -> Result<ChannelConnectionClient, BoxError> {
-    trace!(
-        chain_id = %chain.id(),
-        port_id = %port_id,
-        channel_id = %channel_id,
-        "getting counterparty chain"
-    );
-    let channel_end = chain.query_channel(port_id, channel_id, Height::zero())?;
-    if !channel_end.state_matches(&ChannelState::Open) {
-        return Err(format!(
-            "channel '{}' on chain '{}' not opened",
-            chain.id(),
-            channel_id
-        )
-        .into());
-    }
-
-    let channel =
-        IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end.clone());
-    let connection_id = channel_end
-        .connection_hops()
-        .first()
-        .ok_or_else(|| format!("no connection hops for channel '{}'", channel_id))?;
-
-    let connection_end = chain.query_connection(&connection_id, Height::zero())?;
-    if !connection_end.state_matches(&ConnectionState::Open) {
-        return Err(format!(
-            "connection '{}' on chain '{}' not opened",
-            connection_id,
-            chain.id(),
-        )
-        .into());
-    }
-    let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end.clone());
-
-    let client_id = connection_end.client_id();
-    let client_state = chain.query_client_state(client_id, Height::zero())?;
-    let client = IdentifiedAnyClientState::new(client_id.clone(), client_state.clone());
-    trace!(
-        chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
-        "counterparty chain: {}", client_state.chain_id()
-    );
-
-    Ok(ChannelConnectionClient::new(channel, connection, client))
-}
-
-// TODO: Memoize this result
-fn get_counterparty_chain(
-    src_chain: &dyn ChainHandle,
-    src_channel_id: &ChannelId,
-    src_port_id: &PortId,
-) -> Result<ChainId, BoxError> {
-    let client_state = channel_connection_client(src_port_id, src_channel_id, src_chain)?
-        .client
-        .client_state;
-    Ok(client_state.chain_id())
 }

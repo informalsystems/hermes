@@ -31,13 +31,16 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
-use crate::chain::handle::ChainHandle;
-use crate::channel::{Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
+use crate::{chain::handle::ChainHandle, transfer::PacketError};
+use crate::{
+    channel::{Channel, ChannelError, ChannelSide},
+    event::monitor::UnwrapOrClone,
+};
 use ibc::events::VecIbcEvents;
 
 #[derive(Debug, Error)]
@@ -45,23 +48,26 @@ pub enum LinkError {
     #[error("failed with underlying error: {0}")]
     Failed(String),
 
+    #[error("failed with underlying error: {0}")]
+    Generic(#[from] Error),
+
     #[error("failed to construct packet proofs for chain {0} with error: {1}")]
     PacketProofsConstructor(ChainId, Error),
 
     #[error("failed during query to chain id {0} with underlying error: {1}")]
     QueryError(ChainId, Error),
 
-    #[error("ConnectionError: {0}:")]
+    #[error("connection error: {0}:")]
     ConnectionError(#[from] ConnectionError),
 
-    #[error("ChannelError:  {0}:")]
+    #[error("channel error:  {0}:")]
     ChannelError(#[from] ChannelError),
 
-    #[error("Failed during a client operation: {0}:")]
+    #[error("failed during a client operation: {0}:")]
     ClientError(ForeignClientError),
 
-    #[error("PacketError: {0}:")]
-    PacketError(#[from] Error),
+    #[error("packet error: {0}:")]
+    PacketError(#[from] PacketError),
 
     #[error("clearing of old packets failed")]
     OldPacketClearingFailed,
@@ -1470,7 +1476,13 @@ impl Link {
 
             // Input new events to the relay path, and schedule any batch associated with them
             if let Ok(batch) = events_a.try_recv() {
-                self.a_to_b.update_schedule(batch.unwrap_or_clone())?;
+                let batch = batch.unwrap_or_clone();
+                match batch {
+                    Ok(batch) => self.a_to_b.update_schedule(batch)?,
+                    Err(e) => {
+                        dbg!(e);
+                    }
+                }
             }
 
             // Refresh the scheduled batches and execute any outstanding ones.
@@ -1478,7 +1490,13 @@ impl Link {
             self.a_to_b.execute_schedule()?;
 
             if let Ok(batch) = events_b.try_recv() {
-                self.b_to_a.update_schedule(batch.unwrap_or_clone())?;
+                let batch = batch.unwrap_or_clone();
+                match batch {
+                    Ok(batch) => self.b_to_a.update_schedule(batch)?,
+                    Err(e) => {
+                        dbg!(e);
+                    }
+                }
             }
 
             self.b_to_a.refresh_schedule()?;
