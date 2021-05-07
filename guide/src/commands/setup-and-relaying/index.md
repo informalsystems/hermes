@@ -1,6 +1,6 @@
-# Path Setup and Relay Commands
+# Path Setup
 
-This section describes a number of commands that can be used to manage clients, connections, channels and relay over new or existing  paths.
+This section describes a number of commands that can be used to manage clients, connections, channels.
 
 | CLI name               | Description                                                                                                     |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -8,7 +8,6 @@ This section describes a number of commands that can be used to manage clients, 
 | `update client`        | [Update the specified client on destination chain](./clients.md#md-client)                              |
 | `create connection`    | [Establish a connection using existing or new clients](./connections.md#establish-connection)                            |
 | `create channel`       | [Establish a channel using existing or new connection](./channels.md#establish-channel)                            |
-| `start`                | [Relay packets over a new or exsiting channel](./packets.md#start)                            |
 
 
 ## Create
@@ -41,23 +40,4 @@ DESCRIPTION:
 SUBCOMMANDS:
     help       Get usage information
     client     Update an IBC client
-```
-
-## Relay 
-Use the `start` commands to start relaying packets over one path.
-
-```shell
-USAGE:
-    hermes start <OPTIONS>
-
-DESCRIPTION:
-    Start the relayer
-
-POSITIONAL ARGUMENTS:
-    src_chain_id              identifier of the source chain
-    dst_chain_id              identifier of the destination chain
-
-FLAGS:
-    -p, --src-port-id SRC-PORT-ID
-    -c, --src-channel-id SRC-CHANNEL-ID
 ```

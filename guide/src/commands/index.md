@@ -8,9 +8,13 @@ The `Commands` section presents the commands current available in Hermes
 
 Commands to manage keys (private keys) for each chain.
 
-**[Path Setup and Streaming](./setup-and-relaying/index.md)**
+**[Path Setup](./setup-and-relaying/index.md)**
 
-Commands to manage clients, connections, channels and performing packet relaying
+Commands to manage clients, connections, channels.
+
+**[Packet Relaying](./relaying.md)**
+
+Commands to start the relayer and relay packets.
 
 **[Listen Mode](./listen/index.md)**
 
