@@ -4,8 +4,13 @@
 ## v0.3.0
 *May 7th, 2021*
 
+> Nothing yet.
+
+## v0.3.0
+*May 7h, 2021*
+
 Special thanks to external contributors:
-Jongwhan Lee (@leejw51crypto) ([#878]).
+  - Jongwhan Lee (@leejw51crypto) ([#878])
 
 This release primarily brings stability and UX improvements in Hermes.
 Other notable changes include:

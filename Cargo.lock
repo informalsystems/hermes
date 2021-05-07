@@ -412,9 +412,12 @@ checksum = "ea221b5284a47e40033bf9b66f35f984ec0ea2931eb03505246cd27a963f981b"
 
 [[package]]
 name = "cpufeatures"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cd5a7748210e7ec1a9696610b1015e6e31fbf58f77a160801f124bd1c36592a"
+checksum = "dec1028182c380cc45a2e2c5ec841134f2dfd0f8f5f0a5bcd68004f81b5efdf4"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "crc32fast"
@@ -1186,7 +1189,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anomaly",
  "bytes",
@@ -1213,7 +1216,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anomaly",
  "bytes",
@@ -1226,7 +1229,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anomaly",
  "async-trait",
@@ -1272,7 +1275,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "abscissa_core",
  "anomaly",
@@ -1991,9 +1994,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.5.3"
+version = "1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce5f1ceb7f74abbce32601642fcf8e8508a8a8991e0621c7d750295b9095702b"
+checksum = "d07a8629359eb56f1e2fb1652bb04212c072a87ba68546a04065d525673ac461"
 dependencies = [
  "aho-corasick",
  "memchr",
