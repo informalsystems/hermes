@@ -7,6 +7,7 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 
 - Basic features
     - create and update clients
+    - refresh clients to prevent expiration
     - establish connections with new or existing clients
     - establish channels with new or existing connection
     - channel closing handshake
@@ -15,10 +16,9 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 - Packet relaying over:
     - new path
     - single specified path
-    - multiple paths configured in `config.toml`
+    - multiple paths, for the chains in `config.toml`
 - Restart support
-    - clear packets on relayer restart when started for a single path
-    > clear packets in multi-path mode not fully supported yet
+    - clear packets on relayer restart when started for a single path or multiple paths
 - Client upgrade
     - upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
 - Packet delay:
@@ -30,7 +30,7 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
     > misbehaviour submission to full node not yet supported
 - Individual commands that build and send transactions for:
     - creating and updating IBC Tendermint light clients
-    - aending connection open handshake datagrams
+    - sending connection open handshake datagrams
     - sending channel open handshake datagrams
     - sending channel closing handshake datagrams
     - initiating a cross chain transfer (mainly for testing)
@@ -42,9 +42,10 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 Planned features:
 - Connection handshake for existing connection that is not in `Open` state
 - Channel handshake for existing channel that is not in `Open` state
-- Clear pending packets in multi path mode
 - Full Passive mode: relay from all IBC events
 - Relayer support for management application (add RPC server)
+- Telemetry support
+- Dynamic configuration management
 
 Not planned:
 - Relayer management application

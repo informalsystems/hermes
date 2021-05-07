@@ -35,7 +35,7 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
 - query unreceived packets on `ibc-1`
 
     ```shell
-    hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+    hermes query packet unreceived-packets ibc-1 transfer channel-1
     ```
 
 - send `recv_packet` to `ibc-1`
@@ -47,7 +47,7 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
 - query unreceived acks on `ibc-0`
 
     ```shell
-    hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+    hermes query packet unreceived-acks ibc-0 transfer channel-0
     ```
 
 - send acknowledgement to `ibc-0`

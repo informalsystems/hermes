@@ -70,8 +70,8 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
         time: "0001-01-01T00:00:00Z"
         upgraded_client_state:
           '@type': /ibc.lightclients.tendermint.v1.ClientState
-          allow_update_after_expiry: false
-          allow_update_after_misbehaviour: false
+          allow_update_after_expiry: true
+          allow_update_after_misbehaviour: true
           chain_id: ibc-0
           frozen_height:
             revision_height: "0"

@@ -34,13 +34,16 @@ use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
 
-use crate::connection::ConnectionMsgType;
-use crate::keyring::KeyEntry;
-use crate::{error::Error, event::monitor::EventBatch};
+use crate::{
+    connection::ConnectionMsgType,
+    error::Error,
+    event::monitor::{EventBatch, Result as MonitorResult},
+    keyring::KeyEntry,
+};
 
 mod prod;
 
-pub type Subscription = channel::Receiver<Arc<EventBatch>>;
+pub type Subscription = channel::Receiver<Arc<MonitorResult<EventBatch>>>;
 
 pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
 pub type Reply<T> = channel::Receiver<Result<T, Error>>;

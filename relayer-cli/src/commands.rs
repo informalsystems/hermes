@@ -60,15 +60,11 @@ pub enum CliCmd {
     Create(CreateCmds),
 
     /// The `update` subcommand
-    #[options(
-        help = "Update objects on chains. Currently this sub-commands serves only to update clients"
-    )]
+    #[options(help = "Update objects (clients) on chains")]
     Update(UpdateCmds),
 
     /// The `upgrade` subcommand
-    #[options(
-        help = "Upgrade objects after chain upgrade. Currently this sub-commands serves only to upgrade clients"
-    )]
+    #[options(help = "Upgrade objects (clients) after chain upgrade")]
     Upgrade(UpgradeCmds),
 
     /// The `start` subcommand
@@ -76,8 +72,8 @@ pub enum CliCmd {
     Start(StartCmd),
 
     /// The `start-multi` subcommand
-    #[options(help = "Start the relayer in multi-channel mode. \
-                      Omit the options to pick up connections from the configuration.")]
+    #[options(help = "Start the relayer in multi-chain mode. \
+                      Handles packet relaying across all open channels between all chains in the config.")]
     StartMulti(StartMultiCmd),
 
     /// The `query` subcommand
