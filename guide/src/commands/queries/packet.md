@@ -181,18 +181,17 @@ DESCRIPTION:
     Query unreceived packets
 
 POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the chain to query the unreceived sequences
-    src_chain_id              identifier of the chain where sent sequences are queried
-    src_port_id               identifier of the port to query on source chain
-    src_channel_id            identifier of the channel to query on source chain
+    chain_id                  identifier of the chain for the unreceived sequences
+    port_id                   port identifier
+    channel_id                channel identifier
 ```
 
 __Example__
 
-Query `ibc-1` for the sequence numbers of packets sent on `ibc-0` on `transfer` port and `channel-0` but not yet received:
+Query `transfer` port and `channel-1` on `ibc-1` for the sequence numbers of packets sent on `ibc-0` but not yet received:
 
 ```shell
-hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+hermes query packet unreceived-packets ibc-1 transfer channel-1
 ```
 
 ```json
@@ -205,7 +204,7 @@ Success: [
 
 ## Unreceived Acknowledgments
 
-Use the `query packet unreceived-acks` command to query the sequence numbers of all packets that have been received by the source chain but not yet acknowledged by the destination chain.
+Use the `query packet unreceived-acks` command to query the sequence numbers of all packets that have not yet been acknowledged.
 
 ```shell
 USAGE:
@@ -215,18 +214,17 @@ DESCRIPTION:
     Query unreceived acknowledgments
 
 POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the chain to query the unreceived acknowledgments
-    src_chain_id              identifier of the chain where received sequences are queried
-    src_port_id               identifier of the port to query on source chain
-    src_channel_id            identifier of the channel to query on source chain
+    chain_id                  identifier of the chain to query the unreceived acknowledgments
+    port_id                   port identifier
+    channel_id                channel identifier
 ```
 
 __Example__
 
-Query `ibc-0` for the sequence numbers of packets received on `ibc-1` on `transfer` port and `channel-1` but not yet acknowledged on `ibc-0`:
+Query `transfer` port and `channel-0` on `ibc-0` for the sequence numbers of packets received by `ibc-1` but not yet acknowledged on `ibc-0`:
 
 ```shell
-hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+hermes query packet unreceived-acks ibc-0 transfer channel-0
 ```
 
 ```json
