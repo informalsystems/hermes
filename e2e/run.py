@@ -51,7 +51,7 @@ def loop(c: Config):
     packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
                        src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=4)
 
-    sleep(5.0)
+    sleep(10.0)
 
     # 3. verify the expected number of unreceived packets and acks on each channel end
 
@@ -79,8 +79,12 @@ def loop(c: Config):
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
 
+    sleep(2.0)
+
     # 4. start relaying - it should clear the unreceived packets
     proc = relayer.start(c)
+
+    sleep(5.0)
 
     # 5. wait a bit and make sure there are no pending packets
 
