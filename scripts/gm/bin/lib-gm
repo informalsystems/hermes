@@ -417,8 +417,11 @@ list_keys() {
         echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
       elif a_in_b "${KEY_NAME%%n0}" "$FULL_NODES"; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
-      elif [ "${KEY_NAME}" = "wallet" ]; then
-        echo "mnemonic: \"$(stoml "${HOME_DIR}/wallet_seed.json" mnemonic)\""
+      elif [ -f "${HOME_DIR}/${KEY_NAME}_seed.json" ]; then
+        echo "mnemonic: \"$(stoml "${HOME_DIR}/${KEY_NAME}_seed.json" mnemonic)\""
+      # Compatibility with the full-mesh tool
+      elif a_in_b "${KEY_NAME%%c0}" "$VALIDATORS" && [ -f "${HOME_DIR}/client_wallet_seed.json" ]; then
+        echo "mnemonic: \"$(stoml "${HOME_DIR}/client_wallet_seed.json" mnemonic)\""
       else
         echo "mnemonic: \"\""
       fi
