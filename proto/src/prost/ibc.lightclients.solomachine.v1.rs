@@ -15,15 +15,17 @@ pub struct ClientState {
     #[prost(bool, tag="4")]
     pub allow_update_after_proposal: bool,
 }
-/// ConsensusState defines a solo machine consensus state. The sequence of a consensus state
-/// is contained in the "height" key used in storing the consensus state.
+/// ConsensusState defines a solo machine consensus state. The sequence of a
+/// consensus state is contained in the "height" key used in storing the
+/// consensus state.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
     /// public key of the solo machine
     #[prost(message, optional, tag="1")]
     pub public_key: ::core::option::Option<::prost_types::Any>,
-    /// diversifier allows the same public key to be re-used across different solo machine clients
-    /// (potentially on different chains) without being considered misbehaviour.
+    /// diversifier allows the same public key to be re-used across different solo
+    /// machine clients (potentially on different chains) without being considered
+    /// misbehaviour.
     #[prost(string, tag="2")]
     pub diversifier: ::prost::alloc::string::String,
     #[prost(uint64, tag="3")]
@@ -174,8 +176,8 @@ pub struct NextSequenceRecvData {
     #[prost(uint64, tag="2")]
     pub next_seq_recv: u64,
 }
-/// DataType defines the type of solo machine proof being created. This is done to preserve uniqueness of different
-/// data sign byte encodings.
+/// DataType defines the type of solo machine proof being created. This is done
+/// to preserve uniqueness of different data sign byte encodings.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum DataType {

@@ -61,3 +61,18 @@ pub struct SnapshotIavlItem {
     #[prost(int32, tag="4")]
     pub height: i32,
 }
+/// StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and Deletes)
+/// It optionally includes the StoreKey for the originating KVStore and a Boolean flag to distinguish between Sets and Deletes
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StoreKvPair {
+    /// the store key for the KVStore this pair originates from
+    #[prost(string, tag="1")]
+    pub store_key: ::prost::alloc::string::String,
+    /// true indicates a delete operation, false indicates a set operation
+    #[prost(bool, tag="2")]
+    pub delete: bool,
+    #[prost(bytes="vec", tag="3")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="4")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+}

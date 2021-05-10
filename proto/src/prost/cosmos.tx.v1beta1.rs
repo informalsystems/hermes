@@ -236,8 +236,13 @@ pub struct BroadcastTxResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimulateRequest {
     /// tx is the transaction to simulate.
+    /// Deprecated. Send raw tx bytes instead.
+    #[deprecated]
     #[prost(message, optional, tag="1")]
     pub tx: ::core::option::Option<Tx>,
+    /// tx_bytes is the raw transaction.
+    #[prost(bytes="vec", tag="2")]
+    pub tx_bytes: ::prost::alloc::vec::Vec<u8>,
 }
 /// SimulateResponse is the response type for the
 /// Service.SimulateRPC method.
