@@ -232,6 +232,9 @@ impl OpenTry {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
+    }
     pub fn height(&self) -> Height {
         self.0.height
     }
@@ -284,6 +287,10 @@ impl OpenAck {
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
+    }
+
+    pub fn counterparty_channel_id(&self) -> &Option<ChannelId> {
+        &self.0.counterparty_channel_id
     }
 }
 

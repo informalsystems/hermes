@@ -96,3 +96,32 @@ pub fn get_counterparty_chain(
     channel_connection_client(src_chain, src_port_id, src_channel_id)
         .map(|c| c.client.client_state.chain_id())
 }
+
+pub fn get_counterparty_chain_for_channel(
+    chain: &dyn ChainHandle,
+    channel: IdentifiedChannelEnd,
+) -> Result<ChainId, Error> {
+    let connection_id = channel
+        .channel_end
+        .connection_hops()
+        .first()
+        .ok_or_else(|| Error::MissingConnectionHops(channel.channel_id.clone(), chain.id()))?;
+
+    let connection_end = chain
+        .query_connection(&connection_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+    let client_id = connection_end.client_id();
+    let client_state = chain
+        .query_client_state(&client_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    //  trace!(
+    //     chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
+    //     "counterparty chain: {}", client_state.chain_id()
+    // );
+    //let counterparty_chain_id = client_state.chain_id();
+    // let counterparty_chain = self.registry
+    // .get_or_spawn(&client_state.chain_id())?;
+
+    Ok(client_state.chain_id())
+}
