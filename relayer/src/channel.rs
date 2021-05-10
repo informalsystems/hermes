@@ -538,7 +538,6 @@ impl Channel {
     }
 
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        println!("\n SLEF {:#?}", self);
         let dst_msgs = self.build_chan_open_try()?;
 
         let events = self
