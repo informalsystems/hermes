@@ -122,9 +122,9 @@ pub struct TxRawChanOpenTryCmd {
     src_chan_id: ChannelId,
 
     #[options(
-    help = "identifier of the destination channel (optional)",
-    short = "d",
-    meta = "ID"
+        help = "identifier of the destination channel (optional)",
+        short = "d",
+        meta = "ID"
     )]
     dst_chan_id: ChannelId,
 }

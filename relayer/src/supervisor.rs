@@ -20,15 +20,15 @@ use ibc::{
         channel::IdentifiedChannelEnd,
         events::{Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId, ConnectionId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
     Height,
 };
 
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
+use crate::channel::extract_channel_id;
 use crate::channel::Channel as RelayChannel;
 use crate::channel::ChannelSide;
-use crate::channel::extract_channel_id;
 
 use crate::{
     chain::{
@@ -324,7 +324,7 @@ impl Supervisor {
             channel_connection_client(chain.as_ref(), &channel.port_id, &channel.channel_id);
 
         let (client, channel) = match client_res {
-            Ok(conn_client) => (conn_client.client,conn_client.channel),
+            Ok(conn_client) => (conn_client.client, conn_client.channel),
             Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelNotOpen(..)) => {
                 // These errors are silent.
                 // Simply ignore the channel and return without spawning the workers.
@@ -385,8 +385,7 @@ impl Supervisor {
             });
 
             self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
-            
-            
+
             //channel object
 
             let counterparty_chain_id =
@@ -398,8 +397,8 @@ impl Supervisor {
                 dst_chain_id: counterparty_chain_id,
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id.clone(),
-                src_port_id: channel.port_id.clone(),
-               // connection_id: connection_id.clone(),
+                src_port_id: channel.port_id,
+                // connection_id: connection_id.clone(),
             });
 
             debug!(
@@ -421,7 +420,7 @@ impl Supervisor {
                 dst_chain_id: counterparty_chain_id,
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id.clone(),
-                src_port_id: channel.port_id.clone(),
+                src_port_id: channel.port_id,
                 //connection_id: connection_id.clone(),
             });
 
@@ -755,10 +754,10 @@ impl Worker {
         //     state = &b_channel.state;
         //     a_channel.remote.channel_id.clone().unwrap()
         // };
-       
+
         let mut handshake_channel = RelayChannel {
             ordering: Default::default(),
-            //TODO  how to get the order from raw tx 
+            //TODO  how to get the order from raw tx
             a_side: ChannelSide::new(
                 a_chain.clone(),
                 Default::default(),
@@ -774,8 +773,8 @@ impl Worker {
                 Default::default(),
             ),
             connection_delay: Default::default(),
-            //TODO  detect version from event 
-            version:Default::default(),
+            //TODO  detect version from event
+            version: Default::default(),
         };
 
         // let mut handshake_channel = RelayChannel {
@@ -937,7 +936,7 @@ impl Worker {
         //     }
         // };
 
-        let mut first_iteration = true; 
+        let mut first_iteration = true;
         loop {
             if let Ok(cmd) = self.rx.try_recv() {
                 //Ok(WorkerCmd::IbcEvents { batch })
@@ -953,24 +952,32 @@ impl Worker {
                                         open_init.clone()
                                     );
 
-                                    let connection_id = open_init.attributes().connection_id.clone();
-                                    let counterparty_port_id =  open_init.attributes().counterparty_port_id.clone();
-                                    let connection = self.chains.a.query_connection(&connection_id.clone(), Height::zero())?;
-                                    let counterparty_channel_id = 
-                                        match open_init.attributes().counterparty_channel_id.clone(){
-                                            Some(chan_id) => chan_id,
-                                            None => Default::default(),
-                                        };
-                                    let port_id = open_init.attributes().port_id.clone();
-                                    let channel_id = match open_init.attributes().channel_id.clone(){
+                                    let connection_id =
+                                        open_init.attributes().connection_id.clone();
+                                    let counterparty_port_id =
+                                        open_init.attributes().counterparty_port_id.clone();
+                                    let connection = self
+                                        .chains
+                                        .a
+                                        .query_connection(&connection_id.clone(), Height::zero())?;
+                                    let counterparty_channel_id = match open_init
+                                        .attributes()
+                                        .counterparty_channel_id
+                                        .clone()
+                                    {
                                         Some(chan_id) => chan_id,
                                         None => Default::default(),
                                     };
-                                
+                                    let port_id = open_init.attributes().port_id.clone();
+                                    let channel_id = match open_init.attributes().channel_id.clone()
+                                    {
+                                        Some(chan_id) => chan_id,
+                                        None => Default::default(),
+                                    };
 
                                     handshake_channel = RelayChannel {
                                         ordering: Default::default(),
-                                        //TODO  how to get the order from raw tx 
+                                        //TODO  how to get the order from raw tx
                                         a_side: ChannelSide::new(
                                             a_chain.clone(),
                                             connection.client_id().clone(),
@@ -981,13 +988,17 @@ impl Worker {
                                         b_side: ChannelSide::new(
                                             b_chain.clone(),
                                             connection.counterparty().client_id().clone(),
-                                            connection.counterparty().connection_id().unwrap().clone(),
+                                            connection
+                                                .counterparty()
+                                                .connection_id()
+                                                .unwrap()
+                                                .clone(),
                                             counterparty_port_id.clone(),
                                             counterparty_channel_id.clone(),
                                         ),
                                         connection_delay: connection.delay_period(),
-                                        //TODO  detect version from event 
-                                        version:Default::default(),
+                                        //TODO  detect version from event
+                                        version: Default::default(),
                                     };
 
                                     debug!(
@@ -995,18 +1006,27 @@ impl Worker {
                                         channel.short_name(),
                                         handshake_channel
                                     );
-                                    
+
                                     match handshake_channel.build_chan_open_try_and_send() {
                                         Err(e) => {
-                                            debug!("Failed ChanTry {:?}: {:?}", handshake_channel.b_side, e);
+                                            debug!(
+                                                "Failed ChanTry {:?}: {:?}",
+                                                handshake_channel.b_side, e
+                                            );
                                         }
                                         Ok(event) => {
-                                            handshake_channel.b_side.channel_id = extract_channel_id(&event)?.clone();
-                                            println!("{}  {} => {:#?}\n", done, b_chain.id(), event.clone());
+                                            handshake_channel.b_side.channel_id =
+                                                extract_channel_id(&event)?.clone();
+                                            println!(
+                                                "{}  {} => {:#?}\n",
+                                                done,
+                                                b_chain.id(),
+                                                event.clone()
+                                            );
                                         }
                                     }
 
-                                    first_iteration = false; 
+                                    first_iteration = false;
                                 }
 
                                 IbcEvent::OpenTryChannel(open_try) => {
@@ -1022,45 +1042,53 @@ impl Worker {
                                         channel.short_name(),
                                         handshake_channel
                                     );
-                
+
                                     match handshake_channel.build_chan_open_ack_and_send() {
                                         Err(e) => {
-                                            debug!("Failed ChanAck {:?}: {:?}", handshake_channel.b_side, e);
+                                            debug!(
+                                                "Failed ChanAck {:?}: {:?}",
+                                                handshake_channel.b_side, e
+                                            );
                                         }
                                         Ok(event) => {
                                             // handshake_channel.b_side.channel_id = extract_channel_id(&event)?.clone();
-                                            println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
+                                            println!(
+                                                "{}  {} => {:#?}\n",
+                                                done,
+                                                b_chain.id(),
+                                                event
+                                            );
                                         }
                                     }
-                                        
-                                    first_iteration = false; 
 
+                                    first_iteration = false;
                                 }
 
                                 IbcEvent::OpenAckChannel(open_ack) => {
-                                    debug!(" \n [{}] channel handshake OpenAck from channel {} \n", 
-                                    channel.short_name(),
-                                    //handshake_channel.a_side.channel_id(),
-                                    //handshake_channel.a_side.chain_id(),
-                                    open_ack.channel_id().clone().unwrap()
-                                );
+                                    debug!(
+                                        " \n [{}] channel handshake OpenAck from channel {} \n",
+                                        channel.short_name(),
+                                        //handshake_channel.a_side.channel_id(),
+                                        //handshake_channel.a_side.chain_id(),
+                                        open_ack.channel_id().clone().unwrap()
+                                    );
 
                                     //if stage == 1 && !found {
-                                        // debug!(
-                                        //     "[{}] writting b_side before open_confirm  ",
-                                        //     channel.short_name(),
-                                        //     //handshake_channel.b_side.channel_id
-                                        // );
+                                    // debug!(
+                                    //     "[{}] writting b_side before open_confirm  ",
+                                    //     channel.short_name(),
+                                    //     //handshake_channel.b_side.channel_id
+                                    // );
 
-                                        // handshake_channel.b_side.channel_id =
-                                        //     open_ack.counterparty_channel_id().clone().unwrap();
+                                    // handshake_channel.b_side.channel_id =
+                                    //     open_ack.counterparty_channel_id().clone().unwrap();
 
-                                        // debug!(
-                                        //     "[{}] writting b_side after open_confirm {} ",
-                                        //     channel.short_name(),
-                                        //     handshake_channel.b_side.channel_id
-                                        // );
-                                   // }
+                                    // debug!(
+                                    //     "[{}] writting b_side after open_confirm {} ",
+                                    //     channel.short_name(),
+                                    //     handshake_channel.b_side.channel_id
+                                    // );
+                                    // }
 
                                     // debug!(
                                     //     "[{}] hanshake_channel b_side channel id is {}",
@@ -1071,25 +1099,24 @@ impl Worker {
                                     let event =
                                         handshake_channel.build_chan_open_confirm_and_send()?;
                                     println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
-                                
-                                    first_iteration = false; 
 
+                                    first_iteration = false;
                                 }
 
-                                IbcEvent::OpenConfirmChannel(open_confirm) => {
-                            //         debug!("[{}] {} channel handshake OpenConfirm [{}] channel from event OpenConfirm {} ", 
-                            //     channel.short_name(),
-                            //     handshake_channel.a_side.channel_id(),
-                            //     handshake_channel.a_side.chain_id(),
-                            //     open_confirm.channel_id().clone().unwrap()
-                            // );
+                                IbcEvent::OpenConfirmChannel(_open_confirm) => {
+                                    //         debug!("[{}] {} channel handshake OpenConfirm [{}] channel from event OpenConfirm {} ",
+                                    //     channel.short_name(),
+                                    //     handshake_channel.a_side.channel_id(),
+                                    //     handshake_channel.a_side.chain_id(),
+                                    //     open_confirm.channel_id().clone().unwrap()
+                                    // );
 
                                     println!(
                                         "{}  {}  {}  Channel handshake finished for {:#?}\n",
                                         done, done, done, &channel.src_channel_id,
                                     );
 
-                                   // first_iteration = false; 
+                                    // first_iteration = false;
 
                                     return Ok(());
                                 }
@@ -1105,7 +1132,7 @@ impl Worker {
                         new_block: _,
                     } => {
                         if first_iteration {
-                         debug!("\n [{}] new block \n ",channel.short_name());
+                            debug!("\n [{}] new block \n ", channel.short_name());
                         }
                     } //link.a_to_b.clear_packets(height)?,
 
@@ -1130,8 +1157,7 @@ pub struct Channel {
 
     /// Source port identiier.
     pub src_port_id: PortId,
-
-   // pub connection_id: ConnectionId,
+    // pub connection_id: ConnectionId,
 }
 
 impl Channel {
@@ -1300,7 +1326,7 @@ impl Object {
 
         if dst_chain_id.is_err() {
             debug!("\n err dest_chan_id in init\n ");
-            return Err(format!("dest chain missing in init").into());
+            return Err("dest chain missing in init".into());
         }
 
         debug!(
@@ -1311,7 +1337,7 @@ impl Object {
         );
 
         Ok(Channel {
-            dst_chain_id: dst_chain_id.clone().unwrap(),
+            dst_chain_id: dst_chain_id.unwrap(),
             src_chain_id: src_chain.id(),
             src_channel_id: channel_id.clone(),
             src_port_id: e.port_id().clone(),
@@ -1334,7 +1360,7 @@ impl Object {
 
         if dst_chain_id.is_err() {
             debug!("\n err dest_chan_id in try\n ");
-            return Err(format!("dest chain missing in OpenTry").into());
+            return Err("dest chain missing in OpenTry".into());
         }
 
         debug!(
@@ -1345,7 +1371,7 @@ impl Object {
         );
 
         Ok(Channel {
-            dst_chain_id: dst_chain_id.clone().unwrap(),
+            dst_chain_id: dst_chain_id.unwrap(),
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone().unwrap(),
             src_port_id: e.port_id().clone(),
@@ -1372,7 +1398,7 @@ impl Object {
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone().unwrap(),
             src_port_id: e.port_id().clone(),
-           // connection_id: e.connection_id().clone(),
+            // connection_id: e.connection_id().clone(),
         }
         .into())
     }
@@ -1396,7 +1422,7 @@ impl Object {
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone().unwrap(),
             src_port_id: e.port_id().clone(),
-           // connection_id: e.connection_id().clone(),
+            // connection_id: e.connection_id().clone(),
         }
         .into())
     }
