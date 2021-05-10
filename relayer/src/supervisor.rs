@@ -984,7 +984,7 @@ impl Worker {
                                             connection.client_id().clone(),
                                             connection_id.clone(),
                                             port_id,
-                                            channel_id,
+                                            Some(channel_id),
                                         ),
                                         b_side: ChannelSide::new(
                                             b_chain.clone(),
@@ -995,7 +995,7 @@ impl Worker {
                                                 .unwrap()
                                                 .clone(),
                                             counterparty_port_id.clone(),
-                                            counterparty_channel_id.clone(),
+                                            Some(counterparty_channel_id.clone()),
                                         ),
                                         connection_delay: connection.delay_period(),
                                         //TODO  detect version from event
@@ -1017,7 +1017,7 @@ impl Worker {
                                         }
                                         Ok(event) => {
                                             handshake_channel.b_side.channel_id =
-                                                extract_channel_id(&event)?.clone();
+                                                Some(extract_channel_id(&event)?.clone());
                                             println!(
                                                 "{}  {} => {:#?}\n",
                                                 done,

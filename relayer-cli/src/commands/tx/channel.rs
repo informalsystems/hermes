@@ -80,14 +80,14 @@ impl Runnable for TxRawChanOpenInitCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        ChannelId::default(),
+                        None,
                     ),
                     b_side: ChannelSide::new(
                         chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        ChannelId::default(),
+                        None,
                     ),
                     version: None,
                 }
@@ -126,7 +126,7 @@ pub struct TxRawChanOpenTryCmd {
         short = "d",
         meta = "ID"
     )]
-    dst_chan_id: ChannelId,
+    dst_chan_id: Option<ChannelId>,
 }
 
 impl Runnable for TxRawChanOpenTryCmd {
@@ -144,7 +144,7 @@ impl Runnable for TxRawChanOpenTryCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        self.src_chan_id.clone(),
+                        Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
                         chains.dst.clone(),
@@ -209,14 +209,14 @@ impl Runnable for TxRawChanOpenAckCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        self.src_chan_id.clone(),
+                        Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
                         chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        self.dst_chan_id.clone(),
+                        Some(self.dst_chan_id.clone()),
                     ),
                     version: None,
                 }
@@ -274,14 +274,14 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        self.src_chan_id.clone(),
+                        Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
                         chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        self.dst_chan_id.clone(),
+                        Some(self.dst_chan_id.clone()),
                     ),
                     version: None,
                 }
@@ -339,14 +339,14 @@ impl Runnable for TxRawChanCloseInitCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        self.src_chan_id.clone(),
+                        Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
                         chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        self.dst_chan_id.clone(),
+                        Some(self.dst_chan_id.clone()),
                     ),
                     version: None,
                 }
@@ -404,14 +404,14 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
-                        self.src_chan_id.clone(),
+                        Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
                         chains.dst.clone(),
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        self.dst_chan_id.clone(),
+                        Some(self.dst_chan_id.clone()),
                     ),
                     version: None,
                 }
