@@ -18,12 +18,9 @@ use ibc::{
     },
     ics04_channel::{
         channel::IdentifiedChannelEnd,
-        events::{
-            Attributes, CloseInit, SendPacket,
-            TimeoutPacket, WriteAcknowledgement,
-        },
+        events::{Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement},
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId, ConnectionId},
     Height,
 };
 
@@ -31,6 +28,7 @@ use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 use crate::channel::Channel as RelayChannel;
 use crate::channel::ChannelSide;
+use crate::channel::extract_channel_id;
 
 use crate::{
     chain::{
@@ -186,7 +184,9 @@ impl Supervisor {
 
                 IbcEvent::OpenTryChannel(ref open_try) => {
                     debug!("\n !!!! OpenTry in \n ");
-                    if let Ok(object) = Object::for_open_try_channel(open_try.attributes(), src_chain) {
+                    if let Ok(object) =
+                        Object::for_open_try_channel(open_try.attributes(), src_chain)
+                    {
                         collected.per_object.entry(object).or_default().push(event);
                     } else {
                         debug!("\n !!!! ups object malformed Try in \n ");
@@ -205,7 +205,9 @@ impl Supervisor {
                             .push(event.clone());
                     }
 
-                    if let Ok(object2) = Object::for_open_ack_channel(open_ack.attributes(), src_chain) {
+                    if let Ok(object2) =
+                        Object::for_open_ack_channel(open_ack.attributes(), src_chain)
+                    {
                         collected.per_object.entry(object2).or_default().push(event);
                     } else {
                         debug!("\n !!!! ups object malformed Ack in \n ");
@@ -222,7 +224,9 @@ impl Supervisor {
                             .or_default()
                             .push(event.clone());
                     }
-                    if let Ok(object2) = Object::for_open_confirm_channel(open_confirm.attributes(), src_chain) {
+                    if let Ok(object2) =
+                        Object::for_open_confirm_channel(open_confirm.attributes(), src_chain)
+                    {
                         collected
                             .per_object
                             .entry(object2)
@@ -316,38 +320,11 @@ impl Supervisor {
             chain.id()
         );
 
-        //channel object
-        // self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
-
-        // } end if channel not open
-
-        ////start spawning channel worker
-        // let counterparty_chain_id =
-        //     get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
-
-        // let counterparty_chain = self.registry.get_or_spawn(&counterparty_chain_id)?;
-
-        // let channel_object = Object::Channel(Channel {
-        //     dst_chain_id: counterparty_chain_id,
-        //     src_chain_id: chain.id(),
-        //     src_channel_id: channel.channel_id.clone(),
-        //     src_port_id: channel.port_id.clone(),
-        //     // connection_id: connection_id.clone(),
-        // });
-
-        // debug!(
-        //     "create workers: creating a worker for object {:?}",
-        //     channel_object
-        // );
-
-        // self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
-        // //end the spawning channel worker
-
         let client_res =
             channel_connection_client(chain.as_ref(), &channel.port_id, &channel.channel_id);
 
         let (client, channel) = match client_res {
-            Ok(conn_client) => (conn_client.client, conn_client.channel),
+            Ok(conn_client) => (conn_client.client,conn_client.channel),
             Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelNotOpen(..)) => {
                 // These errors are silent.
                 // Simply ignore the channel and return without spawning the workers.
@@ -401,15 +378,36 @@ impl Supervisor {
             //  https://github.com/informalsystems/ibc-rs/issues/901
             // create the path object and spawn worker
             let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
-                dst_chain_id: counterparty_chain.id(),
+                dst_chain_id: counterparty_chain.clone().id(),
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id.clone(),
-                src_port_id: channel.port_id,
+                src_port_id: channel.port_id.clone(),
             });
 
             self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
+            
+            
             //channel object
-            // self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
+
+            let counterparty_chain_id =
+                get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
+
+            let counterparty_chain = self.registry.get_or_spawn(&counterparty_chain_id)?;
+
+            let channel_object = Object::Channel(Channel {
+                dst_chain_id: counterparty_chain_id,
+                src_chain_id: chain.id(),
+                src_channel_id: channel.channel_id.clone(),
+                src_port_id: channel.port_id.clone(),
+               // connection_id: connection_id.clone(),
+            });
+
+            debug!(
+                "create workers: creating a worker for object {:?}",
+                channel_object
+            );
+
+            self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
         }
         // end if channel not open
         else {
@@ -424,7 +422,7 @@ impl Supervisor {
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id.clone(),
                 src_port_id: channel.port_id.clone(),
-                // connection_id: connection_id.clone(),
+                //connection_id: connection_id.clone(),
             });
 
             debug!(
@@ -727,196 +725,219 @@ impl Worker {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
 
-        let a_channel = self.chains.a.query_channel(
-            &channel.src_port_id,
-            &channel.src_channel_id,
-            Height::zero(), //height - 1 de la newBlock
-        )?;
+        // let a_channel = self.chains.a.query_channel(
+        //     &channel.src_port_id,
+        //     &channel.src_channel_id,
+        //     Height::zero(), //height - 1 de la newBlock
+        // )?;
 
-        let connection_id = a_channel.connection_hops().first().ok_or_else(|| {
-            Error::MissingConnectionHops(channel.src_channel_id.clone(), a_chain.id())
-        })?;
+        // let connection_id = a_channel.connection_hops().first().ok_or_else(|| {
+        //     Error::MissingConnectionHops(channel.src_channel_id.clone(), a_chain.id())
+        // })?;
 
-        let connection = self
-            .chains
-            .a
-            .query_connection(&connection_id, Height::zero())?;
+        // let connection = self
+        //     .chains
+        //     .a
+        //     .query_connection(&connection_id, Height::zero())?;
 
-        let mut state = &ibc::ics04_channel::channel::State::Uninitialized;
+        // let mut state = &ibc::ics04_channel::channel::State::Uninitialized;
 
-        let mut b_channel = Default::default();
+        // let mut b_channel = Default::default();
 
-        let counterparty_channel_id = if a_channel.remote.channel_id.is_none() {
-            Default::default()
-        } else {
-            b_channel = self.chains.b.query_channel(
-                &a_channel.remote.port_id.clone(),
-                &a_channel.remote.channel_id.clone().unwrap(),
-                Height::zero(),
-            )?;
-            state = &b_channel.state;
-            a_channel.remote.channel_id.clone().unwrap()
-        };
-
+        // let counterparty_channel_id = if a_channel.remote.channel_id.is_none() {
+        //     Default::default()
+        // } else {
+        //     b_channel = self.chains.b.query_channel(
+        //         &a_channel.remote.port_id.clone(),
+        //         &a_channel.remote.channel_id.clone().unwrap(),
+        //         Height::zero(),
+        //     )?;
+        //     state = &b_channel.state;
+        //     a_channel.remote.channel_id.clone().unwrap()
+        // };
+       
         let mut handshake_channel = RelayChannel {
-            ordering: a_channel.ordering().clone(),
+            ordering: Default::default(),
+            //TODO  how to get the order from raw tx 
             a_side: ChannelSide::new(
                 a_chain.clone(),
-                connection.client_id().clone(),
-                connection_id.clone(),
-                channel.src_port_id.clone(),
-                channel.src_channel_id.clone(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
             ),
             b_side: ChannelSide::new(
                 b_chain.clone(),
-                connection.counterparty().client_id().clone(),
-                connection.counterparty().connection_id().unwrap().clone(),
-                a_channel.remote.port_id.clone(),
-                counterparty_channel_id.clone(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
             ),
-            connection_delay: connection.delay_period(),
-            version: Some(a_channel.version.clone()),
+            connection_delay: Default::default(),
+            //TODO  detect version from event 
+            version:Default::default(),
         };
 
-        let mut stage = 0; //Nothing started
-        let mut found = false;
+        // let mut handshake_channel = RelayChannel {
+        //     ordering: a_channel.ordering().clone(),
+        //     a_side: ChannelSide::new(
+        //         a_chain.clone(),
+        //         connection.client_id().clone(),
+        //         connection_id.clone(),
+        //         channel.src_port_id.clone(),
+        //         channel.src_channel_id.clone(),
+        //     ),
+        //     b_side: ChannelSide::new(
+        //         b_chain.clone(),
+        //         connection.counterparty().client_id().clone(),
+        //         connection.counterparty().connection_id().unwrap().clone(),
+        //         a_channel.remote.port_id.clone(),
+        //         counterparty_channel_id.clone(),
+        //     ),
+        //     connection_delay: connection.delay_period(),
+        //     version: Some(a_channel.version.clone()),
+        // };
 
-        debug!(
-            "\n [{}] initial handshake_channel is {:?}  \n ",
-            channel.short_name(),
-            handshake_channel
-        );
+        // let mut stage = 0; //Nothing started
+        // let mut found = false;
+
+        // debug!(
+        //     "\n [{}] initial handshake_channel is {:?}  \n ",
+        //     channel.short_name(),
+        //     handshake_channel
+        // );
 
         //c0 ibc0 Init ? // -> OpenTry ibc1 -> create c1 ibc1 -->>
 
         //chan_open_init ibc1 => c1
         //c0 ibc0 OpenTry ? <- chan_open_try c1 ibc-1 dest c0 ibc 0 --> new channel
 
-        if a_channel.state_matches(&ibc::ics04_channel::channel::State::Init) {
-            if a_channel.remote.channel_id.is_none() {
-                let req = QueryChannelsRequest {
-                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
-                };
+        // if a_channel.state_matches(&ibc::ics04_channel::channel::State::Init) {
+        //     if a_channel.remote.channel_id.is_none() {
+        //         let req = QueryChannelsRequest {
+        //             pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        //         };
 
-                let channels: Vec<IdentifiedChannelEnd> = b_chain.query_channels(req.clone())?;
-                for chan in channels.iter() {
-                    if chan.channel_end.remote.channel_id.is_some()
-                        && chan.channel_end.remote.channel_id.clone().unwrap()
-                            == channel.src_channel_id.clone()
-                    {
-                        debug!(
-                            "[{}] found a pair channel {} on chain {}",
-                            channel.short_name(),
-                            chan.channel_id,
-                            handshake_channel.b_side.chain_id()
-                        );
-                        found = true;
-                        handshake_channel.b_side.channel_id = chan.channel_id.clone();
+        //         let channels: Vec<IdentifiedChannelEnd> = b_chain.query_channels(req.clone())?;
+        //         for chan in channels.iter() {
+        //             if chan.channel_end.remote.channel_id.is_some()
+        //                 && chan.channel_end.remote.channel_id.clone().unwrap()
+        //                     == channel.src_channel_id.clone()
+        //             {
+        //                 debug!(
+        //                     "[{}] found a pair channel {} on chain {}",
+        //                     channel.short_name(),
+        //                     chan.channel_id,
+        //                     handshake_channel.b_side.chain_id()
+        //                 );
+        //                 found = true;
+        //                 handshake_channel.b_side.channel_id = chan.channel_id.clone();
 
-                        break;
-                    }
-                }
-                stage = 1; // channel in Init
+        //                 break;
+        //             }
+        //         }
+        //         stage = 1; // channel in Init
 
-                if !found {
-                    println!(
-                    "\n [{}] sends build_chan_open_try_and_send \n on handshake_channel {:?}  channel in state Init \n",
-                    channel.short_name(),
-                    handshake_channel
-                );
+        //         if !found {
+        //             println!(
+        //             "\n [{}] sends build_chan_open_try_and_send \n on handshake_channel {:?}  channel in state Init \n",
+        //             channel.short_name(),
+        //             handshake_channel
+        //         );
 
-                    match handshake_channel.build_chan_open_try_and_send() {
-                        Err(e) => {
-                            debug!("Failed ChanTry {:?}: {:?}", handshake_channel.b_side, e);
-                        }
-                        Ok(event) => {
-                            println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
-                        }
-                    }
-                }
-            }
-        } else {
-            if a_channel.state_matches(&ibc::ics04_channel::channel::State::TryOpen) {
-                stage = 2; //channel is in Try Open
+        //             match handshake_channel.build_chan_open_try_and_send() {
+        //                 Err(e) => {
+        //                     debug!("Failed ChanTry {:?}: {:?}", handshake_channel.b_side, e);
+        //                 }
+        //                 Ok(event) => {
+        //                     println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // } else {
+        //     if a_channel.state_matches(&ibc::ics04_channel::channel::State::TryOpen) {
+        //         stage = 2; //channel is in Try Open
 
-                if a_channel.remote.channel_id.is_some() {
-                    //Try chanOpenTry on b_chain
-                    debug!("[{}] chain {} has channel {} in state TryOpen with counterparty {} in state {} \n", channel.short_name(), a_chain.id(), channel.src_channel_id.clone(), counterparty_channel_id.clone(), state);
+        //         if a_channel.remote.channel_id.is_some() {
+        //             //Try chanOpenTry on b_chain
+        //             debug!("[{}] chain {} has channel {} in state TryOpen with counterparty {} in state {} \n", channel.short_name(), a_chain.id(), channel.src_channel_id.clone(), counterparty_channel_id.clone(), state);
 
-                    if !b_channel.state_matches(&ibc::ics04_channel::channel::State::Open) {
-                        debug!(
-                        "\n [{}] sends build_chan_open_ack_and_send \n on handshake_channel {:?}",
-                        channel.short_name(),handshake_channel);
+        //             if !b_channel.state_matches(&ibc::ics04_channel::channel::State::Open) {
+        //                 debug!(
+        //                 "\n [{}] sends build_chan_open_ack_and_send \n on handshake_channel {:?}",
+        //                 channel.short_name(),handshake_channel);
 
-                        match handshake_channel.build_chan_open_ack_and_send() {
-                            Err(e) => {
-                                debug!("Failed ChanAck {:?}: {:?}", handshake_channel.b_side, e);
-                            }
-                            Ok(event) => {
-                                // handshake_channel.b_side.channel_id = extract_channel_id(&event)?.clone();
-                                println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
-                            }
-                        }
-                    } //TODO else either counter party channel is more advanced or another channel closed the hanshake
-                } //TODO else error
-            } else {
-                match (a_channel.state().clone(), state) {
-                    (
-                        ibc::ics04_channel::channel::State::Open,
-                        ibc::ics04_channel::channel::State::TryOpen,
-                    ) => {
-                        stage = 3; // channel is Open
-                        debug!(
-                            "[{}] chain {} has channel {} in state Open counterparty TryOpen \n",
-                            channel.short_name(),
-                            a_chain.id(),
-                            channel.src_channel_id.clone()
-                        );
+        //                 match handshake_channel.build_chan_open_ack_and_send() {
+        //                     Err(e) => {
+        //                         debug!("Failed ChanAck {:?}: {:?}", handshake_channel.b_side, e);
+        //                     }
+        //                     Ok(event) => {
+        //                         // handshake_channel.b_side.channel_id = extract_channel_id(&event)?.clone();
+        //                         println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
+        //                     }
+        //                 }
+        //             } //TODO else either counter party channel is more advanced or another channel closed the hanshake
+        //         } //TODO else error
+        //     } else {
+        //         match (a_channel.state().clone(), state) {
+        //             (
+        //                 ibc::ics04_channel::channel::State::Open,
+        //                 ibc::ics04_channel::channel::State::TryOpen,
+        //             ) => {
+        //                 stage = 3; // channel is Open
+        //                 debug!(
+        //                     "[{}] chain {} has channel {} in state Open counterparty TryOpen \n",
+        //                     channel.short_name(),
+        //                     a_chain.id(),
+        //                     channel.src_channel_id.clone()
+        //                 );
 
-                        // Confirm to b_chain
-                        debug!(
-                        "[{}] sends build_chan_open_confirm_and_send \n on handshake_channel {:?}",
-                        channel.short_name(),
-                        handshake_channel
-                    );
+        //                 // Confirm to b_chain
+        //                 debug!(
+        //                 "[{}] sends build_chan_open_confirm_and_send \n on handshake_channel {:?}",
+        //                 channel.short_name(),
+        //                 handshake_channel
+        //             );
 
-                        match handshake_channel.build_chan_open_confirm_and_send() {
-                            Err(e) => {
-                                debug!(
-                                    "Failed OpenConfirm {:?}: {:?}",
-                                    handshake_channel.b_side, e
-                                );
-                            }
-                            Ok(event) => {
-                                println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
-                            }
-                        }
-                    }
-                    (
-                        ibc::ics04_channel::channel::State::Open,
-                        ibc::ics04_channel::channel::State::Open,
-                    ) => {
-                        //  stage = 3; //Channel is Open
-                        println!(
-                            "[{}]{}  {}  {}  Channel handshake finished for {:#?}\n",
-                            channel.short_name(),
-                            done,
-                            done,
-                            done,
-                            &channel.src_channel_id,
-                        );
-                        return Ok(());
-                    }
-                    _ => {
-                        debug!(
-                            "[{}] \n Error Unimplemented handshake case \n",
-                            channel.short_name()
-                        )
-                    }
-                }
-            }
-        };
+        //                 match handshake_channel.build_chan_open_confirm_and_send() {
+        //                     Err(e) => {
+        //                         debug!(
+        //                             "Failed OpenConfirm {:?}: {:?}",
+        //                             handshake_channel.b_side, e
+        //                         );
+        //                     }
+        //                     Ok(event) => {
+        //                         println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
+        //                     }
+        //                 }
+        //             }
+        //             (
+        //                 ibc::ics04_channel::channel::State::Open,
+        //                 ibc::ics04_channel::channel::State::Open,
+        //             ) => {
+        //                 //  stage = 3; //Channel is Open
+        //                 println!(
+        //                     "[{}]{}  {}  {}  Channel handshake finished for {:#?}\n",
+        //                     channel.short_name(),
+        //                     done,
+        //                     done,
+        //                     done,
+        //                     &channel.src_channel_id,
+        //                 );
+        //                 return Ok(());
+        //             }
+        //             _ => {
+        //                 debug!(
+        //                     "[{}] \n Error Unimplemented handshake case \n",
+        //                     channel.short_name()
+        //                 )
+        //             }
+        //         }
+        //     }
+        // };
 
+        let mut first_iteration = true; 
         loop {
             if let Ok(cmd) = self.rx.try_recv() {
                 //Ok(WorkerCmd::IbcEvents { batch })
@@ -929,8 +950,63 @@ impl Worker {
                                     debug!(
                                         "\n [{}] Calling Open Init from the loop {:?}\n ",
                                         channel.short_name(),
-                                        open_init
+                                        open_init.clone()
                                     );
+
+                                    let connection_id = open_init.attributes().connection_id.clone();
+                                    let counterparty_port_id =  open_init.attributes().counterparty_port_id.clone();
+                                    let connection = self.chains.a.query_connection(&connection_id.clone(), Height::zero())?;
+                                    let counterparty_channel_id = 
+                                        match open_init.attributes().counterparty_channel_id.clone(){
+                                            Some(chan_id) => chan_id,
+                                            None => Default::default(),
+                                        };
+                                    let port_id = open_init.attributes().port_id.clone();
+                                    let channel_id = match open_init.attributes().channel_id.clone(){
+                                        Some(chan_id) => chan_id,
+                                        None => Default::default(),
+                                    };
+                                
+
+                                    handshake_channel = RelayChannel {
+                                        ordering: Default::default(),
+                                        //TODO  how to get the order from raw tx 
+                                        a_side: ChannelSide::new(
+                                            a_chain.clone(),
+                                            connection.client_id().clone(),
+                                            connection_id.clone(),
+                                            port_id,
+                                            channel_id,
+                                        ),
+                                        b_side: ChannelSide::new(
+                                            b_chain.clone(),
+                                            connection.counterparty().client_id().clone(),
+                                            connection.counterparty().connection_id().unwrap().clone(),
+                                            counterparty_port_id.clone(),
+                                            counterparty_channel_id.clone(),
+                                        ),
+                                        connection_delay: connection.delay_period(),
+                                        //TODO  detect version from event 
+                                        version:Default::default(),
+                                    };
+
+                                    debug!(
+                                        "\n [{}] sends build_chan_open_try_and_send \n on handshake_channel {:?}  channel in state Init \n",
+                                        channel.short_name(),
+                                        handshake_channel
+                                    );
+                                    
+                                    match handshake_channel.build_chan_open_try_and_send() {
+                                        Err(e) => {
+                                            debug!("Failed ChanTry {:?}: {:?}", handshake_channel.b_side, e);
+                                        }
+                                        Ok(event) => {
+                                            handshake_channel.b_side.channel_id = extract_channel_id(&event)?.clone();
+                                            println!("{}  {} => {:#?}\n", done, b_chain.id(), event.clone());
+                                        }
+                                    }
+
+                                    first_iteration = false; 
                                 }
 
                                 IbcEvent::OpenTryChannel(open_try) => {
@@ -939,55 +1015,81 @@ impl Worker {
                                         channel.short_name(),
                                         open_try
                                     );
+
+                                    // Confirm to b_chain
+                                    debug!(
+                                        "[{}] sends build_chan_open_ack_and_send \n on handshake_channel {:?}",
+                                        channel.short_name(),
+                                        handshake_channel
+                                    );
+                
+                                    match handshake_channel.build_chan_open_ack_and_send() {
+                                        Err(e) => {
+                                            debug!("Failed ChanAck {:?}: {:?}", handshake_channel.b_side, e);
+                                        }
+                                        Ok(event) => {
+                                            // handshake_channel.b_side.channel_id = extract_channel_id(&event)?.clone();
+                                            println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
+                                        }
+                                    }
+                                        
+                                    first_iteration = false; 
+
                                 }
 
                                 IbcEvent::OpenAckChannel(open_ack) => {
-                                    debug!(" \n [{}] {} channel handshake OpenAck  from {:?} {} channel from event OpenAck \n", 
+                                    debug!(" \n [{}] channel handshake OpenAck from channel {} \n", 
                                     channel.short_name(),
-                                    handshake_channel.a_side.channel_id(),
-                                    handshake_channel.a_side.chain_id(),
+                                    //handshake_channel.a_side.channel_id(),
+                                    //handshake_channel.a_side.chain_id(),
                                     open_ack.channel_id().clone().unwrap()
                                 );
 
-                                    if stage == 1 && !found {
-                                        debug!(
-                                            "[{}] writting b_side before open_confirm {} ",
-                                            channel.short_name(),
-                                            handshake_channel.b_side.channel_id
-                                        );
+                                    //if stage == 1 && !found {
+                                        // debug!(
+                                        //     "[{}] writting b_side before open_confirm  ",
+                                        //     channel.short_name(),
+                                        //     //handshake_channel.b_side.channel_id
+                                        // );
 
-                                        handshake_channel.b_side.channel_id =
-                                            open_ack.counterparty_channel_id().clone().unwrap();
+                                        // handshake_channel.b_side.channel_id =
+                                        //     open_ack.counterparty_channel_id().clone().unwrap();
 
-                                        debug!(
-                                            "[{}] writting b_side after open_confirm {} ",
-                                            channel.short_name(),
-                                            handshake_channel.b_side.channel_id
-                                        );
-                                    }
+                                        // debug!(
+                                        //     "[{}] writting b_side after open_confirm {} ",
+                                        //     channel.short_name(),
+                                        //     handshake_channel.b_side.channel_id
+                                        // );
+                                   // }
 
-                                    debug!(
-                                        "[{}] hanshake_channel b_side channel id is {}",
-                                        channel.short_name(),
-                                        handshake_channel.b_side.channel_id()
-                                    );
+                                    // debug!(
+                                    //     "[{}] hanshake_channel b_side channel id is {}",
+                                    //     channel.short_name(),
+                                    //     handshake_channel.b_side.channel_id()
+                                    // );
 
                                     let event =
                                         handshake_channel.build_chan_open_confirm_and_send()?;
                                     println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
+                                
+                                    first_iteration = false; 
+
                                 }
+
                                 IbcEvent::OpenConfirmChannel(open_confirm) => {
-                                    debug!("[{}] {} channel handshake OpenConfirm [{}] channel from event OpenConfirm {} ", 
-                                channel.short_name(),
-                                handshake_channel.a_side.channel_id(),
-                                handshake_channel.a_side.chain_id(),
-                                open_confirm.channel_id().clone().unwrap()
-                            );
+                            //         debug!("[{}] {} channel handshake OpenConfirm [{}] channel from event OpenConfirm {} ", 
+                            //     channel.short_name(),
+                            //     handshake_channel.a_side.channel_id(),
+                            //     handshake_channel.a_side.chain_id(),
+                            //     open_confirm.channel_id().clone().unwrap()
+                            // );
 
                                     println!(
                                         "{}  {}  {}  Channel handshake finished for {:#?}\n",
                                         done, done, done, &channel.src_channel_id,
                                     );
+
+                                   // first_iteration = false; 
 
                                     return Ok(());
                                 }
@@ -1002,7 +1104,9 @@ impl Worker {
                         height: _,
                         new_block: _,
                     } => {
-                        debug!("\n new block \n ");
+                        if first_iteration {
+                         debug!("\n [{}] new block \n ",channel.short_name());
+                        }
                     } //link.a_to_b.clear_packets(height)?,
 
                       // _ => {}
@@ -1026,6 +1130,8 @@ pub struct Channel {
 
     /// Source port identiier.
     pub src_port_id: PortId,
+
+   // pub connection_id: ConnectionId,
 }
 
 impl Channel {
@@ -1209,7 +1315,7 @@ impl Object {
             src_chain_id: src_chain.id(),
             src_channel_id: channel_id.clone(),
             src_port_id: e.port_id().clone(),
-            // connection_id: e.connection_id().clone(),
+            //connection_id: e.connection_id().clone(),
         }
         .into())
     }
@@ -1266,7 +1372,7 @@ impl Object {
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone().unwrap(),
             src_port_id: e.port_id().clone(),
-            //connection_id: e.connection_id().clone(),
+           // connection_id: e.connection_id().clone(),
         }
         .into())
     }
@@ -1290,7 +1396,7 @@ impl Object {
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone().unwrap(),
             src_port_id: e.port_id().clone(),
-            //connection_id: e.connection_id().clone(),
+           // connection_id: e.connection_id().clone(),
         }
         .into())
     }

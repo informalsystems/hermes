@@ -846,7 +846,7 @@ impl Channel {
     }
 }
 
-fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> {
+pub fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> {
     match event {
         IbcEvent::OpenInitChannel(ev) => ev.channel_id().as_ref(),
         IbcEvent::OpenTryChannel(ev) => ev.channel_id().as_ref(),
