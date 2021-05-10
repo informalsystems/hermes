@@ -505,10 +505,16 @@ impl Channel {
             ))
         })?;
 
+        let previous_channel_id = if src_channel.counterparty().channel_id.is_none() {
+            Some(self.b_side.channel_id.clone())
+        } else {
+            src_channel.counterparty().channel_id.clone()
+        };
+
         // Build the domain type message
         let new_msg = MsgChannelOpenTry {
             port_id: self.dst_port_id().clone(),
-            previous_channel_id: src_channel.counterparty().channel_id.clone(),
+            previous_channel_id,
             counterparty_version: self.src_version()?,
             channel,
             proofs,

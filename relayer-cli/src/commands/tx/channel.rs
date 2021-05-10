@@ -120,6 +120,13 @@ pub struct TxRawChanOpenTryCmd {
         meta = "ID"
     )]
     src_chan_id: ChannelId,
+
+    #[options(
+    help = "identifier of the destination channel (optional)",
+    short = "d",
+    meta = "ID"
+    )]
+    dst_chan_id: ChannelId,
 }
 
 impl Runnable for TxRawChanOpenTryCmd {
@@ -144,7 +151,7 @@ impl Runnable for TxRawChanOpenTryCmd {
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
-                        ChannelId::default(),
+                        self.dst_chan_id.clone(),
                     ),
                     version: None,
                 }
