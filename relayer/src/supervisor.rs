@@ -973,6 +973,7 @@ impl Worker {
                                     {
                                         Some(chan_id) => chan_id,
                                         None => Default::default(),
+                                        //TODO err
                                     };
 
                                     handshake_channel = RelayChannel {
@@ -1036,7 +1037,6 @@ impl Worker {
                                         open_try
                                     );
 
-                                    // Confirm to b_chain
                                     debug!(
                                         "[{}] sends build_chan_open_ack_and_send \n on handshake_channel {:?}",
                                         channel.short_name(),
