@@ -185,8 +185,14 @@ impl Default for Attributes {
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -229,6 +235,9 @@ impl From<OpenInit> for IbcEvent {
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
@@ -282,6 +291,9 @@ impl OpenAck {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
+    }
     pub fn height(&self) -> Height {
         self.0.height
     }
@@ -332,6 +344,9 @@ impl OpenConfirm {
     }
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
