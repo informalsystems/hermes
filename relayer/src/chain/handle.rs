@@ -296,6 +296,12 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
 
+    // fn query_connection_channels(
+    //     &self,
+    //     connection_id: &ConnectionId,
+    //     height: Height,
+    // ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
+
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
