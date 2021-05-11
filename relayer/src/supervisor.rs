@@ -757,19 +757,13 @@ impl Worker {
 
         loop {
             if let Ok(cmd) = self.rx.try_recv() {
-                //Ok(WorkerCmd::IbcEvents { batch })
-                // Ok(cmd)
                 match cmd {
                     WorkerCmd::IbcEvents { batch } => {
                         for event in batch.events {
                             match event {
                                 IbcEvent::OpenInitChannel(open_init) => {
-                                    debug!(
-                                        "\n [{}] Calling Open Init from the loop {:?}\n ",
-                                        channel.short_name(),
-                                        open_init.clone()
-                                    );
-
+                                
+                                     //Create channel handshake object 
                                     let connection_id =
                                         open_init.attributes().connection_id.clone();
                                     let counterparty_port_id =
@@ -845,6 +839,7 @@ impl Worker {
                                         open_try
                                     );
 
+                                    //Create channel handshake object 
                                     let connection_id = open_try.attributes().connection_id.clone();
                                     let counterparty_port_id =
                                         open_try.attributes().counterparty_port_id.clone();
@@ -884,11 +879,7 @@ impl Worker {
                                         version: Default::default(),
                                     };
 
-                                    debug!(
-                                        "[{}] sends build_chan_open_ack_and_send \n on handshake_channel {:?}",
-                                        channel.short_name(),
-                                        handshake_channel
-                                    );
+                        
 
                                     match handshake_channel.build_chan_open_ack_and_send() {
                                         Err(e) => {
@@ -912,26 +903,11 @@ impl Worker {
                                 }
 
                                 IbcEvent::OpenAckChannel(open_ack) => {
-                                    debug!(
-                                        " \n [{}] channel handshake OpenAck from channel {} \n",
-                                        channel.short_name(),
-                                        //handshake_channel.a_side.channel_id(),
-                                        //handshake_channel.a_side.chain_id(),
-                                        open_ack.channel_id().clone().unwrap()
-                                    );
-
-
+                                   
                                     if handshake_channel.b_side.channel_id.is_none() {
                                         handshake_channel.b_side.channel_id =
                                             open_ack.counterparty_channel_id().clone();
                                     }
-
-                                    debug!(
-                                        "[{}] writting b_side before open_confirm {} ",
-                                        channel.short_name(),
-                                        handshake_channel.b_side.channel_id.clone().unwrap()
-                                    );
-                                    
 
                                     let event =
                                         handshake_channel.build_chan_open_confirm_and_send()?;
@@ -1019,15 +995,7 @@ impl Worker {
                                 version: Some(a_channel.version.clone()),
                             };
 
-                            debug!("\n[{}] the Init handshake from new block is {:?} \n ", channel.short_name(), handshake_channel);
-
                             let mut found_counterparty = false;
-
-                            debug!(
-                                "\n [{}] initial handshake_channel is {:?}  \n ",
-                                channel.short_name(),
-                                handshake_channel
-                            );
 
                             match a_channel.state {
                                 ibc::ics04_channel::channel::State::Init => {
@@ -1066,11 +1034,7 @@ impl Worker {
                                         }
 
                                         if !found_counterparty {
-                                            println!(
-                                             "\n [{}] sends build_chan_open_try_and_send \n on handshake_channel {:?}  channel in state Init \n",
-                                             channel.short_name(),
-                                              handshake_channel
-                                          );
+            
 
                                             match handshake_channel.build_chan_open_try_and_send() {
                                                 Err(e) => {
@@ -1098,10 +1062,7 @@ impl Worker {
                                         if !b_channel.state_matches(
                                             &ibc::ics04_channel::channel::State::Open,
                                         ) {
-                                            debug!(
-                                        "\n [{}] sends build_chan_open_ack_and_send \n on handshake_channel {:?}",
-                                        channel.short_name(),handshake_channel);
-
+                                            
                                             match handshake_channel.build_chan_open_ack_and_send() {
                                                 Err(e) => {
                                                     debug!(
@@ -1126,19 +1087,6 @@ impl Worker {
                                 ibc::ics04_channel::channel::State::Open => {
                                     match counterparty_state {
                                         ibc::ics04_channel::channel::State::TryOpen => {
-                                            debug!(
-                                            "[{}] chain {} has channel {} in state Open counterparty TryOpen \n",
-                                            channel.short_name(),
-                                            a_chain.id(),
-                                            channel.src_channel_id.clone()
-                                        );
-
-                                            // Confirm to b_chain
-                                            debug!(
-                                        "[{}] sends build_chan_open_confirm_and_send \n on handshake_channel {:?}",
-                                        channel.short_name(),
-                                        handshake_channel
-                                    );
 
                                             match handshake_channel
                                                 .build_chan_open_confirm_and_send()
