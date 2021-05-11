@@ -50,10 +50,9 @@ pub fn channel_connection_client(
         .query_channel(port_id, channel_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    //change to Unintialized
-    // if !channel_end.is_open() {
-    //     return Err(Error::ChannelNotOpen(channel_id.clone(), chain.id()));
-    // }
+    if channel_end.state_matches(&ibc::ics04_channel::channel::State::Uninitialized) {
+        return Err(Error::ChannelUninitialized(channel_id.clone(), chain.id()));
+    }
 
     let connection_id = channel_end
         .connection_hops()
