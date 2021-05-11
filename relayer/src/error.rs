@@ -199,4 +199,8 @@ impl Kind {
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
     }
+
+    pub fn channel(err: impl Into<BoxError>) -> Context<Self> {
+        Self::Channel.context(err)
+    }
 }
