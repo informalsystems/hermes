@@ -1320,23 +1320,14 @@ impl Object {
         let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id());
 
         if dst_chain_id.is_err() {
-            debug!("\n err dest_chan_id in init\n ");
             return Err("dest chain missing in init".into());
         }
-
-        debug!(
-            " in for_open_init_channel dst_chain_id {} src_chain_id {} with event {:?} ",
-            dst_chain_id.clone().unwrap(),
-            src_chain.id(),
-            e
-        );
 
         Ok(Channel {
             dst_chain_id: dst_chain_id.unwrap(),
             src_chain_id: src_chain.id(),
             src_channel_id: channel_id.clone(),
             src_port_id: e.port_id().clone(),
-            //connection_id: e.connection_id().clone(),
         }
         .into())
     }
@@ -1349,21 +1340,13 @@ impl Object {
         let channel_id = e
             .channel_id()
             .as_ref()
-            .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
+            .ok_or_else(|| format!("channel_id missing in OpenTry event '{:?}'", e))?;
 
         let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id());
 
         if dst_chain_id.is_err() {
-            debug!("\n err dest_chan_id in try\n ");
             return Err("dest chain missing in OpenTry".into());
         }
-
-        debug!(
-            " in for_open_try_channel dst_chain_id {} src_chain_id {} with event {:?} ",
-            dst_chain_id.clone().unwrap(),
-            src_chain.id(),
-            e
-        );
 
         Ok(Channel {
             dst_chain_id: dst_chain_id.unwrap(),
@@ -1378,22 +1361,21 @@ impl Object {
         e: &Attributes,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
+
+        let channel_id = e
+            .channel_id()
+            .as_ref()
+            .ok_or_else(|| format!("channel_id missing in OpenAck event '{:?}'", e))?;
+
+
         let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.channel_id().clone().unwrap(), &e.port_id())?;
-
-        debug!(
-            " in for_open_ack_channel dst_chain_id {} src_chain_id {} with event {:?} ",
-            dst_chain_id,
-            src_chain.id(),
-            e
-        );
-
+            get_counterparty_chain(src_chain, channel_id, &e.port_id())?;
+    
         Ok(Channel {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone().unwrap(),
             src_port_id: e.port_id().clone(),
-            // connection_id: e.connection_id().clone(),
         }
         .into())
     }
@@ -1402,22 +1384,21 @@ impl Object {
         e: &Attributes,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.channel_id().clone().unwrap(), &e.port_id())?;
 
-        debug!(
-            " in for_open_confirm_channel dst_chain_id {} src_chain_id {} with event {:?} ",
-            dst_chain_id,
-            src_chain.id(),
-            e
-        );
+        let channel_id = e
+        .channel_id()
+        .as_ref()
+        .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
+
+
+        let dst_chain_id =
+            get_counterparty_chain(src_chain, channel_id, &e.port_id())?;
 
         Ok(Channel {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone().unwrap(),
             src_port_id: e.port_id().clone(),
-            // connection_id: e.connection_id().clone(),
         }
         .into())
     }
