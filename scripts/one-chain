@@ -60,7 +60,9 @@ SAMOLEANS=$8
 
 GRPC_WEB_PORT=$((GRPC_PORT + 100))
 
-echo "Creating $BINARY instance: home=$CHAIN_DIR | chain-id=$CHAIN_ID | p2p=:$P2P_PORT | rpc=:$RPC_PORT | profiling=:$PROF_PORT | grpc=:$GRPC_PORT | samoleans=:$SAMOLEANS"
+echo -e "Creating $BINARY instance:
+  \t home=$CHAIN_DIR | chain-id=$CHAIN_ID | p2p=:$P2P_PORT | rpc=:$RPC_PORT | profiling=:$PROF_PORT |
+  \t grpc=:$GRPC_PORT | grpc-web=:$GRPC_WEB_PORT | samoleans=:$SAMOLEANS"
 
 # Add dir for chain, exit if error
 if ! mkdir -p $CHAIN_DIR/$CHAIN_ID 2>/dev/null; then
