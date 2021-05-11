@@ -762,8 +762,7 @@ impl Worker {
                         for event in batch.events {
                             match event {
                                 IbcEvent::OpenInitChannel(open_init) => {
-                                
-                                     //Create channel handshake object 
+                                    //Create channel handshake object
                                     let connection_id =
                                         open_init.attributes().connection_id.clone();
                                     let counterparty_port_id =
@@ -839,7 +838,7 @@ impl Worker {
                                         open_try
                                     );
 
-                                    //Create channel handshake object 
+                                    //Create channel handshake object
                                     let connection_id = open_try.attributes().connection_id.clone();
                                     let counterparty_port_id =
                                         open_try.attributes().counterparty_port_id.clone();
@@ -879,8 +878,6 @@ impl Worker {
                                         version: Default::default(),
                                     };
 
-                        
-
                                     match handshake_channel.build_chan_open_ack_and_send() {
                                         Err(e) => {
                                             debug!(
@@ -903,7 +900,6 @@ impl Worker {
                                 }
 
                                 IbcEvent::OpenAckChannel(open_ack) => {
-                                   
                                     if handshake_channel.b_side.channel_id.is_none() {
                                         handshake_channel.b_side.channel_id =
                                             open_ack.counterparty_channel_id().clone();
@@ -917,7 +913,6 @@ impl Worker {
                                 }
 
                                 IbcEvent::OpenConfirmChannel(_open_confirm) => {
-
                                     println!(
                                         "{}  {}  {}  Channel handshake finished for {:#?}\n",
                                         done, done, done, &channel.src_channel_id,
@@ -943,7 +938,7 @@ impl Worker {
                             let a_channel = self.chains.a.query_channel(
                                 &channel.src_port_id,
                                 &channel.src_channel_id,
-                                height,  
+                                height,
                             )?;
 
                             let connection_id =
@@ -959,7 +954,8 @@ impl Worker {
                                 .a
                                 .query_connection(&connection_id, Height::zero())?;
 
-                            let mut counterparty_state = &ibc::ics04_channel::channel::State::Uninitialized;
+                            let mut counterparty_state =
+                                &ibc::ics04_channel::channel::State::Uninitialized;
 
                             let mut b_channel = Default::default();
 
@@ -976,7 +972,7 @@ impl Worker {
                             };
 
                             handshake_channel = RelayChannel {
-                                ordering: a_channel.ordering().clone(),
+                                ordering: *a_channel.ordering(),
                                 a_side: ChannelSide::new(
                                     a_chain.clone(),
                                     connection.client_id().clone(),
@@ -1008,7 +1004,7 @@ impl Worker {
 
                                         let channels: Vec<IdentifiedChannelEnd> =
                                             b_chain.query_connection_channels(req.clone())?;
-                                        
+
                                         for chan in channels.iter() {
                                             if chan.channel_end.remote.channel_id.is_some()
                                                 && chan
@@ -1034,8 +1030,6 @@ impl Worker {
                                         }
 
                                         if !found_counterparty {
-            
-
                                             match handshake_channel.build_chan_open_try_and_send() {
                                                 Err(e) => {
                                                     debug!(
@@ -1057,37 +1051,34 @@ impl Worker {
                                 }
 
                                 ibc::ics04_channel::channel::State::TryOpen => {
-                                    if a_channel.remote.channel_id.is_some() {
-                                        
-                                        if !b_channel.state_matches(
+                                    if a_channel.remote.channel_id.is_some()
+                                        && !b_channel.state_matches(
                                             &ibc::ics04_channel::channel::State::Open,
-                                        ) {
-                                            
-                                            match handshake_channel.build_chan_open_ack_and_send() {
-                                                Err(e) => {
-                                                    debug!(
-                                                        "Failed ChanAck {:?}: {:?}",
-                                                        handshake_channel.b_side, e
-                                                    );
-                                                }
-                                                Ok(event) => {
-                                                    handshake_channel.b_side.channel_id =
-                                                        Some(extract_channel_id(&event)?.clone());
-                                                    println!(
-                                                        "{}  {} => {:#?}\n",
-                                                        done,
-                                                        b_chain.id(),
-                                                        event
-                                                    );
-                                                }
+                                        )
+                                    {
+                                        match handshake_channel.build_chan_open_ack_and_send() {
+                                            Err(e) => {
+                                                debug!(
+                                                    "Failed ChanAck {:?}: {:?}",
+                                                    handshake_channel.b_side, e
+                                                );
                                             }
-                                        } //TODO else either counter party channel is more advanced or another channel closed the hanshake
-                                    } //TODO else error
+                                            Ok(event) => {
+                                                handshake_channel.b_side.channel_id =
+                                                    Some(extract_channel_id(&event)?.clone());
+                                                println!(
+                                                    "{}  {} => {:#?}\n",
+                                                    done,
+                                                    b_chain.id(),
+                                                    event
+                                                );
+                                            }
+                                        }
+                                    }
                                 }
                                 ibc::ics04_channel::channel::State::Open => {
                                     match counterparty_state {
                                         ibc::ics04_channel::channel::State::TryOpen => {
-
                                             match handshake_channel
                                                 .build_chan_open_confirm_and_send()
                                             {
@@ -1129,7 +1120,7 @@ impl Worker {
 
                                 _ => {} //TODO Uninit and Close
                             } //end match a_state
-                        first_iteration = false; 
+                            first_iteration = false;
                         } //end first iteration
                     } //end worker end block cmd
                 };
@@ -1361,16 +1352,13 @@ impl Object {
         e: &Attributes,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-
         let channel_id = e
             .channel_id()
             .as_ref()
             .ok_or_else(|| format!("channel_id missing in OpenAck event '{:?}'", e))?;
 
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())?;
 
-        let dst_chain_id =
-            get_counterparty_chain(src_chain, channel_id, &e.port_id())?;
-    
         Ok(Channel {
             dst_chain_id,
             src_chain_id: src_chain.id(),
@@ -1384,15 +1372,12 @@ impl Object {
         e: &Attributes,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-
         let channel_id = e
-        .channel_id()
-        .as_ref()
-        .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
+            .channel_id()
+            .as_ref()
+            .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
 
-
-        let dst_chain_id =
-            get_counterparty_chain(src_chain, channel_id, &e.port_id())?;
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())?;
 
         Ok(Channel {
             dst_chain_id,

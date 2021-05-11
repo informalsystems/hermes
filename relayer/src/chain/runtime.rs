@@ -29,9 +29,9 @@ use ibc::{
 
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
+        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
     client::v1::QueryConsensusStatesRequest,
     commitment::v1::MerkleProof,
@@ -629,7 +629,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         request: QueryConnectionChannelsRequest,
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     ) -> Result<(), Error> {
-
         let result = self.chain.query_connection_channels(request);
 
         reply_to
