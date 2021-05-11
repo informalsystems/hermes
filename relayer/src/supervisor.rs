@@ -11,7 +11,7 @@ use itertools::Itertools;
 use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{
-    events::{IbcEvent, VecIbcEvents},
+    events::IbcEvent,
     ics02_client::{
         client_state::ClientState,
         events::{NewBlock, UpdateClient},
@@ -172,24 +172,18 @@ impl Supervisor {
                 }
 
                 IbcEvent::OpenInitChannel(ref open_init) => {
-                    debug!("\n !!!! Init in \n ");
                     if let Ok(object) =
                         Object::for_open_init_channel(open_init.attributes(), src_chain)
                     {
                         collected.per_object.entry(object).or_default().push(event);
-                    } else {
-                        debug!("\n !!!! ups object malformed Init in \n ");
                     }
                 }
 
                 IbcEvent::OpenTryChannel(ref open_try) => {
-                    debug!("\n !!!! OpenTry in \n ");
                     if let Ok(object) =
                         Object::for_open_try_channel(open_try.attributes(), src_chain)
                     {
                         collected.per_object.entry(object).or_default().push(event);
-                    } else {
-                        debug!("\n !!!! ups object malformed Try in \n ");
                     }
                 }
 
@@ -205,12 +199,14 @@ impl Supervisor {
                             .push(event.clone());
                     }
 
-                    if let Ok(object2) =
+                    if let Ok(channel_object) =
                         Object::for_open_ack_channel(open_ack.attributes(), src_chain)
                     {
-                        collected.per_object.entry(object2).or_default().push(event);
-                    } else {
-                        debug!("\n !!!! ups object malformed Ack in \n ");
+                        collected
+                            .per_object
+                            .entry(channel_object)
+                            .or_default()
+                            .push(event);
                     }
                 }
                 IbcEvent::OpenConfirmChannel(ref open_confirm) => {
@@ -224,12 +220,12 @@ impl Supervisor {
                             .or_default()
                             .push(event.clone());
                     }
-                    if let Ok(object2) =
+                    if let Ok(channel_object) =
                         Object::for_open_confirm_channel(open_confirm.attributes(), src_chain)
                     {
                         collected
                             .per_object
-                            .entry(object2)
+                            .entry(channel_object)
                             .or_default()
                             .push(event.clone());
                     }
@@ -401,21 +397,8 @@ impl Supervisor {
                 // connection_id: connection_id.clone(),
             });
 
-            debug!(
-                "create workers: creating a worker for a channel object {:?}",
-                channel_object
-            );
-
             self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
-        }
-        // end if channel not open
-        else {
-            debug!(
-                "\n BABABABAABB 
-                \n"
-            );
-
-            // //start spawning channel worker
+        } else {
             let counterparty_chain_id =
                 get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
 
@@ -426,16 +409,9 @@ impl Supervisor {
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id.clone(),
                 src_port_id: channel.port_id,
-                //connection_id: connection_id.clone(),
             });
 
-            debug!(
-                "create workers: creating a worker for a channel object that is not open {:?}",
-                channel_object
-            );
-
             self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
-            //end the spawning channel worker
         }
 
         Ok(())
@@ -502,13 +478,6 @@ impl Supervisor {
             if events.is_empty() {
                 continue;
             }
-
-            debug!(
-                "chain {} sent {} for object {:?}",
-                chain_id,
-                VecIbcEvents(events.clone()),
-                object,
-            );
 
             let src = self.registry.get_or_spawn(object.src_chain_id())?;
             let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
@@ -751,8 +720,6 @@ impl Worker {
             version: Default::default(),
         };
 
-        debug!("[{}] started ", channel.short_name());
-
         let mut first_iteration = true;
 
         loop {
@@ -803,12 +770,6 @@ impl Worker {
                                         version: Default::default(),
                                     };
 
-                                    debug!(
-                                        "\n [{}] sends build_chan_open_try_and_send \n on handshake_channel {:?}  channel in state Init \n",
-                                        channel.short_name(),
-                                        handshake_channel
-                                    );
-
                                     match handshake_channel.build_chan_open_try_and_send() {
                                         Err(e) => {
                                             debug!(
@@ -832,12 +793,6 @@ impl Worker {
                                 }
 
                                 IbcEvent::OpenTryChannel(open_try) => {
-                                    debug!(
-                                        "\n [{}] Calling Open Try from the loop {:?} \n ",
-                                        channel.short_name(),
-                                        open_try
-                                    );
-
                                     //Create channel handshake object
                                     let connection_id = open_try.attributes().connection_id.clone();
                                     let counterparty_port_id =
@@ -931,8 +886,6 @@ impl Worker {
                         new_block: _,
                     } => {
                         if first_iteration {
-                            debug!("\n [{}] new block \n ", channel.short_name());
-
                             let height = current_height.decrement()?;
 
                             let a_channel = self.chains.a.query_channel(
@@ -1015,12 +968,6 @@ impl Worker {
                                                     .unwrap()
                                                     == channel.src_channel_id.clone()
                                             {
-                                                debug!(
-                                                    "[{}] found a pair channel {} on chain {}",
-                                                    channel.short_name(),
-                                                    chan.channel_id,
-                                                    handshake_channel.b_side.chain_id()
-                                                );
                                                 found_counterparty = true;
                                                 handshake_channel.b_side.channel_id =
                                                     Some(chan.channel_id.clone());
