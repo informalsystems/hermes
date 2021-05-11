@@ -183,7 +183,7 @@ impl std::fmt::Display for CreateClient {
 }
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UpdateClient {
     pub common: Attributes,
     pub header: Option<AnyHeader>,
@@ -252,12 +252,6 @@ impl From<UpdateClient> for IbcEvent {
 impl std::fmt::Display for UpdateClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.common)
-    }
-}
-
-impl std::fmt::Debug for UpdateClient {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?}", self.common)
     }
 }
 

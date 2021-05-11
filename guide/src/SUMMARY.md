@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.2.0)
+# Hermes (v0.3.0)
 
 ---
 - [Introduction](./index.md)
@@ -29,11 +29,11 @@
 - [Commands Reference](./commands/index.md)
    - [Global options and JSON output](./commands/global.md)
    - [Keys](./commands/keys/index.md)
-   - [Path setup and streaming](./commands/setup-and-relaying/index.md)
-     - [Clients](./commands/setup-and-relaying/clients.md)
-     - [Connections](./commands/setup-and-relaying/connections.md)
-     - [Channels](./commands/setup-and-relaying/channels.md)
-     - [Packet relaying](./commands/setup-and-relaying/packets.md)
+   - [Path setup](./commands/path-setup/index.md)
+     - [Clients](./commands/path-setup/clients.md)
+     - [Connections](./commands/path-setup/connections.md)
+     - [Channels](./commands/path-setup/channels.md)
+   - [Packet relaying](./commands/relaying.md)
    - [Listen mode](./commands/listen/index.md)
    - [Client upgrade](./commands/upgrade/index.md)
      - [Testing client upgrade](./commands/upgrade/test.md)
