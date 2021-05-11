@@ -143,7 +143,7 @@ pub enum Kind {
     MessageTransaction(String),
 
     /// Failed query
-    #[error("Query error occurred (failed to finish query for {0})")]
+    #[error("Query error occurred (failed to query for {0})")]
     Query(String),
 
     /// Keybase related error
