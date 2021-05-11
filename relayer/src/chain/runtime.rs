@@ -40,7 +40,7 @@ use ibc_proto::ibc::core::{
 use crate::{
     config::ChainConfig,
     connection::ConnectionMsgType,
-    error::{handle_channel_error, Error},
+    error::{Error, Kind},
     event::{
         bus::EventBus,
         monitor::{EventBatch, EventReceiver, Result as MonitorResult},
@@ -168,7 +168,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                         Ok(event_batch) => {
                             self.event_bus
                                 .broadcast(Arc::new(event_batch))
-                                .map_err(handle_channel_error)?;
+                                .map_err(Kind::channel)?;
                         },
                         Err(e) => error!("received error via event bus: {}", e),
                     }
@@ -176,7 +176,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                 recv(self.request_receiver) -> event => {
                     match event {
                         Ok(ChainRequest::Terminate { reply_to }) => {
-                            reply_to.send(Ok(())).map_err(handle_channel_error)?;
+                            reply_to.send(Ok(())).map_err(Kind::channel)?;
                             break;
                         }
 
@@ -320,9 +320,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
         let subscription = self.event_bus.subscribe();
 
-        reply_to
-            .send(Ok(subscription))
-            .map_err(handle_channel_error)?;
+        reply_to.send(Ok(subscription)).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -334,7 +332,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.send_msgs(proto_msgs);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -342,7 +340,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn query_latest_height(&self, reply_to: ReplyTo<Height>) -> Result<(), Error> {
         let latest_height = self.chain.query_latest_height();
 
-        reply_to.send(latest_height).map_err(handle_channel_error)?;
+        reply_to.send(latest_height).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -350,7 +348,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -358,7 +356,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn get_key(&mut self, reply_to: ReplyTo<KeyEntry>) -> Result<(), Error> {
         let result = self.chain.get_key();
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -366,7 +364,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn module_version(&self, port_id: PortId, reply_to: ReplyTo<String>) -> Result<(), Error> {
         let result = self.chain.query_module_version(&port_id);
 
-        reply_to.send(Ok(result)).map_err(handle_channel_error)?;
+        reply_to.send(Ok(result)).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -401,7 +399,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                 .map_or_else(Err, |header| Ok(header.wrap_any())),
         };
 
-        reply_to.send(header).map_err(handle_channel_error)?;
+        reply_to.send(header).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -417,7 +415,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .build_client_state(height)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(client_state).map_err(handle_channel_error)?;
+        reply_to.send(client_state).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -437,9 +435,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .build_consensus_state(light_block)
             .map(|cs| cs.wrap_any());
 
-        reply_to
-            .send(consensus_state)
-            .map_err(handle_channel_error)?;
+        reply_to.send(consensus_state).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -455,7 +451,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .light_client
             .check_misbehaviour(update_event, &client_state);
 
-        reply_to.send(misbehaviour).map_err(handle_channel_error)?;
+        reply_to.send(misbehaviour).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -478,7 +474,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let result = result
             .map(|(opt_client_state, proofs)| (opt_client_state.map(|cs| cs.wrap_any()), proofs));
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -494,7 +490,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .query_client_state(&client_id, height)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(client_state).map_err(handle_channel_error)?;
+        reply_to.send(client_state).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -509,7 +505,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .query_upgraded_client_state(height)
             .map(|(cl, proof)| (cl.wrap_any(), proof));
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -521,9 +517,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let consensus_states = self.chain.query_consensus_states(request);
 
-        reply_to
-            .send(consensus_states)
-            .map_err(handle_channel_error)?;
+        reply_to.send(consensus_states).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -539,9 +533,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             self.chain
                 .query_consensus_state(client_id, consensus_height, query_height);
 
-        reply_to
-            .send(consensus_state)
-            .map_err(handle_channel_error)?;
+        reply_to.send(consensus_state).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -556,7 +548,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .query_upgraded_consensus_state(height)
             .map(|(cs, proof)| (cs.wrap_any(), proof));
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -564,7 +556,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn query_commitment_prefix(&self, reply_to: ReplyTo<CommitmentPrefix>) -> Result<(), Error> {
         let prefix = self.chain.query_commitment_prefix();
 
-        reply_to.send(prefix).map_err(handle_channel_error)?;
+        reply_to.send(prefix).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -572,7 +564,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn query_compatible_versions(&self, reply_to: ReplyTo<Vec<Version>>) -> Result<(), Error> {
         let versions = self.chain.query_compatible_versions();
 
-        reply_to.send(versions).map_err(handle_channel_error)?;
+        reply_to.send(versions).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -585,9 +577,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let connection_end = self.chain.query_connection(&connection_id, height);
 
-        reply_to
-            .send(connection_end)
-            .map_err(handle_channel_error)?;
+        reply_to.send(connection_end).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -599,7 +589,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.query_channels(request);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -613,7 +603,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.query_channel(&port_id, &channel_id, height);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -629,7 +619,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .proven_client_state(&client_id, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -642,7 +632,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.proven_connection(&connection_id, height);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -659,7 +649,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .proven_client_consensus(&client_id, consensus_height, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -675,7 +665,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             .chain
             .build_channel_proofs(&port_id, &channel_id, height);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -693,7 +683,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             self.chain
                 .build_packet_proofs(packet_type, port_id, channel_id, sequence, height);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -705,7 +695,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_commitments(request);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -717,7 +707,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -729,7 +719,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_acknowledgements(request);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -741,7 +731,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_acknowledgements(request);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -753,7 +743,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.query_next_sequence_receive(request);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -765,7 +755,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
 
-        reply_to.send(result).map_err(handle_channel_error)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
