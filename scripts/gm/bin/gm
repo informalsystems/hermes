@@ -3,7 +3,8 @@
 set -eu
 
 # Load lib-gm either from the local folder or from the global $HOME/.gm/bin/lib-gm
-export SCRIPT_DIR="${0%%gm}"
+SCRIPT_0="${0:-$HOME/.gm/bin/gm}"
+export SCRIPT_DIR="${SCRIPT_0%%gm}"
 export LOCAL_LIB_GM="${SCRIPT_DIR}lib-gm"
 if [ -f "$LOCAL_LIB_GM" ]; then
   . "$LOCAL_LIB_GM"
@@ -61,19 +62,29 @@ case "${1:-help}" in
     load_config
     shift
     F_FLAG=""
+    LIST=""
     while [ "$#" -gt 0 ];
     do
       case "$1" in
         "-f")
           F_FLAG="-f" ;;
         *)
-          NODE="$1"
+          LIST="$LIST $(get_home_dir "$1")/log"
       esac
       shift
     done
-    HOME_DIR="$(get_home_dir "$NODE")"
-    echo "tail $F_FLAG \"${HOME_DIR}/log\""
-    tail "$F_FLAG" "${HOME_DIR}/log"
+    if [ -z "$F_FLAG" ]; then
+      echo "less -R $LIST"
+      # Todo: spaces in folder names and file names are not supported yet.
+      # shellcheck disable=SC2086
+      less -R $LIST
+    else
+      echo "tail -f $LIST"
+      # Todo: spaces in folder names and file names are not supported yet.
+      # shellcheck disable=SC2086
+      tail -f $LIST
+    fi
+
     ;;
   ports)
     load_config
@@ -88,6 +99,11 @@ case "${1:-help}" in
       warn_unknown_node "$i" || continue
       ports "$i"
     done
+    ;;
+  ss)
+    # For debug purposes
+    # Todo: either make this a supported command or remove it
+    lsof -i4:27000-28000 -P
     ;;
   start)
     load_config

@@ -37,6 +37,9 @@ enforce_requirements() {
   if [ -z "$(which sconfig)" ]; then
     exit_with_error "missing sconfig, install it from https://github.com/freshautomations/sconfig/releases"
   fi
+  if [ -z "$(which sed)" ]; then
+    exit_with_error "missing sed, please install it (this requirement will be removed in the future)"
+  fi
 }
 
 debug() {
@@ -85,7 +88,15 @@ a_in_b() {
   test -n "$(echo "$2" | grep '\(^\| \+\)'"${1}"'\( \+\|$\)')"
 }
 
-# Todo: fix "stoml" so it reads empty sections too - currently we work around this with the mandatory comment.
+# Is string A in comma-separated list B?
+a_in_b_comma_separated() {
+  test -n "$(echo "$2" | grep '\(^\|,\) *'"${1}"' *\(,\|$\)')"
+}
+
+load_all_sections() {
+  grep '^ *\[.\+\] *$' "$CONFIG_FILE" | sed 's/^ *\[\([^]]*\)\] *$/\1/'
+}
+
 load_config() {
   FRESH_CONFIG=no
   if [ -f "${SCRIPT_DIR}gm.toml" ]; then
@@ -101,11 +112,10 @@ load_config() {
     fi
   fi
   GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -q "$CONFIG_FILE" global.gaiad_binary || which gaiad)")"
-  GLOBAL_PORTS_START_AT="$(stoml -q "$CONFIG_FILE" global.ports_start_at || echo 27000)"
+  #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
   GLOBAL_HOME_DIR="$(eval echo "$(stoml -q "$CONFIG_FILE" global.home_dir || echo "${HOME}/.gm")")"
   GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -q "$CONFIG_FILE" global.auto_maintain_config || echo "true")"
   export GLOBAL_GAIAD_BINARY
-  export GLOBAL_PORTS_START_AT
   export GLOBAL_HOME_DIR
   export GLOBAL_AUTO_MAINTAIN_CONFIG
   if [ "$FRESH_CONFIG" = "yes" ]; then
@@ -115,7 +125,11 @@ load_config() {
   else
     stoml "$CONFIG_FILE" global 1> /dev/null || exit_with_error invalid config file. Make sure all strings are quoted
     test -x "$GLOBAL_GAIAD_BINARY" || exit_with_error "gaiad binary cannot be executed: $GLOBAL_GAIAD_BINARY"
-    RAW_SECTIONS="$(stoml -q "$CONFIG_FILE" . || echo "")"
+    # Workaround for issue: https://github.com/spf13/viper/issues/1131
+    #   Fix "stoml" so it reads empty sections too.
+    #RAW_SECTIONS="$(stoml -q "$CONFIG_FILE" . || echo "")"
+    RAW_SECTIONS="$(load_all_sections || echo "")"
+    # End of workaround
     VALIDATORS=""
     RAW_NODES=""
     for i in $RAW_SECTIONS
@@ -150,7 +164,7 @@ write_default_config() {
   cat <<EOF > "$CONFIG_FILE"
 [global]
 gaiad_binary="$GLOBAL_GAIAD_BINARY"
-ports_start_at=$GLOBAL_PORTS_START_AT
+ports_start_at=27000
 home_dir="$GLOBAL_HOME_DIR"
 auto_maintain_config=$GLOBAL_AUTO_MAINTAIN_CONFIG
 comment="Please add comments to all node definitions. (Mandatory.)"
@@ -170,15 +184,10 @@ get_gaiad_binary() {
 get_ports_start_at() {
   RESULT="$(stoml -q "$CONFIG_FILE" "${1}.ports_start_at")"
   if [ -z "$RESULT" ]; then
-    i=0
-    for j in $ALL_NODES
-    do
-      if [ "$j" = "$1" ]; then
-        break
-      fi
-      i=$((i+1))
-    done
-    echo "$((GLOBAL_PORTS_START_AT+10*i))"
+    THIS_PORTS_START_AT="$(stoml -q "$CONFIG_FILE" global.ports_start_at || echo 27000)"
+    sconfig "$CONFIG_FILE" -t int "global.ports_start_at=$((THIS_PORTS_START_AT+10))" 1> /dev/null
+    sconfig "$CONFIG_FILE" -t int "${1}.ports_start_at=$THIS_PORTS_START_AT" 1> /dev/null
+    echo "$THIS_PORTS_START_AT"
   else
     echo "$RESULT"
   fi
@@ -266,36 +275,34 @@ create() {
     fi
     mv "${HOME_ROOT}/${i}n0" "${HOME_DIR}"
     rm -rf "${HOME_ROOT}/gentxs"
-    # Todo: Maybe replace the below with calling the configure function.
-    NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
-    cp "$NETWORK_HOME_DIR/config/genesis.json" "$HOME_DIR/config/genesis.json"
-    NETWORK_NODE="$(get_node_id "$NETWORK")@localhost:$(get_p2p_port "$NETWORK")"
-    sconfig "$HOME_DIR/config/config.toml" "p2p.persistent_peers=$NETWORK_NODE" 1> /dev/null
-    if get_auto_maintain_config "$NETWORK"; then
-      NODE_ID="$(get_node_id "$i")"
-      sconfig "$NETWORK_HOME_DIR/config/config.toml" "p2p.unconditional_peer_ids=$NODE_ID" 1> /dev/null
-      # Todo: Make this more robust: if two full nodes connect to the same validator, this override each other
-    fi
   fi
+  configure "$i"
   sconfig "$HOME_DIR/config/config.toml" p2p.addr_book_strict=false 1> /dev/null
   sconfig "$HOME_DIR/config/config.toml" p2p.allow_duplicate_ip=true 1> /dev/null
 }
 
 configure() {
   HOME_DIR="$(get_home_dir "$1")"
-  # Todo: rpc.pprof_laddr=6060, maybe needs moving?
-  # Todo: rpc.grpc also?
   P2P="$(get_p2p_port "$1")"
   RPC="$(get_rpc_port "$1")"
-  #APP="$(get_app_port "$1")"
-  #GRPC="$(get_grpc_port "$1")"
+  APP="$(get_app_port "$1")"
+  GRPC="$(get_grpc_port "$1")"
   PPROF="$(get_pprof_port "$1")"
   sconfig "$HOME_DIR/config/config.toml" "p2p.laddr=tcp://0.0.0.0:${P2P}" 1> /dev/null
   sconfig "$HOME_DIR/config/config.toml" "rpc.laddr=tcp://0.0.0.0:${RPC}" 1> /dev/null
-  sconfig "$HOME_DIR/config/config.toml" "rpc.pprof_laddr=localhost:${PPROF}" 1> /dev/null
-  # Todo: sconfig doesn't support it yet
-  #sconfig "$HOME_DIR/config/app.toml" "api.address=tcp://0.0.0.0:${APP}" 1> /dev/null
-  #sconfig "$HOME_DIR/config/app.toml" "grpc.address=0.0.0.0:${GRPC}" 1> /dev/null
+  sconfig "$HOME_DIR/config/config.toml" "rpc.pprof_laddr=0.0.0.0:${PPROF}" 1> /dev/null
+  # Workaround for https://github.com/spf13/viper/issues/1132
+  #   Viper does not support writing array of arrays so we clean out the variable
+  sconfig "$HOME_DIR/config/app.toml" -t stringSlice "telemetry.global-labels=panic gaiad" 1> /dev/null
+  OS="$(uname -s)"
+  if [ "$OS" = "Darwin" ]; then
+    sed -i '' 's/  global-labels = \["panic","gaiad"\]/  global-labels = []/' "$HOME_DIR/config/app.toml"
+  else
+    sed -i'' 's/  global-labels = \["panic","gaiad"\]/  global-labels = []/' "$HOME_DIR/config/app.toml"
+  fi
+  # End of workaround
+  sconfig "$HOME_DIR/config/app.toml" "api.address=tcp://0.0.0.0:${APP}" 1> /dev/null
+  sconfig "$HOME_DIR/config/app.toml" "grpc.address=0.0.0.0:${GRPC}" 1> /dev/null
   if ! a_in_b "$i" "$VALIDATORS"; then
     NETWORK="$(get_network "$1")"
     NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
@@ -303,35 +310,76 @@ configure() {
     NETWORK_NODE="$(get_node_id "$NETWORK")@localhost:$(get_p2p_port "$NETWORK")"
     sconfig "$HOME_DIR/config/config.toml" "p2p.persistent_peers=$NETWORK_NODE" 1> /dev/null
     if get_auto_maintain_config "$NETWORK"; then
+      EXISTING_PEERS="$(stoml -q "$NETWORK_HOME_DIR/config/config.toml" "p2p.unconditional_peer_ids")"
       NODE_ID="$(get_node_id "$1")"
-      sconfig "$NETWORK_HOME_DIR/config/config.toml" "p2p.unconditional_peer_ids=$NODE_ID" 1> /dev/null
-      # Todo: Make this more robust: if two full nodes connect to the same validator, don't override each other
+      if ! a_in_b_comma_separated "$NODE_ID" "$EXISTING_PEERS"; then
+        if [ -z "$EXISTING_PEERS" ]; then
+          EXISTING_PEERS="$NODE_ID"
+        else
+          EXISTING_PEERS="$EXISTING_PEERS,$NODE_ID"
+        fi
+        sconfig "$NETWORK_HOME_DIR/config/config.toml" "p2p.unconditional_peer_ids=$EXISTING_PEERS" 1> /dev/null
+      fi
     fi
   fi
 }
 
-# Todo: (high-priority) fix sconfig to be able to map in app.toml
-start() {
-  GAIAD="$(get_gaiad_binary "$1")"
+is_running() {
   HOME_DIR="$(get_home_dir "$1")"
-  GAIAD_LOG="${HOME_DIR}/log"
-  nohup "$GAIAD" start --x-crisis-skip-assert-invariants --home "$HOME_DIR" > "$GAIAD_LOG" 2>&1 &
-  GAIAD_PID=$!
-  echo "$GAIAD_PID" > "$HOME_DIR/pid"
-  echo "$i started, PID: $GAIAD_PID, LOG: $GAIAD_LOG"
+  GAIAD_PID_FILE="${HOME_DIR}/pid"
+  if [ -f "$GAIAD_PID_FILE" ]; then
+    GAIAD_PID="$(cat "$GAIAD_PID_FILE")"
+    if [ -n "$GAIAD_PID" ]; then
+      test "$(ps -p "$GAIAD_PID" -o pid | wc -l)" -eq 2
+    else
+      return 1
+    fi
+  else
+    return 1
+  fi
+}
+
+start() {
+  if is_running "$1"; then
+    warn "$1 is already running, skipping"
+  else
+    GAIAD="$(get_gaiad_binary "$1")"
+    HOME_DIR="$(get_home_dir "$1")"
+    GAIAD_LOG="${HOME_DIR}/log"
+    nohup "$GAIAD" start --x-crisis-skip-assert-invariants --home "$HOME_DIR" > "$GAIAD_LOG" 2>&1 &
+    GAIAD_PID=$!
+    echo "$GAIAD_PID" > "$HOME_DIR/pid"
+    echo "$i started, PID: $GAIAD_PID, LOG: $GAIAD_LOG"
+  fi
 }
 
 stop() {
-  HOME_DIR="$(get_home_dir "$1")"
-  #GAIAD_BINARY="$(get_gaiad_binary "$1")"
-  test -f "${HOME_DIR}/pid"
-  GAIAD_PID="$(cat "${HOME_DIR}/pid")"
-  #COMM="$(ps -p "$GAIAD_PID" -o comm | tail -1)"
-  echo "Stopping $1 with PID $GAIAD_PID..."
-  kill -TERM "$GAIAD_PID" 2> /dev/null || echo "  No process with PID $GAIAD_PID. Cleaning up run config."
-  sleep 2
-  # Todo: make this more robust by checking if the process was killed properly
-  rm -f "$HOME_DIR/pid"
+  if is_running "$1"; then
+    HOME_DIR="$(get_home_dir "$1")"
+    GAIAD_PID="$(cat "${HOME_DIR}/pid")"
+    echo "Stopping $1 with PID $GAIAD_PID..."
+    kill -TERM "$GAIAD_PID" 2> /dev/null && rm -f "$HOME_DIR/pid"
+    RESULT="$?"
+    if [ "$RESULT" != "0" ]; then
+        warn "SIGTERM failed on PID ${GAIAD_PID}. Trying KILL..."
+        kill -KILL "$GAIAD_PID" && rm -f "$HOME_DIR/pid"
+        RESULT="$?"
+        if [ "$RESULT" != "0" ]; then
+          warn "SIGKILL failed on PID ${GAIAD_PID}. Giving up..."
+        fi
+    fi
+  else
+    HOME_DIR="$(get_home_dir "$1")"
+    if [ -f "${HOME_DIR}/pid" ]; then
+      GAIAD_PID="$(cat "${HOME_DIR}/pid")"
+      if [ -n "$GAIAD_PID" ]; then
+        warn "no process with PID $GAIAD_PID. Removing stale data."
+      else
+        warn "no process ID found. Removing stale data."
+      fi
+      rm -f "$HOME_DIR/pid"
+    fi
+  fi
 }
 
 print_header_line() {
@@ -352,6 +400,9 @@ print_status_line() {
     GAIAD_PID_FILE="${HOME_DIR}/pid"
     if [ -f "$GAIAD_PID_FILE" ]; then
       GAIAD_PID="$(cat "$GAIAD_PID_FILE")"
+      if [ -z "$GAIAD_PID" ]; then
+        GAIAD_PID=" N/A "
+      fi
       if [ "$(ps -p "$GAIAD_PID" -o pid | wc -l)" -eq 2 ]; then
         echo "${NAME}${NAME_PAD} $GAIAD_PID  $(get_rpc_port "$1") $(get_app_port "$1") $(get_grpc_port "$1") $HOME_DIR"
       else
@@ -371,7 +422,7 @@ status() {
     do
       NETWORK="$(get_network "$j")"
       if [ "$i" = "$NETWORK" ]; then
-        print_status_line "$j" "-"
+        print_status_line "$j" " "
       else
         continue
       fi
