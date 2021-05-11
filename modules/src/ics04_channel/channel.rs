@@ -107,7 +107,6 @@ impl TryFrom<RawChannel> for ChannelEnd {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
-        // Parse the ordering type. Propagate the error, if any, to our caller.
         let chan_state: State = State::from_i32(value.state)?;
 
         if chan_state == State::Uninitialized {
@@ -115,6 +114,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
         }
 
         let chan_ordering = Order::from_i32(value.ordering)?;
+
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = value
             .counterparty
