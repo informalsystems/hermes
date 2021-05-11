@@ -29,7 +29,7 @@ use ibc::{
 
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+        PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
         QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
         QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
@@ -262,6 +262,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryChannels { request, reply_to }) => {
                             self.query_channels(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConnectionChannels { request, reply_to }) => {
+                            self.query_connection_channels(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
@@ -615,6 +619,21 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(connection_end)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+    ) -> Result<(), Error> {
+
+        let result = self.chain.query_connection_channels(request);
+
+        reply_to
+            .send(result)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())

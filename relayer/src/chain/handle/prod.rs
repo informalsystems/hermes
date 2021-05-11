@@ -24,7 +24,7 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
 };
@@ -186,6 +186,13 @@ impl ChainHandle for ProdChainHandle {
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })
+    }
+
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConnectionChannels { request, reply_to })
     }
 
     fn query_channel(

@@ -1032,21 +1032,15 @@ impl Worker {
                             match a_channel.state {
                                 ibc::ics04_channel::channel::State::Init => {
                                     if a_channel.remote.channel_id.is_none() {
-                                        // let req = QueryConnectionChannelsRequest {
-                                        //     connection: connection_id.to_string(),
-                                        //     pagination:
-                                        //         ibc_proto::cosmos::base::query::pagination::all(),
-                                        // };
-
-                                        // let channels: Vec<IdentifiedChannelEnd> =
-                                        //     b_chain.query_connection_channels(req.clone())?;
-                                        let req = QueryChannelsRequest {
+                                        let req = QueryConnectionChannelsRequest {
+                                            connection: connection_id.to_string(),
                                             pagination:
                                                 ibc_proto::cosmos::base::query::pagination::all(),
                                         };
 
                                         let channels: Vec<IdentifiedChannelEnd> =
-                                            b_chain.query_channels(req.clone())?;
+                                            b_chain.query_connection_channels(req.clone())?;
+                                        
                                         for chan in channels.iter() {
                                             if chan.channel_end.remote.channel_id.is_some()
                                                 && chan

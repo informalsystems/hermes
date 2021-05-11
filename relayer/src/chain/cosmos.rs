@@ -749,7 +749,7 @@ impl Chain for CosmosSdkChain {
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<ChannelId>, Error> {
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         crate::time!("query_connection_channels");
 
         let mut client = self
@@ -770,13 +770,21 @@ impl Chain for CosmosSdkChain {
         // TODO: add warnings for any identifiers that fail to parse (below).
         //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
 
-        let vec_ids = response
-            .channels
-            .iter()
-            .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
-            .collect();
 
-        Ok(vec_ids)
+        let channels = response
+            .channels
+            .into_iter()
+            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
+            .collect();
+        Ok(channels)
+
+        // let vec_ids = response
+        //     .channels
+        //     .iter()
+        //     .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
+        //     .collect();
+
+        // Ok(vec_ids)
     }
 
     fn query_channels(
