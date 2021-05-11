@@ -698,27 +698,7 @@ impl Worker {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
 
-        let mut handshake_channel = RelayChannel {
-            ordering: Default::default(),
-            //TODO  how to get the order from raw tx
-            a_side: ChannelSide::new(
-                a_chain.clone(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                None,
-            ),
-            b_side: ChannelSide::new(
-                b_chain.clone(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                None,
-            ),
-            connection_delay: Default::default(),
-            //TODO  detect version from event
-            version: Default::default(),
-        };
+        let mut handshake_channel;
 
         let mut first_iteration = true;
 
@@ -727,158 +707,22 @@ impl Worker {
                 match cmd {
                     WorkerCmd::IbcEvents { batch } => {
                         for event in batch.events {
-                            match event {
-                                IbcEvent::OpenInitChannel(open_init) => {
-                                    //Create channel handshake object
-                                    let connection_id =
-                                        open_init.attributes().connection_id.clone();
-                                    let counterparty_port_id =
-                                        open_init.attributes().counterparty_port_id.clone();
-                                    let connection = self
-                                        .chains
-                                        .a
-                                        .query_connection(&connection_id.clone(), Height::zero())?;
-                                    let counterparty_channel_id =
-                                        open_init.attributes().counterparty_channel_id.clone();
+                            handshake_channel = RelayChannel::restore(
+                                a_chain.clone(),
+                                b_chain.clone(),
+                                event.clone(),
+                            )?;
+                            let result = handshake_channel.handshake_step(event.clone());
 
-                                    let port_id = open_init.attributes().port_id.clone();
-                                    let channel_id = open_init.attributes().channel_id.clone();
-
-                                    handshake_channel = RelayChannel {
-                                        ordering: Default::default(),
-                                        //TODO  how to get the order from raw tx
-                                        a_side: ChannelSide::new(
-                                            a_chain.clone(),
-                                            connection.client_id().clone(),
-                                            connection_id.clone(),
-                                            port_id,
-                                            channel_id,
-                                        ),
-                                        b_side: ChannelSide::new(
-                                            b_chain.clone(),
-                                            connection.counterparty().client_id().clone(),
-                                            connection
-                                                .counterparty()
-                                                .connection_id()
-                                                .unwrap()
-                                                .clone(),
-                                            counterparty_port_id.clone(),
-                                            counterparty_channel_id.clone(),
-                                        ),
-                                        connection_delay: connection.delay_period(),
-                                        //TODO  detect version from event
-                                        version: Default::default(),
-                                    };
-
-                                    match handshake_channel.build_chan_open_try_and_send() {
-                                        Err(e) => {
-                                            debug!(
-                                                "Failed ChanTry {:?}: {:?}",
-                                                handshake_channel.b_side, e
-                                            );
-                                        }
-                                        Ok(event) => {
-                                            handshake_channel.b_side.channel_id =
-                                                Some(extract_channel_id(&event)?.clone());
-                                            println!(
-                                                "{}  {} => {:#?}\n",
-                                                done,
-                                                b_chain.id(),
-                                                event.clone()
-                                            );
-                                        }
-                                    }
-
-                                    first_iteration = false;
+                            match result {
+                                Err(e) => {
+                                    debug!("\n Failed {:?} with error {:?} \n", event, e);
                                 }
-
-                                IbcEvent::OpenTryChannel(open_try) => {
-                                    //Create channel handshake object
-                                    let connection_id = open_try.attributes().connection_id.clone();
-                                    let counterparty_port_id =
-                                        open_try.attributes().counterparty_port_id.clone();
-                                    let connection = self
-                                        .chains
-                                        .a
-                                        .query_connection(&connection_id.clone(), Height::zero())?;
-                                    let counterparty_channel_id =
-                                        open_try.attributes().counterparty_channel_id.clone();
-
-                                    let port_id = open_try.attributes().port_id.clone();
-                                    let channel_id = open_try.attributes().channel_id.clone();
-
-                                    handshake_channel = RelayChannel {
-                                        ordering: Default::default(),
-                                        //TODO  how to get the order from raw tx
-                                        a_side: ChannelSide::new(
-                                            a_chain.clone(),
-                                            connection.client_id().clone(),
-                                            connection_id.clone(),
-                                            port_id,
-                                            channel_id,
-                                        ),
-                                        b_side: ChannelSide::new(
-                                            b_chain.clone(),
-                                            connection.counterparty().client_id().clone(),
-                                            connection
-                                                .counterparty()
-                                                .connection_id()
-                                                .unwrap()
-                                                .clone(),
-                                            counterparty_port_id.clone(),
-                                            counterparty_channel_id.clone(),
-                                        ),
-                                        connection_delay: connection.delay_period(),
-                                        //TODO  detect version from event
-                                        version: Default::default(),
-                                    };
-
-                                    match handshake_channel.build_chan_open_ack_and_send() {
-                                        Err(e) => {
-                                            debug!(
-                                                "Failed ChanAck {:?}: {:?}",
-                                                handshake_channel.b_side, e
-                                            );
-                                        }
-                                        Ok(event) => {
-                                            // handshake_channel.b_side.channel_id = extract_channel_id(&event)?.clone();
-                                            println!(
-                                                "{}  {} => {:#?}\n",
-                                                done,
-                                                b_chain.id(),
-                                                event
-                                            );
-                                        }
-                                    }
-
-                                    first_iteration = false;
+                                Ok(ev) => {
+                                    println!("{} => {:#?}\n", done, ev.clone());
                                 }
-
-                                IbcEvent::OpenAckChannel(open_ack) => {
-                                    if handshake_channel.b_side.channel_id.is_none() {
-                                        handshake_channel.b_side.channel_id =
-                                            open_ack.counterparty_channel_id().clone();
-                                    }
-
-                                    let event =
-                                        handshake_channel.build_chan_open_confirm_and_send()?;
-                                    println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
-
-                                    first_iteration = false;
-                                }
-
-                                IbcEvent::OpenConfirmChannel(_open_confirm) => {
-                                    println!(
-                                        "{}  {}  {}  Channel handshake finished for {:#?}\n",
-                                        done, done, done, &channel.src_channel_id,
-                                    );
-
-                                    return Ok(());
-                                }
-                                IbcEvent::CloseInitChannel(_) => {}
-                                IbcEvent::CloseConfirmChannel(_) => {}
-                                _ => {}
                             }
+                            first_iteration = false;
                         }
                     }
                     WorkerCmd::NewBlock {

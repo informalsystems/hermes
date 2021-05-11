@@ -1,3 +1,4 @@
+use anomaly::BoxError;
 use prost_types::Any;
 use serde::Serialize;
 use thiserror::Error;
@@ -26,6 +27,9 @@ use std::time::Duration;
 pub enum ChannelError {
     #[error("failed with underlying cause: {0}")]
     Failed(String),
+
+    #[error("failed due to missing counterparty connection")]
+    MissingCounterpartyConnection,
 
     #[error("failed during an operation on client ({0}) hosted by chain ({1}) with error: {2}")]
     ClientOperation(ClientId, ChainId, ForeignClientError),
@@ -135,6 +139,71 @@ impl Channel {
         channel.handshake()?;
 
         Ok(channel)
+    }
+
+    pub fn restore(
+        chain: Box<dyn ChainHandle>,
+        counterparty_chain: Box<dyn ChainHandle>,
+        channel_open_event: IbcEvent,
+    ) -> Result<Channel, BoxError> {
+        match channel_open_event.clone() {
+            IbcEvent::OpenInitChannel(_open_init) => {}
+            IbcEvent::OpenTryChannel(_open_try) => {}
+            IbcEvent::OpenAckChannel(_open_ack) => {}
+            IbcEvent::OpenConfirmChannel(_open_confirm) => {}
+            _ => return Err("Supported only for Channel Open Events".to_string().into()),
+        };
+
+        let connection_id = channel_open_event
+            .clone()
+            .attributes()
+            .connection_id
+            .clone();
+        let counterparty_port_id = channel_open_event
+            .clone()
+            .attributes()
+            .counterparty_port_id
+            .clone();
+        let connection = chain.query_connection(&connection_id, Height::zero())?;
+        let counterparty_channel_id = channel_open_event
+            .clone()
+            .attributes()
+            .counterparty_channel_id
+            .clone();
+
+        let port_id = channel_open_event.clone().attributes().port_id.clone();
+        let channel_id = channel_open_event.clone().attributes().channel_id.clone();
+
+        let counterparty_connection_id = match connection.counterparty().connection_id() {
+            Some(x) => x.clone(),
+            None => {
+                return Err("failed due to missing counterparty connection"
+                    .to_string()
+                    .into())
+            }
+        };
+
+        Ok(Channel {
+            ordering: Default::default(),
+            //TODO  how to get the order from raw tx
+            a_side: ChannelSide::new(
+                chain.clone(),
+                connection.client_id().clone(),
+                connection_id,
+                port_id,
+                channel_id,
+            ),
+            b_side: ChannelSide::new(
+                counterparty_chain.clone(),
+                connection.counterparty().client_id().clone(),
+                counterparty_connection_id,
+                counterparty_port_id,
+                counterparty_channel_id,
+            ),
+            connection_delay: connection.delay_period(),
+            //TODO  detect version from event
+            version: Default::default(),
+        })
     }
 
     pub fn src_chain(&self) -> Box<dyn ChainHandle> {
@@ -309,6 +378,18 @@ impl Channel {
             "Failed to finish channel handshake in {} iterations for {:?}",
             MAX_ITER, self
         )))
+    }
+
+    pub fn handshake_step(&mut self, event: IbcEvent) -> Result<Vec<IbcEvent>, ChannelError> {
+        match event {
+            IbcEvent::OpenInitChannel(_open_init) => Ok(vec![self.build_chan_open_try_and_send()?]),
+            IbcEvent::OpenTryChannel(_open_try) => Ok(vec![self.build_chan_open_ack_and_send()?]),
+            IbcEvent::OpenAckChannel(_open_ack) => {
+                Ok(vec![self.build_chan_open_confirm_and_send()?])
+            }
+            IbcEvent::OpenConfirmChannel(_open_confirm) => Ok(vec![]),
+            _ => Ok(vec![]),
+        }
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ChannelError> {
