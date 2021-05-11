@@ -831,12 +831,12 @@ impl Chain for CosmosSdkChain {
             false,
         )?;
         let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| {
-            Kind::Query(format!("port '{}' channel '{}'", port_id, channel_id)).context(e)
+            Kind::Query(format!("port '{}' & channel '{}'", port_id, channel_id)).context(e)
         })?;
 
         match channel_end.state() {
             ChannelState::Uninitialized => Err(Kind::Query(format!(
-                "port '{}' channel '{}'",
+                "port '{}' & channel '{}'",
                 port_id, channel_id
             ))
             .context("channel does not exist")
