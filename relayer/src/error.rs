@@ -187,6 +187,10 @@ pub enum Kind {
     },
 }
 
+pub fn handle_channel_error(err: impl Into<BoxError>) -> Context<Kind> {
+    Kind::Channel.context(err)
+}
+
 impl Kind {
     /// Add a given source error as context for this error kind
     ///
