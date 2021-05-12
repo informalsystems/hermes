@@ -2,7 +2,6 @@ use std::{fmt, thread, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
-use retry::{retry_with_index, OperationResult as TryResult};
 use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
@@ -12,6 +11,7 @@ use crate::{
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
     object::{Client, Object, UnidirectionalChannelPath},
+    util::retry::{retry_with_index, RetryResult},
 };
 
 mod handle;
@@ -19,6 +19,20 @@ pub use handle::WorkerHandle;
 
 mod cmd;
 pub use cmd::WorkerCmd;
+
+mod retry_strategy {
+    use crate::util::retry::{clamp, Fibonacci};
+    use std::time::Duration;
+
+    const MAX_RETRIES: usize = 12;
+    const MAX_RETRY_DELAY: Duration = Duration::from_secs(10);
+    const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(200);
+
+    pub fn uni_chan_path() -> impl Iterator<Item = Duration> {
+        let strategy = Fibonacci::from(INITIAL_RETRY_DELAY);
+        clamp(strategy, MAX_RETRY_DELAY, MAX_RETRIES)
+    }
+}
 
 /// A worker processes batches of events associated with a given [`Object`].
 pub struct Worker {
@@ -158,10 +172,8 @@ impl Worker {
             return Ok(());
         }
 
-        loop {
-            thread::sleep(Duration::from_millis(200));
-
-            if let Ok(cmd) = self.rx.try_recv() {
+        fn step(rx: &Receiver<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<(), u64> {
+            if let Ok(cmd) = rx.try_recv() {
                 let result = match cmd {
                     WorkerCmd::IbcEvents { batch } => {
                         // Update scheduled batches.
@@ -175,11 +187,10 @@ impl Worker {
 
                 if let Err(e) = result {
                     error!("{}", e);
-                    continue;
+                    return RetryResult::Retry(index);
                 }
             }
 
-            // Refresh the scheduled batches and execute any outstanding ones.
             let result = link
                 .a_to_b
                 .refresh_schedule()
@@ -187,6 +198,25 @@ impl Worker {
 
             if let Err(e) = result {
                 error!("{}", e);
+                return RetryResult::Retry(index);
+            }
+
+            RetryResult::Ok(())
+        }
+
+        loop {
+            thread::sleep(Duration::from_millis(200));
+
+            let result = retry_with_index(retry_strategy::uni_chan_path(), |index| {
+                step(&self.rx, &mut link, index)
+            });
+
+            if let Err(retries) = result {
+                return Err(format!(
+                    "UnidirectionalChannelPath worker failed after {} retries",
+                    retries
+                )
+                .into());
             }
         }
     }

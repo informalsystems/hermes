@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
+use retry::delay::Fibonacci;
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
@@ -18,7 +19,20 @@ use tendermint_rpc::{
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
-use crate::util::retry::Clamped;
+use crate::util::retry::clamp;
+
+// Default parameters for the retrying mechanism
+pub const MAX_RETRIES: usize = 5;
+pub const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
+pub const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
+
+fn default_retry_strategy() -> impl Iterator<Item = Duration> {
+    clamp(
+        Fibonacci::from(INITIAL_RETRY_DELAY),
+        MAX_RETRY_DELAY,
+        MAX_RETRIES,
+    )
+}
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {
@@ -240,9 +254,7 @@ impl EventMonitor {
     fn restart(&mut self) {
         use retry::{retry_with_index, OperationResult as TryResult};
 
-        let strategy = Clamped::default();
-
-        retry_with_index(strategy.iter(), |index| {
+        retry_with_index(default_retry_strategy(), |index| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
                 error!("error when reconnecting: {}", e);
