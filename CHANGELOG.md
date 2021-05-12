@@ -6,6 +6,9 @@
 
 ### FEATURES
 
+- [ibc-relayer]
+  - Added support for Protobuf-based Keyring ([#925])
+
 ### IMPROVEMENTS
 - [ibc-relayer-cli]
   - Improve UX when querying non-existing connections and channels ([#875], [#920])
@@ -17,6 +20,7 @@
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#925]: https://github.com/informalsystems/ibc-rs/issues/925
 
 
 ## v0.3.0
