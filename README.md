@@ -17,9 +17,9 @@ This project comprises primarily four crates:
 - The [`ibc-relayer-cli`][relayer-cli-crate-link] is a CLI (a wrapper
   over the `ibc-relayer` library), comprising the
   [`hermes`](https://hermes.informal.systems) binary.
-- The [`ibc-proto`][ibc-proto-crate-link] is a library with proto definitions
-  necessary for interacting with Cosmos SDK
-  [IBC structs](https://github.com/cosmos/ibc-go/tree/main/proto/ibc).
+- The [`ibc-proto`][ibc-proto-crate-link] is a library with Rust types generated from .proto definitions
+  necessary for interacting with [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/tree/master/proto/cosmos)
+  and its [IBC structs](https://github.com/cosmos/ibc-go/tree/main/proto/ibc).
 
 See the table below for more details.
 
