@@ -13,6 +13,8 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 - [ibc-relayer-cli]
   - Added packet clearing and client refresh capabilities for the `start-multi` command ([#784], [#786])
 
+- [scripts]
+  - Created the Gaiad Manager `gm` CLI tool for managing gaiad instances on the local machine ([#902])
 ### IMPROVEMENTS
 
 - [ibc]
@@ -59,6 +61,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
 [#878]: https://github.com/informalsystems/ibc-rs/issues/878
 [#873]: https://github.com/informalsystems/ibc-rs/issues/873
+[#902]: https://github.com/informalsystems/ibc-rs/issues/902
 
 ## v0.2.0
 *April 14th, 2021*
