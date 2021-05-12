@@ -1,12 +1,30 @@
 # Example configuration with one validator and one full node
-# Todo: document this fully
+
+# The global section lists all possible parameters and their default value, when they are not explicitly set.
 [global]
+
+# The path to the gaiad binary path.
 gaiad_binary="$GOPATH/bin/gaiad"
+
+# The ports to start at for any previously undefined nodes. The value will be incremented (by 10)
+# when a new node requires ports.
 ports_start_at=27000
+
+# The folder that contains the chain configuration and data as well as any test keys.
 home_dir="$HOME/.gm"
+
+# Automatically update `persistent_peers` on a full node and `unconditional_peer_ids` on a validator.
 auto_maintain_config=true
 
+# When generating the hermes config, the current section (except for [global]) will be copied as necessary.
+add_to_hermes=true
+
+##
+## Sub-section (node) definitions and parameter redefinitons below.
+##
+
 [validator1]
+add_to_hermes=false
 
 [node1]
 network="validator1"

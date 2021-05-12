@@ -26,6 +26,7 @@ usage() {
   echo "COMMANDS    DESCRIPTION"
   echo
   echo "help        print this help and exit"
+  echo "hermes      print the hermes config.toml"
   echo "install     install the script for the local user"
   echo "keys        print the keys of validator nodes"
   echo "log         print the log of a node"
@@ -40,6 +41,10 @@ usage() {
 case "${1:-help}" in
   help)
     usage
+    ;;
+  hermes)
+    load_config
+    hermes
     ;;
   install)
     install

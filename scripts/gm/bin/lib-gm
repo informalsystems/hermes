@@ -115,9 +115,11 @@ load_config() {
   #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
   GLOBAL_HOME_DIR="$(eval echo "$(stoml -q "$CONFIG_FILE" global.home_dir || echo "${HOME}/.gm")")"
   GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -q "$CONFIG_FILE" global.auto_maintain_config || echo "true")"
+  GLOBAL_ADD_TO_HERMES="$(stoml -q "$CONFIG_FILE" global.add_to_hermes || echo "true")"
   export GLOBAL_GAIAD_BINARY
   export GLOBAL_HOME_DIR
   export GLOBAL_AUTO_MAINTAIN_CONFIG
+  export GLOBAL_ADD_TO_HERMES
   if [ "$FRESH_CONFIG" = "yes" ]; then
     write_default_config
     VALIDATORS=""
@@ -167,7 +169,7 @@ gaiad_binary="$GLOBAL_GAIAD_BINARY"
 ports_start_at=27000
 home_dir="$GLOBAL_HOME_DIR"
 auto_maintain_config=$GLOBAL_AUTO_MAINTAIN_CONFIG
-comment="Please add comments to all node definitions. (Mandatory.)"
+add_to_hermes=$GLOBAL_ADD_TO_HERMES
 EOF
   set -e
 }
@@ -241,6 +243,15 @@ get_network() {
     fi
   fi
   echo "$RESULT"
+}
+
+get_add_to_hermes() {
+  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.add_to_hermes")"
+  if [ -z "$RESULT" ]; then
+    test "$GLOBAL_ADD_TO_HERMES" = "true"
+  else
+    test "$RESULT" = "true"
+  fi
 }
 
 get_node_id() {
@@ -391,7 +402,7 @@ print_status_line() {
     NAME_LENGTH="${#NAME}"
     NAME_PAD=""
     if [ "$NAME_LENGTH" -lt 15 ]; then
-      for p in $(seq "$NAME_LENGTH" 15);
+      for _ in $(seq "$NAME_LENGTH" 15);
       do
         NAME_PAD="$NAME_PAD "
       done
@@ -488,4 +499,42 @@ list_keys() {
       echo "$line"
     fi
   done
+}
+
+hermes() {
+  cat <<EOF
+[global]
+strategy = 'naive'
+log_level = 'info'
+
+EOF
+  for i in $ALL_NODES
+  do
+    if ! get_add_to_hermes "$i"; then
+      continue
+    fi
+    RPC="$(get_rpc_port "$i")"
+    GRPC="$(get_grpc_port "$i")"
+    ID="$(get_network "$i" || echo "")"
+    if [ -z "$ID" ]; then
+      ID="$i"
+    fi
+    cat <<EOF
+[[chains]]
+id='${i}'
+rpc_addr='http://localhost:${RPC}'
+grpc_addr='https://localhost:${GRPC}'
+websocket_addr='ws://localhost:${RPC}/websocket'
+rpc_timeout='1s'
+account_prefix='cosmos'
+key_name='wallet'
+store_prefix='ibc'
+fee_denom='stake'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+EOF
+    done
 }

@@ -32,7 +32,7 @@ _gm_nodes_f() {
 
 _gm_complete_commands() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
-  local cmds="help install keys log ports start status stop version"
+  local cmds="help hermes install keys log ports start status stop version"
   while read -r line; do COMPREPLY+=("$line"); done < <(compgen -W "$cmds" -- "$cur")
 }
 
