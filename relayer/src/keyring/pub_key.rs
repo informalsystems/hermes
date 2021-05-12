@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use base64;
 use serde::{Deserialize, Deserializer};
 use tracing::{error, trace};
 
@@ -23,7 +22,8 @@ impl EncodedPubKey {
 }
 
 /// A variant of [`EncodedPubKey`].
-/// A Protobuf `Any`, having support for deserialization from JSON.
+/// A Protobuf `Any`, having support for deserialization from
+/// JSON + base64 (see `deserialize_key`).
 #[derive(Debug, Deserialize)]
 pub struct ProtoAny {
     #[serde(alias = "@type")]
@@ -35,13 +35,13 @@ pub struct ProtoAny {
 
 /// This method is the workhorse for deserializing
 /// the `key` field from a public key.
-fn deserialize_key<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+fn deserialize_key<'de, D>(deser: D) -> Result<Vec<u8>, D::Error>
 where
     D: Deserializer<'de>,
 {
     // The key is a byte array that is base64-encoded
     // and then marshalled into a JSON String.
-    let based64_encoded: Result<String, _> = Deserialize::deserialize(deserializer);
+    let based64_encoded: Result<String, _> = Deserialize::deserialize(deser);
     let value = base64::decode(based64_encoded?)
         .map_err(|e| serde::de::Error::custom(format!("error in decoding: {}", e)))?;
     Ok(value)
@@ -52,7 +52,7 @@ impl FromStr for EncodedPubKey {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Try to deserialize into a JSON Value.
-        let maybe_json = serde_json::from_str(s);
+        let maybe_json: Result<ProtoAny, _> = serde_json::from_str(s);
 
         match maybe_json {
             Ok(proto) => {

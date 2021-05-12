@@ -1,7 +1,3 @@
-pub mod errors;
-mod pub_key;
-pub use pub_key::EncodedPubKey;
-
 use std::convert::{TryFrom, TryInto};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -19,11 +15,14 @@ use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use ripemd160::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use tracing::info;
+
+use errors::{Error, Kind};
+pub use pub_key::EncodedPubKey;
 
 use crate::config::ChainConfig;
 
-use errors::{Error, Kind};
+pub mod errors;
+mod pub_key;
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test"; // TODO: Change to "keyring"
