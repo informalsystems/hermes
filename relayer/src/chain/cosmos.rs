@@ -6,7 +6,6 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
-use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -27,8 +26,10 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events as ClientEvents;
-use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
+use ibc::ics04_channel::channel::{
+    ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest, State as ChannelState,
+};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -65,7 +66,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::{EventBatch, EventMonitor};
+use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
@@ -334,11 +335,11 @@ impl Chain for CosmosSdkChain {
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
 
         Ok(Self {
-            rt,
             config,
-            keybase,
             rpc_client,
             grpc_addr,
+            rt,
+            keybase,
         })
     }
 
@@ -361,13 +362,7 @@ impl Chain for CosmosSdkChain {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<
-        (
-            channel::Receiver<EventBatch>,
-            Option<thread::JoinHandle<()>>,
-        ),
-        Error,
-    > {
+    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
         crate::time!("init_event_monitor");
 
         let (mut event_monitor, event_receiver) = EventMonitor::new(
@@ -749,8 +744,17 @@ impl Chain for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
         let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
-        Ok(ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query(format!("connection {}", connection_id)).context(e))?)
+        let connection_end = ConnectionEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query(format!("connection '{}'", connection_id)).context(e))?;
+
+        match connection_end.state() {
+            ConnectionState::Uninitialized => {
+                Err(Kind::Query(format!("connection '{}'", connection_id))
+                    .context("connection does not exist")
+                    .into())
+            }
+            _ => Ok(connection_end),
+        }
     }
 
     fn query_connection_channels(
@@ -826,8 +830,19 @@ impl Chain for CosmosSdkChain {
             height,
             false,
         )?;
-        Ok(ChannelEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("channel".into()).context(e))?)
+        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| {
+            Kind::Query(format!("port '{}' & channel '{}'", port_id, channel_id)).context(e)
+        })?;
+
+        match channel_end.state() {
+            ChannelState::Uninitialized => Err(Kind::Query(format!(
+                "port '{}' & channel '{}'",
+                port_id, channel_id
+            ))
+            .context("channel does not exist")
+            .into()),
+            _ => Ok(channel_end),
+        }
     }
 
     /// Queries the packet commitment hashes associated with a channel.

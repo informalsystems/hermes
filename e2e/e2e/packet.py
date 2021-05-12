@@ -132,13 +132,12 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
 @cmd("query packet unreceived-packets")
 @dataclass
 class QueryUnreceivedPackets(Cmd[List[int]]):
-    dst_chain_id: ChainId
-    src_chain_id: ChainId
-    src_port: PortId
-    src_channel: ChannelId
+    chain: ChainId
+    port: PortId
+    channel: ChannelId
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
+        return [self.chain, self.port, self.channel]
 
     def process(self, result: Any) -> List[int]:
         return from_dict(List[int], result)
@@ -146,13 +145,12 @@ class QueryUnreceivedPackets(Cmd[List[int]]):
 
 def query_unreceived_packets(
     c: Config,
-    dst: ChainId,
-    src: ChainId,
-    src_port: PortId,
-    src_channel: ChannelId,
+    chain: ChainId,
+    port: PortId,
+    channel: ChannelId,
 ) -> List[int]:
     cmd = QueryUnreceivedPackets(
-        dst_chain_id=dst, src_chain_id=src, src_port=src_port, src_channel=src_channel)
+        chain=chain, port=port, channel=channel)
 
     return cmd.run(c).success()
 
@@ -162,13 +160,12 @@ def query_unreceived_packets(
 @cmd("query packet unreceived-acks")
 @dataclass
 class QueryUnreceivedAcks(Cmd[List[int]]):
-    dst_chain_id: ChainId
-    src_chain_id: ChainId
-    src_port: PortId
-    src_channel: ChannelId
+    chain: ChainId
+    port: PortId
+    channel: ChannelId
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
+        return [self.chain, self.port, self.channel]
 
     def process(self, result: Any) -> List[int]:
         return from_dict(List[int], result)
@@ -176,13 +173,12 @@ class QueryUnreceivedAcks(Cmd[List[int]]):
 
 def query_unreceived_acks(
     c: Config,
-    dst: ChainId,
-    src: ChainId,
-    src_port: PortId,
-    src_channel: ChannelId,
+    chain: ChainId,
+    port: PortId,
+    channel: ChannelId,
 ) -> List[int]:
     cmd = QueryUnreceivedAcks(
-        dst_chain_id=dst, src_chain_id=src, src_port=src_port, src_channel=src_channel)
+        chain=chain, port=port, channel=channel)
 
     return cmd.run(c).success()
 

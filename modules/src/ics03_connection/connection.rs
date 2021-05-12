@@ -41,14 +41,14 @@ impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
-        if value.client_id.is_empty() {
-            return Err(Kind::EmptyProtoConnectionEnd.into());
-        }
-
         let state = value.state.try_into()?;
         if state == State::Uninitialized {
             return Ok(ConnectionEnd::default());
         }
+        if value.client_id.is_empty() {
+            return Err(Kind::EmptyProtoConnectionEnd.into());
+        }
+
         Ok(Self::new(
             state,
             value

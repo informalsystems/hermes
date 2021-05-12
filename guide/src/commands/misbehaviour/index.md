@@ -90,8 +90,8 @@ hermes query client state ibc-0 07-tendermint-0 | jq
 ```json
 {
   "result": {
-    "allow_update_after_expiry": false,
-    "allow_update_after_misbehaviour": false,
+    "allow_update_after_expiry": true,
+    "allow_update_after_misbehaviour": true,
     "chain_id": "ibc-1",
     "frozen_height": {
       "revision_height": 16,

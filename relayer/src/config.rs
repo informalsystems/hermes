@@ -63,13 +63,7 @@ impl Config {
                 || c.a_chain == *dst_chain && c.b_chain == *src_chain
         });
 
-        connection.and_then(|conn| {
-            if let Some(ref paths) = conn.paths {
-                Some((conn, &paths[0]))
-            } else {
-                None
-            }
-        })
+        connection.and_then(|conn| conn.paths.as_ref().map(|paths| (conn, &paths[0])))
     }
 }
 

@@ -7,11 +7,7 @@ the `start-multi` command.
 > __WARNING__: Relaying packets concurrently over multiple channels with the
 > `start-multi` command is currently __experimental__. Use at your own risk.
 
-> __Caveat__: At the moment, `start-multi` does not clear pending packets
-> when starting. It is therefore advised to only use it for channels which
-> do not have pending packets.
-
-1. Paste the following configuration in a file named __`multi-config.toml`__:
+1. Paste the following configuration in the standard Hermes configuration file at `~/.hermes/config.toml`:
 
     ```toml
     [global]
@@ -70,35 +66,18 @@ the `start-multi` command.
     [chains.trust_threshold]
     numerator = '1'
     denominator = '3'
-
-    [[connections]]
-    a_chain = 'ibc-0'
-    b_chain = 'ibc-1'
-
-    [[connections.paths]]
-    a_port = 'transfer'
-    b_port = 'transfer'
-
-    [[connections]]
-    a_chain = 'ibc-1'
-    b_chain = 'ibc-2'
-
-    [[connections.paths]]
-    a_port = 'transfer'
-    b_port = 'transfer'
     ```
 
-    This configuration three chains `ibc-0`, `ibc-1` and `ibc-2` as well
-    as two connections: one between `ibc-0` and `ibc-1`, and another
-    between `ibc-1` and `ibc-2`, both using the `transfer` ports.
+    This configuration has three chains `ibc-0`, `ibc-1` and `ibc-2`.
 
 2. Run the `dev-env` script with the parameters below to start three chains:
 
     ```bash
-    ./scripts/dev-env multi-config.toml ibc-0 ibc-1 ibc-2
+    ./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1 ibc-2
     ```
 
-    > __NOTE__: If the script above prompts you to delete the data folder, answer __'yes'__.
+    > __NOTE__: The script will prompt you to delete the data folder, double check the path and
+    > if it points to the `data` directory in the current directory, answer __'yes'__.
 
     The script configures and starts three __`gaiad`__ instances, named __`ibc-0`__, and __`ibc-1`__, and __`ibc-2`__.
 
@@ -106,7 +85,7 @@ the `start-multi` command.
 3. Create a channel between `ibc-0` and `ibc-1`:
 
     ```shell
-    hermes -c multi-config.toml create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
+    hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
     ```
 
     ```rust
@@ -168,7 +147,7 @@ the `start-multi` command.
 5. Create a channel between `ibc-1` and `ibc-2`:
 
     ```shell
-    hermes -c multi-config.toml create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
+    hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
     ```
 
     ```rust
@@ -227,18 +206,21 @@ the `start-multi` command.
 
     Note that the channel identifier on `ibc-1` is `channel-1`, and on `ibc-2` it is `channel-0`.
 
-3. From a terminal, start Hermes using the `start-multi` command:
+3. Start Hermes using the `start-multi` command:
 
     ```shell
-    hermes -c multi-config.toml start-multi
+    hermes start-multi
     ```
+
+   Hermes will first relay the pending packets that have not been relayed and then start passive relaying by listening
+    to and acting on packet events.
 
 4. In a separate terminal, use the `ft-transfer` command to send:
 
-    - two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
+    - Two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
 
       ```shell
-      hermes -c multi-config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+      hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
       ```
 
       ```rust
@@ -258,10 +240,10 @@ the `start-multi` command.
       ]
       ```
 
-    - two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
+    - Two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
 
       ```shell
-      hermes -c multi-config.toml tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 1000 -n 2
+      hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 1000 -n 2
       ```
 
       ```rust
@@ -314,10 +296,10 @@ the `start-multi` command.
 5. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
 
     ```shell
-    hermes -c multi-config.toml query packet unreceived-packets ibc-0 ibc-1 transfer channel-0
-    hermes -c multi-config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
-    hermes -c multi-config.toml query packet unreceived-packets ibc-2 ibc-1 transfer channel-1
-    hermes -c multi-config.toml query packet unreceived-acks ibc-1 ibc-2 transfer channel-0
+    hermes query packet unreceived-packets ibc-1 transfer channel-0
+    hermes query packet unreceived-acks ibc-0 transfer channel-0
+    hermes query packet unreceived-packets ibc-2 transfer channel-0
+    hermes query packet unreceived-acks ibc-1 transfer channel-1
     ```
 
     If everything went well, each of these commands should result in:

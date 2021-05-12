@@ -41,7 +41,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use crate::chain::Chain;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::EventBatch;
+use crate::event::monitor::EventReceiver;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
@@ -79,13 +79,7 @@ impl Chain for MockChain {
     fn init_event_monitor(
         &self,
         _rt: Arc<Runtime>,
-    ) -> Result<
-        (
-            channel::Receiver<EventBatch>,
-            Option<thread::JoinHandle<()>>,
-        ),
-        Error,
-    > {
+    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
         let (_, rx) = channel::unbounded();
         Ok((rx, None))
     }

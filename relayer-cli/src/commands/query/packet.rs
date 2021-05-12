@@ -14,17 +14,13 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
-use ibc_relayer::{
-    chain::{
-        counterparty::get_counterparty_chain, runtime::ChainRuntime, Chain, CosmosSdkChain,
-        QueryPacketOptions,
-    },
-    config::{ChainConfig, Config},
-};
+use ibc_relayer::chain::{runtime::ChainRuntime, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
+use ibc::ics02_client::client_state::ClientState;
+use ibc_relayer::chain::counterparty::channel_connection_client;
 
 #[derive(Serialize, Debug)]
 struct PacketSeqs {
@@ -44,43 +40,27 @@ pub struct QueryPacketCommitmentsCmd {
     channel_id: ChannelId,
 }
 
-impl QueryPacketCommitmentsCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, QueryPacketOptions), String> {
-        let dest_chain_config = config
-            .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
-
-        let opts = QueryPacketOptions {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
-            height: 0_u64,
-        };
-
-        Ok((dest_chain_config.clone(), opts))
-    }
-}
-
 // cargo run --bin hermes -- query packet commitments ibc-0 transfer ibconexfer --height 3
 impl Runnable for QueryPacketCommitmentsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let (chain_config, opts) = match self.validate_options(&config) {
+        debug!("Options: {:?}", self);
+
+        let chain_config = match config
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))
+        {
             Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
 
-        debug!("Options: {:?}", opts);
-
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
+        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
 
         let grpc_request = QueryPacketCommitmentsRequest {
-            port_id: opts.port_id.to_string(),
-            channel_id: opts.channel_id.to_string(),
+            port_id: self.port_id.to_string(),
+            channel_id: self.channel_id.to_string(),
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
@@ -111,52 +91,39 @@ pub struct QueryPacketCommitmentCmd {
     channel_id: ChannelId,
 
     #[options(free, required, help = "sequence of packet to query")]
-    sequence: u64,
+    sequence: Sequence,
 
     #[options(help = "height of the state to query", short = "h")]
     height: Option<u64>,
-}
-
-impl QueryPacketCommitmentCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
-        let dest_chain_config = config
-            .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
-
-        let opts = QueryPacketOptions {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
-            height: self.height.unwrap_or(0_u64),
-        };
-
-        Ok((dest_chain_config.clone(), opts, self.sequence.into()))
-    }
 }
 
 impl Runnable for QueryPacketCommitmentCmd {
     fn run(&self) {
         let config = app_config();
 
-        let (chain_config, opts, sequence) = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
-            Ok(result) => result,
-        };
+        debug!("Options: {:?}", self);
 
-        debug!("Options: {:?}", opts);
+        let chain_config = match config.find_chain(&self.chain_id) {
+            None => {
+                return Output::error(format!(
+                    "chain '{}' not found in configuration file",
+                    self.chain_id
+                ))
+                .exit()
+            }
+            Some(chain_config) => chain_config,
+        };
 
         // cargo run --bin hermes -- query packet commitment ibc-0 transfer ibconexfer 3 --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
+        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
 
         let res = chain.build_packet_proofs(
             PacketMsgType::Recv,
-            opts.port_id,
-            opts.channel_id,
-            sequence,
-            Height::new(0, opts.height),
+            &self.port_id,
+            &self.channel_id,
+            self.sequence,
+            Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
         );
 
         match res {
@@ -171,154 +138,95 @@ impl Runnable for QueryPacketCommitmentCmd {
 }
 
 /// This command does the following:
-/// 1. queries the source chain to get the counterparty channel and port identifiers (needed in 3)
-/// 2. queries the source chain for all packet commitmments/ sequences for a given port and channel
-/// 3. queries the destination chain for the unreceived sequences out of the list obtained in 2.
+/// 1. queries the chain to get its counterparty chain, channel and port identifiers (needed in 2)
+/// 2. queries the counterparty chain for all packet commitments/ sequences for a given port and channel
+/// 3. queries the chain for the unreceived sequences out of the list obtained in 2.
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryUnreceivedPacketsCmd {
     #[options(
         free,
         required,
-        help = "identifier of the chain to query the unreceived sequences"
+        help = "identifier of the chain for the unreceived sequences"
     )]
-    dst_chain_id: ChainId,
+    chain_id: ChainId,
 
-    #[options(
-        free,
-        required,
-        help = "identifier of the chain where sent sequences are queried"
-    )]
-    src_chain_id: ChainId,
+    #[options(free, required, help = "port identifier")]
+    port_id: PortId,
 
-    #[options(
-        free,
-        required,
-        help = "identifier of the port to query on source chain"
-    )]
-    src_port_id: PortId,
-
-    #[options(
-        free,
-        required,
-        help = "identifier of the channel to query on source chain"
-    )]
-    src_channel_id: ChannelId,
-}
-
-impl QueryUnreceivedPacketsCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, ChainConfig, QueryPacketOptions), String> {
-        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
-            format!(
-                "source chain '{}' not found in configuration file",
-                self.src_chain_id
-            )
-        })?;
-
-        let dst_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
-            format!(
-                "destination chain '{}' not found in configuration file",
-                self.dst_chain_id
-            )
-        })?;
-
-        let opts = QueryPacketOptions {
-            port_id: self.src_port_id.clone(),
-            channel_id: self.src_channel_id.clone(),
-            height: 0_u64,
-        };
-
-        Ok((dst_chain_config.clone(), src_chain_config.clone(), opts))
-    }
+    #[options(free, required, help = "channel identifier")]
+    channel_id: ChannelId,
 }
 
 impl Runnable for QueryUnreceivedPacketsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
-            Ok(result) => result,
-        };
+        debug!("Options: {:?}", self);
 
-        debug!("Options: {:?}", opts);
-
-        let (src_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config).unwrap();
-        let (dst_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config).unwrap();
-
-        // get the channel information from source chain
-        let channel_res = src_chain
-            .query_channel(&opts.port_id, &opts.channel_id, Height::zero())
-            .map_err(|e| Kind::Query.context(e));
-
-        let channel = match channel_res {
-            Ok(c) => c,
-            Err(e) => {
-                return Output::error(format!(
-                    "failed to find channel ({}/{}) on chain ({}) with error: {}",
-                    opts.port_id,
-                    opts.channel_id,
-                    src_chain.id(),
-                    e
-                ))
-                .exit();
-            }
-        };
-
-        let src_connection_id = match channel.connection_hops().first() {
-            Some(id) => id,
+        let chain_config = match config.find_chain(&self.chain_id) {
             None => {
                 return Output::error(format!(
-                    "no connection hops for channel '{}'",
-                    self.src_channel_id
+                    "chain '{}' not found in configuration file",
+                    self.chain_id
                 ))
                 .exit()
             }
+            Some(chain_config) => chain_config,
         };
 
-        let chain_id =
-            match get_counterparty_chain(src_chain.as_ref(), &opts.channel_id, &opts.port_id) {
-                Ok(chain_id) => chain_id,
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let (chain, _) =
+            ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()).unwrap();
+
+        let channel_connection_client =
+            match channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id) {
+                Ok(channel_connection_client) => channel_connection_client,
                 Err(e) => {
                     return Output::error(format!(
-                        "failed to find channel/connection ({}/{}/{}) client with error: {}",
-                        opts.channel_id,
-                        src_connection_id,
-                        src_chain.id(),
-                        e
+                        "error when getting channel/ connection for {} on {}: {}",
+                        self.channel_id,
+                        chain.id(),
+                        e,
                     ))
                     .exit();
                 }
             };
 
-        // ensure the channel connects the specified chain
-        if chain_id != dst_chain.id() {
-            return Output::error(format!(
-                "no channel/connection {}/{} between {} and {} exists",
-                opts.channel_id,
-                src_connection_id,
-                src_chain.id(),
-                dst_chain.id(),
-            ))
-            .exit();
-        }
-
+        let channel = channel_connection_client.channel;
         debug!(
             "Fetched from source chain {} the following channel {:?}",
-            src_chain.id(),
-            channel
+            self.chain_id, channel
         );
 
-        // get the packet commitments on source chain
+        let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
+        let counterparty_chain_config = match config.find_chain(&counterparty_chain_id) {
+            None => {
+                return Output::error(format!(
+                    "counterparty chain '{}' for channel '{}' not found in configuration file",
+                    counterparty_chain_id, self.channel_id
+                ))
+                .exit()
+            }
+            Some(chain_config) => chain_config,
+        };
+
+        let (counterparty_chain, _) =
+            ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt).unwrap();
+
+        // get the packet commitments on the counterparty/ source chain
         let commitments_request = QueryPacketCommitmentsRequest {
-            port_id: opts.port_id.to_string(),
-            channel_id: opts.channel_id.to_string(),
+            port_id: channel.channel_end.counterparty().port_id.to_string(),
+            channel_id: channel
+                .channel_end
+                .counterparty()
+                .channel_id
+                .as_ref()
+                .unwrap()
+                .to_string(),
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let seq_res = src_chain
+        let seq_res = counterparty_chain
             .query_packet_commitments(commitments_request)
             .map_err(|e| Kind::Query.context(e));
 
@@ -327,35 +235,21 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             Ok(seqs) => seqs.0.into_iter().map(|v| v.sequence).collect(),
             Err(e) => {
                 return Output::error(format!(
-                    "failed to fetch the packet commitments from src chain ({}) with error: {}",
-                    src_chain.id(),
+                    "failed to fetch the packet commitments from chain ({}) with error: {}",
+                    chain.id(),
                     e
                 ))
                 .exit()
             }
         };
 
-        // Extract the channel identifier which the counterparty (dst chain) is using
-        let channel_id = match &channel.counterparty().channel_id {
-            Some(id) => id.to_string(),
-            None => {
-                return Output::error(format!(
-                    "The channel ({}/{}) has no counterparty (channel state is {:?})",
-                    opts.port_id,
-                    opts.channel_id,
-                    *channel.state()
-                ))
-                .exit()
-            }
-        };
-
         let request = QueryUnreceivedPacketsRequest {
-            port_id: channel.counterparty().port_id().to_string(),
-            channel_id,
+            port_id: channel.port_id.to_string(),
+            channel_id: channel.channel_id.to_string(),
             packet_commitment_sequences: sequences,
         };
 
-        let res = dst_chain.query_unreceived_packets(request);
+        let res = chain.query_unreceived_packets(request);
 
         match res {
             Ok(seqs) => Output::success(seqs).exit(),
@@ -376,43 +270,29 @@ pub struct QueryPacketAcknowledgementsCmd {
     channel_id: ChannelId,
 }
 
-impl QueryPacketAcknowledgementsCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, QueryPacketOptions), String> {
-        let dst_chain_config = config
-            .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
-
-        let opts = QueryPacketOptions {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
-            height: 0_u64,
-        };
-
-        Ok((dst_chain_config.clone(), opts))
-    }
-}
-
 // cargo run --bin hermes -- query packet acknowledgements ibc-0 transfer ibconexfer --height 3
 impl Runnable for QueryPacketAcknowledgementsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
-            Ok(result) => result,
+        debug!("Options: {:?}", self);
+
+        let chain_config = match config.find_chain(&self.chain_id) {
+            None => {
+                return Output::error(format!(
+                    "chain '{}' not found in configuration file",
+                    self.chain_id
+                ))
+                .exit()
+            }
+            Some(chain_config) => chain_config,
         };
 
-        debug!("Options: {:?}", opts);
-
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
-
+        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
         let grpc_request = QueryPacketAcknowledgementsRequest {
-            port_id: opts.port_id.to_string(),
-            channel_id: opts.channel_id.to_string(),
+            port_id: self.port_id.to_string(),
+            channel_id: self.channel_id.to_string(),
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
@@ -443,52 +323,39 @@ pub struct QueryPacketAcknowledgmentCmd {
     channel_id: ChannelId,
 
     #[options(free, required, help = "sequence of packet to query")]
-    sequence: u64,
+    sequence: Sequence,
 
     #[options(help = "height of the state to query", short = "h")]
     height: Option<u64>,
-}
-
-impl QueryPacketAcknowledgmentCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
-        let dst_chain_config = config
-            .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
-
-        let opts = QueryPacketOptions {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
-            height: self.height.unwrap_or(0_u64),
-        };
-
-        Ok((dst_chain_config.clone(), opts, self.sequence.into()))
-    }
 }
 
 impl Runnable for QueryPacketAcknowledgmentCmd {
     fn run(&self) {
         let config = app_config();
 
-        let (chain_config, opts, sequence) = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
-            Ok(result) => result,
-        };
+        debug!("Options: {:?}", self);
 
-        debug!("Options: {:?}", opts);
+        let chain_config = match config.find_chain(&self.chain_id) {
+            None => {
+                return Output::error(format!(
+                    "chain '{}' not found in configuration file",
+                    self.chain_id
+                ))
+                .exit()
+            }
+            Some(chain_config) => chain_config,
+        };
 
         // cargo run --bin hermes -- query packet acknowledgment ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSdkChain::bootstrap(chain_config, rt).unwrap();
+        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
 
         let res = chain.build_packet_proofs(
             PacketMsgType::Ack,
-            opts.port_id,
-            opts.channel_id,
-            sequence,
-            Height::new(0, opts.height),
+            &self.port_id,
+            &self.channel_id,
+            self.sequence,
+            Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
         );
 
         match res {
@@ -502,9 +369,9 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
 }
 
 /// This command does the following:
-/// 1. queries the source chain to get the counterparty channel and port identifiers (needed in 3)
-/// 2. queries the source chain for all packet commitmments/ sequences for a given port and channel
-/// 3. queries the destination chain for the unreceived sequences out of the list obtained in 2.
+/// 1. queries the chain to get its counterparty, channel and port identifiers (needed in 2)
+/// 2. queries the chain for all packet commitments/ sequences for a given port and channel
+/// 3. queries the counterparty chain for the unacknowledged sequences out of the list obtained in 2.
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryUnreceivedAcknowledgementCmd {
     #[options(
@@ -512,145 +379,84 @@ pub struct QueryUnreceivedAcknowledgementCmd {
         required,
         help = "identifier of the chain to query the unreceived acknowledgments"
     )]
-    dst_chain_id: ChainId,
+    chain_id: ChainId,
 
-    #[options(
-        free,
-        required,
-        help = "identifier of the chain where received sequences are queried"
-    )]
-    src_chain_id: ChainId,
+    #[options(free, required, help = "port identifier")]
+    port_id: PortId,
 
-    #[options(
-        free,
-        required,
-        help = "identifier of the port to query on source chain"
-    )]
-    src_port_id: PortId,
-
-    #[options(
-        free,
-        required,
-        help = "identifier of the channel to query on source chain"
-    )]
-    src_channel_id: ChannelId,
-}
-
-impl QueryUnreceivedAcknowledgementCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, ChainConfig, QueryPacketOptions), String> {
-        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
-            format!(
-                "source chain '{}' not found in configuration file",
-                self.src_chain_id
-            )
-        })?;
-
-        let dst_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
-            format!(
-                "destination chain '{}' not found in configuration file",
-                self.dst_chain_id
-            )
-        })?;
-
-        let opts = QueryPacketOptions {
-            port_id: self.src_port_id.clone(),
-            channel_id: self.src_channel_id.clone(),
-            height: 0_u64,
-        };
-
-        Ok((dst_chain_config.clone(), src_chain_config.clone(), opts))
-    }
+    #[options(free, required, help = "channel identifier")]
+    channel_id: ChannelId,
 }
 
 impl Runnable for QueryUnreceivedAcknowledgementCmd {
     fn run(&self) {
         let config = app_config();
 
-        let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => return Output::error(err).exit(),
-            Ok(result) => result,
-        };
+        debug!("Options: {:?}", self);
 
-        debug!("Options: {:?}", opts);
-
-        let (src_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(src_chain_config).unwrap();
-        let (dst_chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(dst_chain_config).unwrap();
-
-        // get the channel information from source chain
-        let channel_res = src_chain
-            .query_channel(&opts.port_id, &opts.channel_id, Height::zero())
-            .map_err(|e| Kind::Query.context(e));
-
-        let channel = match channel_res {
-            Ok(c) => c,
-            Err(e) => {
-                return Output::error(format!(
-                    "failed to find the target channel ({}/{}) on src chain ({}) with error: {}",
-                    opts.port_id,
-                    opts.channel_id,
-                    src_chain.id(),
-                    e
-                ))
-                .exit();
-            }
-        };
-
-        // check the chain_id
-        let src_connection_id = match channel.connection_hops().first() {
-            Some(id) => id,
+        let chain_config = match config.find_chain(&self.chain_id) {
             None => {
                 return Output::error(format!(
-                    "no connection hops for channel '{}'",
-                    self.src_channel_id
+                    "chain '{}' not found in configuration file",
+                    self.chain_id
                 ))
                 .exit()
             }
+            Some(chain_config) => chain_config,
         };
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let (chain, _) =
+            ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()).unwrap();
 
-        let chain_id =
-            match get_counterparty_chain(src_chain.as_ref(), &opts.channel_id, &opts.port_id) {
-                Ok(chain_id) => chain_id,
+        let channel_connection_client =
+            match channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id) {
+                Ok(channel_connection_client) => channel_connection_client,
                 Err(e) => {
                     return Output::error(format!(
-                        "failed to find channel/connection ({}/{}/{}) client with error: {}",
-                        opts.channel_id,
-                        src_connection_id,
-                        src_chain.id(),
-                        e
+                        "error when getting channel/ connection for {} on {}: {}",
+                        self.channel_id,
+                        chain.id(),
+                        e,
                     ))
                     .exit();
                 }
             };
 
-        // ensure the channel connects the specified chain
-        if chain_id != dst_chain.id() {
-            return Output::error(format!(
-                "no channel/connection {}/{} between {} and {} exists",
-                opts.channel_id,
-                src_connection_id,
-                src_chain.id(),
-                dst_chain.id(),
-            ))
-            .exit();
-        }
-
+        let channel = channel_connection_client.channel;
         debug!(
-            "Fetched from src chain {} the following channel {:?}",
-            src_chain.id(),
-            channel
+            "Fetched from chain {} the following channel {:?}",
+            self.chain_id, channel
         );
 
-        // get the packet commitments on source chain
+        let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
+        let counterparty_chain_config = match config.find_chain(&counterparty_chain_id) {
+            None => {
+                return Output::error(format!(
+                    "counterparty chain '{}' for channel '{}' not found in configuration file",
+                    counterparty_chain_id, self.channel_id
+                ))
+                .exit()
+            }
+            Some(chain_config) => chain_config,
+        };
+
+        let (counterparty_chain, _) =
+            ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt).unwrap();
+
+        // get the packet acknowledgments on counterparty chain
         let acks_request = QueryPacketAcknowledgementsRequest {
-            port_id: opts.port_id.to_string(),
-            channel_id: opts.channel_id.to_string(),
+            port_id: channel.channel_end.counterparty().port_id.to_string(),
+            channel_id: channel
+                .channel_end
+                .counterparty()
+                .channel_id
+                .as_ref()
+                .unwrap()
+                .to_string(),
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let seq_res = src_chain
+        let seq_res = counterparty_chain
             .query_packet_acknowledgements(acks_request)
             .map_err(|e| Kind::Query.context(e));
 
@@ -659,34 +465,21 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             Ok(seqs) => seqs.0.into_iter().map(|v| v.sequence).collect(),
             Err(e) => {
                 return Output::error(format!(
-                    "failed to fetch packet acknowledgements from src chain ({}) with error: {}",
-                    src_chain.id(),
+                    "failed to fetch packet acknowledgements from chain ({}) with error: {}",
+                    chain.id(),
                     e
                 ))
                 .exit()
             }
         };
 
-        let channel_id = match &channel.counterparty().channel_id() {
-            None => {
-                return Output::error(format!(
-                    "The channel ({}/{}) has no counterparty (channel state is {:?})",
-                    opts.port_id,
-                    opts.channel_id,
-                    *channel.state()
-                ))
-                .exit()
-            }
-            Some(id) => id.to_string(),
-        };
-
         let request = QueryUnreceivedAcksRequest {
-            port_id: channel.counterparty().port_id().to_string(),
-            channel_id,
+            port_id: self.port_id.to_string(),
+            channel_id: self.channel_id.to_string(),
             packet_ack_sequences: sequences,
         };
 
-        let res = dst_chain.query_unreceived_acknowledgement(request);
+        let res = chain.query_unreceived_acknowledgement(request);
 
         match res {
             Ok(seqs) => Output::success(seqs).exit(),

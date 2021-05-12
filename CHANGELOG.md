@@ -1,9 +1,38 @@
+# Changelog
+
 ## Unreleased
 
-Special thanks to external contributors:
-Jongwhan Lee (@leejw51crypto) ([#878]).
-
 > [TODO: high level summary]
+
+### FEATURES
+
+- [scripts]
+  - Created the Gaiad Manager `gm` CLI tool for managing gaiad instances on the local machine ([#902])
+
+### IMPROVEMENTS
+- [ibc-relayer-cli]
+  - Improve UX when querying non-existing connections and channels ([#875], [#920])
+
+### BUG FIXES
+
+### BREAKING CHANGES
+
+
+[#875]: https://github.com/informalsystems/ibc-rs/issues/875
+[#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#902]: https://github.com/informalsystems/ibc-rs/issues/902
+
+
+## v0.3.0
+*May 7h, 2021*
+
+Special thanks to Jongwhan Lee (@leejw51crypto) for his contributions ([#878]).
+
+This release mostly focuses on improving the UX and the experimental multi-paths relayer (`start-multi` command),
+which has been made more resilient against nodes going down, and is now able to clear pending packets
+and periodically refresh IBC clients. The relayer now also supports [ICS 027 (Interchain Accounts)][ics27].
+
+[ics27]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
 
 ### FEATURES
 
@@ -13,8 +42,6 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 - [ibc-relayer-cli]
   - Added packet clearing and client refresh capabilities for the `start-multi` command ([#784], [#786])
 
-- [scripts]
-  - Created the Gaiad Manager `gm` CLI tool for managing gaiad instances on the local machine ([#902])
 ### IMPROVEMENTS
 
 - [ibc]
@@ -23,7 +50,8 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
-  - Use a single supervisor to subscribe to all configured chains ([#862])
+  - Use a single supervisor in `start-multi` to subscribe to all configured chains ([#862])
+  - The `start-multi` command is now more resilient to a node not being up or going down, and will attempt to reconnect ([#871])
 
 ### BUG FIXES
 
@@ -35,6 +63,7 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
   - Fix missing port information in `hermes query channels` ([#840])
   - Fix crash during initialization of event monitor when node is down ([#863])
+  - Spawn a single Tokio runtime for the whole supervisor instead of one per chain ([#909])
 
 - [ibc-relayer-cli]
   - Fix for `ft-transfer` mismatching arguments ([#869])
@@ -43,7 +72,8 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 ### BREAKING CHANGES
 
 - [ibc-relayer]
-  - `hermes -j query channels` command now returns `result` array with the format `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]`.
+  - `hermes -j query channels` command now returns `result` array with the format
+    `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]` ([#840])
 
 
 [#758]: https://github.com/informalsystems/ibc-rs/issues/758
@@ -55,13 +85,13 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 [#840]: https://github.com/informalsystems/ibc-rs/issues/840
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
 [#854]: https://github.com/informalsystems/ibc-rs/issues/854
-[#861]: https://github.com/informalsystems/ibc-rs/issues/861
 [#862]: https://github.com/informalsystems/ibc-rs/issues/862
 [#863]: https://github.com/informalsystems/ibc-rs/issues/863
 [#869]: https://github.com/informalsystems/ibc-rs/issues/869
-[#878]: https://github.com/informalsystems/ibc-rs/issues/878
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#873]: https://github.com/informalsystems/ibc-rs/issues/873
-[#902]: https://github.com/informalsystems/ibc-rs/issues/902
+[#878]: https://github.com/informalsystems/ibc-rs/issues/878
+[#909]: https://github.com/informalsystems/ibc-rs/issues/909
 
 ## v0.2.0
 *April 14th, 2021*
