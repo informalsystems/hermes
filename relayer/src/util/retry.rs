@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-pub use retry::{delay::Fibonacci, retry_with_index, OperationResult as RetryResult};
+pub use retry::{
+    delay::{Fibonacci, Fixed},
+    retry_with_index, OperationResult as RetryResult,
+};
 
 #[derive(Copy, Clone, Debug)]
 pub struct ConstantGrowth {
@@ -46,6 +49,28 @@ pub fn clamp(
     strategy
         .take(max_retries)
         .map(move |delay| delay.min(max_delay))
+}
+
+pub fn clamp_total(
+    strategy: impl Iterator<Item = Duration>,
+    max_delay: Duration,
+    max_total_delay: Duration,
+) -> impl Iterator<Item = Duration> {
+    strategy.map(move |delay| delay.min(max_delay)).scan(
+        Duration::from_millis(0),
+        move |elapsed, delay| {
+            let next = if *elapsed > max_total_delay {
+                None
+            } else if (*elapsed + delay) > max_total_delay {
+                Some(max_total_delay - *elapsed)
+            } else {
+                Some(delay)
+            };
+
+            *elapsed += delay;
+            next
+        },
+    )
 }
 
 #[cfg(test)]

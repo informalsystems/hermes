@@ -21,16 +21,17 @@ mod cmd;
 pub use cmd::WorkerCmd;
 
 mod retry_strategy {
-    use crate::util::retry::{clamp, Fibonacci};
+    use crate::util::retry::{clamp_total, ConstantGrowth};
     use std::time::Duration;
 
-    const MAX_RETRIES: usize = 12;
-    const MAX_RETRY_DELAY: Duration = Duration::from_secs(10);
-    const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(200);
+    const MAX_DELAY: Duration = Duration::from_millis(500);
+    const DELAY_INCR: Duration = Duration::from_millis(100);
+    const INITIAL_DELAY: Duration = Duration::from_millis(200);
+    const MAX_RETRY_DURATION: Duration = Duration::from_secs(2);
 
     pub fn uni_chan_path() -> impl Iterator<Item = Duration> {
-        let strategy = Fibonacci::from(INITIAL_RETRY_DELAY);
-        clamp(strategy, MAX_RETRY_DELAY, MAX_RETRIES)
+        let strategy = ConstantGrowth::new(INITIAL_DELAY, DELAY_INCR);
+        clamp_total(strategy, MAX_DELAY, MAX_RETRY_DURATION)
     }
 }
 
