@@ -1,9 +1,8 @@
-use std::time::Duration;
-
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::connection::{Connection, ConnectionSide};
 
 use crate::cli_utils::ChainHandlePair;
@@ -58,7 +57,7 @@ impl Runnable for TxRawConnInitCmd {
             self,
             |chains: ChainHandlePair| {
                 Connection {
-                    delay_period: Duration::default(),
+                    delay_period: ZERO_DURATION,
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
@@ -106,7 +105,7 @@ impl Runnable for TxRawConnTryCmd {
             self,
             |chains: ChainHandlePair| {
                 Connection {
-                    delay_period: Duration::default(),
+                    delay_period: ZERO_DURATION,
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
@@ -162,7 +161,7 @@ impl Runnable for TxRawConnAckCmd {
             self,
             |chains: ChainHandlePair| {
                 Connection {
-                    delay_period: Duration::default(),
+                    delay_period: ZERO_DURATION,
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
@@ -218,7 +217,7 @@ impl Runnable for TxRawConnConfirmCmd {
             self,
             |chains: ChainHandlePair| {
                 Connection {
-                    delay_period: Duration::default(),
+                    delay_period: ZERO_DURATION,
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),

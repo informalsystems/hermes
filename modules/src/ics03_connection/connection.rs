@@ -14,6 +14,7 @@ use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::timestamp::ZERO_DURATION;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -31,7 +32,7 @@ impl Default for ConnectionEnd {
             client_id: Default::default(),
             counterparty: Default::default(),
             versions: vec![],
-            delay_period: Duration::default(),
+            delay_period: ZERO_DURATION,
         }
     }
 }

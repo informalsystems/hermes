@@ -15,6 +15,7 @@ use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
@@ -381,7 +382,7 @@ impl Connection {
             self.dst_client_id().clone(),
             counterparty,
             versions,
-            Duration::default(),
+            ZERO_DURATION,
         );
 
         // Retrieve existing connection if any
