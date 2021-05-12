@@ -208,7 +208,7 @@ mod tests {
             client_id.clone(),
             ConnectionCounterparty::try_from(get_dummy_raw_counterparty()).unwrap(),
             get_compatible_versions(),
-            Duration::from_secs(0),
+            Duration::default(),
         );
 
         // We're going to test message processing against this message.

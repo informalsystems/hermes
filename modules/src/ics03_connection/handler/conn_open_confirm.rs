@@ -117,7 +117,7 @@ mod tests {
             client_id.clone(),
             counterparty,
             context.get_compatible_versions(),
-            Duration::from_secs(0),
+            Duration::default(),
         );
 
         let mut correct_conn_end = incorrect_conn_end_state.clone();

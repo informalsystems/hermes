@@ -58,7 +58,7 @@ impl Runnable for TxRawConnInitCmd {
             self,
             |chains: ChainHandlePair| {
                 Connection {
-                    delay_period: Duration::from_secs(0),
+                    delay_period: Duration::default(),
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
@@ -106,7 +106,7 @@ impl Runnable for TxRawConnTryCmd {
             self,
             |chains: ChainHandlePair| {
                 Connection {
-                    delay_period: Duration::from_secs(0),
+                    delay_period: Duration::default(),
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
@@ -162,7 +162,7 @@ impl Runnable for TxRawConnAckCmd {
             self,
             |chains: ChainHandlePair| {
                 Connection {
-                    delay_period: Duration::from_secs(0),
+                    delay_period: Duration::default(),
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
@@ -218,7 +218,7 @@ impl Runnable for TxRawConnConfirmCmd {
             self,
             |chains: ChainHandlePair| {
                 Connection {
-                    delay_period: Duration::from_secs(0),
+                    delay_period: Duration::default(),
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),

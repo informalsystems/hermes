@@ -27,7 +27,7 @@ pub mod default {
     }
 
     pub fn connection_delay() -> Duration {
-        Duration::from_secs(0)
+        Duration::default()
     }
 
     pub fn channel_ordering() -> Order {

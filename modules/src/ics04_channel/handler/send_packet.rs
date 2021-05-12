@@ -164,7 +164,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            Duration::from_secs(0),
+            Duration::default(),
         );
 
         let mut packet_old: Packet = get_dummy_raw_packet(1, 1).try_into().unwrap();

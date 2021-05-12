@@ -137,7 +137,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            Duration::from_secs(0),
+            Duration::default(),
         );
 
         let tests: Vec<Test> = vec![

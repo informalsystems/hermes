@@ -157,7 +157,7 @@ mod tests {
                 CommitmentPrefix::from(b"ibc".to_vec()),
             ),
             vec![msg_ack.version().clone()],
-            Duration::from_secs(0),
+            Duration::default(),
         );
 
         // A connection end with incorrect state `Open`; will be part of the context.

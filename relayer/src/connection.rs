@@ -381,7 +381,7 @@ impl Connection {
             self.dst_client_id().clone(),
             counterparty,
             versions,
-            Duration::from_secs(0),
+            Duration::default(),
         );
 
         // Retrieve existing connection if any
@@ -504,11 +504,11 @@ impl Connection {
         // Cross-check the delay_period
         let delay = if src_connection.delay_period() != self.delay_period {
             warn!("`delay_period` for ConnectionEnd @{} is {}s; delay period on local Connection object is set to {}s",
-                self.src_chain().id(), src_connection.delay_period().as_secs(), self.delay_period.as_secs());
+                self.src_chain().id(), src_connection.delay_period().as_secs_f64(), self.delay_period.as_secs_f64());
 
             warn!(
                 "Overriding delay period for local connection object to {}s",
-                src_connection.delay_period().as_secs()
+                src_connection.delay_period().as_secs_f64()
             );
 
             src_connection.delay_period()

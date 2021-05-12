@@ -166,7 +166,7 @@ impl IbcTestRunner {
     }
 
     pub fn delay_period() -> Duration {
-        Duration::from_secs(0)
+        Duration::default()
     }
 
     pub fn commitment_prefix() -> CommitmentPrefix {

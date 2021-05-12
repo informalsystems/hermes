@@ -113,7 +113,7 @@ impl ClientState {
     /// Helper function to verify the upgrade client procedure.
     /// Resets all fields except the blockchain-specific ones.
     pub fn zero_custom_fields(mut client_state: Self) -> Self {
-        client_state.trusting_period = Duration::from_secs(0);
+        client_state.trusting_period = Duration::default();
         client_state.trust_level = TrustThresholdFraction {
             numerator: 0,
             denominator: 0,
@@ -121,7 +121,7 @@ impl ClientState {
         client_state.allow_update.after_expiry = false;
         client_state.allow_update.after_misbehaviour = false;
         client_state.frozen_height = Height::zero();
-        client_state.max_clock_drift = Duration::from_secs(0);
+        client_state.max_clock_drift = Duration::default();
         client_state
     }
 

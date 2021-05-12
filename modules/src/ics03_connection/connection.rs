@@ -31,7 +31,7 @@ impl Default for ConnectionEnd {
             client_id: Default::default(),
             counterparty: Default::default(),
             versions: vec![],
-            delay_period: Duration::from_secs(0),
+            delay_period: Duration::default(),
         }
     }
 }
@@ -65,7 +65,7 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
                 .map(Version::try_from)
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            Duration::from_secs(value.delay_period),
+            Duration::from_nanos(value.delay_period),
         ))
     }
 }
@@ -81,7 +81,7 @@ impl From<ConnectionEnd> for RawConnectionEnd {
                 .collect(),
             state: value.state as i32,
             counterparty: Some(value.counterparty.into()),
-            delay_period: value.delay_period.as_secs(),
+            delay_period: value.delay_period.as_nanos() as u64,
         }
     }
 }
