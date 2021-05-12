@@ -20,6 +20,9 @@ pub enum Kind {
     #[error("cannot generate private key")]
     PrivateKey,
 
+    #[error("cannot deserialize the encoded public key")]
+    EncodedPublicKey(String),
+
     #[error("cannot generate bech32 account")]
     Bech32Account,
 
