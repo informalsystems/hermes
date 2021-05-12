@@ -8,7 +8,7 @@
 use std::path::PathBuf;
 
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::config::Config;
 use crate::DEFAULT_CONFIG_PATH;
@@ -35,7 +35,6 @@ mod version;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
-    info!("Using default configuration from: '.hermes/config.toml'");
     dirs_next::home_dir().map(|home| home.join(DEFAULT_CONFIG_PATH))
 }
 
@@ -101,8 +100,26 @@ pub enum CliCmd {
 impl Configurable<Config> for CliCmd {
     /// Location of the configuration file
     fn config_path(&self) -> Option<PathBuf> {
-        let filename = default_config_file();
-        filename.filter(|f| f.exists())
+        let path = default_config_file();
+
+        match path {
+            Some(path) if path.exists() => {
+                info!("using default configuration from '{}'", path.display());
+                Some(path)
+            }
+            Some(path) => {
+                warn!("could not find configuration file at '{}'", path.display());
+                None
+            }
+            None => {
+                warn!("could not find default configuration file");
+                warn!(
+                    "please create one at '~/{}' or specify it with the --config flag",
+                    DEFAULT_CONFIG_PATH
+                );
+                None
+            }
+        }
     }
 
     /// Apply changes to the config after it's been loaded, e.g. overriding
