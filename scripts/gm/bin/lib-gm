@@ -159,6 +159,14 @@ load_config() {
   export VALIDATORS
   export FULL_NODES
   export ALL_NODES="$VALIDATORS $FULL_NODES"
+  # Workaround for issue: https://github.com/spf13/viper/issues/1131
+  #   Fix "stoml" so it reads empty sections too.
+  for v in $VALIDATORS
+  do
+    # This will fill in the ports_start_at entry in all sections so empty sections have at least one entry.
+    get_ports_start_at "$v" 1> /dev/null
+  done
+  # End of workaround
 }
 
 write_default_config() {
