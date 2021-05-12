@@ -1,7 +1,7 @@
 use std::{fmt, thread, time::Duration};
 
 use anomaly::BoxError;
-use crossbeam_channel::Receiver;
+use crossbeam_channel::{Receiver, Sender};
 use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
@@ -35,10 +35,16 @@ mod retry_strategy {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum WorkerMsg {
+    Stopped(Object),
+}
+
 /// A worker processes batches of events associated with a given [`Object`].
 pub struct Worker {
     chains: ChainHandlePair,
-    rx: Receiver<WorkerCmd>,
+    cmd_rx: Receiver<WorkerCmd>,
+    msg_tx: Sender<WorkerMsg>,
 }
 
 impl fmt::Display for Worker {
@@ -49,8 +55,12 @@ impl fmt::Display for Worker {
 
 impl Worker {
     /// Spawn a worker which relay events pertaining to an [`Object`] between two `chains`.
-    pub fn spawn(chains: ChainHandlePair, object: Object) -> WorkerHandle {
-        let (tx, rx) = crossbeam_channel::unbounded();
+    pub fn spawn(
+        chains: ChainHandlePair,
+        object: Object,
+        msg_tx: Sender<WorkerMsg>,
+    ) -> WorkerHandle {
+        let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 
         debug!(
             "[{}] spawned worker with chains a:{} and b:{} for object {:#?} ",
@@ -60,10 +70,15 @@ impl Worker {
             object,
         );
 
-        let worker = Self { chains, rx };
+        let worker = Self {
+            chains,
+            cmd_rx,
+            msg_tx,
+        };
+
         let thread_handle = std::thread::spawn(move || worker.run(object));
 
-        WorkerHandle::new(tx, thread_handle)
+        WorkerHandle::new(cmd_tx, thread_handle)
     }
 
     /// Run the worker event loop.
@@ -71,7 +86,9 @@ impl Worker {
         let span = error_span!("worker loop", worker = %object.short_name());
         let _guard = span.enter();
 
-        let result = match object {
+        let msg_tx = self.msg_tx.clone();
+
+        let result = match object.clone() {
             Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
             Object::Client(client) => self.run_client(client),
         };
@@ -80,7 +97,11 @@ impl Worker {
             error!("worker error: {}", e);
         }
 
-        info!("worker exits");
+        if let Err(e) = msg_tx.send(WorkerMsg::Stopped(object)) {
+            error!("failed to notify supervisor that worker stopped: {}", e);
+        }
+
+        info!("worker stopped");
     }
 
     fn run_client_misbehaviour(
@@ -140,7 +161,7 @@ impl Worker {
                 continue;
             }
 
-            if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
+            if let Ok(WorkerCmd::IbcEvents { batch }) = self.cmd_rx.try_recv() {
                 trace!("client '{}' worker receives batch {:?}", client, batch);
 
                 for event in batch.events {
@@ -209,7 +230,7 @@ impl Worker {
             thread::sleep(Duration::from_millis(200));
 
             let result = retry_with_index(retry_strategy::uni_chan_path(), |index| {
-                step(self.rx.try_recv().ok(), &mut link, index)
+                step(self.cmd_rx.try_recv().ok(), &mut link, index)
             });
 
             if let Err(retries) = result {
