@@ -23,7 +23,7 @@ pub enum Kind {
     Io,
 
     /// Invalid configuration
-    #[error("Invalid configuration")]
+    #[error("invalid configuration")]
     Config,
 
     /// RPC error (typically raised by the RPC client or the RPC requester)
