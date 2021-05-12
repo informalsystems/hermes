@@ -143,7 +143,7 @@ pub enum Kind {
     MessageTransaction(String),
 
     /// Failed query
-    #[error("Query error occurred (failed to finish query for {0})")]
+    #[error("Query error occurred (failed to query for {0})")]
     Query(String),
 
     /// Keybase related error
@@ -198,5 +198,9 @@ impl Kind {
     /// ```
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
+    }
+
+    pub fn channel(err: impl Into<BoxError>) -> Context<Self> {
+        Self::Channel.context(err)
     }
 }
