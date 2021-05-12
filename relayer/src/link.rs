@@ -720,7 +720,7 @@ impl RelayPath {
     /// Returns `true` if the delay for this relaying path is zero.
     /// Conversely, returns `false` if the delay is non-zero.
     fn zero_delay(&self) -> bool {
-        self.channel.connection_delay.as_nanos() == 0
+        self.channel.connection_delay.is_zero()
     }
 
     /// Handles updating the client on the destination chain
