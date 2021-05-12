@@ -57,8 +57,8 @@ impl FromStr for EncodedPubKey {
         match maybe_json {
             Ok(proto) => {
                 trace!(
-                    "deserialized the encoded pub key into a ProtoAny '{:?}'",
-                    proto
+                    "deserialized the encoded pub key into a ProtoAny of type '{}'",
+                    proto.tpe
                 );
                 assert_eq!(
                     proto.tpe, "/cosmos.crypto.secp256k1.PubKey",
@@ -77,7 +77,7 @@ impl FromStr for EncodedPubKey {
                     "the encoded pub key is not in a valid format: '{}', error: {}",
                     s, e
                 );
-                Err(Kind::EncodedPublicKey(s.to_owned()).into())
+                Err(Kind::EncodedPublicKey(s.to_owned(), e.to_string()).into())
             }
         }
     }
