@@ -5,9 +5,6 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum Error {
     #[error("channel {0} on chain {1} is not open")]
-    ChannelNotOpen(ChannelId, ChainId),
-
-    #[error("channel {0} on chain {1} is not open")]
     ChannelUninitialized(ChannelId, ChainId),
 
     #[error("connection {0} (underlying channel {1}) on chain {2} is not open")]

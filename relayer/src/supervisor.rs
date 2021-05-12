@@ -222,7 +222,7 @@ impl Supervisor {
 
         let (client, channel) = match client_res {
             Ok(conn_client) => (conn_client.client, conn_client.channel),
-            Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelNotOpen(..)) => {
+            Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelUninitialized(..)) => {
                 // These errors are silent.
                 // Simply ignore the channel and return without spawning the workers.
                 warn!(
@@ -256,7 +256,6 @@ impl Supervisor {
         }
 
         if channel.channel_end.is_open() {
-            //if channel open  {
             let counterparty_chain = self
                 .registry
                 .get_or_spawn(&client.client_state.chain_id())?;
@@ -268,7 +267,6 @@ impl Supervisor {
                 src_chain_id: client.client_state.chain_id(),
             });
 
-            //if channel open
             self.worker_for_object(client_object, chain.clone(), counterparty_chain.clone());
 
             // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
@@ -283,8 +281,6 @@ impl Supervisor {
 
             self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
 
-            //channel object
-
             let counterparty_chain_id =
                 get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
 
@@ -295,7 +291,6 @@ impl Supervisor {
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id.clone(),
                 src_port_id: channel.port_id,
-                // connection_id: connection_id.clone(),
             });
 
             self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());

@@ -148,7 +148,7 @@ impl Channel {
     pub fn restore_from_event(
         chain: Box<dyn ChainHandle>,
         counterparty_chain: Box<dyn ChainHandle>,
-        channel_open_event: IbcEvent,
+        mut channel_open_event: IbcEvent,
     ) -> Result<Channel, BoxError> {
         match channel_open_event.clone() {
             IbcEvent::OpenInitChannel(_open_init) => {}
@@ -176,7 +176,7 @@ impl Channel {
             .clone();
 
         let port_id = channel_open_event.clone().attributes().port_id.clone();
-        let channel_id = channel_open_event.clone().attributes().channel_id.clone();
+        let channel_id = channel_open_event.attributes().channel_id.clone();
 
         let counterparty_connection_id = match connection.counterparty().connection_id() {
             Some(x) => x.clone(),
@@ -262,7 +262,6 @@ impl Channel {
                         == channel.src_channel_id.clone()
                 {
                     handshake_channel.b_side.channel_id = Some(chan.channel_id.clone());
-
                     break;
                 }
             }
@@ -452,9 +451,9 @@ impl Channel {
         match event {
             IbcEvent::OpenInitChannel(_open_init) => {
                 // There is a race here: for the same source channel s, in Init,
-                // another chan_open_try with -s src_chan (destination d) can come from the user and if it is
-                // executed first on the chain, before the one send by the relayer,
-                // the later will create a new channel (d' != d) stuck in TryOpen whose counterparty is s
+                // another chan_open_try with source s (that creates destination d) can come from the user and if it is
+                // executed first on the chain, before the one send by the relayer.
+                // In this case the relayer will create a new channel (d' != d) stuck in TryOpen whose counterparty is s
                 // There is no way to avoid it, we can add a check (like in handshake_step_with_state) but
                 // it will slow down and there will still be a window where the behavior is possible.
                 Ok(vec![self.build_chan_open_try_and_send()?])

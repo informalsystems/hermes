@@ -115,13 +115,5 @@ pub fn get_counterparty_chain_for_channel(
         .query_client_state(&client_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    //  trace!(
-    //     chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
-    //     "counterparty chain: {}", client_state.chain_id()
-    // );
-    //let counterparty_chain_id = client_state.chain_id();
-    // let counterparty_chain = self.registry
-    // .get_or_spawn(&client_state.chain_id())?;
-
     Ok(client_state.chain_id())
 }
