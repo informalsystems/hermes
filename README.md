@@ -19,7 +19,7 @@ This project comprises primarily four crates:
   [`hermes`](https://hermes.informal.systems) binary.
 - The [`ibc-proto`][ibc-proto-crate-link] is a library with proto definitions
   necessary for interacting with Cosmos SDK
-  [IBC structs](https://github.com/cosmos/cosmos-sdk/tree/master/proto/ibc).
+  [IBC structs](https://github.com/cosmos/ibc-go/tree/main/proto/ibc).
 
 See the table below for more details.
 
