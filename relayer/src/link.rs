@@ -511,7 +511,7 @@ impl RelayPath {
                     )?,
                 IbcEvent::WriteAcknowledgement(ref write_ack_ev) => {
                     if self
-                        .dst_channel(dst_od.proofs_height)?
+                        .dst_channel(Height::zero())?
                         .state_matches(&ChannelState::Closed)
                     {
                         (None, None)
