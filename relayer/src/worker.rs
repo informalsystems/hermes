@@ -7,13 +7,13 @@ use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 
+use crate::channel::Channel as RelayChannel;
 use crate::{
     chain::handle::ChainHandlePair,
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
-    object::{Client, Object, UnidirectionalChannelPath, Channel},
+    object::{Channel, Client, Object, UnidirectionalChannelPath},
 };
-use crate::channel::Channel as RelayChannel;
 
 mod handle;
 pub use handle::WorkerHandle;
@@ -197,7 +197,7 @@ impl Worker {
         let done = '🥳';
 
         let a_chain = self.chains.a.clone();
-          let b_chain = self.chains.b.clone();
+        let b_chain = self.chains.b.clone();
 
         let mut handshake_channel;
 
