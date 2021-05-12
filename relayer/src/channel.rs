@@ -5,7 +5,7 @@ use thiserror::Error;
 use tracing::error;
 
 use ibc::events::IbcEvent;
-use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
+use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State};
 use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
 use ibc::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
@@ -21,7 +21,11 @@ use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
+use crate::supervisor::error::Error as WorkerChannelError;
+use crate::supervisor::Channel as WorkerChannelObject;
 use std::time::Duration;
+
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
@@ -141,7 +145,7 @@ impl Channel {
         Ok(channel)
     }
 
-    pub fn restore(
+    pub fn restore_from_event(
         chain: Box<dyn ChainHandle>,
         counterparty_chain: Box<dyn ChainHandle>,
         channel_open_event: IbcEvent,
@@ -204,6 +208,67 @@ impl Channel {
             //TODO  detect version from event
             version: Default::default(),
         })
+    }
+
+    pub fn restore_from_state(
+        chain: Box<dyn ChainHandle>,
+        counterparty_chain: Box<dyn ChainHandle>,
+        channel: WorkerChannelObject,
+        height: Height,
+    ) -> Result<(Channel, State), BoxError> {
+        let a_channel =
+            chain.query_channel(&channel.src_port_id, &channel.src_channel_id, height)?;
+
+        let connection_id = a_channel.connection_hops().first().ok_or_else(|| {
+            WorkerChannelError::MissingConnectionHops(channel.src_channel_id.clone(), chain.id())
+        })?;
+
+        let connection = chain.query_connection(&connection_id, Height::zero())?;
+
+        let mut handshake_channel = Channel {
+            ordering: *a_channel.ordering(),
+            a_side: ChannelSide::new(
+                chain.clone(),
+                connection.client_id().clone(),
+                connection_id.clone(),
+                channel.src_port_id.clone(),
+                Some(channel.src_channel_id.clone()),
+            ),
+            b_side: ChannelSide::new(
+                counterparty_chain.clone(),
+                connection.counterparty().client_id().clone(),
+                connection.counterparty().connection_id().unwrap().clone(),
+                a_channel.remote.port_id.clone(),
+                a_channel.remote.channel_id.clone(),
+            ),
+            connection_delay: connection.delay_period(),
+            version: Some(a_channel.version.clone()),
+        };
+
+        if a_channel.state_matches(&ibc::ics04_channel::channel::State::Init)
+            && a_channel.remote.channel_id.is_none()
+        {
+            let req = QueryConnectionChannelsRequest {
+                connection: connection_id.to_string(),
+                pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            };
+
+            let channels: Vec<IdentifiedChannelEnd> =
+                counterparty_chain.query_connection_channels(req)?;
+
+            for chan in channels.iter() {
+                if chan.channel_end.remote.channel_id.is_some()
+                    && chan.channel_end.remote.channel_id.clone().unwrap()
+                        == channel.src_channel_id.clone()
+                {
+                    handshake_channel.b_side.channel_id = Some(chan.channel_id.clone());
+
+                    break;
+                }
+            }
+        }
+
+        Ok((handshake_channel, a_channel.state))
     }
 
     pub fn src_chain(&self) -> Box<dyn ChainHandle> {
@@ -380,14 +445,43 @@ impl Channel {
         )))
     }
 
-    pub fn handshake_step(&mut self, event: IbcEvent) -> Result<Vec<IbcEvent>, ChannelError> {
+    pub fn handshake_step_with_event(
+        &mut self,
+        event: IbcEvent,
+    ) -> Result<Vec<IbcEvent>, ChannelError> {
         match event {
-            IbcEvent::OpenInitChannel(_open_init) => Ok(vec![self.build_chan_open_try_and_send()?]),
+            IbcEvent::OpenInitChannel(_open_init) => {
+                // There is a race here: for the same source channel s, in Init,
+                // another chan_open_try with -s src_chan (destination d) can come from the user and if it is
+                // executed first on the chain, before the one send by the relayer,
+                // the later will create a new channel (d' != d) stuck in TryOpen whose counterparty is s
+                // There is no way to avoid it, we can add a check (like in handshake_step_with_state) but
+                // it will slow down and there will still be a window where the behavior is possible.
+                Ok(vec![self.build_chan_open_try_and_send()?])
+            }
             IbcEvent::OpenTryChannel(_open_try) => Ok(vec![self.build_chan_open_ack_and_send()?]),
             IbcEvent::OpenAckChannel(_open_ack) => {
                 Ok(vec![self.build_chan_open_confirm_and_send()?])
             }
             IbcEvent::OpenConfirmChannel(_open_confirm) => Ok(vec![]),
+            _ => Ok(vec![]),
+        }
+    }
+
+    pub fn handshake_step_with_state(
+        &mut self,
+        state: State,
+    ) -> Result<Vec<IbcEvent>, ChannelError> {
+        match state {
+            ibc::ics04_channel::channel::State::Init => {
+                Ok(vec![self.build_chan_open_try_and_send()?])
+            }
+            ibc::ics04_channel::channel::State::TryOpen => {
+                Ok(vec![self.build_chan_open_ack_and_send()?])
+            }
+            ibc::ics04_channel::channel::State::Open => {
+                Ok(vec![self.build_chan_open_confirm_and_send()?])
+            }
             _ => Ok(vec![]),
         }
     }
@@ -619,6 +713,12 @@ impl Channel {
     }
 
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
+        if self.b_side.channel_id().is_some() {
+            return Err(ChannelError::Failed(
+                "Counterparty channel defined".to_string(),
+            ));
+        };
+
         let dst_msgs = self.build_chan_open_try()?;
 
         let events = self
