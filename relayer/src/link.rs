@@ -23,6 +23,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     query::QueryTxRequest,
     signer::Signer,
+    timestamp::ZERO_DURATION,
     tx_msg::Msg,
     Height,
 };
@@ -720,7 +721,7 @@ impl RelayPath {
     /// Returns `true` if the delay for this relaying path is zero.
     /// Conversely, returns `false` if the delay is non-zero.
     fn zero_delay(&self) -> bool {
-        self.channel.connection_delay.is_zero()
+        self.channel.connection_delay == ZERO_DURATION
     }
 
     /// Handles updating the client on the destination chain
