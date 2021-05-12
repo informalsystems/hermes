@@ -2,7 +2,22 @@
 
 ## Unreleased
 
-> Nothing yet.
+> [TODO: high level summary]
+
+### FEATURES
+
+### IMPROVEMENTS
+- [ibc-relayer-cli]
+  - Improve UX when querying non-existing connections and channels ([#875], [#920])
+
+### BUG FIXES
+
+### BREAKING CHANGES
+
+
+[#875]: https://github.com/informalsystems/ibc-rs/issues/875
+[#920]: https://github.com/informalsystems/ibc-rs/issues/920
+
 
 ## v0.3.0
 *May 7h, 2021*

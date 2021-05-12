@@ -132,7 +132,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                 Height::zero(),
             )
             .unwrap_or_else(exit_with_unrecoverable_error);
-        // TODO: Support for multi-hop channels will impact this.
+
         let conn_id = match channel_end.connection_hops.first() {
             None => {
                 return Output::error(format!(

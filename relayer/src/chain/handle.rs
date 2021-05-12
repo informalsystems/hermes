@@ -43,6 +43,23 @@ use crate::{
 
 mod prod;
 
+/// A pair of [`ChainHandle`]s.
+#[derive(Clone)]
+pub struct ChainHandlePair {
+    pub a: Box<dyn ChainHandle>,
+    pub b: Box<dyn ChainHandle>,
+}
+
+impl ChainHandlePair {
+    /// Swap the two handles.
+    pub fn swap(self) -> Self {
+        Self {
+            a: self.b,
+            b: self.a,
+        }
+    }
+}
+
 pub type Subscription = channel::Receiver<Arc<MonitorResult<EventBatch>>>;
 
 pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
