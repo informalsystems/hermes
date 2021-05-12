@@ -12,11 +12,15 @@
 
 ### BUG FIXES
 
+- [ibc]
+  - Process raw `delay_period` field as nanoseconds instead of seconds. ([#927])
+
 ### BREAKING CHANGES
 
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#927]: https://github.com/informalsystems/ibc-rs/issues/927
 
 
 ## v0.3.0
