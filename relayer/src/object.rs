@@ -73,6 +73,8 @@ pub enum Object {
     Client(Client),
     /// See [`UnidirectionalChannelPath`].
     UnidirectionalChannelPath(UnidirectionalChannelPath),
+    /// See [`Channel`].
+    Channel(Channel),
 }
 
 impl Object {
@@ -83,6 +85,7 @@ impl Object {
         match self {
             Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
             Object::Client(_) => false,
+            Object::Channel(c) => c.src_chain_id == *src_chain_id,
         }
     }
 }
@@ -99,11 +102,44 @@ impl From<UnidirectionalChannelPath> for Object {
     }
 }
 
+impl From<Channel> for Object {
+    fn from(c: Channel) -> Self {
+        Self::Channel(c)
+    }
+}
+
+//Channel
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Channel {
+    /// Destination chain identifier.
+    pub dst_chain_id: ChainId,
+
+    /// Source chain identifier.
+    pub src_chain_id: ChainId,
+
+    /// Source channel identiier.
+    pub src_channel_id: ChannelId,
+
+    /// Source port identiier.
+    pub src_port_id: PortId,
+    // pub connection_id: ConnectionId,
+}
+
+impl Channel {
+    pub fn short_name(&self) -> String {
+        format!(
+            "{}/{}:{} -> {}",
+            self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
+        )
+    }
+}
+
 impl Object {
     pub fn src_chain_id(&self) -> &ChainId {
         match self {
             Self::Client(ref client) => &client.src_chain_id,
             Self::UnidirectionalChannelPath(ref path) => &path.src_chain_id,
+            Self::Channel(ref channel) => &channel.src_chain_id,
         }
     }
 
@@ -111,6 +147,7 @@ impl Object {
         match self {
             Self::Client(ref client) => &client.dst_chain_id,
             Self::UnidirectionalChannelPath(ref path) => &path.dst_chain_id,
+            Self::Channel(ref channel) => &channel.dst_chain_id,
         }
     }
 
@@ -118,6 +155,7 @@ impl Object {
         match self {
             Self::Client(ref client) => client.short_name(),
             Self::UnidirectionalChannelPath(ref path) => path.short_name(),
+            Self::Channel(ref channel) => channel.short_name(),
         }
     }
 
@@ -170,6 +208,96 @@ impl Object {
             dst_client_id: client.client_id.clone(),
             dst_chain_id: dst_chain.id(),
             src_chain_id: client.client_state.chain_id(),
+        }
+        .into())
+    }
+
+    /// Build the object associated with the given [`OpenInit`] event.
+    pub fn for_open_init_channel(
+        e: &Attributes,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let channel_id = e
+            .channel_id()
+            .as_ref()
+            .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
+
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id());
+
+        if dst_chain_id.is_err() {
+            return Err("dest chain missing in init".into());
+        }
+
+        Ok(Channel {
+            dst_chain_id: dst_chain_id.unwrap(),
+            src_chain_id: src_chain.id(),
+            src_channel_id: channel_id.clone(),
+            src_port_id: e.port_id().clone(),
+        }
+        .into())
+    }
+
+    /// Build the object associated with the given [`OpenTry`] event.
+    pub fn for_open_try_channel(
+        e: &Attributes,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let channel_id = e
+            .channel_id()
+            .as_ref()
+            .ok_or_else(|| format!("channel_id missing in OpenTry event '{:?}'", e))?;
+
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id());
+
+        if dst_chain_id.is_err() {
+            return Err("dest chain missing in OpenTry".into());
+        }
+
+        Ok(Channel {
+            dst_chain_id: dst_chain_id.unwrap(),
+            src_chain_id: src_chain.id(),
+            src_channel_id: e.channel_id().clone().unwrap(),
+            src_port_id: e.port_id().clone(),
+        }
+        .into())
+    }
+
+    pub fn for_open_ack_channel(
+        e: &Attributes,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let channel_id = e
+            .channel_id()
+            .as_ref()
+            .ok_or_else(|| format!("channel_id missing in OpenAck event '{:?}'", e))?;
+
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())?;
+
+        Ok(Channel {
+            dst_chain_id,
+            src_chain_id: src_chain.id(),
+            src_channel_id: e.channel_id().clone().unwrap(),
+            src_port_id: e.port_id().clone(),
+        }
+        .into())
+    }
+
+    pub fn for_open_confirm_channel(
+        e: &Attributes,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let channel_id = e
+            .channel_id()
+            .as_ref()
+            .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
+
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())?;
+
+        Ok(Channel {
+            dst_chain_id,
+            src_chain_id: src_chain.id(),
+            src_channel_id: e.channel_id().clone().unwrap(),
+            src_port_id: e.port_id().clone(),
         }
         .into())
     }

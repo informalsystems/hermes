@@ -22,7 +22,7 @@ use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
 use crate::supervisor::error::Error as WorkerChannelError;
-use crate::supervisor::Channel as WorkerChannelObject;
+use crate::object::Channel as WorkerChannelObject;
 use std::time::Duration;
 
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;

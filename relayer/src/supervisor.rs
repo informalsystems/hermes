@@ -6,7 +6,7 @@ use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
 use ibc::{
-    events::{IbcEvent, VecIbcEvents},
+    events::IbcEvent,
     ics02_client::client_state::ClientState,
     ics04_channel::channel::IdentifiedChannelEnd,
     ics24_host::identifier::ChainId,
@@ -15,20 +15,19 @@ use ibc::{
 
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
-use crate::channel::Channel as RelayChannel;
-
 use crate::{
     chain::{
-        counterparty::channel_connection_client,
+        counterparty::{channel_connection_client,get_counterparty_chain_for_channel},
         handle::{ChainHandle, ChainHandlePair},
     },
     config::Config,
     event::monitor::{EventBatch, UnwrapOrClone},
-    object::{Client, Object, UnidirectionalChannelPath},
+    object::{Client, Object, UnidirectionalChannelPath, Channel},
     registry::Registry,
     util::recv_multiple,
     worker::{Worker, WorkerHandle},
 };
+
 
 pub mod error;
 pub use error::Error;

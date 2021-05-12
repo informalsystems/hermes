@@ -11,8 +11,9 @@ use crate::{
     chain::handle::ChainHandlePair,
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
-    object::{Client, Object, UnidirectionalChannelPath},
+    object::{Client, Object, UnidirectionalChannelPath, Channel},
 };
+use crate::channel::Channel as RelayChannel;
 
 mod handle;
 pub use handle::WorkerHandle;
@@ -59,6 +60,7 @@ impl Worker {
         let result = match object {
             Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
             Object::Client(client) => self.run_client(client),
+            Object::Channel(channel) => self.run_channel(channel),
         };
 
         if let Err(e) = result {
@@ -186,6 +188,74 @@ impl Worker {
 
             if let Err(e) = result {
                 error!("{}", e);
+            }
+        }
+    }
+
+    /// Run the event loop for events associated with a [`Channel`].
+    fn run_channel(self, channel: Channel) -> Result<(), BoxError> {
+        let done = '🥳';
+
+        let a_chain = self.chains.a.clone();
+          let b_chain = self.chains.b.clone();
+
+        let mut handshake_channel;
+
+        let mut first_iteration = true;
+
+        loop {
+            if let Ok(cmd) = self.rx.try_recv() {
+                match cmd {
+                    WorkerCmd::IbcEvents { batch } => {
+                        for event in batch.events {
+                            handshake_channel = RelayChannel::restore_from_event(
+                                a_chain.clone(),
+                                b_chain.clone(),
+                                event.clone(),
+                            )?;
+                            let result = handshake_channel.handshake_step_with_event(event.clone());
+
+                            match result {
+                                Err(e) => {
+                                    debug!("\n Failed {:?} with error {:?} \n", event, e);
+                                }
+                                Ok(ev) => {
+                                    println!("{} => {:#?}\n", done, ev.clone());
+                                }
+                            }
+                            first_iteration = false;
+                        }
+                    }
+                    WorkerCmd::NewBlock {
+                        height: current_height,
+                        new_block: _,
+                    } => {
+                        if first_iteration {
+                            let height = current_height.decrement()?;
+
+                            let (h, state) = RelayChannel::restore_from_state(
+                                a_chain.clone(),
+                                b_chain.clone(),
+                                channel.clone(),
+                                height,
+                            )?;
+
+                            handshake_channel = h;
+
+                            let result = handshake_channel.handshake_step_with_state(state);
+
+                            match result {
+                                Err(e) => {
+                                    debug!("\n Failed with error {:?} \n", e);
+                                }
+                                Ok(ev) => {
+                                    println!("{} => {:#?}\n", done, ev.clone());
+                                }
+                            }
+                            first_iteration = false;
+                        }
+                    }
+                };
             }
         }
     }
