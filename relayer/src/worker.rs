@@ -172,8 +172,8 @@ impl Worker {
             return Ok(());
         }
 
-        fn step(rx: &Receiver<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<(), u64> {
-            if let Ok(cmd) = rx.try_recv() {
+        fn step(cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<(), u64> {
+            if let Some(cmd) = cmd {
                 let result = match cmd {
                     WorkerCmd::IbcEvents { batch } => {
                         // Update scheduled batches.
@@ -208,7 +208,7 @@ impl Worker {
             thread::sleep(Duration::from_millis(200));
 
             let result = retry_with_index(retry_strategy::uni_chan_path(), |index| {
-                step(&self.rx, &mut link, index)
+                step(self.rx.try_recv().ok(), &mut link, index)
             });
 
             if let Err(retries) = result {
