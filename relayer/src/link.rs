@@ -7,6 +7,8 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 
+use ibc::events::VecIbcEvents;
+use ibc::timestamp::{Expiry::Expired, Timestamp};
 use ibc::{
     downcast,
     events::{IbcEvent, IbcEventType},
@@ -41,9 +43,6 @@ use crate::{
     channel::{Channel, ChannelError, ChannelSide},
     event::monitor::UnwrapOrClone,
 };
-use ibc::events::VecIbcEvents;
-use ibc::timestamp::Expiry::Expired;
-use ibc::timestamp::Timestamp;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
