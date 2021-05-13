@@ -124,7 +124,7 @@ hermes create connection ibc-0 ibc-1
 )
 
 🥂🥂🥂  Connection handshake finished for [Connection {
-    delay_period: 0ns,
+    delay_period: 0s,
     a_side: ConnectionSide {
         chain: ProdChainHandle {
             chain_id: ChainId {
@@ -158,7 +158,7 @@ hermes create connection ibc-0 ibc-1
 }]
 
 Success: Connection {
-    delay_period: 0ns,
+    delay_period: 0s,
     a_side: ConnectionSide {
         chain: ProdChainHandle {
             chain_id: ChainId {

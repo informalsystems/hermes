@@ -142,9 +142,9 @@ mod tests {
     use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
+    use crate::timestamp::ZERO_DURATION;
 
     use std::convert::TryFrom;
-    use std::time::Duration;
 
     #[test]
     fn ack_packet_processing() {
@@ -193,7 +193,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            Duration::from_secs(0),
+            ZERO_DURATION,
         );
 
         let tests: Vec<Test> = vec![
