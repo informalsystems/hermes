@@ -185,13 +185,13 @@ impl IbcEvent {
         }
     }
 
-    pub fn attributes(&mut self) -> &ChannelAttributes {
+    pub fn channel_attributes(&mut self) -> Option<&ChannelAttributes> {
         match self {
-            IbcEvent::OpenInitChannel(ev) => ev.attributes(),
-            IbcEvent::OpenTryChannel(ev) => ev.attributes(),
-            IbcEvent::OpenAckChannel(ev) => ev.attributes(),
-            IbcEvent::OpenConfirmChannel(ev) => ev.attributes(),
-            _ => unimplemented!(),
+            IbcEvent::OpenInitChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenTryChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenAckChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenConfirmChannel(ev) => Some(ev.attributes()),
+            _ => None,
         }
     }
 }

@@ -150,33 +150,27 @@ impl Channel {
         counterparty_chain: Box<dyn ChainHandle>,
         mut channel_open_event: IbcEvent,
     ) -> Result<Channel, BoxError> {
-        match channel_open_event.clone() {
-            IbcEvent::OpenInitChannel(_open_init) => {}
-            IbcEvent::OpenTryChannel(_open_try) => {}
-            IbcEvent::OpenAckChannel(_open_ack) => {}
-            IbcEvent::OpenConfirmChannel(_open_confirm) => {}
-            _ => return Err("Supported only for Channel Open Events".to_string().into()),
+        let channel_event_attributes = match channel_open_event.channel_attributes() {
+            None => {
+                return Err(ChannelError::Failed(
+                    "A channel object must be build only from a channel event ".to_string(),
+                )
+                .into())
+            }
+            Some(attributes) => attributes,
         };
 
-        let connection_id = channel_open_event
-            .clone()
-            .attributes()
-            .connection_id
-            .clone();
-        let counterparty_port_id = channel_open_event
-            .clone()
-            .attributes()
-            .counterparty_port_id
-            .clone();
+        let connection_id = channel_event_attributes.connection_id.clone();
+        let counterparty_port_id = channel_event_attributes.counterparty_port_id.clone();
         let connection = chain.query_connection(&connection_id, Height::zero())?;
-        let counterparty_channel_id = channel_open_event
-            .clone()
-            .attributes()
-            .counterparty_channel_id
-            .clone();
+        let counterparty_channel_id = channel_event_attributes.counterparty_channel_id.clone();
 
-        let port_id = channel_open_event.clone().attributes().port_id.clone();
-        let channel_id = channel_open_event.attributes().channel_id.clone();
+        let port_id = channel_event_attributes.port_id.clone();
+        let channel_id = channel_event_attributes.channel_id.clone();
+
+        let version = counterparty_chain
+            .module_version(&port_id)
+            .map_err(|e| ChannelError::QueryError(counterparty_chain.id(), e))?;
 
         let counterparty_connection_id = match connection.counterparty().connection_id() {
             Some(x) => x.clone(),
@@ -206,7 +200,7 @@ impl Channel {
             ),
             connection_delay: connection.delay_period(),
             //TODO  detect version from event
-            version: Default::default(),
+            version: Some(version),
         })
     }
 

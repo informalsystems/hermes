@@ -72,18 +72,20 @@ impl Supervisor {
                     }
                 }
 
-                IbcEvent::OpenInitChannel(ref open_init) => {
-                    if let Ok(object) =
-                        Object::for_open_init_channel(open_init.attributes(), src_chain)
-                    {
+                IbcEvent::OpenInitChannel(ref _open_init) => {
+                    if let Ok(object) = Object::channel_from_chan_open_events(
+                        event.clone().channel_attributes().unwrap(),
+                        src_chain,
+                    ) {
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
 
-                IbcEvent::OpenTryChannel(ref open_try) => {
-                    if let Ok(object) =
-                        Object::for_open_try_channel(open_try.attributes(), src_chain)
-                    {
+                IbcEvent::OpenTryChannel(ref _open_try) => {
+                    if let Ok(object) = Object::channel_from_chan_open_events(
+                        event.clone().channel_attributes().unwrap(),
+                        src_chain,
+                    ) {
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
@@ -91,7 +93,7 @@ impl Supervisor {
                 IbcEvent::OpenAckChannel(ref open_ack) => {
                     // Create client worker here as channel end must be opened
                     if let Ok(object) =
-                        Object::for_chan_open_events(open_ack.attributes(), src_chain)
+                        Object::client_from_chan_open_events(open_ack.attributes(), src_chain)
                     {
                         collected
                             .per_object
@@ -100,9 +102,10 @@ impl Supervisor {
                             .push(event.clone());
                     }
 
-                    if let Ok(channel_object) =
-                        Object::for_open_ack_channel(open_ack.attributes(), src_chain)
-                    {
+                    if let Ok(channel_object) = Object::channel_from_chan_open_events(
+                        event.clone().channel_attributes().unwrap(),
+                        src_chain,
+                    ) {
                         collected
                             .per_object
                             .entry(channel_object)
@@ -113,7 +116,7 @@ impl Supervisor {
                 IbcEvent::OpenConfirmChannel(ref open_confirm) => {
                     // Create client worker here as channel end must be opened
                     if let Ok(object) =
-                        Object::for_chan_open_events(open_confirm.attributes(), src_chain)
+                        Object::client_from_chan_open_events(open_confirm.attributes(), src_chain)
                     {
                         collected
                             .per_object
@@ -121,9 +124,10 @@ impl Supervisor {
                             .or_default()
                             .push(event.clone());
                     }
-                    if let Ok(channel_object) =
-                        Object::for_open_confirm_channel(open_confirm.attributes(), src_chain)
-                    {
+                    if let Ok(channel_object) = Object::channel_from_chan_open_events(
+                        event.clone().channel_attributes().unwrap(),
+                        src_chain,
+                    ) {
                         collected
                             .per_object
                             .entry(channel_object)
@@ -280,35 +284,21 @@ impl Supervisor {
             });
 
             self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
-
-            let counterparty_chain_id =
-                get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
-
-            let counterparty_chain = self.registry.get_or_spawn(&counterparty_chain_id)?;
-
-            let channel_object = Object::Channel(Channel {
-                dst_chain_id: counterparty_chain_id,
-                src_chain_id: chain.id(),
-                src_channel_id: channel.channel_id.clone(),
-                src_port_id: channel.port_id,
-            });
-
-            self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
-        } else {
-            let counterparty_chain_id =
-                get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
-
-            let counterparty_chain = self.registry.get_or_spawn(&counterparty_chain_id)?;
-
-            let channel_object = Object::Channel(Channel {
-                dst_chain_id: counterparty_chain_id,
-                src_chain_id: chain.id(),
-                src_channel_id: channel.channel_id.clone(),
-                src_port_id: channel.port_id,
-            });
-
-            self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
         }
+
+        let counterparty_chain_id =
+            get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
+
+        let counterparty_chain = self.registry.get_or_spawn(&counterparty_chain_id)?;
+
+        let channel_object = Object::Channel(Channel {
+            dst_chain_id: counterparty_chain_id,
+            src_chain_id: chain.id(),
+            src_channel_id: channel.channel_id.clone(),
+            src_port_id: channel.port_id,
+        });
+
+        self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
 
         Ok(())
     }

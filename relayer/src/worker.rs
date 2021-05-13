@@ -7,12 +7,15 @@ use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 
-use crate::channel::Channel as RelayChannel;
 use crate::{
     chain::handle::ChainHandlePair,
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
     object::{Channel, Client, Object, UnidirectionalChannelPath},
+};
+use crate::{
+    channel::{Channel as RelayChannel, ChannelError},
+    relay::MAX_ITER,
 };
 
 mod handle;
@@ -213,16 +216,34 @@ impl Worker {
                                 b_chain.clone(),
                                 event.clone(),
                             )?;
-                            let result = handshake_channel.handshake_step_with_event(event.clone());
 
-                            match result {
-                                Err(e) => {
-                                    debug!("\n Failed {:?} with error {:?} \n", event, e);
-                                }
-                                Ok(ev) => {
-                                    println!("{} => {:#?}\n", done, ev.clone());
+                            let mut counter = 0;
+                            let mut success = false;
+                            while counter < MAX_ITER && !success {
+                                counter += 1;
+
+                                let result =
+                                    handshake_channel.handshake_step_with_event(event.clone());
+
+                                match result {
+                                    Err(e) => {
+                                        debug!("\n Failed {:?} with error {:?} \n", event, e);
+                                    }
+                                    Ok(ev) => {
+                                        success = true;
+                                        println!("{} => {:#?}\n", done, ev.clone());
+                                    }
                                 }
                             }
+                            // Check that the channel was created on a_chain
+                            if !success {
+                                return Err(ChannelError::Failed(format!(
+                                    "Failed to finish channel open init in {} iterations for {:?}",
+                                    MAX_ITER, handshake_channel
+                                ))
+                                .into());
+                            };
+
                             first_iteration = false;
                         }
                     }
@@ -242,16 +263,32 @@ impl Worker {
 
                             handshake_channel = h;
 
-                            let result = handshake_channel.handshake_step_with_state(state);
+                            let mut counter = 0;
+                            let mut success = false;
+                            while counter < MAX_ITER && !success {
+                                counter += 1;
 
-                            match result {
-                                Err(e) => {
-                                    debug!("\n Failed with error {:?} \n", e);
-                                }
-                                Ok(ev) => {
-                                    println!("{} => {:#?}\n", done, ev.clone());
+                                let result = handshake_channel.handshake_step_with_state(state);
+
+                                match result {
+                                    Err(e) => {
+                                        debug!("\n Failed with error {:?} \n", e);
+                                    }
+                                    Ok(ev) => {
+                                        success = true;
+                                        println!("{} => {:#?}\n", done, ev.clone());
+                                    }
                                 }
                             }
+                            // Check that the channel was created on a_chain
+                            if !success {
+                                return Err(ChannelError::Failed(format!(
+                                    "Failed to finish channel open {} iterations for {:?}",
+                                    MAX_ITER, handshake_channel
+                                ))
+                                .into());
+                            };
+
                             first_iteration = false;
                         }
                     }
