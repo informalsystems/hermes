@@ -22,7 +22,7 @@ pub enum Kind {
     Query,
 
     /// Error while spawning the runtime
-    #[error("chain runtime/handle error")]
+    #[error("chain runtime error")]
     Runtime,
 
     /// Error during transaction submission
