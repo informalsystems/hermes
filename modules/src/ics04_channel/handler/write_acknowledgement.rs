@@ -82,7 +82,6 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryInto;
-    use std::time::Duration;
 
     use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
@@ -94,6 +93,7 @@ mod tests {
     use crate::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
+    use crate::timestamp::ZERO_DURATION;
     use crate::{events::IbcEvent, ics04_channel::packet::Packet};
 
     #[test]
@@ -137,7 +137,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            Duration::from_secs(0),
+            ZERO_DURATION,
         );
 
         let tests: Vec<Test> = vec![

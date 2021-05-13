@@ -53,7 +53,7 @@ Success: Channel {
             "channel-1",
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
     version: Some(
         "ics20-1",
     ),
@@ -61,4 +61,4 @@ Success: Channel {
 
 ```
 
-Note that for each side, *a_side* (__ibc-0__) and *b_side* (__ibc-1__) there are a __client_id__, __connection_id__, __channel_id__ and __port_id__. With all these established, you have [a path that you can relay packets](./existing-path.md) 
+Note that for each side, *a_side* (__ibc-0__) and *b_side* (__ibc-1__) there are a __client_id__, __connection_id__, __channel_id__ and __port_id__. With all these established, you have [a path that you can relay packets](./existing-path.md)
