@@ -1057,14 +1057,14 @@ all the necessary chain objects (clients, connections, channels) and relay packe
             &quot;channel-1&quot;,
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
     version: Some(
         &quot;ics20-1&quot;,
     ),
 }
 
 </code></pre>
-<p>Note that for each side, <em>a_side</em> (<strong>ibc-0</strong>) and <em>b_side</em> (<strong>ibc-1</strong>) there are a <strong>client_id</strong>, <strong>connection_id</strong>, <strong>channel_id</strong> and <strong>port_id</strong>. With all these established, you have <a href="tutorials/local-chains/relay-paths/./existing-path.html">a path that you can relay packets</a> </p>
+<p>Note that for each side, <em>a_side</em> (<strong>ibc-0</strong>) and <em>b_side</em> (<strong>ibc-1</strong>) there are a <strong>client_id</strong>, <strong>connection_id</strong>, <strong>channel_id</strong> and <strong>port_id</strong>. With all these established, you have <a href="tutorials/local-chains/relay-paths/./existing-path.html">a path that you can relay packets</a></p>
 <h1><a class="header" href="#packet-relaying-on-existing-path" id="packet-relaying-on-existing-path">Packet relaying on existing path</a></h1>
 <p>Hermes can listen to IBC packet events over a specified path and relay receive packets, acknowledgments and timeouts.</p>
 <ol>
@@ -1338,7 +1338,7 @@ Success: Channel {
             &quot;channel-0&quot;,
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
     version: Some(
         &quot;ics20-1&quot;,
     ),
@@ -1400,7 +1400,7 @@ Success: Channel {
             &quot;channel-0&quot;,
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
     version: Some(
         &quot;ics20-1&quot;,
     ),
@@ -2208,7 +2208,7 @@ FLAGS:
 )
 
 🥂🥂🥂  Connection handshake finished for [Connection {
-    delay_period: 0ns,
+    delay_period: 0s,
     a_side: ConnectionSide {
         chain: ProdChainHandle {
             chain_id: ChainId {
@@ -2242,7 +2242,7 @@ FLAGS:
 }]
 
 Success: Connection {
-    delay_period: 0ns,
+    delay_period: 0s,
     a_side: ConnectionSide {
         chain: ProdChainHandle {
             chain_id: ChainId {
@@ -2410,7 +2410,7 @@ port name <code>transfer</code> on both sides:</p>
 )
 
 🥂🥂🥂  Connection handshake finished for [Connection {
-    delay_period: 0ns,
+    delay_period: 0s,
     a_side: ConnectionSide {
         chain: ProdChainHandle {
             chain_id: ChainId {
@@ -2539,7 +2539,7 @@ port name <code>transfer</code> on both sides:</p>
             &quot;channel-0&quot;,
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
 }
 
 Success: Channel {
@@ -2586,7 +2586,7 @@ Success: Channel {
             &quot;channel-0&quot;,
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
 }
 <span class="boring">}
 </span></code></pre></pre>
@@ -2698,7 +2698,7 @@ figure it out by looking up the given connection on <code>ibc-0</code>.</p>
             &quot;channel-1&quot;,
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
 }
 
 Success: Channel {
@@ -2745,7 +2745,7 @@ Success: Channel {
             &quot;channel-1&quot;,
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
 }
 <span class="boring">}
 </span></code></pre></pre>
@@ -3702,7 +3702,7 @@ FLAGS:
             ],
         },
     ],
-    delay_period: 0ns,
+    delay_period: 0s,
 }
 <span class="boring">}
 </span></code></pre></pre>
