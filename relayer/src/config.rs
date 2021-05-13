@@ -87,6 +87,10 @@ pub struct GlobalConfig {
     /// All valid log levels, as defined in tracing:
     /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
     pub log_level: String,
+
+    pub telemetry_enabled: bool,
+
+    pub telemetry_port: u16,
 }
 
 impl Default for GlobalConfig {
@@ -94,6 +98,8 @@ impl Default for GlobalConfig {
         Self {
             strategy: Strategy::default(),
             log_level: "info".to_string(),
+            telemetry_enabled: true,
+            telemetry_port: 3000,
         }
     }
 }

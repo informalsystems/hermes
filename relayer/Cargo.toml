@@ -72,3 +72,19 @@ ibc = { version = "0.3.0", path = "../modules", features = ["mocks"] }
 
 # Needed for generating (synthetic) light blocks.
 tendermint-testgen = { version = "=0.19.0" }
+
+# Dependencies needed for telemetry support
+[dependencies.opentelemetry]
+version = "0.14.0"
+
+[dependencies.opentelemetry-prometheus]
+version = "0.7.0"
+
+[dependencies.hyper]
+version = "0.14.7"
+
+[dependencies.lazy_static]
+version = "1.4.0"
+
+[dependencies.prometheus]
+version = "0.12.0"

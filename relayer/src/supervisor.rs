@@ -29,6 +29,7 @@ use crate::{
 };
 
 mod error;
+use crate::telemetry::service::TelemetryService;
 pub use error::Error;
 
 /// The supervisor listens for events on multiple pairs of chains,
@@ -38,6 +39,7 @@ pub struct Supervisor {
     config: Config,
     registry: Registry,
     workers: HashMap<Object, WorkerHandle>,
+    telemetry: Option<TelemetryService>,
 }
 
 impl Supervisor {
@@ -45,10 +47,25 @@ impl Supervisor {
     pub fn spawn(config: Config) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
 
+        // Start the telemetry service
+        let telemetry = match config.global.telemetry_enabled {
+            true => {
+                println!(
+                    "TELEMETRY ENABLED ON PORT: {:?}",
+                    config.global.telemetry_port
+                );
+                Some(TelemetryService {
+                    listen_port: config.global.telemetry_port,
+                })
+            }
+            false => None,
+        };
+
         Ok(Self {
             config,
             registry,
             workers: HashMap::new(),
+            telemetry,
         })
     }
 
