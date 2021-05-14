@@ -379,7 +379,7 @@ to and acting on packet events.</p>
 <ul>
 <li>
 <p>Two packets from <code>ibc-0</code> to <code>ibc-1</code> from source channel <code>channel-0</code></p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -403,7 +403,7 @@ to and acting on packet events.</p>
 </li>
 <li>
 <p>Two packets from <code>ibc-1</code> to <code>ibc-2</code> from source channel <code>channel-1</code></p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 -o 1000 -n 2
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]

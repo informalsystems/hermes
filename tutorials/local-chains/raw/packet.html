@@ -185,7 +185,7 @@
 <ul>
 <li>
 <p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This sends a <code>MsgTransfer</code> in a transaction to <code>ibc-0</code></p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d samoleans
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 1 -d samoleans
 </code></pre>
 </li>
 <li>
@@ -213,9 +213,28 @@
 <pre><code class="language-shell">hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
+</ul>
+<p>Send those samoleans back, from <code>ibc-1</code> to <code>ibc-0</code>.</p>
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 -o 1000 -n 1 -d ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC
+hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
+</code></pre>
+<p>The <code>ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC</code> denominator above can be obtained by querying the balance at <code>ibc-1</code> after the transfer from <code>ibc-0</code> to <code>ibc-1</code> is concluded.</p>
+<p>Next we will test the packet timeouts.</p>
+<ul>
 <li>
 <p>send 1 packet with low timeout height offset to ibc-0</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 2 -n 1
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 2 -n 1
+</code></pre>
+</li>
+<li>
+<p>send timeout to <code>ibc-0</code></p>
+<pre><code class="language-shell">hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+</code></pre>
+</li>
+<li>
+<p>send 1 packet with 2 second timeout to ibc-0</p>
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -t 2 -n 1
 </code></pre>
 </li>
 <li>
@@ -224,12 +243,6 @@
 </code></pre>
 </li>
 </ul>
-<p>Send those samoleans back, from <code>ibc-1</code> to <code>ibc-0</code>.</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 1000 -n 1 -d ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC
-hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
-hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
-</code></pre>
-<p>The <code>ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC</code> denominator above can be obtained by querying the balance at <code>ibc-1</code> after the transfer from <code>ibc-0</code> to <code>ibc-1</code> is concluded.</p>
 
                     </main>
 

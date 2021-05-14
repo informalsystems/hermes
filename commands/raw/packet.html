@@ -185,16 +185,17 @@ POSITIONAL ARGUMENTS:
     src_port_id               identifier of the source port
     src_channel_id            identifier of the source channel
     amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
-    height_offset             timeout in number of blocks since current
 
 FLAGS:
+    -o, --timeout-height-offset TIMEOUT-HEIGHT-OFFSET
+    -t, --timeout-seconds TIMEOUT-SECONDS
     -r, --receiver RECEIVER   receiving account address on the destination chain
     -d, --denom DENOM         denomination of the coins to send (default: samoleans)
     -n, --number-msgs NUMBER-MSGS
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Send two transfer packets from the <code>transfer</code> module and <code>channel-0</code> of <code>ibc-0</code> to <code>ibc-1</code>. Each transfer if for <code>9999</code> samoleans (default denomination) and a timeout offset of <code>10</code> blocks. The transfer fee is paid by the relayer account on <code>ibc-1</code>.</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -225,7 +226,7 @@ FLAGS:
 <blockquote>
 <p>To send transfer packets with a custom receiver address use the <code>--receiver | -r</code> flag.</p>
 </blockquote>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -r board:1938586739
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 1 -r board:1938586739
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]

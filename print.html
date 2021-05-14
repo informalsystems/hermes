@@ -1078,7 +1078,7 @@ all the necessary chain objects (clients, connections, channels) and relay packe
 </li>
 <li>
 <p>In a separate terminal, use the transfer command to send 2 packets to <code>ibc-0</code> chain:</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 </code></pre>
 <p>You should see a result similar to the one below:</p>
 <pre><code class="language-json">Success: [
@@ -1105,7 +1105,7 @@ all the necessary chain objects (clients, connections, channels) and relay packe
 </li>
 <li>
 <p>Use the CLI to send 2 packets to <code>ibc-1</code> chain:</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 -o 1000 -n 2
 </code></pre>
 <p>You should see a result similar to the one below:</p>
 <pre><code class="language-json">Success: [
@@ -1176,12 +1176,12 @@ b_port = 'transfer'
 </li>
 <li>
 <p>in a separate terminal, use the transfer command to send 2 packets to <code>ibc-0</code> chain:</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 </code></pre>
 </li>
 <li>
 <p>use the CLI to send 2 packets to <code>ibc-1</code> chain:</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 -o 1000 -n 2
 </code></pre>
 </li>
 <li>
@@ -1421,7 +1421,7 @@ to and acting on packet events.</p>
 <ul>
 <li>
 <p>Two packets from <code>ibc-0</code> to <code>ibc-1</code> from source channel <code>channel-0</code></p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -1445,7 +1445,7 @@ to and acting on packet events.</p>
 </li>
 <li>
 <p>Two packets from <code>ibc-1</code> to <code>ibc-2</code> from source channel <code>channel-1</code></p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 -o 1000 -n 2
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -1688,7 +1688,7 @@ hermes query packet unreceived-acks ibc-1 transfer channel-1
 <ul>
 <li>
 <p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This sends a <code>MsgTransfer</code> in a transaction to <code>ibc-0</code></p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d samoleans
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 1 -d samoleans
 </code></pre>
 </li>
 <li>
@@ -1716,9 +1716,28 @@ hermes query packet unreceived-acks ibc-1 transfer channel-1
 <pre><code class="language-shell">hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
+</ul>
+<p>Send those samoleans back, from <code>ibc-1</code> to <code>ibc-0</code>.</p>
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 -o 1000 -n 1 -d ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC
+hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
+</code></pre>
+<p>The <code>ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC</code> denominator above can be obtained by querying the balance at <code>ibc-1</code> after the transfer from <code>ibc-0</code> to <code>ibc-1</code> is concluded.</p>
+<p>Next we will test the packet timeouts.</p>
+<ul>
 <li>
 <p>send 1 packet with low timeout height offset to ibc-0</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 2 -n 1
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 2 -n 1
+</code></pre>
+</li>
+<li>
+<p>send timeout to <code>ibc-0</code></p>
+<pre><code class="language-shell">hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+</code></pre>
+</li>
+<li>
+<p>send 1 packet with 2 second timeout to ibc-0</p>
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -t 2 -n 1
 </code></pre>
 </li>
 <li>
@@ -1727,12 +1746,6 @@ hermes query packet unreceived-acks ibc-1 transfer channel-1
 </code></pre>
 </li>
 </ul>
-<p>Send those samoleans back, from <code>ibc-1</code> to <code>ibc-0</code>.</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 1000 -n 1 -d ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC
-hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
-hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
-</code></pre>
-<p>The <code>ibc/49D321B40FCF56B0370E5673CF090389C8E9CD185209FBE1BEE5D94E58E69BDC</code> denominator above can be obtained by querying the balance at <code>ibc-1</code> after the transfer from <code>ibc-0</code> to <code>ibc-1</code> is concluded.</p>
 <h1><a class="header" href="#commands" id="commands">Commands</a></h1>
 <p>The <code>Commands</code> section presents the commands current available in Hermes</p>
 <h2><a class="header" href="#sections-2" id="sections-2">Sections</a></h2>
@@ -4849,16 +4862,17 @@ POSITIONAL ARGUMENTS:
     src_port_id               identifier of the source port
     src_channel_id            identifier of the source channel
     amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
-    height_offset             timeout in number of blocks since current
 
 FLAGS:
+    -o, --timeout-height-offset TIMEOUT-HEIGHT-OFFSET
+    -t, --timeout-seconds TIMEOUT-SECONDS
     -r, --receiver RECEIVER   receiving account address on the destination chain
     -d, --denom DENOM         denomination of the coins to send (default: samoleans)
     -n, --number-msgs NUMBER-MSGS
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Send two transfer packets from the <code>transfer</code> module and <code>channel-0</code> of <code>ibc-0</code> to <code>ibc-1</code>. Each transfer if for <code>9999</code> samoleans (default denomination) and a timeout offset of <code>10</code> blocks. The transfer fee is paid by the relayer account on <code>ibc-1</code>.</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -4889,7 +4903,7 @@ FLAGS:
 <blockquote>
 <p>To send transfer packets with a custom receiver address use the <code>--receiver | -r</code> flag.</p>
 </blockquote>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -r board:1938586739
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 1 -r board:1938586739
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -5275,7 +5289,7 @@ in your <code>go.mod</code> in the gaia clone:</p>
 Tx to <code>ibc-1</code> for a <code>MsgTransfer</code> packet.
 Make sure you're not relaying this packet (the relayer should not be running on
 this path).</p>
-<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 5555 1000 -n 1 -d samoleans
+<pre><code class="language-shell">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 5555 -o 1000 -n 1 -d samoleans
 </code></pre>
 </li>
 <li>
