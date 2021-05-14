@@ -229,10 +229,9 @@ impl Worker {
         loop {
             thread::sleep(Duration::from_millis(200));
 
-            let next = self.cmd_rx.try_recv().ok();
-            let link_ref = &mut link;
-            let result = retry_with_index(retry_strategy::uni_chan_path(), move |index| {
-                step(next.clone(), link_ref, index)
+            let cmd = self.cmd_rx.try_recv().ok();
+            let result = retry_with_index(retry_strategy::uni_chan_path(), |index| {
+                step(cmd.clone(), &mut link, index)
             });
 
             if let Err(retries) = result {
