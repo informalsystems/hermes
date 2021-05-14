@@ -7,6 +7,8 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 
+use ibc::events::VecIbcEvents;
+use ibc::timestamp::{Expiry::Expired, Timestamp};
 use ibc::{
     downcast,
     events::{IbcEvent, IbcEventType},
@@ -42,7 +44,6 @@ use crate::{
     channel::{Channel, ChannelError, ChannelSide},
     event::monitor::UnwrapOrClone,
 };
-use ibc::events::VecIbcEvents;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -1201,14 +1202,16 @@ impl RelayPath {
             ));
         }
 
-        if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height {
+        if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height
+            || packet.timeout_timestamp != Timestamp::none()
+                && Timestamp::now().check_expiry(&packet.timeout_timestamp) == Expired
+        {
             debug!(
                 "[{}] new timeout message emerged for seq {}, with proofs for height {}",
                 self, event.packet.sequence, dst_chain_height
             );
             return self.build_timeout_packet(&event.packet, dst_chain_height);
         }
-
         Ok(None)
     }
 
@@ -1232,11 +1235,11 @@ impl RelayPath {
     /// of corresponding packets to the target chain.
     pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
-        for od in src_ods {
+        for od in dst_ods {
             self.relay_from_operational_data(od)?;
         }
 
-        for od in dst_ods {
+        for od in src_ods {
             self.relay_from_operational_data(od)?;
         }
 
