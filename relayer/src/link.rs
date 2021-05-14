@@ -1203,7 +1203,7 @@ impl RelayPath {
         }
 
         if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height
-            || packet.timeout_timestamp != Timestamp::default()
+            || packet.timeout_timestamp != Timestamp::none()
                 && Timestamp::now().check_expiry(&packet.timeout_timestamp) == Expired
         {
             debug!(

@@ -64,6 +64,11 @@ impl Timestamp {
         }
     }
 
+    /// Returns a `Timestamp` representation of a timestamp not being set.
+    pub fn none() -> Self {
+        Timestamp { time: None }
+    }
+
     /// Computes the duration difference of another `Timestamp` from the current one.
     /// Returns the difference in time as an [`std::time::Duration`].
     /// Returns `None` if the other `Timestamp` is more advanced

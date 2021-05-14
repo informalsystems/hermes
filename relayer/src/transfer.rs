@@ -57,7 +57,7 @@ pub fn build_and_send_transfer_messages(
         .map_err(PacketError::KeyError)?;
 
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
-        Timestamp::default()
+        Timestamp::none()
     } else {
         Timestamp::from_nanoseconds(
             Timestamp::now().as_nanoseconds() + opts.timeout_seconds.as_nanos() as u64,
