@@ -236,11 +236,10 @@ impl Worker {
             });
 
             if let Err(retries) = result {
-                return Err(format!(
-                    "UnidirectionalChannelPath worker failed after {} retries",
+                warn!(
+                    "UnidirectionalChannelPath worker failed to process event batch after {} retries",
                     retries
-                )
-                .into());
+                );
             }
         }
     }
