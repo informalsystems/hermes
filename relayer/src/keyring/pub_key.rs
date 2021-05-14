@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer};
+use subtle_encoding::base64;
 use tracing::{error, trace};
 
 use super::decode_bech32;
@@ -44,6 +45,7 @@ where
     let based64_encoded: Result<String, _> = Deserialize::deserialize(deser);
     let value = base64::decode(based64_encoded?)
         .map_err(|e| serde::de::Error::custom(format!("error in decoding: {}", e)))?;
+
     Ok(value)
 }
 

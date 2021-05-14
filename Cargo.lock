@@ -1233,7 +1233,6 @@ version = "0.3.0"
 dependencies = [
  "anomaly",
  "async-trait",
- "base64",
  "bech32 0.8.0",
  "bitcoin",
  "bytes",
