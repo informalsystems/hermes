@@ -7,6 +7,7 @@
 ### FEATURES
 
 - [ibc-relayer]
+  - Add support for packet timeout based on timeout timestamp ([#937])
   - Added support for Protobuf-based Keyring ([#925])
 
 ### IMPROVEMENTS
@@ -31,6 +32,7 @@
 [#927]: https://github.com/informalsystems/ibc-rs/issues/927
 [#932]: https://github.com/informalsystems/ibc-rs/issues/932
 [#934]: https://github.com/informalsystems/ibc-rs/issues/934
+[#937]: https://github.com/informalsystems/ibc-rs/issues/937
 
 
 ## v0.3.0

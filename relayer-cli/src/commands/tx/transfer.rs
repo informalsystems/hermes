@@ -38,8 +38,11 @@ pub struct TxIcs20MsgTransferCmd {
     )]
     amount: u64,
 
-    #[options(free, required, help = "timeout in number of blocks since current")]
-    height_offset: u64,
+    #[options(help = "timeout in number of blocks since current", short = "o")]
+    timeout_height_offset: u64,
+
+    #[options(help = "timeout in seconds since current", short = "t")]
+    timeout_seconds: u64,
 
     #[options(
         help = "receiving account address on the destination chain",
@@ -75,6 +78,12 @@ impl TxIcs20MsgTransferCmd {
             return Err("number of messages should be greater than zero".into());
         }
 
+        if self.timeout_height_offset == 0 && self.timeout_seconds == 0 {
+            return Err(
+                "packet timeout height and packet timeout timestamp cannot both be 0".into(),
+            );
+        }
+
         let opts = TransferOptions {
             packet_src_chain_config: src_chain_config.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
@@ -83,7 +92,8 @@ impl TxIcs20MsgTransferCmd {
             amount: self.amount,
             denom,
             receiver: self.receiver.clone(),
-            height_offset: self.height_offset,
+            timeout_height_offset: self.timeout_height_offset,
+            timeout_seconds: std::time::Duration::from_secs(self.timeout_seconds),
             number_msgs,
         };
 
