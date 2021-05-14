@@ -62,10 +62,15 @@ impl FromStr for EncodedPubKey {
                     "deserialized the encoded pub key into a ProtoAny of type '{}'",
                     proto.tpe
                 );
-                assert_eq!(
-                    proto.tpe, "/cosmos.crypto.secp256k1.PubKey",
-                    "only secp256k1 pub keys are currently supported"
-                );
+
+                if proto.tpe != "/cosmos.crypto.secp256k1.PubKey" {
+                    return Err(Kind::EncodedPublicKey(
+                        s.to_string(),
+                        "only secp256k1 pub keys are currently supported".to_string(),
+                    )
+                    .into());
+                }
+
                 Ok(EncodedPubKey::Proto(proto))
             }
             Err(e) if e.classify() == serde_json::error::Category::Syntax => {
@@ -79,7 +84,8 @@ impl FromStr for EncodedPubKey {
                     "the encoded pub key is not in a valid format: '{}', error: {}",
                     s, e
                 );
-                Err(Kind::EncodedPublicKey(s.to_owned(), e.to_string()).into())
+
+                Err(Kind::EncodedPublicKey(s.to_string(), e.to_string()).into())
             }
         }
     }
