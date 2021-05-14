@@ -16,6 +16,7 @@
   - Improve UX when querying non-existing connections and channels ([#875], [#920])
   - More details in error messages to increase debuggability ([#921], [#934])
   - Disallow creating a client with same source and destination chains ([#932])
+  - Make packet worker more resilient to nodes being unreachable for a short amount of time ([#943])
 
 ### BUG FIXES
 
@@ -33,6 +34,7 @@
 [#932]: https://github.com/informalsystems/ibc-rs/issues/932
 [#934]: https://github.com/informalsystems/ibc-rs/issues/934
 [#937]: https://github.com/informalsystems/ibc-rs/issues/937
+[#943]: https://github.com/informalsystems/ibc-rs/issues/943
 
 
 ## v0.3.0

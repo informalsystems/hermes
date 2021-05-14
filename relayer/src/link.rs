@@ -410,8 +410,11 @@ impl RelayPath {
 
             let clear_height = above_height.decrement().map_err(|e| LinkError::Failed(
                 format!("Cannot clear packets @height {}, because this height cannot be decremented: {}", above_height, e.to_string())))?;
+
             self.relay_pending_packets(clear_height)?;
+
             info!("[{}] finished clearing pending packets", self);
+
             self.clear_packets = false;
         }
 
@@ -1429,6 +1432,11 @@ impl RelayPath {
             return Some(od);
         }
         None
+    }
+
+    /// Set the relay path's clear packets flag.
+    pub fn set_clear_packets(&mut self, clear_packets: bool) {
+        self.clear_packets = clear_packets;
     }
 }
 
