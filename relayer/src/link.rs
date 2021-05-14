@@ -7,6 +7,8 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 
+use ibc::events::VecIbcEvents;
+use ibc::timestamp::{Expiry::Expired, Timestamp};
 use ibc::{
     downcast,
     events::{IbcEvent, IbcEventType},
@@ -23,6 +25,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     query::QueryTxRequest,
     signer::Signer,
+    timestamp::ZERO_DURATION,
     tx_msg::Msg,
     Height,
 };
@@ -41,7 +44,6 @@ use crate::{
     channel::{Channel, ChannelError, ChannelSide},
     event::monitor::UnwrapOrClone,
 };
-use ibc::events::VecIbcEvents;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -408,8 +410,11 @@ impl RelayPath {
 
             let clear_height = above_height.decrement().map_err(|e| LinkError::Failed(
                 format!("Cannot clear packets @height {}, because this height cannot be decremented: {}", above_height, e.to_string())))?;
+
             self.relay_pending_packets(clear_height)?;
+
             info!("[{}] finished clearing pending packets", self);
+
             self.clear_packets = false;
         }
 
@@ -506,7 +511,7 @@ impl RelayPath {
                     )?,
                 IbcEvent::WriteAcknowledgement(ref write_ack_ev) => {
                     if self
-                        .dst_channel(dst_od.proofs_height)?
+                        .dst_channel(Height::zero())?
                         .state_matches(&ChannelState::Closed)
                     {
                         (None, None)
@@ -720,7 +725,7 @@ impl RelayPath {
     /// Returns `true` if the delay for this relaying path is zero.
     /// Conversely, returns `false` if the delay is non-zero.
     fn zero_delay(&self) -> bool {
-        self.channel.connection_delay.as_nanos() == 0
+        self.channel.connection_delay == ZERO_DURATION
     }
 
     /// Handles updating the client on the destination chain
@@ -1200,14 +1205,16 @@ impl RelayPath {
             ));
         }
 
-        if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height {
+        if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height
+            || packet.timeout_timestamp != Timestamp::none()
+                && Timestamp::now().check_expiry(&packet.timeout_timestamp) == Expired
+        {
             debug!(
                 "[{}] new timeout message emerged for seq {}, with proofs for height {}",
                 self, event.packet.sequence, dst_chain_height
             );
             return self.build_timeout_packet(&event.packet, dst_chain_height);
         }
-
         Ok(None)
     }
 
@@ -1231,11 +1238,11 @@ impl RelayPath {
     /// of corresponding packets to the target chain.
     pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
-        for od in src_ods {
+        for od in dst_ods {
             self.relay_from_operational_data(od)?;
         }
 
-        for od in dst_ods {
+        for od in src_ods {
             self.relay_from_operational_data(od)?;
         }
 
@@ -1425,6 +1432,11 @@ impl RelayPath {
             return Some(od);
         }
         None
+    }
+
+    /// Set the relay path's clear packets flag.
+    pub fn set_clear_packets(&mut self, clear_packets: bool) {
+        self.clear_packets = clear_packets;
     }
 }
 

@@ -1,5 +1,10 @@
 use std::time::Duration;
 
+pub use retry::{
+    delay::{Fibonacci, Fixed},
+    retry_with_index, OperationResult as RetryResult,
+};
+
 #[derive(Copy, Clone, Debug)]
 pub struct ConstantGrowth {
     delay: Duration,
@@ -11,8 +16,8 @@ impl ConstantGrowth {
         Self { delay, incr }
     }
 
-    pub const fn clamp(self, max_delay: Duration, max_retries: usize) -> Clamped<Self> {
-        Clamped::new(self, max_delay, max_retries)
+    pub fn clamp(self, max_delay: Duration, max_retries: usize) -> impl Iterator<Item = Duration> {
+        clamp(self, max_delay, max_retries)
     }
 }
 
@@ -36,36 +41,36 @@ impl Iterator for ConstantGrowth {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Clamped<S> {
-    pub strategy: S,
-    pub max_delay: Duration,
-    pub max_retries: usize,
+pub fn clamp(
+    strategy: impl Iterator<Item = Duration>,
+    max_delay: Duration,
+    max_retries: usize,
+) -> impl Iterator<Item = Duration> {
+    strategy
+        .take(max_retries)
+        .map(move |delay| delay.min(max_delay))
 }
 
-impl<S> Clamped<S> {
-    pub const fn new(strategy: S, max_delay: Duration, max_retries: usize) -> Self {
-        Self {
-            strategy,
-            max_delay,
-            max_retries,
-        }
-    }
+pub fn clamp_total(
+    strategy: impl Iterator<Item = Duration>,
+    max_delay: Duration,
+    max_total_delay: Duration,
+) -> impl Iterator<Item = Duration> {
+    strategy.map(move |delay| delay.min(max_delay)).scan(
+        Duration::from_millis(0),
+        move |elapsed, delay| {
+            let next = if *elapsed >= max_total_delay {
+                None
+            } else if (*elapsed + delay) > max_total_delay {
+                Some(max_total_delay - *elapsed)
+            } else {
+                Some(delay)
+            };
 
-    pub fn iter(self) -> impl Iterator<Item = Duration>
-    where
-        S: Iterator<Item = Duration>,
-    {
-        let Self {
-            strategy,
-            max_retries,
-            max_delay,
-        } = self;
-
-        strategy
-            .take(max_retries)
-            .map(move |delay| delay.min(max_delay))
-    }
+            *elapsed += delay;
+            next
+        },
+    )
 }
 
 #[cfg(test)]
@@ -98,7 +103,7 @@ mod tests {
     #[test]
     fn clamped_const_growth_max_delay() {
         let strategy = CONST_STRATEGY.clamp(Duration::from_secs(10), 10);
-        let delays = strategy.iter().collect::<Vec<_>>();
+        let delays = strategy.collect::<Vec<_>>();
         assert_eq!(
             delays,
             vec![
@@ -119,7 +124,7 @@ mod tests {
     #[test]
     fn clamped_const_growth_max_retries() {
         let strategy = CONST_STRATEGY.clamp(Duration::from_secs(10000), 5);
-        let delays = strategy.iter().collect::<Vec<_>>();
+        let delays = strategy.collect::<Vec<_>>();
         assert_eq!(
             delays,
             vec![
@@ -128,6 +133,34 @@ mod tests {
                 Duration::from_millis(2000),
                 Duration::from_millis(2500),
                 Duration::from_millis(3000)
+            ]
+        );
+    }
+
+    #[test]
+    fn clamped_total_const_growth_max_retries() {
+        const MAX_DELAY: Duration = Duration::from_millis(500);
+        const DELAY_INCR: Duration = Duration::from_millis(100);
+        const INITIAL_DELAY: Duration = Duration::from_millis(200);
+        const MAX_RETRY_DURATION: Duration = Duration::from_secs(2);
+
+        let strategy = clamp_total(
+            ConstantGrowth::new(INITIAL_DELAY, DELAY_INCR),
+            MAX_DELAY,
+            MAX_RETRY_DURATION,
+        );
+
+        let delays = strategy.collect::<Vec<_>>();
+
+        assert_eq!(
+            delays,
+            vec![
+                Duration::from_millis(200),
+                Duration::from_millis(300),
+                Duration::from_millis(400),
+                Duration::from_millis(500),
+                Duration::from_millis(500),
+                Duration::from_millis(100)
             ]
         );
     }

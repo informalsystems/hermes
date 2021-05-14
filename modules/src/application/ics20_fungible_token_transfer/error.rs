@@ -24,8 +24,17 @@ pub enum Kind {
     )]
     DestinationChannelNotFound(PortId, ChannelId),
 
+    #[error("invalid port identifier")]
+    InvalidPortId(String),
+
+    #[error("invalid channel identifier")]
+    InvalidChannelId(String),
+
+    #[error("invalid packet timeout height value")]
+    InvalidPacketTimeoutHeight(String),
+
     #[error("invalid packet timeout timestamp value")]
-    InvalidPacketTimestamp(u64),
+    InvalidPacketTimeoutTimestamp(u64),
 }
 
 impl Kind {

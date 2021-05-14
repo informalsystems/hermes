@@ -1,14 +1,13 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
-use retry::delay::Fibonacci;
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, trace};
 
 use tendermint_rpc::{
     event::Event as RpcEvent,
@@ -19,11 +18,22 @@ use tendermint_rpc::{
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
-use crate::util::retry::Clamped;
+use crate::util::retry::{retry_with_index, RetryResult};
 
-const MAX_RETRIES: usize = 1000;
-const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
-const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(2);
+mod retry_strategy {
+    use crate::util::retry::clamp_total;
+    use retry::delay::Fibonacci;
+    use std::time::Duration;
+
+    // Default parameters for the retrying mechanism
+    const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
+    const MAX_TOTAL_DELAY: Duration = Duration::from_secs(10 * 60); // 10 minutes
+    const INITIAL_DELAY: Duration = Duration::from_secs(1); // 1 second
+
+    pub fn default() -> impl Iterator<Item = Duration> {
+        clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
+    }
+}
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {
@@ -177,7 +187,7 @@ impl EventMonitor {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
-            debug!("subscribing to query: {}", query);
+            trace!("subscribing to query: {}", query);
 
             let subscription = self
                 .rt
@@ -189,13 +199,13 @@ impl EventMonitor {
 
         self.subscriptions = Box::new(select_all(subscriptions));
 
-        debug!("subscribed to all queries");
+        trace!("subscribed to all queries");
 
         Ok(())
     }
 
     fn try_reconnect(&mut self) -> Result<()> {
-        warn!(
+        trace!(
             "trying to reconnect to WebSocket endpoint: {}",
             self.node_addr
         );
@@ -213,60 +223,55 @@ impl EventMonitor {
         std::mem::swap(&mut self.client, &mut client);
         std::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
-        warn!("reconnected to WebSocket endpoint: {}", self.node_addr);
+        trace!("reconnected to WebSocket endpoint: {}", self.node_addr);
 
         // Shut down previous client
-        debug!("gracefully shutting down previous client");
-
+        trace!("gracefully shutting down previous client");
         if let Err(e) = client.close() {
-            error!("previous websocket client closing failure {}", e);
+            trace!("previous websocket client closing failure: {}", e);
         }
 
         self.rt
             .block_on(driver_handle)
             .map_err(|e| Error::ClientTerminationFailed(Arc::new(e)))?;
 
-        debug!("previous client successfully shutdown");
+        trace!("previous client successfully shutdown");
 
         Ok(())
     }
 
     /// Try to resubscribe to events
     fn try_resubscribe(&mut self) -> Result<()> {
-        warn!("trying to resubscribe to events");
+        trace!("trying to resubscribe to events");
 
         self.subscribe()
     }
 
-    /// Attempt to restart the WebSocket client using the given retry stragegy.
+    /// Attempt to restart the WebSocket client using the given retry strategy.
     ///
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
     fn restart(&mut self) {
-        use retry::{retry_with_index, OperationResult as TryResult};
-
-        let strategy = Clamped::new(
-            Fibonacci::from(INITIAL_RETRY_DELAY),
-            MAX_RETRY_DELAY,
-            MAX_RETRIES,
-        );
-
-        retry_with_index(strategy.iter(), |index| {
+        let result = retry_with_index(retry_strategy::default(), |index| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
-                error!("error when reconnecting: {}", e);
-                return TryResult::Retry(index);
+                trace!("error when reconnecting: {}", e);
+                return RetryResult::Retry(index);
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
-                error!("error when reconnecting: {}", e);
-                return TryResult::Retry(index);
+                trace!("error when reconnecting: {}", e);
+                return RetryResult::Retry(index);
             }
 
-            TryResult::Ok(())
-        })
-        .unwrap_or_else(|retries| error!("failed to reconnect after {} retries", retries));
+            RetryResult::Ok(())
+        });
+
+        match result {
+            Ok(()) => info!("successfully reconnected to WebSocket endpoint"),
+            Err(retries) => error!("failed to reconnect after {} retries", retries),
+        }
     }
 
     /// Event monitor loop

@@ -132,7 +132,7 @@ hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unorder
 )
 
 🥂🥂🥂  Connection handshake finished for [Connection {
-    delay_period: 0ns,
+    delay_period: 0s,
     a_side: ConnectionSide {
         chain: ProdChainHandle {
             chain_id: ChainId {
@@ -261,7 +261,7 @@ hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unorder
             "channel-0",
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
 }
 
 Success: Channel {
@@ -308,7 +308,7 @@ Success: Channel {
             "channel-0",
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
 }
 ```
 
@@ -424,7 +424,7 @@ figure it out by looking up the given connection on `ibc-0`.
             "channel-1",
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
 }
 
 Success: Channel {
@@ -471,6 +471,6 @@ Success: Channel {
             "channel-1",
         ),
     },
-    connection_delay: 0ns,
+    connection_delay: 0s,
 }
 ```

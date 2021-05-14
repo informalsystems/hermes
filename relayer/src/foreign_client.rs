@@ -912,9 +912,10 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
     match event {
         IbcEvent::CreateClient(ev) => Ok(ev.client_id()),
         IbcEvent::UpdateClient(ev) => Ok(ev.client_id()),
-        _ => Err(ForeignClientError::ClientCreate(
-            "cannot extract client_id from result".to_string(),
-        )),
+        other => Err(ForeignClientError::ClientCreate(format!(
+            "cannot extract client_id from result: {:?}",
+            other
+        ))),
     }
 }
 

@@ -135,7 +135,7 @@ the `start-multi` command.
                 "channel-0",
             ),
         },
-        connection_delay: 0ns,
+        connection_delay: 0s,
         version: Some(
             "ics20-1",
         ),
@@ -197,7 +197,7 @@ the `start-multi` command.
                 "channel-0",
             ),
         },
-        connection_delay: 0ns,
+        connection_delay: 0s,
         version: Some(
             "ics20-1",
         ),
@@ -220,7 +220,7 @@ the `start-multi` command.
     - Two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
 
       ```shell
-      hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+      hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
       ```
 
       ```rust
@@ -243,7 +243,7 @@ the `start-multi` command.
     - Two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
 
       ```shell
-      hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 1000 -n 2
+      hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 -o 1000 -n 2
       ```
 
       ```rust

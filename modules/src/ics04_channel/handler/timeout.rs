@@ -155,11 +155,11 @@ mod tests {
     use crate::ics04_channel::msgs::timeout::test_util::get_dummy_raw_msg_timeout;
     use crate::ics04_channel::msgs::timeout::MsgTimeout;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::timestamp::ZERO_DURATION;
 
     use crate::mock::context::MockContext;
 
     use std::convert::TryFrom;
-    use std::time::Duration;
 
     #[test]
     fn timeout_packet_processing() {
@@ -215,7 +215,7 @@ mod tests {
                 Default::default(),
             ),
             get_compatible_versions(),
-            Duration::from_secs(0),
+            ZERO_DURATION,
         );
 
         let tests: Vec<Test> = vec![

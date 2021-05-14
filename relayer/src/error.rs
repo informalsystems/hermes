@@ -23,7 +23,7 @@ pub enum Kind {
     Io,
 
     /// Invalid configuration
-    #[error("Invalid configuration")]
+    #[error("invalid configuration")]
     Config,
 
     /// RPC error (typically raised by the RPC client or the RPC requester)
@@ -35,7 +35,7 @@ pub enum Kind {
     Websocket(tendermint_rpc::Url),
 
     /// Event monitor error
-    #[error("Event monitor")]
+    #[error("event monitor error: {0}")]
     EventMonitor(crate::event::monitor::Error),
 
     /// GRPC error (typically raised by the GRPC client or the GRPC requester)
@@ -143,7 +143,7 @@ pub enum Kind {
     MessageTransaction(String),
 
     /// Failed query
-    #[error("Query error occurred (failed to finish query for {0})")]
+    #[error("Query error occurred (failed to query for {0})")]
     Query(String),
 
     /// Keybase related error
@@ -198,5 +198,9 @@ impl Kind {
     /// ```
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
+    }
+
+    pub fn channel(err: impl Into<BoxError>) -> Context<Self> {
+        Self::Channel.context(err)
     }
 }
