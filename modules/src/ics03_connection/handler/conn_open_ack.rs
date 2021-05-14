@@ -104,7 +104,6 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
-    use std::time::Duration;
 
     use crate::events::IbcEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
@@ -117,6 +116,7 @@ mod tests {
     use crate::ics24_host::identifier::{ChainId, ClientId};
     use crate::mock::context::MockContext;
     use crate::mock::host::HostType;
+    use crate::timestamp::ZERO_DURATION;
 
     #[test]
     fn conn_open_ack_msg_processing() {
@@ -157,7 +157,7 @@ mod tests {
                 CommitmentPrefix::from(b"ibc".to_vec()),
             ),
             vec![msg_ack.version().clone()],
-            Duration::from_secs(0),
+            ZERO_DURATION,
         );
 
         // A connection end with incorrect state `Open`; will be part of the context.
