@@ -1,5 +1,3 @@
-pub mod errors;
-
 use std::convert::{TryFrom, TryInto};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
@@ -18,9 +16,13 @@ use ripemd160::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use errors::{Error, Kind};
+pub use pub_key::EncodedPubKey;
+
 use crate::config::ChainConfig;
 
-use errors::{Error, Kind};
+pub mod errors;
+mod pub_key;
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test"; // TODO: Change to "keyring"
@@ -98,37 +100,36 @@ impl TryFrom<KeyFile> for KeyEntry {
         // Decode the Bech32-encoded address from the key file
         let keyfile_address_bytes = decode_bech32(&key_file.address)?;
 
-        // Decode the Bech32-encoded public key from the key file
-        let mut keyfile_pubkey_bytes = decode_bech32(&key_file.pubkey)?;
+        let encoded_key: EncodedPubKey = key_file.pubkey.parse()?;
+        let mut keyfile_pubkey_bytes = encoded_key.into_bytes();
 
         // Use coin type if present or default coin type (ie. Atom).
         let coin_type = key_file.coin_type.unwrap_or_default();
 
         // Decode the private key from the mnemonic
         let private_key = private_key_from_mnemonic(&key_file.mnemonic, coin_type)?;
-        let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
-        let public_key_bytes = public_key.public_key.to_bytes();
-
-        assert!(public_key_bytes.len() <= keyfile_pubkey_bytes.len());
+        let derived_pubkey = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
+        let derived_pubkey_bytes = derived_pubkey.public_key.to_bytes();
+        assert!(derived_pubkey_bytes.len() <= keyfile_pubkey_bytes.len());
 
         // FIXME: For some reason that is currently unclear, the public key decoded from
         //        the keyfile contains a few extraneous leading bytes. To compare both
         //        public keys, we therefore strip those leading bytes off and keep the
         //        common parts.
         let keyfile_pubkey_bytes =
-            keyfile_pubkey_bytes.split_off(keyfile_pubkey_bytes.len() - public_key_bytes.len());
+            keyfile_pubkey_bytes.split_off(keyfile_pubkey_bytes.len() - derived_pubkey_bytes.len());
 
         // Ensure that the public key in the key file and the one extracted from the mnemonic match.
-        if keyfile_pubkey_bytes != public_key_bytes {
+        if keyfile_pubkey_bytes != derived_pubkey_bytes {
             return Err(Kind::PublicKeyMismatch {
                 keyfile: keyfile_pubkey_bytes,
-                mnemonic: public_key_bytes,
+                mnemonic: derived_pubkey_bytes,
             }
             .into());
         }
 
         Ok(KeyEntry {
-            public_key,
+            public_key: derived_pubkey,
             private_key,
             account: key_file.address,
             address: keyfile_address_bytes,
