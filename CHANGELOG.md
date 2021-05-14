@@ -13,7 +13,7 @@
 
 - [ibc-relayer-cli]
   - Improve UX when querying non-existing connections and channels ([#875], [#920])
-  - More details in error messages to increase debuggability ([#934])
+  - More details in error messages to increase debuggability ([#921], [#934])
   - Disallow creating a client with same source and destination chains ([#932])
 
 ### BUG FIXES
@@ -26,6 +26,7 @@
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#921]: https://github.com/informalsystems/ibc-rs/issues/921
 [#925]: https://github.com/informalsystems/ibc-rs/issues/925
 [#927]: https://github.com/informalsystems/ibc-rs/issues/927
 [#932]: https://github.com/informalsystems/ibc-rs/issues/932
