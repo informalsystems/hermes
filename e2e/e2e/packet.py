@@ -40,7 +40,7 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
             self.src_port,
             self.src_channel,
             str(self.amount),
-            str(self.height_offset),
+            "-o", str(self.height_offset),
         ]
 
         if self.number_msgs != None:
