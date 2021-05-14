@@ -187,7 +187,7 @@ impl EventMonitor {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
-            debug!("subscribing to query: {}", query);
+            trace!("subscribing to query: {}", query);
 
             let subscription = self
                 .rt
@@ -199,13 +199,13 @@ impl EventMonitor {
 
         self.subscriptions = Box::new(select_all(subscriptions));
 
-        debug!("subscribed to all queries");
+        trace!("subscribed to all queries");
 
         Ok(())
     }
 
     fn try_reconnect(&mut self) -> Result<()> {
-        warn!(
+        trace!(
             "trying to reconnect to WebSocket endpoint: {}",
             self.node_addr
         );
@@ -223,26 +223,26 @@ impl EventMonitor {
         std::mem::swap(&mut self.client, &mut client);
         std::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
-        warn!("reconnected to WebSocket endpoint: {}", self.node_addr);
+        trace!("reconnected to WebSocket endpoint: {}", self.node_addr);
 
         // Shut down previous client
-        debug!("gracefully shutting down previous client");
+        trace!("gracefully shutting down previous client");
         if let Err(e) = client.close() {
-            debug!("previous websocket client closing failure: {}", e);
+            trace!("previous websocket client closing failure: {}", e);
         }
 
         self.rt
             .block_on(driver_handle)
             .map_err(|e| Error::ClientTerminationFailed(Arc::new(e)))?;
 
-        debug!("previous client successfully shutdown");
+        trace!("previous client successfully shutdown");
 
         Ok(())
     }
 
     /// Try to resubscribe to events
     fn try_resubscribe(&mut self) -> Result<()> {
-        warn!("trying to resubscribe to events");
+        trace!("trying to resubscribe to events");
 
         self.subscribe()
     }
