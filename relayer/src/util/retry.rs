@@ -59,7 +59,7 @@ pub fn clamp_total(
     strategy.map(move |delay| delay.min(max_delay)).scan(
         Duration::from_millis(0),
         move |elapsed, delay| {
-            let next = if *elapsed > max_total_delay {
+            let next = if *elapsed >= max_total_delay {
                 None
             } else if (*elapsed + delay) > max_total_delay {
                 Some(max_total_delay - *elapsed)
@@ -133,6 +133,34 @@ mod tests {
                 Duration::from_millis(2000),
                 Duration::from_millis(2500),
                 Duration::from_millis(3000)
+            ]
+        );
+    }
+
+    #[test]
+    fn clamped_total_const_growth_max_retries() {
+        const MAX_DELAY: Duration = Duration::from_millis(500);
+        const DELAY_INCR: Duration = Duration::from_millis(100);
+        const INITIAL_DELAY: Duration = Duration::from_millis(200);
+        const MAX_RETRY_DURATION: Duration = Duration::from_secs(2);
+
+        let strategy = clamp_total(
+            ConstantGrowth::new(INITIAL_DELAY, DELAY_INCR),
+            MAX_DELAY,
+            MAX_RETRY_DURATION,
+        );
+
+        let delays = strategy.collect::<Vec<_>>();
+
+        assert_eq!(
+            delays,
+            vec![
+                Duration::from_millis(200),
+                Duration::from_millis(300),
+                Duration::from_millis(400),
+                Duration::from_millis(500),
+                Duration::from_millis(500),
+                Duration::from_millis(100)
             ]
         );
     }
