@@ -538,7 +538,7 @@ EOF
     fi
     cat <<EOF
 [[chains]]
-id='${i}'
+id='${ID}'
 rpc_addr='http://localhost:${RPC}'
 grpc_addr='https://localhost:${GRPC}'
 websocket_addr='ws://localhost:${RPC}/websocket'
