@@ -6,6 +6,14 @@ version() {
   echo "v0.0.1"
 }
 
+config_defaults() {
+    GLOBAL_GAIAD_BINARY="$(which gaiad || echo "${GOPATH:-./gaiad}")"
+    #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
+    GLOBAL_HOME_DIR="${HOME}/.gm"
+    GLOBAL_AUTO_MAINTAIN_CONFIG="true"
+    GLOBAL_ADD_TO_HERMES="false"
+}
+
 install() {
   mkdir -p "${HOME}/.gm/bin"
   cp "$0" "${HOME}/.gm/bin/gm"
@@ -16,6 +24,7 @@ install() {
   chmod 644 "${HOME}/.gm/bin/shell-support"
   CONFIG_FILE="${HOME}/.gm/gm.toml"
   if [ ! -f "$CONFIG_FILE" ]; then
+    config_defaults
     write_default_config
   fi
   if [ -z "$(which stoml)" ]; then
@@ -111,11 +120,11 @@ load_config() {
       export CONFIG_FILE="${SCRIPT_DIR}gm.toml"
     fi
   fi
-  GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -q "$CONFIG_FILE" global.gaiad_binary || which gaiad)")"
-  #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
-  GLOBAL_HOME_DIR="$(eval echo "$(stoml -q "$CONFIG_FILE" global.home_dir || echo "${HOME}/.gm")")"
-  GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -q "$CONFIG_FILE" global.auto_maintain_config || echo "true")"
-  GLOBAL_ADD_TO_HERMES="$(stoml -q "$CONFIG_FILE" global.add_to_hermes || echo "true")"
+  config_defaults
+  GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -q "$CONFIG_FILE" global.gaiad_binary)")"
+  GLOBAL_HOME_DIR="$(eval echo "$(stoml -q "$CONFIG_FILE" global.home_dir)")"
+  GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -q "$CONFIG_FILE" global.auto_maintain_config)"
+  GLOBAL_ADD_TO_HERMES="$(stoml -q "$CONFIG_FILE" global.add_to_hermes)"
   export GLOBAL_GAIAD_BINARY
   export GLOBAL_HOME_DIR
   export GLOBAL_AUTO_MAINTAIN_CONFIG
