@@ -2,7 +2,14 @@
 
 ## Unreleased
 
-> [TODO: high level summary]
+> Nothing yet,
+
+## v0.3.1
+*May 14h, 2021*
+
+This release improves the UX of a couple commands, fixes a bug related
+to delay periods, and adds support for packet timeouts based on timestamps,
+as well as support Protobuf-encoded keys.
 
 ### FEATURES
 
