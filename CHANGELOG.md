@@ -8,12 +8,14 @@
 
 - [ibc-relayer]
   - Add support for packet timeout based on timeout timestamp ([#937])
+  - Added support for Protobuf-based Keyring ([#925])
 
 ### IMPROVEMENTS
 
 - [ibc-relayer-cli]
   - Improve UX when querying non-existing connections and channels ([#875], [#920])
   - More details in error messages to increase debuggability ([#934])
+  - Disallow creating a client with same source and destination chains ([#932])
 
 ### BUG FIXES
 
@@ -25,7 +27,9 @@
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#925]: https://github.com/informalsystems/ibc-rs/issues/925
 [#927]: https://github.com/informalsystems/ibc-rs/issues/927
+[#932]: https://github.com/informalsystems/ibc-rs/issues/932
 [#934]: https://github.com/informalsystems/ibc-rs/issues/934
 [#937]: https://github.com/informalsystems/ibc-rs/issues/937
 
