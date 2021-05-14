@@ -239,6 +239,9 @@ impl Worker {
                     "UnidirectionalChannelPath worker failed to process event batch after {} retries",
                     retries
                 );
+
+                // Try to clear packets again on next iteration.
+                link.a_to_b.set_clear_packets(true);
             }
         }
     }
