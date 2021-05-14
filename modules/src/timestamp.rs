@@ -2,10 +2,13 @@ use std::convert::TryInto;
 use std::fmt::Display;
 use std::num::{ParseIntError, TryFromIntError};
 use std::str::FromStr;
+use std::time::Duration;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
+
+pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 
 /// A newtype wrapper over `Option<DateTime<Utc>>` to keep track of
 /// IBC packet timeout.
@@ -65,7 +68,7 @@ impl Timestamp {
     /// Returns the difference in time as an [`std::time::Duration`].
     /// Returns `None` if the other `Timestamp` is more advanced
     /// than the current or if either of the `Timestamp`s is not set.
-    pub fn duration_since(&self, other: &Timestamp) -> Option<std::time::Duration> {
+    pub fn duration_since(&self, other: &Timestamp) -> Option<Duration> {
         match (self.time, other.time) {
             (Some(time1), Some(time2)) => time1.signed_duration_since(time2).to_std().ok(),
             _ => None,

@@ -115,7 +115,7 @@ impl CosmosSdkChain {
             .unbonding_time
             .ok_or_else(|| Kind::Grpc.context("none unbonding time".to_string()))?;
 
-        Ok(Duration::from_secs(res.seconds as u64))
+        Ok(Duration::new(res.seconds as u64, res.nanos as u32))
     }
 
     fn rpc_client(&self) -> &HttpClient {

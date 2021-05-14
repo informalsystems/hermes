@@ -135,7 +135,7 @@ the `start-multi` command.
                 "channel-0",
             ),
         },
-        connection_delay: 0ns,
+        connection_delay: 0s,
         version: Some(
             "ics20-1",
         ),
@@ -197,7 +197,7 @@ the `start-multi` command.
                 "channel-0",
             ),
         },
-        connection_delay: 0ns,
+        connection_delay: 0s,
         version: Some(
             "ics20-1",
         ),
