@@ -1,8 +1,7 @@
 use std::{fmt, thread, time::Duration};
 
 use anomaly::BoxError;
-use crossbeam_channel::Receiver;
-
+use crossbeam_channel::{Receiver, Sender};
 use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
@@ -12,6 +11,7 @@ use crate::{
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     link::{Link, LinkParameters},
     object::{Client, Object, UnidirectionalChannelPath},
+    util::retry::{retry_with_index, RetryResult},
 };
 
 mod handle;
@@ -20,10 +20,31 @@ pub use handle::WorkerHandle;
 mod cmd;
 pub use cmd::WorkerCmd;
 
+mod retry_strategy {
+    use crate::util::retry::{clamp_total, ConstantGrowth};
+    use std::time::Duration;
+
+    const MAX_DELAY: Duration = Duration::from_millis(500);
+    const DELAY_INCR: Duration = Duration::from_millis(100);
+    const INITIAL_DELAY: Duration = Duration::from_millis(200);
+    const MAX_RETRY_DURATION: Duration = Duration::from_secs(2);
+
+    pub fn uni_chan_path() -> impl Iterator<Item = Duration> {
+        let strategy = ConstantGrowth::new(INITIAL_DELAY, DELAY_INCR);
+        clamp_total(strategy, MAX_DELAY, MAX_RETRY_DURATION)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum WorkerMsg {
+    Stopped(Object),
+}
+
 /// A worker processes batches of events associated with a given [`Object`].
 pub struct Worker {
     chains: ChainHandlePair,
-    rx: Receiver<WorkerCmd>,
+    cmd_rx: Receiver<WorkerCmd>,
+    msg_tx: Sender<WorkerMsg>,
 }
 
 impl fmt::Display for Worker {
@@ -34,8 +55,12 @@ impl fmt::Display for Worker {
 
 impl Worker {
     /// Spawn a worker which relay events pertaining to an [`Object`] between two `chains`.
-    pub fn spawn(chains: ChainHandlePair, object: Object) -> WorkerHandle {
-        let (tx, rx) = crossbeam_channel::unbounded();
+    pub fn spawn(
+        chains: ChainHandlePair,
+        object: Object,
+        msg_tx: Sender<WorkerMsg>,
+    ) -> WorkerHandle {
+        let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 
         debug!(
             "[{}] spawned worker with chains a:{} and b:{} for object {:#?} ",
@@ -45,10 +70,15 @@ impl Worker {
             object,
         );
 
-        let worker = Self { chains, rx };
+        let worker = Self {
+            chains,
+            cmd_rx,
+            msg_tx,
+        };
+
         let thread_handle = std::thread::spawn(move || worker.run(object));
 
-        WorkerHandle::new(tx, thread_handle)
+        WorkerHandle::new(cmd_tx, thread_handle)
     }
 
     /// Run the worker event loop.
@@ -56,7 +86,9 @@ impl Worker {
         let span = error_span!("worker loop", worker = %object.short_name());
         let _guard = span.enter();
 
-        let result = match object {
+        let msg_tx = self.msg_tx.clone();
+
+        let result = match object.clone() {
             Object::UnidirectionalChannelPath(path) => self.run_uni_chan_path(path),
             Object::Client(client) => self.run_client(client),
         };
@@ -65,7 +97,11 @@ impl Worker {
             error!("worker error: {}", e);
         }
 
-        info!("worker exits");
+        if let Err(e) = msg_tx.send(WorkerMsg::Stopped(object)) {
+            error!("failed to notify supervisor that worker stopped: {}", e);
+        }
+
+        info!("worker stopped");
     }
 
     fn run_client_misbehaviour(
@@ -125,7 +161,7 @@ impl Worker {
                 continue;
             }
 
-            if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
+            if let Ok(WorkerCmd::IbcEvents { batch }) = self.cmd_rx.try_recv() {
                 trace!("client '{}' worker receives batch {:?}", client, batch);
 
                 for event in batch.events {
@@ -152,15 +188,14 @@ impl Worker {
             },
         )?;
 
+        // TODO: Do periodical checks that the link is closed (upon every retry in the loop).
         if link.is_closed()? {
             warn!("channel is closed, exiting");
             return Ok(());
         }
 
-        loop {
-            thread::sleep(Duration::from_millis(200));
-
-            if let Ok(cmd) = self.rx.try_recv() {
+        fn step(cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<(), u64> {
+            if let Some(cmd) = cmd {
                 let result = match cmd {
                     WorkerCmd::IbcEvents { batch } => {
                         // Update scheduled batches.
@@ -174,11 +209,10 @@ impl Worker {
 
                 if let Err(e) = result {
                     error!("{}", e);
-                    continue;
+                    return RetryResult::Retry(index);
                 }
             }
 
-            // Refresh the scheduled batches and execute any outstanding ones.
             let result = link
                 .a_to_b
                 .refresh_schedule()
@@ -186,6 +220,28 @@ impl Worker {
 
             if let Err(e) = result {
                 error!("{}", e);
+                return RetryResult::Retry(index);
+            }
+
+            RetryResult::Ok(())
+        }
+
+        loop {
+            thread::sleep(Duration::from_millis(200));
+
+            let cmd = self.cmd_rx.try_recv().ok();
+            let result = retry_with_index(retry_strategy::uni_chan_path(), |index| {
+                step(cmd.clone(), &mut link, index)
+            });
+
+            if let Err(retries) = result {
+                warn!(
+                    "UnidirectionalChannelPath worker failed to process event batch after {} retries",
+                    retries
+                );
+
+                // Try to clear packets again on next iteration.
+                link.a_to_b.set_clear_packets(true);
             }
         }
     }
