@@ -63,7 +63,7 @@ pub enum Error {
 }
 
 /// A batch of events from a chain at a specific height
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EventBatch {
     pub chain_id: ChainId,
     pub height: Height,
