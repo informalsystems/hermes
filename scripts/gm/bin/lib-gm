@@ -351,7 +351,7 @@ create() {
       mv "${HOME_ROOT}/${i}v0" "${HOME_DIR}"
       mv "${HOME_ROOT}/gentxs" "${HOME_DIR}"
       $GAIAD keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-      $GAIAD add-genesis-account "wallet" "10000000stake,10000${i}coin" --keyring-backend test --home "${HOME_DIR}"
+      $GAIAD add-genesis-account "wallet" "10000000stake,10000localcoin" --keyring-backend test --home "${HOME_DIR}"
     fi
   else
     NETWORK="$(get_network "$i")"
