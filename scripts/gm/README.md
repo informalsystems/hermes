@@ -241,11 +241,11 @@ have a full node and the hermes config is going through the full nodes instead o
 
 You can get the hermes configuration automatically.
 
-You need to manually run the `hermes create channel` commands to create the IBC paths as well as the relayer commands.
-
-(Note: maybe it's a good feature request to automate this in the next release.)
-
 You might need to replace the value of the `gaiad_binary` entry, if you don't set `$GOPATH` in your regular executions.
+
+The same is true for `hermes_binary`.
+
+`gm.toml`:
 ```toml
 [global]
 gaiad_binary="$GOPATH/bin/gaiad"
@@ -253,6 +253,8 @@ ports_start_at=27000
 home_dir="$HOME/.gm"
 auto_maintain_config=true
 add_to_hermes=false
+hermes_binary="./hermes"
+hermes_config="$HOME/.hermes/config.toml"
 
 [network1]
 [network2]
@@ -276,5 +278,20 @@ add_to_hermes=true
 network="network5"
 add_to_hermes=true
 ```
+(Ports will be auto-assigned and written in the configuration file on the first start.)
 
-Ports will be auto-assigned and written in the configuration file on the first start.
+Run the below:
+```bash
+gm start
+gm hermes config
+gm hermes keys
+gm hermes cc
+```
+
+This will
+* create the node configuration and start all nodes
+* generate the keys for hermes
+* generate the config for hermes
+* print the `create client` commands for a full-mesh connection among the IBC node networks.
+
+Pick and choose the connections from the list that you want to create.
