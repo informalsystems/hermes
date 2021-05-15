@@ -62,37 +62,49 @@ pub fn get_all_events(
 pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
     match object.action.as_str() {
         // Client events
-        "create_client" => Ok(IbcEvent::from(ClientEvents::CreateClient::try_from(
-            object,
-        )?)),
-        "update_client" => Ok(IbcEvent::from(ClientEvents::UpdateClient::try_from(
-            object,
-        )?)),
-        "submit_misbehaviour" => Ok(IbcEvent::from(ClientEvents::ClientMisbehaviour::try_from(
-            object,
-        )?)),
+        "create_client" | ibc::ics02_client::msgs::create_client::TYPE_URL => Ok(IbcEvent::from(
+            ClientEvents::CreateClient::try_from(object)?,
+        )),
+        "update_client" | ibc::ics02_client::msgs::update_client::TYPE_URL => Ok(IbcEvent::from(
+            ClientEvents::UpdateClient::try_from(object)?,
+        )),
+        "submit_misbehaviour" | ibc::ics02_client::msgs::misbehavior::TYPE_URL => Ok(
+            IbcEvent::from(ClientEvents::ClientMisbehaviour::try_from(object)?),
+        ),
 
         // Connection events
-        "connection_open_init" => Ok(IbcEvent::from(ConnectionEvents::OpenInit::try_from(
-            object,
-        )?)),
-        "connection_open_try" => Ok(IbcEvent::from(ConnectionEvents::OpenTry::try_from(object)?)),
-        "connection_open_ack" => Ok(IbcEvent::from(ConnectionEvents::OpenAck::try_from(object)?)),
-        "connection_open_confirm" => Ok(IbcEvent::from(ConnectionEvents::OpenConfirm::try_from(
-            object,
-        )?)),
+        "connection_open_init" | ibc::ics03_connection::msgs::conn_open_init::TYPE_URL => Ok(
+            IbcEvent::from(ConnectionEvents::OpenInit::try_from(object)?),
+        ),
+        "connection_open_try" | ibc::ics03_connection::msgs::conn_open_try::TYPE_URL => {
+            Ok(IbcEvent::from(ConnectionEvents::OpenTry::try_from(object)?))
+        }
+        "connection_open_ack" | ibc::ics03_connection::msgs::conn_open_ack::TYPE_URL => {
+            Ok(IbcEvent::from(ConnectionEvents::OpenAck::try_from(object)?))
+        }
+        "connection_open_confirm" | ibc::ics03_connection::msgs::conn_open_confirm::TYPE_URL => Ok(
+            IbcEvent::from(ConnectionEvents::OpenConfirm::try_from(object)?),
+        ),
 
         // Channel events
-        "channel_open_init" => Ok(IbcEvent::from(ChannelEvents::OpenInit::try_from(object)?)),
-        "channel_open_try" => Ok(IbcEvent::from(ChannelEvents::OpenTry::try_from(object)?)),
-        "channel_open_ack" => Ok(IbcEvent::from(ChannelEvents::OpenAck::try_from(object)?)),
-        "channel_open_confirm" => Ok(IbcEvent::from(ChannelEvents::OpenConfirm::try_from(
-            object,
-        )?)),
-        "channel_close_init" => Ok(IbcEvent::from(ChannelEvents::CloseInit::try_from(object)?)),
-        "channel_close_confirm" => Ok(IbcEvent::from(ChannelEvents::CloseConfirm::try_from(
-            object,
-        )?)),
+        "channel_open_init" | ibc::ics04_channel::msgs::chan_open_init::TYPE_URL => {
+            Ok(IbcEvent::from(ChannelEvents::OpenInit::try_from(object)?))
+        }
+        "channel_open_try" | ibc::ics04_channel::msgs::chan_open_try::TYPE_URL => {
+            Ok(IbcEvent::from(ChannelEvents::OpenTry::try_from(object)?))
+        }
+        "channel_open_ack" | ibc::ics04_channel::msgs::chan_open_ack::TYPE_URL => {
+            Ok(IbcEvent::from(ChannelEvents::OpenAck::try_from(object)?))
+        }
+        "channel_open_confirm" | ibc::ics04_channel::msgs::chan_open_confirm::TYPE_URL => Ok(
+            IbcEvent::from(ChannelEvents::OpenConfirm::try_from(object)?),
+        ),
+        "channel_close_init" | ibc::ics04_channel::msgs::chan_close_init::TYPE_URL => {
+            Ok(IbcEvent::from(ChannelEvents::CloseInit::try_from(object)?))
+        }
+        "channel_close_confirm" | ibc::ics04_channel::msgs::chan_close_confirm::TYPE_URL => Ok(
+            IbcEvent::from(ChannelEvents::CloseConfirm::try_from(object)?),
+        ),
 
         // Packet events
         // Note: There is no message.action "send_packet", the only one we can hook into is the
@@ -101,13 +113,16 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
         // - "register" and "send" for ICS27
         // However the attributes are all prefixed with "send_packet" therefore the overwrite here
         // TODO: This need to be sorted out
-        "transfer" | "register" | "send" => {
+        "transfer"
+        | "register"
+        | "send"
+        | ibc::application::ics20_fungible_token_transfer::msgs::transfer::TYPE_URL => {
             object.action = "send_packet".to_string();
             Ok(IbcEvent::from(ChannelEvents::SendPacket::try_from(object)?))
         }
         // Same here
         // TODO: sort this out
-        "recv_packet" => {
+        "recv_packet" | ibc::ics04_channel::msgs::recv_packet::TYPE_URL => {
             object.action = "write_acknowledgement".to_string();
             Ok(IbcEvent::from(
                 ChannelEvents::WriteAcknowledgement::try_from(object)?,
@@ -116,14 +131,19 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
         "write_acknowledgement" => Ok(IbcEvent::from(
             ChannelEvents::WriteAcknowledgement::try_from(object)?,
         )),
-        "acknowledge_packet" => Ok(IbcEvent::from(ChannelEvents::AcknowledgePacket::try_from(
-            object,
-        )?)),
-        "timeout_packet" => Ok(IbcEvent::from(ChannelEvents::TimeoutPacket::try_from(
-            object,
-        )?)),
-
-        "timeout_on_close_packet" => {
+        "acknowledge_packet" | ibc::ics04_channel::msgs::acknowledgement::TYPE_URL => {
+            object.action = "acknowledge_packet".to_string();
+            Ok(IbcEvent::from(ChannelEvents::AcknowledgePacket::try_from(
+                object,
+            )?))
+        }
+        "timeout_packet" | ibc::ics04_channel::msgs::timeout::TYPE_URL => {
+            object.action = "timeout_packet".to_string();
+            Ok(IbcEvent::from(ChannelEvents::TimeoutPacket::try_from(
+                object,
+            )?))
+        }
+        "timeout_on_close_packet" | ibc::ics04_channel::msgs::timeout_on_close::TYPE_URL => {
             object.action = "timeout_packet".to_string();
             Ok(IbcEvent::from(
                 ChannelEvents::TimeoutOnClosePacket::try_from(object)?,
