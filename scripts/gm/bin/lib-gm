@@ -13,7 +13,7 @@ config_defaults() {
     GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
     GLOBAL_HOME_DIR="${HOME}/.gm"
-    GLOBAL_HERMES_CONFIG="${HOME}/.hermes/hermes.toml"
+    GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
     GLOBAL_AUTO_MAINTAIN_CONFIG="true"
     GLOBAL_ADD_TO_HERMES="false"
 }
