@@ -23,18 +23,34 @@ usage() {
   echo "Usage:"
   echo "  gm <COMMAND> [[<PARAMS>]...]"
   echo
-  echo "COMMANDS    DESCRIPTION"
+  echo "COMMANDS     DESCRIPTION"
   echo
-  echo "help        print this help and exit"
-  echo "hermes      print the hermes config.toml"
-  echo "install     install the script for the local user"
-  echo "keys        print the keys of validator nodes"
-  echo "log         print the log of a node"
-  echo "ports       print the ports of a (running) node"
-  echo "start       start one or more nodes (starts all nodes if no parameter is given)"
-  echo "status      print the status of nodes"
-  echo "stop        stop one or more nodes (stops all nodes if no parameter is given)"
-  echo "version     print the application version"
+  echo "help         print this help and exit"
+  echo "hermes       sub-command for hermes-related configuration"
+  echo "install      install the script for the local user"
+  echo "keys         print the keys of validator nodes"
+  echo "log          print the log of a node"
+  echo "ports        print the ports of a (running) node"
+  echo "start        start one or more nodes (starts all nodes if no parameter is given)"
+  echo "status       print the status of nodes"
+  echo "stop         stop one or more nodes (stops all nodes if no parameter is given)"
+  echo "unsafe-reset unsafe-reset-all one or more nodes (resets all nodes if no parameter is given)"
+  echo "version      print the application version"
+  echo
+}
+
+hermes_usage() {
+  echo "Gaiad Manager $(version) - hermes subcommand"
+  echo
+  echo "Usage:"
+  echo "  gm hermes <SUBCOMMAND> [[<PARAMS>]...]"
+  echo
+  echo "SUBCOMMANDS  DESCRIPTION"
+  echo
+  echo "help         print this help and exit"
+  echo "config       print the hermes config.toml"
+  echo "keys         add keys to $HOME/.hermes"
+  echo "cc           print a list of hermes commands to create IBC connections"
   echo
 }
 
@@ -43,8 +59,38 @@ case "${1:-help}" in
     usage
     ;;
   hermes)
-    load_config
-    hermes
+    shift
+    case "${1:-help}" in
+      help)
+        hermes_usage
+        ;;
+      config)
+        load_config
+        hermes_config
+        ;;
+      keys)
+        load_config
+        if [ $# -eq 1 ]; then
+          NODES="$ALL_HERMES_NODES"
+        else
+          shift
+          NODES="$*"
+        fi
+        for i in $NODES
+        do
+          warn_unknown_hermes_node "$i" || continue
+          hermes_keys "$i"
+        done
+        ;;
+      cc)
+        load_config
+        hermes_cc
+        ;;
+      *)
+        hermes_usage
+        exit_with_error "could not understand the command hermes \"$1\""
+        ;;
+    esac
     ;;
   install)
     install
@@ -146,6 +192,20 @@ case "${1:-help}" in
     do
       warn_unknown_node "$i" || continue
       stop "$i"
+    done
+    ;;
+  unsafe-reset)
+    load_config
+    if [ $# -eq 1 ]; then
+      NODES_TO_STOP="$ALL_NODES"
+    else
+      shift
+      NODES_TO_STOP="$*"
+    fi
+    for i in $NODES_TO_STOP
+    do
+      warn_unknown_node "$i" || continue
+      unsafe_reset "$i"
     done
     ;;
   version)

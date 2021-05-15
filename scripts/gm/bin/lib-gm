@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
-#set -x
 set -eu
+if [ -n "${DEBUG:-}" ]; then
+  set -x
+fi
 
 version() {
   echo "v0.0.1"
@@ -8,8 +10,10 @@ version() {
 
 config_defaults() {
     GLOBAL_GAIAD_BINARY="$(which gaiad || echo "${GOPATH:-./gaiad}")"
+    GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
     GLOBAL_HOME_DIR="${HOME}/.gm"
+    GLOBAL_HERMES_CONFIG="${HOME}/.hermes/hermes.toml"
     GLOBAL_AUTO_MAINTAIN_CONFIG="true"
     GLOBAL_ADD_TO_HERMES="false"
 }
@@ -23,7 +27,9 @@ install() {
   cp "${0%%gm}shell-support" "${HOME}/.gm/bin/shell-support"
   chmod 644 "${HOME}/.gm/bin/shell-support"
   CONFIG_FILE="${HOME}/.gm/gm.toml"
-  if [ ! -f "$CONFIG_FILE" ]; then
+  if [ -f "$CONFIG_FILE" ]; then
+    warn "Config file already exists. Please double-check the documentation to see if all necessary configuration items are set."
+  else
     config_defaults
     write_default_config
   fi
@@ -68,6 +74,13 @@ warn_unknown_node() {
   fi
 }
 
+warn_unknown_hermes_node() {
+  if ! a_in_b "$1" "$ALL_HERMES_NODES"; then
+    warn "not a hermes node $1, skipping..."
+    return 1
+  fi
+}
+
 exit_with_error() {
   echo "ERROR: $*, exiting..."
   return 1
@@ -102,6 +115,24 @@ a_in_b_comma_separated() {
   test -n "$(echo "$2" | grep '\(^\|,\) *'"${1}"' *\(,\|$\)')"
 }
 
+# Return the n-th value from a comma-separated list.
+# Starts with 1.
+n_from_a() {
+  i=1
+  N=$(($1))
+  shift
+  LIST="$*"
+  for j in $LIST
+  do
+    if [ $((N-i)) -eq 0 ]; then
+      echo "$j"
+      return 0
+    fi
+    i=$((i+1))
+  done
+  return 1
+}
+
 load_all_sections() {
   grep '^ *\[.\+\] *$' "$CONFIG_FILE" | sed 's/^ *\[\([^]]*\)\] *$/\1/'
 }
@@ -121,18 +152,23 @@ load_config() {
     fi
   fi
   config_defaults
-  GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -q "$CONFIG_FILE" global.gaiad_binary)")"
-  GLOBAL_HOME_DIR="$(eval echo "$(stoml -q "$CONFIG_FILE" global.home_dir)")"
-  GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -q "$CONFIG_FILE" global.auto_maintain_config)"
-  GLOBAL_ADD_TO_HERMES="$(stoml -q "$CONFIG_FILE" global.add_to_hermes)"
+  GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -q "$CONFIG_FILE" global.gaiad_binary || echo "$GLOBAL_GAIAD_BINARY")")"
+  GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -q "$CONFIG_FILE" global.hermes_binary || echo "$GLOBAL_HERMES_BINARY")")"
+  GLOBAL_HOME_DIR="$(eval echo "$(stoml -q "$CONFIG_FILE" global.home_dir || echo "$GLOBAL_HOME_DIR")")"
+  GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -q "$CONFIG_FILE" global.hermes_config || echo "$GLOBAL_HERMES_CONFIG")")"
+  GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -q "$CONFIG_FILE" global.auto_maintain_config || echo "$GLOBAL_AUTO_MAINTAIN_CONFIG")"
+  GLOBAL_ADD_TO_HERMES="$(stoml -q "$CONFIG_FILE" global.add_to_hermes || echo "$GLOBAL_ADD_TO_HERMES")"
   export GLOBAL_GAIAD_BINARY
+  export GLOBAL_HERMES_BINARY
   export GLOBAL_HOME_DIR
+  export GLOBAL_HERMES_CONFIG
   export GLOBAL_AUTO_MAINTAIN_CONFIG
   export GLOBAL_ADD_TO_HERMES
   if [ "$FRESH_CONFIG" = "yes" ]; then
     write_default_config
     VALIDATORS=""
     FULL_NODES=""
+    ALL_HERMES_NODES=""
   else
     stoml "$CONFIG_FILE" global 1> /dev/null || exit_with_error invalid config file. Make sure all strings are quoted
     test -x "$GLOBAL_GAIAD_BINARY" || exit_with_error "gaiad binary cannot be executed: $GLOBAL_GAIAD_BINARY"
@@ -143,6 +179,7 @@ load_config() {
     # End of workaround
     VALIDATORS=""
     RAW_NODES=""
+    ALL_HERMES_NODES=""
     for i in $RAW_SECTIONS
     do
       if [ "$i" = "global" ]; then
@@ -150,6 +187,9 @@ load_config() {
       fi
       if [ -z "$(stoml "$CONFIG_FILE" "${i}.network")" ]; then
         VALIDATORS="$VALIDATORS $i"
+        if get_add_to_hermes "$i"; then
+          ALL_HERMES_NODES="$ALL_HERMES_NODES $i"
+        fi
       else
         RAW_NODES="$RAW_NODES $i"
       fi
@@ -163,10 +203,17 @@ load_config() {
         continue
       fi
       FULL_NODES="${FULL_NODES} $i"
+      if get_add_to_hermes "$i"; then
+        ALL_HERMES_NODES="$ALL_HERMES_NODES $i"
+      fi
     done
   fi
+  VALIDATORS="${VALIDATORS## }"
+  FULL_NODES="${FULL_NODES## }"
+  ALL_HERMES_NODES="${ALL_HERMES_NODES## }"
   export VALIDATORS
   export FULL_NODES
+  export ALL_HERMES_NODES
   export ALL_NODES="$VALIDATORS $FULL_NODES"
   # Workaround for issue: https://github.com/spf13/viper/issues/1131
   #   Fix "stoml" so it reads empty sections too.
@@ -187,6 +234,8 @@ ports_start_at=27000
 home_dir="$GLOBAL_HOME_DIR"
 auto_maintain_config=$GLOBAL_AUTO_MAINTAIN_CONFIG
 add_to_hermes=$GLOBAL_ADD_TO_HERMES
+hermes_binary="$GLOBAL_HERMES_BINARY"
+hermes_config="$GLOBAL_HERMES_CONFIG"
 EOF
   set -e
 }
@@ -260,6 +309,16 @@ get_network() {
     fi
   fi
   echo "$RESULT"
+}
+
+# Note: this depends on one-validator nodes.
+# We might want to change it to `stoml -q "${HOME_DIR}/config/genesis.json" "chain_id"` later.
+get_chain_id() {
+  if a_in_b "$1" "$VALIDATORS"; then
+    echo "$1"
+  else
+    get_network "$1"
+  fi
 }
 
 get_add_to_hermes() {
@@ -374,10 +433,19 @@ start() {
     GAIAD="$(get_gaiad_binary "$1")"
     HOME_DIR="$(get_home_dir "$1")"
     GAIAD_LOG="${HOME_DIR}/log"
+    VALIDATION="$("$GAIAD" validate-genesis --home "$HOME_DIR" > "$GAIAD_LOG" 2>&1 || echo "ERR")"
+    if [ "$VALIDATION" = "ERR" ]; then
+      warn "invalid genesis.json for ${1}. Please check the log and fix manually. Skipping..."
+      return 0
+    fi
     nohup "$GAIAD" start --x-crisis-skip-assert-invariants --home "$HOME_DIR" > "$GAIAD_LOG" 2>&1 &
     GAIAD_PID=$!
     echo "$GAIAD_PID" > "$HOME_DIR/pid"
     echo "$i started, PID: $GAIAD_PID, LOG: $GAIAD_LOG"
+    sleep 1
+    if ! is_running "$1"; then
+      warn "$1 failed. Check the logs with \`gm log $1\`."
+    fi
   fi
 }
 
@@ -389,11 +457,11 @@ stop() {
     kill -TERM "$GAIAD_PID" 2> /dev/null && rm -f "$HOME_DIR/pid"
     RESULT="$?"
     if [ "$RESULT" != "0" ]; then
-        warn "SIGTERM failed on PID ${GAIAD_PID}. Trying KILL..."
+        warn "SIGTERM failed on PID ${GAIAD_PID} for $1. Trying KILL..."
         kill -KILL "$GAIAD_PID" && rm -f "$HOME_DIR/pid"
         RESULT="$?"
         if [ "$RESULT" != "0" ]; then
-          warn "SIGKILL failed on PID ${GAIAD_PID}. Giving up..."
+          warn "SIGKILL failed on PID ${GAIAD_PID} for $1. Giving up..."
         fi
     fi
   else
@@ -401,9 +469,9 @@ stop() {
     if [ -f "${HOME_DIR}/pid" ]; then
       GAIAD_PID="$(cat "${HOME_DIR}/pid")"
       if [ -n "$GAIAD_PID" ]; then
-        warn "no process with PID $GAIAD_PID. Removing stale data."
+        warn "no process with PID $GAIAD_PID found for $1. Removing stale data."
       else
-        warn "no process ID found. Removing stale data."
+        warn "no process ID found for $1. Removing stale data."
       fi
       rm -f "$HOME_DIR/pid"
     fi
@@ -518,8 +586,8 @@ list_keys() {
   done
 }
 
-hermes() {
-  cat <<EOF
+hermes_config() {
+  cat <<EOF > "$GLOBAL_HERMES_CONFIG"
 [global]
 strategy = 'naive'
 log_level = 'info'
@@ -532,11 +600,8 @@ EOF
     fi
     RPC="$(get_rpc_port "$i")"
     GRPC="$(get_grpc_port "$i")"
-    ID="$(get_network "$i" || echo "")"
-    if [ -z "$ID" ]; then
-      ID="$i"
-    fi
-    cat <<EOF
+    ID="$(get_chain_id "$i")"
+    cat <<EOF >> "$GLOBAL_HERMES_CONFIG"
 [[chains]]
 id='${ID}'
 rpc_addr='http://localhost:${RPC}'
@@ -554,4 +619,46 @@ denominator = '3'
 
 EOF
     done
+}
+
+hermes_keys() {
+  ID="$(get_chain_id "$1")"
+  NETWORK_HOME_DIR="$(get_home_dir "$ID")"
+  test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config."
+  if [ -z "$GLOBAL_HERMES_CONFIG" ]; then
+    "$GLOBAL_HERMES_BINARY" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+  else
+    "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+  fi
+}
+
+hermes_cc() {
+  CHAINS=""
+  for i in $ALL_HERMES_NODES
+  do
+    if ! a_in_b "$i" "$CHAINS"; then
+      ID="$(get_chain_id "$i")"
+      CHAINS="$CHAINS $ID"
+    fi
+  done
+  CHAINS="${CHAINS## }"
+  N="$(($(wc -w <<< "$CHAINS")))"
+  for i in $(seq 1 $((N-1)))
+  do
+    for j in $(seq $((i+1)) $N)
+    do
+      echo "\"${GLOBAL_HERMES_BINARY}\" create channel $(n_from_a "$i" "$CHAINS") $(n_from_a "$j" "$CHAINS") --port-a transfer --port-b transfer"
+    done
+  done
+}
+
+unsafe_reset() {
+  if is_running "$1"; then
+    warn "$1 is already running, skipping"
+  else
+    GAIAD="$(get_gaiad_binary "$1")"
+    HOME_DIR="$(get_home_dir "$1")"
+    echo "Resetting $1..."
+    "$GAIAD" unsafe-reset-all --home "$HOME_DIR"
+  fi
 }

@@ -85,7 +85,7 @@ the `gm.toml` file for node configuration. By default, newly created node config
 
 **Entries**:
 * `[global]` - the global section defines application-wide defaults. All the entries here can be overridden on a
-  per-node basis.
+  per-node basis, except if indicated otherwise.
 * `gaiad_binary` - Path to the `gaiad` binary to use.
 * `ports_start_at`
   * In the global section this defines the first free port to use for newly created nodes.
@@ -99,8 +99,19 @@ the `gm.toml` file for node configuration. By default, newly created node config
   configuration.
 * `add_to_hermes` - this node should be part of the hermes config.
 * `network`
-  * Only in subsections: Define the network (the validator connection) for the full node.
+  * This is a sub-sections-only variable. It will be ignored in the `global` section.
+  * Defines the network (the validator connection) for the full node.
   * **Mandatory for full nodes**, does not exist for validator nodes.
+* `hermes_binary`
+  * Optional variable.
+  * Path to the `hermes` binary to use.
+  * Only used in the `hermes` sub-commands.
+  * This is a global-only variable. It will be ignored in sub-sections.
+* `hermes_config`
+  * Optional variable.
+  * The hermes configuration file path.
+  * Only used in the `hermes` sub-commands.
+  * This is a global-only variable. It will be ignored in sub-sections.
 
 Note: the user is welcome to create additional nodes outside the scope of `gm` on the local machine but `gm` will only
 manage nodes that are added to the configuration file.
@@ -151,10 +162,21 @@ node4 PPROF: http://localhost:27054
 ### `gm help`
 **Description**: shows the help screen
 
-### `gm hermes`
-**Description**: generate the `hermes.toml` config and print it on the screen.
+### `gm hermes cc`
+**Description**: create the `hermes create client` commands for a fully interconnected set of IBC calls and print them
+on the screen.
 
-Tip: `gm hermes > $HOME/.hermes/config.toml` if you know what you're doing.
+Tip: Pick and choose the ones you want to create.
+
+### `gm hermes config`
+**Description**: generate the hermes `config.toml` config file and write it to the defined config path.
+
+Tip: Do not run this command, if you value your current hermes config. It will be overwritten.
+
+### `gm hermes keys`
+**Description**: add network keys to a hermes configuration.
+
+Tip: Make sure you set the `global.hermes_binary` entry in the config to a valid binary path.
 
 ### `gm install`
 **Description**: Install the `gm` command under `$HOME/.gm`, create a default configuration and warn about missing
@@ -198,6 +220,12 @@ error or maybe the user simply killed the PID. No worries, `gm` will clean up wh
 If no node is specified then it will stop all nodes.
 
 Tip: If a node was killed, you can use `gm stop` to clean up the PID file.
+
+### `gm unsafe-reset [<node> ...]`
+**Description**: Run `unsafe-reset-all` on the node(s). This will use the defined `gaiad` binary and configuration.
+If no node is specified then it will run for all nodes.
+
+Tip: It will skip nodes that are running.
 
 ### `gm version`
 **Description**: Display the version of `gm`.
