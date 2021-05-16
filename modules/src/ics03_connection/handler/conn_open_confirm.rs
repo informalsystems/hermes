@@ -78,7 +78,6 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
-    use std::time::Duration;
 
     use crate::events::IbcEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
@@ -90,6 +89,7 @@ mod tests {
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock::context::MockContext;
+    use crate::timestamp::ZERO_DURATION;
     use crate::Height;
 
     #[test]
@@ -117,7 +117,7 @@ mod tests {
             client_id.clone(),
             counterparty,
             context.get_compatible_versions(),
-            Duration::from_secs(0),
+            ZERO_DURATION,
         );
 
         let mut correct_conn_end = incorrect_conn_end_state.clone();

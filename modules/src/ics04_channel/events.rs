@@ -37,8 +37,9 @@ const PKT_SRC_CHANNEL_ATTRIBUTE_KEY: &str = "packet_src_channel";
 const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
 const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
 const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
+const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
+
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
-//const PKT_TIMEOUT_STAMP_ATTRIBUTE_KEY: &str = "packet_timeout_stamp";
 
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.as_str() {
@@ -139,8 +140,10 @@ fn extract_packet_and_write_ack_from_tx(
             PKT_DST_CHANNEL_ATTRIBUTE_KEY => packet.destination_channel = value.parse().unwrap(),
             PKT_SEQ_ATTRIBUTE_KEY => packet.sequence = value.parse::<u64>().unwrap().into(),
             PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => packet.timeout_height = value.parse().unwrap(),
+            PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY => {
+                packet.timeout_timestamp = value.parse().unwrap()
+            }
             PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
-            // TODO: `Packet` has 7 fields and we're only parsing 6; is that intended?
             PKT_ACK_ATTRIBUTE_KEY => write_ack = Some(Vec::from(value.as_bytes())),
             _ => {}
         };

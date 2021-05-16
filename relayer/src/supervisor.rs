@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anomaly::BoxError;
 
+use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
@@ -18,11 +19,14 @@ use crate::{
         handle::{ChainHandle, ChainHandlePair},
     },
     config::Config,
-    event::monitor::{EventBatch, UnwrapOrClone},
+    event::{
+        self,
+        monitor::{EventBatch, UnwrapOrClone},
+    },
     object::{Channel, Client, Object, UnidirectionalChannelPath},
     registry::Registry,
-    util::recv_multiple,
-    worker::{Worker, WorkerHandle},
+    util::try_recv_multiple,
+    worker::{Worker, WorkerHandle, WorkerMsg},
 };
 
 pub mod error;
@@ -35,17 +39,22 @@ pub struct Supervisor {
     config: Config,
     registry: Registry,
     workers: HashMap<Object, WorkerHandle>,
+    worker_msg_tx: Sender<WorkerMsg>,
+    worker_msg_rx: Receiver<WorkerMsg>,
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn spawn(config: Config) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
+        let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
 
         Ok(Self {
             config,
             registry,
             workers: HashMap::new(),
+            worker_msg_tx,
+            worker_msg_rx,
         })
     }
 
@@ -230,8 +239,9 @@ impl Supervisor {
                 // These errors are silent.
                 // Simply ignore the channel and return without spawning the workers.
                 warn!(
-                    "ignoring channel {} because it is not open (or its connection is not open)",
-                    channel.channel_id
+                    " client and packet relay workers not spawned for channel/chain pair '{}'/'{}' because channel is not open",
+                    channel.channel_id,
+                    chain.id(),
                 );
 
                 return Ok(());
@@ -280,26 +290,26 @@ impl Supervisor {
                 dst_chain_id: counterparty_chain.clone().id(),
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id.clone(),
-                src_port_id: channel.port_id.clone(),
+                src_port_id: channel.port_id,
             });
 
             self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
+        } else {
+            let counterparty_chain_id =
+                get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
+
+            let counterparty_chain = self.registry.get_or_spawn(&counterparty_chain_id)?;
+
+            let channel_object = Object::Channel(Channel {
+                dst_chain_id: counterparty_chain_id,
+                src_chain_id: chain.id(),
+                src_channel_id: channel.channel_id.clone(),
+                src_port_id: channel.port_id,
+                clear_pending: false,
+            });
+
+            self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
         }
-
-        let counterparty_chain_id =
-            get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
-
-        let counterparty_chain = self.registry.get_or_spawn(&counterparty_chain_id)?;
-
-        let channel_object = Object::Channel(Channel {
-            dst_chain_id: counterparty_chain_id,
-            src_chain_id: chain.id(),
-            src_channel_id: channel.channel_id.clone(),
-            src_port_id: channel.port_id,
-        });
-
-        self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
-
         Ok(())
     }
 
@@ -331,19 +341,47 @@ impl Supervisor {
         self.spawn_workers();
 
         loop {
-            match recv_multiple(&subscriptions) {
-                Ok((chain, batch)) => {
-                    let result = batch
-                        .unwrap_or_clone()
-                        .map_err(Into::into)
-                        .and_then(|batch| self.process_batch(chain.clone(), batch));
-
-                    if let Err(e) = result {
-                        error!("[{}] error during batch processing: {}", chain.id(), e);
-                    }
-                }
-                Err(e) => error!("error when waiting for events: {}", e),
+            if let Some((chain, batch)) = try_recv_multiple(&subscriptions) {
+                self.handle_batch(chain.clone(), batch);
             }
+
+            if let Ok(msg) = self.worker_msg_rx.try_recv() {
+                self.handle_msg(msg);
+            }
+
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    fn handle_msg(&mut self, msg: WorkerMsg) {
+        match msg {
+            WorkerMsg::Stopped(object) => {
+                if let Some(handle) = self.workers.remove(&object) {
+                    let _ = handle.join();
+                } else {
+                    warn!(
+                        "did not find worker handle for object '{}' after worker stopped",
+                        object.short_name()
+                    );
+                }
+            }
+        }
+    }
+
+    fn handle_batch(
+        &mut self,
+        chain: Box<dyn ChainHandle>,
+        batch: Arc<event::monitor::Result<EventBatch>>,
+    ) {
+        let chain_id = chain.id();
+
+        let result = batch
+            .unwrap_or_clone()
+            .map_err(Into::into)
+            .and_then(|batch| self.process_batch(chain, batch));
+
+        if let Err(e) = result {
+            error!("[{}] error during batch processing: {}", chain_id, e);
         }
     }
 
@@ -399,9 +437,9 @@ impl Supervisor {
         if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
-            let worker = Worker::spawn(ChainHandlePair { a: src, b: dst }, object.clone());
-            let worker = self.workers.entry(object).or_insert(worker);
-            worker
+            let handles = ChainHandlePair { a: src, b: dst };
+            let worker = Worker::spawn(handles, object.clone(), self.worker_msg_tx.clone());
+            self.workers.entry(object).or_insert(worker)
         }
     }
 }

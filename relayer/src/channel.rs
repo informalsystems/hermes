@@ -25,6 +25,7 @@ use crate::relay::MAX_ITER;
 use crate::supervisor::error::Error as WorkerChannelError;
 use std::time::Duration;
 
+use crate::util::retry::RetryResult;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 #[derive(Debug, Error)]
@@ -479,6 +480,36 @@ impl Channel {
         }
     }
 
+    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<(), u64> {
+        let done = '🥳';
+
+        match self.handshake_step_with_event(event.clone()) {
+            Err(e) => {
+                error!("\n Failed {:?} with error {:?} \n", event, e);
+                RetryResult::Retry(index)
+            }
+            Ok(ev) => {
+                println!("{} => {:#?}\n", done, ev);
+                RetryResult::Ok(())
+            }
+        }
+    }
+
+    pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<(), u64> {
+        let done = '🥳';
+
+        match self.handshake_step_with_state(state) {
+            Err(e) => {
+                error!("\n Failed {:?} with error {:?} \n", state, e);
+                RetryResult::Retry(index)
+            }
+            Ok(ev) => {
+                println!("{} => {:#?}\n", done, ev);
+                RetryResult::Ok(())
+            }
+        }
+    }
+
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ChannelError> {
         let client =
             ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
@@ -645,6 +676,17 @@ impl Channel {
             .src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+
+        if src_channel.counterparty().port_id() != self.dst_port_id() {
+            return Err(ChannelError::Failed(format!(
+                "channel open try to chain `{}` and destination port `{}` does not match \
+                the source chain `{}` counterparty port `{}`",
+                self.dst_chain().id(),
+                self.dst_port_id(),
+                self.src_chain().id(),
+                src_channel.counterparty().port_id,
+            )));
+        }
 
         // Retrieve the connection
         let _dst_connection = self
