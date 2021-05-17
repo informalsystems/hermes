@@ -1,9 +1,26 @@
+use anomaly::BoxError;
+use std::fmt::{Debug, Display};
 use std::time::Duration;
 
 pub use retry::{
     delay::{Fibonacci, Fixed},
     retry_with_index, OperationResult as RetryResult,
 };
+
+/// When encountering an error, indicates whether the relayer should
+/// perform retry on the same operation.
+pub trait RetryableError {
+    fn is_retryable(&self) -> bool;
+}
+
+impl<Kind> RetryableError for anomaly::Error<Kind>
+where
+    Kind: RetryableError + Clone + Debug + Display + Into<BoxError>,
+{
+    fn is_retryable(&self) -> bool {
+        self.kind().is_retryable()
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub struct ConstantGrowth {

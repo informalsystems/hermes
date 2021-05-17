@@ -21,7 +21,7 @@ use tendermint_rpc::{
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
 use crate::util::{
-    retry::{retry_with_index, RetryResult},
+    retry::{retry_with_index, RetryResult, RetryableError},
     stream::group_while,
 };
 
@@ -65,6 +65,13 @@ pub enum Error {
 
     #[error("failed to send event batch through channel")]
     ChannelSendFailed,
+}
+
+impl RetryableError for Error {
+    fn is_retryable(&self) -> bool {
+        // TODO: actually classify whether an error kind is retryable
+        true
+    }
 }
 
 /// A batch of events from a chain at a specific height
@@ -263,13 +270,23 @@ impl EventMonitor {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
                 trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
-                return RetryResult::Retry(index);
+
+                if e.is_retryable() {
+                    return RetryResult::Retry(index);
+                } else {
+                    return RetryResult::Err(index);
+                }
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
                 trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
-                return RetryResult::Retry(index);
+
+                if e.is_retryable() {
+                    return RetryResult::Retry(index);
+                } else {
+                    return RetryResult::Err(index);
+                }
             }
 
             RetryResult::Ok(())

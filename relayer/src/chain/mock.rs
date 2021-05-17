@@ -41,7 +41,7 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use crate::chain::Chain;
 use crate::config::ChainConfig;
-use crate::error::{Error, Kind};
+use crate::error::{ics18_relayer_error, Error, Kind};
 use crate::event::monitor::{EventReceiver, EventSender};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
@@ -105,10 +105,7 @@ impl Chain for MockChain {
 
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        let events = self
-            .context
-            .send(proto_msgs)
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+        let events = self.context.send(proto_msgs).map_err(ics18_relayer_error)?;
 
         Ok(events)
     }
