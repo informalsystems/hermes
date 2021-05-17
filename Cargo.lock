@@ -1191,7 +1191,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anomaly",
  "bytes",
@@ -1231,7 +1231,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anomaly",
  "async-trait",
@@ -1277,7 +1277,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "abscissa_core",
  "anomaly",
