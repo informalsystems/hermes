@@ -191,7 +191,7 @@ impl Object {
         let channel_id = e
             .channel_id()
             .as_ref()
-            .ok_or_else(|| format!("channel_id missing in OpenAck event '{:?}'", e))?;
+            .ok_or_else(|| format!("channel_id missing in channel open event '{:?}'", e))?;
 
         let client = channel_connection_client(dst_chain, e.port_id(), channel_id)?.client;
         if client.client_state.refresh_period().is_none() {

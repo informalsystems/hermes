@@ -11,7 +11,7 @@ use ibc::{
     ics04_channel::channel::IdentifiedChannelEnd, ics24_host::identifier::ChainId, Height,
 };
 
-use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
+use ibc_proto::ibc::core::channel::v1::{QueryChannelsRequest, QueryConnectionChannelsRequest};
 
 use crate::{
     chain::{
@@ -31,6 +31,7 @@ use crate::{
 
 pub mod error;
 pub use error::Error;
+use ibc::ics04_channel::channel::State;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -233,10 +234,14 @@ impl Supervisor {
         let client_res =
             channel_connection_client(chain.as_ref(), &channel.port_id, &channel.channel_id);
 
-        let (client, channel) = match client_res {
+        let (client, connection, channel) = match client_res {
             Ok(conn_client) => {
                 trace!("channel, connection, client {:?}", conn_client);
-                (conn_client.client, conn_client.channel)
+                (
+                    conn_client.client,
+                    conn_client.connection,
+                    conn_client.channel,
+                )
             }
             Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelUninitialized(..)) => {
                 // These errors are silent.
@@ -274,7 +279,46 @@ impl Supervisor {
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
 
-        if channel.channel_end.is_open() {
+        let local_state = channel.channel_end.state;
+        let remote_state = if let Some(remote_channel_id) = channel.channel_end.remote.channel_id()
+        {
+            counterparty_chain
+                .query_channel(
+                    channel.channel_end.remote.port_id(),
+                    remote_channel_id,
+                    Height::zero(),
+                )?
+                .state
+        } else {
+            let mut remote_state = State::Uninitialized;
+            // TODO - refactor
+            if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
+                let req = QueryConnectionChannelsRequest {
+                    connection: remote_connection_id.to_string(),
+                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                };
+                let channels = counterparty_chain.query_connection_channels(req)?;
+
+                for remote_channel in channels.iter() {
+                    if remote_channel.channel_end.remote.channel_id.is_some()
+                        && remote_channel
+                            .channel_end
+                            .remote
+                            .channel_id
+                            .clone()
+                            .unwrap()
+                            == channel.channel_id.clone()
+                    {
+                        remote_state = remote_channel.channel_end.state;
+                        break;
+                    }
+                }
+            }
+            remote_state
+        };
+
+        error!("LOCAL STATE {} REMOTE STATE {}", local_state, remote_state);
+        if local_state.is_open() && remote_state.is_open() {
             // create the client object and spawn worker
             let client_object = Object::Client(Client {
                 dst_client_id: client.client_id.clone(),
@@ -295,7 +339,8 @@ impl Supervisor {
             });
 
             self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
-        } else {
+        } else if remote_state as u32 <= local_state as u32 && !remote_state.is_open() {
+            // create worker for channel handshake that will advance the remote state
             let channel_object = Object::Channel(Channel {
                 dst_chain_id: counterparty_chain.clone().id(),
                 src_chain_id: chain.id(),

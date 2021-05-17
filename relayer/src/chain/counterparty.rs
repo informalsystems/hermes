@@ -50,6 +50,7 @@ pub fn channel_connection_client(
         .query_channel(port_id, channel_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
+    // TODO - query_channel doesn't return uninitialized for non-existing channels anymore
     if channel_end.state_matches(&ibc::ics04_channel::channel::State::Uninitialized) {
         return Err(Error::ChannelUninitialized(channel_id.clone(), chain.id()));
     }
