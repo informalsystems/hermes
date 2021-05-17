@@ -251,49 +251,55 @@ impl Worker {
     }
 
     /// Run the event loop for events associated with a [`Channel`].
-    fn run_channel(self, mut channel: Channel) -> Result<(), BoxError> {
+    fn run_channel(self, channel: Channel) -> Result<(), BoxError> {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
 
         let mut handshake_channel;
 
-        channel.clear_pending = true;
+        // Flag that indicates if the worker should actively resume handshake.
+        // Set on start or when event based handshake fails.
+        let mut resume_handshake = true;
 
         loop {
-            if let Ok(cmd) = self.cmd_rx.try_recv() {
-                match cmd {
-                    WorkerCmd::IbcEvents { batch } => {
-                        for event in batch.events {
-                            handshake_channel = RelayChannel::restore_from_event(
-                                a_chain.clone(),
-                                b_chain.clone(),
-                                event.clone(),
-                            )?;
+            thread::sleep(Duration::from_millis(200));
 
-                            let result =
+            if let Ok(cmd) = self.cmd_rx.try_recv() {
+                let result = match cmd {
+                    WorkerCmd::IbcEvents { batch } => {
+                        // only take the last event in the queue
+                        let mut last_event = None;
+                        for event in batch.events {
+                            // TODO - verify the events are in increased state order
+                            last_event = Some(event);
+                        }
+                        debug!("channel worker start processing {:#?}", last_event);
+                        match last_event {
+                            Some(event) => {
+                                handshake_channel = RelayChannel::restore_from_event(
+                                    a_chain.clone(),
+                                    b_chain.clone(),
+                                    event.clone(),
+                                )?;
                                 retry_with_index(retry_strategy::uni_chan_path(), |index| {
                                     handshake_channel.step_event(event.clone(), index)
-                                });
-                            if let Err(retries) = result {
-                                warn!(
-                                    "Channel worker failed to process event batch after {} retries",
-                                    retries
-                                );
-
-                                // Resume handshake on next iteration.
-                                channel.clear_pending = true;
-                            } else {
-                                channel.clear_pending = false;
+                                })
                             }
+                            None => Ok(()),
                         }
                     }
                     WorkerCmd::NewBlock {
                         height: current_height,
                         new_block: _,
                     } => {
-                        if !channel.clear_pending {
+                        if !resume_handshake {
                             continue;
                         }
+                        debug!(
+                            "channel worker is processing block event at {:#?}",
+                            current_height
+                        );
+
                         let height = current_height.decrement()?;
 
                         let (mut handshake_channel, state) = RelayChannel::restore_from_state(
@@ -303,21 +309,22 @@ impl Worker {
                             height,
                         )?;
 
-                        let result = retry_with_index(retry_strategy::uni_chan_path(), |index| {
+                        retry_with_index(retry_strategy::uni_chan_path(), |index| {
                             handshake_channel.step_state(state, index)
-                        });
-                        if let Err(retries) = result {
-                            warn!(
-                                "Channel worker failed to process event batch after {} retries",
-                                retries
-                            );
-
-                            // Resume handshake on next iteration.
-                            channel.clear_pending = true;
-                        } else {
-                            channel.clear_pending = false;
-                        }
+                        })
                     }
+                };
+
+                if let Err(retries) = result {
+                    warn!(
+                        "Channel worker failed to process event batch after {} retries",
+                        retries
+                    );
+
+                    // Resume handshake on next iteration.
+                    resume_handshake = true;
+                } else {
+                    resume_handshake = false;
                 }
             }
         }

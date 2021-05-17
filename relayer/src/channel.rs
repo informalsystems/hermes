@@ -2,7 +2,7 @@ use anomaly::BoxError;
 use prost_types::Any;
 use serde::Serialize;
 use thiserror::Error;
-use tracing::error;
+use tracing::{debug, error};
 
 use ibc::events::IbcEvent;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State};
@@ -214,50 +214,52 @@ impl Channel {
         let a_channel =
             chain.query_channel(&channel.src_port_id, &channel.src_channel_id, height)?;
 
-        let connection_id = a_channel.connection_hops().first().ok_or_else(|| {
+        let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
             WorkerChannelError::MissingConnectionHops(channel.src_channel_id.clone(), chain.id())
         })?;
 
-        let connection = chain.query_connection(&connection_id, Height::zero())?;
+        let a_connection = chain.query_connection(&a_connection_id, Height::zero())?;
 
         let mut handshake_channel = Channel {
             ordering: *a_channel.ordering(),
             a_side: ChannelSide::new(
                 chain.clone(),
-                connection.client_id().clone(),
-                connection_id.clone(),
+                a_connection.client_id().clone(),
+                a_connection_id.clone(),
                 channel.src_port_id.clone(),
                 Some(channel.src_channel_id.clone()),
             ),
             b_side: ChannelSide::new(
                 counterparty_chain.clone(),
-                connection.counterparty().client_id().clone(),
-                connection.counterparty().connection_id().unwrap().clone(),
+                a_connection.counterparty().client_id().clone(),
+                a_connection.counterparty().connection_id().unwrap().clone(),
                 a_channel.remote.port_id.clone(),
                 a_channel.remote.channel_id.clone(),
             ),
-            connection_delay: connection.delay_period(),
+            connection_delay: a_connection.delay_period(),
             version: Some(a_channel.version.clone()),
         };
 
         if a_channel.state_matches(&ibc::ics04_channel::channel::State::Init)
             && a_channel.remote.channel_id.is_none()
         {
-            let req = QueryConnectionChannelsRequest {
-                connection: connection_id.to_string(),
-                pagination: ibc_proto::cosmos::base::query::pagination::all(),
-            };
+            if let Some(b_connection_id) = a_connection.counterparty().connection_id() {
+                let req = QueryConnectionChannelsRequest {
+                    connection: b_connection_id.to_string(),
+                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                };
 
-            let channels: Vec<IdentifiedChannelEnd> =
-                counterparty_chain.query_connection_channels(req)?;
+                let channels: Vec<IdentifiedChannelEnd> =
+                    counterparty_chain.query_connection_channels(req)?;
 
-            for chan in channels.iter() {
-                if chan.channel_end.remote.channel_id.is_some()
-                    && chan.channel_end.remote.channel_id.clone().unwrap()
-                        == channel.src_channel_id.clone()
-                {
-                    handshake_channel.b_side.channel_id = Some(chan.channel_id.clone());
-                    break;
+                for chan in channels.iter() {
+                    if chan.channel_end.remote.channel_id.is_some()
+                        && chan.channel_end.remote.channel_id.clone().unwrap()
+                            == channel.src_channel_id.clone()
+                    {
+                        handshake_channel.b_side.channel_id = Some(chan.channel_id.clone());
+                        break;
+                    }
                 }
             }
         }
@@ -443,6 +445,29 @@ impl Channel {
         &mut self,
         event: IbcEvent,
     ) -> Result<Vec<IbcEvent>, ChannelError> {
+        // highest expected state on destination
+        let expected_state = match event {
+            IbcEvent::OpenTryChannel(_) => State::Init,
+            IbcEvent::OpenAckChannel(_) => State::TryOpen,
+            IbcEvent::OpenConfirmChannel(_) => State::TryOpen,
+            _ => State::Uninitialized,
+        };
+
+        // TODO - consider move of this `if` into the actual build functions
+        // Get the channel on destination and if it exists check its state
+        if let Some(dst_channel_id) = self.dst_channel_id() {
+            let dst_channel =
+                self.dst_chain()
+                    .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero());
+            if let Ok(counterparty_channel) = dst_channel {
+                if counterparty_channel.state as u32 > expected_state as u32 {
+                    // The state of channel on destination is already higher than
+                    // what this handshake step is trying to achieve
+                    return Ok(vec![]);
+                }
+            };
+        }
+
         match event {
             IbcEvent::OpenInitChannel(_open_init) => {
                 // There is a race here: for the same source channel s, in Init,
@@ -466,6 +491,21 @@ impl Channel {
         &mut self,
         state: State,
     ) -> Result<Vec<IbcEvent>, ChannelError> {
+        // TODO - consider move of this `if` into the actual build functions
+        // Get the channel on destination and if it exists check its state
+        if let Some(dst_channel_id) = self.dst_channel_id() {
+            let dst_channel =
+                self.dst_chain()
+                    .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero());
+            if let Ok(counterparty_channel) = dst_channel {
+                if counterparty_channel.state as u32 > state as u32 {
+                    // The state of channel on destination is already higher than
+                    // what this handshake step is trying to achieve
+                    return Ok(vec![]);
+                }
+            };
+        }
+
         match state {
             ibc::ics04_channel::channel::State::Init => {
                 Ok(vec![self.build_chan_open_try_and_send()?])
@@ -489,7 +529,7 @@ impl Channel {
                 RetryResult::Retry(index)
             }
             Ok(ev) => {
-                println!("{} => {:#?}\n", done, ev);
+                debug!("{} => {:#?}\n", done, ev);
                 RetryResult::Ok(())
             }
         }
@@ -504,7 +544,7 @@ impl Channel {
                 RetryResult::Retry(index)
             }
             Ok(ev) => {
-                println!("{} => {:#?}\n", done, ev);
+                debug!("{} => {:#?}\n", done, ev);
                 RetryResult::Ok(())
             }
         }
@@ -652,11 +692,13 @@ impl Channel {
             )
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
+        // TODO - remove this as now the query ^ retuns error or..
+        // consider reverting the change and keep Uninit for non existing channels
         // Check if a connection is expected to exist on destination chain
         // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
         if dst_channel.state_matches(&State::Uninitialized) {
             return Err(ChannelError::Failed(
-                "missing channel on source chain".to_string(),
+                "missing channel on destination chain".to_string(),
             ));
         }
 
@@ -748,12 +790,6 @@ impl Channel {
     }
 
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        if self.b_side.channel_id().is_some() {
-            return Err(ChannelError::Failed(
-                "Counterparty channel defined".to_string(),
-            ));
-        };
-
         let dst_msgs = self.build_chan_open_try()?;
 
         let events = self

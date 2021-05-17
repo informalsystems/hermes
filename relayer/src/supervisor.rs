@@ -15,7 +15,7 @@ use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 use crate::{
     chain::{
-        counterparty::{channel_connection_client, get_counterparty_chain_for_channel},
+        counterparty::channel_connection_client,
         handle::{ChainHandle, ChainHandlePair},
     },
     config::Config,
@@ -234,7 +234,10 @@ impl Supervisor {
             channel_connection_client(chain.as_ref(), &channel.port_id, &channel.channel_id);
 
         let (client, channel) = match client_res {
-            Ok(conn_client) => (conn_client.client, conn_client.channel),
+            Ok(conn_client) => {
+                trace!("channel, connection, client {:?}", conn_client);
+                (conn_client.client, conn_client.channel)
+            }
             Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelUninitialized(..)) => {
                 // These errors are silent.
                 // Simply ignore the channel and return without spawning the workers.
@@ -258,8 +261,6 @@ impl Supervisor {
             }
         };
 
-        trace!("Obtained client id {:?}", client.client_id);
-
         if self
             .config
             .find_chain(&client.client_state.chain_id())
@@ -269,11 +270,11 @@ impl Supervisor {
             return Ok(());
         }
 
-        if channel.channel_end.is_open() {
-            let counterparty_chain = self
-                .registry
-                .get_or_spawn(&client.client_state.chain_id())?;
+        let counterparty_chain = self
+            .registry
+            .get_or_spawn(&client.client_state.chain_id())?;
 
+        if channel.channel_end.is_open() {
             // create the client object and spawn worker
             let client_object = Object::Client(Client {
                 dst_client_id: client.client_id.clone(),
@@ -295,17 +296,11 @@ impl Supervisor {
 
             self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
         } else {
-            let counterparty_chain_id =
-                get_counterparty_chain_for_channel(chain.as_ref(), channel.clone()).unwrap();
-
-            let counterparty_chain = self.registry.get_or_spawn(&counterparty_chain_id)?;
-
             let channel_object = Object::Channel(Channel {
-                dst_chain_id: counterparty_chain_id,
+                dst_chain_id: counterparty_chain.clone().id(),
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id.clone(),
                 src_port_id: channel.port_id,
-                clear_pending: false,
             });
 
             self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());

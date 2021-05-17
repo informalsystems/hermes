@@ -50,8 +50,6 @@ pub struct Channel {
 
     /// Source port identiier.
     pub src_port_id: PortId,
-    // pub connection_id: ConnectionId,
-    pub clear_pending: bool,
 }
 
 impl Channel {
@@ -234,7 +232,6 @@ impl Object {
             src_chain_id: src_chain.id(),
             src_channel_id: channel_id.clone(),
             src_port_id: e.port_id().clone(),
-            clear_pending: false,
         }
         .into())
     }

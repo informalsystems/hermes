@@ -391,6 +391,8 @@ impl Connection {
             .query_connection(self.dst_connection_id(), ICSHeight::default())
             .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
 
+        // TODO - remove this as now the query ^ retuns error or..
+        // consider reverting the change and keep Uninit for non existing connections
         // Check if a connection is expected to exist on destination chain
         // A connection must exist on destination chain for Ack and Confirm Tx-es to succeed
         if dst_connection.state_matches(&State::Uninitialized) {
