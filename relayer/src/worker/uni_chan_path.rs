@@ -9,43 +9,33 @@ use crate::{
     link::{Link, LinkParameters},
     object::UnidirectionalChannelPath,
     util::retry::{retry_with_index, RetryResult},
+    worker::retry_strategy,
 };
 
 use super::WorkerCmd;
 
-mod retry_strategy {
-    use crate::util::retry::{clamp_total, ConstantGrowth};
-    use std::time::Duration;
-
-    const MAX_DELAY: Duration = Duration::from_millis(500);
-    const DELAY_INCR: Duration = Duration::from_millis(100);
-    const INITIAL_DELAY: Duration = Duration::from_millis(200);
-    const MAX_RETRY_DURATION: Duration = Duration::from_secs(2);
-
-    pub fn default() -> impl Iterator<Item = Duration> {
-        let strategy = ConstantGrowth::new(INITIAL_DELAY, DELAY_INCR);
-        clamp_total(strategy, MAX_DELAY, MAX_RETRY_DURATION)
-    }
-}
-
 pub struct UniChanPathWorker {
-    chains: ChainHandlePair,
-    rx: Receiver<WorkerCmd>,
     path: UnidirectionalChannelPath,
+    chains: ChainHandlePair,
+    cmd_rx: Receiver<WorkerCmd>,
 }
 
 impl UniChanPathWorker {
     pub fn new(
-        chains: ChainHandlePair,
-        rx: Receiver<WorkerCmd>,
         path: UnidirectionalChannelPath,
+        chains: ChainHandlePair,
+        cmd_rx: Receiver<WorkerCmd>,
     ) -> Self {
-        Self { chains, rx, path }
+        Self {
+            path,
+            chains,
+            cmd_rx,
+        }
     }
 
     /// Run the event loop for events associated with a [`UnidirectionalChannelPath`].
     pub fn run(self) -> Result<(), BoxError> {
-        let rx = self.rx;
+        let rx = self.cmd_rx;
 
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
@@ -65,7 +55,7 @@ impl UniChanPathWorker {
         loop {
             thread::sleep(Duration::from_millis(200));
 
-            let result = retry_with_index(retry_strategy::default(), |index| {
+            let result = retry_with_index(retry_strategy::uni_chan_path(), |index| {
                 Self::step(rx.try_recv().ok(), &mut link, index)
             });
 
@@ -114,5 +104,10 @@ impl UniChanPathWorker {
     /// Get a reference to the uni chan path worker's chains.
     pub fn chains(&self) -> &ChainHandlePair {
         &self.chains
+    }
+
+    /// Get a reference to the client worker's object.
+    pub fn object(&self) -> &UnidirectionalChannelPath {
+        &self.path
     }
 }

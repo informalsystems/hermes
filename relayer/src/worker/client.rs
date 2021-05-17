@@ -15,14 +15,18 @@ use crate::{
 use super::WorkerCmd;
 
 pub struct ClientWorker {
-    chains: ChainHandlePair,
-    rx: Receiver<WorkerCmd>,
     client: Client,
+    chains: ChainHandlePair,
+    cmd_rx: Receiver<WorkerCmd>,
 }
 
 impl ClientWorker {
-    pub fn new(chains: ChainHandlePair, rx: Receiver<WorkerCmd>, client: Client) -> Self {
-        Self { chains, rx, client }
+    pub fn new(client: Client, chains: ChainHandlePair, cmd_rx: Receiver<WorkerCmd>) -> Self {
+        Self {
+            client,
+            chains,
+            cmd_rx,
+        }
     }
 
     /// Run the event loop for events associated with a [`Client`].
@@ -59,7 +63,7 @@ impl ClientWorker {
                 continue;
             }
 
-            if let Ok(WorkerCmd::IbcEvents { batch }) = self.rx.try_recv() {
+            if let Ok(WorkerCmd::IbcEvents { batch }) = self.cmd_rx.try_recv() {
                 trace!("client '{}' worker receives batch {:?}", client, batch);
 
                 for event in batch.events {
@@ -97,5 +101,10 @@ impl ClientWorker {
     /// Get a reference to the client worker's chains.
     pub fn chains(&self) -> &ChainHandlePair {
         &self.chains
+    }
+
+    /// Get a reference to the client worker's object.
+    pub fn object(&self) -> &Client {
+        &self.client
     }
 }

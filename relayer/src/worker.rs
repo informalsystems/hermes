@@ -54,18 +54,20 @@ impl Worker {
         );
 
         let worker = match object {
-            Object::Client(client) => Self::Client(ClientWorker::new(chains, cmd_rx, client)),
+            Object::Client(client) => Self::Client(ClientWorker::new(client, chains, cmd_rx)),
             Object::UnidirectionalChannelPath(path) => {
-                Self::UniChanPath(UniChanPathWorker::new(chains, cmd_rx, path))
+                Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx))
             }
         };
 
-        let thread_handle = std::thread::spawn(move || worker.run());
+        let thread_handle = std::thread::spawn(move || worker.run(msg_tx));
         WorkerHandle::new(cmd_tx, thread_handle)
     }
 
     /// Run the worker event loop.
-    fn run(self) {
+    fn run(self, msg_tx: Sender<WorkerMsg>) {
+        let object = self.object();
+
         let result = match self {
             Self::Client(w) => w.run(),
             Self::UniChanPath(w) => w.run(),
@@ -75,9 +77,9 @@ impl Worker {
             error!("worker error: {}", e);
         }
 
-        // if let Err(e) = msg_tx.send(WorkerMsg::Stopped(object)) {
-        //     error!("failed to notify supervisor that worker stopped: {}", e);
-        // }
+        if let Err(e) = msg_tx.send(WorkerMsg::Stopped(object)) {
+            error!("failed to notify supervisor that worker stopped: {}", e);
+        }
 
         info!("worker stopped");
     }
@@ -86,6 +88,13 @@ impl Worker {
         match self {
             Self::Client(w) => &w.chains(),
             Self::UniChanPath(w) => w.chains(),
+        }
+    }
+
+    fn object(&self) -> Object {
+        match self {
+            Worker::Client(w) => w.object().clone().into(),
+            Worker::UniChanPath(w) => w.object().clone().into(),
         }
     }
 }
