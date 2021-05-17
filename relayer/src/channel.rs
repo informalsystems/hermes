@@ -464,6 +464,17 @@ impl Channel {
             .query_channel(self.src_port_id(), self.src_channel_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
+        if src_channel.counterparty().port_id() != self.dst_port_id() {
+            return Err(ChannelError::Failed(format!(
+                "channel open try to chain `{}` and destination port `{}` does not match \
+                the source chain `{}` counterparty port `{}`",
+                self.dst_chain().id(),
+                self.dst_port_id(),
+                self.src_chain().id(),
+                src_channel.counterparty().port_id,
+            )));
+        }
+
         // Retrieve the connection
         let _dst_connection = self
             .dst_chain()

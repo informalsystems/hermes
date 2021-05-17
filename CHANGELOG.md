@@ -2,21 +2,46 @@
 
 ## Unreleased
 
-> [TODO: high level summary]
+> Nothing yet,
+
+## v0.3.1
+*May 14h, 2021*
+
+This release improves the UX of a couple commands, fixes a bug related
+to delay periods, and adds support for packet timeouts based on timestamps,
+as well as support Protobuf-encoded keys.
 
 ### FEATURES
 
+- [ibc-relayer]
+  - Add support for packet timeout based on timeout timestamp ([#937])
+  - Added support for Protobuf-based Keyring ([#925])
+
 ### IMPROVEMENTS
+
 - [ibc-relayer-cli]
   - Improve UX when querying non-existing connections and channels ([#875], [#920])
+  - More details in error messages to increase debuggability ([#921], [#934])
+  - Disallow creating a client with same source and destination chains ([#932])
+  - Make packet worker more resilient to nodes being unreachable for a short amount of time ([#943])
 
 ### BUG FIXES
+
+- [ibc]
+  - Process raw `delay_period` field as nanoseconds instead of seconds. ([#927])
 
 ### BREAKING CHANGES
 
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#921]: https://github.com/informalsystems/ibc-rs/issues/921
+[#925]: https://github.com/informalsystems/ibc-rs/issues/925
+[#927]: https://github.com/informalsystems/ibc-rs/issues/927
+[#932]: https://github.com/informalsystems/ibc-rs/issues/932
+[#934]: https://github.com/informalsystems/ibc-rs/issues/934
+[#937]: https://github.com/informalsystems/ibc-rs/issues/937
+[#943]: https://github.com/informalsystems/ibc-rs/issues/943
 
 
 ## v0.3.0

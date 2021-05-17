@@ -10,6 +10,7 @@ use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
+use crate::timestamp::Timestamp;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
@@ -32,9 +33,9 @@ pub struct MsgTransfer {
     /// Timeout height relative to the current block height.
     /// The timeout is disabled when set to 0.
     pub timeout_height: Height,
-    /// Timeout timestamp (in nanoseconds) relative to the current block timestamp.
+    /// Timeout timestamp relative to the current block timestamp.
     /// The timeout is disabled when set to 0.
-    pub timeout_timestamp: u64,
+    pub timeout_timestamp: Timestamp,
 }
 
 impl Msg for MsgTransfer {
@@ -56,14 +57,30 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(raw_msg: RawMsgTransfer) -> Result<Self, Self::Error> {
+        let timeout_timestamp = Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
+            .map_err(|_| Kind::InvalidPacketTimeoutTimestamp(raw_msg.timeout_timestamp))?;
+
+        let timeout_height = match raw_msg.timeout_height.clone() {
+            None => Height::zero(),
+            Some(raw_height) => raw_height.try_into().map_err(|e| {
+                Kind::InvalidPacketTimeoutHeight(format!("invalid timeout height {}", e))
+            })?,
+        };
+
         Ok(MsgTransfer {
-            source_port: raw_msg.source_port.parse().unwrap(),
-            source_channel: raw_msg.source_channel.parse().unwrap(),
+            source_port: raw_msg
+                .source_port
+                .parse()
+                .map_err(|_| Kind::InvalidPortId(raw_msg.source_port.clone()))?,
+            source_channel: raw_msg
+                .source_channel
+                .parse()
+                .map_err(|_| Kind::InvalidChannelId(raw_msg.source_channel.clone()))?,
             token: raw_msg.token,
             sender: raw_msg.sender.into(),
             receiver: raw_msg.receiver.into(),
-            timeout_height: raw_msg.timeout_height.unwrap().try_into().unwrap(),
-            timeout_timestamp: raw_msg.timeout_timestamp,
+            timeout_height,
+            timeout_timestamp,
         })
     }
 }
@@ -77,7 +94,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
             timeout_height: Some(domain_msg.timeout_height.try_into().unwrap()),
-            timeout_timestamp: domain_msg.timeout_timestamp,
+            timeout_timestamp: domain_msg.timeout_timestamp.as_nanoseconds(),
         }
     }
 }
@@ -91,6 +108,7 @@ pub mod test_util {
     };
 
     use super::MsgTransfer;
+    use crate::timestamp::Timestamp;
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
@@ -102,7 +120,7 @@ pub mod test_util {
             token: None,
             sender: id.clone(),
             receiver: id,
-            timeout_timestamp: 1,
+            timeout_timestamp: Timestamp::from_nanoseconds(1).unwrap(),
             timeout_height: Height {
                 revision_number: 0,
                 revision_height: height,
