@@ -25,6 +25,7 @@ use crate::relay::MAX_ITER;
 use crate::supervisor::error::Error as WorkerChannelError;
 use std::time::Duration;
 
+use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::util::retry::RetryResult;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
@@ -32,6 +33,9 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 pub enum ChannelError {
     #[error("failed with underlying cause: {0}")]
     Failed(String),
+
+    #[error("failed due to missing local channel id")]
+    MissingLocalChannelId,
 
     #[error("failed due to missing counterparty connection")]
     MissingCounterpartyConnection,
@@ -441,104 +445,49 @@ impl Channel {
         )))
     }
 
-    pub fn handshake_step_with_event(
-        &mut self,
-        event: IbcEvent,
-    ) -> Result<Vec<IbcEvent>, ChannelError> {
-        // highest expected state on destination
-        let expected_state = match event {
-            IbcEvent::OpenTryChannel(_) => State::Init,
-            IbcEvent::OpenAckChannel(_) => State::TryOpen,
-            IbcEvent::OpenConfirmChannel(_) => State::TryOpen,
-            _ => State::Uninitialized,
-        };
+    pub fn counterparty_state(&self) -> Result<State, ChannelError> {
+        let channel_id = self
+            .src_channel_id()
+            .ok_or(ChannelError::MissingLocalChannelId)?;
 
-        // TODO - consider move of this `if` into the actual build functions
-        // Get the channel on destination and if it exists check its state
-        if let Some(dst_channel_id) = self.dst_channel_id() {
-            let dst_channel =
-                self.dst_chain()
-                    .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero());
-            if let Ok(counterparty_channel) = dst_channel {
-                if counterparty_channel.state as u32 > expected_state as u32 {
-                    // The state of channel on destination is already higher than
-                    // what this handshake step is trying to achieve
-                    return Ok(vec![]);
-                }
-            };
-        }
+        let channel_deps =
+            channel_connection_client(self.src_chain().as_ref(), self.src_port_id(), channel_id)
+                .map_err(|_| {
+                    ChannelError::Failed(format!(
+                        "failed to query the channel dependecies for {}",
+                        channel_id
+                    ))
+                })?;
 
-        match event {
-            IbcEvent::OpenInitChannel(_open_init) => {
-                // There is a race here: for the same source channel s, in Init,
-                // another chan_open_try with source s (that creates destination d) can come from the user and if it is
-                // executed first on the chain, before the one send by the relayer.
-                // In this case the relayer will create a new channel (d' != d) stuck in TryOpen whose counterparty is s
-                // There is no way to avoid it, we can add a check (like in handshake_step_with_state) but
-                // it will slow down and there will still be a window where the behavior is possible.
-                Ok(vec![self.build_chan_open_try_and_send()?])
-            }
-            IbcEvent::OpenTryChannel(_open_try) => Ok(vec![self.build_chan_open_ack_and_send()?]),
-            IbcEvent::OpenAckChannel(_open_ack) => {
-                Ok(vec![self.build_chan_open_confirm_and_send()?])
-            }
-            IbcEvent::OpenConfirmChannel(_open_confirm) => Ok(vec![]),
-            _ => Ok(vec![]),
-        }
+        channel_state_on_destination(
+            channel_deps.channel.clone(),
+            channel_deps.connection,
+            self.dst_chain().as_ref(),
+        )
+        .map_err(|_| {
+            ChannelError::Failed(format!(
+                "failed to query the channel state on destination for {}",
+                channel_id
+            ))
+        })
     }
 
-    pub fn handshake_step_with_state(
-        &mut self,
-        state: State,
-    ) -> Result<Vec<IbcEvent>, ChannelError> {
-        // TODO - consider move of this `if` into the actual build functions
-        // Get the channel on destination and if it exists check its state
-        if let Some(dst_channel_id) = self.dst_channel_id() {
-            let dst_channel =
-                self.dst_chain()
-                    .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero());
-            if let Ok(counterparty_channel) = dst_channel {
-                if counterparty_channel.state as u32 > state as u32 {
-                    // The state of channel on destination is already higher than
-                    // what this handshake step is trying to achieve
-                    return Ok(vec![]);
-                }
-            };
-        }
-
-        match state {
-            ibc::ics04_channel::channel::State::Init => {
-                Ok(vec![self.build_chan_open_try_and_send()?])
-            }
-            ibc::ics04_channel::channel::State::TryOpen => {
-                Ok(vec![self.build_chan_open_ack_and_send()?])
-            }
-            ibc::ics04_channel::channel::State::Open => {
-                Ok(vec![self.build_chan_open_confirm_and_send()?])
-            }
+    pub fn handshake_step(&mut self, state: State) -> Result<Vec<IbcEvent>, ChannelError> {
+        // TODO - add tiebreaker when states are equal, r.g. relay only if src_chain.id < dst_chain.id
+        match (state, self.counterparty_state()?) {
+            (State::Init, State::Uninitialized) => Ok(vec![self.build_chan_open_try_and_send()?]),
+            (State::Init, State::Init) => Ok(vec![self.build_chan_open_try_and_send()?]),
+            (State::TryOpen, State::Init) => Ok(vec![self.build_chan_open_ack_and_send()?]),
+            (State::TryOpen, State::TryOpen) => Ok(vec![self.build_chan_open_ack_and_send()?]),
+            (State::Open, State::TryOpen) => Ok(vec![self.build_chan_open_confirm_and_send()?]),
             _ => Ok(vec![]),
-        }
-    }
-
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<(), u64> {
-        let done = '🥳';
-
-        match self.handshake_step_with_event(event.clone()) {
-            Err(e) => {
-                error!("\n Failed {:?} with error {:?} \n", event, e);
-                RetryResult::Retry(index)
-            }
-            Ok(ev) => {
-                debug!("{} => {:#?}\n", done, ev);
-                RetryResult::Ok(())
-            }
         }
     }
 
     pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<(), u64> {
         let done = '🥳';
 
-        match self.handshake_step_with_state(state) {
+        match self.handshake_step(state) {
             Err(e) => {
                 error!("\n Failed {:?} with error {:?} \n", state, e);
                 RetryResult::Retry(index)
@@ -548,6 +497,18 @@ impl Channel {
                 RetryResult::Ok(())
             }
         }
+    }
+
+    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<(), u64> {
+        let state = match event {
+            IbcEvent::OpenInitChannel(_) => State::Init,
+            IbcEvent::OpenTryChannel(_) => State::TryOpen,
+            IbcEvent::OpenAckChannel(_) => State::Open,
+            IbcEvent::OpenConfirmChannel(_) => State::Open,
+            _ => State::Uninitialized,
+        };
+
+        self.step_state(state, index)
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ChannelError> {
@@ -1154,13 +1115,15 @@ fn check_destination_channel_state(
 
     // TODO: Refactor into a method
     let good_state = *existing_channel.state() as u32 <= *expected_channel.state() as u32;
-    let good_channel_ids = existing_channel.counterparty().channel_id().is_none()
+    let good_channel_port_ids = existing_channel.counterparty().channel_id().is_none()
         || existing_channel.counterparty().channel_id()
-            == expected_channel.counterparty().channel_id();
+            == expected_channel.counterparty().channel_id()
+            && existing_channel.counterparty().port_id()
+                == expected_channel.counterparty().port_id();
 
     // TODO: Check versions
 
-    if good_state && good_connection_hops && good_channel_ids {
+    if good_state && good_connection_hops && good_channel_port_ids {
         Ok(())
     } else {
         Err(ChannelError::Failed(format!(

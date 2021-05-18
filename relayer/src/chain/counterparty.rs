@@ -12,6 +12,9 @@ use ibc::{
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
+use ibc::ics04_channel::channel::{ChannelEnd, State};
+use ibc::ics24_host::identifier::ConnectionId;
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelConnectionClient {
@@ -96,4 +99,62 @@ pub fn get_counterparty_chain(
 ) -> Result<ChainId, Error> {
     channel_connection_client(src_chain, src_port_id, src_channel_id)
         .map(|c| c.client.client_state.chain_id())
+}
+
+fn channel_on_destination(
+    port_id: &PortId,
+    channel_id: &ChannelId,
+    counterparty_chain: &dyn ChainHandle,
+    remote_connection_id: &ConnectionId,
+) -> Result<Option<ChannelEnd>, Error> {
+    let req = QueryConnectionChannelsRequest {
+        connection: remote_connection_id.to_string(),
+        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+    };
+
+    let counterparty_channels = counterparty_chain
+        .query_connection_channels(req)
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    for counterparty_channel in counterparty_channels.into_iter() {
+        let local_channel_end = &counterparty_channel.channel_end.remote;
+        if let Some(local_channel_id) = local_channel_end.channel_id() {
+            if local_channel_id == channel_id && local_channel_end.port_id() == port_id {
+                return Ok(Some(counterparty_channel.channel_end));
+            }
+        }
+    }
+    Ok(None)
+}
+
+pub fn channel_state_on_destination(
+    channel: IdentifiedChannelEnd,
+    connection: IdentifiedConnectionEnd,
+    counterparty_chain: &dyn ChainHandle,
+) -> Result<State, Error> {
+    let counterparty_state =
+        if let Some(remote_channel_id) = channel.channel_end.remote.channel_id() {
+            counterparty_chain
+                .query_channel(
+                    channel.channel_end.remote.port_id(),
+                    remote_channel_id,
+                    Height::zero(),
+                )
+                .map_err(|e| Error::QueryFailed(format!("{}", e)))?
+                .state
+        } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
+            channel_on_destination(
+                &channel.port_id,
+                &channel.channel_id,
+                counterparty_chain,
+                remote_connection_id,
+            )?
+            .map_or_else(
+                || State::Uninitialized,
+                |remote_channel| remote_channel.state,
+            )
+        } else {
+            State::Uninitialized
+        };
+    Ok(counterparty_state)
 }
