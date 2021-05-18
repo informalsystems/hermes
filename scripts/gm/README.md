@@ -53,6 +53,7 @@ ibc-rs/scripts/gm/bin/gm install
 
 Alternatively, you can create the folder `$HOME/.gm/bin` and copy the files from `scripts/gm/bin` in there.
 The rest is just fluff.
+
 3. Activate `gm`
 * Add `source $HOME/.gm/bin/shell-support` to a file that executes when a new terminal window comes up
   (`$HOME/.bash_profile` or `$HOME/.bashrc`)
