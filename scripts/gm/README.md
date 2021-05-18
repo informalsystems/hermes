@@ -164,7 +164,7 @@ node4 PPROF: http://localhost:27054
 **Description**: shows the help screen
 
 ### `gm hermes cc`
-**Description**: create the `hermes create client` commands for a fully interconnected set of IBC calls and print them
+**Description**: create and print the `hermes create channel` commands to obtain a fully interconnected IBC mesh
 on the screen.
 
 Tip: Pick and choose the ones you want to create.
