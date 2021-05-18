@@ -235,9 +235,7 @@ impl Channel {
             version: Some(a_channel.version.clone()),
         };
 
-        if a_channel.state_matches(&ibc::ics04_channel::channel::State::Init)
-            && a_channel.remote.channel_id.is_none()
-        {
+        if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
             if let Some(b_connection_id) = a_connection.counterparty().connection_id() {
                 let req = QueryConnectionChannelsRequest {
                     connection: b_connection_id.to_string(),

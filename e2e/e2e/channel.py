@@ -418,18 +418,19 @@ def handshake(
     c: Config,
     side_a: ChainId, side_b: ChainId,
     conn_a: ConnectionId, conn_b: ConnectionId,
+    port_id: PortId
 ) -> Tuple[ChannelId, ChannelId]:
     a_chan_id = chan_open_init(c, dst=side_a, src=side_b, dst_conn=conn_a)
 
     split()
 
     b_chan_id = chan_open_try(
-        c, dst=side_b, src=side_a, dst_conn=conn_b, dst_port=PortId('transfer'), src_port=PortId('transfer'),
+        c, dst=side_b, src=side_a, dst_conn=conn_b, dst_port=port_id, src_port=port_id,
         src_chan=a_chan_id)
 
     split()
 
-    ack_res = chan_open_ack(c, dst=side_a, src=side_b, dst_port=PortId('transfer'), src_port=PortId('transfer'),
+    ack_res = chan_open_ack(c, dst=side_a, src=side_b, dst_port=port_id, src_port=port_id,
                             dst_conn=conn_a, dst_chan=a_chan_id, src_chan=b_chan_id)
 
     if ack_res != a_chan_id:
@@ -438,7 +439,7 @@ def handshake(
         exit(1)
 
     confirm_res = chan_open_confirm(
-        c, dst=side_b, src=side_a, dst_port=PortId('transfer'), src_port=PortId('transfer'),
+        c, dst=side_b, src=side_a, dst_port=port_id, src_port=port_id,
         dst_conn=conn_b, dst_chan=b_chan_id, src_chan=a_chan_id)
 
     if confirm_res != b_chan_id:
@@ -448,13 +449,13 @@ def handshake(
 
     split()
 
-    a_chan_end = query_channel_end(c, side_a, PortId('transfer'), a_chan_id)
+    a_chan_end = query_channel_end(c, side_a, port_id, a_chan_id)
     if a_chan_end.state != 'Open':
         l.error(
             f'Channel end with id {a_chan_id} on chain {side_a} is not in Open state, got: {a_chan_end.state}')
         exit(1)
 
-    b_chan_end = query_channel_end(c, side_b, PortId('transfer'), b_chan_id)
+    b_chan_end = query_channel_end(c, side_b, port_id, b_chan_id)
     if b_chan_end.state != 'Open':
         l.error(
             f'Channel end with id {b_chan_id} on chain {side_b} is not in Open state, got: {b_chan_end.state}')
