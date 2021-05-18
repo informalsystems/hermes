@@ -25,6 +25,9 @@ pub enum PacketError {
         "failed during a transaction submission step to chain id {0} with underlying error: {1}"
     )]
     SubmitError(ChainId, Error),
+
+    #[error("Timestamp overflow when modifying with duration")]
+    TimestampOverflowError,
 }
 
 #[derive(Clone, Debug)]
@@ -59,15 +62,8 @@ pub fn build_and_send_transfer_messages(
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        Timestamp::from_nanoseconds(
-            Timestamp::now().as_nanoseconds() + opts.timeout_seconds.as_nanos() as u64,
-        )
-        .map_err(|_| {
-            PacketError::Failed(format!(
-                "invalid timeout timestamp {:?}",
-                opts.timeout_seconds
-            ))
-        })?
+        (Timestamp::now() + opts.timeout_seconds)
+            .map_err(|_| PacketError::TimestampOverflowError)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
