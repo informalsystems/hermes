@@ -1,5 +1,5 @@
 [global]
-strategy = 'packets'
+strategy = 'all'
 log_level = 'info'
 
 [[chains]]
