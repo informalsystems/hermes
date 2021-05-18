@@ -3,8 +3,8 @@ use std::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ConnectionId;
+use ibc::ics24_host::identifier::{ChainId, PortChannelId};
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use ibc_relayer::chain::{Chain, CosmosSdkChain};
 
@@ -96,7 +96,16 @@ impl Runnable for QueryConnectionChannelsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cids) => Output::success(cids).exit(),
+            Ok(channels) => {
+                let ids: Vec<PortChannelId> = channels
+                    .into_iter()
+                    .map(|identified_channel| PortChannelId {
+                        port_id: identified_channel.port_id,
+                        channel_id: identified_channel.channel_id,
+                    })
+                    .collect();
+                Output::success(ids).exit()
+            }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }

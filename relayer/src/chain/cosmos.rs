@@ -787,14 +787,6 @@ impl Chain for CosmosSdkChain {
             .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
             .collect();
         Ok(channels)
-
-        // let vec_ids = response
-        //     .channels
-        //     .iter()
-        //     .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
-        //     .collect();
-
-        // Ok(vec_ids)
     }
 
     fn query_channels(

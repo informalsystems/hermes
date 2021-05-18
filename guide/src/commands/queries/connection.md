@@ -135,8 +135,21 @@ hermes query connection channels ibc-1 connection-1
 
 ```rust
 Success: [
-    ChannelId(
-        "channel-1",
-    ),
+    PortChannelId {
+        channel_id: ChannelId(
+            "channel-0",
+        ),
+        port_id: PortId(
+            "transfer",
+        ),
+    },
+    PortChannelId {
+        channel_id: ChannelId(
+            "channel-1",
+        ),
+        port_id: PortId(
+            "transfer",
+        ),
+    },
 ]
 ```

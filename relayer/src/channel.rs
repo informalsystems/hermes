@@ -155,20 +155,12 @@ impl Channel {
         counterparty_chain: Box<dyn ChainHandle>,
         mut channel_open_event: IbcEvent,
     ) -> Result<Channel, BoxError> {
-        let channel_event_attributes = match channel_open_event.channel_attributes() {
-            None => {
-                return Err(ChannelError::Failed(
+        let channel_event_attributes =
+            channel_open_event.channel_attributes().ok_or_else(|| {
+                ChannelError::Failed(
                     "A channel object must be build only from a channel event ".to_string(),
                 )
-                .into())
-            }
-            Some(attributes) => attributes,
-        };
-
-        let connection_id = channel_event_attributes.connection_id.clone();
-        let counterparty_port_id = channel_event_attributes.counterparty_port_id.clone();
-        let connection = chain.query_connection(&connection_id, Height::zero())?;
-        let counterparty_channel_id = channel_event_attributes.counterparty_channel_id.clone();
+            })?;
 
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id.clone();
@@ -177,18 +169,17 @@ impl Channel {
             .module_version(&port_id)
             .map_err(|e| ChannelError::QueryError(counterparty_chain.id(), e))?;
 
-        let counterparty_connection_id = match connection.counterparty().connection_id() {
-            Some(x) => x.clone(),
-            None => {
-                return Err("failed due to missing counterparty connection"
-                    .to_string()
-                    .into())
-            }
-        };
+        let connection_id = channel_event_attributes.connection_id.clone();
+        let connection = chain.query_connection(&connection_id, Height::zero())?;
+        let connection_counterparty = connection.counterparty();
+
+        let counterparty_connection_id = connection_counterparty
+            .connection_id()
+            .ok_or(ChannelError::MissingCounterpartyConnection)?;
 
         Ok(Channel {
             ordering: Default::default(),
-            //TODO  how to get the order from raw tx
+            //TODO  how to get the order from event
             a_side: ChannelSide::new(
                 chain.clone(),
                 connection.client_id().clone(),
@@ -199,9 +190,9 @@ impl Channel {
             b_side: ChannelSide::new(
                 counterparty_chain.clone(),
                 connection.counterparty().client_id().clone(),
-                counterparty_connection_id,
-                counterparty_port_id,
-                counterparty_channel_id,
+                counterparty_connection_id.clone(),
+                channel_event_attributes.counterparty_port_id.clone(),
+                channel_event_attributes.counterparty_channel_id.clone(),
             ),
             connection_delay: connection.delay_period(),
             //TODO  detect version from event
