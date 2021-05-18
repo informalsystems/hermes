@@ -35,8 +35,8 @@ where
             Kind::SequenceSendNotFound(msg.source_port.clone(), msg.source_channel.clone())
         })?;
 
-    let timeout_timestamp = Timestamp::from_nanoseconds(msg.timeout_timestamp)
-        .map_err(|_| Kind::InvalidPacketTimestamp(msg.timeout_timestamp))?;
+    let timeout_timestamp = Timestamp::from_nanoseconds(msg.timeout_timestamp.as_nanoseconds())
+        .map_err(|_| Kind::InvalidPacketTimeoutTimestamp(msg.timeout_timestamp.as_nanoseconds()))?;
 
     //TODO: Application LOGIC.
 

@@ -165,7 +165,6 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
-    use std::time::Duration;
 
     use crate::events::IbcEvent;
     use crate::ics02_client::client_type::ClientType;
@@ -182,6 +181,7 @@ mod tests {
     use crate::ics04_channel::msgs::ChannelMsg;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
     use crate::mock::context::MockContext;
+    use crate::timestamp::ZERO_DURATION;
     use crate::Height;
 
     #[test]
@@ -208,7 +208,7 @@ mod tests {
             client_id.clone(),
             ConnectionCounterparty::try_from(get_dummy_raw_counterparty()).unwrap(),
             get_compatible_versions(),
-            Duration::from_secs(0),
+            ZERO_DURATION,
         );
 
         // We're going to test message processing against this message.

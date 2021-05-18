@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anomaly::BoxError;
 
+use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
@@ -21,11 +22,14 @@ use crate::{
         handle::{ChainHandle, ChainHandlePair},
     },
     config::Config,
-    event::monitor::{EventBatch, UnwrapOrClone},
+    event::{
+        self,
+        monitor::{EventBatch, UnwrapOrClone},
+    },
     object::{Client, Object, UnidirectionalChannelPath},
     registry::Registry,
-    util::recv_multiple,
-    worker::{Worker, WorkerHandle},
+    util::try_recv_multiple,
+    worker::{Worker, WorkerHandle, WorkerMsg},
 };
 
 mod error;
@@ -40,12 +44,15 @@ pub struct Supervisor {
     registry: Registry,
     workers: HashMap<Object, WorkerHandle>,
     telemetry: Option<TelemetryService>,
+    worker_msg_tx: Sender<WorkerMsg>,
+    worker_msg_rx: Receiver<WorkerMsg>,
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn spawn(config: Config) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
+        let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
 
         // Start the telemetry service
         let telemetry = match config.global.telemetry_enabled {
@@ -66,6 +73,8 @@ impl Supervisor {
             registry,
             workers: HashMap::new(),
             telemetry,
+            worker_msg_tx,
+            worker_msg_rx,
         })
     }
 
@@ -287,19 +296,47 @@ impl Supervisor {
         self.spawn_workers();
 
         loop {
-            match recv_multiple(&subscriptions) {
-                Ok((chain, batch)) => {
-                    let result = batch
-                        .unwrap_or_clone()
-                        .map_err(Into::into)
-                        .and_then(|batch| self.process_batch(chain.clone(), batch));
-
-                    if let Err(e) = result {
-                        error!("[{}] error during batch processing: {}", chain.id(), e);
-                    }
-                }
-                Err(e) => error!("error when waiting for events: {}", e),
+            if let Some((chain, batch)) = try_recv_multiple(&subscriptions) {
+                self.handle_batch(chain.clone(), batch);
             }
+
+            if let Ok(msg) = self.worker_msg_rx.try_recv() {
+                self.handle_msg(msg);
+            }
+
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    fn handle_msg(&mut self, msg: WorkerMsg) {
+        match msg {
+            WorkerMsg::Stopped(object) => {
+                if let Some(handle) = self.workers.remove(&object) {
+                    let _ = handle.join();
+                } else {
+                    warn!(
+                        "did not find worker handle for object '{}' after worker stopped",
+                        object.short_name()
+                    );
+                }
+            }
+        }
+    }
+
+    fn handle_batch(
+        &mut self,
+        chain: Box<dyn ChainHandle>,
+        batch: Arc<event::monitor::Result<EventBatch>>,
+    ) {
+        let chain_id = chain.id();
+
+        let result = batch
+            .unwrap_or_clone()
+            .map_err(Into::into)
+            .and_then(|batch| self.process_batch(chain, batch));
+
+        if let Err(e) = result {
+            error!("[{}] error during batch processing: {}", chain_id, e);
         }
     }
 
@@ -362,9 +399,9 @@ impl Supervisor {
         if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
-            let worker = Worker::spawn(ChainHandlePair { a: src, b: dst }, object.clone());
-            let worker = self.workers.entry(object).or_insert(worker);
-            worker
+            let handles = ChainHandlePair { a: src, b: dst };
+            let worker = Worker::spawn(handles, object.clone(), self.worker_msg_tx.clone());
+            self.workers.entry(object).or_insert(worker)
         }
     }
 }

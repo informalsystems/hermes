@@ -7,6 +7,7 @@ use tendermint_light_client::types::TrustThreshold;
 
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, PortId};
+use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
 
@@ -27,7 +28,7 @@ pub mod default {
     }
 
     pub fn connection_delay() -> Duration {
-        Duration::from_secs(0)
+        ZERO_DURATION
     }
 
     pub fn channel_ordering() -> Order {
