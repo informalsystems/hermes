@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anomaly::BoxError;
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
@@ -17,10 +17,7 @@ use ibc::{
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 use crate::{
-    chain::{
-        counterparty::channel_connection_client,
-        handle::{ChainHandle, ChainHandlePair},
-    },
+    chain::{counterparty::channel_connection_client, handle::ChainHandle},
     config::Config,
     event::{
         self,
@@ -29,80 +26,11 @@ use crate::{
     object::{Client, Object, UnidirectionalChannelPath},
     registry::Registry,
     util::try_recv_multiple,
-    worker::{Worker, WorkerHandle, WorkerMsg},
+    worker::{WorkerMap, WorkerMsg},
 };
 
 mod error;
 pub use error::Error;
-
-/// Manage the lifecycle of [`Worker`]s associated with [`Object`]s.
-#[derive(Debug)]
-pub struct WorkerMap {
-    workers: HashMap<Object, WorkerHandle>,
-    msg_tx: Sender<WorkerMsg>,
-}
-
-impl WorkerMap {
-    /// Create a new worker map, which will spawn workers with
-    /// the given channel for sending messages back to the [`Supervisor`].
-    pub fn new(msg_tx: Sender<WorkerMsg>) -> Self {
-        Self {
-            workers: HashMap::new(),
-            msg_tx,
-        }
-    }
-
-    /// Returns `true` if there is a spawned [`Worker`] associated with the given [`Object`].
-    pub fn contains(&self, object: &Object) -> bool {
-        self.workers.contains_key(object)
-    }
-
-    /// Remove the [`Worker`] associated with the given [`Object`] from
-    /// the map and wait for its thread to terminate.
-    pub fn remove_stopped(&mut self, object: &Object) -> bool {
-        if let Some(handle) = self.workers.remove(object) {
-            let _ = handle.join();
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Returns all the [`Worker`] which are interested in new block events originating
-    /// from the chain with the given [`ChainId`].
-    /// See: [`Object::notify_new_block`]
-    pub fn to_notify<'a>(
-        &'a self,
-        src_chain_id: &'a ChainId,
-    ) -> impl Iterator<Item = &'a WorkerHandle> {
-        self.workers.iter().filter_map(move |(o, w)| {
-            if o.notify_new_block(src_chain_id) {
-                Some(w)
-            } else {
-                None
-            }
-        })
-    }
-
-    /// Get a handle to the worker in charge of handling events associated
-    /// with the given [`Object`].
-    ///
-    /// This function will spawn a new [`Worker`] if one does not exists already.
-    pub fn get_or_spawn(
-        &mut self,
-        object: Object,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
-    ) -> &WorkerHandle {
-        if self.workers.contains_key(&object) {
-            &self.workers[&object]
-        } else {
-            let handles = ChainHandlePair { a: src, b: dst };
-            let worker = Worker::spawn(handles, object.clone(), self.msg_tx.clone());
-            self.workers.entry(object).or_insert(worker)
-        }
-    }
-}
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate

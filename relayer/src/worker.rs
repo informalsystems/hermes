@@ -16,6 +16,9 @@ pub use cmd::WorkerCmd;
 mod client;
 pub use client::ClientWorker;
 
+mod map;
+pub use map::WorkerMap;
+
 mod uni_chan_path;
 pub use uni_chan_path::UniChanPathWorker;
 
