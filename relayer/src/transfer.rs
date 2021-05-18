@@ -2,15 +2,16 @@ use thiserror::Error;
 use tracing::error;
 
 use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
-use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::tx_msg::Msg;
 
 use crate::chain::{Chain, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
+use ibc::events::IbcEvent;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
+use std::thread;
 use std::time::Duration;
 
 #[derive(Debug, Error)]
@@ -85,29 +86,16 @@ pub fn build_and_send_transfer_messages(
         timeout_timestamp,
     };
 
-    let raw_msg = msg.to_any();
-    let msgs = vec![raw_msg; opts.number_msgs];
+    let mut seq = 0;
+    for _i in 0..opts.number_msgs {
+        thread::sleep(Duration::from_millis(100));
+        let raw_msg = msg.clone().to_any();
 
-    let events = packet_src_chain
-        .send_msgs(msgs)
-        .map_err(|e| PacketError::Submit(packet_src_chain.id().clone(), e))?;
+        let new_seq = packet_src_chain
+            .send_msgs_async(raw_msg, seq)
+            .map_err(|e| PacketError::Submit(packet_src_chain.id().clone(), e))?;
 
-    // Check if the chain rejected the transaction
-    let result = events
-        .iter()
-        .find(|event| matches!(event, IbcEvent::ChainError(_)));
-
-    match result {
-        None => Ok(events),
-        Some(err) => {
-            if let IbcEvent::ChainError(err) = err {
-                Err(PacketError::Failed(err.to_string()))
-            } else {
-                panic!(
-                    "internal error, expected IBCEvent::ChainError, got {:?}",
-                    err
-                )
-            }
-        }
+        seq = new_seq;
     }
+    Ok(vec![])
 }

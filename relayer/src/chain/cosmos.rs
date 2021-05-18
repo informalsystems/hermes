@@ -71,6 +71,7 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
+use tendermint_rpc::endpoint::broadcast;
 use tendermint_rpc::endpoint::tx_search::ResultTx;
 
 // TODO size this properly
@@ -313,6 +314,116 @@ impl CosmosSdkChain {
         );
 
         Ok((proof, height))
+    }
+    /// Send one async transaction
+    pub(crate) fn send_msgs_async(&mut self, proto_msg: Any, seq: u64) -> Result<u64, Error> {
+        self.send_tx_async(vec![proto_msg], seq)
+    }
+
+    fn send_tx_async(&self, proto_msgs: Vec<Any>, seq: u64) -> Result<u64, Error> {
+        crate::time!("send_tx");
+
+        let key = self
+            .keybase()
+            .get_key(&self.config.key_name)
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        // Create TxBody
+        let body = TxBody {
+            messages: proto_msgs.to_vec(),
+            memo: "".to_string(),
+            timeout_height: 0_u64,
+            extension_options: Vec::<Any>::new(),
+            non_critical_extension_options: Vec::<Any>::new(),
+        };
+
+        // A protobuf serialization of a TxBody
+        let mut body_buf = Vec::new();
+        prost::Message::encode(&body, &mut body_buf).unwrap();
+
+        let mut pk_buf = Vec::new();
+        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
+
+        crate::time!("PK {:?}", hex::encode(key.public_key.public_key.to_bytes()));
+
+        // Create a MsgSend proto Any message
+        let pk_any = Any {
+            type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
+            value: pk_buf,
+        };
+
+        let acct_response = self
+            .block_on(query_account(self, key.account))
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let sequence = if seq == 0 {
+            acct_response.sequence
+        } else {
+            seq
+        };
+
+        let single = Single { mode: 1 };
+        let sum_single = Some(Sum::Single(single));
+        let mode = Some(ModeInfo { sum: sum_single });
+        let signer_info = SignerInfo {
+            public_key: Some(pk_any),
+            mode_info: mode,
+            sequence,
+        };
+
+        let fee = Some(Fee {
+            amount: vec![self.fee()],
+            gas_limit: self.gas(),
+            payer: "".to_string(),
+            granter: "".to_string(),
+        });
+
+        let auth_info = AuthInfo {
+            signer_infos: vec![signer_info],
+            fee,
+        };
+
+        // A protobuf serialization of a AuthInfo
+        let mut auth_buf = Vec::new();
+        prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
+
+        let sign_doc = SignDoc {
+            body_bytes: body_buf.clone(),
+            auth_info_bytes: auth_buf.clone(),
+            chain_id: self.config.clone().id.to_string(),
+            account_number: acct_response.account_number,
+        };
+
+        // A protobuf serialization of a SignDoc
+        let mut signdoc_buf = Vec::new();
+        prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
+
+        // Sign doc and broadcast
+        let signed = self
+            .keybase
+            .sign_msg(&self.config.key_name, signdoc_buf)
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        let tx_raw = TxRaw {
+            body_bytes: body_buf,
+            auth_info_bytes: auth_buf,
+            signatures: vec![signed],
+        };
+
+        let mut txraw_buf = Vec::new();
+        prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
+
+        let response = self
+            .block_on(broadcast_tx_sync(self, txraw_buf))
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+
+        if response.code != tendermint::abci::Code::Ok {
+            println!("chk {:?}", response);
+
+            return Err(Kind::Rpc(self.config.rpc_addr.clone()).into());
+        }
+
+        Ok(sequence + 1)
     }
 }
 
@@ -1455,6 +1566,20 @@ async fn broadcast_tx_commit(
     let response = chain
         .rpc_client()
         .broadcast_tx_commit(data.into())
+        .await
+        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
+
+    Ok(response)
+}
+
+/// Perform a `broadcast_tx_commit`, and return the corresponding deserialized response data.
+async fn broadcast_tx_sync(
+    chain: &CosmosSdkChain,
+    data: Vec<u8>,
+) -> Result<broadcast::tx_sync::Response, anomaly::Error<Kind>> {
+    let response = chain
+        .rpc_client()
+        .broadcast_tx_sync(data.into())
         .await
         .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
 
