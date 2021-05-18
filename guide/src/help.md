@@ -156,7 +156,7 @@ Relevant snippet:
 
 ```toml
 [global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 ```
 

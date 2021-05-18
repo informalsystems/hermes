@@ -31,6 +31,7 @@ use crate::{
 
 pub mod error;
 use crate::chain::counterparty::channel_state_on_destination;
+use crate::config::Strategy;
 pub use error::Error;
 
 /// The supervisor listens for events on multiple pairs of chains,
@@ -59,6 +60,10 @@ impl Supervisor {
         })
     }
 
+    fn handshake_enabled(&self) -> bool {
+        self.config.global.strategy == Strategy::HandshakeAndPackets
+    }
+
     /// Collect the events we are interested in from an [`EventBatch`],
     /// and maps each [`IbcEvent`] to their corresponding [`Object`].
     pub fn collect_events(
@@ -83,6 +88,9 @@ impl Supervisor {
                 }
 
                 IbcEvent::OpenInitChannel(ref _open_init) => {
+                    if !self.handshake_enabled() {
+                        continue;
+                    }
                     if let Ok(object) = Object::channel_from_chan_open_events(
                         event.clone().channel_attributes().unwrap(),
                         src_chain,
@@ -92,6 +100,9 @@ impl Supervisor {
                 }
 
                 IbcEvent::OpenTryChannel(ref _open_try) => {
+                    if !self.handshake_enabled() {
+                        continue;
+                    }
                     if let Ok(object) = Object::channel_from_chan_open_events(
                         event.clone().channel_attributes().unwrap(),
                         src_chain,
@@ -110,6 +121,10 @@ impl Supervisor {
                             .entry(object)
                             .or_default()
                             .push(event.clone());
+                    }
+
+                    if !self.handshake_enabled() {
+                        continue;
                     }
 
                     if let Ok(channel_object) = Object::channel_from_chan_open_events(
@@ -210,6 +225,7 @@ impl Supervisor {
     }
 
     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+    #[allow(clippy::suspicious_operation_groupings)]
     fn spawn_workers_for_channel(
         &mut self,
         chain: Box<dyn ChainHandle>,
@@ -293,7 +309,10 @@ impl Supervisor {
                 src_port_id: channel.port_id,
             });
             self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
-        } else if remote_state as u32 <= local_state as u32 && !remote_state.is_open() {
+        } else if self.handshake_enabled()
+            && !remote_state.is_open()
+            && remote_state as u32 <= local_state as u32
+        {
             // create worker for channel handshake that will advance the remote state
             let channel_object = Object::Channel(Channel {
                 dst_chain_id: counterparty_chain.clone().id(),

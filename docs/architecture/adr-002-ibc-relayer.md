@@ -119,7 +119,7 @@ Below is an example of a configuration file.
 
 ```toml
 [global]
-strategy = "naive"
+strategy = "packets"
 log_level = "error"
 
 [[chains]]
@@ -200,7 +200,7 @@ pub struct Config {
 }
 
 pub enum Strategy {
-    Naive,
+    Packets,
 }
 
 pub struct GlobalConfig {
