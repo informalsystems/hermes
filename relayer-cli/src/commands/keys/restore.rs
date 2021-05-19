@@ -76,9 +76,10 @@ pub fn restore_key(
     coin_type: CoinType,
     config: ChainConfig,
 ) -> Result<KeyEntry, BoxError> {
-    let mut keyring = KeyRing::new(Store::Test, config)?;
+    let key_name = config.key_name.clone();
+    let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     let key_entry = keyring.key_from_mnemonic(mnemonic, coin_type)?;
-    keyring.add_key(key_entry.clone())?;
+    keyring.add_key(&key_name, key_entry.clone())?;
 
     Ok(key_entry)
 }

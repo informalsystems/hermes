@@ -57,7 +57,7 @@ pub struct KeysListOptions {
 }
 
 pub fn list_keys(config: ChainConfig) -> Result<KeyEntry, BoxError> {
-    let keyring = KeyRing::new(Store::Test, config)?;
-    let key_entry = keyring.get_key()?;
+    let keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+    let key_entry = keyring.get_key(&config.key_name)?;
     Ok(key_entry)
 }
