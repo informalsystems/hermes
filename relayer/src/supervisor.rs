@@ -287,7 +287,9 @@ impl Supervisor {
                 self.handle_msg(msg);
             }
 
-            rest::process(&self.config, &self.rest_receiver);
+            if let Some(msg) = rest::process(&self.config, &self.rest_receiver) {
+                self.handle_rest_request(msg);
+            }
 
             std::thread::sleep(Duration::from_millis(50));
         }
@@ -304,6 +306,10 @@ impl Supervisor {
                 }
             }
         }
+    }
+
+    fn handle_rest_request(&mut self, _m: rest::Msg) {
+        todo!()
     }
 
     fn handle_batch(
