@@ -1,13 +1,15 @@
 use std::sync::Arc;
 
 use crossbeam_channel as channel;
-use futures::stream::StreamExt;
-use futures::{stream::select_all, Stream};
-use itertools::Itertools;
+use futures::{
+    pin_mut,
+    stream::{self, select_all, StreamExt},
+    Stream,
+};
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{error, info, trace};
+use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
     event::Event as RpcEvent,
@@ -18,7 +20,10 @@ use tendermint_rpc::{
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
-use crate::util::retry::{retry_with_index, RetryResult};
+use crate::util::{
+    retry::{retry_with_index, RetryResult},
+    stream::group_while,
+};
 
 mod retry_strategy {
     use crate::util::retry::clamp_total;
@@ -276,24 +281,30 @@ impl EventMonitor {
 
     /// Event monitor loop
     pub fn run(mut self) {
-        info!(chain.id = %self.chain_id, "starting event monitor");
+        debug!(chain.id = %self.chain_id, "starting event monitor");
 
         let rt = self.rt.clone();
+
+        // Take ownership of the subscriptions
+        let subscriptions =
+            std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
+
+        // Convert the stream of RPC events into a stream of event batches.
+        let batches = stream_batches(subscriptions, self.chain_id.clone());
+
+        // Needed to be able to poll the stream
+        pin_mut!(batches);
 
         loop {
             let result = rt.block_on(async {
                 tokio::select! {
-                    Some(event) = self.subscriptions.next() => {
-                        event
-                            .map_err(Error::NextEventBatchFailed)
-                            .and_then(|e| self.collect_events(e))
-                    },
+                    Some(batch) = batches.next() => Ok(batch),
                     Some(e) = self.rx_err.recv() => Err(Error::WebSocketDriver(e)),
                 }
             });
 
             match result {
-                Ok(batches) => self.process_batches(batches).unwrap_or_else(|e| {
+                Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
                     error!("failed to process event batch: {}", e);
                 }),
                 Err(e) => {
@@ -307,31 +318,43 @@ impl EventMonitor {
     }
 
     /// Collect the IBC events from the subscriptions
-    fn process_batches(&self, batches: Vec<EventBatch>) -> Result<()> {
-        for batch in batches {
-            self.tx_batch
-                .send(Ok(batch))
-                .map_err(|_| Error::ChannelSendFailed)?;
-        }
+    fn process_batch(&self, batch: EventBatch) -> Result<()> {
+        self.tx_batch
+            .send(Ok(batch))
+            .map_err(|_| Error::ChannelSendFailed)?;
 
         Ok(())
     }
+}
 
-    /// Collect the IBC events from the subscriptions
-    fn collect_events(&mut self, event: RpcEvent) -> Result<Vec<EventBatch>> {
-        let ibc_events = crate::event::rpc::get_all_events(&self.chain_id, event)
-            .map_err(Error::CollectEventsFailed)?;
+/// Collect the IBC events from an RPC event
+fn collect_events(chain_id: &ChainId, event: RpcEvent) -> impl Stream<Item = (Height, IbcEvent)> {
+    let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
+    stream::iter(events)
+}
 
-        let events_by_height = ibc_events.into_iter().into_group_map();
-        let batches = events_by_height
-            .into_iter()
-            .map(|(height, events)| EventBatch {
-                chain_id: self.chain_id.clone(),
-                height,
-                events,
-            })
-            .collect();
+/// Convert a stream of RPC event into a stream of event batches
+fn stream_batches(
+    subscriptions: Box<SubscriptionStream>,
+    chain_id: ChainId,
+) -> impl Stream<Item = EventBatch> {
+    let id = chain_id.clone();
 
-        Ok(batches)
-    }
+    // Collect IBC events from each RPC event
+    let batches = subscriptions
+        .filter_map(|rpc_event| async { rpc_event.ok() })
+        .flat_map(move |rpc_event| collect_events(&id, rpc_event));
+
+    // Group events by height
+    let grouped = group_while(batches, |(h0, _), (h1, _)| h0 == h1);
+
+    // Convert each group to a batch
+    grouped.map(move |events| {
+        let (height, _) = events.first().expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+        EventBatch {
+            height: *height,
+            chain_id: chain_id.clone(),
+            events: events.into_iter().map(|e| e.1).collect(),
+        }
+    })
 }
