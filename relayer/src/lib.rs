@@ -16,6 +16,9 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate rouille;
+
 pub mod chain;
 pub mod channel;
 pub mod config;

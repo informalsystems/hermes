@@ -1,2 +1,2 @@
-pub mod relayer_state;
+pub mod state;
 pub mod service;
