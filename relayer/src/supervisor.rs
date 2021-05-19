@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anomaly::BoxError;
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
@@ -14,10 +14,7 @@ use ibc::{
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 use crate::{
-    chain::{
-        counterparty::channel_connection_client,
-        handle::{ChainHandle, ChainHandlePair},
-    },
+    chain::{counterparty::channel_connection_client, handle::ChainHandle},
     config::Config,
     event::{
         self,
@@ -26,7 +23,7 @@ use crate::{
     object::{Channel, Client, Object, UnidirectionalChannelPath},
     registry::Registry,
     util::try_recv_multiple,
-    worker::{Worker, WorkerHandle, WorkerMsg},
+    worker::{WorkerMap, WorkerMsg},
 };
 
 pub mod error;
@@ -40,8 +37,7 @@ pub use error::Error;
 pub struct Supervisor {
     config: Config,
     registry: Registry,
-    workers: HashMap<Object, WorkerHandle>,
-    worker_msg_tx: Sender<WorkerMsg>,
+    workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
 }
 
@@ -54,8 +50,7 @@ impl Supervisor {
         Ok(Self {
             config,
             registry,
-            workers: HashMap::new(),
-            worker_msg_tx,
+            workers: WorkerMap::new(worker_msg_tx),
             worker_msg_rx,
         })
     }
@@ -81,7 +76,7 @@ impl Supervisor {
                 IbcEvent::UpdateClient(ref update) => {
                     if let Ok(object) = Object::for_update_client(update, src_chain) {
                         // Collect update client events only if the worker exists
-                        if self.workers.get(&object).is_some() {
+                        if self.workers.contains(&object) {
                             collected.per_object.entry(object).or_default().push(event);
                         }
                     }
@@ -297,7 +292,8 @@ impl Supervisor {
                 dst_chain_id: chain.id(),
                 src_chain_id: client.client_state.chain_id(),
             });
-            self.worker_for_object(client_object, chain.clone(), counterparty_chain.clone());
+            self.workers
+                .get_or_spawn(client_object, chain.clone(), counterparty_chain.clone());
 
             // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
             //  https://github.com/informalsystems/ibc-rs/issues/901
@@ -308,7 +304,8 @@ impl Supervisor {
                 src_channel_id: channel.channel_id.clone(),
                 src_port_id: channel.port_id,
             });
-            self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
+            self.workers
+                .get_or_spawn(path_object, chain.clone(), counterparty_chain.clone());
         } else if self.handshake_enabled()
             && !remote_state.is_open()
             && remote_state as u32 <= local_state as u32
@@ -321,7 +318,8 @@ impl Supervisor {
                 src_port_id: channel.port_id,
             });
 
-            self.worker_for_object(channel_object, chain.clone(), counterparty_chain.clone());
+            self.workers
+                .get_or_spawn(channel_object, chain.clone(), counterparty_chain.clone());
         }
         Ok(())
     }
@@ -369,9 +367,7 @@ impl Supervisor {
     fn handle_msg(&mut self, msg: WorkerMsg) {
         match msg {
             WorkerMsg::Stopped(object) => {
-                if let Some(handle) = self.workers.remove(&object) {
-                    let _ = handle.join();
-                } else {
+                if !self.workers.remove_stopped(&object) {
                     warn!(
                         "did not find worker handle for object '{}' after worker stopped",
                         object.short_name()
@@ -419,41 +415,18 @@ impl Supervisor {
             let src = self.registry.get_or_spawn(object.src_chain_id())?;
             let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
 
-            let worker = self.worker_for_object(object, src, dst);
+            let worker = self.workers.get_or_spawn(object, src, dst);
             worker.send_events(height, events, chain_id.clone())?
         }
 
         // If there is a NewBlock event, forward the event to any workers affected by it.
         if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-            for (_, worker) in self
-                .workers
-                .iter()
-                .filter(|(o, _)| o.notify_new_block(&src_chain.id()))
-            {
+            for worker in self.workers.to_notify(&src_chain.id()) {
                 worker.send_new_block(height, new_block)?;
             }
         }
 
         Ok(())
-    }
-
-    /// Get a handle to the worker in charge of handling events associated
-    /// with the given [`Object`].
-    ///
-    /// This function will spawn a new [`Worker`] if one does not exists already.
-    fn worker_for_object(
-        &mut self,
-        object: Object,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
-    ) -> &WorkerHandle {
-        if self.workers.contains_key(&object) {
-            &self.workers[&object]
-        } else {
-            let handles = ChainHandlePair { a: src, b: dst };
-            let worker = Worker::spawn(handles, object.clone(), self.worker_msg_tx.clone());
-            self.workers.entry(object).or_insert(worker)
-        }
     }
 }
 
