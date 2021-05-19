@@ -54,7 +54,7 @@ impl Default for Version {
 
 /// Process incoming requests. This goes into a `loop{}`, namely into the Supervisor's loop.
 pub fn process(config: &Config, rest_receiver: &channel::Receiver<Request>) {
-    match rest_receiver.recv() {
+    match rest_receiver.try_recv() {
         Ok(request) => {
             match request {
                 Request::Version { reply_to } => {
