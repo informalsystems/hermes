@@ -185,6 +185,9 @@ pub enum Kind {
         expected: ClientType,
         got: ClientType,
     },
+
+    #[error("chain ID not found: {0}")]
+    ChainIdNotFound(String),
 }
 
 impl Kind {

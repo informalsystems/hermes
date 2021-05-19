@@ -87,6 +87,9 @@ pub struct GlobalConfig {
     /// All valid log levels, as defined in tracing:
     /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
     pub log_level: String,
+
+    /// REST interface address
+    pub rest_addr: String,
 }
 
 impl Default for GlobalConfig {
@@ -94,6 +97,7 @@ impl Default for GlobalConfig {
         Self {
             strategy: Strategy::default(),
             log_level: "info".to_string(),
+            rest_addr: "127.0.0.1:9999".to_string(),
         }
     }
 }

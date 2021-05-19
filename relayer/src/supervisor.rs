@@ -24,6 +24,7 @@ use crate::{
     event::monitor::{EventBatch, UnwrapOrClone},
     object::{Client, Object, UnidirectionalChannelPath},
     registry::Registry,
+    rest,
     util::recv_multiple,
     worker::{Worker, WorkerHandle},
 };
@@ -38,17 +39,22 @@ pub struct Supervisor {
     config: Config,
     registry: Registry,
     workers: HashMap<Object, WorkerHandle>,
+    rest_receiver: crossbeam_channel::Receiver<rest::Request>,
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(config: Config) -> Result<Self, BoxError> {
+    pub fn spawn(
+        config: Config,
+        rest_receiver: crossbeam_channel::Receiver<rest::Request>,
+    ) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
 
         Ok(Self {
             config,
             registry,
             workers: HashMap::new(),
+            rest_receiver,
         })
     }
 
@@ -283,6 +289,7 @@ impl Supervisor {
                 }
                 Err(e) => error!("error when waiting for events: {}", e),
             }
+            rest::process(&self.config, &self.rest_receiver);
         }
     }
 

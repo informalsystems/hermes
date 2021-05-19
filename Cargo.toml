@@ -4,7 +4,8 @@ members = [
     "modules",
     "relayer",
     "relayer-cli",
-    "proto"
+    "relayer-rest",
+    "proto",
 ]
 
 exclude = [

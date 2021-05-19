@@ -1,0 +1,22 @@
+[package]
+name       = "ibc-relayer-rest"
+version    = "0.1.0"
+authors    = ["Informal Systems <hello@informal.systems>"]
+edition    = "2018"
+license    = "Apache-2.0"
+readme     = "README.md"
+keywords   = ["ibc", "rest", "api", "cosmos", "tendermint"]
+homepage   = "https://hermes.informal.systems/"
+repository = "https://github.com/informalsystems/ibc-rs"
+
+description = """
+  Implementation of the Hermes RPC library in Rust.
+"""
+
+[dependencies]
+crossbeam-channel = { version = "0.5" }
+ibc              = { version = "0.3.0", path = "../modules" }
+ibc-relayer       = { version = "0.3.0", path = "../relayer" }
+rouille           = { version = "3.1" }
+tracing           = { version = "0.1" }
+serde             = { version = "1.0" }
