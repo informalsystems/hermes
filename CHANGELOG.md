@@ -2,7 +2,24 @@
 
 ## Unreleased
 
-> Nothing yet,
+### FEATURES
+
+> Nothing
+
+### IMPROVEMENTS
+
+- [ibc-relayer]
+  - Bulk events from all transactions included in a block ([#957])
+
+### BUG FIXES
+
+> Nothing
+
+### BREAKING CHANGES
+
+> Nothing
+
+[#957]: https://github.com/informalsystems/ibc-rs/issues/957
 
 ## v0.3.1
 *May 14h, 2021*
@@ -31,6 +48,8 @@ as well as support Protobuf-encoded keys.
   - Process raw `delay_period` field as nanoseconds instead of seconds. ([#927])
 
 ### BREAKING CHANGES
+
+> Nothing
 
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
