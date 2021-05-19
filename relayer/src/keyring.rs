@@ -1,9 +1,12 @@
-use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
+};
+use std::{
+    ffi::OsStr,
+    fs::{self, File},
 };
 
 use bech32::{ToBase32, Variant};
@@ -143,6 +146,7 @@ impl TryFrom<KeyFile> for KeyEntry {
 pub trait KeyStore {
     fn get_key(&self, key_name: &str) -> Result<KeyEntry, Error>;
     fn add_key(&mut self, key_name: &str, key_entry: KeyEntry) -> Result<(), Error>;
+    fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error>;
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -176,6 +180,14 @@ impl KeyStore for Memory {
         self.keys.insert(key_name.to_string(), key_entry);
 
         Ok(())
+    }
+
+    fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error> {
+        Ok(self
+            .keys
+            .iter()
+            .map(|(n, k)| (n.to_string(), k.clone()))
+            .collect())
     }
 }
 
@@ -223,6 +235,22 @@ impl KeyStore for Test {
             .map_err(|_| Kind::KeyStore.context("error writing the key file"))?;
 
         Ok(())
+    }
+
+    fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error> {
+        let dir = fs::read_dir(&self.store)
+            .map_err(|e| Kind::KeyStore.context(format!("cannot list keys: {}", e)))?;
+
+        let ext = OsStr::new(KEYSTORE_FILE_EXTENSION);
+
+        dir.into_iter()
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| path.extension() == Some(ext))
+            .flat_map(|path| path.file_stem().map(OsStr::to_owned))
+            .flat_map(|stem| stem.to_str().map(ToString::to_string))
+            .map(|name| self.get_key(&name).map(|key| (name, key)))
+            .collect()
     }
 }
 
@@ -272,6 +300,13 @@ impl KeyRing {
         match self {
             KeyRing::Memory(m) => m.add_key(key_name, key_entry),
             KeyRing::Test(d) => d.add_key(key_name, key_entry),
+        }
+    }
+
+    pub fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error> {
+        match self {
+            KeyRing::Memory(m) => m.keys(),
+            KeyRing::Test(d) => d.keys(),
         }
     }
 

@@ -7,8 +7,8 @@ use ibc_relayer::{
     keyring::{KeyEntry, KeyRing, Store},
 };
 
-use crate::application::app_config;
 use crate::conclude::Output;
+use crate::{application::app_config, conclude::json};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysListCmd {
@@ -37,16 +37,19 @@ impl Runnable for KeysListCmd {
             Ok(result) => result,
         };
 
-        let chain_config = opts.chain_config.clone();
-        let key = list_keys(opts.chain_config);
-
-        match key {
-            Ok(key) => Output::success_msg(format!(
-                "chain: {} -> {} ({})",
-                chain_config.id, chain_config.key_name, key.account,
-            ))
-            .exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+        match list_keys(opts.chain_config) {
+            Ok(keys) if json() => {
+                let keys = keys.into_iter().map(|(_, k)| k).collect::<Vec<_>>();
+                Output::success(keys).exit()
+            }
+            Ok(keys) => {
+                let mut msg = String::new();
+                for (name, key) in keys {
+                    msg.push_str(&format!("\n- {} ({})", name, key.account));
+                }
+                Output::success_msg(msg).exit()
+            }
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -56,8 +59,8 @@ pub struct KeysListOptions {
     pub chain_config: ChainConfig,
 }
 
-pub fn list_keys(config: ChainConfig) -> Result<KeyEntry, BoxError> {
+pub fn list_keys(config: ChainConfig) -> Result<Vec<(String, KeyEntry)>, BoxError> {
     let keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
-    let key_entry = keyring.get_key(&config.key_name)?;
-    Ok(key_entry)
+    let keys = keyring.keys()?;
+    Ok(keys)
 }

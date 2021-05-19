@@ -22,6 +22,12 @@ pub struct KeysAddCmd {
 
     #[options(short = "f", required, help = "path to the key file")]
     file: PathBuf,
+
+    #[options(
+        short = "n",
+        help = "name of the key (defaults to the `key_name` defined in the config)"
+    )]
+    name: Option<String>,
 }
 
 impl KeysAddCmd {
@@ -31,9 +37,12 @@ impl KeysAddCmd {
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         Ok(KeysAddOptions {
-            name: chain_config.key_name.clone(),
             config: chain_config.clone(),
             file: self.file.clone(),
+            name: self
+                .name
+                .clone()
+                .unwrap_or_else(|| chain_config.key_name.clone()),
         })
     }
 }
@@ -54,13 +63,12 @@ impl Runnable for KeysAddCmd {
             Ok(result) => result,
         };
 
-        let chain_id = opts.config.id.clone();
-        let key = add_key(opts.config, &opts.file);
+        let key = add_key(&opts.config, &opts.name, &opts.file);
 
         match key {
             Ok(key) => Output::success_msg(format!(
                 "Added key '{}' ({}) on chain {}",
-                opts.name, key.account, chain_id
+                opts.name, key.account, opts.config.id
             ))
             .exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -68,13 +76,12 @@ impl Runnable for KeysAddCmd {
     }
 }
 
-pub fn add_key(config: ChainConfig, file: &Path) -> Result<KeyEntry, BoxError> {
+pub fn add_key(config: &ChainConfig, key_name: &str, file: &Path) -> Result<KeyEntry, BoxError> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
 
     let key_contents = fs::read_to_string(file).map_err(|_| "error reading the key file")?;
     let key = keyring.key_from_seed_file(&key_contents)?;
 
-    keyring.add_key(&config.key_name, key.clone())?;
-
+    keyring.add_key(key_name, key.clone())?;
     Ok(key)
 }
