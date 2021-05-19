@@ -4,6 +4,7 @@ import argparse
 import logging as l
 from typing import Tuple
 from pathlib import Path
+import toml
 
 import e2e.channel as channel
 import e2e.client as client
@@ -168,6 +169,7 @@ def passive_channel(c: Config,
     ibc1: ChainId, ibc0: ChainId,
     ibc1_conn_id: ConnectionId, port_id: PortId):
 
+
     # 1. create a channel in Init state
     ibc1_chan_id = channel.chan_open_init(c, dst=ibc1, src=ibc0, dst_conn=ibc1_conn_id)
 
@@ -177,21 +179,21 @@ def passive_channel(c: Config,
     proc = relayer.start(c)
     sleep(10.0)
 
-    # 3. verify channel state on both chains
-    ibc1_chan_end = channel.query_channel_end(c, ibc1, port_id, ibc1_chan_id)
-    if ibc1_chan_end.state != 'Open':
-        l.error(
-            f'Channel end with id {ibc1_chan_id} on chain {ibc1} is not in Open state, got: {ibc1_chan_end.state}')
-        proc.kill()
-        exit(1)
+    strategy = toml.load(c.config_file)['global']['strategy']
 
+    # 3. verify channel state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
+    ibc1_chan_end = channel.query_channel_end(c, ibc1, port_id, ibc1_chan_id)
     ibc0_chan_id = ibc1_chan_end.remote.channel_id
     ibc0_chan_end = channel.query_channel_end(c, ibc0, port_id, ibc0_chan_id)
-    if ibc0_chan_end.state != 'Open':
-        l.error(
-            f'Channel end with id {ibc0_chan_id} on chain {ibc0} is not in Open state, got: {ibc0_chan_end.state}')
-        proc.kill()
-        exit(1)
+
+    if strategy == 'all':
+        assert (ibc0_chan_end.state == 'Open'), (ibc0_chan_end, "state is not Open")
+        assert (ibc1_chan_end.state == 'Open'), (ibc1_chan_end, "state is not Open")
+    elif strategy == 'packets':
+        assert (ibc1_chan_end.state == 'Init'), (ibc1_chan_end, "state is not Init")
+
+    proc.kill()
+    exit(1)
 
     # 4. All good, stop the relayer
     proc.kill()
@@ -233,8 +235,10 @@ def main():
         format='%(asctime)s [%(levelname)8s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
-    ibc0  = ChainId('ibc-0')
-    ibc1 = ChainId('ibc-1')
+    chains = toml.load(config.config_file)['chains']
+
+    ibc0  = chains[0]['id']
+    ibc1 = chains[1]['id']
     port_id = PortId('transfer')
 
     ibc0_client_id, ibc0_conn_id, ibc0_chan_id, ibc1_client_id, ibc1_conn_id, ibc1_chan_id = raw(config, ibc0 , ibc1, port_id)
