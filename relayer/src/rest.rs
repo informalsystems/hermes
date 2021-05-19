@@ -1,12 +1,14 @@
+use crossbeam_channel as channel;
+use serde::Serialize;
+use tracing::{debug, error};
+
+use ibc::ics24_host::identifier::ChainId;
+
 use crate::error::Kind as IBCErrorKind;
 use crate::{
     config::{ChainConfig, Config},
     error::Error,
 };
-use crossbeam_channel as channel;
-use ibc::ics24_host::identifier::ChainId;
-use serde::Serialize;
-use tracing::{debug, error};
 
 pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
 pub type Reply<T> = channel::Receiver<Result<T, Error>>;
@@ -21,7 +23,6 @@ pub enum Request {
     Version {
         reply_to: ReplyTo<Version>,
     },
-
     AddChain {
         chain_config: ChainConfig,
         reply_to: ReplyTo<ChainConfig>,

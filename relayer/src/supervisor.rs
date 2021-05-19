@@ -46,10 +46,7 @@ pub struct Supervisor {
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(
-        config: Config,
-        rest_receiver: Receiver<rest::Request>,
-    ) -> Result<Self, BoxError> {
+    pub fn spawn(config: Config, rest_receiver: Receiver<rest::Request>) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
 
