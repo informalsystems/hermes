@@ -1,16 +1,13 @@
 use prometheus::{Encoder, TextEncoder};
 
 use crate::telemetry::state::TelemetryState;
+use std::sync::Arc;
 
-pub struct TelemetryService {
-    pub(crate) listen_port: u16,
-}
+pub struct TelemetryService {}
 
 impl TelemetryService {
-    pub async fn run(self) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let state = TelemetryState::init();
-
-        rouille::start_server(format!("localhost:{}", self.listen_port), move |request| {
+    pub fn run(state: Arc<TelemetryState>, listen_port: u16) -> () {
+        rouille::start_server(format!("localhost:{}", listen_port), move |request| {
             router!(request,
                 // The prometheus endpoint
                 (GET) (/metrics) => {
@@ -31,6 +28,6 @@ impl TelemetryService {
                     rouille::Response::empty_404()
                 }
             )
-        })
+        });
     }
 }
