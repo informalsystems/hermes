@@ -14,7 +14,7 @@ Hermes can listen to IBC packet events over a specified path and relay receive p
 2. In a separate terminal, use the transfer command to send 2 packets to `ibc-0` chain:
 
     ```shell
-    hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+    hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
     ```
 
    You should see a result similar to the one below:
@@ -45,7 +45,7 @@ Hermes can listen to IBC packet events over a specified path and relay receive p
 3. Use the CLI to send 2 packets to `ibc-1` chain:
 
     ```shell
-    hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 1000 -n 2
+    hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 -o 1000 -n 2
     ```
 
    You should see a result similar to the one below:

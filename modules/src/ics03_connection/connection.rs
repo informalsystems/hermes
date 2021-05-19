@@ -14,6 +14,7 @@ use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::timestamp::ZERO_DURATION;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -31,7 +32,7 @@ impl Default for ConnectionEnd {
             client_id: Default::default(),
             counterparty: Default::default(),
             versions: vec![],
-            delay_period: Duration::from_secs(0),
+            delay_period: ZERO_DURATION,
         }
     }
 }
@@ -65,7 +66,7 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
                 .map(Version::try_from)
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            Duration::from_secs(value.delay_period),
+            Duration::from_nanos(value.delay_period),
         ))
     }
 }
@@ -81,7 +82,7 @@ impl From<ConnectionEnd> for RawConnectionEnd {
                 .collect(),
             state: value.state as i32,
             counterparty: Some(value.counterparty.into()),
-            delay_period: value.delay_period.as_secs(),
+            delay_period: value.delay_period.as_nanos() as u64,
         }
     }
 }

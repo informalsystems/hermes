@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anomaly::BoxError;
 
+use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
@@ -16,17 +17,17 @@ use ibc::{
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
 use crate::{
-    chain::{
-        counterparty::channel_connection_client,
-        handle::{ChainHandle, ChainHandlePair},
-    },
+    chain::{counterparty::channel_connection_client, handle::ChainHandle},
     config::Config,
-    event::monitor::{EventBatch, UnwrapOrClone},
+    event::{
+        self,
+        monitor::{EventBatch, UnwrapOrClone},
+    },
     object::{Client, Object, UnidirectionalChannelPath},
     registry::Registry,
     rest,
-    util::recv_multiple,
-    worker::{Worker, WorkerHandle},
+    util::try_recv_multiple,
+    worker::{WorkerMap, WorkerMsg},
 };
 
 mod error;
@@ -38,22 +39,25 @@ pub use error::Error;
 pub struct Supervisor {
     config: Config,
     registry: Registry,
-    workers: HashMap<Object, WorkerHandle>,
-    rest_receiver: crossbeam_channel::Receiver<rest::Request>,
+    workers: WorkerMap,
+    worker_msg_rx: Receiver<WorkerMsg>,
+    rest_receiver: Receiver<rest::Request>,
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn spawn(
         config: Config,
-        rest_receiver: crossbeam_channel::Receiver<rest::Request>,
+        rest_receiver: Receiver<rest::Request>,
     ) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
+        let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
 
         Ok(Self {
             config,
             registry,
-            workers: HashMap::new(),
+            workers: WorkerMap::new(worker_msg_tx),
+            worker_msg_rx,
             rest_receiver,
         })
     }
@@ -75,7 +79,7 @@ impl Supervisor {
                 IbcEvent::UpdateClient(ref update) => {
                     if let Ok(object) = Object::for_update_client(update, src_chain) {
                         // Collect update client events only if the worker exists
-                        if self.workers.get(&object).is_some() {
+                        if self.workers.contains(&object) {
                             collected.per_object.entry(object).or_default().push(event);
                         }
                     }
@@ -231,7 +235,8 @@ impl Supervisor {
             src_chain_id: client.client_state.chain_id(),
         });
 
-        self.worker_for_object(client_object, chain.clone(), counterparty_chain.clone());
+        self.workers
+            .get_or_spawn(client_object, chain.clone(), counterparty_chain.clone());
 
         // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
         //  https://github.com/informalsystems/ibc-rs/issues/901
@@ -243,7 +248,8 @@ impl Supervisor {
             src_port_id: channel.port_id,
         });
 
-        self.worker_for_object(path_object, chain.clone(), counterparty_chain.clone());
+        self.workers
+            .get_or_spawn(path_object, chain.clone(), counterparty_chain.clone());
 
         Ok(())
     }
@@ -276,20 +282,47 @@ impl Supervisor {
         self.spawn_workers();
 
         loop {
-            match recv_multiple(&subscriptions) {
-                Ok((chain, batch)) => {
-                    let result = batch
-                        .unwrap_or_clone()
-                        .map_err(Into::into)
-                        .and_then(|batch| self.process_batch(chain.clone(), batch));
-
-                    if let Err(e) = result {
-                        error!("[{}] error during batch processing: {}", chain.id(), e);
-                    }
-                }
-                Err(e) => error!("error when waiting for events: {}", e),
+            if let Some((chain, batch)) = try_recv_multiple(&subscriptions) {
+                self.handle_batch(chain.clone(), batch);
             }
+
+            if let Ok(msg) = self.worker_msg_rx.try_recv() {
+                self.handle_msg(msg);
+            }
+
             rest::process(&self.config, &self.rest_receiver);
+
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    fn handle_msg(&mut self, msg: WorkerMsg) {
+        match msg {
+            WorkerMsg::Stopped(object) => {
+                if !self.workers.remove_stopped(&object) {
+                    warn!(
+                        "did not find worker handle for object '{}' after worker stopped",
+                        object.short_name()
+                    );
+                }
+            }
+        }
+    }
+
+    fn handle_batch(
+        &mut self,
+        chain: Box<dyn ChainHandle>,
+        batch: Arc<event::monitor::Result<EventBatch>>,
+    ) {
+        let chain_id = chain.id();
+
+        let result = batch
+            .unwrap_or_clone()
+            .map_err(Into::into)
+            .and_then(|batch| self.process_batch(chain, batch));
+
+        if let Err(e) = result {
+            error!("[{}] error during batch processing: {}", chain_id, e);
         }
     }
 
@@ -321,41 +354,18 @@ impl Supervisor {
             let src = self.registry.get_or_spawn(object.src_chain_id())?;
             let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
 
-            let worker = self.worker_for_object(object, src, dst);
+            let worker = self.workers.get_or_spawn(object, src, dst);
             worker.send_events(height, events, chain_id.clone())?
         }
 
         // If there is a NewBlock event, forward the event to any workers affected by it.
         if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-            for (_, worker) in self
-                .workers
-                .iter()
-                .filter(|(o, _)| o.notify_new_block(&src_chain.id()))
-            {
+            for worker in self.workers.to_notify(&src_chain.id()) {
                 worker.send_new_block(height, new_block)?;
             }
         }
 
         Ok(())
-    }
-
-    /// Get a handle to the worker in charge of handling events associated
-    /// with the given [`Object`].
-    ///
-    /// This function will spawn a new [`Worker`] if one does not exists already.
-    fn worker_for_object(
-        &mut self,
-        object: Object,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
-    ) -> &WorkerHandle {
-        if self.workers.contains_key(&object) {
-            &self.workers[&object]
-        } else {
-            let worker = Worker::spawn(ChainHandlePair { a: src, b: dst }, object.clone());
-            let worker = self.workers.entry(object).or_insert(worker);
-            worker
-        }
     }
 }
 
