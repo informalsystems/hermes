@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-> Nothing yet,
+### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel. ([#960])
+
+[#960]: https://github.com/informalsystems/ibc-rs/issues/960
 
 ## v0.3.1
 *May 14h, 2021*
