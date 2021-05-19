@@ -6,6 +6,8 @@
 
 ### FEATURES
 
+- [ibc-relayer-rest] New RESTful API for the relayer library.
+
 ### IMPROVEMENTS
 - [ibc-relayer-cli]
   - Improve UX when querying non-existing connections and channels ([#875], [#920])
@@ -17,6 +19,7 @@
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#843]: https://github.com/informalsystems/ibc-rs/issues/843
 
 
 ## v0.3.0

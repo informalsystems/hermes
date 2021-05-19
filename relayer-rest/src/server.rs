@@ -55,7 +55,7 @@ fn run(config: Config, sender: channel::Sender<Request>) {
                 rouille::Response::json(&result)
             },
 
-            (GET) (/chains) => {
+            (GET) (/chain) => {
                 let result = send(&sender, |reply_to| Request::GetChains { reply_to }).unwrap();
                 rouille::Response::json(&result)
             },
