@@ -84,6 +84,6 @@ pub fn process(config: &Config, rest_receiver: &channel::Receiver<Request>) {
                 }
             }
         }
-        Err(e) => error!("error when waiting for requests: {}", e),
+        Err(e) => error!("error while waiting for requests: {}", e),
     }
 }
