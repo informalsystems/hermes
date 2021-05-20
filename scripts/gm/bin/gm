@@ -114,29 +114,41 @@ case "${1:-help}" in
     load_config
     shift
     F_FLAG=""
+    R_FLAG=""
     LIST=""
     while [ "$#" -gt 0 ];
     do
       case "$1" in
         "-f")
           F_FLAG="-f" ;;
+        "-r")
+          R_FLAG="-r" ;;
         *)
           LIST="$LIST $(get_home_dir "$1")/log"
       esac
       shift
     done
-    if [ -z "$F_FLAG" ]; then
-      echo "less -R $LIST"
-      # Todo: spaces in folder names and file names are not supported yet.
-      # shellcheck disable=SC2086
-      less -R $LIST
-    else
-      echo "tail -f $LIST"
-      # Todo: spaces in folder names and file names are not supported yet.
-      # shellcheck disable=SC2086
-      tail -f $LIST
+    if [ -n "$F_FLAG" ] && [ -n "$R_FLAG" ]; then
+      exit_with_error "-f and -r is too much even for the tail command"
     fi
-
+    if [ -z "$F_FLAG" ] && [ -z "$R_FLAG" ]; then
+      echo "less -R +G $LIST"
+      # Todo: spaces in folder names and file names are not supported yet.
+      # shellcheck disable=SC2086
+      less -R +G $LIST
+    else
+      if [ -n "$F_FLAG" ]; then
+        echo "tail -f $LIST"
+        # Todo: spaces in folder names and file names are not supported yet.
+        # shellcheck disable=SC2086
+        tail -f $LIST
+      elif [ -n "$R_FLAG" ]; then
+        echo "tail -r $LIST"
+        # Todo: spaces in folder names and file names are not supported yet.
+        # shellcheck disable=SC2086
+        tail -r $LIST
+      fi
+    fi
     ;;
   ports)
     load_config

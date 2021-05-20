@@ -192,10 +192,10 @@ If no node is specified then it lists all keys.
 
 Tip: it will show you the seed phrase if it can find it in the folder.
 
-### `gm log <node> [<node> ...] [-f]`
+### `gm log <node> [<node> ...] [-f|-r]`
 **Description**: Show the log of the specified node(s). At least one node has to be specified.
 
-Tip: You can put `-f` anywhere after `log` to get `tail -f`-like functionality.
+Tip: You can put `-f` and `-r` anywhere after `log` to get `tail -f` or `tail -r`-like functionality.
 
 ### `gm ports [<node> ...]`
 **Description**: List the ports assigned to a node.
