@@ -10,6 +10,8 @@ Jongwhan Lee (@leejw51crypto) ([#878]).
 - [ibc-relayer]
   - Support for ICS27 ([#794])
 
+- [release] Official hermes image on Docker Hub.
+
 ### IMPROVEMENTS
 
 - [ibc]
