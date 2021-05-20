@@ -208,18 +208,21 @@ impl Test {
 
 impl KeyStore for Test {
     fn get_key(&self, key_name: &str) -> Result<KeyEntry, Error> {
-        let mut filename = self.store.join(key_name);
-        filename.set_extension(KEYSTORE_FILE_EXTENSION);
+        let mut key_file = self.store.join(key_name);
+        key_file.set_extension(KEYSTORE_FILE_EXTENSION);
 
-        if !filename.as_path().exists() {
-            return Err(Kind::KeyStore.context("cannot find key file").into());
+        if !key_file.as_path().exists() {
+            return Err(Kind::KeyStore
+                .context(format!("cannot find key file at '{}'", key_file.display()))
+                .into());
         }
 
         let file =
-            File::open(filename).map_err(|_| Kind::KeyStore.context("cannot open key file"))?;
+            File::open(&key_file).map_err(|_| Kind::KeyStore.context("cannot open key file"))?;
 
-        let key_entry = serde_json::from_reader(file)
-            .map_err(|_| Kind::KeyStore.context("cannot ready key file"))?;
+        let key_entry = serde_json::from_reader(file).map_err(|_| {
+            Kind::KeyStore.context(format!("cannot read key file at '{}'", key_file.display()))
+        })?;
 
         Ok(key_entry)
     }
