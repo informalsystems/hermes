@@ -7,8 +7,11 @@
 - [ibc-relayer]
   - Add support for event based channel relaying ([#822])
 
-[#822]: https://github.com/informalsystems/ibc-rs/issues/822
+- [relayer]
+  - Official hermes image on Docker Hub ([#894])
 
+[#822]: https://github.com/informalsystems/ibc-rs/issues/822
+[#894]: https://github.com/informalsystems/ibc-rs/pull/894
 
 ## v0.3.1
 *May 14h, 2021*
