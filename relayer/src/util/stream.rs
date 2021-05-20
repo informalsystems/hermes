@@ -53,13 +53,30 @@ mod tests {
 
     #[test]
     fn group_while_non_empty() {
-        let input = stream::iter(vec![1, 1, 2, 3, 3, 3, 4, 5, 5]);
-        let output = group_while(input, |a, b| a == b).collect::<Vec<_>>();
+        let input = stream::iter(vec![
+            (1, 1),
+            (1, 2),
+            (2, 1),
+            (3, 1),
+            (3, 2),
+            (3, 3),
+            (4, 1),
+            (5, 1),
+            (5, 2),
+        ]);
+
+        let output = group_while(input, |a, b| a.0 == b.0).collect::<Vec<_>>();
         let result = block_on(output);
 
         assert_eq!(
             result,
-            vec![vec![1, 1], vec![2], vec![3, 3, 3], vec![4], vec![5, 5]]
+            vec![
+                vec![(1, 1), (1, 2)],
+                vec![(2, 1)],
+                vec![(3, 1), (3, 2), (3, 3)],
+                vec![(4, 1)],
+                vec![(5, 1), (5, 2)]
+            ]
         );
     }
 
