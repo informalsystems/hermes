@@ -192,9 +192,6 @@ def passive_channel(c: Config,
     elif strategy == 'packets':
         assert (ibc1_chan_end.state == 'Init'), (ibc1_chan_end, "state is not Init")
 
-    proc.kill()
-    exit(1)
-
     # 4. All good, stop the relayer
     proc.kill()
 
