@@ -60,8 +60,7 @@ pub fn build_and_send_transfer_messages(
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        (Timestamp::now() + opts.timeout_seconds)
-            .map_err(|_| PacketError::TimestampOverflow)?
+        (Timestamp::now() + opts.timeout_seconds).map_err(|_| PacketError::TimestampOverflow)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
