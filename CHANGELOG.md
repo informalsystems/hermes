@@ -2,7 +2,15 @@
 
 ## Unreleased
 
-> Nothing yet,
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Add a `--key` option to the tx raw ft-transfer command to override the account used for sending messages ([#963])
+
+- [ibc-relayer]
+  - Add support for multiple keys to the keyring ([#963])
+
+[#963]: https://github.com/informalsystems/ibc-rs/issues/963
 
 ## v0.3.1
 *May 14h, 2021*
