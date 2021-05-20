@@ -128,6 +128,9 @@ case "${1:-help}" in
       esac
       shift
     done
+    if [ -z "$LIST" ]; then
+      exit_with_error "no node name was given"
+    fi
     if [ -n "$F_FLAG" ] && [ -n "$R_FLAG" ]; then
       exit_with_error "-f and -r is too much even for the tail command"
     fi
