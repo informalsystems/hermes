@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
 use anomaly::BoxError;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -59,6 +59,26 @@ pub struct TxIcs20MsgTransferCmd {
 
     #[options(help = "number of messages to send", short = "n")]
     number_msgs: Option<usize>,
+
+    #[options(
+        help = "use the given signing key (default: `key_name` config)",
+        short = "k"
+    )]
+    key: Option<String>,
+}
+
+impl Override<Config> for TxIcs20MsgTransferCmd {
+    fn override_config(&self, mut config: Config) -> Result<Config, abscissa_core::FrameworkError> {
+        let src_chain_config = config.find_chain_mut(&self.src_chain_id).ok_or_else(|| {
+            FrameworkErrorKind::ComponentError.context("missing src chain configuration")
+        })?;
+
+        if let Some(ref key_name) = self.key {
+            src_chain_config.key_name = key_name.to_string();
+        }
+
+        Ok(config)
+    }
 }
 
 impl TxIcs20MsgTransferCmd {
@@ -153,17 +173,22 @@ impl Runnable for TxIcs20MsgTransferCmd {
             }
             Some(cid) => cid,
         };
+
         let conn_end = src_chain
             .query_connection(conn_id, Height::zero())
             .unwrap_or_else(exit_with_unrecoverable_error);
+
         debug!("connection hop underlying the channel: {:?}", conn_end);
+
         let src_chain_client_state = src_chain
             .query_client_state(conn_end.client_id(), Height::zero())
             .unwrap_or_else(exit_with_unrecoverable_error);
+
         debug!(
             "client state underlying the channel: {:?}",
             src_chain_client_state
         );
+
         if src_chain_client_state.chain_id != self.dst_chain_id {
             return Output::error(
                 format!("the requested port/channel ({}/{}) provides a path from chain '{}' to \
