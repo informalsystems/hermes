@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel. ([#960])
+
 ### FEATURES
 
 - [ibc-relayer-cli]
@@ -11,8 +16,11 @@
   - Add support for multiple keys to the keyring ([#963])
 
 - [release]
-  - Official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub
+  - Official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub ([#894])
 
+
+[#894]: https://github.com/informalsystems/ibc-rs/pull/894
+[#960]: https://github.com/informalsystems/ibc-rs/issues/960
 [#963]: https://github.com/informalsystems/ibc-rs/issues/963
 
 ## v0.3.1

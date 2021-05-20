@@ -162,6 +162,16 @@ impl Runnable for TxIcs20MsgTransferCmd {
                 Height::zero(),
             )
             .unwrap_or_else(exit_with_unrecoverable_error);
+        if !channel_end.is_open() {
+            return Output::error(format!(
+                "the requested port/channel ('{}'/'{}') on chain id '{}' is in state '{}'; expected 'open' state",
+                opts.packet_src_port_id,
+                opts.packet_src_channel_id,
+                self.src_chain_id,
+                channel_end.state
+            ))
+            .exit();
+        }
 
         let conn_id = match channel_end.connection_hops.first() {
             None => {
@@ -191,7 +201,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         if src_chain_client_state.chain_id != self.dst_chain_id {
             return Output::error(
-                format!("the requested port/channel ({}/{}) provides a path from chain '{}' to \
+                format!("the requested port/channel ('{}'/'{}') provides a path from chain '{}' to \
                  chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
                         opts.packet_src_port_id, opts.packet_src_channel_id,
                         self.src_chain_id,
