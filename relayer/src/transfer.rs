@@ -19,12 +19,15 @@ pub enum PacketError {
     Failed(String),
 
     #[error("key error with underlying cause: {0}")]
-    KeyError(Error),
+    Key(Error),
 
     #[error(
         "failed during a transaction submission step to chain id {0} with underlying error: {1}"
     )]
-    SubmitError(ChainId, Error),
+    Submit(ChainId, Error),
+
+    #[error("timestamp overflow")]
+    TimestampOverflow,
 }
 
 #[derive(Clone, Debug)]
@@ -50,24 +53,14 @@ pub fn build_and_send_transfer_messages(
         None => packet_dst_chain.get_signer(),
         Some(r) => Ok(r.clone().into()),
     }
-    .map_err(PacketError::KeyError)?;
+    .map_err(PacketError::Key)?;
 
-    let sender = packet_src_chain
-        .get_signer()
-        .map_err(PacketError::KeyError)?;
+    let sender = packet_src_chain.get_signer().map_err(PacketError::Key)?;
 
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        Timestamp::from_nanoseconds(
-            Timestamp::now().as_nanoseconds() + opts.timeout_seconds.as_nanos() as u64,
-        )
-        .map_err(|_| {
-            PacketError::Failed(format!(
-                "invalid timeout timestamp {:?}",
-                opts.timeout_seconds
-            ))
-        })?
+        (Timestamp::now() + opts.timeout_seconds).map_err(|_| PacketError::TimestampOverflow)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
@@ -97,7 +90,7 @@ pub fn build_and_send_transfer_messages(
 
     let events = packet_src_chain
         .send_msgs(msgs)
-        .map_err(|e| PacketError::SubmitError(packet_src_chain.id().clone(), e))?;
+        .map_err(|e| PacketError::Submit(packet_src_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events
