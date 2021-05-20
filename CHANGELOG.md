@@ -10,6 +10,9 @@
 - [ibc-relayer]
   - Add support for multiple keys to the keyring ([#963])
 
+- [release]
+  - Official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub
+
 [#963]: https://github.com/informalsystems/ibc-rs/issues/963
 
 ## v0.3.1
