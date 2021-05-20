@@ -58,7 +58,7 @@ _gm_hermes_nodes() {
 
 _gm_complete_commands() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
-  local cmds="help hermes install keys log ports start status stop unsafe-reset version"
+  local cmds="help hermes install keys log ports start status stop reset rm version"
   while read -r line; do COMPREPLY+=("$line"); done < <(compgen -W "$cmds" -- "$cur")
 }
 
