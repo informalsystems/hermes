@@ -231,7 +231,7 @@ In order to test the correct operation during the channel close, perform the ste
   this path).
 
   ```shell
-  hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 5555 1000 -n 1 -d samoleans
+  hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 5555 -o 1000 -n 1 -d samoleans
   ```
 
 - now do the first step of channel closing: the channel will transition

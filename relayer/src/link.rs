@@ -7,6 +7,8 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 
+use ibc::events::VecIbcEvents;
+use ibc::timestamp::{Expiry::Expired, Timestamp};
 use ibc::{
     downcast,
     events::{IbcEvent, IbcEventType},
@@ -23,6 +25,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     query::QueryTxRequest,
     signer::Signer,
+    timestamp::ZERO_DURATION,
     tx_msg::Msg,
     Height,
 };
@@ -31,19 +34,24 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
-use crate::chain::handle::ChainHandle;
-use crate::channel::{Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
-use ibc::events::VecIbcEvents;
+use crate::{chain::handle::ChainHandle, transfer::PacketError};
+use crate::{
+    channel::{Channel, ChannelError, ChannelSide},
+    event::monitor::UnwrapOrClone,
+};
 
 #[derive(Debug, Error)]
 pub enum LinkError {
     #[error("failed with underlying error: {0}")]
     Failed(String),
+
+    #[error("failed with underlying error: {0}")]
+    Generic(#[from] Error),
 
     #[error("failed to construct packet proofs for chain {0} with error: {1}")]
     PacketProofsConstructor(ChainId, Error),
@@ -51,17 +59,17 @@ pub enum LinkError {
     #[error("failed during query to chain id {0} with underlying error: {1}")]
     QueryError(ChainId, Error),
 
-    #[error("ConnectionError: {0}:")]
+    #[error("connection error: {0}:")]
     ConnectionError(#[from] ConnectionError),
 
-    #[error("ChannelError:  {0}:")]
+    #[error("channel error:  {0}:")]
     ChannelError(#[from] ChannelError),
 
-    #[error("Failed during a client operation: {0}:")]
+    #[error("failed during a client operation: {0}:")]
     ClientError(ForeignClientError),
 
-    #[error("PacketError: {0}:")]
-    PacketError(#[from] Error),
+    #[error("packet error: {0}:")]
+    PacketError(#[from] PacketError),
 
     #[error("clearing of old packets failed")]
     OldPacketClearingFailed,
@@ -305,24 +313,16 @@ impl RelayPath {
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
-        let client = ForeignClient {
-            id: self.dst_client_id().clone(),
-            dst_chain: self.dst_chain(),
-            src_chain: self.src_chain(),
-        };
-
+        let client =
+            ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
         client
             .build_update_client(height)
             .map_err(LinkError::ClientError)
     }
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
-        let client = ForeignClient {
-            id: self.src_client_id().clone(),
-            dst_chain: self.src_chain(),
-            src_chain: self.dst_chain(),
-        };
-
+        let client =
+            ForeignClient::restore(self.src_client_id(), self.src_chain(), self.dst_chain());
         client
             .build_update_client(height)
             .map_err(LinkError::ClientError)
@@ -403,10 +403,18 @@ impl RelayPath {
     /// Should not run more than once per execution.
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
+            info!(
+                "[{}] clearing pending packets from events before height {:?}",
+                self, above_height
+            );
+
             let clear_height = above_height.decrement().map_err(|e| LinkError::Failed(
                 format!("Cannot clear packets @height {}, because this height cannot be decremented: {}", above_height, e.to_string())))?;
+
             self.relay_pending_packets(clear_height)?;
+
             info!("[{}] finished clearing pending packets", self);
+
             self.clear_packets = false;
         }
 
@@ -503,7 +511,7 @@ impl RelayPath {
                     )?,
                 IbcEvent::WriteAcknowledgement(ref write_ack_ev) => {
                     if self
-                        .dst_channel(dst_od.proofs_height)?
+                        .dst_channel(Height::zero())?
                         .state_matches(&ChannelState::Closed)
                     {
                         (None, None)
@@ -717,7 +725,7 @@ impl RelayPath {
     /// Returns `true` if the delay for this relaying path is zero.
     /// Conversely, returns `false` if the delay is non-zero.
     fn zero_delay(&self) -> bool {
-        self.channel.connection_delay.as_nanos() == 0
+        self.channel.connection_delay == ZERO_DURATION
     }
 
     /// Handles updating the client on the destination chain
@@ -1197,14 +1205,16 @@ impl RelayPath {
             ));
         }
 
-        if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height {
+        if packet.timeout_height != Height::zero() && packet.timeout_height < dst_chain_height
+            || packet.timeout_timestamp != Timestamp::none()
+                && Timestamp::now().check_expiry(&packet.timeout_timestamp) == Expired
+        {
             debug!(
                 "[{}] new timeout message emerged for seq {}, with proofs for height {}",
                 self, event.packet.sequence, dst_chain_height
             );
             return self.build_timeout_packet(&event.packet, dst_chain_height);
         }
-
         Ok(None)
     }
 
@@ -1228,11 +1238,11 @@ impl RelayPath {
     /// of corresponding packets to the target chain.
     pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
-        for od in src_ods {
+        for od in dst_ods {
             self.relay_from_operational_data(od)?;
         }
 
-        for od in dst_ods {
+        for od in src_ods {
             self.relay_from_operational_data(od)?;
         }
 
@@ -1423,6 +1433,11 @@ impl RelayPath {
         }
         None
     }
+
+    /// Set the relay path's clear packets flag.
+    pub fn set_clear_packets(&mut self, clear_packets: bool) {
+        self.clear_packets = clear_packets;
+    }
 }
 
 impl fmt::Display for RelayPath {
@@ -1473,7 +1488,13 @@ impl Link {
 
             // Input new events to the relay path, and schedule any batch associated with them
             if let Ok(batch) = events_a.try_recv() {
-                self.a_to_b.update_schedule(batch.unwrap_or_clone())?;
+                let batch = batch.unwrap_or_clone();
+                match batch {
+                    Ok(batch) => self.a_to_b.update_schedule(batch)?,
+                    Err(e) => {
+                        dbg!(e);
+                    }
+                }
             }
 
             // Refresh the scheduled batches and execute any outstanding ones.
@@ -1481,7 +1502,13 @@ impl Link {
             self.a_to_b.execute_schedule()?;
 
             if let Ok(batch) = events_b.try_recv() {
-                self.b_to_a.update_schedule(batch.unwrap_or_clone())?;
+                let batch = batch.unwrap_or_clone();
+                match batch {
+                    Ok(batch) => self.b_to_a.update_schedule(batch)?,
+                    Err(e) => {
+                        dbg!(e);
+                    }
+                }
             }
 
             self.b_to_a.refresh_schedule()?;

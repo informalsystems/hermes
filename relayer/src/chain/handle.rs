@@ -9,6 +9,8 @@ use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWi
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::query::QueryTxRequest;
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
@@ -24,22 +26,41 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
 
-use crate::connection::ConnectionMsgType;
-use crate::keyring::KeyEntry;
-use crate::{error::Error, event::monitor::EventBatch};
-use ibc::query::QueryTxRequest;
+use crate::{
+    connection::ConnectionMsgType,
+    error::Error,
+    event::monitor::{EventBatch, Result as MonitorResult},
+    keyring::KeyEntry,
+};
 
 mod prod;
 
-pub type Subscription = channel::Receiver<Arc<EventBatch>>;
+/// A pair of [`ChainHandle`]s.
+#[derive(Clone)]
+pub struct ChainHandlePair {
+    pub a: Box<dyn ChainHandle>,
+    pub b: Box<dyn ChainHandle>,
+}
+
+impl ChainHandlePair {
+    /// Swap the two handles.
+    pub fn swap(self) -> Self {
+        Self {
+            a: self.b,
+            b: self.a,
+        }
+    }
+}
+
+pub type Subscription = channel::Receiver<Arc<MonitorResult<EventBatch>>>;
 
 pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
 pub type Reply<T> = channel::Receiver<Result<T, Error>>;
@@ -115,11 +136,6 @@ pub enum ChainRequest {
         reply_to: ReplyTo<(Option<AnyClientState>, Proofs)>,
     },
 
-    QueryClients {
-        request: QueryClientStatesRequest,
-        reply_to: ReplyTo<Vec<ClientId>>,
-    },
-
     QueryClientState {
         client_id: ClientId,
         height: Height,
@@ -129,6 +145,13 @@ pub enum ChainRequest {
     QueryConsensusStates {
         request: QueryConsensusStatesRequest,
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
+    },
+
+    QueryConsensusState {
+        client_id: ClientId,
+        consensus_height: Height,
+        query_height: Height,
+        reply_to: ReplyTo<AnyConsensusState>,
     },
 
     QueryUpgradedClientState {
@@ -153,6 +176,11 @@ pub enum ChainRequest {
         connection_id: ConnectionId,
         height: Height,
         reply_to: ReplyTo<ConnectionEnd>,
+    },
+
+    QueryChannels {
+        request: QueryChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     },
 
     QueryChannel {
@@ -247,8 +275,6 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
-
     fn query_client_state(
         &self,
         client_id: &ClientId,
@@ -259,6 +285,13 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
+
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: Height,
+        query_height: Height,
+    ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -284,6 +317,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         request: QueryNextSequenceReceiveRequest,
     ) -> Result<Sequence, Error>;
+
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
     fn query_channel(
         &self,

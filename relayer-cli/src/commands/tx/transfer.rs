@@ -38,8 +38,11 @@ pub struct TxIcs20MsgTransferCmd {
     )]
     amount: u64,
 
-    #[options(free, required, help = "timeout in number of blocks since current")]
-    height_offset: u64,
+    #[options(help = "timeout in number of blocks since current", short = "o")]
+    timeout_height_offset: u64,
+
+    #[options(help = "timeout in seconds since current", short = "t")]
+    timeout_seconds: u64,
 
     #[options(
         help = "receiving account address on the destination chain",
@@ -75,6 +78,12 @@ impl TxIcs20MsgTransferCmd {
             return Err("number of messages should be greater than zero".into());
         }
 
+        if self.timeout_height_offset == 0 && self.timeout_seconds == 0 {
+            return Err(
+                "packet timeout height and packet timeout timestamp cannot both be 0".into(),
+            );
+        }
+
         let opts = TransferOptions {
             packet_src_chain_config: src_chain_config.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
@@ -83,7 +92,8 @@ impl TxIcs20MsgTransferCmd {
             amount: self.amount,
             denom,
             receiver: self.receiver.clone(),
-            height_offset: self.height_offset,
+            timeout_height_offset: self.timeout_height_offset,
+            timeout_seconds: std::time::Duration::from_secs(self.timeout_seconds),
             number_msgs,
         };
 
@@ -132,12 +142,12 @@ impl Runnable for TxIcs20MsgTransferCmd {
                 Height::zero(),
             )
             .unwrap_or_else(exit_with_unrecoverable_error);
-        // TODO: Support for multi-hop channels will impact this.
+
         let conn_id = match channel_end.connection_hops.first() {
             None => {
                 return Output::error(format!(
-                    "could not retrieve the connection hop underlying channel end {:?} on chain {}",
-                    channel_end, self.src_chain_id
+                    "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
+                    opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
                 ))
                 .exit()
             }

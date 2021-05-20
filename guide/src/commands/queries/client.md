@@ -102,8 +102,8 @@ Success: ClientState {
         "upgrade",
         "upgradedIBCState",
     ],
-    allow_update_after_expiry: false,
-    allow_update_after_misbehaviour: false,
+    allow_update_after_expiry: true,
+    allow_update_after_misbehaviour: true,
 }
 ```
 
