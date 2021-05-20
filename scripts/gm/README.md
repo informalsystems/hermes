@@ -96,6 +96,7 @@ the `gm.toml` file for node configuration. By default, newly created node config
 * `home_dir`
   * In the global section this defines the default folder where all node folders will be created.
   * In the per-node configuration this is the folder for the node configuration.
+* `wallet_mnemonic` - define a 24-word seed phrase to use for wallet address(es) instead of creating random wallets.
 * `auto_maintain_config` - automatically update the `persistent_peers` and `unconditional_peer_ids` sections of the node
   configuration.
 * `add_to_hermes` - this node should be part of the hermes config.
@@ -213,6 +214,9 @@ were killed for any reason, the `pid` configuration will be updated, and a fresh
 **Description**: List all nodes and their basic properties, such as: their PID if they are running, their home folder,
 and the most common ports used.
 
+Home folders in brackets mean the configuration was not created yet. Configuration is automatically created during
+startup of a node.
+
 Tip: PIDs in brackets mean that the node is not running when `gm` started them. This could be because of a configuration
 error or maybe the user simply killed the PID. No worries, `gm` will clean up when `start` or `stop` is invoked.
 
@@ -222,11 +226,16 @@ If no node is specified then it will stop all nodes.
 
 Tip: If a node was killed, you can use `gm stop` to clean up the PID file.
 
-### `gm unsafe-reset [<node> ...]`
-**Description**: Run `unsafe-reset-all` on the node(s). This will use the defined `gaiad` binary and configuration.
-If no node is specified then it will run for all nodes.
+### `gm reset [<node> ...]`
+**Description**: Run `unsafe-reset-all` on the node(s) and reset the node database. This will use the defined
+`gaiad` binary and configuration. If no node is specified then it will run for all nodes.
 
-Tip: It will skip nodes that are running.
+Tip: It will stop nodes that are running and restart them after the database reset.
+
+### `gm rm <node> [<node> ...]`
+**Description**: Delete the node configuration. At least one node has to be specified.
+
+Tip: It will stop nodes that are running.
 
 ### `gm version`
 **Description**: Display the version of `gm`.

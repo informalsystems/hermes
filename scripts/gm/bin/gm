@@ -34,7 +34,8 @@ usage() {
   echo "start        start one or more nodes (starts all nodes if no parameter is given)"
   echo "status       print the status of nodes"
   echo "stop         stop one or more nodes (stops all nodes if no parameter is given)"
-  echo "unsafe-reset unsafe-reset-all one or more nodes (resets all nodes if no parameter is given)"
+  echo "reset        reset one or more nodes' database (resets all nodes if no parameter is given)"
+  echo "rm           delete the configuration of a node"
   echo "version      print the application version"
   echo
 }
@@ -194,7 +195,7 @@ case "${1:-help}" in
       stop "$i"
     done
     ;;
-  unsafe-reset)
+  reset)
     load_config
     if [ $# -eq 1 ]; then
       NODES_TO_STOP="$ALL_NODES"
@@ -205,7 +206,23 @@ case "${1:-help}" in
     for i in $NODES_TO_STOP
     do
       warn_unknown_node "$i" || continue
-      unsafe_reset "$i"
+      reset "$i"
+    done
+    ;;
+  rm)
+    load_config
+    shift
+    if [ "$#" -eq 0 ]; then
+      exit_with_error "no node was given"
+    fi
+    while [ "$#" -gt 0 ];
+    do
+      if is_running "$1"; then
+        stop "$1"
+        sleep 1
+      fi
+      safer_rm "$1"
+      shift
     done
     ;;
   version)

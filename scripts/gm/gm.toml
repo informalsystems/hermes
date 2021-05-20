@@ -14,6 +14,9 @@ ports_start_at=27000
 # The default folder where all node folders will be created.
 home_dir="$HOME/.gm"
 
+# (Optional) The wallet address will be created from this 24-word seed phrase instead of a random address.
+wallet_mnemonic=""
+
 # Automatically update the `persistent_peers` and `unconditional_peer_ids` sections of the node configuration.
 auto_maintain_config=true
 
