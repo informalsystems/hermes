@@ -249,8 +249,7 @@ def ping_pong(c: Config,
               port_id: PortId = PortId('transfer')):
 
     pkt_send_a = packet_send(c, side_a, side_b, port_id,
-                             a_chan, amount=9999, height_offset=1000,
-                             key='user2')
+                             a_chan, amount=9999, height_offset=1000)
 
     split()
 
@@ -272,8 +271,7 @@ def ping_pong(c: Config,
     split()
 
     pkt_send_b = packet_send(c, side_b, side_a, port_id,
-                             b_chan, amount=9999, height_offset=1000,
-                             key='user2')
+                             b_chan, amount=9999, height_offset=1000)
 
     split()
 
@@ -298,8 +296,7 @@ def timeout(c: Config,
             port_id: PortId = PortId('transfer')):
 
     pkt_send_a = packet_send(c, side_a, side_b, port_id,
-                             a_chan, amount=9999, height_offset=1,
-                             key='user2')
+                             a_chan, amount=9999, height_offset=1)
 
     split()
 
@@ -312,8 +309,7 @@ def timeout(c: Config,
     split()
 
     pkt_send_b = packet_send(c, side_b, side_a, port_id,
-                             b_chan, amount=9999, height_offset=1,
-                             key='user2')
+                             b_chan, amount=9999, height_offset=1)
 
     split()
 

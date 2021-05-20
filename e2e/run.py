@@ -26,13 +26,11 @@ def loop(c: Config):
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 2
     packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
-                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=2,
-                       key='user2')
+                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=2)
 
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 2
     packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
-                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=2,
-                       key='user2')
+                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=2)
     sleep(5.0)
 
     # hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
@@ -47,13 +45,11 @@ def loop(c: Config):
 
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 3
     packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
-                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=3,
-                       key='user2')
+                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=3)
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
     packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
-                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=4,
-                       key='user2')
+                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=4)
 
     sleep(10.0)
 
@@ -94,13 +90,11 @@ def loop(c: Config):
 
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 3
     packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
-                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=3,
-                       key='user2')
+                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=3)
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
     packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
-                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=4,
-                       key='user2')
+                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=4)
 
     sleep(10.0)
 
@@ -108,25 +102,29 @@ def loop(c: Config):
     unreceived = packet.query_unreceived_packets(
         c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packets mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
 
     # hermes query packet unreceived-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived acks mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
 
     # hermes query packet unreceived-packets ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packets mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
 
     # hermes query packet unreceived-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived acks mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
 
     # 6. All good, stop the relayer
     proc.kill()
