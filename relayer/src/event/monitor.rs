@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{cmp::Ordering, sync::Arc};
 
 use crossbeam_channel as channel;
 use futures::{
@@ -351,11 +351,28 @@ fn stream_batches(
 
     // Convert each group to a batch
     grouped.map(move |events| {
-        let (height, _) = events.first().expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+        let height = events
+            .first()
+            .map(|(h, _)| h)
+            .copied()
+            .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+
+        let mut events = events.into_iter().map(|(_, e)| e).collect();
+        sort_events(&mut events);
+
         EventBatch {
-            height: *height,
+            height,
+            events,
             chain_id: chain_id.clone(),
-            events: events.into_iter().map(|e| e.1).collect(),
         }
+    })
+}
+
+/// Sort the given events by putting the NewBlock event first,
+/// and leaving the other events as is.
+fn sort_events(events: &mut Vec<IbcEvent>) {
+    events.sort_by(|a, b| match (a, b) {
+        (IbcEvent::NewBlock(_), _) => Ordering::Less,
+        _ => Ordering::Equal,
     })
 }
