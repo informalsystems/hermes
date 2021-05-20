@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-> Nothing yet,
+### FEATURES
+
+- [release]
+  - Official hermes image on Docker Hub.
 
 ## v0.3.1
 *May 14h, 2021*
