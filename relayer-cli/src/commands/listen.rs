@@ -106,12 +106,22 @@ pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> Result<(), BoxEr
     while let Ok(event_batch) = rx.recv() {
         match event_batch {
             Ok(batch) => {
-                println!("- Event batch at height {}", batch.height);
-                for event in batch.events {
-                    if event_match(&event, filters) {
-                        println!("+ {:#?}", event);
-                    }
+                let matching_events = batch
+                    .events
+                    .into_iter()
+                    .filter(|e| event_match(&e, filters))
+                    .collect_vec();
+
+                if matching_events.is_empty() {
+                    continue;
                 }
+
+                println!("- Event batch at height {}", batch.height);
+
+                for event in matching_events {
+                    println!("+ {:#?}", event);
+                }
+
                 println!();
             }
             Err(e) => println!("- Error: {}", e),
