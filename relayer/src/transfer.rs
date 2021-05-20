@@ -26,8 +26,8 @@ pub enum PacketError {
     )]
     SubmitError(ChainId, Error),
 
-    #[error("Timestamp overflow when modifying with duration")]
-    TimestampOverflowError,
+    #[error("timestamp overflow")]
+    TimestampOverflow,
 }
 
 #[derive(Clone, Debug)]
@@ -63,7 +63,7 @@ pub fn build_and_send_transfer_messages(
         Timestamp::none()
     } else {
         (Timestamp::now() + opts.timeout_seconds)
-            .map_err(|_| PacketError::TimestampOverflowError)?
+            .map_err(|_| PacketError::TimestampOverflow)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
