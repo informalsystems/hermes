@@ -150,8 +150,8 @@ impl Object {
 
     /// Build the client object associated with the given channel event attributes.
     pub fn for_chan_open_events(
-        e: &Attributes,     // The attributes of the emitted event
-        chain: &dyn ChainHandle,   // The chain which emitted the event
+        e: &Attributes,          // The attributes of the emitted event
+        chain: &dyn ChainHandle, // The chain which emitted the event
     ) -> Result<Self, BoxError> {
         let channel_id = e
             .channel_id()
@@ -170,7 +170,7 @@ impl Object {
 
         Ok(Client {
             dst_client_id: client.client_id.clone(),
-            dst_chain_id: chain.id(),   // The object's destination is the chain hosting the client
+            dst_chain_id: chain.id(), // The object's destination is the chain hosting the client
             src_chain_id: client.client_state.chain_id(),
         }
         .into())

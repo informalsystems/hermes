@@ -230,7 +230,7 @@ impl Supervisor {
         });
 
         self.workers
-            .get_or_spawn(client_object,counterparty_chain.clone(), chain.clone());
+            .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
 
         // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
         //  https://github.com/informalsystems/ibc-rs/issues/901
