@@ -1,3 +1,7 @@
+#![allow(clippy::borrowed_box)]
+
+use std::time::Duration;
+
 use prost_types::Any;
 use serde::Serialize;
 use thiserror::Error;

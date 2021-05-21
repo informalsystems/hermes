@@ -1,7 +1,9 @@
+#![allow(clippy::borrowed_box)]
+
 use std::collections::HashMap;
 use std::fmt;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use prost_types::Any;
 use thiserror::Error;
@@ -190,8 +192,6 @@ impl fmt::Display for OperationalData {
 }
 
 pub struct RelayPath {
-    src_chain: Box<dyn ChainHandle>,
-    dst_chain: Box<dyn ChainHandle>,
     channel: Channel,
     clear_packets: bool,
 
@@ -205,18 +205,12 @@ pub struct RelayPath {
 }
 
 impl RelayPath {
-    pub fn new(
-        src_chain: Box<dyn ChainHandle>,
-        dst_chain: Box<dyn ChainHandle>,
-        channel: Channel,
-    ) -> Self {
+    pub fn new(channel: Channel) -> Self {
         Self {
-            src_chain,
-            dst_chain,
             channel,
             clear_packets: true,
-            src_operational_data: Default::default(),
-            dst_operational_data: Default::default(),
+            src_operational_data: vec![],
+            dst_operational_data: vec![],
         }
     }
 
@@ -1473,63 +1467,10 @@ pub struct Link {
 
 impl Link {
     pub fn new(channel: Channel) -> Self {
-        let a_chain = channel.src_chain();
-        let b_chain = channel.dst_chain();
         let flipped = channel.flipped();
-
         Self {
-            a_to_b: RelayPath::new(a_chain.clone(), b_chain.clone(), channel),
-            b_to_a: RelayPath::new(b_chain, a_chain, flipped),
-        }
-    }
-
-    pub fn relay(&mut self) -> Result<(), LinkError> {
-        info!(
-            "relaying packets on path {} <-> {} with delay of {:?}",
-            self.a_to_b.src_chain().id(),
-            self.a_to_b.dst_chain().id(),
-            self.a_to_b.channel.connection_delay
-        );
-
-        let events_a = self.a_to_b.src_chain().subscribe()?;
-        let events_b = self.b_to_a.src_chain().subscribe()?;
-
-        loop {
-            if self.is_closed()? {
-                warn!("channel is closed, exiting");
-                return Ok(());
-            }
-
-            // Input new events to the relay path, and schedule any batch associated with them
-            if let Ok(batch) = events_a.try_recv() {
-                let batch = batch.unwrap_or_clone();
-                match batch {
-                    Ok(batch) => self.a_to_b.update_schedule(batch)?,
-                    Err(e) => {
-                        dbg!(e);
-                    }
-                }
-            }
-
-            // Refresh the scheduled batches and execute any outstanding ones.
-            self.a_to_b.refresh_schedule()?;
-            self.a_to_b.execute_schedule()?;
-
-            if let Ok(batch) = events_b.try_recv() {
-                let batch = batch.unwrap_or_clone();
-                match batch {
-                    Ok(batch) => self.b_to_a.update_schedule(batch)?,
-                    Err(e) => {
-                        dbg!(e);
-                    }
-                }
-            }
-
-            self.b_to_a.refresh_schedule()?;
-            self.b_to_a.execute_schedule()?;
-
-            // TODO - select over the two subscriptions
-            thread::sleep(Duration::from_millis(100))
+            a_to_b: RelayPath::new(channel),
+            b_to_a: RelayPath::new(flipped),
         }
     }
 
