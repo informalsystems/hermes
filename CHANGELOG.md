@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Promote `start-multi` command to `start` ([#911])
+
+[#911]: https://github.com/informalsystems/ibc-rs/issues/911
+
 ## v0.3.2
 *May 21st, 2021*
 
