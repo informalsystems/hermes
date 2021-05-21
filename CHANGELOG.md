@@ -12,6 +12,7 @@
 
 - [release]
   - Released the official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub ([#894])
+  - Automatically deploy Docker Hub image during release ([#967])
 
 ### IMPROVEMENTS
 
@@ -21,7 +22,7 @@
 ### BUG FIXES
 
 - [ibc-relayer-cli]
-  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel. ([#960])
+  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel ([#960])
 
 ### BREAKING CHANGES
 
@@ -31,6 +32,7 @@
 [#957]: https://github.com/informalsystems/ibc-rs/issues/957
 [#960]: https://github.com/informalsystems/ibc-rs/issues/960
 [#963]: https://github.com/informalsystems/ibc-rs/issues/963
+[#967]: https://github.com/informalsystems/ibc-rs/issues/967
 
 ## v0.3.1
 *May 14h, 2021*
