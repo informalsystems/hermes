@@ -96,7 +96,12 @@ the `gm.toml` file for node configuration. By default, newly created node config
 * `home_dir`
   * In the global section this defines the default folder where all node folders will be created.
   * In the per-node configuration this is the folder for the node configuration.
-* `wallet_mnemonic` - define a 24-word seed phrase to use for wallet address(es) instead of creating random wallets.
+* `wallet_mnemonic`
+  * Optional variable.
+  * define a 24-word seed phrase to use for wallet address(es) instead of creating random wallets.
+* `wallet_hdpath`
+  * Optional variable.
+  * Change the HD derivation path for the wallet address.
 * `auto_maintain_config` - automatically update the `persistent_peers` and `unconditional_peer_ids` sections of the node
   configuration.
 * `add_to_hermes` - this node should be part of the hermes config.

@@ -17,6 +17,9 @@ home_dir="$HOME/.gm"
 # (Optional) The wallet address will be created from this 24-word seed phrase instead of a random address.
 wallet_mnemonic=""
 
+# (Optional) The HD derivation path for the wallet (default is "m/44'/118'/0'/0/0" for ATOM.)
+wallet_hdpath=""
+
 # Automatically update the `persistent_peers` and `unconditional_peer_ids` sections of the node configuration.
 auto_maintain_config=true
 
