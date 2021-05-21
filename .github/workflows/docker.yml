@@ -29,5 +29,5 @@ jobs:
           context: ./ci/
           file: hermes.Dockerfile
           push: true
-          build-args: CHECKOUT=$RELEASE_VERSION
-          tags: informaldev/hermes:$RELEASE_VERSION
+          build-args: TAG=${{env.RELEASE_VERSION}}
+          tags: informaldev/hermes:${{env.RELEASE_VERSION}}
