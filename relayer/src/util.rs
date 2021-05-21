@@ -7,3 +7,4 @@ pub use recv_multiple::{recv_multiple, try_recv_multiple};
 pub mod iter;
 pub mod retry;
 pub mod sled;
+pub mod stream;
