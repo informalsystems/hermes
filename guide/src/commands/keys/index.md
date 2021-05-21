@@ -175,22 +175,22 @@ If the command is successful a message similar to the one below will be displaye
 
 ```json
 {
-  "result": [
-    {
-      "account": "cosmos1attn9fxrcvjz483w3tu4cfz77ldmlyujly3q3k",
-      "address": [ 234, 215, 50, 164, 195, 195, 36, 42, 158, 46, 138, 249, 92, 36, 94, 247, 219, 191, 147, 146 ],
-      "coin_type": 118,
-      "private_key": "xprvA2msC8jZg8B9honNBeKpRDWqQnZ2c2PftVuUyyWK8bzAs7SjUSAfPZqzZW5gWFbBckN9NKN8TkQMGs3XKZ6UsvbJ13npwtagMtpjxTzZPrQ",
-      "public_key": "xpub6FmDbeGTWVjSvHrqHfrpnMTZxpPX1V7XFiq5nMuvgwX9jumt1yUuwNAUQo8Nn36unbFShg6iSjkfMBgeY49wik7rF91N2SHvarpX62ByWMf"
-    },
-    {
+  "result": {
+    "testkey": {
       "account": "cosmos1dw88vdekeeuta5u50p6n5lt5v5c6y2we0pu8nz",
       "address": [ 107, 142, 118, 55, 54, 206, 120, 190, 211, 148, 120, 117, 58, 125, 116, 101, 49, 162, 41, 217 ],
       "coin_type": 118,
-      "private_key": "xprvA3cm9yM8zddRC4fENdRt2n8s1K7KTpzqCKue3WybXvDBPxx5JoPw8Rm3wRUGBwr4e11VWhfP6PyeE3pCwutzXXwaD4rX2dwznBWyPYqyRPb",
+      "private_key": "(snip)",
       "public_key": "xpub6Gc7ZUt2q1BiQYjhUextPv5bZLwosHigZYqEquPD6FkAGmHDrLiBgE5Xnh8XGZp79rAXtZn1Dt3DNQHxxgCgVQqfRMfVsRiXn6mwULBnYq7"
+    },
+    "user2": {
+      "account": "cosmos1attn9fxrcvjz483w3tu4cfz77ldmlyujly3q3k",
+      "address": [ 234, 215, 50, 164, 195, 195, 36, 42, 158, 46, 138, 249, 92, 36, 94, 247, 219, 191, 147, 146 ],
+      "coin_type": 118,
+      "private_key": "(snip)",
+      "public_key": "xpub6FmDbeGTWVjSvHrqHfrpnMTZxpPX1V7XFiq5nMuvgwX9jumt1yUuwNAUQo8Nn36unbFShg6iSjkfMBgeY49wik7rF91N2SHvarpX62ByWMf"
     }
-  ],
+  },
   "status": "success"
 }
 ```
