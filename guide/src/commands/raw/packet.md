@@ -24,11 +24,12 @@ POSITIONAL ARGUMENTS:
     amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
 
 FLAGS:
-    -o, --timeout-height-offset TIMEOUT-HEIGHT-OFFSET
-    -t, --timeout-seconds TIMEOUT-SECONDS
-    -r, --receiver RECEIVER   receiving account address on the destination chain
-    -d, --denom DENOM         denomination of the coins to send (default: samoleans)
-    -n, --number-msgs NUMBER-MSGS
+    -o, --timeout-height-offset TIMEOUT-HEIGHT-OFFSET  timeout in number of blocks since current
+    -t, --timeout-seconds TIMEOUT-SECONDS              timeout in seconds since current
+    -r, --receiver RECEIVER                            receiving account address on the destination chain
+    -d, --denom DENOM                                  denomination of the coins to send (default: samoleans)
+    -n, --number-msgs NUMBER-MSGS                      number of messages to send
+    -k, --key KEY                                      use the given signing key (default: `key_name` config)
 ```
 
 __Example__

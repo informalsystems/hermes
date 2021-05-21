@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use abscissa_core::{Command, Options, Runnable};
 use anomaly::BoxError;
 
@@ -39,7 +41,7 @@ impl Runnable for KeysListCmd {
 
         match list_keys(opts.chain_config) {
             Ok(keys) if json() => {
-                let keys = keys.into_iter().map(|(_, k)| k).collect::<Vec<_>>();
+                let keys = keys.into_iter().collect::<HashMap<_, _>>();
                 Output::success(keys).exit()
             }
             Ok(keys) => {

@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## v0.3.2
+*May 21st, 2021*
+
+This is minor release which brings substantial performance improvements
+to the relayer (relaying 1000 packets now takes 2-5min instead of 1h+),
+better UX for the `ft-transfer` command, and automatic deployment of
+Docker images to Docker Hub.
 
 ### FEATURES
 
@@ -19,13 +25,13 @@
   - Add support for multiple keys to the keyring ([#963])
 
 - [release]
-  - Released the official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub ([#894])
+  - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
   - Automatically deploy Docker Hub image during release ([#967])
 
 ### IMPROVEMENTS
 
 - [ibc-relayer]
-  - Bulk events from all transactions included in a block ([#957])
+  - Batch together all events from all transactions included in a block ([#957])
 
 ### BUG FIXES
 
@@ -41,6 +47,8 @@
 [#960]: https://github.com/informalsystems/ibc-rs/issues/960
 [#963]: https://github.com/informalsystems/ibc-rs/issues/963
 [#967]: https://github.com/informalsystems/ibc-rs/issues/967
+
+[hermes-docker]: https://hub.docker.com/r/informalsystems/hermes
 
 ## v0.3.1
 *May 14h, 2021*
