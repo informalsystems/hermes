@@ -411,18 +411,14 @@ impl Connection {
     }
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
-        let client =
-            ForeignClient::restore(self.src_client_id(), self.src_chain(), self.dst_chain());
-
+        let client = self.restore_src_client();
         client.build_update_client(height).map_err(|e| {
             ConnectionError::ClientOperation(self.src_client_id().clone(), self.src_chain().id(), e)
         })
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
-        let client =
-            ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
-
+        let client = self.restore_dst_client();
         client.build_update_client(height).map_err(|e| {
             ConnectionError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)
         })
@@ -799,6 +795,22 @@ impl Connection {
             }
             _ => panic!("internal error"),
         }
+    }
+
+    fn restore_src_client(&self) -> ForeignClient {
+        ForeignClient::restore(
+            self.src_client_id().clone(),
+            self.src_chain().clone(),
+            self.dst_chain().clone(),
+        )
+    }
+
+    fn restore_dst_client(&self) -> ForeignClient {
+        ForeignClient::restore(
+            self.dst_client_id().clone(),
+            self.dst_chain().clone(),
+            self.src_chain().clone(),
+        )
     }
 }
 

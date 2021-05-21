@@ -26,9 +26,10 @@ use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
 
 use crate::chain::handle::ChainHandle;
-use crate::relay::MAX_ITER;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
+
+const MAX_RETRIES: usize = 5;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -117,14 +118,14 @@ impl ForeignClient {
     }
 
     pub fn restore(
-        client_id: &ClientId,
+        id: ClientId,
         dst_chain: Box<dyn ChainHandle>,
         src_chain: Box<dyn ChainHandle>,
     ) -> ForeignClient {
         ForeignClient {
-            id: client_id.clone(),
-            dst_chain: dst_chain.clone(),
-            src_chain: src_chain.clone(),
+            id,
+            dst_chain,
+            src_chain,
         }
     }
 
@@ -151,7 +152,7 @@ impl ForeignClient {
                 } else {
                     // TODO: Any additional checks?
                     Ok(ForeignClient::restore(
-                        client_id,
+                        client_id.clone(),
                         host_chain.clone(),
                         expected_target_chain,
                     ))
@@ -948,10 +949,10 @@ mod test {
         let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let a_client =
-            ForeignClient::restore(&Default::default(), a_chain.clone(), b_chain.clone());
+            ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
         let b_client =
-            ForeignClient::restore(&Default::default(), b_chain.clone(), a_chain.clone());
+            ForeignClient::restore(ClientId::default(), b_chain.clone(), a_chain.clone());
 
         // Create the client on chain a
         let res = a_client.build_create_client_and_send();
@@ -985,10 +986,10 @@ mod test {
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
-        let mut a_client = ForeignClient::restore(&a_client_id, a_chain.clone(), b_chain.clone());
+        let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
-            ForeignClient::restore(&Default::default(), b_chain.clone(), a_chain.clone());
+            ForeignClient::restore(ClientId::default(), b_chain.clone(), a_chain.clone());
 
         // This action should fail because no client exists (yet)
         let res = a_client.build_latest_update_client_and_send();

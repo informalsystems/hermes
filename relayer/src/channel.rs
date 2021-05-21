@@ -137,12 +137,12 @@ impl Channel {
         Ok(channel)
     }
 
-    pub fn src_chain(&self) -> Box<dyn ChainHandle> {
-        self.a_side.chain.clone()
+    pub fn src_chain(&self) -> &Box<dyn ChainHandle> {
+        &self.a_side.chain
     }
 
-    pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
-        self.b_side.chain.clone()
+    pub fn dst_chain(&self) -> &Box<dyn ChainHandle> {
+        &self.b_side.chain
     }
 
     pub fn src_client_id(&self) -> &ClientId {
@@ -191,8 +191,8 @@ impl Channel {
     fn handshake(&mut self) -> Result<(), ChannelError> {
         let done = '🥳';
 
-        let a_chain = self.src_chain();
-        let b_chain = self.dst_chain();
+        let a_chain = self.src_chain().clone();
+        let b_chain = self.dst_chain().clone();
 
         // Try chanOpenInit on a_chain
         let mut counter = 0;
@@ -298,13 +298,16 @@ impl Channel {
 
         Err(ChannelError::Failed(format!(
             "Failed to finish channel handshake in {} iterations for {:?}",
-            MAX_ITER, self
+            MAX_RETRIES, self
         )))
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ChannelError> {
-        let client =
-            ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
+        let client = ForeignClient::restore(
+            self.dst_client_id().clone(),
+            self.dst_chain().clone(),
+            self.src_chain().clone(),
+        );
 
         client.build_update_client(height).map_err(|e| {
             ChannelError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)
