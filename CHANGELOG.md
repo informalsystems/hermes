@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### FEATURES
+
+- [ibc-relayer]
+  - Add support for event based channel relaying ([#822])
+
+
+[#822]: https://github.com/informalsystems/ibc-rs/issues/822
+
 ## v0.3.2
 *May 21st, 2021*
 
