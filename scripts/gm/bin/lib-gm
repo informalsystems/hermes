@@ -429,7 +429,7 @@ create() {
         fi
         sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
       fi
-      "$GAIAD_BINARY" add-genesis-account "wallet" "10000000stake,10000localcoin" --keyring-backend test --home "${HOME_DIR}"
+      "$GAIAD_BINARY" add-genesis-account "wallet" "10000000stake,100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
       # Workaround for https://github.com/cosmos/cosmos-sdk/issues/9372 : remove supply from genesis
       sconfig "${HOME_DIR}/config/genesis.json" -t stringSlice app_state.bank.supply=remove_supply 1> /dev/null
       OS="$(uname -s)"
