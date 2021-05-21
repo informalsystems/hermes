@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 set -eu
-if [ -n "${DEBUG:-}" ]; then
+if [ "${DEBUG:-}" == "2" ]; then
   set -x
 fi
 
@@ -396,12 +396,13 @@ create() {
   HOME_DIR="$(get_home_dir "$i")"
   HOME_ROOT="${HOME_DIR%%${i}}"
   if a_in_b "$i" "$VALIDATORS"; then
-    EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$i" --keyring-backend test --node-dir-prefix "${i}v" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
+    NODE_DIR_PREFIX="$(echo "${i}v" | tr -d '-')"
+    EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$i" --keyring-backend test --node-dir-prefix "$NODE_DIR_PREFIX" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
     if [ "$EXEC_RESULT" != "Successfully initialized 1 node directories" ]; then
       warn "could not create config for ${i}: \"$EXEC_RESULT\", skipping..."
       return 1
     else
-      mv "${HOME_ROOT}/${i}v0" "${HOME_DIR}"
+      mv "${HOME_ROOT}/${NODE_DIR_PREFIX}0" "${HOME_DIR}"
       mv "${HOME_ROOT}/gentxs" "${HOME_DIR}"
       WALLET_MNEMONIC="$(get_wallet_mnemonic "$i")"
       WALLET_HDPATH="$(get_wallet_hdpath "$i")"
@@ -423,12 +424,13 @@ create() {
     fi
   else
     NETWORK="$(get_network "$i")"
-    EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$NETWORK" --keyring-backend test --node-dir-prefix "${i}n" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
+    NODE_DIR_PREFIX="$(echo "${i}n" | tr -d '-')"
+    EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$NETWORK" --keyring-backend test --node-dir-prefix "$NODE_DIR_PREFIX" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
     if [ "$EXEC_RESULT" != "Successfully initialized 1 node directories" ]; then
       warn "could not create config for ${i}: \"$EXEC_RESULT\", skipping..."
       return 1
     fi
-    mv "${HOME_ROOT}/${i}n0" "${HOME_DIR}"
+    mv "${HOME_ROOT}/${NODE_DIR_PREFIX}0" "${HOME_DIR}"
     rm -rf "${HOME_ROOT}/gentxs"
   fi
   configure "$i"
@@ -461,6 +463,10 @@ configure() {
   if ! a_in_b "$i" "$VALIDATORS"; then
     NETWORK="$(get_network "$1")"
     NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
+    if [ ! -f "$NETWORK_HOME_DIR/config/genesis.json" ]; then
+      warn "${NETWORK} does not have a genesis.json. Start ${NETWORK} first."
+      return 1
+    fi
     cp "$NETWORK_HOME_DIR/config/genesis.json" "$HOME_DIR/config/genesis.json"
     NETWORK_NODE="$(get_node_id "$NETWORK")@localhost:$(get_p2p_port "$NETWORK")"
     sconfig "$HOME_DIR/config/config.toml" "p2p.persistent_peers=$NETWORK_NODE" 1> /dev/null
@@ -637,15 +643,12 @@ list_keys() {
         echo "$line"
       fi
     elif [ "$MNEMONIC" != "$line" ]; then
-      if a_in_b "${KEY_NAME%%v0}" "$VALIDATORS"; then
+      if a_in_b "${KEY_NAME%%v0}" "$VALIDATORS" || a_in_b "${KEY_NAME%%v0}" "$(echo "$VALIDATORS" | tr -d '-')"; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
-      elif a_in_b "${KEY_NAME%%n0}" "$FULL_NODES"; then
+      elif a_in_b "${KEY_NAME%%n0}" "$FULL_NODES" || a_in_b "${KEY_NAME%%n0}" "$(echo "$FULL_NODES" | tr -d '-')"; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
       elif [ -f "${HOME_DIR}/${KEY_NAME}_seed.json" ]; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/${KEY_NAME}_seed.json" mnemonic)\""
-      # Compatibility with the full-mesh tool
-      elif a_in_b "${KEY_NAME%%c0}" "$VALIDATORS" && [ -f "${HOME_DIR}/client_wallet_seed.json" ]; then
-        echo "mnemonic: \"$(stoml "${HOME_DIR}/client_wallet_seed.json" mnemonic)\""
       else
         echo "mnemonic: \"\""
       fi

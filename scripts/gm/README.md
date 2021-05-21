@@ -25,7 +25,7 @@ configuration updates.
 * Bourne shell (`sh`)
 * [`sconfig`](https://github.com/freshautomations/sconfig/releases) and
   [`stoml`](https://github.com/freshautomations/stoml/releases) installed in your PATH (put them in `/usr/local/bin`)
-* `sed` (trying to remove this dependency in the future)
+* `sed`, `tr` (trying to remove these in the future)
 * For shell-completion Bourne Again Shell (`bash`) for the local user (`zsh` shell-completion is coming)
 
 ## How to run
