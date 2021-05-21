@@ -26,10 +26,8 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events as ClientEvents;
-use ibc::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
-use ibc::ics04_channel::channel::{
-    ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest, State as ChannelState,
-};
+use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -747,14 +745,7 @@ impl Chain for CosmosSdkChain {
         let connection_end = ConnectionEnd::decode_vec(&res.value)
             .map_err(|e| Kind::Query(format!("connection '{}'", connection_id)).context(e))?;
 
-        match connection_end.state() {
-            ConnectionState::Uninitialized => {
-                Err(Kind::Query(format!("connection '{}'", connection_id))
-                    .context("connection does not exist")
-                    .into())
-            }
-            _ => Ok(connection_end),
-        }
+        Ok(connection_end)
     }
 
     fn query_connection_channels(
@@ -833,15 +824,7 @@ impl Chain for CosmosSdkChain {
             Kind::Query(format!("port '{}' & channel '{}'", port_id, channel_id)).context(e)
         })?;
 
-        match channel_end.state() {
-            ChannelState::Uninitialized => Err(Kind::Query(format!(
-                "port '{}' & channel '{}'",
-                port_id, channel_id
-            ))
-            .context("channel does not exist")
-            .into()),
-            _ => Ok(channel_end),
-        }
+        Ok(channel_end)
     }
 
     /// Queries the packet commitment hashes associated with a channel.

@@ -11,6 +11,7 @@ use ibc_relayer::chain::{Chain, CosmosSdkChain};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
+use ibc::ics03_connection::connection::State;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -48,7 +49,17 @@ impl Runnable for QueryConnectionEndCmd {
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
         let res = chain.query_connection(&self.connection_id, height);
         match res {
-            Ok(ce) => Output::success(ce).exit(),
+            Ok(connection_end) => {
+                if connection_end.state_matches(&State::Uninitialized) {
+                    Output::error(format!(
+                        "connection '{}' does not exist",
+                        self.connection_id
+                    ))
+                    .exit()
+                } else {
+                    Output::success(connection_end).exit()
+                }
+            }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
