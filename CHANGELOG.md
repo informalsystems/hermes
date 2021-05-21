@@ -6,6 +6,8 @@
 
 - [ibc-relayer-cli]
   - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel. ([#960])
+- [documentation]
+  - e2e documentation was updated to build hermes in a docker container ([#965])
 
 ### FEATURES
 
@@ -15,6 +17,7 @@
 
 [#960]: https://github.com/informalsystems/ibc-rs/issues/960
 [#894]: https://github.com/informalsystems/ibc-rs/pull/894
+[#965]: https://github.com/informalsystems/ibc-rs/issues/965
 
 ## v0.3.1
 *May 14h, 2021*

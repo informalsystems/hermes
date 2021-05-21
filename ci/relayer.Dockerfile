@@ -1,6 +1,14 @@
 #####################################################
-####                 Relayer image               ####
+####         Relayer image for e2e testing       ####
 #####################################################
+FROM rust:buster AS build-env
+
+ARG CHECKOUT=master
+WORKDIR /root
+
+RUN git clone https://github.com/informalsystems/ibc-rs
+RUN cd ibc-rs && git checkout $CHECKOUT && cargo build --release
+
 FROM rust:slim
 LABEL maintainer="hello@informal.systems"
 
@@ -10,7 +18,9 @@ ARG RELEASE
 RUN apt-get update -y && apt-get install python3 -y
 
 # Copy relayer executable
-COPY ./hermes /usr/bin/hermes
+COPY --chown=0:0 --from=build-env /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
+COPY --chown=0:0 --from=build-env /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+COPY --chown=0:0 --from=build-env /root/ibc-rs/target/release/hermes /usr/bin/hermes
 
 # Relayer folder
 WORKDIR /relayer

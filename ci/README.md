@@ -24,10 +24,11 @@ __Note__: This assumes you are running this the first time, if not, please ensur
 
 3. Build the relayer container image (this might take a few minutes since it will do a fresh compile and build of all modules)
 
-    `docker-compose -f ci/docker-compose.yml build relayer`
+    `docker-compose -f ci/docker-compose.yml build --build-arg CHECKOUT=master relayer`
 
+Note: you can change the CHECKOUT build argument to build from alternative branches or tags.
 
-4. Run all the containers (two containers, one for each chain and one for the relayer)
+4. Run all the containers (three containers, one for each chain and one for the relayer)
 
    `docker-compose -f ci/docker-compose.yml up -d ibc-0 ibc-1 relayer`
 
@@ -142,6 +143,7 @@ Jan 21 18:46:58.299  INFO relayer::event::monitor: running listener chain.id=ibc
 Jan 21 18:46:58.324  INFO relayer::event::monitor: running listener chain.id=ibc-1
 {"status":"success","result":[{"CreateClient":{"client_id":"07-tendermint-0","client_type":"Tendermint","consensus_height":{"revision_height":740,"revision_number":0},"height":"1"}}]}
 ```
+Note: hermes 0.3.0 introduced a lot of additional log entries that you will also see.
 
 ### [Cleaning up](#cleaning-up)
 
@@ -158,7 +160,7 @@ Stopping ibc-1   ... done
 Removing relayer ... done
 Removing ibc-0   ... done
 Removing ibc-1   ... done
-Removing network ibc-rs_relaynet
+Removing network ci_relaynet
 ```
 
 ### [Upgrading the gaia chains release and generating new container images](#upgrading-chains)
