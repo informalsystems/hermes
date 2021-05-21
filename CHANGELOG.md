@@ -2,11 +2,6 @@
 
 ## Unreleased
 
-### BUG FIXES
-
-- [ibc-relayer-cli]
-  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel. ([#960])
-
 ### FEATURES
 
 - [ibc-relayer-cli]
@@ -16,10 +11,24 @@
   - Add support for multiple keys to the keyring ([#963])
 
 - [release]
-  - Official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub ([#894])
+  - Released the official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub ([#894])
 
+### IMPROVEMENTS
+
+- [ibc-relayer]
+  - Bulk events from all transactions included in a block ([#957])
+
+### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel. ([#960])
+
+### BREAKING CHANGES
+
+> Nothing
 
 [#894]: https://github.com/informalsystems/ibc-rs/pull/894
+[#957]: https://github.com/informalsystems/ibc-rs/issues/957
 [#960]: https://github.com/informalsystems/ibc-rs/issues/960
 [#963]: https://github.com/informalsystems/ibc-rs/issues/963
 
@@ -50,6 +59,8 @@ as well as support Protobuf-encoded keys.
   - Process raw `delay_period` field as nanoseconds instead of seconds. ([#927])
 
 ### BREAKING CHANGES
+
+> Nothing
 
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
