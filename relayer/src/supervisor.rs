@@ -275,7 +275,7 @@ impl Supervisor {
 
         // At least one chain runtime should be alive and kicking, otherwise bail.
         if self.registry.size() == 0 {
-            return Err(format!("supervisor was not able to connect to any chain").into());
+            return Err("supervisor was not able to connect to any chain".into());
         }
 
         self.spawn_workers();
