@@ -44,12 +44,9 @@ impl ChannelWorker {
             if let Ok(cmd) = self.cmd_rx.try_recv() {
                 let result = match cmd {
                     WorkerCmd::IbcEvents { batch } => {
-                        // only take the last event in the queue
-                        let mut last_event = None;
-                        for event in batch.events {
-                            // TODO - verify the events are in increased state order
-                            last_event = Some(event);
-                        }
+                        // there can be up to two event for this channel, e.g. init and try.
+                        // process the last event, the one with highest "rank".
+                        let last_event = batch.events.last();
                         debug!("channel worker start processing {:#?}", last_event);
                         match last_event {
                             Some(event) => {

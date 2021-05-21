@@ -265,18 +265,28 @@ impl RelayPath {
     }
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        assert!(self.src_channel_id().is_some());
+        let src_channel_id = self.src_channel_id().ok_or_else(|| {
+            LinkError::Failed(format!(
+                "channel_id on source chain '{}' is 'None'",
+                self.src_chain.id()
+            ))
+        })?;
         Ok(self
             .src_chain()
-            .query_channel(self.src_port_id(), self.src_channel_id().unwrap(), height)
+            .query_channel(self.src_port_id(), src_channel_id, height)
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        assert!(self.dst_channel_id().is_some());
+        let dst_channel_id = self.src_channel_id().ok_or_else(|| {
+            LinkError::Failed(format!(
+                "channel_id on destination chain '{}' is 'None'",
+                self.dst_chain.id()
+            ))
+        })?;
         Ok(self
             .dst_chain()
-            .query_channel(self.dst_port_id(), self.dst_channel_id().unwrap(), height)
+            .query_channel(self.dst_port_id(), dst_channel_id, height)
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
     }
 

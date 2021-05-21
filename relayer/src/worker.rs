@@ -13,17 +13,17 @@ pub use handle::WorkerHandle;
 mod cmd;
 pub use cmd::WorkerCmd;
 
-mod client;
-pub use client::ClientWorker;
-
 mod map;
 pub use map::WorkerMap;
 
-mod uni_chan_path;
-pub use uni_chan_path::UniChanPathWorker;
+mod client;
+pub use client::ClientWorker;
 
 mod channel;
 pub use channel::ChannelWorker;
+
+mod uni_chan_path;
+pub use uni_chan_path::UniChanPathWorker;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WorkerMsg {
@@ -33,8 +33,8 @@ pub enum WorkerMsg {
 /// A worker processes batches of events associated with a given [`Object`].
 pub enum Worker {
     Client(ClientWorker),
-    UniChanPath(UniChanPathWorker),
     Channel(ChannelWorker),
+    UniChanPath(UniChanPathWorker),
 }
 
 impl fmt::Display for Worker {
@@ -62,10 +62,10 @@ impl Worker {
 
         let worker = match object {
             Object::Client(client) => Self::Client(ClientWorker::new(client, chains, cmd_rx)),
+            Object::Channel(channel) => Self::Channel(ChannelWorker::new(channel, chains, cmd_rx)),
             Object::UnidirectionalChannelPath(path) => {
                 Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx))
             }
-            Object::Channel(channel) => Self::Channel(ChannelWorker::new(channel, chains, cmd_rx)),
         };
 
         let thread_handle = std::thread::spawn(move || worker.run(msg_tx));

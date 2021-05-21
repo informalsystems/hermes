@@ -100,25 +100,29 @@ def passive_packets(
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packet mismatch")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
 
     # hermes query packet unreceived-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packet mismatch")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
 
     # hermes query packet unreceived-packets ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc0 , port=port_id, channel=ibc0_channel_id)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packet mismatch")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
 
     # hermes query packet unreceived-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc0 , port=port_id, channel=ibc0_channel_id)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packet mismatch")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
 
     # 6. All good, stop the relayer
     proc.kill()

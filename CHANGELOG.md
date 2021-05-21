@@ -7,11 +7,40 @@
 - [ibc-relayer]
   - Add support for event based channel relaying ([#822])
 
-- [relayer]
-  - Official hermes image on Docker Hub ([#894])
-
 [#822]: https://github.com/informalsystems/ibc-rs/issues/822
+
+
+## Unreleased
+
+- [ibc-relayer-cli]
+  - Add a `--key` option to the tx raw ft-transfer command to override the account used for sending messages ([#963])
+
+- [ibc-relayer]
+  - Add support for multiple keys to the keyring ([#963])
+
+- [release]
+  - Released the official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub ([#894])
+  - Automatically deploy Docker Hub image during release ([#967])
+
+### IMPROVEMENTS
+
+- [ibc-relayer]
+  - Bulk events from all transactions included in a block ([#957])
+
+### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel ([#960])
+
+### BREAKING CHANGES
+
+> Nothing
+
 [#894]: https://github.com/informalsystems/ibc-rs/pull/894
+[#957]: https://github.com/informalsystems/ibc-rs/issues/957
+[#960]: https://github.com/informalsystems/ibc-rs/issues/960
+[#963]: https://github.com/informalsystems/ibc-rs/issues/963
+[#967]: https://github.com/informalsystems/ibc-rs/issues/967
 
 ## v0.3.1
 *May 14h, 2021*
@@ -40,6 +69,8 @@ as well as support Protobuf-encoded keys.
   - Process raw `delay_period` field as nanoseconds instead of seconds. ([#927])
 
 ### BREAKING CHANGES
+
+> Nothing
 
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875

@@ -462,7 +462,6 @@ impl Channel {
     }
 
     pub fn handshake_step(&mut self, state: State) -> Result<Vec<IbcEvent>, ChannelError> {
-        // TODO - add tiebreaker when states are equal, r.g. relay only if src_chain.id < dst_chain.id
         match (state, self.counterparty_state()?) {
             (State::Init, State::Uninitialized) => Ok(vec![self.build_chan_open_try_and_send()?]),
             (State::Init, State::Init) => Ok(vec![self.build_chan_open_try_and_send()?]),
@@ -642,8 +641,6 @@ impl Channel {
             )
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
-        // TODO - remove this as now the query ^ retuns error or..
-        // consider reverting the change and keep Uninit for non existing channels
         // Check if a connection is expected to exist on destination chain
         // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
         if dst_channel.state_matches(&State::Uninitialized) {
