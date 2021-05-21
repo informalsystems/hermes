@@ -102,25 +102,29 @@ def loop(c: Config):
     unreceived = packet.query_unreceived_packets(
         c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packets mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
 
     # hermes query packet unreceived-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived acks mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
 
     # hermes query packet unreceived-packets ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packets mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
 
     # hermes query packet unreceived-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived acks mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
 
     # 6. All good, stop the relayer
     proc.kill()

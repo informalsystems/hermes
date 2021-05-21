@@ -4,8 +4,14 @@
 
 ### FEATURES
 
+- [ibc-relayer-cli]
+  - Add a `--key` option to the tx raw ft-transfer command to override the account used for sending messages ([#963])
+
+- [ibc-relayer]
+  - Add support for multiple keys to the keyring ([#963])
+
 - [release]
-  - Released official Hermes image on Docker Hub ([#894])
+  - Released the official [Hermes image](https://hub.docker.com/r/informalsystems/hermes) on Docker Hub ([#894])
   - Automatically deploy Docker Hub image during release ([#967])
 
 ### IMPROVEMENTS
@@ -25,6 +31,7 @@
 [#894]: https://github.com/informalsystems/ibc-rs/pull/894
 [#957]: https://github.com/informalsystems/ibc-rs/issues/957
 [#960]: https://github.com/informalsystems/ibc-rs/issues/960
+[#963]: https://github.com/informalsystems/ibc-rs/issues/963
 [#967]: https://github.com/informalsystems/ibc-rs/issues/967
 
 ## v0.3.1
