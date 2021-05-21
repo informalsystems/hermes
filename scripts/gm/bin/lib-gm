@@ -57,6 +57,9 @@ enforce_requirements() {
   if [ -z "$(which sed)" ]; then
     exit_with_error "missing sed, please install it (this requirement will be removed in the future)"
   fi
+  if [ -z "$(which tr)" ]; then
+    exit_with_error "missing tr, please install it (this requirement will be removed in the future)"
+  fi
 }
 
 debug() {
@@ -156,6 +159,7 @@ is_configuration_valid() {
   return 0
 }
 
+# Function to work around https://github.com/spf13/viper/issues/1131
 load_all_sections() {
   grep '^ *\[.\+\] *$' "$CONFIG_FILE" | sed 's/^ *\[\([^]]*\)\] *$/\1/'
 }
@@ -422,6 +426,15 @@ create() {
         sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
       fi
       "$GAIAD_BINARY" add-genesis-account "wallet" "10000000stake,10000localcoin" --keyring-backend test --home "${HOME_DIR}"
+      # Workaround for https://github.com/cosmos/cosmos-sdk/issues/9372 : remove supply from genesis
+      sconfig "${HOME_DIR}/config/genesis.json" -t stringSlice app_state.bank.supply=remove_supply 1> /dev/null
+      OS="$(uname -s)"
+      if [ "$OS" = "Darwin" ]; then
+        sed -i '' 's/\"remove_supply\"//' "$HOME_DIR/config/genesis.json"
+      else
+        sed -i'' 's/\"remove_supply\"//' "$HOME_DIR/config/genesis.json"
+      fi
+      # End of workaround
     fi
   else
     NETWORK="$(get_network "$i")"
