@@ -252,12 +252,22 @@ impl RelayPath {
         &self.channel.dst_port_id()
     }
 
-    pub fn src_channel_id(&self) -> Option<&ChannelId> {
-        self.channel.src_channel_id()
+    pub fn src_channel_id(&self) -> Result<&ChannelId, LinkError> {
+        self.channel.src_channel_id().ok_or_else(|| {
+            LinkError::Failed(format!(
+                "channel_id on source chain '{}' is 'None'",
+                self.src_chain.id()
+            ))
+        })
     }
 
-    pub fn dst_channel_id(&self) -> Option<&ChannelId> {
-        self.channel.dst_channel_id()
+    pub fn dst_channel_id(&self) -> Result<&ChannelId, LinkError> {
+        self.channel.dst_channel_id().ok_or_else(|| {
+            LinkError::Failed(format!(
+                "channel_id on destination chain '{}' is 'None'",
+                self.dst_chain.id()
+            ))
+        })
     }
 
     pub fn channel(&self) -> &Channel {
@@ -265,28 +275,16 @@ impl RelayPath {
     }
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        let src_channel_id = self.src_channel_id().ok_or_else(|| {
-            LinkError::Failed(format!(
-                "channel_id on source chain '{}' is 'None'",
-                self.src_chain.id()
-            ))
-        })?;
         Ok(self
             .src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, height)
+            .query_channel(self.src_port_id(), self.src_channel_id()?, height)
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        let dst_channel_id = self.src_channel_id().ok_or_else(|| {
-            LinkError::Failed(format!(
-                "channel_id on destination chain '{}' is 'None'",
-                self.dst_chain.id()
-            ))
-        })?;
         Ok(self
             .dst_chain()
-            .query_channel(self.dst_port_id(), dst_channel_id, height)
+            .query_channel(self.dst_port_id(), self.dst_channel_id()?, height)
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
     }
 
@@ -341,8 +339,7 @@ impl RelayPath {
     }
 
     fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
-        assert!(self.src_channel_id().is_some());
-        let src_channel_id = self.src_channel_id().unwrap();
+        let src_channel_id = self.src_channel_id()?;
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
@@ -364,32 +361,37 @@ impl RelayPath {
     fn filter_events(&self, events: &[IbcEvent]) -> Vec<IbcEvent> {
         let mut result = vec![];
 
+        let src_channel_id = if let Ok(some_id) = self.src_channel_id() {
+            some_id
+        } else {
+            return vec![];
+        };
+
         for event in events.iter() {
             match event {
                 IbcEvent::SendPacket(send_packet_ev) => {
-                    if self.src_channel_id() == Some(&send_packet_ev.packet.source_channel)
-                        && self.src_port_id() == &send_packet_ev.packet.source_port
+                    if src_channel_id == send_packet_ev.src_channel_id()
+                        && self.src_port_id() == send_packet_ev.src_port_id()
                     {
                         result.push(event.clone());
                     }
                 }
                 IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                    if self.channel.src_channel_id()
-                        == Some(&write_ack_ev.packet.destination_channel)
-                        && self.channel.src_port_id() == &write_ack_ev.packet.destination_port
+                    if src_channel_id == write_ack_ev.dst_channel_id()
+                        && self.src_port_id() == write_ack_ev.dst_port_id()
                     {
                         result.push(event.clone());
                     }
                 }
                 IbcEvent::CloseInitChannel(chan_close_ev) => {
-                    if self.channel.src_channel_id() == Some(chan_close_ev.channel_id())
-                        && self.channel.src_port_id() == chan_close_ev.port_id()
+                    if src_channel_id == chan_close_ev.channel_id()
+                        && self.src_port_id() == chan_close_ev.port_id()
                     {
                         result.push(event.clone());
                     }
                 }
                 IbcEvent::TimeoutPacket(timeout_ev) => {
-                    if self.channel.src_channel_id() == Some(timeout_ev.src_channel_id())
+                    if src_channel_id == timeout_ev.src_channel_id()
                         && self.channel.src_port_id() == timeout_ev.src_port_id()
                     {
                         result.push(event.clone());
@@ -844,8 +846,7 @@ impl RelayPath {
     ) -> Result<(Vec<IbcEvent>, Height), LinkError> {
         let mut events_result = vec![];
 
-        assert!(self.src_channel_id().is_some());
-        let src_channel_id = self.src_channel_id().unwrap();
+        let src_channel_id = self.src_channel_id()?;
 
         // Query packet commitments on source chain that have not been acknowledged
         let pc_request = QueryPacketCommitmentsRequest {
@@ -869,13 +870,10 @@ impl RelayPath {
             commit_sequences
         );
 
-        assert!(self.src_channel_id().is_some());
-        let dst_channel_id = self.dst_channel_id().unwrap();
-
         // Get the packets that have not been received on destination chain
         let request = QueryUnreceivedPacketsRequest {
             port_id: self.dst_port_id().to_string(),
-            channel_id: dst_channel_id.to_string(),
+            channel_id: self.dst_channel_id()?.to_string(),
             packet_commitment_sequences: commit_sequences,
         };
 
@@ -898,15 +896,12 @@ impl RelayPath {
             return Ok((events_result, query_height));
         }
 
-        assert!(self.src_channel_id().is_some());
-        assert!(self.dst_channel_id().is_some());
-
         let query = QueryTxRequest::Packet(QueryPacketEventDataRequest {
             event_id: IbcEventType::SendPacket,
             source_port_id: self.src_port_id().clone(),
-            source_channel_id: self.src_channel_id().unwrap().clone(),
+            source_channel_id: src_channel_id.clone(),
             destination_port_id: self.dst_port_id().clone(),
-            destination_channel_id: self.dst_channel_id().unwrap().clone(),
+            destination_channel_id: self.dst_channel_id()?.clone(),
             sequences,
             height: query_height,
         });
@@ -932,10 +927,8 @@ impl RelayPath {
     ) -> Result<(Vec<IbcEvent>, Height), LinkError> {
         let mut events_result = vec![];
 
-        assert!(self.src_channel_id().is_some());
-        let src_channel_id = self.src_channel_id().unwrap();
-        assert!(self.dst_channel_id().is_some());
-        let dst_channel_id = self.dst_channel_id().unwrap();
+        let src_channel_id = self.src_channel_id()?;
+        let dst_channel_id = self.dst_channel_id()?;
 
         // Get the sequences of packets that have been acknowledged on source
         let pc_request = QueryPacketAcknowledgementsRequest {
@@ -1090,15 +1083,12 @@ impl RelayPath {
         &self,
         event: &WriteAcknowledgement,
     ) -> Result<Option<Any>, LinkError> {
-        assert!(self.src_channel_id().is_some());
-        let dst_channel_id = self.dst_channel_id().unwrap();
-
         let packet = event.packet.clone();
         let acked =
             self.dst_chain()
                 .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
                     port_id: self.dst_port_id().to_string(),
-                    channel_id: dst_channel_id.to_string(),
+                    channel_id: self.dst_channel_id()?.to_string(),
                     packet_ack_sequences: vec![packet.sequence.into()],
                 })?;
         if acked.is_empty() {
@@ -1138,8 +1128,7 @@ impl RelayPath {
         packet: &Packet,
         height: Height,
     ) -> Result<Option<Any>, LinkError> {
-        assert!(self.src_channel_id().is_some());
-        let dst_channel_id = self.dst_channel_id().unwrap();
+        let dst_channel_id = self.dst_channel_id()?;
 
         let (packet_type, next_sequence_received) = if self.ordered_channel() {
             let next_seq = self
@@ -1555,8 +1544,7 @@ impl Link {
     }
 
     pub fn is_closed(&self) -> Result<bool, LinkError> {
-        assert!(self.a_to_b.src_channel_id().is_some());
-        let a_channel_id = self.a_to_b.src_channel_id().unwrap();
+        let a_channel_id = self.a_to_b.src_channel_id()?;
 
         let a_channel = self
             .a_to_b
@@ -1571,11 +1559,7 @@ impl Link {
                 ))
             })?;
 
-        if self.a_to_b.dst_channel_id().is_none() {
-            return Ok(a_channel.state_matches(&ChannelState::Closed));
-        }
-
-        let b_channel_id = self.a_to_b.dst_channel_id().unwrap();
+        let b_channel_id = self.a_to_b.dst_channel_id()?;
 
         let b_channel = self
             .a_to_b

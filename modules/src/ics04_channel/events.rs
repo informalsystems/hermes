@@ -545,6 +545,18 @@ impl SendPacket {
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
     }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
+    }
 }
 
 impl TryFrom<RawObject> for SendPacket {
@@ -582,6 +594,18 @@ impl ReceivePacket {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -622,6 +646,18 @@ impl WriteAcknowledgement {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -666,6 +702,12 @@ impl AcknowledgePacket {
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
     }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
@@ -700,13 +742,19 @@ impl TimeoutPacket {
         self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height
+        self.height = height;
     }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
     pub fn src_channel_id(&self) -> &ChannelId {
         &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -744,6 +792,18 @@ impl TimeoutOnClosePacket {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 

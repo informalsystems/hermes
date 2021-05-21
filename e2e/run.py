@@ -181,7 +181,7 @@ def passive_channel(c: Config,
 
     # 2. start relaying, wait for channel handshake to finish
     proc = relayer.start(c)
-    sleep(10.0)
+    sleep(15.0)
 
     strategy = toml.load(c.config_file)['global']['strategy']
 
