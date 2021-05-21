@@ -396,6 +396,7 @@ create() {
   HOME_DIR="$(get_home_dir "$i")"
   HOME_ROOT="${HOME_DIR%%${i}}"
   if a_in_b "$i" "$VALIDATORS"; then
+    # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
     NODE_DIR_PREFIX="$(echo "${i}v" | tr -d '-')"
     EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$i" --keyring-backend test --node-dir-prefix "$NODE_DIR_PREFIX" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
     if [ "$EXEC_RESULT" != "Successfully initialized 1 node directories" ]; then
@@ -424,6 +425,7 @@ create() {
     fi
   else
     NETWORK="$(get_network "$i")"
+    # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
     NODE_DIR_PREFIX="$(echo "${i}n" | tr -d '-')"
     EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$NETWORK" --keyring-backend test --node-dir-prefix "$NODE_DIR_PREFIX" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
     if [ "$EXEC_RESULT" != "Successfully initialized 1 node directories" ]; then
@@ -643,8 +645,10 @@ list_keys() {
         echo "$line"
       fi
     elif [ "$MNEMONIC" != "$line" ]; then
+      # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
       if a_in_b "${KEY_NAME%%v0}" "$VALIDATORS" || a_in_b "${KEY_NAME%%v0}" "$(echo "$VALIDATORS" | tr -d '-')"; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
+      # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
       elif a_in_b "${KEY_NAME%%n0}" "$FULL_NODES" || a_in_b "${KEY_NAME%%n0}" "$(echo "$FULL_NODES" | tr -d '-')"; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
       elif [ -f "${HOME_DIR}/${KEY_NAME}_seed.json" ]; then
