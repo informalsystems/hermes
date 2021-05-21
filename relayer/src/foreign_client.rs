@@ -565,7 +565,7 @@ impl ForeignClient {
         };
 
         let mut events = vec![];
-        for i in 0..MAX_ITER {
+        for i in 0..MAX_RETRIES {
             thread::sleep(Duration::from_millis(100));
             let result = self
                 .dst_chain
@@ -584,7 +584,7 @@ impl ForeignClient {
                         self,
                         e,
                         i + 1,
-                        MAX_ITER
+                        MAX_RETRIES
                     );
                     continue;
                 }

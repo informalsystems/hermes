@@ -19,8 +19,8 @@ use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
-use crate::relay::MAX_ITER;
-use std::time::Duration;
+
+const MAX_RETRIES: usize = 5;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
@@ -197,7 +197,7 @@ impl Channel {
         // Try chanOpenInit on a_chain
         let mut counter = 0;
         let mut init_success = false;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
             match self.flipped().build_chan_open_init_and_send() {
                 Err(e) => {
@@ -217,14 +217,14 @@ impl Channel {
         if !init_success {
             return Err(ChannelError::Failed(format!(
                 "Failed to finish channel open init in {} iterations for {:?}",
-                MAX_ITER, self
+                MAX_RETRIES, self
             )));
         };
 
         // Try chanOpenTry on b_chain
         counter = 0;
         let mut try_success = false;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
             match self.build_chan_open_try_and_send() {
                 Err(e) => {
@@ -243,12 +243,12 @@ impl Channel {
         if !try_success {
             return Err(ChannelError::Failed(format!(
                 "Failed to finish channel open try in {} iterations for {:?}",
-                MAX_ITER, self
+                MAX_RETRIES, self
             )));
         };
 
         counter = 0;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
 
             // Continue loop if query error

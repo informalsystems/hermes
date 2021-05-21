@@ -22,10 +22,11 @@ use ibc::Height as ICSHeight;
 use crate::chain::handle::ChainHandle;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
-use crate::relay::MAX_ITER;
 
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
+
+const MAX_RETRIES: usize = 5;
 
 #[derive(Debug, Error)]
 pub enum ConnectionError {
@@ -252,7 +253,7 @@ impl Connection {
 
         // Try connOpenInit on a_chain
         let mut counter = 0;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
             match self.flipped().build_conn_init_and_send() {
                 Err(e) => {
@@ -269,7 +270,7 @@ impl Connection {
 
         // Try connOpenTry on b_chain
         counter = 0;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
             match self.build_conn_try_and_send() {
                 Err(e) => {
@@ -285,7 +286,7 @@ impl Connection {
         }
 
         counter = 0;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
 
             // Continue loop if query error
@@ -342,7 +343,7 @@ impl Connection {
 
         Err(ConnectionError::Failed(format!(
             "Failed to finish connection handshake in {:?} iterations",
-            MAX_ITER
+            MAX_RETRIES
         )))
     }
 
