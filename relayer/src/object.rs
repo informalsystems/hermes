@@ -18,12 +18,14 @@ use crate::chain::{
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Client {
     /// Destination chain identifier.
+    /// This is the chain hosting the client.
     pub dst_chain_id: ChainId,
 
-    /// Source channel identifier.
+    /// Client identifier (allocated on the destination chain `dst_chain_id`).
     pub dst_client_id: ClientId,
 
     /// Source chain identifier.
+    /// This is the chain whose headers the client worker is verifying.
     pub src_chain_id: ChainId,
 }
 
