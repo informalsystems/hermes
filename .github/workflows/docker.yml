@@ -3,10 +3,9 @@
 name: Docker Hub Release
 
 on:
-#  push:
+  push:
 #    tags:
 #      - v[0-9]+.*
-  pull_request:
     branches: [ greg/docker-release-ci ]
 
 jobs:
