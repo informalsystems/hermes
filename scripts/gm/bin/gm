@@ -49,7 +49,7 @@ hermes_usage() {
   echo "SUBCOMMANDS  DESCRIPTION"
   echo
   echo "help         print this help and exit"
-  echo "config       print the hermes config.toml"
+  echo "config       update hermes config.toml with the current gm network details"
   echo "keys         add keys to $HOME/.hermes"
   echo "cc           print a list of hermes commands to create IBC connections"
   echo
