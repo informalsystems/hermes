@@ -284,7 +284,7 @@ impl Supervisor {
         let remote_state =
             channel_state_on_destination(channel.clone(), connection, counterparty_chain.as_ref())?;
 
-        error!("LOCAL STATE {} REMOTE STATE {}", local_state, remote_state); // TODO remove
+        debug!("local state is: {}, remote state is: {}", local_state, remote_state);
         if local_state.is_open() && remote_state.is_open() {
             // create the client object and spawn worker
             let client_object = Object::Client(Client {
@@ -293,7 +293,7 @@ impl Supervisor {
                 src_chain_id: client.client_state.chain_id(),
             });
             self.workers
-                .get_or_spawn(client_object, chain.clone(), counterparty_chain.clone());
+                .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
 
             // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
             //  https://github.com/informalsystems/ibc-rs/issues/901

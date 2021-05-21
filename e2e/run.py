@@ -169,36 +169,6 @@ def raw(c: Config, ibc0: ChainId, ibc1: ChainId, port_id: PortId) -> Tuple[ Clie
 
     return ibc0_client_id, ibc0_conn_id, ibc0_chan_id, ibc1_client_id, ibc1_conn_id, ibc1_chan_id
 
-def passive_channel(c: Config,
-    ibc1: ChainId, ibc0: ChainId,
-    ibc1_conn_id: ConnectionId, port_id: PortId):
-
-
-    # 1. create a channel in Init state
-    ibc1_chan_id = channel.chan_open_init(c, dst=ibc1, src=ibc0, dst_conn=ibc1_conn_id)
-
-    sleep(2.0)
-
-    # 2. start relaying, wait for channel handshake to finish
-    proc = relayer.start(c)
-    sleep(15.0)
-
-    strategy = toml.load(c.config_file)['global']['strategy']
-
-    # 3. verify channel state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
-    ibc1_chan_end = channel.query_channel_end(c, ibc1, port_id, ibc1_chan_id)
-    ibc0_chan_id = ibc1_chan_end.remote.channel_id
-    ibc0_chan_end = channel.query_channel_end(c, ibc0, port_id, ibc0_chan_id)
-
-    if strategy == 'all':
-        assert (ibc0_chan_end.state == 'Open'), (ibc0_chan_end, "state is not Open")
-        assert (ibc1_chan_end.state == 'Open'), (ibc1_chan_end, "state is not Open")
-    elif strategy == 'packets':
-        assert (ibc1_chan_end.state == 'Init'), (ibc1_chan_end, "state is not Init")
-
-    # 4. All good, stop the relayer
-    proc.kill()
-
 def main():
     parser = argparse.ArgumentParser(
         description='Test all relayer commands, end-to-end')
@@ -248,9 +218,14 @@ def main():
     passive_packets(config, ibc0, ibc1, port_id, ibc0_chan_id, ibc1_chan_id)
     sleep(2.0)
 
-    passive_channel(config, ibc1, ibc0, ibc1_conn_id, port_id)
+    channel.passive_channel_start_then_init(config, ibc1, ibc0, ibc1_conn_id, port_id)
     sleep(2.0)
 
+    channel.passive_channel_init_then_start(config, ibc1, ibc0, ibc1_conn_id, port_id)
+    sleep(2.0)
+
+    channel.passive_channel_try_then_start(config, ibc1, ibc0, ibc1_conn_id, ibc0_conn_id, port_id)
+    sleep(2.0)
 
 if __name__ == "__main__":
     main()

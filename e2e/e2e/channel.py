@@ -1,8 +1,10 @@
 from typing import Optional, Tuple
+import toml
 
 from .cmd import *
 from .common import *
 
+import e2e.relayer as relayer
 
 @dataclass
 class TxChanOpenInitRes:
@@ -476,3 +478,94 @@ def query_channel_end(c: Config, chain_id: ChainId, port: PortId, chan_id: Chann
     l.debug(f'Status of channel end {chan_id}: {res}')
 
     return res
+
+
+# =============================================================================
+# Passive CHANNEL relayer tests
+# =============================================================================
+
+def verify_state(c: Config,
+    ibc1: ChainId, ibc0: ChainId,
+    ibc1_chan_id: ChannelId, port_id: PortId):
+
+    strategy = toml.load(c.config_file)['global']['strategy']
+    # verify channel state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
+
+    if strategy == 'all':
+        for i in range(20):
+            sleep(2.0)
+            ibc1_chan_end = query_channel_end(c, ibc1, port_id, ibc1_chan_id)
+            ibc0_chan_id = ibc1_chan_end.remote.channel_id
+            ibc0_chan_end = query_channel_end(c, ibc0, port_id, ibc0_chan_id)
+            if ibc0_chan_end.state == 'Open' and ibc1_chan_end.state == 'Open':
+                break
+        else:
+            assert (ibc0_chan_end.state == 'Open'), (ibc0_chan_end, "state is not Open")
+            assert (ibc1_chan_end.state == 'Open'), (ibc1_chan_end, "state is not Open")
+
+    elif strategy == 'packets':
+        sleep(8.0)
+        ibc1_chan_end = query_channel_end(c, ibc1, port_id, ibc1_chan_id)
+        assert (ibc1_chan_end.state == 'Init'), (ibc1_chan_end, "state is not Init")
+
+
+def passive_channel_start_then_init(c: Config,
+    ibc1: ChainId, ibc0: ChainId,
+    ibc1_conn_id: ConnectionId, port_id: PortId):
+
+    # 1. start hermes
+    proc = relayer.start(c)
+    sleep(2.0)
+
+    # 2. create a channel in Init state and wait for hermes to finish handshake
+    ibc1_chan_id = chan_open_init(c, dst=ibc1, src=ibc0, dst_conn=ibc1_conn_id)
+    sleep(10.0)
+
+    # 3. verify channel state on both chains
+    verify_state(c, ibc1, ibc0, ibc1_chan_id, port_id)
+
+    # 4. All good, stop the relayer
+    proc.kill()
+
+
+def passive_channel_init_then_start(c: Config,
+    ibc1: ChainId, ibc0: ChainId,
+    ibc1_conn_id: ConnectionId, port_id: PortId):
+
+    # 1. create a channel in Init state
+    ibc1_chan_id = chan_open_init(c, dst=ibc1, src=ibc0, dst_conn=ibc1_conn_id)
+    sleep(2.0)
+
+    # 2. start relaying, wait for channel handshake to finish
+    proc = relayer.start(c)
+    sleep(10.0)
+
+    # 3. verify channel state on both chains
+    verify_state(c, ibc1, ibc0, ibc1_chan_id, port_id)
+
+    # 4. All good, stop the relayer
+    proc.kill()
+
+
+def passive_channel_try_then_start(c: Config,
+    ibc1: ChainId,
+    ibc0: ChainId,
+    ibc1_conn_id: ConnectionId,
+    ibc0_conn_id: ConnectionId,
+    port_id: PortId):
+
+    # 1. create a channel in Try state
+    ibc1_chan_id = chan_open_init(c, dst=ibc1, src=ibc0, dst_conn=ibc1_conn_id)
+    sleep(2.0)
+    ibc0_chan_id = chan_open_try(c, dst=ibc0, src=ibc1, dst_conn=ibc0_conn_id, src_port=port_id, dst_port=port_id, src_chan=ibc1_chan_id)
+    sleep(2.0)
+
+    # 2. start relaying, wait for channel handshake to finish
+    proc = relayer.start(c)
+    sleep(10.0)
+
+    # 3. verify channel state on both chains
+    verify_state(c, ibc1, ibc0, ibc1_chan_id, port_id)
+
+    # 4. All good, stop the relayer
+    proc.kill()
