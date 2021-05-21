@@ -20,14 +20,6 @@ Docker images to Docker Hub.
 
 ### FEATURES
 
-- [ibc-relayer]
-  - Add support for event based channel relaying ([#822])
-
-[#822]: https://github.com/informalsystems/ibc-rs/issues/822
-
-
-## Unreleased
-
 - [ibc-relayer-cli]
   - Add a `--key` option to the tx raw ft-transfer command to override the account used for sending messages ([#963])
 

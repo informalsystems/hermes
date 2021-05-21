@@ -47,7 +47,7 @@ impl ChannelWorker {
                         // there can be up to two event for this channel, e.g. init and try.
                         // process the last event, the one with highest "rank".
                         let last_event = batch.events.last();
-                        debug!("channel worker start processing {:#?}", last_event);
+                        debug!("channel worker starts processing {:#?}", last_event);
                         match last_event {
                             Some(event) => {
                                 handshake_channel = RelayChannel::restore_from_event(
@@ -70,7 +70,7 @@ impl ChannelWorker {
                             continue;
                         }
                         debug!(
-                            "channel worker is processing block event at {:#?}",
+                            "channel worker starts processing block event at {:#?}",
                             current_height
                         );
 
@@ -90,10 +90,7 @@ impl ChannelWorker {
                 };
 
                 if let Err(retries) = result {
-                    warn!(
-                        "Channel worker failed to process event batch after {} retries",
-                        retries
-                    );
+                    warn!("Channel worker failed after {} retries", retries);
 
                     // Resume handshake on next iteration.
                     resume_handshake = true;

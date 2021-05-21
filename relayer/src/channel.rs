@@ -37,6 +37,9 @@ pub enum ChannelError {
     #[error("failed due to missing local channel id")]
     MissingLocalChannelId,
 
+    #[error("failed due to missing counterparty channel id")]
+    MissingCounterpartyChannelId,
+
     #[error("failed due to missing counterparty connection")]
     MissingCounterpartyConnection,
 
@@ -200,6 +203,8 @@ impl Channel {
         })
     }
 
+    /// Recreates a 'Channel' object from the worker's object built from chain state scanning.
+    /// The channel must exist on chain and its connection must be initialized on both chains.
     pub fn restore_from_state(
         chain: Box<dyn ChainHandle>,
         counterparty_chain: Box<dyn ChainHandle>,
@@ -214,6 +219,17 @@ impl Channel {
         })?;
 
         let a_connection = chain.query_connection(&a_connection_id, Height::zero())?;
+        let b_connection_id = a_connection
+            .counterparty()
+            .connection_id()
+            .cloned()
+            .ok_or_else(|| {
+                WorkerChannelError::ChannelConnectionUninitialized(
+                    channel.src_channel_id.clone(),
+                    chain.id(),
+                    a_connection.counterparty(),
+                )
+            })?;
 
         let mut handshake_channel = Channel {
             ordering: *a_channel.ordering(),
@@ -227,7 +243,7 @@ impl Channel {
             b_side: ChannelSide::new(
                 counterparty_chain.clone(),
                 a_connection.counterparty().client_id().clone(),
-                a_connection.counterparty().connection_id().unwrap().clone(),
+                b_connection_id.clone(),
                 a_channel.remote.port_id.clone(),
                 a_channel.remote.channel_id.clone(),
             ),
@@ -236,20 +252,17 @@ impl Channel {
         };
 
         if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
-            if let Some(b_connection_id) = a_connection.counterparty().connection_id() {
-                let req = QueryConnectionChannelsRequest {
-                    connection: b_connection_id.to_string(),
-                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
-                };
+            let req = QueryConnectionChannelsRequest {
+                connection: b_connection_id.to_string(),
+                pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            };
 
-                let channels: Vec<IdentifiedChannelEnd> =
-                    counterparty_chain.query_connection_channels(req)?;
+            let channels: Vec<IdentifiedChannelEnd> =
+                counterparty_chain.query_connection_channels(req)?;
 
-                for chan in channels.iter() {
-                    if chan.channel_end.remote.channel_id.is_some()
-                        && chan.channel_end.remote.channel_id.clone().unwrap()
-                            == channel.src_channel_id.clone()
-                    {
+            for chan in channels.iter() {
+                if let Some(remote_channel_id) = chan.channel_end.remote.channel_id() {
+                    if remote_channel_id == &channel.src_channel_id {
                         handshake_channel.b_side.channel_id = Some(chan.channel_id.clone());
                         break;
                     }
@@ -435,6 +448,7 @@ impl Channel {
     }
 
     pub fn counterparty_state(&self) -> Result<State, ChannelError> {
+        // Source channel ID must be specified
         let channel_id = self
             .src_channel_id()
             .ok_or(ChannelError::MissingLocalChannelId)?;
@@ -606,10 +620,16 @@ impl Channel {
     /// Retrieves the channel from destination and compares against the expected channel
     /// built from the message type (`msg_type`) and options (`opts`).
     /// If the expected and the destination channels are compatible, it returns the expected channel
+    /// Source and destination channel IDs must be specified.
     fn validated_expected_channel(
         &self,
         msg_type: ChannelMsgType,
     ) -> Result<ChannelEnd, ChannelError> {
+        // Destination channel ID must be specified
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+
         // If there is a channel present on the destination chain, it should look like this:
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
@@ -631,17 +651,12 @@ impl Channel {
         );
 
         // Retrieve existing channel
-        assert!(self.dst_channel_id().is_some());
         let dst_channel = self
             .dst_chain()
-            .query_channel(
-                self.dst_port_id(),
-                self.dst_channel_id().unwrap(),
-                Height::default(),
-            )
+            .query_channel(self.dst_port_id(), dst_channel_id, Height::default())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
-        // Check if a connection is expected to exist on destination chain
+        // Check if a channel is expected to exist on destination chain
         // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
         if dst_channel.state_matches(&State::Uninitialized) {
             return Err(ChannelError::Failed(
@@ -650,7 +665,7 @@ impl Channel {
         }
 
         check_destination_channel_state(
-            self.dst_channel_id().cloned().unwrap(),
+            dst_channel_id.clone(),
             dst_channel,
             dst_expected_channel.clone(),
         )?;
@@ -659,11 +674,15 @@ impl Channel {
     }
 
     pub fn build_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
-        assert!(self.src_channel_id().is_some());
-        let src_channel_id = self.src_channel_id().unwrap();
+        // Source channel ID must be specified
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or(ChannelError::MissingLocalChannelId)?;
+
+        // Channel must exist on source
         let src_channel = self
             .src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::default())
+            .query_channel(self.src_port_id(), &src_channel_id, Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
         if src_channel.counterparty().port_id() != self.dst_port_id() {
@@ -677,9 +696,8 @@ impl Channel {
             )));
         }
 
-        // Retrieve the connection
-        let _dst_connection = self
-            .dst_chain()
+        // Connection must exist on destination
+        self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
@@ -697,7 +715,7 @@ impl Channel {
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
         let counterparty =
-            Counterparty::new(self.src_port_id().clone(), Some(src_channel_id.clone()));
+            Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
         let channel = ChannelEnd::new(
             State::TryOpen,
@@ -765,20 +783,24 @@ impl Channel {
     }
 
     pub fn build_chan_open_ack(&self) -> Result<Vec<Any>, ChannelError> {
-        // Check that the destination chain will accept the message
-        let _dst_expected_channel = self.validated_expected_channel(ChannelMsgType::OpenAck)?;
-        assert!(self.src_channel_id().is_some());
-        let src_channel_id = self.src_channel_id().unwrap();
-        assert!(self.dst_channel_id().is_some());
+        // Source and destination channel IDs must be specified
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or(ChannelError::MissingLocalChannelId)?;
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
 
-        let _src_channel = self
-            .src_chain()
+        // Check that the destination chain will accept the message
+        self.validated_expected_channel(ChannelMsgType::OpenAck)?;
+
+        // Channel must exist on source
+        self.src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
-        // Retrieve the connection
-        let _dst_connection = self
-            .dst_chain()
+        // Connection must exist on destination
+        self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
@@ -812,7 +834,7 @@ impl Channel {
         // Build the domain type message
         let new_msg = MsgChannelOpenAck {
             port_id: self.dst_port_id().clone(),
-            channel_id: self.dst_channel_id().unwrap().clone(),
+            channel_id: dst_channel_id.clone(),
             counterparty_channel_id: src_channel_id.clone(),
             counterparty_version: self.src_version()?,
             proofs,
@@ -852,21 +874,24 @@ impl Channel {
     }
 
     pub fn build_chan_open_confirm(&self) -> Result<Vec<Any>, ChannelError> {
+        // Source and destination channel IDs must be specified
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or(ChannelError::MissingLocalChannelId)?;
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+
         // Check that the destination chain will accept the message
-        let _dst_expected_channel = self.validated_expected_channel(ChannelMsgType::OpenConfirm)?;
+        self.validated_expected_channel(ChannelMsgType::OpenConfirm)?;
 
-        assert!(self.src_channel_id().is_some());
-        let src_channel_id = self.src_channel_id().unwrap();
-        assert!(self.dst_channel_id().is_some());
-
-        let _src_channel = self
-            .src_chain()
+        // Channel must exist on source
+        self.src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
-        // Retrieve the connection
-        let _dst_connection = self
-            .dst_chain()
+        // Connection must exist on destination
+        self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
@@ -895,7 +920,7 @@ impl Channel {
         // Build the domain type message
         let new_msg = MsgChannelOpenConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: self.dst_channel_id().unwrap().clone(),
+            channel_id: dst_channel_id.clone(),
             proofs,
             signer,
         };
@@ -933,11 +958,13 @@ impl Channel {
     }
 
     pub fn build_chan_close_init(&self) -> Result<Vec<Any>, ChannelError> {
-        assert!(self.dst_channel_id().is_some());
-        let dst_channel_id = self.dst_channel_id().unwrap();
+        // Destination channel ID must be specified
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
 
-        let _channel = self
-            .dst_chain()
+        // Channel must exist on destination
+        self.dst_chain()
             .query_channel(self.dst_port_id(), dst_channel_id, Height::default())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
@@ -989,22 +1016,24 @@ impl Channel {
     }
 
     pub fn build_chan_close_confirm(&self) -> Result<Vec<Any>, ChannelError> {
+        // Source and destination channel IDs must be specified
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or(ChannelError::MissingLocalChannelId)?;
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+
         // Check that the destination chain will accept the message
-        let _dst_expected_channel =
-            self.validated_expected_channel(ChannelMsgType::CloseConfirm)?;
+        self.validated_expected_channel(ChannelMsgType::CloseConfirm)?;
 
-        assert!(self.src_channel_id().is_some());
-        let src_channel_id = self.src_channel_id().unwrap();
-        assert!(self.dst_channel_id().is_some());
-
-        let _src_channel = self
-            .src_chain()
+        // Channel must exist on source
+        self.src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
-        // Retrieve the connection
-        let _dst_connection = self
-            .dst_chain()
+        // Connection must exist on destination
+        self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
@@ -1033,7 +1062,7 @@ impl Channel {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: self.dst_channel_id().unwrap().clone(),
+            channel_id: dst_channel_id.clone(),
             proofs,
             signer,
         };
