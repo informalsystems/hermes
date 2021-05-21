@@ -284,7 +284,10 @@ impl Supervisor {
         let remote_state =
             channel_state_on_destination(channel.clone(), connection, counterparty_chain.as_ref())?;
 
-        debug!("local state is: {}, remote state is: {}", local_state, remote_state);
+        debug!(
+            "local state is: {}, remote state is: {}",
+            local_state, remote_state
+        );
         if local_state.is_open() && remote_state.is_open() {
             // create the client object and spawn worker
             let client_object = Object::Client(Client {
