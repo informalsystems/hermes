@@ -147,13 +147,14 @@ This setup allows developers to run a node outside of `gm` just by pointing the 
 Ports are defined by the `ports_start_at` parameter which will be the first port assigned.
 Port assignment is as follows:
 ```
-| name         | port redirection   |
-|==============|====================|
-| RPC (26657)  | ports_start_at + 0 | 
-| App (1317)   | ports_start_at + 1 | 
-| GRPC (9090   | ports_start_at + 2 | 
-| P2P (26656)  | ports_start_at + 3 | 
-| PPROF (6060) | ports_start_at + 4 | 
+| name            | port redirection   |
+|=================|====================|
+| RPC (26657)     | ports_start_at + 0 | 
+| App (1317)      | ports_start_at + 1 | 
+| GRPC (9090      | ports_start_at + 2 | 
+| P2P (26656)     | ports_start_at + 3 | 
+| PPROF (6060)    | ports_start_at + 4 | 
+| GRPC-WEB (9091) | ports_start_at + 5 | 
 ```
 
 Example output of `gm ports` command when `node4.ports_start_at=27050`:
@@ -163,7 +164,10 @@ node4 APP  : http://localhost:27051
 node4 GRPC : http://localhost:27052
 node4 P2P  : http://localhost:27053
 node4 PPROF: http://localhost:27054
+node4 GRPCW: http://localhost:27055
 ```
+
+Note: The GRPC-Web port was recently introduced (after gaiad v4.2.1). It will be ignored in earlier versions.
 
 ## Execution manual
 ### `gm help`

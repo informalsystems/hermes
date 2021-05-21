@@ -314,6 +314,10 @@ get_pprof_port() {
   echo "$(($(get_ports_start_at "$1")+4))"
 }
 
+get_grpcw_port() {
+  echo "$(($(get_ports_start_at "$1")+5))"
+}
+
 get_home_dir() {
   RESULT="$(stoml -q "$CONFIG_FILE" "${1}.home_dir")"
   if [ -z "$RESULT" ]; then
@@ -460,6 +464,7 @@ configure() {
   APP="$(get_app_port "$1")"
   GRPC="$(get_grpc_port "$1")"
   PPROF="$(get_pprof_port "$1")"
+  GRPCW="$(get_grpcw_port "$1")"
   sconfig "$HOME_DIR/config/config.toml" "p2p.laddr=tcp://0.0.0.0:${P2P}" 1> /dev/null
   sconfig "$HOME_DIR/config/config.toml" "rpc.laddr=tcp://0.0.0.0:${RPC}" 1> /dev/null
   sconfig "$HOME_DIR/config/config.toml" "rpc.pprof_laddr=0.0.0.0:${PPROF}" 1> /dev/null
@@ -475,6 +480,7 @@ configure() {
   # End of workaround
   sconfig "$HOME_DIR/config/app.toml" "api.address=tcp://0.0.0.0:${APP}" 1> /dev/null
   sconfig "$HOME_DIR/config/app.toml" "grpc.address=0.0.0.0:${GRPC}" 1> /dev/null
+  sconfig "$HOME_DIR/config/app.toml" "grpc-web.address=0.0.0.0:${GRPCW}" 1> /dev/null
   if ! a_in_b "$i" "$VALIDATORS"; then
     NETWORK="$(get_network "$1")"
     NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
@@ -625,11 +631,13 @@ ports() {
   APP="$(get_app_port "$1")"
   GRPC="$(get_grpc_port "$1")"
   PPROF="$(get_pprof_port "$1")"
+  GRPCW="$(get_grpcw_port "$1")"
   echo "${1} RPC  : http://localhost:${RPC}"
   echo "${1} APP  : http://localhost:${APP}"
   echo "${1} GRPC : http://localhost:${GRPC}"
   echo "${1} P2P  : http://localhost:${P2P}"
   echo "${1} PPROF: http://localhost:${PPROF}"
+  echo "${1} GRPCW: http://localhost:${GRPCW}"
 }
 
 list_keys() {
