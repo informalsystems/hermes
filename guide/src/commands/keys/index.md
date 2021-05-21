@@ -73,12 +73,13 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -f, --file FILE           the path to the key file (conflicts with --mnemonic)
+    -n, --name NAME           name of the key (defaults to the `key_name` defined in the config)
 ```
 
 To add a private key file to a chain:
 
 ```shell
-hermes -c config keys add [CHAIN_ID] -f [PRIVATE_KEY_FILE]
+hermes -c config.toml keys add [CHAIN_ID] -f [PRIVATE_KEY_FILE]
 ```
 
 If the command is successful a message similar to the one below will be displayed:
@@ -86,6 +87,14 @@ If the command is successful a message similar to the one below will be displaye
 ```json
 Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 ```
+
+> **Key name:**
+> By default, the key will be named after the `key_name` property specified in the configuration file.
+> To use a different key name, specify the `--name` option when invoking `keys add`.
+>
+> ```
+> hermes -c config.toml keys add [CHAINID] -f [PRIVATE_KEY_FILE] -n [KEY_NAME]
+> ```
 
 #### Restore a private key to a chain from a mnemonic
 
@@ -100,14 +109,15 @@ POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain
 
 FLAGS:
-    -n, --name NAME           key name
     -m, --mnemonic MNEMONIC   mnemonic to restore the key from
+    -t, --coin-type COIN-TYPE coin type of the key to restore, default: 118 (Atom)
+    -n, --name NAME           name of the key (defaults to the `key_name` defined in the config)
 ```
 
 To restore a key from its mnemonic:
 
 ```shell
-hermes -c config keys restore [CHAIN_ID] -m "[MNEMONIC]"
+hermes -c config.toml keys restore [CHAIN_ID] -m "[MNEMONIC]"
 ```
 
 If the command is successful a message similar to the one below will be displayed:
@@ -115,6 +125,14 @@ If the command is successful a message similar to the one below will be displaye
 ```json
 Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 ```
+
+> **Key name:**
+> By default, the key will be named after the `key_name` property specified in the configuration file.
+> To use a different key name, specify the `--name` option when invoking `keys restore`.
+>
+> ```
+> hermes -c config.toml keys restore [CHAINID] -m "[MNEMONIC]" -n [KEY_NAME]
+> ```
 
 ### List keys
 
@@ -136,11 +154,43 @@ POSITIONAL ARGUMENTS:
 To list the private key file that was added to a chain:
 
 ```shell
-hermes -c config keys list [CHAIN_ID]
+hermes -c config.toml keys list [CHAIN_ID]
+```
+
+If the command is successful a message similar to the one below will be displayed:
+
+```
+Success:
+- user2 (cosmos1attn9fxrcvjz483w3tu4cfz77ldmlyujly3q3k)
+- testkey (cosmos1dw88vdekeeuta5u50p6n5lt5v5c6y2we0pu8nz)
+```
+
+**JSON:**
+
+```shell
+hermes --json -c config.toml keys list [CHAIN_ID] | jq
 ```
 
 If the command is successful a message similar to the one below will be displayed:
 
 ```json
-[CHAIN_ID] -> [KEY_NAME] ([ADDRESS])
+{
+  "result": [
+    {
+      "account": "cosmos1attn9fxrcvjz483w3tu4cfz77ldmlyujly3q3k",
+      "address": [ 234, 215, 50, 164, 195, 195, 36, 42, 158, 46, 138, 249, 92, 36, 94, 247, 219, 191, 147, 146 ],
+      "coin_type": 118,
+      "private_key": "xprvA2msC8jZg8B9honNBeKpRDWqQnZ2c2PftVuUyyWK8bzAs7SjUSAfPZqzZW5gWFbBckN9NKN8TkQMGs3XKZ6UsvbJ13npwtagMtpjxTzZPrQ",
+      "public_key": "xpub6FmDbeGTWVjSvHrqHfrpnMTZxpPX1V7XFiq5nMuvgwX9jumt1yUuwNAUQo8Nn36unbFShg6iSjkfMBgeY49wik7rF91N2SHvarpX62ByWMf"
+    },
+    {
+      "account": "cosmos1dw88vdekeeuta5u50p6n5lt5v5c6y2we0pu8nz",
+      "address": [ 107, 142, 118, 55, 54, 206, 120, 190, 211, 148, 120, 117, 58, 125, 116, 101, 49, 162, 41, 217 ],
+      "coin_type": 118,
+      "private_key": "xprvA3cm9yM8zddRC4fENdRt2n8s1K7KTpzqCKue3WybXvDBPxx5JoPw8Rm3wRUGBwr4e11VWhfP6PyeE3pCwutzXXwaD4rX2dwznBWyPYqyRPb",
+      "public_key": "xpub6Gc7ZUt2q1BiQYjhUextPv5bZLwosHigZYqEquPD6FkAGmHDrLiBgE5Xnh8XGZp79rAXtZn1Dt3DNQHxxgCgVQqfRMfVsRiXn6mwULBnYq7"
+    }
+  ],
+  "status": "success"
+}
 ```
