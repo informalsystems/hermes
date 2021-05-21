@@ -1,4 +1,5 @@
-use bitcoin::hashes::core::time::Duration;
+use std::time::Duration;
+
 use prost_types::Any;
 use thiserror::Error;
 use tracing::error;

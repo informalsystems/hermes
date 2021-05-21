@@ -14,7 +14,7 @@ Hermes can listen to IBC packet events over a specified path and relay receive p
 2. In a separate terminal, use the transfer command to send 2 packets to `ibc-0` chain:
 
     ```shell
-    hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+    hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
     ```
 
    You should see a result similar to the one below:
@@ -45,7 +45,7 @@ Hermes can listen to IBC packet events over a specified path and relay receive p
 3. Use the CLI to send 2 packets to `ibc-1` chain:
 
     ```shell
-    hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 1000 -n 2
+    hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 -o 1000 -n 2
     ```
 
    You should see a result similar to the one below:
@@ -75,13 +75,13 @@ Hermes can listen to IBC packet events over a specified path and relay receive p
    
 4. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packet`s are sent out.
 
-5. Query the unreceived packets on `ibc-0` and `ibc-1` from a different terminal
+5. Query the unreceived packets and acknowledgments on `ibc-0` and `ibc-1` from a different terminal
 
     ```shell
-    hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
-    hermes query packet unreceived-acks    ibc-0 ibc-1 transfer channel-1
-    hermes query packet unreceived-packets ibc-0 ibc-1 transfer channel-1
-    hermes query packet unreceived-acks    ibc-1 ibc-0 transfer channel-0
+    hermes query packet unreceived-packets ibc-0 transfer channel-0
+    hermes query packet unreceived-acks    ibc-1 transfer channel-1
+    hermes query packet unreceived-packets ibc-1 transfer channel-1
+    hermes query packet unreceived-acks    ibc-0 transfer channel-0
     ```
 
     There should be no unreceived packets and acks:

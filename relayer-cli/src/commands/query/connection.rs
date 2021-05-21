@@ -3,7 +3,6 @@ use std::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ConnectionId;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
@@ -47,11 +46,7 @@ impl Runnable for QueryConnectionEndCmd {
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
 
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
-
-        let res: Result<ConnectionEnd, Error> = chain
-            .query_connection(&self.connection_id, height)
-            .map_err(|e| Kind::Query.context(e).into());
-
+        let res = chain.query_connection(&self.connection_id, height);
         match res {
             Ok(ce) => Output::success(ce).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),

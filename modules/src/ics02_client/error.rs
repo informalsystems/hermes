@@ -4,7 +4,7 @@ use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::error::Kind as Ics23Kind;
+use crate::ics23_commitment::error::Error as Ics23Error;
 use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
@@ -34,9 +34,6 @@ pub enum Kind {
     #[error("implementation specific")]
     ImplementationSpecific,
 
-    #[error("Negative timestamp in consensus state {0}; timestamp must be a positive value")]
-    NegativeConsensusStateTimestamp(String),
-
     #[error("header verification failed")]
     HeaderVerificationFailure,
 
@@ -57,6 +54,9 @@ pub enum Kind {
 
     #[error("unknown misbehaviour type: {0}")]
     UnknownMisbehaviourType(String),
+
+    #[error("invalid raw client identifier {0} with underlying error: {1}")]
+    InvalidRawClientId(String, ValidationKind),
 
     #[error("invalid raw client state")]
     InvalidRawClientState,
@@ -89,10 +89,13 @@ pub enum Kind {
     InvalidAddress,
 
     #[error("invalid proof for the upgraded client state")]
-    InvalidUpgradeClientProof(Ics23Kind),
+    InvalidUpgradeClientProof(Ics23Error),
 
     #[error("invalid proof for the upgraded consensus state")]
-    InvalidUpgradeConsensusStateProof(Ics23Kind),
+    InvalidUpgradeConsensusStateProof(Ics23Error),
+
+    #[error("invalid packet timeout timestamp value")]
+    InvalidPacketTimestamp,
 
     #[error("mismatch between client and arguments types, expected: {0:?}")]
     ClientArgsTypeMismatch(ClientType),

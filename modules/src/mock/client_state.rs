@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::time::Duration;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
@@ -15,6 +16,7 @@ use crate::ics02_client::error::Kind as ClientKind;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// A mock of an IBC client record as it is stored in a mock context.
@@ -34,7 +36,7 @@ pub struct MockClientRecord {
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
 // TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockClientState(pub MockHeader);
 
 impl Protobuf<RawMockClientState> for MockClientState {}
@@ -42,6 +44,13 @@ impl Protobuf<RawMockClientState> for MockClientState {}
 impl MockClientState {
     pub fn latest_height(&self) -> Height {
         (self.0).height
+    }
+
+    pub fn refresh_time(&self) -> Option<Duration> {
+        None
+    }
+    pub fn expired(&self, _elapsed: Duration) -> bool {
+        false
     }
 }
 
@@ -64,7 +73,7 @@ impl From<MockClientState> for RawMockClientState {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
-                timestamp: (value.0).timestamp,
+                timestamp: (value.0).timestamp.as_nanoseconds(),
             }),
         }
     }
@@ -103,7 +112,7 @@ impl From<MockConsensusState> for MockClientState {
 pub struct MockConsensusState(pub MockHeader);
 
 impl MockConsensusState {
-    pub fn timestamp(&self) -> u64 {
+    pub fn timestamp(&self) -> Timestamp {
         (self.0).timestamp
     }
 }
@@ -127,7 +136,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
-                timestamp: (value.0).timestamp,
+                timestamp: (value.0).timestamp.as_nanoseconds(),
             }),
         }
     }

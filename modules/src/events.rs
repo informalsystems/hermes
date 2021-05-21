@@ -257,6 +257,8 @@ macro_rules! attribute {
 #[macro_export]
 macro_rules! some_attribute {
     ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse().ok()
+        $a.events
+            .get($b)
+            .map_or_else(|| None, |tags| tags[$a.idx].parse().ok())
     };
 }

@@ -105,7 +105,7 @@ Success: ConnectionEnd {
             ],
         },
     ],
-    delay_period: 0ns,
+    delay_period: 0s,
 }
 ```
 
@@ -140,4 +140,3 @@ Success: [
     ),
 ]
 ```
-

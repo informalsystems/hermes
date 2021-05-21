@@ -13,17 +13,28 @@ pub enum Kind {
     #[error("error raised by message handler")]
     HandlerRaisedError,
 
-    #[error("Sending sequence number not found for port {0} and channel {1}")]
+    #[error("sending sequence number not found for port {0} and channel {1}")]
     SequenceSendNotFound(PortId, ChannelId),
 
-    #[error("Missing channel for port_id {0} and channel_id {1}")]
+    #[error("missing channel for port_id {0} and channel_id {1} ")]
     ChannelNotFound(PortId, ChannelId),
 
-    #[error("Destination channel not found in the counterparty of port_id {0} and channel_id {1}")]
+    #[error(
+        "destination channel not found in the counterparty of port_id {0} and channel_id {1} "
+    )]
     DestinationChannelNotFound(PortId, ChannelId),
 
-    #[error("Invalid MsgTransfer proto object: could not convert into a domain type")]
-    InvalidProtoMsgTransfer(String),
+    #[error("invalid port identifier")]
+    InvalidPortId(String),
+
+    #[error("invalid channel identifier")]
+    InvalidChannelId(String),
+
+    #[error("invalid packet timeout height value")]
+    InvalidPacketTimeoutHeight(String),
+
+    #[error("invalid packet timeout timestamp value")]
+    InvalidPacketTimeoutTimestamp(u64),
 }
 
 impl Kind {

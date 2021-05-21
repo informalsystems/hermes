@@ -6,7 +6,6 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
-use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -25,10 +24,12 @@ use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
 };
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events as ClientEvents;
-use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
+use ibc::ics04_channel::channel::{
+    ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest, State as ChannelState,
+};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState};
@@ -65,7 +66,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::{EventBatch, EventMonitor};
+use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
@@ -114,7 +115,7 @@ impl CosmosSdkChain {
             .unbonding_time
             .ok_or_else(|| Kind::Grpc.context("none unbonding time".to_string()))?;
 
-        Ok(Duration::from_secs(res.seconds as u64))
+        Ok(Duration::new(res.seconds as u64, res.nanos as u32))
     }
 
     fn rpc_client(&self) -> &HttpClient {
@@ -147,7 +148,7 @@ impl CosmosSdkChain {
 
         let key = self
             .keybase()
-            .get_key()
+            .get_key(&self.config.key_name)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         // Create TxBody
@@ -217,7 +218,7 @@ impl CosmosSdkChain {
         // Sign doc and broadcast
         let signed = self
             .keybase
-            .sign_msg(signdoc_buf)
+            .sign_msg(&self.config.key_name, signdoc_buf)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         let tx_raw = TxRaw {
@@ -327,18 +328,18 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Rpc(config.rpc_addr.clone()).context(e))?;
 
         // Initialize key store and load key
-        let keybase =
-            KeyRing::new(Store::Test, config.clone()).map_err(|e| Kind::KeyBase.context(e))?;
+        let keybase = KeyRing::new(Store::Test, &config.account_prefix, &config.id)
+            .map_err(|e| Kind::KeyBase.context(e))?;
 
         let grpc_addr =
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
 
         Ok(Self {
-            rt,
             config,
-            keybase,
             rpc_client,
             grpc_addr,
+            rt,
+            keybase,
         })
     }
 
@@ -361,22 +362,18 @@ impl Chain for CosmosSdkChain {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<
-        (
-            channel::Receiver<EventBatch>,
-            Option<thread::JoinHandle<()>>,
-        ),
-        Error,
-    > {
+    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
         crate::time!("init_event_monitor");
 
         let (mut event_monitor, event_receiver) = EventMonitor::new(
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
             rt,
-        )?;
+        )
+        .map_err(Kind::EventMonitor)?;
 
-        event_monitor.subscribe().unwrap();
+        event_monitor.subscribe().map_err(Kind::EventMonitor)?;
+
         let monitor_thread = thread::spawn(move || event_monitor.run());
 
         Ok((event_receiver, Some(monitor_thread)))
@@ -435,7 +432,7 @@ impl Chain for CosmosSdkChain {
         // Get the key from key seed file
         let key = self
             .keybase()
-            .get_key()
+            .get_key(&self.config.key_name)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
@@ -449,7 +446,7 @@ impl Chain for CosmosSdkChain {
         // Get the key from key seed file
         let key = self
             .keybase()
-            .get_key()
+            .get_key(&self.config.key_name)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         Ok(key)
@@ -487,7 +484,10 @@ impl Chain for CosmosSdkChain {
         })
     }
 
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
         crate::time!("query_chain_clients");
 
         let mut client = self
@@ -504,13 +504,13 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        let vec_ids = response
+        let clients = response
             .client_states
-            .iter()
-            .filter_map(|ic| ClientId::from_str(ic.client_id.as_str()).ok())
+            .into_iter()
+            .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
             .collect();
 
-        Ok(vec_ids)
+        Ok(clients)
     }
 
     fn query_client_state(
@@ -658,7 +658,20 @@ impl Chain for CosmosSdkChain {
         Ok(consensus_states)
     }
 
-    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: ICSHeight,
+        query_height: ICSHeight,
+    ) -> Result<AnyConsensusState, Error> {
+        crate::time!("query_chain_clients");
+
+        let consensus_state = self
+            .proven_client_consensus(&client_id, consensus_height, query_height)?
+            .0;
+        Ok(AnyConsensusState::Tendermint(consensus_state))
+    }
+
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
@@ -731,8 +744,17 @@ impl Chain for CosmosSdkChain {
         height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
         let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
-        Ok(ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query(format!("connection {}", connection_id)).context(e))?)
+        let connection_end = ConnectionEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query(format!("connection '{}'", connection_id)).context(e))?;
+
+        match connection_end.state() {
+            ConnectionState::Uninitialized => {
+                Err(Kind::Query(format!("connection '{}'", connection_id))
+                    .context("connection does not exist")
+                    .into())
+            }
+            _ => Ok(connection_end),
+        }
     }
 
     fn query_connection_channels(
@@ -768,7 +790,10 @@ impl Chain for CosmosSdkChain {
         Ok(vec_ids)
     }
 
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -786,16 +811,12 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
-        let ids = response
+        let channels = response
             .channels
-            .iter()
-            .filter_map(|ch| ChannelId::from_str(ch.channel_id.as_str()).ok())
+            .into_iter()
+            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
             .collect();
-
-        Ok(ids)
+        Ok(channels)
     }
 
     fn query_channel(
@@ -809,8 +830,19 @@ impl Chain for CosmosSdkChain {
             height,
             false,
         )?;
-        Ok(ChannelEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("channel".into()).context(e))?)
+        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| {
+            Kind::Query(format!("port '{}' & channel '{}'", port_id, channel_id)).context(e)
+        })?;
+
+        match channel_end.state() {
+            ChannelState::Uninitialized => Err(Kind::Query(format!(
+                "port '{}' & channel '{}'",
+                port_id, channel_id
+            ))
+            .context("channel does not exist")
+            .into()),
+            _ => Ok(channel_end),
+        }
     }
 
     /// Queries the packet commitment hashes associated with a channel.
@@ -991,6 +1023,10 @@ impl Chain for CosmosSdkChain {
                         response.txs.len() <= 1,
                         "packet_from_tx_search_response: unexpected number of txs"
                     );
+
+                    if response.txs.is_empty() {
+                        continue;
+                    }
 
                     if let Some(event) = packet_from_tx_search_response(
                         self.id(),
@@ -1385,12 +1421,16 @@ async fn abci_query(
         return Err(Kind::EmptyResponseProof.into());
     }
 
-    let raw_proof_ops = response.proof;
+    let proof = response
+        .proof
+        .map(|p| convert_tm_to_ics_merkle_proof(&p))
+        .transpose()
+        .map_err(Kind::Ics023)?;
 
     let response = QueryResponse {
         value: response.value,
-        proof: convert_tm_to_ics_merkle_proof(raw_proof_ops).unwrap(), // FIXME
         height: response.height,
+        proof,
     };
 
     Ok(response)

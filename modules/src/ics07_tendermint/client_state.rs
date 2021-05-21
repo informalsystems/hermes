@@ -1,7 +1,8 @@
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 use std::time::Duration;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tendermint::trust_threshold::{
     TrustThresholdFraction as TrustThreshold, TrustThresholdFraction,
 };
@@ -13,12 +14,12 @@ use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
-use crate::ics23_commitment::merkle::cosmos_specs;
+use crate::ics23_commitment::specs::ProofSpecs;
 use crate::ics24_host::identifier::ChainId;
+use crate::timestamp::ZERO_DURATION;
 use crate::Height;
-use std::str::FromStr;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: ChainId,
     pub trust_level: TrustThreshold,
@@ -32,7 +33,7 @@ pub struct ClientState {
     pub allow_update: AllowUpdate,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AllowUpdate {
     pub after_expiry: bool,
     pub after_misbehaviour: bool,
@@ -113,7 +114,7 @@ impl ClientState {
     /// Helper function to verify the upgrade client procedure.
     /// Resets all fields except the blockchain-specific ones.
     pub fn zero_custom_fields(mut client_state: Self) -> Self {
-        client_state.trusting_period = Duration::from_secs(0);
+        client_state.trusting_period = ZERO_DURATION;
         client_state.trust_level = TrustThresholdFraction {
             numerator: 0,
             denominator: 0,
@@ -121,8 +122,19 @@ impl ClientState {
         client_state.allow_update.after_expiry = false;
         client_state.allow_update.after_misbehaviour = false;
         client_state.frozen_height = Height::zero();
-        client_state.max_clock_drift = Duration::from_secs(0);
+        client_state.max_clock_drift = ZERO_DURATION;
         client_state
+    }
+
+    /// Get the refresh time to ensure the state does not expire
+    pub fn refresh_time(&self) -> Option<Duration> {
+        Some(2 * self.trusting_period / 3)
+    }
+
+    /// Check if the state is expired when `elapsed` time has passed since the latest consensus
+    /// state timestamp
+    pub fn expired(&self, elapsed: Duration) -> bool {
+        elapsed > self.trusting_period
     }
 }
 
@@ -212,7 +224,7 @@ impl From<ClientState> for RawClientState {
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
-            proof_specs: cosmos_specs(),
+            proof_specs: ProofSpecs::cosmos().into(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
             upgrade_path: value.upgrade_path,
@@ -230,6 +242,7 @@ mod tests {
     use crate::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::ics24_host::identifier::ChainId;
     use crate::test::test_serialization_roundtrip;
+    use crate::timestamp::ZERO_DURATION;
     use crate::Height;
 
     #[test]
@@ -304,7 +317,7 @@ mod tests {
             Test {
                 name: "Invalid unbonding period".to_string(),
                 params: ClientStateParams {
-                    unbonding_period: Duration::default(),
+                    unbonding_period: ZERO_DURATION,
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -312,7 +325,7 @@ mod tests {
             Test {
                 name: "Invalid (too small) trusting period".to_string(),
                 params: ClientStateParams {
-                    trusting_period: Duration::default(),
+                    trusting_period: ZERO_DURATION,
                     ..default_params.clone()
                 },
                 want_pass: false,

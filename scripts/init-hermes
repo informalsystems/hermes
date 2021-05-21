@@ -63,11 +63,14 @@ cargo build -q --locked
 
 # add the key seeds to the keyring of each chain
 echo "Importing keys..."
-cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_0_ID" -f "$GAIA_DATA/$CHAIN_0_ID/key_seed.json"
-cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_1_ID" -f "$GAIA_DATA/$CHAIN_1_ID/key_seed.json"
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_0_ID" -f "$GAIA_DATA/$CHAIN_0_ID/user_seed.json"
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_0_ID" -f "$GAIA_DATA/$CHAIN_0_ID/user2_seed.json" -n user2
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_1_ID" -f "$GAIA_DATA/$CHAIN_1_ID/user_seed.json"
+cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_1_ID" -f "$GAIA_DATA/$CHAIN_1_ID/user2_seed.json" -n user2
 
 if [ -n "$CHAIN_2_ID" ]; then
-  cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_2_ID" -f "$GAIA_DATA/$CHAIN_2_ID/key_seed.json"
+  cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_2_ID" -f "$GAIA_DATA/$CHAIN_2_ID/user_seed.json"
+  cargo run -q --bin hermes -- -c "$CONFIG_FILE" keys add "$CHAIN_2_ID" -f "$GAIA_DATA/$CHAIN_2_ID/user2_seed.json" -n user2
 fi
 
 echo "Done!"

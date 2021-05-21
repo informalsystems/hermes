@@ -263,10 +263,7 @@ impl Channel {
                 continue;
             }
 
-            match (
-                a_channel.unwrap().state().clone(),
-                b_channel.unwrap().state().clone(),
-            ) {
+            match (a_channel.unwrap().state(), b_channel.unwrap().state()) {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                     // Ack to a_chain
                     match self.flipped().build_chan_open_ack_and_send() {
@@ -306,11 +303,8 @@ impl Channel {
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ChannelError> {
-        let client = ForeignClient {
-            id: self.dst_client_id().clone(),
-            dst_chain: self.dst_chain(),
-            src_chain: self.src_chain(),
-        };
+        let client =
+            ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
 
         client.build_update_client(height).map_err(|e| {
             ChannelError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)
@@ -469,6 +463,17 @@ impl Channel {
             .src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+
+        if src_channel.counterparty().port_id() != self.dst_port_id() {
+            return Err(ChannelError::Failed(format!(
+                "channel open try to chain `{}` and destination port `{}` does not match \
+                the source chain `{}` counterparty port `{}`",
+                self.dst_chain().id(),
+                self.dst_port_id(),
+                self.src_chain().id(),
+                src_channel.counterparty().port_id,
+            )));
+        }
 
         // Retrieve the connection
         let _dst_connection = self
@@ -858,7 +863,7 @@ fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> {
 }
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ChannelMsgType {
     OpenTry,
     OpenAck,
@@ -874,14 +879,13 @@ fn check_destination_channel_state(
     let good_connection_hops =
         existing_channel.connection_hops() == expected_channel.connection_hops();
 
-    let good_state =
-        existing_channel.state().clone() as u32 <= expected_channel.state().clone() as u32;
-
+    // TODO: Refactor into a method
+    let good_state = *existing_channel.state() as u32 <= *expected_channel.state() as u32;
     let good_channel_ids = existing_channel.counterparty().channel_id().is_none()
         || existing_channel.counterparty().channel_id()
             == expected_channel.counterparty().channel_id();
 
-    // TODO check versions
+    // TODO: Check versions
 
     if good_state && good_connection_hops && good_channel_ids {
         Ok(())

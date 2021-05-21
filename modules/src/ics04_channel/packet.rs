@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -6,6 +7,7 @@ use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 use super::handler::{
@@ -53,6 +55,22 @@ impl std::fmt::Display for PacketMsgType {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, PartialOrd, Ord)]
 pub struct Sequence(u64);
 
+impl Default for Sequence {
+    fn default() -> Self {
+        Sequence(0)
+    }
+}
+
+impl FromStr for Sequence {
+    type Err = anomaly::Error<Kind>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::from(s.parse::<u64>().map_err(|_e| {
+            Kind::InvalidStringAsSequence(s.to_string())
+        })?))
+    }
+}
+
 impl Sequence {
     pub fn is_zero(&self) -> bool {
         self.0 == 0
@@ -91,7 +109,7 @@ pub struct Packet {
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub data: Vec<u8>,
     pub timeout_height: Height,
-    pub timeout_timestamp: u64,
+    pub timeout_timestamp: Timestamp,
 }
 
 impl std::fmt::Debug for Packet {
@@ -131,7 +149,7 @@ impl Default for Packet {
             destination_channel: Default::default(),
             data: vec![],
             timeout_height: Default::default(),
-            timeout_timestamp: 0,
+            timeout_timestamp: Default::default(),
         }
     }
 }
@@ -156,6 +174,9 @@ impl TryFrom<RawPacket> for Packet {
             return Err(Kind::ZeroPacketData.into());
         }
 
+        let timeout_timestamp = Timestamp::from_nanoseconds(raw_pkt.timeout_timestamp)
+            .map_err(|_| Kind::InvalidPacketTimestamp)?;
+
         Ok(Packet {
             sequence: Sequence::from(raw_pkt.sequence),
             source_port: raw_pkt
@@ -176,7 +197,7 @@ impl TryFrom<RawPacket> for Packet {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             data: raw_pkt.data,
             timeout_height: packet_timeout_height,
-            timeout_timestamp: raw_pkt.timeout_timestamp,
+            timeout_timestamp,
         })
     }
 }
@@ -191,16 +212,17 @@ impl From<Packet> for RawPacket {
             destination_channel: packet.destination_channel.to_string(),
             data: packet.data,
             timeout_height: Some(packet.timeout_height.into()),
-            timeout_timestamp: packet.timeout_timestamp,
+            timeout_timestamp: packet.timeout_timestamp.as_nanoseconds(),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_utils {
-    use crate::ics24_host::identifier::{ChannelId, PortId};
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+
+    use crate::ics24_host::identifier::{ChannelId, PortId};
 
     /// Returns a dummy `RawPacket`, for testing only!
     pub fn get_dummy_raw_packet(timeout_height: u64, timeout_timestamp: u64) -> RawPacket {
