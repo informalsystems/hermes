@@ -1,5 +1,4 @@
 use prometheus::{Encoder, TextEncoder};
-use tracing::info;
 use crate::telemetry::state::TelemetryState;
 
 pub struct TelemetryServer {
@@ -16,13 +15,10 @@ impl TelemetryServer {
             router!(request,
                 // The prometheus endpoint
                 (GET) (/metrics) => {
-                    //telemetry_state.packets_relayed.add(1);
-                    info!("metrics called on telemetry server");
                     let mut buffer = vec![];
                     let encoder = TextEncoder::new();
                     let metric_families = telemetry_state.exporter.registry().gather();
                     encoder.encode(&metric_families, &mut buffer).unwrap();
-                    dbg!(metric_families);
                     rouille::Response::from_data(encoder.format_type().to_string(), buffer)
                 },
 

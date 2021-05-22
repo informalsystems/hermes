@@ -110,6 +110,8 @@ impl Supervisor {
                 }
                 IbcEvent::WriteAcknowledgement(ref packet) => {
                     if let Ok(object) = Object::for_write_ack(packet, src_chain) {
+                        // TODO: Find a better place to record the telemetry metric
+                        let _ = self.telemetry.send(MetricUpdate::AcknowledgePacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
@@ -137,11 +139,12 @@ impl Supervisor {
             .map(|c| c.id.clone())
             .collect_vec();
 
-        let _ = self.telemetry.send(MetricUpdate::RelayChainsNumber(chain_ids.len() as u64));
-
         for chain_id in chain_ids {
             let chain = match self.registry.get_or_spawn(&chain_id) {
-                Ok(chain_handle) => chain_handle,
+                Ok(chain_handle) => {
+                    let _ = self.telemetry.send(MetricUpdate::RelayChainsNumber(1));
+                    chain_handle
+                },
                 Err(e) => {
                     error!("skipping workers for chain id {}. reason: failed to spawn chain runtime with error: {}", chain_id, e);
                     continue;
@@ -149,7 +152,10 @@ impl Supervisor {
             };
 
             let channels = match chain.query_channels(req.clone()) {
-                Ok(channels) => channels,
+                Ok(channels) => {
+                    let _ = self.telemetry.send(MetricUpdate::RelayChannelsNumber(1));
+                    channels
+                },
                 Err(e) => {
                     error!("failed to query channels from {}: {}", chain_id, e);
                     continue;
