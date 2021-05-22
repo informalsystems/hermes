@@ -12,7 +12,7 @@ pub struct TelemetryState {
     pub exporter: PrometheusExporter,
 
     // Count the number of trans
-    pub packets_relayed: BoundCounter<'static, u64>,
+    pub relay_chains_num: BoundCounter<'static, u64>,
 }
 
 impl TelemetryState {
@@ -21,9 +21,9 @@ impl TelemetryState {
         let meter = global::meter("hermes");
         let telemetry_state = TelemetryState {
             exporter,
-            packets_relayed: meter
-                .u64_counter("hermes.tx_count")
-                .with_description("Total number of transactions processed via the relayer.")
+            relay_chains_num: meter
+                .u64_counter("relay_chains_num")
+                .with_description("Number of chains the relay is connecting to")
                 .init()
                 .bind(HANDLER_ALL.as_ref()),
         };

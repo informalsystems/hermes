@@ -1,7 +1,4 @@
 use prometheus::{Encoder, TextEncoder};
-
-use crate::telemetry::service::MetricUpdate;
-use crossbeam_channel::Sender;
 use tracing::info;
 use crate::telemetry::state::TelemetryState;
 
@@ -10,16 +7,16 @@ pub struct TelemetryServer {
 }
 
 impl TelemetryServer {
-    fn new(state: TelemetryState) -> TelemetryServer {
+    pub(crate) fn new(state: TelemetryState) -> TelemetryServer {
         TelemetryServer { state }
     }
 
-    fn run(&self, telemetry_state: TelemetryState, listen_port: u16) -> () {
+    pub(crate) fn run(&self, telemetry_state: TelemetryState, listen_port: u16) -> () {
         rouille::start_server(format!("localhost:{}", listen_port), move |request| {
             router!(request,
                 // The prometheus endpoint
                 (GET) (/metrics) => {
-                    telemetry_state.packets_relayed.add(1);
+                    //telemetry_state.packets_relayed.add(1);
                     info!("metrics called on telemetry server");
                     let mut buffer = vec![];
                     let encoder = TextEncoder::new();
@@ -36,16 +33,5 @@ impl TelemetryServer {
                 }
             )
         });
-    }
-
-    pub fn spawn(port: u16) -> Sender<MetricUpdate> {
-        let telemetry_state = TelemetryState::new();
-        let (tx, _rx) = crossbeam_channel::unbounded();
-        //let (service, tx) = TelemetryService::new(app_state.clone());
-        let server = TelemetryServer::new(telemetry_state.clone());
-        std::thread::spawn(move || server.run( telemetry_state,port));
-        //std::thread::spawn(|| service.run());
-
-        tx
     }
 }

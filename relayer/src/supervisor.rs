@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anomaly::BoxError;
 
-use crossbeam_channel::Receiver;
+use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
@@ -31,6 +31,7 @@ use crate::{
 
 mod error;
 pub use error::Error;
+use crate::telemetry::service::MetricUpdate;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -40,18 +41,21 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
+    telemetry: Sender<MetricUpdate>
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(config: Config) -> Result<Self, BoxError> {
+    pub fn spawn(config: Config, telemetry: Sender<MetricUpdate>) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
+
         Ok(Self {
             config,
             registry,
             workers: WorkerMap::new(worker_msg_tx),
             worker_msg_rx,
+            telemetry
         })
     }
 
@@ -132,6 +136,8 @@ impl Supervisor {
             .iter()
             .map(|c| c.id.clone())
             .collect_vec();
+
+        let _ = self.telemetry.send(MetricUpdate::RelayChainsNumber(chain_ids.len() as u64));
 
         for chain_id in chain_ids {
             let chain = match self.registry.get_or_spawn(&chain_id) {

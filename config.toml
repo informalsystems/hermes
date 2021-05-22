@@ -2,7 +2,7 @@
 strategy = 'naive'
 log_level = 'debug'
 telemetry_enabled = true
-telemetry_port = 3002
+telemetry_port = 3001
 
 [[chains]]
 id = 'ibc-0'
@@ -35,6 +35,20 @@ store_prefix = 'ibc'
 gas = 3000000
 fee_denom = 'stake'
 fee_amount = 1000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[[chains]]
+id = 'cosmoshub-4'
+rpc_addr = 'http://cosmos.decentrox.com:26657'
+grpc_addr = 'http://cosmos.decentrox.com:9090'
+websocket_addr = 'ws://cosmos.decentrox.com:26657/websocket'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 3000000
+fee_denom = 'uatom'
+fee_amount = 300
 clock_drift = '5s'
 trusting_period = '14days'
 
