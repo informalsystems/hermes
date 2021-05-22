@@ -7,6 +7,7 @@ lazy_static! {
     static ref HANDLER_ALL: [KeyValue; 1] = [KeyValue::new("hermes", "all")];
 }
 
+#[derive(Clone)]
 pub struct TelemetryState {
     pub exporter: PrometheusExporter,
 

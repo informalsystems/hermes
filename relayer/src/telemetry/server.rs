@@ -13,11 +13,8 @@ impl TelemetryServer {
     fn new(state: TelemetryState) -> TelemetryServer {
         TelemetryServer { state }
     }
-}
 
-impl TelemetryServer {
-    fn run(listen_port: u16) -> () {
-        let telemetry_state = TelemetryState::new();
+    fn run(&self, telemetry_state: TelemetryState, listen_port: u16) -> () {
         rouille::start_server(format!("localhost:{}", listen_port), move |request| {
             router!(request,
                 // The prometheus endpoint
@@ -42,11 +39,11 @@ impl TelemetryServer {
     }
 
     pub fn spawn(port: u16) -> Sender<MetricUpdate> {
-
+        let telemetry_state = TelemetryState::new();
         let (tx, _rx) = crossbeam_channel::unbounded();
         //let (service, tx) = TelemetryService::new(app_state.clone());
-        //let server = TelemetryServer::new(app_state.clone());
-        std::thread::spawn(move || TelemetryServer::run( port));
+        let server = TelemetryServer::new(telemetry_state.clone());
+        std::thread::spawn(move || server.run( telemetry_state,port));
         //std::thread::spawn(|| service.run());
 
         tx
