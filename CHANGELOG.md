@@ -1,5 +1,10 @@
 # Changelog
 
+### BUG FIXES
+- [#975] gm tool: Import hermes keys properly even if wallet HD derivation path is set.
+
+[#975]: https://github.com/informalsystems/ibc-rs/issues/975
+
 ## v0.3.2
 *May 21st, 2021*
 
