@@ -25,13 +25,11 @@ use crate::{
     },
     object::{Client, Object, UnidirectionalChannelPath},
     registry::Registry,
-    telemetry::service::TelemetryService,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
 
 mod error;
-use crate::telemetry::state::TelemetryState;
 pub use error::Error;
 
 /// The supervisor listens for events on multiple pairs of chains,
@@ -42,7 +40,6 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
-    telemetry_state: Arc<TelemetryState>,
 }
 
 impl Supervisor {
@@ -50,20 +47,11 @@ impl Supervisor {
     pub fn spawn(config: Config) -> Result<Self, BoxError> {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
-
-        // Start the telemetry service
-        let telemetry_state = TelemetryState::init();
-        match config.global.telemetry_enabled {
-            true => TelemetryService::run(telemetry_state.clone(), config.global.telemetry_port),
-            false => println!("Telemetry not enabled"),
-        };
-
         Ok(Self {
             config,
             registry,
             workers: WorkerMap::new(worker_msg_tx),
             worker_msg_rx,
-            telemetry_state,
         })
     }
 
@@ -109,7 +97,6 @@ impl Supervisor {
                     if let Ok(object) = Object::for_send_packet(packet, src_chain) {
                         collected.per_object.entry(object).or_default().push(event);
                         // Increase counter
-                        self.telemetry_state.tx_counter.add(1);
                     }
                 }
                 IbcEvent::TimeoutPacket(ref packet) => {

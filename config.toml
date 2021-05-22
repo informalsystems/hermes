@@ -1,6 +1,8 @@
 [global]
 strategy = 'naive'
-log_level = 'error'
+log_level = 'debug'
+telemetry_enabled = true
+telemetry_port = 3002
 
 [[chains]]
 id = 'ibc-0'
