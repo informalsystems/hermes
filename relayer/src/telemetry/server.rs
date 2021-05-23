@@ -10,7 +10,8 @@ impl TelemetryServer {
         TelemetryServer { state }
     }
 
-    pub(crate) fn run(&self, telemetry_state: TelemetryState, listen_port: u16) -> () {
+    #[allow(clippy::manual_strip)]
+    pub(crate) fn run(&self, telemetry_state: TelemetryState, listen_port: u16) {
         rouille::start_server(format!("localhost:{}", listen_port), move |request| {
             router!(request,
                 // The prometheus endpoint

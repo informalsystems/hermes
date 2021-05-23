@@ -100,18 +100,19 @@ impl Supervisor {
                 IbcEvent::SendPacket(ref packet) => {
                     if let Ok(object) = Object::for_send_packet(packet, src_chain) {
                         collected.per_object.entry(object).or_default().push(event);
-                        // Increase counter
                     }
                 }
                 IbcEvent::TimeoutPacket(ref packet) => {
                     if let Ok(object) = Object::for_timeout_packet(packet, src_chain) {
+                        // TODO: Is this the right place to record the telemetry metric ?
+                        let _ = self.telemetry.send(MetricUpdate::TimeoutPacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
                 IbcEvent::WriteAcknowledgement(ref packet) => {
                     if let Ok(object) = Object::for_write_ack(packet, src_chain) {
-                        // TODO: Find a better place to record the telemetry metric
-                        let _ = self.telemetry.send(MetricUpdate::AcknowledgePacket(1));
+                        // TODO: Is this the right place to record the telemetry metric ?
+                        let _ = self.telemetry.send(MetricUpdate::IbcAcknowledgePacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }

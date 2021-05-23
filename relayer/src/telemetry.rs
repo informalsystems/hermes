@@ -13,7 +13,9 @@ pub fn spawn(port: u16, enabled: bool) -> Sender<MetricUpdate> {
 
     // Only start the telemetry service and server if it is enabled in the configuration
     if enabled {
-        let telemetry_state = TelemetryState::new();
+        let telemetry_state = TelemetryState {
+            ..Default::default()
+        };
         let service = TelemetryService::new(telemetry_state.clone(), rx);
         let server = TelemetryServer::new(telemetry_state.clone());
 

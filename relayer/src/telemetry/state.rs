@@ -20,12 +20,30 @@ pub struct TelemetryState {
     // Total number of IBC packets acknowledged
     pub tx_msg_ibc_acknowledge_packet: BoundCounter<'static, u64>,
 
-    // Total number of txs processed via Relay tx
+    // Total number of txs processed via relay tx
     pub tx_count: BoundCounter<'static, u64>,
+
+    // Total number of successful txs processed via relay tx
+    pub tx_successful: BoundCounter<'static, u64>,
+
+    // Total number of failed txs processed via relay tx
+    pub tx_failed: BoundCounter<'static, u64>,
+
+    // Total number of IBC transfers sent from a chain (source or sink)
+    pub ibc_transfer_send: BoundCounter<'static, u64>,
+
+    // Total number of IBC transfers received to a chain (source or sink)
+    pub ibc_transfer_receive: BoundCounter<'static, u64>,
+
+    // Total number of IBC packets received
+    pub tx_msg_ibc_recv_packet: BoundCounter<'static, u64>,
+
+    // Total number of IBC timeout packets
+    pub ibc_timeout_packet: BoundCounter<'static, u64>,
 }
 
-impl TelemetryState {
-    pub fn new() -> TelemetryState {
+impl Default for TelemetryState {
+    fn default() -> Self {
         let exporter = opentelemetry_prometheus::exporter().init();
         let meter = global::meter("hermes");
         let telemetry_state = TelemetryState {
@@ -46,8 +64,42 @@ impl TelemetryState {
                 .init()
                 .bind(HANDLER_ALL.as_ref()),
             tx_count: meter
-                .u64_counter("tx_count")
-                .with_description("Total number of txs processed via Relay tx")
+                .u64_counter("hermes_tx_count")
+                .with_description("Total number of txs processed via relay tx")
+                .init()
+                .bind(HANDLER_ALL.as_ref()),
+            tx_successful: meter
+                .u64_counter("hermes_tx_successful")
+                .with_description("Total number of successful txs processed via relay tx")
+                .init()
+                .bind(HANDLER_ALL.as_ref()),
+            tx_failed: meter
+                .u64_counter("hermes_tx_failed")
+                .with_description("Total number of failed txs processed via relay tx")
+                .init()
+                .bind(HANDLER_ALL.as_ref()),
+            ibc_transfer_send: meter
+                .u64_counter("hermes_ibc_transfer_send")
+                .with_description(
+                    "Total number of IBC transfers sent from a chain (source or sink)",
+                )
+                .init()
+                .bind(HANDLER_ALL.as_ref()),
+            ibc_transfer_receive: meter
+                .u64_counter("hermes_ibc_transfer_receive")
+                .with_description(
+                    "Total number of IBC transfers received to a chain (source or sink)",
+                )
+                .init()
+                .bind(HANDLER_ALL.as_ref()),
+            tx_msg_ibc_recv_packet: meter
+                .u64_counter("hermes_tx_msg_ibc_recv_packet")
+                .with_description("Total number of IBC packets received")
+                .init()
+                .bind(HANDLER_ALL.as_ref()),
+            ibc_timeout_packet: meter
+                .u64_counter("hermes_ibc_timeout_packet")
+                .with_description("Total number of IBC timeout packets")
                 .init()
                 .bind(HANDLER_ALL.as_ref()),
         };
