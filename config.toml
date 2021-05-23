@@ -1,6 +1,6 @@
 [global]
 strategy = 'naive'
-log_level = 'debug'
+log_level = 'info'
 telemetry_enabled = true
 telemetry_port = 3001
 

@@ -30,8 +30,8 @@ use crate::{
 };
 
 mod error;
-pub use error::Error;
 use crate::telemetry::service::MetricUpdate;
+pub use error::Error;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -41,7 +41,7 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
-    telemetry: Sender<MetricUpdate>
+    telemetry: Sender<MetricUpdate>,
 }
 
 impl Supervisor {
@@ -55,7 +55,7 @@ impl Supervisor {
             registry,
             workers: WorkerMap::new(worker_msg_tx),
             worker_msg_rx,
-            telemetry
+            telemetry,
         })
     }
 
@@ -144,7 +144,7 @@ impl Supervisor {
                 Ok(chain_handle) => {
                     let _ = self.telemetry.send(MetricUpdate::RelayChainsNumber(1));
                     chain_handle
-                },
+                }
                 Err(e) => {
                     error!("skipping workers for chain id {}. reason: failed to spawn chain runtime with error: {}", chain_id, e);
                     continue;
@@ -155,7 +155,7 @@ impl Supervisor {
                 Ok(channels) => {
                     let _ = self.telemetry.send(MetricUpdate::RelayChannelsNumber(1));
                     channels
-                },
+                }
                 Err(e) => {
                     error!("failed to query channels from {}: {}", chain_id, e);
                     continue;

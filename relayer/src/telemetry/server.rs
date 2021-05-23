@@ -1,5 +1,5 @@
-use prometheus::{Encoder, TextEncoder};
 use crate::telemetry::state::TelemetryState;
+use prometheus::{Encoder, TextEncoder};
 
 pub struct TelemetryServer {
     pub state: TelemetryState,

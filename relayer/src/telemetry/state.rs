@@ -1,7 +1,7 @@
-use opentelemetry::metrics::BoundCounter;
-use opentelemetry_prometheus::PrometheusExporter;
 use opentelemetry::global;
+use opentelemetry::metrics::BoundCounter;
 use opentelemetry::KeyValue;
+use opentelemetry_prometheus::PrometheusExporter;
 
 lazy_static! {
     static ref HANDLER_ALL: [KeyValue; 1] = [KeyValue::new("hermes", "all")];
@@ -22,7 +22,6 @@ pub struct TelemetryState {
 
     // Total number of txs processed via Relay tx
     pub tx_count: BoundCounter<'static, u64>,
-
 }
 
 impl TelemetryState {

@@ -1,5 +1,5 @@
-use crossbeam_channel::Receiver;
 use crate::telemetry::state::TelemetryState;
+use crossbeam_channel::Receiver;
 
 pub enum MetricUpdate {
     RelayChainsNumber(u64),
@@ -10,15 +10,12 @@ pub enum MetricUpdate {
 
 pub struct TelemetryService {
     pub state: TelemetryState,
-    pub rx: Receiver<MetricUpdate>
+    pub rx: Receiver<MetricUpdate>,
 }
 
 impl TelemetryService {
     pub(crate) fn new(state: TelemetryState, rx: Receiver<MetricUpdate>) -> Self {
-        Self {
-            state,
-            rx,
-        }
+        Self { state, rx }
     }
 
     pub(crate) fn run(self) {
@@ -29,7 +26,7 @@ impl TelemetryService {
 
     fn apply_update(&self, update: MetricUpdate) {
         match update {
-            MetricUpdate::RelayChainsNumber(n) => self.state.relay_chains_num.add(n ),
+            MetricUpdate::RelayChainsNumber(n) => self.state.relay_chains_num.add(n),
             MetricUpdate::RelayChannelsNumber(n) => self.state.relay_channels_num.add(n),
             MetricUpdate::AcknowledgePacket(n) => self.state.tx_msg_ibc_acknowledge_packet.add(n),
             MetricUpdate::TxCount(n) => self.state.tx_count.add(n),
