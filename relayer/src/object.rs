@@ -108,9 +108,9 @@ impl Object {
     /// Returns `false` otherwise.
     pub fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
         match self {
-            Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
             Object::Client(_) => false,
             Object::Channel(c) => c.src_chain_id == *src_chain_id,
+            Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
         }
     }
 }
