@@ -167,6 +167,12 @@
 <h2><a class="header" href="#table-of-contents" id="table-of-contents">Table of Contents</a></h2>
 <ul>
 <li><a href="#establish-connection">Establish Connection</a></li>
+<li><a href="#examples">Examples</a>
+<ul>
+<li><a href="#new-connection-over-new-clients">New connection over new clients</a></li>
+<li><a href="#new-connection-over-existing-clients">New connection over existing clients</a></li>
+</ul>
+</li>
 <li><a href="#non-zero-delay-connection">Non-zero Delay Connection</a></li>
 </ul>
 <h2><a class="header" href="#establish-connection" id="establish-connection">Establish Connection</a></h2>
@@ -186,7 +192,9 @@ FLAGS:
     --client-b CLIENT-B       identifier of client hosted on chain `b`; default: None (creates a new client)
 
 </code></pre>
-<p><strong>Example</strong></p>
+<h2><a class="header" href="#examples" id="examples">Examples</a></h2>
+<h3><a class="header" href="#new-connection-over-new-clients" id="new-connection-over-new-clients">New connection over new clients</a></h3>
+<p>Create a new connection between <code>ibc-0</code> and <code>ibc-1</code> over new clients:</p>
 <pre><code class="language-shell">hermes create connection ibc-0 ibc-1
 </code></pre>
 <pre><pre class="playground"><code class="language-rust">
@@ -353,6 +361,14 @@ Success: Connection {
 }
 <span class="boring">}
 </span></code></pre></pre>
+<h3><a class="header" href="#new-connection-over-existing-clients" id="new-connection-over-existing-clients">New connection over existing clients</a></h3>
+<p>Create a new connection between <code>ibc-0</code> and <code>ibc-1</code> over existing clients,
+both with client id <code>07-tendermint-0</code>:</p>
+<pre><code class="language-shell">hermes create connection ibc-0 --client-a 07-tendermint-0 --client-b
+07-tendermint-0
+</code></pre>
+<p>Notice that one can omit the destination chain parameter, as Hermes will automatically
+figure it out by looking up the given client on <code>ibc-0</code>.</p>
 <h2><a class="header" href="#non-zero-delay-connection" id="non-zero-delay-connection">Non-zero Delay Connection</a></h2>
 <p>A connection can be created with a delay period parameter. This parameter specifies a period of time that must elpase after a successful client state update and before a packet with proofs using its commitment root can pe processed on chain. For more information see <a href="../relaying.html#packet-delay">how packet delay works</a> and the <a href="https://github.com/cosmos/ibc/tree/master/spec/core/ics-003-connection-semantics">connection delay specification</a>.</p>
 
