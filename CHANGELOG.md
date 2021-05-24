@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### FEATURES
+
+- [ibc-relayer]
+  - Graceful handling of packet events in the presence of multiple relayers ([#983])
+
+
+[#822]: https://github.com/informalsystems/ibc-rs/issues/983
+
 ## v0.3.2
 *May 21st, 2021*
 
