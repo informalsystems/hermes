@@ -14,6 +14,7 @@ use super::handler::{
     acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
     timeout::TimeoutPacketResult, write_acknowledgement::WriteAckPacketResult,
 };
+use crate::timestamp::Expiry::Expired;
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -110,6 +111,14 @@ pub struct Packet {
     pub data: Vec<u8>,
     pub timeout_height: Height,
     pub timeout_timestamp: Timestamp,
+}
+
+impl Packet {
+    pub fn timed_out(&self, dst_chain_height: Height) -> bool {
+        self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height
+            || self.timeout_timestamp != Timestamp::none()
+                && Timestamp::now().check_expiry(&self.timeout_timestamp) == Expired
+    }
 }
 
 impl std::fmt::Debug for Packet {
