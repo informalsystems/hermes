@@ -32,6 +32,11 @@ impl Registry {
         }
     }
 
+    /// Return the size of the registry, i.e., the number of distinct chain runtimes.
+    pub fn size(&self) -> usize {
+        self.handles.len()
+    }
+
     /// Get the [`ChainHandle`] associated with the given [`ChainId`].
     ///
     /// If there is no handle yet, this will first spawn the runtime and then
