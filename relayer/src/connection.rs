@@ -22,10 +22,11 @@ use ibc::Height as ICSHeight;
 use crate::chain::handle::ChainHandle;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
-use crate::relay::MAX_ITER;
 
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
+
+const MAX_RETRIES: usize = 5;
 
 #[derive(Debug, Error)]
 pub enum ConnectionError {
@@ -252,7 +253,7 @@ impl Connection {
 
         // Try connOpenInit on a_chain
         let mut counter = 0;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
             match self.flipped().build_conn_init_and_send() {
                 Err(e) => {
@@ -269,7 +270,7 @@ impl Connection {
 
         // Try connOpenTry on b_chain
         counter = 0;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
             match self.build_conn_try_and_send() {
                 Err(e) => {
@@ -285,7 +286,7 @@ impl Connection {
         }
 
         counter = 0;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
 
             // Continue loop if query error
@@ -342,7 +343,7 @@ impl Connection {
 
         Err(ConnectionError::Failed(format!(
             "Failed to finish connection handshake in {:?} iterations",
-            MAX_ITER
+            MAX_RETRIES
         )))
     }
 
@@ -411,18 +412,14 @@ impl Connection {
     }
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
-        let client =
-            ForeignClient::restore(self.src_client_id(), self.src_chain(), self.dst_chain());
-
+        let client = self.restore_src_client();
         client.build_update_client(height).map_err(|e| {
             ConnectionError::ClientOperation(self.src_client_id().clone(), self.src_chain().id(), e)
         })
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
-        let client =
-            ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
-
+        let client = self.restore_dst_client();
         client.build_update_client(height).map_err(|e| {
             ConnectionError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)
         })
@@ -799,6 +796,22 @@ impl Connection {
             }
             _ => panic!("internal error"),
         }
+    }
+
+    fn restore_src_client(&self) -> ForeignClient {
+        ForeignClient::restore(
+            self.src_client_id().clone(),
+            self.src_chain().clone(),
+            self.dst_chain().clone(),
+        )
+    }
+
+    fn restore_dst_client(&self) -> ForeignClient {
+        ForeignClient::restore(
+            self.dst_client_id().clone(),
+            self.dst_chain().clone(),
+            self.src_chain().clone(),
+        )
     }
 }
 

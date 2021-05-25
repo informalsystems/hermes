@@ -17,8 +17,7 @@ use crate::DEFAULT_CONFIG_PATH;
 
 use self::{
     create::CreateCmds, keys::KeysCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
-    version::VersionCmd,
+    tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
 };
 use crate::commands::misbehaviour::MisbehaviourCmd;
 
@@ -29,7 +28,6 @@ mod listen;
 mod misbehaviour;
 mod query;
 mod start;
-mod start_multi;
 mod tx;
 mod update;
 mod upgrade;
@@ -70,13 +68,9 @@ pub enum CliCmd {
     Upgrade(UpgradeCmds),
 
     /// The `start` subcommand
-    #[options(help = "Start the relayer")]
-    Start(StartCmd),
-
-    /// The `start-multi` subcommand
     #[options(help = "Start the relayer in multi-chain mode. \
                       Handles packet relaying across all open channels between all chains in the config.")]
-    StartMulti(StartMultiCmd),
+    Start(StartCmd),
 
     /// The `query` subcommand
     #[options(help = "Query objects from the chain")]

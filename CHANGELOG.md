@@ -7,8 +7,13 @@
 - [ibc-relayer]
   - Add support for event based channel relaying ([#822])
 
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Promote `start-multi` command to `start` ([#911])
 
 [#822]: https://github.com/informalsystems/ibc-rs/issues/822
+[#911]: https://github.com/informalsystems/ibc-rs/issues/911
 
 ## v0.3.2
 *May 21st, 2021*
@@ -61,6 +66,9 @@ as well as support Protobuf-encoded keys.
 
 ### FEATURES
 
+- [scripts]
+  - Created the Gaiad Manager `gm` CLI tool for managing gaiad instances on the local machine ([#902])
+
 - [ibc-relayer]
   - Add support for packet timeout based on timeout timestamp ([#937])
   - Added support for Protobuf-based Keyring ([#925])
@@ -85,6 +93,7 @@ as well as support Protobuf-encoded keys.
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#902]: https://github.com/informalsystems/ibc-rs/issues/902
 [#921]: https://github.com/informalsystems/ibc-rs/issues/921
 [#925]: https://github.com/informalsystems/ibc-rs/issues/925
 [#927]: https://github.com/informalsystems/ibc-rs/issues/927
