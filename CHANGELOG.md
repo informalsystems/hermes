@@ -1,8 +1,20 @@
 # Changelog
 
+## Unreleased
+
 ### BUG FIXES
+
+- [ibc-relayer]
+  - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
 - [#975] gm tool: Import hermes keys properly even if wallet HD derivation path is set.
 
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Promote `start-multi` command to `start` ([#911])
+
+[#911]: https://github.com/informalsystems/ibc-rs/issues/911
+[#972]: https://github.com/informalsystems/ibc-rs/issues/972
 [#975]: https://github.com/informalsystems/ibc-rs/issues/975
 
 ## v0.3.2
