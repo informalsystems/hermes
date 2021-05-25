@@ -3,15 +3,17 @@ use std::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics24_host::identifier::ConnectionId;
-use ibc::ics24_host::identifier::{ChainId, PortChannelId};
+use ibc::{
+    ics03_connection::connection::State,
+    ics24_host::identifier::ConnectionId,
+    ics24_host::identifier::{ChainId, PortChannelId},
+};
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use ibc_relayer::chain::{Chain, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use ibc::ics03_connection::connection::State;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {

@@ -279,15 +279,19 @@ impl Supervisor {
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
 
-        let local_state = channel.channel_end.state;
-        let remote_state =
+        let chan_state_src = channel.channel_end.state;
+        let chan_state_dst =
             channel_state_on_destination(channel.clone(), connection, counterparty_chain.as_ref())?;
 
         debug!(
-            "local state is: {}, remote state is: {}",
-            local_state, remote_state
+            "channel {} on chain {} is: {}; state on dest. chain ({}) is: {}",
+            channel.channel_id,
+            chain.id(),
+            chan_state_src,
+            counterparty_chain.id(),
+            chan_state_dst
         );
-        if local_state.is_open() && remote_state.is_open() {
+        if chan_state_src.is_open() && chan_state_dst.is_open() {
             // create the client object and spawn worker
             let client_object = Object::Client(Client {
                 dst_client_id: client.client_id.clone(),
@@ -308,8 +312,8 @@ impl Supervisor {
             });
             self.workers
                 .get_or_spawn(path_object, chain.clone(), counterparty_chain.clone());
-        } else if !remote_state.is_open()
-            && remote_state as u32 <= local_state as u32
+        } else if !chan_state_dst.is_open()
+            && chan_state_dst as u32 <= chan_state_src as u32
             && self.handshake_enabled()
         {
             // create worker for channel handshake that will advance the remote state

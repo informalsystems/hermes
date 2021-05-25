@@ -4,17 +4,16 @@ use tracing::trace;
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
     ics03_connection::connection::IdentifiedConnectionEnd,
-    ics04_channel::channel::IdentifiedChannelEnd,
+    ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
+    ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, ChannelId, PortId},
     Height,
 };
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
-use ibc::ics04_channel::channel::{ChannelEnd, State};
-use ibc::ics24_host::identifier::ConnectionId;
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelConnectionClient {
@@ -37,6 +36,8 @@ impl ChannelConnectionClient {
     }
 }
 
+/// Returns the [`ChannelConnectionClient`] associated with the
+/// provided port and channel id.
 pub fn channel_connection_client(
     chain: &dyn ChainHandle,
     port_id: &PortId,
@@ -53,7 +54,7 @@ pub fn channel_connection_client(
         .query_channel(port_id, channel_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    if channel_end.state_matches(&ibc::ics04_channel::channel::State::Uninitialized) {
+    if channel_end.state_matches(&State::Uninitialized) {
         return Err(Error::ChannelUninitialized(channel_id.clone(), chain.id()));
     }
 
