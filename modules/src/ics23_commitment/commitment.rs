@@ -147,3 +147,60 @@ impl Serialize for CommitmentPrefix {
         format!("{:?}", self).serialize(serializer)
     }
 }
+
+
+
+#[cfg(test)]
+pub mod test_util {
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use prost::Message;
+
+    use crate::test_utils::get_dummy_proof;
+
+    /// Returns a dummy `RawMerkleProof`, for testing only!
+    pub fn get_dummy_merkle_proof() -> RawMerkleProof {
+
+        let data = get_dummy_proof();
+        let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
+        
+        parsed.merge(data.as_slice()).unwrap();
+
+        let mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![parsed];
+        RawMerkleProof { proofs: mproofs }
+    }
+}
+
+// #[cfg(test)]
+// mod tests {
+  
+//     //use std::convert::TryFrom;
+
+//     use crate::test_utils::get_dummy_proof;
+
+//     //{ics23_commitment::merkle::MerkleProof, 
+//     use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+
+//     use super::CommitmentProofBytes;
+
+//     #[test]
+//     fn proof_commitment() {
+//         // let client_id: ClientId = "tendermint".parse().unwrap();
+//         // let signer = get_dummy_account_id();
+
+//         // let header = get_dummy_ics07_header();
+
+//         let proof = get_dummy_proof();
+//         let merkle_proof :RawMerkleProof= vec![CommitmentProofBytes::from(proof)].into();
+//         let commitment  = CommitmentProofBytes::from(proof);
+//         //let merkle = RawMerkleProof::try_from(commitment.clone());
+
+//         //let back_commitment = CommitmentProofBytes::from(merkle.unwrap()); 
+//        // assert_eq!(commitment, back_commitment);
+//         // MsgUpdateAnyClient::new(client_id, AnyHeader::Tendermint(header), signer);
+//         // let raw = MsgUpdateClient::from(msg.clone());
+//         // let msg_back = MsgUpdateAnyClient::try_from(raw.clone()).unwrap();
+//         // let raw_back = MsgUpdateClient::from(msg_back.clone());
+//         // assert_eq!(msg, msg_back);
+//         // assert_eq!(raw, raw_back);
+//     }
+// }

@@ -7,6 +7,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+//as RawMerkleProof;
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
@@ -85,5 +86,38 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
                 .map_err(|e| Kind::InvalidUpgradeConsensusStateProof(e.kind().clone()))?,
             signer: proto_msg.signer.into(),
         })
+    }
+}
+
+#[cfg(test)]
+pub mod test_util {
+    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+    //use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+
+    use crate::{ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height}, ics24_host::identifier::ClientId, mock::{client_state::{MockClientState, MockConsensusState}, header::MockHeader}, test_utils::{get_dummy_bech32_account, get_dummy_proof}};
+    use super::MsgUpgradeAnyClient;
+
+
+    /// Extends the implementation with additional helper methods.
+    impl MsgUpgradeAnyClient {
+        /// Setter for `client_id`. Amenable to chaining, since it consumes the input message.
+        pub fn with_client_id(self, client_id: ClientId) -> Self {
+            MsgUpgradeAnyClient { client_id, ..self }
+        }
+    }
+    
+    /// Returns a dummy `RawMsgAcknowledgement`, for testing only!
+    /// The `height` parametrizes both the proof height as well as the timeout height.
+    pub fn get_dummy_raw_msg_upgrade_client(height :Height) -> RawMsgUpgradeClient {
+        RawMsgUpgradeClient {
+            client_id: "tendermint".parse().unwrap(),
+            client_state: Some(AnyClientState::Mock(MockClientState(MockHeader::new(
+                height))).into()),
+            consensus_state: Some(AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
+                height))).into()),
+            proof_upgrade_client: get_dummy_proof(),
+            proof_upgrade_consensus_state: get_dummy_proof(),
+            signer: get_dummy_bech32_account(),
+        }
     }
 }
