@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### FEATURES
+
+- [ibc-relayer]
+  - Graceful handling of packet events in the presence of multiple relayers ([#983])
+
 ### IMPROVEMENTS
 
 - [ibc]
@@ -17,6 +22,7 @@
 - [ibc-relayer-cli]
   - Promote `start-multi` command to `start` ([#911])
 
+[#983]: https://github.com/informalsystems/ibc-rs/issues/983
 [#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
