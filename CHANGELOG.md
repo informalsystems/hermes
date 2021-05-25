@@ -8,7 +8,19 @@
   - Graceful handling of packet events in the presence of multiple relayers ([#983])
 
 
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
+
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Promote `start-multi` command to `start` ([#911])
+
 [#822]: https://github.com/informalsystems/ibc-rs/issues/983
+[#911]: https://github.com/informalsystems/ibc-rs/issues/911
+[#972]: https://github.com/informalsystems/ibc-rs/issues/972
 
 ## v0.3.2
 *May 21st, 2021*

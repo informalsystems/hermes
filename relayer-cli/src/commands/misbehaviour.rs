@@ -117,7 +117,7 @@ fn misbehaviour_handling(
             )
         })?;
 
-    let client = ForeignClient::restore(&client_id, chain.clone(), counterparty_chain.clone());
+    let client = ForeignClient::restore(client_id, chain, counterparty_chain);
     let result = client.detect_misbehaviour_and_submit_evidence(update);
     if let MisbehaviourResults::EvidenceSubmitted(events) = result {
         info!("evidence submission result {:?}", events);
