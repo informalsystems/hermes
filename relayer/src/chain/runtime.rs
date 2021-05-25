@@ -53,6 +53,12 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
 };
+use ibc::ics02_client::client_state::IdentifiedAnyClientState;
+use ibc_proto::ibc::core::channel::v1::{
+    QueryChannelClientStateRequest, QueryConnectionChannelsRequest,
+};
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
@@ -228,6 +234,14 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_latest_height(reply_to)?
                         }
 
+                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
+                            self.query_clients(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryClientConnections { request, reply_to }) => {
+                            self.query_client_connections(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
@@ -260,12 +274,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_connection(connection_id, height, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryConnectionChannels { request, reply_to }) => {
+                            self.query_connection_channels(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryChannels { request, reply_to }) => {
                             self.query_channels(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
                             self.query_channel(port_id, channel_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
+                            self.query_channel_client(request, reply_to)?
                         },
 
                         Ok(ChainRequest::ProvenClientState { client_id, height, reply_to }) => {
@@ -479,6 +501,30 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_clients(request);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_client_connections(
+        &self,
+        request: QueryClientConnectionsRequest,
+        reply_to: ReplyTo<Vec<ConnectionId>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_client_connections(request);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
     fn query_client_state(
         &self,
         client_id: ClientId,
@@ -582,6 +628,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+    ) -> Result<(), Error> {
+        let connection_channels = self.chain.query_connection_channels(request);
+
+        reply_to.send(connection_channels).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
@@ -602,6 +660,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<ChannelEnd>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel(&port_id, &channel_id, height);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_channel_client(
+        &self,
+        request: QueryChannelClientStateRequest,
+        reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_channel_client(request);
 
         reply_to.send(result).map_err(Kind::channel)?;
 

@@ -53,9 +53,10 @@ use ibc_proto::cosmos::upgrade::v1beta1::{
     QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -760,7 +761,7 @@ impl Chain for CosmosSdkChain {
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<ChannelId>, Error> {
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         crate::time!("query_connection_channels");
 
         let mut client = self
@@ -781,13 +782,13 @@ impl Chain for CosmosSdkChain {
         // TODO: add warnings for any identifiers that fail to parse (below).
         //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
 
-        let vec_ids = response
+        let channels = response
             .channels
-            .iter()
-            .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
+            .into_iter()
+            .filter_map(|cs| IdentifiedChannelEnd::try_from(cs).ok())
             .collect();
 
-        Ok(vec_ids)
+        Ok(channels)
     }
 
     fn query_channels(
@@ -843,6 +844,34 @@ impl Chain for CosmosSdkChain {
             .into()),
             _ => Ok(channel_end),
         }
+    }
+
+    fn query_channel_client(
+        &self,
+        request: QueryChannelClientStateRequest,
+    ) -> Result<Option<IdentifiedAnyClientState>, Error> {
+        crate::time!("query_connections");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.channel_client_state(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let client_state: Option<IdentifiedAnyClientState> = response
+            .identified_client_state
+            .map_or_else(|| None, |cs| cs.try_into().ok());
+
+        Ok(client_state)
     }
 
     /// Queries the packet commitment hashes associated with a channel.
