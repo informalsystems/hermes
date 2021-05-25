@@ -755,7 +755,9 @@ impl RelayPath {
             || self.send_packet_commitment_cleared_on_src(&sp.packet)?)
     }
 
-    /// Checks if an acknowledge packet has been received on source chain.
+    /// Checks if an acknowledgement for the given packet has been received on
+    /// source chain of the packet, ie. the destination chain of the relay path
+    /// that sends the acknowledgment.
     fn recv_packet_acknowledged_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
         let unreceived_ack =
             self.dst_chain()
