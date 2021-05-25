@@ -15,9 +15,11 @@ use crate::ics02_client::height::Height;
 use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
+use crate::timestamp::Timestamp;
+use crate::utils::UnwrapInfallible;
+
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
-use crate::timestamp::Timestamp;
 
 pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
     "/ibc.lightclients.tendermint.v1.ConsensusState";
@@ -101,12 +103,16 @@ impl From<AnyConsensusState> for Any {
         match value {
             AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
+                value: value
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
+                value: value
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
             },
         }
     }
@@ -121,18 +127,22 @@ pub struct AnyConsensusStateWithHeight {
 impl Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {}
 
 impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
-    type Error = Error;
+    type Error = Kind;
 
     fn try_from(value: ConsensusStateWithHeight) -> Result<Self, Self::Error> {
         let state = value
             .consensus_state
             .map(AnyConsensusState::try_from)
             .transpose()
-            .map_err(|e| Kind::InvalidRawConsensusState.context(e))?
+            .map_err(|_| Kind::InvalidRawConsensusState)?
             .ok_or(Kind::EmptyConsensusStateResponse)?;
 
         Ok(AnyConsensusStateWithHeight {
-            height: value.height.ok_or(Kind::InvalidHeightResult)?.try_into()?,
+            height: value
+                .height
+                .ok_or(Kind::MissingHeight)?
+                .try_into()
+                .unwrap_infallible(),
             consensus_state: state,
         })
     }
