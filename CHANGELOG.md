@@ -7,6 +7,12 @@
 - [ibc-relayer]
   - Add support for event based channel relaying ([#822])
 
+### IMPROVEMENTS
+
+- [ibc]
+  - Started `unwrap` cleanup ([#871])
+
+
 ### BUG FIXES
 
 - [ibc-relayer]
@@ -18,6 +24,7 @@
   - Promote `start-multi` command to `start` ([#911])
 
 [#822]: https://github.com/informalsystems/ibc-rs/issues/822
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
 

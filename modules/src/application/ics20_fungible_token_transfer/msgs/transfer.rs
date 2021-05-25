@@ -54,7 +54,7 @@ impl Msg for MsgTransfer {
 impl Protobuf<RawMsgTransfer> for MsgTransfer {}
 
 impl TryFrom<RawMsgTransfer> for MsgTransfer {
-    type Error = anomaly::Error<Kind>;
+    type Error = Kind;
 
     fn try_from(raw_msg: RawMsgTransfer) -> Result<Self, Self::Error> {
         let timeout_timestamp = Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
@@ -93,7 +93,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             token: domain_msg.token,
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
-            timeout_height: Some(domain_msg.timeout_height.try_into().unwrap()),
+            timeout_height: Some(domain_msg.timeout_height.into()),
             timeout_timestamp: domain_msg.timeout_timestamp.as_nanoseconds(),
         }
     }
