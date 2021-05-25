@@ -3,7 +3,6 @@ use crate::ics02_client;
 use crate::ics03_connection;
 use crate::ics04_channel;
 use flex_error::*;
-use tendermint_proto;
 
 define_error! { RoutingError;
     Ics02Client
