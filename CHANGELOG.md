@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### IMPROVEMENTS
+
+- [ibc]
+  - Started `unwrap` cleanup ([#871])
+
 ### BUG FIXES
 
 - [ibc-relayer]
@@ -12,6 +17,7 @@
 - [ibc-relayer-cli]
   - Promote `start-multi` command to `start` ([#911])
 
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
 
