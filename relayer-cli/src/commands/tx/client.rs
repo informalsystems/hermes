@@ -34,7 +34,7 @@ impl Runnable for TxCreateClientCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let client = ForeignClient::restore(&ClientId::default(), chains.dst, chains.src);
+        let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client

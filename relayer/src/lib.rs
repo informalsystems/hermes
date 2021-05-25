@@ -27,7 +27,6 @@ pub mod link;
 pub mod macros;
 pub mod object;
 pub mod registry;
-pub mod relay;
 pub mod supervisor;
 pub mod transfer;
 pub mod upgrade_chain;

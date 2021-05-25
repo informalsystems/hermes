@@ -230,7 +230,7 @@ impl Supervisor {
         });
 
         self.workers
-            .get_or_spawn(client_object, chain.clone(), counterparty_chain.clone());
+            .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
 
         // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
         //  https://github.com/informalsystems/ibc-rs/issues/901
@@ -271,6 +271,12 @@ impl Supervisor {
                     chain_config.id, e
                 ),
             }
+        }
+
+        // At least one chain runtime should be available, otherwise the supervisor
+        // cannot do anything and will hang indefinitely.
+        if self.registry.size() == 0 {
+            return Err("supervisor was not able to connect to any chain".into());
         }
 
         self.spawn_workers();
