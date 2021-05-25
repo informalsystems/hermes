@@ -1328,10 +1328,11 @@ impl RelayPath {
         }
 
         // Schedule new operational data targeting the source chain
-        for (&_pos, batch) in timed_out.iter() {
+        for (_, batch) in timed_out.into_iter() {
             let mut new_od =
                 OperationalData::new(dst_current_height, OperationalDataTarget::Source);
-            new_od.batch = batch.clone();
+
+            new_od.batch = batch;
 
             info!(
                 "[{}] re-scheduling from new timed-out batch of size {}",
@@ -1343,10 +1344,11 @@ impl RelayPath {
         }
 
         self.dst_operational_data = all_dst_odata;
+
         // Possibly some op. data became empty (if no events were kept).
         // Retain only the non-empty ones.
-        self.dst_operational_data
-            .retain(|odata| !odata.batch.is_empty());
+        self.dst_operational_data.retain(|o| !o.batch.is_empty());
+
         Ok(())
     }
 
@@ -1361,6 +1363,7 @@ impl RelayPath {
             );
             return Ok(());
         }
+
         info!(
             "[{}] scheduling op. data with {} msg(s) for {} chain (height {})",
             self,
@@ -1422,17 +1425,19 @@ impl RelayPath {
     /// waiting for the delay period to pass.
     /// Returns `None` if there is no operational data scheduled.
     fn fetch_scheduled_operational_data(&mut self) -> Option<OperationalData> {
-        if let Some(odata) = self
+        let odata = self
             .src_operational_data
             .first()
-            .or_else(|| self.dst_operational_data.first())
-        {
+            .or_else(|| self.dst_operational_data.first());
+
+        if let Some(odata) = odata {
             // Check if the delay period did not completely elapse
-            match self
+            let delay_left = self
                 .channel
                 .connection_delay
-                .checked_sub(odata.scheduled_time.elapsed())
-            {
+                .checked_sub(odata.scheduled_time.elapsed());
+
+            match delay_left {
                 None => info!(
                     "[{}] ready to fetch a scheduled op. data with batch of size {} targeting {}",
                     self,
@@ -1447,18 +1452,21 @@ impl RelayPath {
                         odata.batch.len(),
                         odata.target,
                     );
+
                     // Wait until the delay period passes
                     thread::sleep(delay_left);
                 }
             }
 
-            let od = match odata.target {
+            let op = match odata.target {
                 OperationalDataTarget::Source => self.src_operational_data.remove(0),
                 OperationalDataTarget::Destination => self.dst_operational_data.remove(0),
             };
-            return Some(od);
+
+            Some(op)
+        } else {
+            None
         }
-        None
     }
 
     /// Set the relay path's clear packets flag.
