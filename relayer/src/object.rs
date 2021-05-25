@@ -38,7 +38,7 @@ impl Client {
     }
 }
 
-//Channel
+/// Channel
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Channel {
     /// Destination chain identifier.
@@ -47,10 +47,10 @@ pub struct Channel {
     /// Source chain identifier.
     pub src_chain_id: ChainId,
 
-    /// Source channel identiier.
+    /// Source channel identifier.
     pub src_channel_id: ChannelId,
 
-    /// Source port identiier.
+    /// Source port identifier.
     pub src_port_id: PortId,
 }
 

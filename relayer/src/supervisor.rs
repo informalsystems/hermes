@@ -220,7 +220,6 @@ impl Supervisor {
     }
 
     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
-    #[allow(clippy::suspicious_operation_groupings)]
     fn spawn_workers_for_channel(
         &mut self,
         chain: Box<dyn ChainHandle>,
@@ -309,9 +308,9 @@ impl Supervisor {
             });
             self.workers
                 .get_or_spawn(path_object, chain.clone(), counterparty_chain.clone());
-        } else if self.handshake_enabled()
-            && !remote_state.is_open()
+        } else if !remote_state.is_open()
             && remote_state as u32 <= local_state as u32
+            && self.handshake_enabled()
         {
             // create worker for channel handshake that will advance the remote state
             let channel_object = Object::Channel(Channel {

@@ -88,7 +88,7 @@ the `profiling` feature and the [log level][log-level] should be `info` level or
 #### Example output for `tx raw conn-init` command
 
 ```
-hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
+hermes -c   config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
 ```
 
 ```
