@@ -34,6 +34,7 @@ pub use error::Error;
 use ibc::ics02_client::client_state::IdentifiedAnyClientState;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
+use ibc::ics04_channel::channel::State;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -220,6 +221,11 @@ impl Supervisor {
         client: IdentifiedAnyClientState,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), BoxError> {
+
+        if !channel.channel_end.state_matches(&State::Open) {
+            return Ok(())
+        }
+
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
