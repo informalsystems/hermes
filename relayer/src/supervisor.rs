@@ -273,7 +273,8 @@ impl Supervisor {
             }
         }
 
-        // At least one chain runtime should be alive and kicking, otherwise bail.
+        // At least one chain runtime should be available, otherwise the supervisor
+        // cannot do anything and will hang indefinitely.
         if self.registry.size() == 0 {
             return Err("supervisor was not able to connect to any chain".into());
         }
