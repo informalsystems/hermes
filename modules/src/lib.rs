@@ -8,7 +8,9 @@
     unused_qualifications,
     rust_2018_idioms
 )]
-#![cfg_attr(not(test), deny(clippy::unwrap_used))]
+// TODO: disable unwraps:
+//  https://github.com/informalsystems/ibc-rs/issues/987
+// #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 #![forbid(unsafe_code)]
 
 //! Implementation of the following ICS modules:
