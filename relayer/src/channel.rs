@@ -1,8 +1,8 @@
 #![allow(clippy::borrowed_box)]
-use std::time::Duration;
 use anomaly::BoxError;
 use prost_types::Any;
 use serde::Serialize;
+use std::time::Duration;
 use thiserror::Error;
 use tracing::{debug, error};
 
