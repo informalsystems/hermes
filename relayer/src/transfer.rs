@@ -20,12 +20,15 @@ pub enum PacketError {
     Failed(String),
 
     #[error("key error with underlying cause: {0}")]
-    KeyError(Error),
+    Key(Error),
 
     #[error(
         "failed during a transaction submission step to chain id {0} with underlying error: {1}"
     )]
-    SubmitError(ChainId, Error),
+    Submit(ChainId, Error),
+
+    #[error("timestamp overflow")]
+    TimestampOverflow,
 }
 
 #[derive(Clone, Debug)]
@@ -51,24 +54,14 @@ pub fn build_and_send_transfer_messages(
         None => packet_dst_chain.get_signer(),
         Some(r) => Ok(r.clone().into()),
     }
-    .map_err(PacketError::KeyError)?;
+    .map_err(PacketError::Key)?;
 
-    let sender = packet_src_chain
-        .get_signer()
-        .map_err(PacketError::KeyError)?;
+    let sender = packet_src_chain.get_signer().map_err(PacketError::Key)?;
 
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        Timestamp::from_nanoseconds(
-            Timestamp::now().as_nanoseconds() + opts.timeout_seconds.as_nanos() as u64,
-        )
-        .map_err(|_| {
-            PacketError::Failed(format!(
-                "invalid timeout timestamp {:?}",
-                opts.timeout_seconds
-            ))
-        })?
+        (Timestamp::now() + opts.timeout_seconds).map_err(|_| PacketError::TimestampOverflow)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
@@ -97,10 +90,9 @@ pub fn build_and_send_transfer_messages(
     for _i in 0..opts.number_msgs {
         thread::sleep(Duration::from_millis(100));
         let raw_msg = msg.clone().to_any();
-
         let new_seq = packet_src_chain
             .send_msgs_async(raw_msg, seq)
-            .map_err(|e| PacketError::SubmitError(packet_src_chain.id().clone(), e))?;
+            .map_err(|e| PacketError::Submit(packet_src_chain.id().clone(), e))?;
 
         seq = new_seq;
     }

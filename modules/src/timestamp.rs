@@ -1,6 +1,7 @@
 use std::convert::TryInto;
 use std::fmt::Display;
 use std::num::{ParseIntError, TryFromIntError};
+use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -124,6 +125,40 @@ impl Display for Timestamp {
     }
 }
 
+#[derive(Clone, Debug, Error, PartialEq, Eq)]
+#[error("Timestamp overflow when modifying with duration")]
+pub struct TimestampOverflowError;
+
+impl Add<Duration> for Timestamp {
+    type Output = Result<Timestamp, TimestampOverflowError>;
+
+    fn add(self, duration: Duration) -> Result<Timestamp, TimestampOverflowError> {
+        match self.as_datetime() {
+            Some(datetime) => {
+                let duration2 =
+                    chrono::Duration::from_std(duration).map_err(|_| TimestampOverflowError)?;
+                Ok(Self::from_datetime(datetime + duration2))
+            }
+            None => Ok(self),
+        }
+    }
+}
+
+impl Sub<Duration> for Timestamp {
+    type Output = Result<Timestamp, TimestampOverflowError>;
+
+    fn sub(self, duration: Duration) -> Result<Timestamp, TimestampOverflowError> {
+        match self.as_datetime() {
+            Some(datetime) => {
+                let duration2 =
+                    chrono::Duration::from_std(duration).map_err(|_| TimestampOverflowError)?;
+                Ok(Self::from_datetime(datetime - duration2))
+            }
+            None => Ok(self),
+        }
+    }
+}
+
 pub type ParseTimestampError = anomaly::Error<ParseTimestampErrorKind>;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
@@ -158,7 +193,7 @@ mod tests {
     use std::thread::sleep;
     use std::time::Duration;
 
-    use super::{Expiry, Timestamp};
+    use super::{Expiry, Timestamp, ZERO_DURATION};
 
     #[test]
     fn test_timestamp_comparisons() {
@@ -199,6 +234,21 @@ mod tests {
             nil_timestamp.check_expiry(&nil_timestamp),
             Expiry::InvalidTimestamp
         );
+    }
+
+    #[test]
+    fn test_timestamp_arithmetic() {
+        let time0 = Timestamp::none();
+        let time1 = Timestamp::from_nanoseconds(100).unwrap();
+        let time2 = Timestamp::from_nanoseconds(150).unwrap();
+        let time3 = Timestamp::from_nanoseconds(50).unwrap();
+        let duration = Duration::from_nanos(50);
+
+        assert_eq!(time1, (time1 + ZERO_DURATION).unwrap());
+        assert_eq!(time2, (time1 + duration).unwrap());
+        assert_eq!(time3, (time1 - duration).unwrap());
+        assert_eq!(time0, (time0 + duration).unwrap());
+        assert_eq!(time0, (time0 - duration).unwrap());
     }
 
     #[test]

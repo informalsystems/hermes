@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.3.1"
+version    = "0.3.2"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -23,8 +23,8 @@ mocks = [ "tendermint-testgen", "sha2" ]
 ibc-proto = { version = "0.8.0", path = "../proto" }
 ics23 = "0.6.5"
 anomaly = "0.2.0"
-chrono = "0.4"
-thiserror = "1.0.24"
+chrono = "0.4.19"
+thiserror = "1.0.25"
 serde_derive = "1.0.104"
 serde = "1.0.125"
 serde_json = "1"

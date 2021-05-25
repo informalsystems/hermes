@@ -24,7 +24,11 @@ FLAGS:
 
 ```
 
-__Example__
+## Examples
+
+### New connection over new clients
+
+Create a new connection between `ibc-0` and `ibc-1` over new clients:
 
 ```shell
 hermes create connection ibc-0 ibc-1
@@ -191,6 +195,20 @@ Success: Connection {
     },
 }
 ```
+
+### New connection over existing clients
+
+Create a new connection between `ibc-0` and `ibc-1` over existing clients,
+both with client id `07-tendermint-0`:
+
+```shell
+hermes create connection ibc-0 --client-a 07-tendermint-0 --client-b
+07-tendermint-0
+```
+
+
+Notice that one can omit the destination chain parameter, as Hermes will automatically
+figure it out by looking up the given client on `ibc-0`.
 
 ## Non-zero Delay Connection
 

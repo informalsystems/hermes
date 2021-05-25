@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{cmp::Ordering, sync::Arc};
 
 use crossbeam_channel as channel;
 use futures::{
@@ -283,8 +283,6 @@ impl EventMonitor {
     pub fn run(mut self) {
         debug!(chain.id = %self.chain_id, "starting event monitor");
 
-        let rt = self.rt.clone();
-
         // Take ownership of the subscriptions
         let subscriptions =
             std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
@@ -294,6 +292,9 @@ impl EventMonitor {
 
         // Needed to be able to poll the stream
         pin_mut!(batches);
+
+        // Work around double borrow
+        let rt = self.rt.clone();
 
         loop {
             let result = rt.block_on(async {
@@ -341,20 +342,37 @@ fn stream_batches(
     let id = chain_id.clone();
 
     // Collect IBC events from each RPC event
-    let batches = subscriptions
+    let events = subscriptions
         .filter_map(|rpc_event| async { rpc_event.ok() })
         .flat_map(move |rpc_event| collect_events(&id, rpc_event));
 
     // Group events by height
-    let grouped = group_while(batches, |(h0, _), (h1, _)| h0 == h1);
+    let grouped = group_while(events, |(h0, _), (h1, _)| h0 == h1);
 
     // Convert each group to a batch
     grouped.map(move |events| {
-        let (height, _) = events.first().expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+        let height = events
+            .first()
+            .map(|(h, _)| h)
+            .copied()
+            .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+
+        let mut events = events.into_iter().map(|(_, e)| e).collect();
+        sort_events(&mut events);
+
         EventBatch {
-            height: *height,
+            height,
+            events,
             chain_id: chain_id.clone(),
-            events: events.into_iter().map(|e| e.1).collect(),
         }
+    })
+}
+
+/// Sort the given events by putting the NewBlock event first,
+/// and leaving the other events as is.
+fn sort_events(events: &mut Vec<IbcEvent>) {
+    events.sort_by(|a, b| match (a, b) {
+        (IbcEvent::NewBlock(_), _) => Ordering::Less,
+        _ => Ordering::Equal,
     })
 }
