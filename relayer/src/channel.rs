@@ -1,3 +1,7 @@
+#![allow(clippy::borrowed_box)]
+
+use std::time::Duration;
+
 use prost_types::Any;
 use serde::Serialize;
 use thiserror::Error;
@@ -19,8 +23,8 @@ use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
-use crate::relay::MAX_ITER;
-use std::time::Duration;
+
+const MAX_RETRIES: usize = 5;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
@@ -137,12 +141,12 @@ impl Channel {
         Ok(channel)
     }
 
-    pub fn src_chain(&self) -> Box<dyn ChainHandle> {
-        self.a_side.chain.clone()
+    pub fn src_chain(&self) -> &Box<dyn ChainHandle> {
+        &self.a_side.chain
     }
 
-    pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
-        self.b_side.chain.clone()
+    pub fn dst_chain(&self) -> &Box<dyn ChainHandle> {
+        &self.b_side.chain
     }
 
     pub fn src_client_id(&self) -> &ClientId {
@@ -191,13 +195,13 @@ impl Channel {
     fn handshake(&mut self) -> Result<(), ChannelError> {
         let done = '🥳';
 
-        let a_chain = self.src_chain();
-        let b_chain = self.dst_chain();
+        let a_chain = self.src_chain().clone();
+        let b_chain = self.dst_chain().clone();
 
         // Try chanOpenInit on a_chain
         let mut counter = 0;
         let mut init_success = false;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
             match self.flipped().build_chan_open_init_and_send() {
                 Err(e) => {
@@ -217,14 +221,14 @@ impl Channel {
         if !init_success {
             return Err(ChannelError::Failed(format!(
                 "Failed to finish channel open init in {} iterations for {:?}",
-                MAX_ITER, self
+                MAX_RETRIES, self
             )));
         };
 
         // Try chanOpenTry on b_chain
         counter = 0;
         let mut try_success = false;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
             match self.build_chan_open_try_and_send() {
                 Err(e) => {
@@ -243,12 +247,12 @@ impl Channel {
         if !try_success {
             return Err(ChannelError::Failed(format!(
                 "Failed to finish channel open try in {} iterations for {:?}",
-                MAX_ITER, self
+                MAX_RETRIES, self
             )));
         };
 
         counter = 0;
-        while counter < MAX_ITER {
+        while counter < MAX_RETRIES {
             counter += 1;
 
             // Continue loop if query error
@@ -298,13 +302,16 @@ impl Channel {
 
         Err(ChannelError::Failed(format!(
             "Failed to finish channel handshake in {} iterations for {:?}",
-            MAX_ITER, self
+            MAX_RETRIES, self
         )))
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ChannelError> {
-        let client =
-            ForeignClient::restore(self.dst_client_id(), self.dst_chain(), self.src_chain());
+        let client = ForeignClient::restore(
+            self.dst_client_id().clone(),
+            self.dst_chain().clone(),
+            self.src_chain().clone(),
+        );
 
         client.build_update_client(height).map_err(|e| {
             ChannelError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)
