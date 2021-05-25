@@ -18,7 +18,7 @@ use crate::ics04_channel::msgs::{
     chan_open_init, chan_open_try, recv_packet, timeout, timeout_on_close, ChannelMsg, PacketMsg,
 };
 use crate::ics26_routing::context::Ics26Context;
-use crate::ics26_routing::error::{Error, Kind};
+use crate::ics26_routing::error;
 use crate::ics26_routing::msgs::Ics26Envelope::{
     self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
 };
@@ -27,7 +27,7 @@ use crate::ics26_routing::msgs::Ics26Envelope::{
 /// info or signature checks here.
 /// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
 /// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
+pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, error::RoutingError>
 where
     Ctx: Ics26Context,
 {
@@ -44,36 +44,36 @@ where
             create_client::TYPE_URL => {
                 // Pop out the message and then wrap it in the corresponding type.
                 let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics2Msg(ClientMsg::CreateClient(domain_msg)))
             }
             update_client::TYPE_URL => {
                 let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics2Msg(ClientMsg::UpdateClient(domain_msg)))
             }
             upgrade_client::TYPE_URL => {
                 let domain_msg = upgrade_client::MsgUpgradeAnyClient::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics2Msg(ClientMsg::UpgradeClient(domain_msg)))
             }
 
             // ICS03
             conn_open_init::TYPE_URL => {
                 let domain_msg = conn_open_init::MsgConnectionOpenInit::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics3Msg(ConnectionMsg::ConnectionOpenInit(domain_msg)))
             }
             conn_open_try::TYPE_URL => {
                 let domain_msg = conn_open_try::MsgConnectionOpenTry::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     domain_msg,
                 ))))
             }
             conn_open_ack::TYPE_URL => {
                 let domain_msg = conn_open_ack::MsgConnectionOpenAck::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
                     domain_msg,
                 ))))
@@ -81,72 +81,72 @@ where
             conn_open_confirm::TYPE_URL => {
                 let domain_msg =
                     conn_open_confirm::MsgConnectionOpenConfirm::decode_vec(&any_msg.value)
-                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                        .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(domain_msg)))
             }
 
             // ICS04 channel messages
             chan_open_init::TYPE_URL => {
                 let domain_msg = chan_open_init::MsgChannelOpenInit::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(domain_msg)))
             }
             chan_open_try::TYPE_URL => {
                 let domain_msg = chan_open_try::MsgChannelOpenTry::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenTry(domain_msg)))
             }
             chan_open_ack::TYPE_URL => {
                 let domain_msg = chan_open_ack::MsgChannelOpenAck::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenAck(domain_msg)))
             }
             chan_open_confirm::TYPE_URL => {
                 let domain_msg =
                     chan_open_confirm::MsgChannelOpenConfirm::decode_vec(&any_msg.value)
-                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                        .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenConfirm(domain_msg)))
             }
             chan_close_init::TYPE_URL => {
                 let domain_msg = chan_close_init::MsgChannelCloseInit::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4ChannelMsg(ChannelMsg::ChannelCloseInit(domain_msg)))
             }
             chan_close_confirm::TYPE_URL => {
                 let domain_msg =
                     chan_close_confirm::MsgChannelCloseConfirm::decode_vec(&any_msg.value)
-                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                        .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4ChannelMsg(ChannelMsg::ChannelCloseConfirm(domain_msg)))
             }
             // ICS20 - 04 - Send packet
             transfer::TYPE_URL => {
                 let domain_msg = transfer::MsgTransfer::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics20Msg(domain_msg))
             }
             // ICS04 packet messages
             recv_packet::TYPE_URL => {
                 let domain_msg = recv_packet::MsgRecvPacket::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4PacketMsg(PacketMsg::RecvPacket(domain_msg)))
             }
             acknowledgement::TYPE_URL => {
                 let domain_msg = acknowledgement::MsgAcknowledgement::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4PacketMsg(PacketMsg::AckPacket(domain_msg)))
             }
             timeout::TYPE_URL => {
                 let domain_msg = timeout::MsgTimeout::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4PacketMsg(PacketMsg::ToPacket(domain_msg)))
             }
             timeout_on_close::TYPE_URL => {
                 let domain_msg = timeout_on_close::MsgTimeoutOnClose::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                    .map_err(error::malformed_message_bytes_error)?;
                 Ok(Ics4PacketMsg(PacketMsg::ToClosePacket(domain_msg)))
             }
 
-            _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)),
+            _ => Err(error::unknown_message_type_url_error(any_msg.type_url)),
         }?;
 
         // Process the envelope, and accumulate any events that were generated.
@@ -163,18 +163,21 @@ where
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
 /// Returns a handler output with empty result of type `HandlerOutput<()>` which contains the log
 /// and events produced after processing the input `msg`.
-pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx>(
+    ctx: &mut Ctx,
+    msg: Ics26Envelope,
+) -> Result<HandlerOutput<()>, error::RoutingError>
 where
     Ctx: Ics26Context,
 {
     let output = match msg {
         Ics2Msg(msg) => {
             let handler_output =
-                ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+                ics2_msg_dispatcher(ctx, msg).map_err(error::ics02_client_error)?;
 
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(error::ics02_client_error)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -184,11 +187,11 @@ where
 
         Ics3Msg(msg) => {
             let handler_output =
-                ics3_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+                ics3_msg_dispatcher(ctx, msg).map_err(error::ics03_connection_error)?;
 
             // Apply any results to the host chain store.
             ctx.store_connection_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(error::ics03_connection_error)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -198,11 +201,11 @@ where
 
         Ics4ChannelMsg(msg) => {
             let handler_output =
-                ics4_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+                ics4_msg_dispatcher(ctx, msg).map_err(error::ics04_channel_error)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(error::ics04_channel_error)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -211,12 +214,12 @@ where
         }
 
         Ics20Msg(msg) => {
-            let handler_output =
-                ics20_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output = ics20_msg_dispatcher(ctx, msg)
+                .map_err(error::ics20_fungible_token_transfer_error)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(error::ics04_channel_error)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -225,12 +228,12 @@ where
         }
 
         Ics4PacketMsg(msg) => {
-            let handler_output = ics04_packet_msg_dispatcher(ctx, msg)
-                .map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output =
+                ics04_packet_msg_dispatcher(ctx, msg).map_err(error::ics04_channel_error)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(error::ics04_channel_error)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
