@@ -39,6 +39,8 @@ pub mod default {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
     pub global: GlobalConfig,
+    #[serde(default)]
+    pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -88,10 +90,6 @@ pub struct GlobalConfig {
     /// All valid log levels, as defined in tracing:
     /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
     pub log_level: String,
-
-    pub telemetry_enabled: bool,
-
-    pub telemetry_port: u16,
 }
 
 impl Default for GlobalConfig {
@@ -99,8 +97,21 @@ impl Default for GlobalConfig {
         Self {
             strategy: Strategy::default(),
             log_level: "info".to_string(),
-            telemetry_enabled: true,
-            telemetry_port: 3000,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TelemetryConfig {
+    pub enabled: bool,
+    pub port: u16,
+}
+
+impl Default for TelemetryConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            port: 3000,
         }
     }
 }

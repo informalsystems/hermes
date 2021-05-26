@@ -1,8 +1,10 @@
 [global]
 strategy = 'naive'
 log_level = 'info'
-telemetry_enabled = true
-telemetry_port = 3001
+
+[telemetry]
+enabled = true
+port = 3001
 
 [[chains]]
 id = 'ibc-0'
