@@ -32,6 +32,7 @@ use crate::{
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
+use ibc::ics03_connection::connection::State;
 
 pub mod error;
 
@@ -182,7 +183,11 @@ impl Supervisor {
             let chain = match self.registry.get_or_spawn(&chain_id) {
                 Ok(chain_handle) => chain_handle,
                 Err(e) => {
-                    error!("skipping workers for chain id {}. reason: failed to spawn chain runtime with error: {}", chain_id, e);
+                    error!(
+                        "skipping workers for chain {}. \
+                        reason: failed to spawn chain runtime with error: {}",
+                        chain_id, e
+                    );
                     continue;
                 }
             };
@@ -190,7 +195,11 @@ impl Supervisor {
             let clients = match chain.query_clients(req.clone()) {
                 Ok(clients) => clients,
                 Err(e) => {
-                    error!("failed to query clients from {}: {}", chain_id, e);
+                    error!(
+                        "skipping workers for chain {}. \
+                    reason: failed to query clients with error: {}",
+                        chain_id, e
+                    );
                     continue;
                 }
             };
@@ -209,13 +218,31 @@ impl Supervisor {
                     Ok(connections) => connections,
                     Err(e) => {
                         error!(
-                            "failed to query client connections from {} for {}: {}",
+                            "skipping workers for chain {}. \
+                             reason: failed to query client connections for client {}: {}",
                             chain_id, client.client_id, e
                         );
                         continue;
                     }
                 };
                 for connection_id in client_connections {
+                    let connection_end =
+                        match chain.query_connection(&connection_id, Height::zero()) {
+                            Ok(connection_end) => connection_end,
+                            Err(e) => {
+                                error!(
+                                    "skipping workers for chain {} and connection {}. \
+                                    reason: failed to query connection end: {}",
+                                    chain_id, connection_id, e
+                                );
+                                continue;
+                            }
+                        };
+
+                    if !connection_end.state_matches(&State::Open) {
+                        continue;
+                    }
+
                     let connection_channels =
                         match chain.query_connection_channels(QueryConnectionChannelsRequest {
                             connection: connection_id.to_string(),
@@ -224,26 +251,31 @@ impl Supervisor {
                             Ok(channels) => channels,
                             Err(e) => {
                                 error!(
-                                    "failed to query channels from {} for {}: {}",
+                                    "skipping workers for chain {} and connection {}. \
+                                     reason: failed to query its channels: {}",
                                     chain_id, connection_id, e
                                 );
                                 continue;
                             }
                         };
 
+                    let connection =
+                        IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
+
                     for channel in connection_channels {
                         match self.spawn_workers_for_channel(
                             chain.clone(),
                             client.clone(),
+                            connection.clone(),
                             channel.clone(),
                         ) {
                             Ok(()) => debug!(
-                                "done spawning workers for channel {} on chain {}",
+                                "done spawning workers for chain {} and channel {}",
                                 chain.id(),
                                 channel.channel_id
                             ),
                             Err(e) => error!(
-                                "skipped workers for channel {} on chain {} due to error {}",
+                                "skipped workers for chain {} and channel {} due to error {}",
                                 chain.id(),
                                 channel.channel_id,
                                 e
@@ -260,15 +292,9 @@ impl Supervisor {
         &mut self,
         chain: Box<dyn ChainHandle>,
         client: IdentifiedAnyClientState,
+        connection: IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), BoxError> {
-        let connection_id = &channel.channel_end.connection_hops[0];
-        let connection_end = chain
-            .query_connection(&connection_id, Height::zero())
-            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
-
-        let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
-
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
