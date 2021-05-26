@@ -13,11 +13,14 @@ pub use handle::WorkerHandle;
 mod cmd;
 pub use cmd::WorkerCmd;
 
+mod map;
+pub use map::WorkerMap;
+
 mod client;
 pub use client::ClientWorker;
 
-mod map;
-pub use map::WorkerMap;
+mod channel;
+pub use channel::ChannelWorker;
 
 mod uni_chan_path;
 pub use uni_chan_path::UniChanPathWorker;
@@ -30,6 +33,7 @@ pub enum WorkerMsg {
 /// A worker processes batches of events associated with a given [`Object`].
 pub enum Worker {
     Client(ClientWorker),
+    Channel(ChannelWorker),
     UniChanPath(UniChanPathWorker),
 }
 
@@ -58,6 +62,7 @@ impl Worker {
 
         let worker = match object {
             Object::Client(client) => Self::Client(ClientWorker::new(client, chains, cmd_rx)),
+            Object::Channel(channel) => Self::Channel(ChannelWorker::new(channel, chains, cmd_rx)),
             Object::UnidirectionalChannelPath(path) => {
                 Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx))
             }
@@ -73,6 +78,7 @@ impl Worker {
 
         let result = match self {
             Self::Client(w) => w.run(),
+            Self::Channel(w) => w.run(),
             Self::UniChanPath(w) => w.run(),
         };
 
@@ -90,6 +96,7 @@ impl Worker {
     fn chains(&self) -> &ChainHandlePair {
         match self {
             Self::Client(w) => &w.chains(),
+            Self::Channel(w) => w.chains(),
             Self::UniChanPath(w) => w.chains(),
         }
     }
@@ -97,6 +104,7 @@ impl Worker {
     fn object(&self) -> Object {
         match self {
             Worker::Client(w) => w.object().clone().into(),
+            Worker::Channel(w) => w.object().clone().into(),
             Worker::UniChanPath(w) => w.object().clone().into(),
         }
     }

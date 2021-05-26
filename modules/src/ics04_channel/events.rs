@@ -166,8 +166,8 @@ impl Attributes {
     pub fn port_id(&self) -> &PortId {
         &self.port_id
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.channel_id.as_ref()
     }
 }
 
@@ -188,8 +188,14 @@ impl Default for Attributes {
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -232,8 +238,14 @@ impl From<OpenInit> for IbcEvent {
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -279,14 +291,21 @@ impl OpenAck {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
+    }
+
+    pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
+        self.0.counterparty_channel_id.as_ref()
     }
 }
 
@@ -326,8 +345,11 @@ impl OpenConfirm {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -444,8 +466,8 @@ impl std::fmt::Display for CloseInit {
 pub struct CloseConfirm(Attributes);
 
 impl CloseConfirm {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -523,6 +545,18 @@ impl SendPacket {
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
     }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
+    }
 }
 
 impl TryFrom<RawObject> for SendPacket {
@@ -560,6 +594,18 @@ impl ReceivePacket {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -600,6 +646,18 @@ impl WriteAcknowledgement {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -648,6 +706,12 @@ impl AcknowledgePacket {
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
     }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
@@ -682,13 +746,19 @@ impl TimeoutPacket {
         self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height
+        self.height = height;
     }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
     pub fn src_channel_id(&self) -> &ChannelId {
         &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -726,6 +796,18 @@ impl TimeoutOnClosePacket {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
