@@ -110,8 +110,8 @@ pub struct TelemetryConfig {
 impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
-            port: 3000,
+            enabled: false,
+            port: 3001,
         }
     }
 }
