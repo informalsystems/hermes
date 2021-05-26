@@ -15,6 +15,7 @@
 
 - [ibc-relayer-cli]
   - Include chain-id in `query clients` command, and sort output by client counter ([#992])
+  - Improve config loading message ([#996])
 
 ### BUG FIXES
 
@@ -32,6 +33,7 @@
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
 [#983]: https://github.com/informalsystems/ibc-rs/issues/983
 [#992]: https://github.com/informalsystems/ibc-rs/issues/992
+[#996]: https://github.com/informalsystems/ibc-rs/issues/996
 
 ## v0.3.2
 *May 21st, 2021*
