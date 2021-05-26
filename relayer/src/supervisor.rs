@@ -82,27 +82,16 @@ impl Supervisor {
                     }
                 }
 
-                IbcEvent::OpenInitChannel(ref _open_init) => {
+                IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                     if !self.handshake_enabled() {
                         continue;
                     }
-                    if let Ok(object) = Object::channel_from_chan_open_events(
-                        event.clone().channel_attributes().unwrap(),
-                        src_chain,
-                    ) {
-                        collected.per_object.entry(object).or_default().push(event);
-                    }
-                }
-
-                IbcEvent::OpenTryChannel(ref _open_try) => {
-                    if !self.handshake_enabled() {
-                        continue;
-                    }
-                    if let Ok(object) = Object::channel_from_chan_open_events(
-                        event.clone().channel_attributes().unwrap(),
-                        src_chain,
-                    ) {
-                        collected.per_object.entry(object).or_default().push(event);
+                    if let Some(attributes) = event.clone().channel_attributes() {
+                        if let Ok(object) =
+                            Object::channel_from_chan_open_events(attributes, src_chain)
+                        {
+                            collected.per_object.entry(object).or_default().push(event);
+                        }
                     }
                 }
 

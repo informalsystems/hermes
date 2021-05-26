@@ -262,10 +262,10 @@ impl Channel {
             let channels: Vec<IdentifiedChannelEnd> =
                 counterparty_chain.query_connection_channels(req)?;
 
-            for chan in channels.iter() {
+            for chan in channels {
                 if let Some(remote_channel_id) = chan.channel_end.remote.channel_id() {
                     if remote_channel_id == &channel.src_channel_id {
-                        handshake_channel.b_side.channel_id = Some(chan.channel_id.clone());
+                        handshake_channel.b_side.channel_id = Some(chan.channel_id);
                         break;
                     }
                 }
@@ -389,23 +389,20 @@ impl Channel {
         while counter < MAX_RETRIES {
             counter += 1;
 
-            assert!(self.src_channel_id().is_some());
-            assert!(self.dst_channel_id().is_some());
-
+            let src_channel_id = self
+                .src_channel_id()
+                .ok_or(ChannelError::MissingLocalChannelId)?;
+            let dst_channel_id = self
+                .dst_channel_id()
+                .ok_or(ChannelError::MissingCounterpartyChannelId)?;
             // Continue loop if query error
-            let a_channel = a_chain.query_channel(
-                &self.src_port_id(),
-                &self.src_channel_id().unwrap(),
-                Height::zero(),
-            );
+            let a_channel =
+                a_chain.query_channel(&self.src_port_id(), &src_channel_id, Height::zero());
             if a_channel.is_err() {
                 continue;
             }
-            let b_channel = b_chain.query_channel(
-                &self.dst_port_id(),
-                &self.dst_channel_id().unwrap(),
-                Height::zero(),
-            );
+            let b_channel =
+                b_chain.query_channel(&self.dst_port_id(), &dst_channel_id, Height::zero());
             if b_channel.is_err() {
                 continue;
             }
@@ -658,7 +655,7 @@ impl Channel {
         // Retrieve existing channel
         let dst_channel = self
             .dst_chain()
-            .query_channel(self.dst_port_id(), dst_channel_id, Height::default())
+            .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
         // Check if a channel is expected to exist on destination chain
@@ -687,7 +684,7 @@ impl Channel {
         // Channel must exist on source
         let src_channel = self
             .src_chain()
-            .query_channel(self.src_port_id(), &src_channel_id, Height::default())
+            .query_channel(self.src_port_id(), &src_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
         if src_channel.counterparty().port_id() != self.dst_port_id() {
@@ -703,7 +700,7 @@ impl Channel {
 
         // Connection must exist on destination
         self.dst_chain()
-            .query_connection(self.dst_connection_id(), Height::default())
+            .query_connection(self.dst_connection_id(), Height::zero())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
         let query_height = self
@@ -801,12 +798,12 @@ impl Channel {
 
         // Channel must exist on source
         self.src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::default())
+            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
-            .query_connection(self.dst_connection_id(), Height::default())
+            .query_connection(self.dst_connection_id(), Height::zero())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
         let query_height = self
@@ -892,12 +889,12 @@ impl Channel {
 
         // Channel must exist on source
         self.src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::default())
+            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
-            .query_connection(self.dst_connection_id(), Height::default())
+            .query_connection(self.dst_connection_id(), Height::zero())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
         let query_height = self
@@ -970,7 +967,7 @@ impl Channel {
 
         // Channel must exist on destination
         self.dst_chain()
-            .query_channel(self.dst_port_id(), dst_channel_id, Height::default())
+            .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
         let signer = self.dst_chain().get_signer().map_err(|e| {
@@ -1034,12 +1031,12 @@ impl Channel {
 
         // Channel must exist on source
         self.src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::default())
+            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
-            .query_connection(self.dst_connection_id(), Height::default())
+            .query_connection(self.dst_connection_id(), Height::zero())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
 
         let query_height = self

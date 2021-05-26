@@ -55,9 +55,10 @@ impl ChannelWorker {
                                     b_chain.clone(),
                                     event.clone(),
                                 )?;
-                                retry_with_index(retry_strategy::uni_chan_path(), |index| {
-                                    handshake_channel.step_event(event.clone(), index)
-                                })
+                                retry_with_index(
+                                    retry_strategy::worker_default_strategy(),
+                                    |index| handshake_channel.step_event(event.clone(), index),
+                                )
                             }
                             None => Ok(()),
                         }
@@ -83,7 +84,7 @@ impl ChannelWorker {
                             height,
                         )?;
 
-                        retry_with_index(retry_strategy::uni_chan_path(), |index| {
+                        retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                             handshake_channel.step_state(state, index)
                         })
                     }

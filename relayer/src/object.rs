@@ -221,14 +221,11 @@ impl Object {
             .channel_id()
             .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
 
-        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id());
-
-        if dst_chain_id.is_err() {
-            return Err("dest chain missing in init".into());
-        }
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())
+            .map_err(|_| "dest chain missing in init".to_string())?;
 
         Ok(Channel {
-            dst_chain_id: dst_chain_id.unwrap(),
+            dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: channel_id.clone(),
             src_port_id: e.port_id().clone(),
