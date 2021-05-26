@@ -100,7 +100,7 @@ impl Runnable for QueryAllClientsCmd {
                     }
                     Some(source_chain_id) => {
                         info!(
-                            "filtering for client hosted on chain {} which target chain {}",
+                            "printing identifiers of all clients hosted on chain {} which target chain {}",
                             self.chain_id, source_chain_id
                         );
                         // Filter and omit chain ids
