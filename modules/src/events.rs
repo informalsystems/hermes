@@ -130,7 +130,10 @@ pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -
 
 impl IbcEvent {
     pub fn to_json(&self) -> String {
-        serde_json::to_string(self).unwrap()
+        match serde_json::to_string(self) {
+            Ok(value) => value,
+            Err(_) => format!("{:?}", self), // Fallback to debug printing
+        }
     }
 
     pub fn height(&self) -> Height {

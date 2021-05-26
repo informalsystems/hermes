@@ -129,14 +129,16 @@ data
 │   ├── config
 │   ├── data
 │   ├── keyring-test
-│   ├── key_seed.json
+│   ├── user_seed.json
+│   ├── user2_seed.json
 │   └── validator_seed.json
 ├── ibc-0.log
 ├── ibc-1
 │   ├── config
 │   ├── data
 │   ├── keyring-test
-│   ├── key_seed.json
+│   ├── user_seed.json
+│   ├── user2_seed.json
 │   └── validator_seed.json
 └── ibc-1.log
 

@@ -7,7 +7,9 @@
 
 use std::path::PathBuf;
 
-use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
+use abscissa_core::{
+    config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
+};
 use tracing::info;
 
 use crate::config::Config;
@@ -15,8 +17,7 @@ use crate::DEFAULT_CONFIG_PATH;
 
 use self::{
     create::CreateCmds, keys::KeysCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
-    version::VersionCmd,
+    tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
 };
 use crate::commands::misbehaviour::MisbehaviourCmd;
 
@@ -27,7 +28,6 @@ mod listen;
 mod misbehaviour;
 mod query;
 mod start;
-mod start_multi;
 mod tx;
 mod update;
 mod upgrade;
@@ -68,13 +68,9 @@ pub enum CliCmd {
     Upgrade(UpgradeCmds),
 
     /// The `start` subcommand
-    #[options(help = "Start the relayer")]
-    Start(StartCmd),
-
-    /// The `start-multi` subcommand
     #[options(help = "Start the relayer in multi-chain mode. \
                       Handles packet relaying across all open channels between all chains in the config.")]
-    StartMulti(StartMultiCmd),
+    Start(StartCmd),
 
     /// The `query` subcommand
     #[options(help = "Query objects from the chain")]
@@ -111,6 +107,20 @@ impl Configurable<Config> for CliCmd {
     /// This can be safely deleted if you don't want to override config
     /// settings from command-line options.
     fn process_config(&self, config: Config) -> Result<Config, FrameworkError> {
-        Ok(config)
+        match self {
+            CliCmd::Tx(cmd) => cmd.override_config(config),
+            // CliCmd::Help(cmd) => cmd.override_config(config),
+            // CliCmd::Keys(cmd) => cmd.override_config(config),
+            // CliCmd::Create(cmd) => cmd.override_config(config),
+            // CliCmd::Update(cmd) => cmd.override_config(config),
+            // CliCmd::Upgrade(cmd) => cmd.override_config(config),
+            // CliCmd::Start(cmd) => cmd.override_config(config),
+            // CliCmd::StartMulti(cmd) => cmd.override_config(config),
+            // CliCmd::Query(cmd) => cmd.override_config(config),
+            // CliCmd::Listen(cmd) => cmd.override_config(config),
+            // CliCmd::Misbehaviour(cmd) => cmd.override_config(config),
+            // CliCmd::Version(cmd) => cmd.override_config(config),
+            _ => Ok(config),
+        }
     }
 }
