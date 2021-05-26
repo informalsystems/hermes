@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use abscissa_core::{
     config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
 };
-use tracing::{info, warn};
+use tracing::{error, info};
 
 use crate::config::Config;
 use crate::DEFAULT_CONFIG_PATH;
@@ -95,6 +95,7 @@ pub enum CliCmd {
 /// This trait allows you to define how application configuration is loaded.
 impl Configurable<Config> for CliCmd {
     /// Location of the configuration file
+    /// This is called only when the `-c` command-line option is omitted.
     fn config_path(&self) -> Option<PathBuf> {
         let path = default_config_file();
 
@@ -104,15 +105,19 @@ impl Configurable<Config> for CliCmd {
                 Some(path)
             }
             Some(path) => {
-                warn!("could not find configuration file at '{}'", path.display());
+                // No file exists at the config path
+                error!("could not find configuration file at '{}'", path.display());
+                error!("for an example, please see https://hermes.informal.systems/config.html#example-configuration-file");
                 None
             }
             None => {
-                warn!("could not find default configuration file");
-                warn!(
-                    "please create one at '~/{}' or specify it with the --config flag",
+                // The path to the default config file could not be found
+                error!("could not find default configuration file");
+                error!(
+                    "please create one at '~/{}' or specify it with the '-c'/'--config' flag",
                     DEFAULT_CONFIG_PATH
                 );
+                error!("for an example, please see https://hermes.informal.systems/config.html#example-configuration-file");
                 None
             }
         }
