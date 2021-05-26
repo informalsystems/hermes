@@ -4,19 +4,19 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::{
     events::IbcEvent,
+    Height,
     ics02_client::{
         client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
-        client_state::{AnyClientState, ClientState},
+        client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
         events::UpdateClient,
         header::{AnyHeader, Header},
         misbehaviour::AnyMisbehaviour,
     },
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
-        channel::ChannelEnd,
+        channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
     },
     ics23_commitment::commitment::CommitmentPrefix,
@@ -24,17 +24,16 @@ use ibc::{
     proofs::Proofs,
     query::QueryTxRequest,
     signer::Signer,
-    Height,
 };
-
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
-        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest, QueryConnectionChannelsRequest,
+        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
-    client::v1::QueryConsensusStatesRequest,
+    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
+    connection::v1::QueryClientConnectionsRequest,
 };
 
 use crate::{
@@ -50,15 +49,9 @@ use crate::{
 };
 
 use super::{
-    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
+    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
 };
-use ibc::ics02_client::client_state::IdentifiedAnyClientState;
-use ibc_proto::ibc::core::channel::v1::{
-    QueryChannelClientStateRequest, QueryConnectionChannelsRequest,
-};
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
@@ -633,9 +626,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         request: QueryConnectionChannelsRequest,
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     ) -> Result<(), Error> {
-        let connection_channels = self.chain.query_connection_channels(request);
+        let result = self.chain.query_connection_channels(request);
 
-        reply_to.send(connection_channels).map_err(Kind::channel)?;
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
     }

@@ -7,11 +7,8 @@ use itertools::Itertools;
 use tracing::{debug, error, warn};
 
 use ibc::{
-    events::{IbcEvent, VecIbcEvents},
-    ics02_client::client_state::ClientState,
-    ics04_channel::channel::IdentifiedChannelEnd,
-    ics24_host::identifier::ChainId,
-    Height,
+    events::IbcEvent, ics02_client::client_state::ClientState,
+    ics04_channel::channel::IdentifiedChannelEnd, ics24_host::identifier::ChainId, Height,
 };
 
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
@@ -23,18 +20,21 @@ use crate::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
     },
-    object::{Client, Object, UnidirectionalChannelPath},
+    object::{Channel, Client, Object, UnidirectionalChannelPath},
     registry::Registry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
 
-mod error;
+pub mod error;
+use crate::chain::counterparty::channel_state_on_destination;
+use crate::config::Strategy;
 pub use error::Error;
 use ibc::ics02_client::client_state::IdentifiedAnyClientState;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc::ics04_channel::channel::State;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -60,6 +60,10 @@ impl Supervisor {
         })
     }
 
+    fn handshake_enabled(&self) -> bool {
+        self.config.global.strategy == Strategy::HandshakeAndPackets
+    }
+
     /// Collect the events we are interested in from an [`EventBatch`],
     /// and maps each [`IbcEvent`] to their corresponding [`Object`].
     pub fn collect_events(
@@ -82,20 +86,58 @@ impl Supervisor {
                         }
                     }
                 }
+
+                IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
+                    if !self.handshake_enabled() {
+                        continue;
+                    }
+
+                    let object = event
+                        .channel_attributes()
+                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
+                        collected.per_object.entry(object).or_default().push(event);
+                    }
+                }
+
                 IbcEvent::OpenAckChannel(ref open_ack) => {
                     // Create client worker here as channel end must be opened
                     if let Ok(object) =
-                        Object::for_chan_open_events(open_ack.attributes(), src_chain)
+                        Object::client_from_chan_open_events(open_ack.attributes(), src_chain)
                     {
-                        collected.per_object.entry(object).or_default().push(event);
+                        collected
+                            .per_object
+                            .entry(object)
+                            .or_default()
+                            .push(event.clone());
+                    }
+
+                    if !self.handshake_enabled() {
+                        continue;
+                    }
+
+                    if let Ok(channel_object) = Object::channel_from_chan_open_events(
+                        event.clone().channel_attributes().unwrap(),
+                        src_chain,
+                    ) {
+                        collected
+                            .per_object
+                            .entry(channel_object)
+                            .or_default()
+                            .push(event);
                     }
                 }
                 IbcEvent::OpenConfirmChannel(ref open_confirm) => {
                     // Create client worker here as channel end must be opened
                     if let Ok(object) =
-                        Object::for_chan_open_events(open_confirm.attributes(), src_chain)
+                        Object::client_from_chan_open_events(open_confirm.attributes(), src_chain)
                     {
-                        collected.per_object.entry(object).or_default().push(event);
+                        collected
+                            .per_object
+                            .entry(object)
+                            .or_default()
+                            .push(event.clone());
                     }
                 }
                 IbcEvent::SendPacket(ref packet) => {
@@ -222,6 +264,16 @@ impl Supervisor {
         channel: IdentifiedChannelEnd,
     ) -> Result<(), BoxError> {
 
+        let connection_id = &channel.channel_end.connection_hops[0];
+        let connection_end = chain
+            .query_connection(&connection_id, Height::zero())
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        let connection = IdentifiedConnectionEnd::new(
+            connection_id.clone(),
+            connection_end
+        );
+
         if !channel.channel_end.state_matches(&State::Open) {
             return Ok(())
         }
@@ -230,29 +282,54 @@ impl Supervisor {
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
 
-        // create the client object and spawn worker
-        let client_object = Object::Client(Client {
-            dst_client_id: client.client_id.clone(),
-            dst_chain_id: chain.id(),
-            src_chain_id: client.client_state.chain_id(),
-        });
+        let chan_state_src = channel.channel_end.state;
+        let chan_state_dst =
+            channel_state_on_destination(channel.clone(), connection, counterparty_chain.as_ref())?;
 
-        self.workers
-            .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
+        debug!(
+            "channel {} on chain {} is: {}; state on dest. chain ({}) is: {}",
+            channel.channel_id,
+            chain.id(),
+            chan_state_src,
+            counterparty_chain.id(),
+            chan_state_dst
+        );
+        if chan_state_src.is_open() && chan_state_dst.is_open() {
+            // create the client object and spawn worker
+            let client_object = Object::Client(Client {
+                dst_client_id: client.client_id.clone(),
+                dst_chain_id: chain.id(),
+                src_chain_id: client.client_state.chain_id(),
+            });
+            self.workers
+                .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
 
-        // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
-        //  https://github.com/informalsystems/ibc-rs/issues/901
-        // create the path object and spawn worker
-        let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
-            dst_chain_id: counterparty_chain.id(),
-            src_chain_id: chain.id(),
-            src_channel_id: channel.channel_id.clone(),
-            src_port_id: channel.port_id,
-        });
+            // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
+            //  https://github.com/informalsystems/ibc-rs/issues/901
+            // create the path object and spawn worker
+            let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
+                dst_chain_id: counterparty_chain.clone().id(),
+                src_chain_id: chain.id(),
+                src_channel_id: channel.channel_id.clone(),
+                src_port_id: channel.port_id,
+            });
+            self.workers
+                .get_or_spawn(path_object, chain.clone(), counterparty_chain.clone());
+        } else if !chan_state_dst.is_open()
+            && chan_state_dst as u32 <= chan_state_src as u32
+            && self.handshake_enabled()
+        {
+            // create worker for channel handshake that will advance the remote state
+            let channel_object = Object::Channel(Channel {
+                dst_chain_id: counterparty_chain.clone().id(),
+                src_chain_id: chain.id(),
+                src_channel_id: channel.channel_id.clone(),
+                src_port_id: channel.port_id,
+            });
 
-        self.workers
-            .get_or_spawn(path_object, chain.clone(), counterparty_chain.clone());
-
+            self.workers
+                .get_or_spawn(channel_object, chain.clone(), counterparty_chain.clone());
+        }
         Ok(())
     }
 
@@ -349,13 +426,6 @@ impl Supervisor {
             if events.is_empty() {
                 continue;
             }
-
-            debug!(
-                "chain {} sent {} for object {:?}",
-                chain_id,
-                VecIbcEvents(events.clone()),
-                object,
-            );
 
             let src = self.registry.get_or_spawn(object.src_chain_id())?;
             let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
