@@ -2,21 +2,117 @@
 
 ## Unreleased
 
-> [TODO: high level summary]
-
 ### FEATURES
 
+- [ibc-relayer]
+  - Graceful handling of packet events in the presence of multiple relayers ([#983])
+
 ### IMPROVEMENTS
-- [ibc-relayer-cli]
-  - Improve UX when querying non-existing connections and channels ([#875], [#920])
+
+- [ibc]
+  - Started `unwrap` cleanup ([#871])
 
 ### BUG FIXES
 
+- [ibc-relayer]
+  - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
+
 ### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Promote `start-multi` command to `start` ([#911])
+
+[#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
+[#911]: https://github.com/informalsystems/ibc-rs/issues/911
+[#972]: https://github.com/informalsystems/ibc-rs/issues/972
+
+## v0.3.2
+*May 21st, 2021*
+
+This is minor release which brings substantial performance improvements
+to the relayer (relaying 1000 packets now takes 2-5min instead of 1h+),
+better UX for the `ft-transfer` command, and automatic deployment of
+Docker images to Docker Hub.
+
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Add a `--key` option to the tx raw ft-transfer command to override the account used for sending messages ([#963])
+
+- [ibc-relayer]
+  - Add support for multiple keys to the keyring ([#963])
+
+- [release]
+  - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
+  - Automatically deploy Docker Hub image during release ([#967])
+
+### IMPROVEMENTS
+
+- [ibc-relayer]
+  - Batch together all events from all transactions included in a block ([#957])
+
+### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel ([#960])
+
+### BREAKING CHANGES
+
+> Nothing
+
+[#894]: https://github.com/informalsystems/ibc-rs/pull/894
+[#957]: https://github.com/informalsystems/ibc-rs/issues/957
+[#960]: https://github.com/informalsystems/ibc-rs/issues/960
+[#963]: https://github.com/informalsystems/ibc-rs/issues/963
+[#967]: https://github.com/informalsystems/ibc-rs/issues/967
+
+[hermes-docker]: https://hub.docker.com/r/informalsystems/hermes
+
+## v0.3.1
+*May 14h, 2021*
+
+This release improves the UX of a couple commands, fixes a bug related
+to delay periods, and adds support for packet timeouts based on timestamps,
+as well as support Protobuf-encoded keys.
+
+### FEATURES
+
+- [scripts]
+  - Created the Gaiad Manager `gm` CLI tool for managing gaiad instances on the local machine ([#902])
+
+- [ibc-relayer]
+  - Add support for packet timeout based on timeout timestamp ([#937])
+  - Added support for Protobuf-based Keyring ([#925])
+
+### IMPROVEMENTS
+
+- [ibc-relayer-cli]
+  - Improve UX when querying non-existing connections and channels ([#875], [#920])
+  - More details in error messages to increase debuggability ([#921], [#934])
+  - Disallow creating a client with same source and destination chains ([#932])
+  - Make packet worker more resilient to nodes being unreachable for a short amount of time ([#943])
+
+### BUG FIXES
+
+- [ibc]
+  - Process raw `delay_period` field as nanoseconds instead of seconds. ([#927])
+
+### BREAKING CHANGES
+
+> Nothing
 
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#902]: https://github.com/informalsystems/ibc-rs/issues/902
+[#921]: https://github.com/informalsystems/ibc-rs/issues/921
+[#925]: https://github.com/informalsystems/ibc-rs/issues/925
+[#927]: https://github.com/informalsystems/ibc-rs/issues/927
+[#932]: https://github.com/informalsystems/ibc-rs/issues/932
+[#934]: https://github.com/informalsystems/ibc-rs/issues/934
+[#937]: https://github.com/informalsystems/ibc-rs/issues/937
+[#943]: https://github.com/informalsystems/ibc-rs/issues/943
 
 
 ## v0.3.0

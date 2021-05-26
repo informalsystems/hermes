@@ -1,14 +1,15 @@
-use std::{sync::Arc, time::Duration};
+use std::{cmp::Ordering, sync::Arc};
 
 use crossbeam_channel as channel;
-use futures::stream::StreamExt;
-use futures::{stream::select_all, Stream};
-use itertools::Itertools;
-use retry::delay::Fibonacci;
+use futures::{
+    pin_mut,
+    stream::{self, select_all, StreamExt},
+    Stream,
+};
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
     event::Event as RpcEvent,
@@ -19,11 +20,25 @@ use tendermint_rpc::{
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
-use crate::util::retry::Clamped;
+use crate::util::{
+    retry::{retry_with_index, RetryResult},
+    stream::group_while,
+};
 
-const MAX_RETRIES: usize = 1000;
-const MAX_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
-const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(2);
+mod retry_strategy {
+    use crate::util::retry::clamp_total;
+    use retry::delay::Fibonacci;
+    use std::time::Duration;
+
+    // Default parameters for the retrying mechanism
+    const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
+    const MAX_TOTAL_DELAY: Duration = Duration::from_secs(10 * 60); // 10 minutes
+    const INITIAL_DELAY: Duration = Duration::from_secs(1); // 1 second
+
+    pub fn default() -> impl Iterator<Item = Duration> {
+        clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
+    }
+}
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {
@@ -177,7 +192,7 @@ impl EventMonitor {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
-            debug!("subscribing to query: {}", query);
+            trace!("subscribing to query: {}", query);
 
             let subscription = self
                 .rt
@@ -189,13 +204,13 @@ impl EventMonitor {
 
         self.subscriptions = Box::new(select_all(subscriptions));
 
-        debug!("subscribed to all queries");
+        trace!("subscribed to all queries");
 
         Ok(())
     }
 
     fn try_reconnect(&mut self) -> Result<()> {
-        warn!(
+        trace!(
             "trying to reconnect to WebSocket endpoint: {}",
             self.node_addr
         );
@@ -213,82 +228,84 @@ impl EventMonitor {
         std::mem::swap(&mut self.client, &mut client);
         std::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
-        warn!("reconnected to WebSocket endpoint: {}", self.node_addr);
+        trace!("reconnected to WebSocket endpoint: {}", self.node_addr);
 
         // Shut down previous client
-        debug!("gracefully shutting down previous client");
-
+        trace!("gracefully shutting down previous client");
         if let Err(e) = client.close() {
-            error!("previous websocket client closing failure {}", e);
+            trace!("previous websocket client closing failure: {}", e);
         }
 
         self.rt
             .block_on(driver_handle)
             .map_err(|e| Error::ClientTerminationFailed(Arc::new(e)))?;
 
-        debug!("previous client successfully shutdown");
+        trace!("previous client successfully shutdown");
 
         Ok(())
     }
 
     /// Try to resubscribe to events
     fn try_resubscribe(&mut self) -> Result<()> {
-        warn!("trying to resubscribe to events");
+        trace!("trying to resubscribe to events");
 
         self.subscribe()
     }
 
-    /// Attempt to restart the WebSocket client using the given retry stragegy.
+    /// Attempt to restart the WebSocket client using the given retry strategy.
     ///
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
     fn restart(&mut self) {
-        use retry::{retry_with_index, OperationResult as TryResult};
-
-        let strategy = Clamped::new(
-            Fibonacci::from(INITIAL_RETRY_DELAY),
-            MAX_RETRY_DELAY,
-            MAX_RETRIES,
-        );
-
-        retry_with_index(strategy.iter(), |index| {
+        let result = retry_with_index(retry_strategy::default(), |index| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
-                error!("error when reconnecting: {}", e);
-                return TryResult::Retry(index);
+                trace!("error when reconnecting: {}", e);
+                return RetryResult::Retry(index);
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
-                error!("error when reconnecting: {}", e);
-                return TryResult::Retry(index);
+                trace!("error when reconnecting: {}", e);
+                return RetryResult::Retry(index);
             }
 
-            TryResult::Ok(())
-        })
-        .unwrap_or_else(|retries| error!("failed to reconnect after {} retries", retries));
+            RetryResult::Ok(())
+        });
+
+        match result {
+            Ok(()) => info!("successfully reconnected to WebSocket endpoint"),
+            Err(retries) => error!("failed to reconnect after {} retries", retries),
+        }
     }
 
     /// Event monitor loop
     pub fn run(mut self) {
-        info!(chain.id = %self.chain_id, "starting event monitor");
+        debug!(chain.id = %self.chain_id, "starting event monitor");
 
+        // Take ownership of the subscriptions
+        let subscriptions =
+            std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
+
+        // Convert the stream of RPC events into a stream of event batches.
+        let batches = stream_batches(subscriptions, self.chain_id.clone());
+
+        // Needed to be able to poll the stream
+        pin_mut!(batches);
+
+        // Work around double borrow
         let rt = self.rt.clone();
 
         loop {
             let result = rt.block_on(async {
                 tokio::select! {
-                    Some(event) = self.subscriptions.next() => {
-                        event
-                            .map_err(Error::NextEventBatchFailed)
-                            .and_then(|e| self.collect_events(e))
-                    },
+                    Some(batch) = batches.next() => Ok(batch),
                     Some(e) = self.rx_err.recv() => Err(Error::WebSocketDriver(e)),
                 }
             });
 
             match result {
-                Ok(batches) => self.process_batches(batches).unwrap_or_else(|e| {
+                Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
                     error!("failed to process event batch: {}", e);
                 }),
                 Err(e) => {
@@ -302,31 +319,60 @@ impl EventMonitor {
     }
 
     /// Collect the IBC events from the subscriptions
-    fn process_batches(&self, batches: Vec<EventBatch>) -> Result<()> {
-        for batch in batches {
-            self.tx_batch
-                .send(Ok(batch))
-                .map_err(|_| Error::ChannelSendFailed)?;
-        }
+    fn process_batch(&self, batch: EventBatch) -> Result<()> {
+        self.tx_batch
+            .send(Ok(batch))
+            .map_err(|_| Error::ChannelSendFailed)?;
 
         Ok(())
     }
+}
 
-    /// Collect the IBC events from the subscriptions
-    fn collect_events(&mut self, event: RpcEvent) -> Result<Vec<EventBatch>> {
-        let ibc_events = crate::event::rpc::get_all_events(&self.chain_id, event)
-            .map_err(Error::CollectEventsFailed)?;
+/// Collect the IBC events from an RPC event
+fn collect_events(chain_id: &ChainId, event: RpcEvent) -> impl Stream<Item = (Height, IbcEvent)> {
+    let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
+    stream::iter(events)
+}
 
-        let events_by_height = ibc_events.into_iter().into_group_map();
-        let batches = events_by_height
-            .into_iter()
-            .map(|(height, events)| EventBatch {
-                chain_id: self.chain_id.clone(),
-                height,
-                events,
-            })
-            .collect();
+/// Convert a stream of RPC event into a stream of event batches
+fn stream_batches(
+    subscriptions: Box<SubscriptionStream>,
+    chain_id: ChainId,
+) -> impl Stream<Item = EventBatch> {
+    let id = chain_id.clone();
 
-        Ok(batches)
-    }
+    // Collect IBC events from each RPC event
+    let events = subscriptions
+        .filter_map(|rpc_event| async { rpc_event.ok() })
+        .flat_map(move |rpc_event| collect_events(&id, rpc_event));
+
+    // Group events by height
+    let grouped = group_while(events, |(h0, _), (h1, _)| h0 == h1);
+
+    // Convert each group to a batch
+    grouped.map(move |events| {
+        let height = events
+            .first()
+            .map(|(h, _)| h)
+            .copied()
+            .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+
+        let mut events = events.into_iter().map(|(_, e)| e).collect();
+        sort_events(&mut events);
+
+        EventBatch {
+            height,
+            events,
+            chain_id: chain_id.clone(),
+        }
+    })
+}
+
+/// Sort the given events by putting the NewBlock event first,
+/// and leaving the other events as is.
+fn sort_events(events: &mut Vec<IbcEvent>) {
+    events.sort_by(|a, b| match (a, b) {
+        (IbcEvent::NewBlock(_), _) => Ordering::Less,
+        _ => Ordering::Equal,
+    })
 }

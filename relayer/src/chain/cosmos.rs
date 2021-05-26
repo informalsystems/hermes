@@ -115,7 +115,7 @@ impl CosmosSdkChain {
             .unbonding_time
             .ok_or_else(|| Kind::Grpc.context("none unbonding time".to_string()))?;
 
-        Ok(Duration::from_secs(res.seconds as u64))
+        Ok(Duration::new(res.seconds as u64, res.nanos as u32))
     }
 
     fn rpc_client(&self) -> &HttpClient {
@@ -148,7 +148,7 @@ impl CosmosSdkChain {
 
         let key = self
             .keybase()
-            .get_key()
+            .get_key(&self.config.key_name)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         // Create TxBody
@@ -218,7 +218,7 @@ impl CosmosSdkChain {
         // Sign doc and broadcast
         let signed = self
             .keybase
-            .sign_msg(signdoc_buf)
+            .sign_msg(&self.config.key_name, signdoc_buf)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         let tx_raw = TxRaw {
@@ -328,8 +328,8 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Rpc(config.rpc_addr.clone()).context(e))?;
 
         // Initialize key store and load key
-        let keybase =
-            KeyRing::new(Store::Test, config.clone()).map_err(|e| Kind::KeyBase.context(e))?;
+        let keybase = KeyRing::new(Store::Test, &config.account_prefix, &config.id)
+            .map_err(|e| Kind::KeyBase.context(e))?;
 
         let grpc_addr =
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
@@ -432,7 +432,7 @@ impl Chain for CosmosSdkChain {
         // Get the key from key seed file
         let key = self
             .keybase()
-            .get_key()
+            .get_key(&self.config.key_name)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
@@ -446,7 +446,7 @@ impl Chain for CosmosSdkChain {
         // Get the key from key seed file
         let key = self
             .keybase()
-            .get_key()
+            .get_key(&self.config.key_name)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         Ok(key)

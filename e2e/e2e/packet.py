@@ -31,7 +31,8 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
     src_channel: ChannelId
     amount: int
     height_offset: int
-    number_msgs: Optional[int]
+    number_msgs: Optional[int] = None
+    key: Optional[str] = None
 
     def args(self) -> List[str]:
         args = [
@@ -40,11 +41,14 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
             self.src_port,
             self.src_channel,
             str(self.amount),
-            str(self.height_offset),
+            "-o", str(self.height_offset),
         ]
 
         if self.number_msgs != None:
             args.extend(['-n', str(self.number_msgs)])
+
+        if self.key != None:
+            args.extend(['-k', str(self.key)])
 
         return args
 
@@ -189,13 +193,15 @@ def query_unreceived_acks(
 
 def packet_send(c: Config, src: ChainId, dst: ChainId,
                 src_port: PortId, src_channel: ChannelId,
-                amount: int, height_offset: int, number_msgs: Optional[int] = None) -> Packet:
+                amount: int, height_offset: int, number_msgs: Optional[int] = None,
+                key: Optional[str] = None) -> Packet:
 
     cmd = TxPacketSend(dst_chain_id=dst, src_chain_id=src,
                        src_port=src_port, src_channel=src_channel,
                        amount=amount,
                        number_msgs=number_msgs,
-                       height_offset=height_offset)
+                       height_offset=height_offset,
+                       key=key)
 
     res = cmd.run(c).success()
     l.info(

@@ -1,4 +1,7 @@
-use std::thread::{self, JoinHandle};
+use std::{
+    fmt,
+    thread::{self, JoinHandle},
+};
 
 use anomaly::BoxError;
 use crossbeam_channel::Sender;
@@ -16,6 +19,12 @@ use super::WorkerCmd;
 pub struct WorkerHandle {
     tx: Sender<WorkerCmd>,
     thread_handle: JoinHandle<()>,
+}
+
+impl fmt::Debug for WorkerHandle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("WorkerHandle").finish()
+    }
 }
 
 impl WorkerHandle {

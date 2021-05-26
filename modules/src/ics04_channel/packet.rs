@@ -7,7 +7,7 @@ use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::timestamp::Timestamp;
+use crate::timestamp::{Expiry::Expired, Timestamp};
 use crate::Height;
 
 use super::handler::{
@@ -110,6 +110,14 @@ pub struct Packet {
     pub data: Vec<u8>,
     pub timeout_height: Height,
     pub timeout_timestamp: Timestamp,
+}
+
+impl Packet {
+    pub fn timed_out(&self, dst_chain_height: Height) -> bool {
+        (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
+            || (self.timeout_timestamp != Timestamp::none()
+                && Timestamp::now().check_expiry(&self.timeout_timestamp) == Expired)
+    }
 }
 
 impl std::fmt::Debug for Packet {

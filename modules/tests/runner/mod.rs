@@ -35,6 +35,7 @@ use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
+use ibc::timestamp::ZERO_DURATION;
 use ibc::Height;
 use step::{Action, ActionOutcome, Chain, Step};
 
@@ -166,7 +167,7 @@ impl IbcTestRunner {
     }
 
     pub fn delay_period() -> Duration {
-        Duration::from_secs(0)
+        ZERO_DURATION
     }
 
     pub fn commitment_prefix() -> CommitmentPrefix {
