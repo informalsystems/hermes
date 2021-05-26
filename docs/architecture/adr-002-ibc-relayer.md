@@ -175,6 +175,7 @@ pub struct Config {
 }
 
 pub enum Strategy {
+    All,
     Packets,
     HandshakeAndPackets,
 }
