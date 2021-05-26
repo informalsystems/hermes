@@ -70,15 +70,18 @@ impl Config {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Strategy {
-    #[serde(rename = "naive")]
-    Naive,
+    #[serde(rename = "packets")]
+    Packets,
+
+    #[serde(rename = "all")]
+    HandshakeAndPackets,
 }
 
 impl Default for Strategy {
     fn default() -> Self {
-        Self::Naive
+        Self::Packets
     }
 }
 

@@ -1,5 +1,8 @@
 [global]
-strategy = 'naive'
+# Valid strategies:
+#   'packets': restricts relaying to packets only, or
+#   'all': relay from all types of events
+strategy = 'packets'
 log_level = 'info'
 
 [telemetry]
