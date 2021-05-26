@@ -33,8 +33,8 @@ impl ClientWorker {
     pub fn run(self) -> Result<(), BoxError> {
         let mut client = ForeignClient::restore(
             self.client.dst_client_id.clone(),
-            self.chains.a.clone(),
             self.chains.b.clone(),
+            self.chains.a.clone(),
         );
 
         info!(

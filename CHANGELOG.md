@@ -4,13 +4,34 @@
 
 ### FEATURES
 
-> Nothing
+- [ibc-relayer]
+  - Add support for event based channel relaying ([#822])
+  - Graceful handling of packet events in the presence of multiple relayers ([#983])
+
+### IMPROVEMENTS
+
+- [ibc]
+  - Started `unwrap` cleanup ([#871])
+
+- [ibc-relayer-cli]
+  - Improve config loading message ([#996])
+
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
+
 ### BREAKING CHANGES
 
 - [ibc-relayer-cli]
   - Promote `start-multi` command to `start` ([#911])
 
+[#822]: https://github.com/informalsystems/ibc-rs/issues/822
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
+[#972]: https://github.com/informalsystems/ibc-rs/issues/972
+[#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#996]: https://github.com/informalsystems/ibc-rs/issues/996
 
 ## v0.3.2
 *May 21st, 2021*
@@ -35,28 +56,17 @@ Docker images to Docker Hub.
 ### IMPROVEMENTS
 
 - [ibc-relayer]
-<<<<<<< HEAD
-  - Bulk events from all transactions included in a block ([#957])
-
-### BUG FIXES
-
-> Nothing
-=======
   - Batch together all events from all transactions included in a block ([#957])
 
 ### BUG FIXES
 
 - [ibc-relayer-cli]
   - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel ([#960])
->>>>>>> master
 
 ### BREAKING CHANGES
 
 > Nothing
 
-<<<<<<< HEAD
-[#957]: https://github.com/informalsystems/ibc-rs/issues/957
-=======
 [#894]: https://github.com/informalsystems/ibc-rs/pull/894
 [#957]: https://github.com/informalsystems/ibc-rs/issues/957
 [#960]: https://github.com/informalsystems/ibc-rs/issues/960
@@ -64,7 +74,6 @@ Docker images to Docker Hub.
 [#967]: https://github.com/informalsystems/ibc-rs/issues/967
 
 [hermes-docker]: https://hub.docker.com/r/informalsystems/hermes
->>>>>>> master
 
 ## v0.3.1
 *May 14h, 2021*

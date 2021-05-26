@@ -7,6 +7,7 @@ use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
+use crate::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::Height;
 use prost::alloc::fmt::Formatter;
 use std::fmt;
@@ -130,7 +131,10 @@ pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -
 
 impl IbcEvent {
     pub fn to_json(&self) -> String {
-        serde_json::to_string(self).unwrap()
+        match serde_json::to_string(self) {
+            Ok(value) => value,
+            Err(_) => format!("{:?}", self), // Fallback to debug printing
+        }
     }
 
     pub fn height(&self) -> Height {
@@ -181,6 +185,16 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(ev) => ev.set_height(height),
             IbcEvent::TimeoutPacket(ev) => ev.set_height(height),
             _ => unimplemented!(),
+        }
+    }
+
+    pub fn channel_attributes(&self) -> Option<&ChannelAttributes> {
+        match self {
+            IbcEvent::OpenInitChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenTryChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenAckChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenConfirmChannel(ev) => Some(ev.attributes()),
+            _ => None,
         }
     }
 }

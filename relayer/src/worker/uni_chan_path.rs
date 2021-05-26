@@ -55,7 +55,7 @@ impl UniChanPathWorker {
         loop {
             thread::sleep(Duration::from_millis(200));
 
-            let result = retry_with_index(retry_strategy::uni_chan_path(), |index| {
+            let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                 Self::step(rx.try_recv().ok(), &mut link, index)
             });
 
