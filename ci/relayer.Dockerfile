@@ -7,7 +7,7 @@ LABEL maintainer="hello@informal.systems"
 ARG RELEASE
 
 # Add Python 3
-RUN apt-get update -y && apt-get install python3 -y && apt-get install python3-toml -y
+RUN apt-get update -y && apt-get install libc6-dev python3 python3-toml -y
 
 # Copy relayer executable
 COPY ./hermes /usr/bin/hermes
