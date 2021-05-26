@@ -578,7 +578,7 @@ impl From<SendPacket> for IbcEvent {
 
 impl std::fmt::Display for SendPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -628,7 +628,7 @@ impl From<ReceivePacket> for IbcEvent {
 
 impl std::fmt::Display for ReceivePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(f, "ReceivePacket - h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -685,7 +685,11 @@ impl From<WriteAcknowledgement> for IbcEvent {
 
 impl std::fmt::Display for WriteAcknowledgement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(
+            f,
+            "WriteAcknowledgement - h:{}, {}",
+            self.height, self.packet
+        )
     }
 }
 
@@ -776,7 +780,7 @@ impl From<TimeoutPacket> for IbcEvent {
 
 impl std::fmt::Display for TimeoutPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(f, "TimeoutPacket - h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -825,6 +829,10 @@ impl From<TimeoutOnClosePacket> for IbcEvent {
 
 impl std::fmt::Display for TimeoutOnClosePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(
+            f,
+            "TimeoutOnClosePacket - h:{}, {}",
+            self.height, self.packet
+        )
     }
 }
