@@ -1,21 +1,28 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anomaly::BoxError;
-
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, warn};
 
+pub use error::Error;
 use ibc::{
-    events::IbcEvent, ics02_client::client_state::ClientState,
-    ics04_channel::channel::IdentifiedChannelEnd, ics24_host::identifier::ChainId, Height,
+    events::IbcEvent,
+    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
+    ics03_connection::connection::IdentifiedConnectionEnd,
+    ics04_channel::channel::IdentifiedChannelEnd,
+    ics24_host::identifier::ChainId,
+    Height,
+};
+use ibc_proto::ibc::core::{
+    channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest,
+    connection::v1::QueryClientConnectionsRequest,
 };
 
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
-
 use crate::{
+    chain::counterparty::channel_state_on_destination,
     chain::handle::ChainHandle,
-    config::Config,
+    config::{Config, Strategy},
     event::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
@@ -27,14 +34,6 @@ use crate::{
 };
 
 pub mod error;
-use crate::chain::counterparty::channel_state_on_destination;
-use crate::config::Strategy;
-pub use error::Error;
-use ibc::ics02_client::client_state::IdentifiedAnyClientState;
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
-use ibc::ics04_channel::channel::State;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -263,20 +262,12 @@ impl Supervisor {
         client: IdentifiedAnyClientState,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), BoxError> {
-
         let connection_id = &channel.channel_end.connection_hops[0];
         let connection_end = chain
             .query_connection(&connection_id, Height::zero())
             .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-        let connection = IdentifiedConnectionEnd::new(
-            connection_id.clone(),
-            connection_end
-        );
-
-        if !channel.channel_end.state_matches(&State::Open) {
-            return Ok(())
-        }
+        let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
 
         let counterparty_chain = self
             .registry

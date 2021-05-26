@@ -198,7 +198,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_channel_client(
+    fn query_channel_client_state(
         &self,
         _request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {

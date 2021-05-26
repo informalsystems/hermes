@@ -6,7 +6,6 @@ use tracing::error;
 
 use ibc::{
     events::IbcEvent,
-    Height,
     ics02_client::{
         client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
         client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
@@ -24,12 +23,14 @@ use ibc::{
     proofs::Proofs,
     query::QueryTxRequest,
     signer::Signer,
+    Height,
 };
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest, QueryConnectionChannelsRequest,
-        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+        QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
@@ -49,8 +50,8 @@ use crate::{
 };
 
 use super::{
-    Chain,
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
+    Chain,
 };
 
 pub struct Threads {
@@ -280,7 +281,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                         },
 
                         Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
-                            self.query_channel_client(request, reply_to)?
+                            self.query_channel_client_state(request, reply_to)?
                         },
 
                         Ok(ChainRequest::ProvenClientState { client_id, height, reply_to }) => {
@@ -661,12 +662,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn query_channel_client(
+    fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
         reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_channel_client(request);
+        let result = self.chain.query_channel_client_state(request);
 
         reply_to.send(result).map_err(Kind::channel)?;
 

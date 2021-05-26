@@ -205,7 +205,7 @@ pub trait Chain: Sized {
         }
     }
 
-    fn query_channel_client(
+    fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
