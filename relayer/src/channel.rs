@@ -183,8 +183,10 @@ impl Channel {
             .ok_or(ChannelError::MissingCounterpartyConnection)?;
 
         Ok(Channel {
+            // The event does not include the channel ordering.
+            // The message handlers `build_chan_open..` determine the order included in the handshake
+            // message from channel query.
             ordering: Default::default(),
-            //TODO  how to get the order from event
             a_side: ChannelSide::new(
                 chain.clone(),
                 connection.client_id().clone(),
@@ -200,7 +202,8 @@ impl Channel {
                 channel_event_attributes.counterparty_channel_id.clone(),
             ),
             connection_delay: connection.delay_period(),
-            //TODO  detect version from event
+            // The event does not include the version.
+            // The message handlers `build_chan_open..` determine the version from channel query.
             version: Some(version),
         })
     }
