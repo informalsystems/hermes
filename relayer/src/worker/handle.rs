@@ -32,7 +32,7 @@ impl WorkerHandle {
         Self { tx, thread_handle }
     }
 
-    /// Send a batch of packet events to the worker.
+    /// Send a batch of events to the worker.
     pub fn send_events(
         &self,
         height: Height,
