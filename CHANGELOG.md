@@ -12,6 +12,9 @@
 - [ibc]
   - Started `unwrap` cleanup ([#871])
 
+- [ibc-relayer-cli]
+  - Include chain-id in `query clients` command, and sort output by client counter ([#992])
+
 ### BUG FIXES
 
 - [ibc-relayer]
@@ -26,6 +29,7 @@
 [#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
+[#992]: https://github.com/informalsystems/ibc-rs/issues/992
 
 ## v0.3.2
 *May 21st, 2021*
