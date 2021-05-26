@@ -13,6 +13,9 @@
 - [ibc]
   - Started `unwrap` cleanup ([#871])
 
+- [ibc-relayer-cli]
+  - Improve config loading message ([#996])
+
 ### BUG FIXES
 
 - [ibc-relayer]
@@ -28,6 +31,7 @@
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
 [#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#996]: https://github.com/informalsystems/ibc-rs/issues/996
 
 ## v0.3.2
 *May 21st, 2021*
