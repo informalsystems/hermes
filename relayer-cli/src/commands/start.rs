@@ -1,7 +1,7 @@
 use abscissa_core::{Command, Options, Runnable};
 
+use ibc_relayer::config::Config;
 use ibc_relayer::supervisor::Supervisor;
-use ibc_relayer::telemetry;
 
 use crate::conclude::Output;
 use crate::prelude::*;
@@ -13,17 +13,25 @@ impl Runnable for StartCmd {
     fn run(&self) {
         let config = app_config();
 
-        let telemetry = telemetry::spawn(
-            config.global.telemetry_port,
-            config.global.telemetry_enabled,
-        );
-
-        let supervisor =
-            Supervisor::spawn(config.clone(), telemetry).expect("failed to spawn supervisor");
-
+        let supervisor = spawn_supervisor(config.clone());
         match supervisor.run() {
             Ok(()) => Output::success_msg("done").exit(),
             Err(e) => Output::error(e).exit(),
         }
     }
+}
+
+#[cfg(feature = "telemetry")]
+fn spawn_supervisor(config: Config) -> Supervisor {
+    let telemetry = ibc_telemetry::spawn(
+        config.global.telemetry_port,
+        config.global.telemetry_enabled,
+    );
+
+    Supervisor::spawn_with_telemetry(config, telemetry)
+}
+
+#[cfg(not(feature = "telemetry"))]
+fn spawn_supervisor(config: Config) -> Supervisor {
+    Supervisor::spawn(config)
 }

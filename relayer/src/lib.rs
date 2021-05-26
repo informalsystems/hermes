@@ -16,12 +16,6 @@
 //!
 //! [Hermes]: https://docs.rs/ibc-relayer-cli/0.2.0/
 
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate rouille;
-
 pub mod chain;
 pub mod channel;
 pub mod config;
@@ -36,7 +30,6 @@ pub mod macros;
 pub mod object;
 pub mod registry;
 pub mod supervisor;
-pub mod telemetry;
 pub mod transfer;
 pub mod upgrade_chain;
 pub mod util;

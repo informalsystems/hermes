@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anomaly::BoxError;
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
@@ -15,6 +15,9 @@ use ibc::{
 };
 
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
+
+#[cfg(feature = "telemetry")]
+use ibc_telemetry::service::MetricUpdate;
 
 use crate::{
     chain::{counterparty::channel_connection_client, handle::ChainHandle},
@@ -30,8 +33,17 @@ use crate::{
 };
 
 mod error;
-use crate::telemetry::service::MetricUpdate;
 pub use error::Error;
+
+#[cfg(feature = "telemetry")]
+use ibc_telemetry::TelemetryHandle;
+
+macro_rules! metric {
+    ($t:expr, $e:expr) => {
+        #[cfg(feature = "telemetry")]
+        $t.send($e);
+    };
+}
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -41,22 +53,35 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
-    telemetry: Sender<MetricUpdate>,
+
+    #[cfg(feature = "telemetry")]
+    telemetry: TelemetryHandle,
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(config: Config, telemetry: Sender<MetricUpdate>) -> Result<Self, BoxError> {
+    pub fn spawn(config: Config) -> Self {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
 
-        Ok(Self {
+        Self {
             config,
             registry,
             workers: WorkerMap::new(worker_msg_tx),
             worker_msg_rx,
-            telemetry,
-        })
+
+            #[cfg(feature = "telemetry")]
+            telemetry: TelemetryHandle::noop(),
+        }
+    }
+
+    #[cfg(feature = "telemetry")]
+    /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`],
+    /// with telemetry enabled.
+    pub fn spawn_with_telemetry(config: Config, telemetry: TelemetryHandle) -> Self {
+        let mut supervisor = Self::spawn(config);
+        supervisor.telemetry = telemetry;
+        supervisor
     }
 
     /// Collect the events we are interested in from an [`EventBatch`],
@@ -105,14 +130,14 @@ impl Supervisor {
                 IbcEvent::TimeoutPacket(ref packet) => {
                     if let Ok(object) = Object::for_timeout_packet(packet, src_chain) {
                         // TODO: Is this the right place to record the telemetry metric ?
-                        let _ = self.telemetry.send(MetricUpdate::TimeoutPacket(1));
+                        metric!(self.telemetry, MetricUpdate::TimeoutPacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
                 IbcEvent::WriteAcknowledgement(ref packet) => {
                     if let Ok(object) = Object::for_write_ack(packet, src_chain) {
                         // TODO: Is this the right place to record the telemetry metric ?
-                        let _ = self.telemetry.send(MetricUpdate::IbcAcknowledgePacket(1));
+                        metric!(self.telemetry, MetricUpdate::IbcAcknowledgePacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
@@ -143,7 +168,7 @@ impl Supervisor {
         for chain_id in chain_ids {
             let chain = match self.registry.get_or_spawn(&chain_id) {
                 Ok(chain_handle) => {
-                    let _ = self.telemetry.send(MetricUpdate::RelayChainsNumber(1));
+                    metric!(self.telemetry, MetricUpdate::RelayChainsNumber(1));
                     chain_handle
                 }
                 Err(e) => {
@@ -154,7 +179,7 @@ impl Supervisor {
 
             let channels = match chain.query_channels(req.clone()) {
                 Ok(channels) => {
-                    let _ = self.telemetry.send(MetricUpdate::RelayChannelsNumber(1));
+                    metric!(self.telemetry, MetricUpdate::RelayChannelsNumber(1));
                     channels
                 }
                 Err(e) => {

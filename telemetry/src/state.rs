@@ -1,13 +1,10 @@
-use opentelemetry::global;
-use opentelemetry::metrics::BoundCounter;
-use opentelemetry::KeyValue;
+use once_cell::sync::Lazy;
+use opentelemetry::{global, metrics::BoundCounter, KeyValue};
 use opentelemetry_prometheus::PrometheusExporter;
 
-lazy_static! {
-    static ref HANDLER_ALL: [KeyValue; 1] = [KeyValue::new("hermes", "all")];
-}
+static HANDLER_ALL: Lazy<[KeyValue; 1]> = Lazy::new(|| [KeyValue::new("hermes", "all")]);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TelemetryState {
     pub exporter: PrometheusExporter,
 

@@ -1,5 +1,7 @@
-use crate::telemetry::state::TelemetryState;
 use prometheus::{Encoder, TextEncoder};
+use rouille::router;
+
+use crate::state::TelemetryState;
 
 pub struct TelemetryServer {
     pub state: TelemetryState,

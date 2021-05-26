@@ -1,6 +1,8 @@
-use crate::telemetry::state::TelemetryState;
 use crossbeam_channel::Receiver;
 
+use crate::state::TelemetryState;
+
+#[derive(Debug)]
 pub enum MetricUpdate {
     RelayChainsNumber(u64),
     RelayChannelsNumber(u64),
@@ -14,6 +16,7 @@ pub enum MetricUpdate {
     TimeoutPacket(u64),
 }
 
+#[derive(Debug)]
 pub struct TelemetryService {
     pub state: TelemetryState,
     pub rx: Receiver<MetricUpdate>,

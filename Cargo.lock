@@ -1403,17 +1403,13 @@ dependencies = [
  "humantime-serde",
  "ibc",
  "ibc-proto",
+ "ibc-telemetry",
  "itertools 0.10.0",
  "k256",
- "lazy_static",
- "opentelemetry",
- "opentelemetry-prometheus",
- "prometheus",
  "prost",
  "prost-types",
  "retry",
  "ripemd160",
- "rouille",
  "serde",
  "serde_cbor",
  "serde_derive",
@@ -1450,6 +1446,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ibc-relayer",
+ "ibc-telemetry",
  "itertools 0.10.0",
  "once_cell",
  "prost",
@@ -1473,6 +1470,14 @@ dependencies = [
 [[package]]
 name = "ibc-telemetry"
 version = "0.1.0"
+dependencies = [
+ "crossbeam-channel 0.5.1",
+ "once_cell",
+ "opentelemetry",
+ "opentelemetry-prometheus",
+ "prometheus",
+ "rouille",
+]
 
 [[package]]
 name = "ics23"
