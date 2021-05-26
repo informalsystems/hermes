@@ -2,10 +2,11 @@ pub mod server;
 pub mod service;
 pub mod state;
 
+use std::sync::Arc;
+
 use crossbeam_channel::Sender;
 
 use crate::{
-    server::TelemetryServer,
     service::{MetricUpdate, TelemetryService},
     state::TelemetryState,
 };
@@ -34,13 +35,11 @@ pub fn spawn(port: u16, enabled: bool) -> TelemetryHandle {
         return TelemetryHandle::noop();
     }
 
-    let telemetry_state = TelemetryState::default();
-
+    let telemetry_state = Arc::new(TelemetryState::default());
     let service = TelemetryService::new(telemetry_state.clone(), rx);
-    let server = TelemetryServer::new(telemetry_state.clone());
 
     // Start the telemetry service and server
-    std::thread::spawn(move || server.run(telemetry_state.clone(), port));
+    std::thread::spawn(move || server::run(telemetry_state, port));
     std::thread::spawn(move || service.run());
 
     TelemetryHandle { tx: Some(tx) }

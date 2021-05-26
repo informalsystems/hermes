@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crossbeam_channel::Receiver;
 
 use crate::state::TelemetryState;
@@ -16,18 +18,23 @@ pub enum MetricUpdate {
     TimeoutPacket(u64),
 }
 
+pub fn run(telemetry_state: Arc<TelemetryState>, rx: Receiver<MetricUpdate>) {
+    let service = TelemetryService::new(telemetry_state, rx);
+    service.run()
+}
+
 #[derive(Debug)]
 pub struct TelemetryService {
-    pub state: TelemetryState,
-    pub rx: Receiver<MetricUpdate>,
+    state: Arc<TelemetryState>,
+    rx: Receiver<MetricUpdate>,
 }
 
 impl TelemetryService {
-    pub(crate) fn new(state: TelemetryState, rx: Receiver<MetricUpdate>) -> Self {
+    pub fn new(state: Arc<TelemetryState>, rx: Receiver<MetricUpdate>) -> Self {
         Self { state, rx }
     }
 
-    pub(crate) fn run(self) {
+    pub fn run(self) {
         while let Ok(update) = self.rx.recv() {
             self.apply_update(update);
         }
