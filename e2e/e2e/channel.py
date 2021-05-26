@@ -492,6 +492,7 @@ def verify_state(c: Config,
     # verify channel state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
 
     if strategy == 'all':
+        sleep(10.0)
         for i in range(20):
             sleep(2.0)
             ibc1_chan_end = query_channel_end(c, ibc1, port_id, ibc1_chan_id)
@@ -504,7 +505,7 @@ def verify_state(c: Config,
             assert (ibc1_chan_end.state == 'Open'), (ibc1_chan_end, "state is not Open")
 
     elif strategy == 'packets':
-        sleep(8.0)
+        sleep(5.0)
         ibc1_chan_end = query_channel_end(c, ibc1, port_id, ibc1_chan_id)
         assert (ibc1_chan_end.state == 'Init'), (ibc1_chan_end, "state is not Init")
 
@@ -517,11 +518,10 @@ def passive_channel_start_then_init(c: Config,
     proc = relayer.start(c)
     sleep(2.0)
 
-    # 2. create a channel in Init state and wait for hermes to finish handshake
+    # 2. create a channel in Init state
     ibc1_chan_id = chan_open_init(c, dst=ibc1, src=ibc0, dst_conn=ibc1_conn_id)
-    sleep(10.0)
 
-    # 3. verify channel state on both chains
+    # 3. wait for channel handshake to finish and verify channel state on both chains
     verify_state(c, ibc1, ibc0, ibc1_chan_id, port_id)
 
     # 4. All good, stop the relayer
@@ -536,11 +536,10 @@ def passive_channel_init_then_start(c: Config,
     ibc1_chan_id = chan_open_init(c, dst=ibc1, src=ibc0, dst_conn=ibc1_conn_id)
     sleep(2.0)
 
-    # 2. start relaying, wait for channel handshake to finish
+    # 2. start relaying
     proc = relayer.start(c)
-    sleep(10.0)
 
-    # 3. verify channel state on both chains
+    # 3. wait for channel handshake to finish and verify channel state on both chains
     verify_state(c, ibc1, ibc0, ibc1_chan_id, port_id)
 
     # 4. All good, stop the relayer
@@ -560,11 +559,10 @@ def passive_channel_try_then_start(c: Config,
     ibc0_chan_id = chan_open_try(c, dst=ibc0, src=ibc1, dst_conn=ibc0_conn_id, src_port=port_id, dst_port=port_id, src_chan=ibc1_chan_id)
     sleep(2.0)
 
-    # 2. start relaying, wait for channel handshake to finish
+    # 2. start relaying
     proc = relayer.start(c)
-    sleep(10.0)
 
-    # 3. verify channel state on both chains
+    # 3. wait for channel handshake to finish and verify channel state on both chains
     verify_state(c, ibc1, ibc0, ibc1_chan_id, port_id)
 
     # 4. All good, stop the relayer

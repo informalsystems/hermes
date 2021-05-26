@@ -77,15 +77,13 @@ def passive_packets(
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
 
-    sleep(5.0)
-
     # 4. start relaying - it should clear the unreceived packets
     proc = relayer.start(c)
 
-    sleep(5.0)
+    # 5. wait for the relayer to initialize and pick up pending packets
+    sleep(10.0)
 
-    # 5. wait a bit and make sure there are no pending packets
-
+    # 6. verify that there are no pending packets
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 3
     packet.packet_send(c, src=ibc1, dst=ibc0 , src_port=port_id,
                        src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
@@ -124,7 +122,7 @@ def passive_packets(
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived acks mismatch (expected 0)")
 
-    # 6. All good, stop the relayer
+    # 7.Stop the relayer
     proc.kill()
 
 
