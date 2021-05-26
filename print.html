@@ -569,7 +569,7 @@ For more information on parametrizing the log output, see the section
 </ul>
 <p>Here is an example for the <code>global</code> section:</p>
 <pre><code class="language-toml">[global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'info'
 </code></pre>
 <h3><a class="header" href="#chains" id="chains"><code>[[chains]]</code></a></h3>
@@ -637,7 +637,7 @@ trusting_period = '14days'
 <h3><a class="header" href="#example-configuration-file" id="example-configuration-file">Example configuration file</a></h3>
 <p>Here is a full example of a configuration file with two chains configured:</p>
 <pre><code class="language-toml">[global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 
 [[chains]]
@@ -731,8 +731,11 @@ commit: dbd8a6fb522c571debf958837f9113c56d418f6b
 <p>The following configuration file in the <code>ibc-rs</code> repository folder can be used for running the local chains:</p>
 <p><strong>config.toml</strong></p>
 <pre><code class="language-toml">[global]
-strategy = 'naive'
-log_level = 'error'
+# Valid strategies:
+#   'packets': restricts relaying to packets only, or
+#   'all': relay from all types of events
+strategy = 'packets'
+log_level = 'info'
 
 [[chains]]
 id = 'ibc-0'
@@ -1219,7 +1222,7 @@ the <code>start-multi</code> command.</p>
 <li>
 <p>Paste the following configuration in the standard Hermes configuration file at <code>~/.hermes/config.toml</code>:</p>
 <pre><code class="language-toml">[global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'info'
 
 [[chains]]
@@ -3799,9 +3802,22 @@ POSITIONAL ARGUMENTS:
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>Success: [
-    ChannelId(
-        &quot;channel-1&quot;,
-    ),
+    PortChannelId {
+        channel_id: ChannelId(
+            &quot;channel-0&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+    },
+    PortChannelId {
+        channel_id: ChannelId(
+            &quot;channel-1&quot;,
+        ),
+        port_id: PortId(
+            &quot;transfer&quot;,
+        ),
+    },
 ]
 <span class="boring">}
 </span></code></pre></pre>
@@ -5223,7 +5239,7 @@ methods involved in a command.</p>
 <p><strong>NOTE</strong>: To be able to see the profiling output, the realyer needs to be compiled with
 the <code>profiling</code> feature and the <a href="./help.html#parametrizing-the-log-output-level">log level</a> should be <code>info</code> level or lower.</p>
 <h4><a class="header" href="#example-output-for-tx-raw-conn-init-command" id="example-output-for-tx-raw-conn-init-command">Example output for <code>tx raw conn-init</code> command</a></h4>
-<pre><code>hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
+<pre><code>hermes -c   config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
 </code></pre>
 <pre><code>Apr 13 20:58:21.225  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - start
 Apr 13 20:58:21.230  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - elapsed: 4ms
@@ -5284,7 +5300,7 @@ This file is loaded by default from <code>$HOME/.hermes/config.toml</code>, but 
 with the <code>-c</code> flag, eg. <code>hermes -c ./path/to/my/config.toml some command</code>.</p>
 <p>Relevant snippet:</p>
 <pre><code class="language-toml">[global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 </code></pre>
 <p>Valid options for <code>log_level</code> are: 'error', 'warn', 'info', 'debug', 'trace'.

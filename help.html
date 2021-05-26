@@ -234,7 +234,7 @@ methods involved in a command.</p>
 <p><strong>NOTE</strong>: To be able to see the profiling output, the realyer needs to be compiled with
 the <code>profiling</code> feature and the <a href="./help.html#parametrizing-the-log-output-level">log level</a> should be <code>info</code> level or lower.</p>
 <h4><a class="header" href="#example-output-for-tx-raw-conn-init-command" id="example-output-for-tx-raw-conn-init-command">Example output for <code>tx raw conn-init</code> command</a></h4>
-<pre><code>hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
+<pre><code>hermes -c   config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
 </code></pre>
 <pre><code>Apr 13 20:58:21.225  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - start
 Apr 13 20:58:21.230  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - elapsed: 4ms
@@ -295,7 +295,7 @@ This file is loaded by default from <code>$HOME/.hermes/config.toml</code>, but 
 with the <code>-c</code> flag, eg. <code>hermes -c ./path/to/my/config.toml some command</code>.</p>
 <p>Relevant snippet:</p>
 <pre><code class="language-toml">[global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 </code></pre>
 <p>Valid options for <code>log_level</code> are: 'error', 'warn', 'info', 'debug', 'trace'.

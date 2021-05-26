@@ -179,8 +179,11 @@
 <p>The following configuration file in the <code>ibc-rs</code> repository folder can be used for running the local chains:</p>
 <p><strong>config.toml</strong></p>
 <pre><code class="language-toml">[global]
-strategy = 'naive'
-log_level = 'error'
+# Valid strategies:
+#   'packets': restricts relaying to packets only, or
+#   'all': relay from all types of events
+strategy = 'packets'
+log_level = 'info'
 
 [[chains]]
 id = 'ibc-0'
