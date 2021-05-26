@@ -179,6 +179,26 @@ impl ClientId {
     pub fn as_bytes(&self) -> &[u8] {
         &self.0.as_bytes()
     }
+
+    /// Returns the suffix counter of this client.
+    /// Returns `None` if the client identifier is malformed
+    /// and the suffix could not be parsed.
+    /// ```rust
+    /// # use ibc::ics24_host::identifier::ClientId;
+    /// # use ibc::ics02_client::client_type::ClientType;
+    /// # use std::str::FromStr;
+    /// let cl_a = ClientId::new(ClientType::Mock, 670).unwrap();
+    /// assert_eq!(cl_a.suffix(), Some(670));
+    /// let cl_b = ClientId::from_str("nosuffix_client").unwrap();
+    /// assert_eq!(cl_b.suffix(), None);
+    /// ```
+    pub fn suffix(&self) -> Option<u64> {
+        self.as_str()
+            .split('-')
+            .last()
+            .map(|e| e.parse::<u64>().ok())
+            .flatten()
+    }
 }
 
 /// This implementation provides a `to_string` method.
