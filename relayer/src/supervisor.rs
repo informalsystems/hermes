@@ -26,6 +26,7 @@ use crate::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
     },
+    metric,
     object::{Client, Object, UnidirectionalChannelPath},
     registry::Registry,
     util::try_recv_multiple,
@@ -37,13 +38,6 @@ pub use error::Error;
 
 #[cfg(feature = "telemetry")]
 use ibc_telemetry::TelemetryHandle;
-
-macro_rules! metric {
-    ($t:expr, $e:expr) => {
-        #[cfg(feature = "telemetry")]
-        $t.send($e);
-    };
-}
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate

@@ -34,3 +34,5 @@ pub mod transfer;
 pub mod upgrade_chain;
 pub mod util;
 pub mod worker;
+
+mod telemetry;
