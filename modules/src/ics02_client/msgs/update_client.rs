@@ -8,6 +8,7 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::AnyHeader;
+use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -33,7 +34,7 @@ impl MsgUpdateAnyClient {
 }
 
 impl Msg for MsgUpdateAnyClient {
-    type ValidationError = crate::ics24_host::error::ValidationError;
+    type ValidationError = ValidationError;
     type Raw = RawMsgUpdateClient;
 
     fn route(&self) -> String {
@@ -54,8 +55,11 @@ impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
         let raw_header = raw.header.ok_or(Kind::InvalidRawHeader)?;
 
         Ok(MsgUpdateAnyClient {
-            client_id: raw.client_id.parse().unwrap(),
-            header: AnyHeader::try_from(raw_header).unwrap(),
+            client_id: raw
+                .client_id
+                .parse()
+                .map_err(|e| Kind::InvalidMsgUpdateClientId.context(e))?,
+            header: AnyHeader::try_from(raw_header)?,
             signer: raw.signer.into(),
         })
     }

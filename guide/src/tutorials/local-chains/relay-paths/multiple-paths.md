@@ -11,7 +11,7 @@ the `start-multi` command.
 
     ```toml
     [global]
-    strategy = 'naive'
+    strategy = 'packets'
     log_level = 'info'
 
     [[chains]]

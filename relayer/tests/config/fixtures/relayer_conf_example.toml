@@ -1,5 +1,5 @@
 [global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 
 [[chains]]

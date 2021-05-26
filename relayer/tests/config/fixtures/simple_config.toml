@@ -3,7 +3,7 @@
 title = "IBC Relayer Config Example"
 
 [global]
-strategy = "naive"
+strategy = "packets"
 
 [[chains]]
   id = "ibc-test"

@@ -6,6 +6,9 @@
     unused_qualifications,
     rust_2018_idioms
 )]
+// TODO: disable unwraps:
+//  https://github.com/informalsystems/ibc-rs/issues/987
+// #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 //! IBC Relayer implementation as a library.
 //!
