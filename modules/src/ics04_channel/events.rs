@@ -166,8 +166,8 @@ impl Attributes {
     pub fn port_id(&self) -> &PortId {
         &self.port_id
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.channel_id.as_ref()
     }
 }
 
@@ -191,8 +191,8 @@ impl OpenInit {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
@@ -241,8 +241,8 @@ impl OpenTry {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
@@ -291,8 +291,8 @@ impl OpenAck {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
@@ -304,8 +304,8 @@ impl OpenAck {
         self.0.height = height;
     }
 
-    pub fn counterparty_channel_id(&self) -> &Option<ChannelId> {
-        &self.0.counterparty_channel_id
+    pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
+        self.0.counterparty_channel_id.as_ref()
     }
 }
 
@@ -345,8 +345,8 @@ impl OpenConfirm {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
@@ -466,8 +466,8 @@ impl std::fmt::Display for CloseInit {
 pub struct CloseConfirm(Attributes);
 
 impl CloseConfirm {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
     }
     pub fn height(&self) -> Height {
         self.0.height

@@ -192,7 +192,6 @@ impl Object {
     ) -> Result<Self, BoxError> {
         let channel_id = e
             .channel_id()
-            .as_ref()
             .ok_or_else(|| format!("channel_id missing in channel open event '{:?}'", e))?;
 
         let client = channel_connection_client(chain, e.port_id(), channel_id)?.client;
@@ -220,7 +219,6 @@ impl Object {
     ) -> Result<Self, BoxError> {
         let channel_id = e
             .channel_id()
-            .as_ref()
             .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
 
         let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id());

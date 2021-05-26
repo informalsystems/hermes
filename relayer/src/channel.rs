@@ -1107,10 +1107,10 @@ impl Channel {
 
 pub fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> {
     match event {
-        IbcEvent::OpenInitChannel(ev) => ev.channel_id().as_ref(),
-        IbcEvent::OpenTryChannel(ev) => ev.channel_id().as_ref(),
-        IbcEvent::OpenAckChannel(ev) => ev.channel_id().as_ref(),
-        IbcEvent::OpenConfirmChannel(ev) => ev.channel_id().as_ref(),
+        IbcEvent::OpenInitChannel(ev) => ev.channel_id(),
+        IbcEvent::OpenTryChannel(ev) => ev.channel_id(),
+        IbcEvent::OpenAckChannel(ev) => ev.channel_id(),
+        IbcEvent::OpenConfirmChannel(ev) => ev.channel_id(),
         _ => None,
     }
     .ok_or_else(|| ChannelError::Failed("cannot extract channel_id from result".to_string()))
