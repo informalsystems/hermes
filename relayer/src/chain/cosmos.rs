@@ -504,11 +504,20 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        let clients = response
+        // Deserialize into domain type
+        let mut clients: Vec<IdentifiedAnyClientState> = response
             .client_states
             .into_iter()
             .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
             .collect();
+
+        // Sort by client identifier counter
+        clients.sort_by(|a, b| {
+            a.client_id
+                .suffix()
+                .unwrap_or(0) // Fallback to `0` suffix (no sorting) if client id is malformed
+                .cmp(&b.client_id.suffix().unwrap_or(0))
+        });
 
         Ok(clients)
     }
