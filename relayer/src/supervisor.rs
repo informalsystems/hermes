@@ -86,12 +86,13 @@ impl Supervisor {
                     if !self.handshake_enabled() {
                         continue;
                     }
-                    if let Some(attributes) = event.clone().channel_attributes() {
-                        if let Ok(object) =
-                            Object::channel_from_chan_open_events(attributes, src_chain)
-                        {
-                            collected.per_object.entry(object).or_default().push(event);
-                        }
+
+                    let object = event
+                        .channel_attributes()
+                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
+                        collected.per_object.entry(object).or_default().push(event);
                     }
                 }
 

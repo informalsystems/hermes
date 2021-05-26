@@ -158,7 +158,7 @@ impl Channel {
     pub fn restore_from_event(
         chain: Box<dyn ChainHandle>,
         counterparty_chain: Box<dyn ChainHandle>,
-        mut channel_open_event: IbcEvent,
+        channel_open_event: IbcEvent,
     ) -> Result<Channel, BoxError> {
         let channel_event_attributes =
             channel_open_event.channel_attributes().ok_or_else(|| {
