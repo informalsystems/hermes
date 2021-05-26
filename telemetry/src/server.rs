@@ -1,28 +1,41 @@
 use std::sync::Arc;
 
 use prometheus::{Encoder, TextEncoder};
-use rouille::router;
+use rouille::Request;
 
 use crate::state::TelemetryState;
 
-#[allow(clippy::manual_strip)]
+enum Route {
+    Metrics,
+    Other,
+}
+
+impl Route {
+    fn from_request(request: &Request) -> Route {
+        if request.url() == "/metrics" {
+            Route::Metrics
+        } else {
+            Route::Other
+        }
+    }
+}
+
 pub fn run(telemetry_state: Arc<TelemetryState>, port: u16) {
     rouille::start_server(("localhost", port), move |request| {
-        router!(request,
+        match Route::from_request(request) {
             // The prometheus endpoint
-            (GET) (/metrics) => {
+            Route::Metrics => {
                 let mut buffer = vec![];
                 let encoder = TextEncoder::new();
                 let metric_families = telemetry_state.exporter.registry().gather();
                 encoder.encode(&metric_families, &mut buffer).unwrap();
-                rouille::Response::from_data(encoder.format_type().to_string(), buffer)
-            },
 
-            // Any route other than /metrics
-            // return an empty response with a 404 status code.
-            _ => {
-                rouille::Response::empty_404()
+                rouille::Response::from_data(encoder.format_type().to_string(), buffer)
             }
-        )
-    });
+
+            // Any other route
+            // Return an empty response with a 404 status code.
+            Route::Other => rouille::Response::empty_404(),
+        }
+    })
 }
