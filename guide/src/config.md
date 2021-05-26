@@ -36,7 +36,7 @@ Here is an example for the `global` section:
 
 ```toml
 [global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'info'
 ```
 
@@ -101,7 +101,7 @@ Here is a full example of a configuration file with two chains configured:
 
 ```toml
 [global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 
 [[chains]]

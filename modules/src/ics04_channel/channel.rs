@@ -404,6 +404,9 @@ impl State {
             _ => fail!(error::Kind::UnknownState, s),
         }
     }
+    pub fn is_open(self) -> bool {
+        self == State::Open
+    }
 }
 
 /// Provides a `to_string` method.

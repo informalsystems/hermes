@@ -5,6 +5,7 @@
 ### FEATURES
 
 - [ibc-relayer]
+  - Add support for event based channel relaying ([#822])
   - Graceful handling of packet events in the presence of multiple relayers ([#983])
 
 ### IMPROVEMENTS
@@ -25,10 +26,11 @@
 - [ibc-relayer-cli]
   - Promote `start-multi` command to `start` ([#911])
 
-[#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#822]: https://github.com/informalsystems/ibc-rs/issues/822
 [#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
+[#983]: https://github.com/informalsystems/ibc-rs/issues/983
 [#992]: https://github.com/informalsystems/ibc-rs/issues/992
 
 ## v0.3.2

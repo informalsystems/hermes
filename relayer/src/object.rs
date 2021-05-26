@@ -38,6 +38,31 @@ impl Client {
     }
 }
 
+/// Channel
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Channel {
+    /// Destination chain identifier.
+    pub dst_chain_id: ChainId,
+
+    /// Source chain identifier.
+    pub src_chain_id: ChainId,
+
+    /// Source channel identifier.
+    pub src_channel_id: ChannelId,
+
+    /// Source port identifier.
+    pub src_port_id: PortId,
+}
+
+impl Channel {
+    pub fn short_name(&self) -> String {
+        format!(
+            "{}/{}:{} -> {}",
+            self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
+        )
+    }
+}
+
 /// A unidirectional path from a source chain, channel and port.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct UnidirectionalChannelPath {
@@ -73,6 +98,8 @@ impl UnidirectionalChannelPath {
 pub enum Object {
     /// See [`Client`].
     Client(Client),
+    /// See [`Channel`].
+    Channel(Channel),
     /// See [`UnidirectionalChannelPath`].
     UnidirectionalChannelPath(UnidirectionalChannelPath),
 }
@@ -83,8 +110,9 @@ impl Object {
     /// Returns `false` otherwise.
     pub fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
         match self {
-            Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
             Object::Client(_) => false,
+            Object::Channel(c) => c.src_chain_id == *src_chain_id,
+            Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
         }
     }
 }
@@ -92,6 +120,12 @@ impl Object {
 impl From<Client> for Object {
     fn from(c: Client) -> Self {
         Self::Client(c)
+    }
+}
+
+impl From<Channel> for Object {
+    fn from(c: Channel) -> Self {
+        Self::Channel(c)
     }
 }
 
@@ -106,6 +140,7 @@ impl Object {
         match self {
             Self::Client(ref client) => &client.src_chain_id,
             Self::UnidirectionalChannelPath(ref path) => &path.src_chain_id,
+            Self::Channel(ref channel) => &channel.src_chain_id,
         }
     }
 
@@ -113,6 +148,7 @@ impl Object {
         match self {
             Self::Client(ref client) => &client.dst_chain_id,
             Self::UnidirectionalChannelPath(ref path) => &path.dst_chain_id,
+            Self::Channel(ref channel) => &channel.dst_chain_id,
         }
     }
 
@@ -120,6 +156,7 @@ impl Object {
         match self {
             Self::Client(ref client) => client.short_name(),
             Self::UnidirectionalChannelPath(ref path) => path.short_name(),
+            Self::Channel(ref channel) => channel.short_name(),
         }
     }
 
@@ -149,14 +186,13 @@ impl Object {
     }
 
     /// Build the client object associated with the given channel event attributes.
-    pub fn for_chan_open_events(
+    pub fn client_from_chan_open_events(
         e: &Attributes,          // The attributes of the emitted event
         chain: &dyn ChainHandle, // The chain which emitted the event
     ) -> Result<Self, BoxError> {
         let channel_id = e
             .channel_id()
-            .as_ref()
-            .ok_or_else(|| format!("channel_id missing in OpenAck event '{:?}'", e))?;
+            .ok_or_else(|| format!("channel_id missing in channel open event '{:?}'", e))?;
 
         let client = channel_connection_client(chain, e.port_id(), channel_id)?.client;
         if client.client_state.refresh_period().is_none() {
@@ -172,6 +208,27 @@ impl Object {
             dst_client_id: client.client_id.clone(),
             dst_chain_id: chain.id(), // The object's destination is the chain hosting the client
             src_chain_id: client.client_state.chain_id(),
+        }
+        .into())
+    }
+
+    /// Build the Channel object associated with the given [`Open`] channel event.
+    pub fn channel_from_chan_open_events(
+        e: &Attributes,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let channel_id = e
+            .channel_id()
+            .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
+
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())
+            .map_err(|_| "dest chain missing in init".to_string())?;
+
+        Ok(Channel {
+            dst_chain_id,
+            src_chain_id: src_chain.id(),
+            src_channel_id: channel_id.clone(),
+            src_port_id: e.port_id().clone(),
         }
         .into())
     }
