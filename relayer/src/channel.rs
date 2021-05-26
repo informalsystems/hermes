@@ -63,7 +63,7 @@ pub struct ChannelSide {
     client_id: ClientId,
     connection_id: ConnectionId,
     port_id: PortId,
-    pub channel_id: Option<ChannelId>,
+    channel_id: Option<ChannelId>,
 }
 
 impl ChannelSide {

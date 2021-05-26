@@ -745,7 +745,7 @@ impl RelayPath {
             self.dst_chain()
                 .query_unreceived_packets(QueryUnreceivedPacketsRequest {
                     port_id: self.dst_port_id().to_string(),
-                    channel_id: self.dst_channel_id().to_string(),
+                    channel_id: self.dst_channel_id()?.to_string(),
                     packet_commitment_sequences: vec![packet.sequence.into()],
                 })?;
 
@@ -758,7 +758,7 @@ impl RelayPath {
         let (bytes, _) = self.src_chain().build_packet_proofs(
             PacketMsgType::Recv,
             self.src_port_id(),
-            self.src_channel_id(),
+            self.src_channel_id()?,
             packet.sequence,
             Height::zero(),
         )?;
@@ -780,7 +780,7 @@ impl RelayPath {
             self.dst_chain()
                 .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
                     port_id: self.dst_port_id().to_string(),
-                    channel_id: self.dst_channel_id().to_string(),
+                    channel_id: self.dst_channel_id()?.to_string(),
                     packet_ack_sequences: vec![packet.sequence.into()],
                 })?;
 
@@ -1519,12 +1519,17 @@ impl RelayPath {
 
 impl fmt::Display for RelayPath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let channel_id = self
+            .src_channel_id()
+            .map(ToString::to_string)
+            .unwrap_or_else(|_| "None".to_string());
+
         write!(
             f,
             "{}:{}/{} -> {}",
             self.src_chain().id(),
             self.src_port_id(),
-            self.src_channel_id(),
+            channel_id,
             self.dst_chain().id()
         )
     }
