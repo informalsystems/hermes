@@ -34,9 +34,9 @@ pub struct QueryAllClientsCmd {
 }
 
 #[derive(Debug, Serialize)]
-struct ChainClientTuple {
+struct ClientChain {
     client_id: ClientId,
-    target_chain_id: String,
+    chain_id: ChainId,
 }
 
 /// Command for querying all clients.
@@ -87,11 +87,11 @@ impl Runnable for QueryAllClientsCmd {
                             false => {
                                 // Include chain identifiers
                                 info!("printing identifiers (and target chain identifiers) of all clients hosted on chain {}", self.chain_id);
-                                let out: Vec<ChainClientTuple> = clients
+                                let out: Vec<ClientChain> = clients
                                     .into_iter()
-                                    .map(|cs| ChainClientTuple {
+                                    .map(|cs| ClientChain {
                                         client_id: cs.client_id,
-                                        target_chain_id: cs.client_state.chain_id().to_string(),
+                                        chain_id: cs.client_state.chain_id(),
                                     })
                                     .collect();
                                 Output::success(out).exit()
