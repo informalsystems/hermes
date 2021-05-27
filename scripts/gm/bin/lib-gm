@@ -692,10 +692,12 @@ list_keys() {
 }
 
 hermes_config() {
+  STRATEGY="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.strategy || echo 'all')"
+  LOG_LEVEL="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.log_level || echo 'info')"
   cat <<EOF > "$GLOBAL_HERMES_CONFIG"
 [global]
-strategy = 'naive'
-log_level = 'info'
+strategy = '${STRATEGY}'
+log_level = '${LOG_LEVEL}'
 
 EOF
   for i in $ALL_NODES
