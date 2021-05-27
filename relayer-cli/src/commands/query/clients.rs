@@ -20,14 +20,13 @@ pub struct QueryAllClientsCmd {
     chain_id: ChainId,
 
     #[options(
-        help = "filter for clients which target a specific chain id",
+        help = "filter for clients which target a specific chain id (implies '-o')",
         meta = "ID"
     )]
     src_chain_id: Option<ChainId>,
 
     #[options(
-        help = "omit printing the chain identifier which each client targets; \
-                providing a `-s`/`--src-chain-id` will enable this option",
+        help = "omit printing the source chain for each client",
         default = "false"
     )]
     omit_chain_ids: bool,
