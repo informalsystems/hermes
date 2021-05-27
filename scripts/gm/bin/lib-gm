@@ -187,6 +187,8 @@ load_config() {
   GLOBAL_ADD_TO_HERMES="$(stoml -q "$CONFIG_FILE" global.add_to_hermes || echo "$GLOBAL_ADD_TO_HERMES")"
   GLOBAL_WALLET_MNEMONIC="$(stoml -q "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
   GLOBAL_WALLET_HDPATH="$(stoml -q "$CONFIG_FILE" global.wallet_hdpath || echo "$GLOBAL_WALLET_HDPATH")"
+  GLOBAL_HERMES_STRATEGY="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.strategy || echo 'all')"
+  GLOBAL_HERMES_LOG_LEVEL="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.log_level || echo 'info')"
   export GLOBAL_GAIAD_BINARY
   export GLOBAL_HERMES_BINARY
   export GLOBAL_HOME_DIR
@@ -692,12 +694,10 @@ list_keys() {
 }
 
 hermes_config() {
-  STRATEGY="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.strategy || echo 'all')"
-  LOG_LEVEL="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.log_level || echo 'info')"
   cat <<EOF > "$GLOBAL_HERMES_CONFIG"
 [global]
-strategy = '${STRATEGY}'
-log_level = '${LOG_LEVEL}'
+strategy = '${GLOBAL_HERMES_STRATEGY}'
+log_level = '${GLOBAL_HERMES_LOG_LEVEL}'
 
 EOF
   for i in $ALL_NODES
