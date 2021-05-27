@@ -33,7 +33,7 @@ pub trait ClientDef: Clone {
         &self,
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
-        proofproof_upgrade_client: MerkleProof,
+        proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>>;
 
@@ -580,7 +580,7 @@ impl ClientDef for AnyClient {
         &self,
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
-        proofproof_upgrade_client: MerkleProof,
+        proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
         match self {
@@ -594,7 +594,7 @@ impl ClientDef for AnyClient {
                 let (new_state, new_consensus) = client.verify_upgrade_and_update_state(
                     client_state,
                     consensus_state,
-                    proofproof_upgrade_client,
+                    proof_upgrade_client,
                     proof_upgrade_consensus_state,
                 )?;
 
@@ -615,7 +615,7 @@ impl ClientDef for AnyClient {
                 let (new_state, new_consensus) = client.verify_upgrade_and_update_state(
                     client_state,
                     consensus_state,
-                    proofproof_upgrade_client,
+                    proof_upgrade_client,
                     proof_upgrade_consensus_state,
                 )?;
 

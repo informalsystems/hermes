@@ -246,13 +246,13 @@ where
 mod tests {
     use std::convert::TryFrom;
 
-    use crate::application::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer;
+    use crate::{application::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer, ics23_commitment::commitment::test_util::get_dummy_merkle_proof};
     use crate::events::IbcEvent;
     use crate::ics02_client::client_consensus::AnyConsensusState;
     use crate::ics02_client::client_state::AnyClientState;
+    
     use crate::ics02_client::msgs::{
-        create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient, upgrade_client::MsgUpgradeAnyClient, ClientMsg,
-        //upgrade_client::test_util::get_dummy_raw_msg_upgrade_client
+        create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient,upgrade_client::MsgUpgradeAnyClient, ClientMsg,
     };
     use crate::ics03_connection::msgs::{
         conn_open_ack::{test_util::get_dummy_raw_msg_conn_open_ack, MsgConnectionOpenAck},
@@ -281,11 +281,6 @@ mod tests {
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
     use crate::Height;
-    use crate::ics23_commitment::commitment::test_util::get_dummy_merkle_proof;
-
-
-   // use crate::test_utils::get_dummy_proof;
-   //use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 
     #[test]
@@ -308,7 +303,10 @@ mod tests {
 
         let update_client_height_after_second_send = Height::new(0, 36);
 
-        let upgrade_client_height = Height::new(1, 1);
+        let upgrade_client_height = Height::new(1, 2);
+
+        let upgrade_client_height_second = Height::new(1, 1);
+
 
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
@@ -343,15 +341,6 @@ mod tests {
             client_height,
         ))
         .unwrap();
-
-        //Upgrade message to extract dummy proofs 
-        //let _msg_upgrade = MsgUpgradeAnyClient::try_from(get_dummy_raw_msg_upgrade_client(upgrade_client_height)).unwrap();
-        //TryFrom<RawMsgUpgradeClient>::try_from();
-        // msg_upgrade.client_state = AnyClientState::Mock(MockClientState(MockHeader::new(
-        //     upgrade_client_height)));
-        // msg_upgrade.consensus_state= AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
-        //     upgrade_client_height)));
-
 
         //
         // Channel handshake messages.
@@ -428,21 +417,7 @@ mod tests {
                 })),
                 want_pass: true,
             },
-            //msg_upgrade.with_client_id(client_id.clone())
-            Test {
-                name: "Client upgrade successful".to_string(),
-                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient {
-                    client_id: client_id.clone(),
-                    client_state: AnyClientState::Mock(MockClientState(MockHeader::new(
-                        upgrade_client_height))),
-                    consensus_state: AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
-                            upgrade_client_height))),
-                    proof_upgrade_client: get_dummy_merkle_proof(),
-                    proof_upgrade_consensus_state: get_dummy_merkle_proof(),
-                    signer: default_signer.clone(),
-                })),
-                want_pass: true,
-            },
+            
             Test {
                 name: "Client update fails due to stale header".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
@@ -539,9 +514,9 @@ mod tests {
             Test {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
-                    client_id,
+                    client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height_after_second_send).into(),
-                    signer: default_signer,
+                    signer: default_signer.clone(),
                 })),
                 want_pass: true,
             },
@@ -566,6 +541,35 @@ mod tests {
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::ToClosePacket(msg_to_on_close)),
                 want_pass: true,
             },
+
+            Test {
+                name: "Client upgrade successful".to_string(),
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
+                    client_id.clone(),
+                     AnyClientState::Mock(MockClientState(MockHeader::new(
+                        upgrade_client_height))),
+                    AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
+                            upgrade_client_height))),
+                    get_dummy_merkle_proof(),
+                    get_dummy_merkle_proof(),
+                    default_signer.clone(),
+            ))),
+                want_pass: true,
+            },
+            Test {
+                name: "Client upgrade un-successful".to_string(),
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
+                    client_id,
+                     AnyClientState::Mock(MockClientState(MockHeader::new(
+                        upgrade_client_height_second))),
+                    AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
+                            upgrade_client_height_second))),
+                    get_dummy_merkle_proof(),
+                    get_dummy_merkle_proof(),
+                    default_signer,
+            ))),
+            want_pass: false,
+        },
         ]
         .into_iter()
         .collect();

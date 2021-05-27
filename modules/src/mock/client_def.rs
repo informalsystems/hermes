@@ -153,7 +153,7 @@ impl ClientDef for MockClient {
         &self,
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
-        _proofproof_upgrade_client: MerkleProof,
+        _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
         Ok((*client_state, *consensus_state))
