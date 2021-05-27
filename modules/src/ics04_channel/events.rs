@@ -37,8 +37,9 @@ const PKT_SRC_CHANNEL_ATTRIBUTE_KEY: &str = "packet_src_channel";
 const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
 const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
 const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
+const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
+
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
-//const PKT_TIMEOUT_STAMP_ATTRIBUTE_KEY: &str = "packet_timeout_stamp";
 
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.as_str() {
@@ -139,8 +140,10 @@ fn extract_packet_and_write_ack_from_tx(
             PKT_DST_CHANNEL_ATTRIBUTE_KEY => packet.destination_channel = value.parse().unwrap(),
             PKT_SEQ_ATTRIBUTE_KEY => packet.sequence = value.parse::<u64>().unwrap().into(),
             PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => packet.timeout_height = value.parse().unwrap(),
+            PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY => {
+                packet.timeout_timestamp = value.parse().unwrap()
+            }
             PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
-            // TODO: `Packet` has 7 fields and we're only parsing 6; is that intended?
             PKT_ACK_ATTRIBUTE_KEY => write_ack = Some(Vec::from(value.as_bytes())),
             _ => {}
         };
@@ -157,6 +160,15 @@ pub struct Attributes {
     pub connection_id: ConnectionId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
+}
+
+impl Attributes {
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.channel_id.as_ref()
+    }
 }
 
 impl Default for Attributes {
@@ -176,8 +188,14 @@ impl Default for Attributes {
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -220,8 +238,14 @@ impl From<OpenInit> for IbcEvent {
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -264,14 +288,24 @@ impl From<OpenTry> for IbcEvent {
 pub struct OpenAck(Attributes);
 
 impl OpenAck {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
+    }
+
+    pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
+        self.0.counterparty_channel_id.as_ref()
     }
 }
 
@@ -308,8 +342,14 @@ impl From<OpenAck> for IbcEvent {
 pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -426,8 +466,8 @@ impl std::fmt::Display for CloseInit {
 pub struct CloseConfirm(Attributes);
 
 impl CloseConfirm {
-    pub fn channel_id(&self) -> &Option<ChannelId> {
-        &self.0.channel_id
+    pub fn channel_id(&self) -> Option<&ChannelId> {
+        self.0.channel_id.as_ref()
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -505,6 +545,18 @@ impl SendPacket {
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
     }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
+    }
 }
 
 impl TryFrom<RawObject> for SendPacket {
@@ -526,7 +578,7 @@ impl From<SendPacket> for IbcEvent {
 
 impl std::fmt::Display for SendPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -542,6 +594,18 @@ impl ReceivePacket {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -564,7 +628,7 @@ impl From<ReceivePacket> for IbcEvent {
 
 impl std::fmt::Display for ReceivePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(f, "ReceivePacket - h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -582,6 +646,18 @@ impl WriteAcknowledgement {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -609,7 +685,11 @@ impl From<WriteAcknowledgement> for IbcEvent {
 
 impl std::fmt::Display for WriteAcknowledgement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(
+            f,
+            "WriteAcknowledgement - h:{}, {}",
+            self.height, self.packet
+        )
     }
 }
 
@@ -625,6 +705,12 @@ impl AcknowledgePacket {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
     }
 }
 
@@ -660,13 +746,19 @@ impl TimeoutPacket {
         self.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height
+        self.height = height;
     }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
     pub fn src_channel_id(&self) -> &ChannelId {
         &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -688,7 +780,7 @@ impl From<TimeoutPacket> for IbcEvent {
 
 impl std::fmt::Display for TimeoutPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(f, "TimeoutPacket - h:{}, {}", self.height, self.packet)
     }
 }
 
@@ -704,6 +796,18 @@ impl TimeoutOnClosePacket {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.packet.source_port
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.packet.source_channel
+    }
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.packet.destination_port
+    }
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.packet.destination_channel
     }
 }
 
@@ -725,6 +829,10 @@ impl From<TimeoutOnClosePacket> for IbcEvent {
 
 impl std::fmt::Display for TimeoutOnClosePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(
+            f,
+            "TimeoutOnClosePacket - h:{}, {}",
+            self.height, self.packet
+        )
     }
 }

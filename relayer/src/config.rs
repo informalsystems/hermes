@@ -5,10 +5,11 @@ use std::{fs, fs::File, io::Write, path::Path, time::Duration};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
+use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, PortId};
+use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
-use ibc::ics04_channel::channel::Order;
 
 /// Defaults for various fields
 pub mod default {
@@ -27,7 +28,7 @@ pub mod default {
     }
 
     pub fn connection_delay() -> Duration {
-        Duration::from_secs(0)
+        ZERO_DURATION
     }
 
     pub fn channel_ordering() -> Order {
@@ -63,25 +64,22 @@ impl Config {
                 || c.a_chain == *dst_chain && c.b_chain == *src_chain
         });
 
-        connection.and_then(|conn| {
-            if let Some(ref paths) = conn.paths {
-                Some((conn, &paths[0]))
-            } else {
-                None
-            }
-        })
+        connection.and_then(|conn| conn.paths.as_ref().map(|paths| (conn, &paths[0])))
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Strategy {
-    #[serde(rename = "naive")]
-    Naive,
+    #[serde(rename = "packets")]
+    Packets,
+
+    #[serde(rename = "all")]
+    HandshakeAndPackets,
 }
 
 impl Default for Strategy {
     fn default() -> Self {
-        Self::Naive
+        Self::Packets
     }
 }
 

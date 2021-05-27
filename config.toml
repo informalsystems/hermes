@@ -1,6 +1,9 @@
 [global]
-strategy = 'naive'
-log_level = 'error'
+# Valid strategies:
+#   'packets': restricts relaying to packets only, or
+#   'all': relay from all types of events
+strategy = 'packets'
+log_level = 'info'
 
 [[chains]]
 id = 'ibc-0'

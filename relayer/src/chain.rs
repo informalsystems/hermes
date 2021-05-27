@@ -1,18 +1,20 @@
 use std::{sync::Arc, thread};
 
-use crossbeam_channel as channel;
 use prost_types::Any;
 use tendermint::block::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSdkChain;
+
 use ibc::events::IbcEvent;
-use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
-use ibc::ics02_client::client_state::ClientState;
+use ibc::ics02_client::client_consensus::{
+    AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
+};
+use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::header::Header;
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -31,14 +33,14 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
-use crate::event::monitor::EventBatch;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
+use crate::{config::ChainConfig, event::monitor::EventReceiver};
 
 pub(crate) mod cosmos;
+pub mod counterparty;
 pub mod handle;
 pub mod runtime;
 
@@ -87,13 +89,7 @@ pub trait Chain: Sized {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<
-        (
-            channel::Receiver<EventBatch>,
-            Option<thread::JoinHandle<()>>,
-        ),
-        Error,
-    >;
+    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;
@@ -123,8 +119,11 @@ pub trait Chain: Sized {
     /// Query the latest height the chain is at
     fn query_latest_height(&self) -> Result<ICSHeight, Error>;
 
-    /// Performs a query to retrieve the identifiers of all clients associated with a chain.
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+    /// Performs a query to retrieve the state of all clients that a chain hosts.
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
     fn query_client_state(
         &self,
@@ -136,6 +135,15 @@ pub trait Chain: Sized {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
+
+    /// Performs a query to retrieve the consensus state (for a specific height `consensus_height`)
+    /// that an on-chain client stores.
+    fn query_consensus_state(
+        &self,
+        client_id: ClientId,
+        consensus_height: ICSHeight,
+        query_height: ICSHeight,
+    ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -169,10 +177,13 @@ pub trait Chain: Sized {
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<ChannelId>, Error>;
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels.
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
+    fn query_channels(
+        &self,
+        request: QueryChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
     fn query_channel(
         &self,
@@ -186,6 +197,8 @@ pub trait Chain: Sized {
         // TODO - query the chain, currently hardcoded
         if port_id.as_str() == "transfer" {
             "ics20-1".to_string()
+        } else if port_id.as_str() == "ibcaccount" {
+            "ics27-1".to_string()
         } else {
             "".to_string()
         }

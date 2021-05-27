@@ -1,27 +1,195 @@
+# Changelog
+
 ## Unreleased
 
-> [TODO: high level summary]
+### FEATURES
+
+- [ibc-relayer]
+  - Add support for event based channel relaying ([#822])
+  - Graceful handling of packet events in the presence of multiple relayers ([#983])
+
+### IMPROVEMENTS
+
+- [ibc]
+  - Started `unwrap` cleanup ([#871])
+
+- [ibc-relayer-cli]
+  - Improve config loading message ([#996])
+
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
+
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Promote `start-multi` command to `start` ([#911])
+
+[#822]: https://github.com/informalsystems/ibc-rs/issues/822
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
+[#911]: https://github.com/informalsystems/ibc-rs/issues/911
+[#972]: https://github.com/informalsystems/ibc-rs/issues/972
+[#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#996]: https://github.com/informalsystems/ibc-rs/issues/996
+
+## v0.3.2
+*May 21st, 2021*
+
+This is minor release which brings substantial performance improvements
+to the relayer (relaying 1000 packets now takes 2-5min instead of 1h+),
+better UX for the `ft-transfer` command, and automatic deployment of
+Docker images to Docker Hub.
+
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Add a `--key` option to the tx raw ft-transfer command to override the account used for sending messages ([#963])
+
+- [ibc-relayer]
+  - Add support for multiple keys to the keyring ([#963])
+
+- [release]
+  - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
+  - Automatically deploy Docker Hub image during release ([#967])
 
 ### IMPROVEMENTS
 
 - [ibc-relayer]
-  - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour. ([#785])
-  
+  - Batch together all events from all transactions included in a block ([#957])
+
 ### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel ([#960])
+
+### BREAKING CHANGES
+
+> Nothing
+
+[#894]: https://github.com/informalsystems/ibc-rs/pull/894
+[#957]: https://github.com/informalsystems/ibc-rs/issues/957
+[#960]: https://github.com/informalsystems/ibc-rs/issues/960
+[#963]: https://github.com/informalsystems/ibc-rs/issues/963
+[#967]: https://github.com/informalsystems/ibc-rs/issues/967
+
+[hermes-docker]: https://hub.docker.com/r/informalsystems/hermes
+
+## v0.3.1
+*May 14h, 2021*
+
+This release improves the UX of a couple commands, fixes a bug related
+to delay periods, and adds support for packet timeouts based on timestamps,
+as well as support Protobuf-encoded keys.
+
+### FEATURES
+
+- [scripts]
+  - Created the Gaiad Manager `gm` CLI tool for managing gaiad instances on the local machine ([#902])
+
+- [ibc-relayer]
+  - Add support for packet timeout based on timeout timestamp ([#937])
+  - Added support for Protobuf-based Keyring ([#925])
+
+### IMPROVEMENTS
+
+- [ibc-relayer-cli]
+  - Improve UX when querying non-existing connections and channels ([#875], [#920])
+  - More details in error messages to increase debuggability ([#921], [#934])
+  - Disallow creating a client with same source and destination chains ([#932])
+  - Make packet worker more resilient to nodes being unreachable for a short amount of time ([#943])
+
+### BUG FIXES
+
+- [ibc]
+  - Process raw `delay_period` field as nanoseconds instead of seconds. ([#927])
+
+### BREAKING CHANGES
+
+> Nothing
+
+
+[#875]: https://github.com/informalsystems/ibc-rs/issues/875
+[#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#902]: https://github.com/informalsystems/ibc-rs/issues/902
+[#921]: https://github.com/informalsystems/ibc-rs/issues/921
+[#925]: https://github.com/informalsystems/ibc-rs/issues/925
+[#927]: https://github.com/informalsystems/ibc-rs/issues/927
+[#932]: https://github.com/informalsystems/ibc-rs/issues/932
+[#934]: https://github.com/informalsystems/ibc-rs/issues/934
+[#937]: https://github.com/informalsystems/ibc-rs/issues/937
+[#943]: https://github.com/informalsystems/ibc-rs/issues/943
+
+
+## v0.3.0
+*May 7h, 2021*
+
+Special thanks to Jongwhan Lee (@leejw51crypto) for his contributions ([#878]).
+
+This release mostly focuses on improving the UX and the experimental multi-paths relayer (`start-multi` command),
+which has been made more resilient against nodes going down, and is now able to clear pending packets
+and periodically refresh IBC clients. The relayer now also supports [ICS 027 (Interchain Accounts)][ics27].
+
+[ics27]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md
+
+### FEATURES
+
+- [ibc-relayer]
+  - Support for ICS27 ([#794])
+
+- [ibc-relayer-cli]
+  - Added packet clearing and client refresh capabilities for the `start-multi` command ([#784], [#786])
+
+### IMPROVEMENTS
+
+- [ibc]
+  - Reinstated `ics23` dependency ([#854])
+  - Use proper Timestamp type to track time ([#758])
+
+- [ibc-relayer]
+  - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
+  - Use a single supervisor in `start-multi` to subscribe to all configured chains ([#862])
+  - The `start-multi` command is now more resilient to a node not being up or going down, and will attempt to reconnect ([#871])
+
+### BUG FIXES
+
+- [ibc]
+  - Fix parsing in `chain_version` when chain identifier has multiple dashes ([#878])
 
 - [ibc-relayer]
   - Fix pagination in gRPC query for clients ([#811])
   - Fix relayer crash when hermes starts in the same time as packets are being sent ([#851])
+  - Fix missing port information in `hermes query channels` ([#840])
+  - Fix crash during initialization of event monitor when node is down ([#863])
+  - Spawn a single Tokio runtime for the whole supervisor instead of one per chain ([#909])
+
+- [ibc-relayer-cli]
+  - Fix for `ft-transfer` mismatching arguments ([#869])
+  - Fix channel destination chain mismatch on unreceived-packets or unreceived-acks ([#873])
 
 ### BREAKING CHANGES
 
-> Nothing yet.
+- [ibc-relayer]
+  - `hermes -j query channels` command now returns `result` array with the format
+    `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]` ([#840])
 
 
+[#758]: https://github.com/informalsystems/ibc-rs/issues/758
+[#784]: https://github.com/informalsystems/ibc-rs/issues/784
 [#785]: https://github.com/informalsystems/ibc-rs/issues/785
+[#786]: https://github.com/informalsystems/ibc-rs/issues/786
+[#794]: https://github.com/informalsystems/ibc-rs/issues/794
 [#811]: https://github.com/informalsystems/ibc-rs/issues/811
+[#840]: https://github.com/informalsystems/ibc-rs/issues/840
 [#851]: https://github.com/informalsystems/ibc-rs/issues/851
-
+[#854]: https://github.com/informalsystems/ibc-rs/issues/854
+[#862]: https://github.com/informalsystems/ibc-rs/issues/862
+[#863]: https://github.com/informalsystems/ibc-rs/issues/863
+[#869]: https://github.com/informalsystems/ibc-rs/issues/869
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
+[#873]: https://github.com/informalsystems/ibc-rs/issues/873
+[#878]: https://github.com/informalsystems/ibc-rs/issues/878
+[#909]: https://github.com/informalsystems/ibc-rs/issues/909
 
 ## v0.2.0
 *April 14th, 2021*

@@ -10,6 +10,7 @@ use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::{error::Error, packet::Receipt};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::timestamp::Timestamp;
 use crate::Height;
 
 use super::packet::{PacketResult, Sequence};
@@ -48,14 +49,14 @@ pub trait ChannelReader {
 
     fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String>;
 
-    /// A hashing function for packet commitments  
+    /// A hashing function for packet commitments
     fn hash(&self, value: String) -> String;
 
     /// Returns the current height of the local chain.
     fn host_height(&self) -> Height;
 
     /// Returns the current timestamp of the local chain.
-    fn host_timestamp(&self) -> u64;
+    fn host_timestamp(&self) -> Timestamp;
 
     /// Returns a counter on the number of channel ids have been created thus far.
     /// The value of this counter should increase only via method
@@ -172,7 +173,7 @@ pub trait ChannelKeeper {
     fn store_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-        timestamp: u64,
+        timestamp: Timestamp,
         heigh: Height,
         data: Vec<u8>,
     ) -> Result<(), Error>;

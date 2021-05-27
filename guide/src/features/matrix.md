@@ -25,6 +25,7 @@ __Feature comparison between Hermes and the Go relayer__
 |                        |       |        |
 | Connection Delay       | ✅    | ❌     | 
 | Cl_Misbehavior         | ✅    | ❌     | monitors and submits IBC client misbehavior
+| Cl_Refresh             | ✅    | ❌     | periodically refresh an on-chain client to prevent expiration
 | Packet Delay           | ✅    | ❌     | 
 |                        |       |        |
 | Chan_Unordered         | ✅    | ✅     |
@@ -39,17 +40,20 @@ __Feature comparison between Hermes and the Go relayer__
 |                        |       |        |
 | Chan_Open_Handshake_A  | ✅    | ✅     |
 | Chan_Open_Handshake_P  | ❌    | ❌     |
+| Chan_Open_Handshake_Optimistic  | ❌    | ❌     | open a channel on a non-Open connection
 |                        |       |        |
 | Chan_Close_Handshake_P | ✅    | ✅     | 
 | Chan_Close_Handshake_A | ✅    | ❌     |
 |                        |       |        |
 | FT_Transfer            | ✅    | ✅     | can submit an ICS-20 fungible token transfer message
+| ICA_Relay               | ✅    | ❌     | can relay ICS-27 Interchain account packets
 | Packet_Recv_A          | ✅    | ✅     |
 | Packet_Recv_P          | ✅    | ✅     |
 | Packet_Timeout_A       | ✅    | ✅     |
 | Packet_Timeout_P       | ✅    | ✅     |
 | Packet_TimeoutClose_A  | ✅    | ❓     |
 | Packet_TimeoutClose_P  | ✅    | ❓     |
+| Packet_Optimistic      | ❌    | ❓     | relay packets over non-Open channels
 |                        |       |        |
 | Cl_Non_Tendermint      | ❌    | ❌     | supports non tendermint IBC light clients
 | Chain_Non_Cosmos       | ❌    | ❌     | supports non cosmos-SDK chains

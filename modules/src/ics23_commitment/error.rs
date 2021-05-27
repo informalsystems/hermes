@@ -1,16 +1,11 @@
-use anomaly::{BoxError, Context};
+use prost::DecodeError;
 use thiserror::Error;
 
-pub type Error = anomaly::Error<Kind>;
-
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
+pub enum Error {
     #[error("invalid raw merkle proof")]
-    InvalidRawMerkleProof,
-}
+    InvalidRawMerkleProof(DecodeError),
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
-    }
+    #[error("failed to decode commitment proof")]
+    CommitmentProofDecodingFailed(DecodeError),
 }

@@ -29,15 +29,20 @@ hermes create client ibc-0 ibc-1
 ```
 
 ```rust
-Success: CreateClient(
     CreateClient(
         Attributes {
-            height: Height { revision: 0, height: 264 },
+            height: Height {
+                revision: 0,
+                height: 286,
+            },
             client_id: ClientId(
-                "07-tendermint-1",
+                "07-tendermint-0",
             ),
             client_type: Tendermint,
-            consensus_height: Height { revision: 1, height: 253 },
+            consensus_height: Height {
+                revision: 1,
+                height: 274,
+            },
         },
     ),
 )
@@ -86,7 +91,9 @@ Success: UpdateClient(
             consensus_height: Height { revision: 1, height: 293 },
         },
         header: Some(
-            Tendermint(...),
+            Tendermint(
+                 Header {...},
+            ),
         ),
     },
 )
@@ -112,7 +119,9 @@ Success: UpdateClient(
             consensus_height: Height { revision: 1, height: 320 },
         },
         header: Some(
-            Tendermint(...),
+            Tendermint(
+                 Header {...},
+            ),
         ),
     },
 )

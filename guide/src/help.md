@@ -88,7 +88,7 @@ the `profiling` feature and the [log level][log-level] should be `info` level or
 #### Example output for `tx raw conn-init` command
 
 ```
-hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
+hermes -c   config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
 ```
 
 ```
@@ -156,7 +156,7 @@ Relevant snippet:
 
 ```toml
 [global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 ```
 
@@ -231,7 +231,7 @@ In order to test the correct operation during the channel close, perform the ste
   this path).
 
   ```shell
-  hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 5555 1000 -n 1 -d samoleans
+  hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 5555 -o 1000 -n 1 -d samoleans
   ```
 
 - now do the first step of channel closing: the channel will transition

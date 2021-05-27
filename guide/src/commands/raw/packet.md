@@ -22,12 +22,14 @@ POSITIONAL ARGUMENTS:
     src_port_id               identifier of the source port
     src_channel_id            identifier of the source channel
     amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
-    height_offset             timeout in number of blocks since current
 
 FLAGS:
-    -r, --receiver RECEIVER   receiving account address on the destination chain
-    -d, --denom DENOM         denomination of the coins to send (default: samoleans)
-    -n, --number-msgs NUMBER-MSGS
+    -o, --timeout-height-offset TIMEOUT-HEIGHT-OFFSET  timeout in number of blocks since current
+    -t, --timeout-seconds TIMEOUT-SECONDS              timeout in seconds since current
+    -r, --receiver RECEIVER                            receiving account address on the destination chain
+    -d, --denom DENOM                                  denomination of the coins to send (default: samoleans)
+    -n, --number-msgs NUMBER-MSGS                      number of messages to send
+    -k, --key KEY                                      use the given signing key (default: `key_name` config)
 ```
 
 __Example__
@@ -35,7 +37,7 @@ __Example__
 Send two transfer packets from the `transfer` module and `channel-0` of `ibc-0` to `ibc-1`. Each transfer if for `9999` samoleans (default denomination) and a timeout offset of `10` blocks. The transfer fee is paid by the relayer account on `ibc-1`.
 
 ```shell
-hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
+hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 ```
 
 ```rust
@@ -66,7 +68,7 @@ The transfer packets are stored on `ibc-0` and can be relayed.
 > To send transfer packets with a custom receiver address use the `--receiver | -r` flag.
 
 ```shell
-hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -r board:1938586739
+hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 1 -r board:1938586739
 ```
 
 ```rust

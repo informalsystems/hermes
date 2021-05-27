@@ -6,7 +6,10 @@ use anomaly::fail;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel, Counterparty as RawCounterparty};
+use ibc_proto::ibc::core::channel::v1::{
+    Channel as RawChannel, Counterparty as RawCounterparty,
+    IdentifiedChannel as RawIdentifiedChannel,
+};
 
 use crate::events::IbcEventType;
 use crate::ics02_client::height::Height;
@@ -16,7 +19,68 @@ use crate::ics04_channel::{
 };
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IdentifiedChannelEnd {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub channel_end: ChannelEnd,
+}
+
+impl IdentifiedChannelEnd {
+    pub fn new(port_id: PortId, channel_id: ChannelId, channel_end: ChannelEnd) -> Self {
+        IdentifiedChannelEnd {
+            port_id,
+            channel_id,
+            channel_end,
+        }
+    }
+}
+
+impl Protobuf<RawIdentifiedChannel> for IdentifiedChannelEnd {}
+
+impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(value: RawIdentifiedChannel) -> Result<Self, Self::Error> {
+        let raw_channel_end = RawChannel {
+            state: value.state,
+            ordering: value.ordering,
+            counterparty: value.counterparty,
+            connection_hops: value.connection_hops,
+            version: value.version,
+        };
+
+        Ok(IdentifiedChannelEnd {
+            port_id: value.port_id.parse().map_err(|_| Kind::IdentifierError)?,
+            channel_id: value
+                .channel_id
+                .parse()
+                .map_err(|_| Kind::IdentifierError)?,
+            channel_end: raw_channel_end.try_into()?,
+        })
+    }
+}
+
+impl From<IdentifiedChannelEnd> for RawIdentifiedChannel {
+    fn from(value: IdentifiedChannelEnd) -> Self {
+        RawIdentifiedChannel {
+            state: value.channel_end.state as i32,
+            ordering: value.channel_end.ordering as i32,
+            counterparty: Some(value.channel_end.counterparty().clone().into()),
+            connection_hops: value
+                .channel_end
+                .connection_hops
+                .iter()
+                .map(|v| v.as_str().to_string())
+                .collect(),
+            version: value.channel_end.version,
+            port_id: value.port_id.to_string(),
+            channel_id: value.channel_id.to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelEnd {
     pub state: State,
     pub ordering: Order,
@@ -43,7 +107,6 @@ impl TryFrom<RawChannel> for ChannelEnd {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
-        // Parse the ordering type. Propagate the error, if any, to our caller.
         let chan_state: State = State::from_i32(value.state)?;
 
         if chan_state == State::Uninitialized {
@@ -51,6 +114,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
         }
 
         let chan_ordering = Order::from_i32(value.ordering)?;
+
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = value
             .counterparty
@@ -80,7 +144,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
 impl From<ChannelEnd> for RawChannel {
     fn from(value: ChannelEnd) -> Self {
         RawChannel {
-            state: value.state.clone() as i32,
+            state: value.state as i32,
             ordering: value.ordering as i32,
             counterparty: Some(value.counterparty().clone().into()),
             connection_hops: value
@@ -122,6 +186,11 @@ impl ChannelEnd {
 
     pub fn set_counterparty_channel_id(&mut self, c: ChannelId) {
         self.remote.channel_id = Some(c);
+    }
+
+    /// Returns `true` if this `ChannelEnd` is in state [`State::Open`].
+    pub fn is_open(&self) -> bool {
+        self.state_matches(&State::Open)
     }
 
     pub fn state(&self) -> &State {
@@ -182,7 +251,7 @@ impl ChannelEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
@@ -250,7 +319,7 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Order {
     None = 0,
     Unordered,
@@ -303,7 +372,7 @@ impl FromStr for Order {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,
@@ -334,6 +403,9 @@ impl State {
             4 => Ok(Self::Closed),
             _ => fail!(error::Kind::UnknownState, s),
         }
+    }
+    pub fn is_open(self) -> bool {
+        self == State::Open
     }
 }
 

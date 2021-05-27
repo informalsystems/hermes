@@ -70,7 +70,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .ok_or(Kind::InvalidVersion)?
                 .try_into()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            delay_period: Duration::from_secs(msg.delay_period),
+            delay_period: Duration::from_nanos(msg.delay_period),
             signer: msg.signer.into(),
         })
     }
@@ -82,7 +82,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             client_id: ics_msg.client_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
             version: Some(ics_msg.version.into()),
-            delay_period: ics_msg.delay_period.as_secs(),
+            delay_period: ics_msg.delay_period.as_nanos() as u64,
             signer: ics_msg.signer.to_string(),
         }
     }

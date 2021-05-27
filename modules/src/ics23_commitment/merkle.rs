@@ -1,9 +1,10 @@
+use tendermint::merkle::proof::Proof;
+
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use crate::ics23_commitment::error::Error;
-use tendermint::merkle::proof::Proof;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
@@ -15,53 +16,8 @@ pub fn apply_prefix(
 
     let mut result: Vec<String> = vec![format!("{:?}", prefix)];
     result.append(&mut path);
-    Ok(MerklePath { key_path: result })
-}
 
-// TODO - get this from the ics23 crate proof
-pub fn cosmos_specs() -> Vec<ibc_proto::ics23::ProofSpec> {
-    vec![
-        // Format of proofs-iavl (iavl merkle proofs)
-        ibc_proto::ics23::ProofSpec {
-            leaf_spec: Some(ibc_proto::ics23::LeafOp {
-                hash: 1,
-                prehash_key: 0,
-                prehash_value: 1,
-                length: 1,
-                prefix: vec![0],
-            }),
-            inner_spec: Some(ibc_proto::ics23::InnerSpec {
-                child_order: vec![0, 1],
-                child_size: 33,
-                min_prefix_length: 4,
-                max_prefix_length: 12,
-                empty_child: vec![],
-                hash: 1,
-            }),
-            max_depth: 0,
-            min_depth: 0,
-        },
-        // Format of proofs-tendermint (crypto/ merkle SimpleProof)
-        ibc_proto::ics23::ProofSpec {
-            leaf_spec: Some(ibc_proto::ics23::LeafOp {
-                hash: 1,
-                prehash_key: 0,
-                prehash_value: 1,
-                length: 1,
-                prefix: vec![0],
-            }),
-            inner_spec: Some(ibc_proto::ics23::InnerSpec {
-                child_order: vec![0, 1],
-                child_size: 32,
-                min_prefix_length: 1,
-                max_prefix_length: 1,
-                empty_child: vec![],
-                hash: 1,
-            }),
-            max_depth: 0,
-            min_depth: 0,
-        },
-    ]
+    Ok(MerklePath { key_path: result })
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -121,21 +77,16 @@ pub struct MerkleProof {
 //     }
 // }
 
-use prost::Message;
+pub fn convert_tm_to_ics_merkle_proof(tm_proof: &Proof) -> Result<RawMerkleProof, Error> {
+    let mut proofs = vec![];
 
-pub fn convert_tm_to_ics_merkle_proof(
-    tm_proof: Option<Proof>,
-) -> Result<Option<RawMerkleProof>, Error> {
-    if let Some(proof) = tm_proof {
-        let mut mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![];
-        for (_i, op) in proof.ops.iter().enumerate() {
-            let data = op.clone().data;
-            let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
-            parsed.merge(data.as_slice()).unwrap();
-            mproofs.append(&mut vec![parsed]);
-        }
-        Ok(Some(RawMerkleProof { proofs: mproofs }))
-    } else {
-        Ok(None)
+    for op in &tm_proof.ops {
+        let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
+        prost::Message::merge(&mut parsed, op.data.as_slice())
+            .map_err(Error::CommitmentProofDecodingFailed)?;
+
+        proofs.push(parsed);
     }
+
+    Ok(RawMerkleProof { proofs })
 }

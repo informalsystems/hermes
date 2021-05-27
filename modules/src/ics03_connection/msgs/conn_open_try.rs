@@ -158,7 +158,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            delay_period: Duration::from_secs(msg.delay_period),
+            delay_period: Duration::from_nanos(msg.delay_period),
             signer: msg.signer.into(),
         })
     }
@@ -175,7 +175,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
-            delay_period: ics_msg.delay_period.as_secs(),
+            delay_period: ics_msg.delay_period.as_nanos() as u64,
             counterparty_versions: ics_msg
                 .counterparty_versions
                 .iter()

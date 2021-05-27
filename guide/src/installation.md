@@ -14,8 +14,8 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- MacOS: `hermes-v0.2.0-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-v0.2.0-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- MacOS: `hermes-v0.3.2-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-v0.3.2-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
  
@@ -47,7 +47,7 @@ hermes version
 ```
 
 ```
-hermes 0.2.0
+hermes 0.3.2
 ```
 
 ## Install via Cargo
@@ -81,7 +81,7 @@ hermes version
 ```
 
 ```
-hermes 0.2.0
+hermes 0.3.2
 ```
 
 ## Build from source
@@ -103,10 +103,10 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `v0.2.0` then execute the command:
+Then checkout the release, for example if the most recent release is `v0.3.2` then execute the command:
 
 ```shell
-git checkout v0.2.0
+git checkout v0.3.2
 ```
 
 ### Building with `cargo build`
@@ -141,7 +141,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes 0.2.0
+hermes 0.3.2
 Informal Systems <hello@informal.systems>
 
 USAGE:
@@ -150,11 +150,15 @@ USAGE:
 SUBCOMMANDS:
     help       Get usage information
     keys       Manage keys in the relayer for each chain
+    create     Create objects (client, connection, or channel) on chains
+    update     Update objects (clients) on chains
+    upgrade    Upgrade objects (clients) after chain upgrade
     start      Start the relayer
-    channel    Channel functionality for managing channels
-    query      Query state from chain
+    start-multi Start the relayer in multi-chain mode. Handles packet relaying across all open channels between all chains in the config.
+    query      Query objects from the chain
     tx         Create and send IBC transactions
     listen     Listen to and display IBC events emitted by a chain
+    misbehaviour Listen to client update IBC events and handles misbehaviour
     version    Display version information
 ```
 

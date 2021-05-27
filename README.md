@@ -4,22 +4,22 @@
 [![End to End testing][e2e-image]][e2e-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
-![Rust 1.49+][rustc-version]
+![Rust 1.51+][rustc-version]
 
 Rust implementation of the Inter-Blockchain Communication (IBC) protocol.
 
 This project comprises primarily four crates:
- 
-- The [`ibc`][ibc-crate-link] crate defines the main data structures and 
+
+- The [`ibc`][ibc-crate-link] crate defines the main data structures and
   on-chain logic for the IBC protocol.
-- The [`ibc-relayer`][relayer-crate-link] crate provides an implementation 
+- The [`ibc-relayer`][relayer-crate-link] crate provides an implementation
   of an IBC relayer, as a _library_.
-- The [`ibc-relayer-cli`][relayer-cli-crate-link] is a CLI (a wrapper 
-  over the `ibc-relayer` library), comprising the 
+- The [`ibc-relayer-cli`][relayer-cli-crate-link] is a CLI (a wrapper
+  over the `ibc-relayer` library), comprising the
   [`hermes`](https://hermes.informal.systems) binary.
-- The [`ibc-proto`][ibc-proto-crate-link] is a library with proto definitions 
-  necessary for interacting with Cosmos SDK
-  [IBC structs](https://github.com/cosmos/cosmos-sdk/tree/master/proto/ibc).
+- The [`ibc-proto`][ibc-proto-crate-link] is a library with Rust types generated from .proto definitions
+  necessary for interacting with [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/tree/master/proto/cosmos)
+  and its [IBC structs](https://github.com/cosmos/ibc-go/tree/main/proto/ibc).
 
 See the table below for more details.
 
@@ -33,9 +33,9 @@ Includes [TLA+ specifications](/docs/spec).
 | [ibc-proto](./proto)  | lib |  [![IBC Proto Crate][ibc-proto-crate-image]][ibc-proto-crate-link]      |  [![IBC Proto Docs][ibc-proto-docs-image]][ibc-proto-docs-link] |
 
 
-## Requirements 
+## Requirements
 
-Developed with the latest stable version of Rust: `1.49.0`. 
+Developed with the latest stable version of Rust: `1.51.0`.
 (May work with older versions.)
 
 ## Hermes Guide
@@ -56,14 +56,14 @@ See also [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Versioning
 
-We follow [Semantic Versioning](https://semver.org/), though APIs are still 
+We follow [Semantic Versioning](https://semver.org/), though APIs are still
 under active development.
 
 ## Resources
 
 - [IBC Website](https://cosmos.network/ibc)
-- [IBC Specification](https://github.com/cosmos/ics) <!-- this will change to /ibc -->
-- [IBC Modules in Go](https://github.com/cosmos/cosmos-sdk/tree/master/x/ibc) <!-- this will change to a TBD repo, see https://github.com/cosmos/cosmos-sdk/issues/8501 -->
+- [IBC Specification](https://github.com/cosmos/ibc)
+- [IBC Modules in Go](https://github.com/cosmos/ibc-go)
 - [IBC Relayer in Go](https://github.com/cosmos/relayer)
 
 ## License
@@ -100,4 +100,4 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [license-image]: https://img.shields.io/badge/license-Apache_2.0-blue.svg
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
-[rustc-version]: https://img.shields.io/badge/rustc-1.49+-blue.svg
+[rustc-version]: https://img.shields.io/badge/rustc-1.51+-blue.svg

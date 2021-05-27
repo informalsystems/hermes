@@ -20,6 +20,9 @@ pub enum Kind {
     #[error("cannot generate private key")]
     PrivateKey,
 
+    #[error("cannot deserialize the encoded public key {0} with error {1}")]
+    EncodedPublicKey(String, String),
+
     #[error("cannot generate bech32 account")]
     Bech32Account,
 
@@ -31,6 +34,9 @@ pub enum Kind {
 
     #[error("key store error")]
     KeyStore,
+
+    #[error("invalid HD path: {0}")]
+    InvalidHdPath(String),
 }
 
 impl Kind {

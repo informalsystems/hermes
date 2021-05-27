@@ -24,16 +24,17 @@ pub struct TxCreateClientCmd {
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
+
+        if self.src_chain_id == self.dst_chain_id {
+            Output::error("source and destination chains must be different".to_string()).exit()
+        }
+
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let client = ForeignClient {
-            dst_chain: chains.dst,
-            src_chain: chains.src,
-            id: ClientId::default(),
-        };
+        let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
