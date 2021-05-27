@@ -13,9 +13,6 @@ use ibc::{
 
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 
-#[cfg(feature = "telemetry")]
-use ibc_telemetry::service::MetricUpdate;
-
 use crate::{
     chain::{counterparty::channel_connection_client, handle::ChainHandle},
     config::Config,
@@ -26,6 +23,7 @@ use crate::{
     metric,
     object::{Channel, Client, Object, UnidirectionalChannelPath},
     registry::Registry,
+    telemetry::TelemetryHandle,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
@@ -35,9 +33,6 @@ use crate::chain::counterparty::channel_state_on_destination;
 use crate::config::Strategy;
 pub use error::Error;
 
-#[cfg(feature = "telemetry")]
-use ibc_telemetry::TelemetryHandle;
-
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
 /// worker, based on the [`Object`] associated with each event.
@@ -46,35 +41,23 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
-
-    #[cfg(feature = "telemetry")]
     telemetry: TelemetryHandle,
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(config: Config) -> Self {
+    pub fn spawn(config: Config, telemetry: TelemetryHandle) -> Self {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
+        let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
 
         Self {
             config,
             registry,
-            workers: WorkerMap::new(worker_msg_tx),
+            workers,
             worker_msg_rx,
-
-            #[cfg(feature = "telemetry")]
-            telemetry: TelemetryHandle::noop(),
+            telemetry,
         }
-    }
-
-    #[cfg(feature = "telemetry")]
-    /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`],
-    /// with telemetry enabled.
-    pub fn spawn_with_telemetry(config: Config, telemetry: TelemetryHandle) -> Self {
-        let mut supervisor = Self::spawn(config);
-        supervisor.telemetry = telemetry;
-        supervisor
     }
 
     fn handshake_enabled(&self) -> bool {
@@ -165,14 +148,14 @@ impl Supervisor {
                 IbcEvent::TimeoutPacket(ref packet) => {
                     if let Ok(object) = Object::for_timeout_packet(packet, src_chain) {
                         // TODO: Is this the right place to record the telemetry metric ?
-                        metric!(self.telemetry, MetricUpdate::TimeoutPacket(1));
+                        metric!(self.telemetry, TimeoutPacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
                 IbcEvent::WriteAcknowledgement(ref packet) => {
                     if let Ok(object) = Object::for_write_ack(packet, src_chain) {
                         // TODO: Is this the right place to record the telemetry metric ?
-                        metric!(self.telemetry, MetricUpdate::IbcAcknowledgePacket(1));
+                        metric!(self.telemetry, IbcAcknowledgePacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
@@ -203,7 +186,7 @@ impl Supervisor {
         for chain_id in chain_ids {
             let chain = match self.registry.get_or_spawn(&chain_id) {
                 Ok(chain_handle) => {
-                    metric!(self.telemetry, MetricUpdate::RelayChainsNumber(1));
+                    metric!(self.telemetry, RelayChainsNumber(1));
                     chain_handle
                 }
                 Err(e) => {
@@ -214,7 +197,7 @@ impl Supervisor {
 
             let channels = match chain.query_channels(req.clone()) {
                 Ok(channels) => {
-                    metric!(self.telemetry, MetricUpdate::RelayChannelsNumber(1));
+                    metric!(self.telemetry, RelayChannelsNumber(1));
                     channels
                 }
                 Err(e) => {

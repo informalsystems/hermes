@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use crossbeam_channel::Sender;
+
 use ibc::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
     object::Object,
+    telemetry::TelemetryHandle,
 };
 
 use super::{Worker, WorkerHandle, WorkerMsg};
@@ -15,15 +17,17 @@ use super::{Worker, WorkerHandle, WorkerMsg};
 pub struct WorkerMap {
     workers: HashMap<Object, WorkerHandle>,
     msg_tx: Sender<WorkerMsg>,
+    telemetry: TelemetryHandle,
 }
 
 impl WorkerMap {
     /// Create a new worker map, which will spawn workers with
     /// the given channel for sending messages back to the [`Supervisor`].
-    pub fn new(msg_tx: Sender<WorkerMsg>) -> Self {
+    pub fn new(msg_tx: Sender<WorkerMsg>, telemetry: TelemetryHandle) -> Self {
         Self {
             workers: HashMap::new(),
             msg_tx,
+            telemetry,
         }
     }
 
@@ -72,9 +76,22 @@ impl WorkerMap {
         if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
-            let handles = ChainHandlePair { a: src, b: dst };
-            let worker = Worker::spawn(handles, object.clone(), self.msg_tx.clone());
+            let worker = self.spawn_worker(src, dst, &object);
             self.workers.entry(object).or_insert(worker)
         }
+    }
+
+    fn spawn_worker(
+        &mut self,
+        src: Box<dyn ChainHandle>,
+        dst: Box<dyn ChainHandle>,
+        object: &Object,
+    ) -> WorkerHandle {
+        Worker::spawn(
+            ChainHandlePair { a: src, b: dst },
+            object.clone(),
+            self.msg_tx.clone(),
+            self.telemetry.clone(),
+        )
     }
 }

@@ -9,7 +9,9 @@ use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 use crate::{
     chain::handle::ChainHandlePair,
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
+    metric,
     object::Client,
+    telemetry::TelemetryHandle,
 };
 
 use super::WorkerCmd;
@@ -18,14 +20,21 @@ pub struct ClientWorker {
     client: Client,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
+    telemetry: TelemetryHandle,
 }
 
 impl ClientWorker {
-    pub fn new(client: Client, chains: ChainHandlePair, cmd_rx: Receiver<WorkerCmd>) -> Self {
+    pub fn new(
+        client: Client,
+        chains: ChainHandlePair,
+        cmd_rx: Receiver<WorkerCmd>,
+        telemetry: TelemetryHandle,
+    ) -> Self {
         Self {
             client,
             chains,
             cmd_rx,
+            telemetry,
         }
     }
 
@@ -72,7 +81,9 @@ impl ClientWorker {
 
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
-                        self.detect_misbehaviour(&client, Some(update));
+                        if self.detect_misbehaviour(&client, Some(update)) {
+                            metric!(self.telemetry, IbcClientMisbehaviour(1));
+                        }
                     }
                 }
             }

@@ -1,16 +1,19 @@
 pub mod server;
+
 pub mod service;
+pub use service::TelemetryService;
+
 pub mod state;
+pub use state::TelemetryState;
+
+pub mod metric;
+pub use metric::MetricUpdate;
 
 use std::sync::Arc;
 
 use crossbeam_channel::Sender;
 
-use crate::{
-    service::{MetricUpdate, TelemetryService},
-    state::TelemetryState,
-};
-
+#[derive(Clone, Debug)]
 pub struct TelemetryHandle {
     tx: Option<Sender<MetricUpdate>>,
 }

@@ -24,11 +24,11 @@ impl Runnable for StartCmd {
 #[cfg(feature = "telemetry")]
 fn spawn_supervisor(config: Config) -> Supervisor {
     let telemetry = ibc_telemetry::spawn(config.telemetry.port, config.telemetry.enabled);
-
-    Supervisor::spawn_with_telemetry(config, telemetry)
+    Supervisor::spawn(config, telemetry)
 }
 
 #[cfg(not(feature = "telemetry"))]
 fn spawn_supervisor(config: Config) -> Supervisor {
-    Supervisor::spawn(config)
+    let telemetry = ibc_relayer::telemetry::TelemetryDisabled;
+    Supervisor::spawn(config, telemetry)
 }

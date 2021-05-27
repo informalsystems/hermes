@@ -37,13 +37,17 @@ pub struct TelemetryState {
 
     // Total number of IBC timeout packets
     pub ibc_timeout_packet: BoundCounter<'static, u64>,
+
+    // Total number of client misbehaviours
+    pub ibc_client_misbehaviour: BoundCounter<'static, u64>,
 }
 
 impl Default for TelemetryState {
     fn default() -> Self {
         let exporter = opentelemetry_prometheus::exporter().init();
         let meter = global::meter("hermes");
-        let telemetry_state = TelemetryState {
+
+        Self {
             exporter,
             relay_chains_num: meter
                 .u64_counter("hermes_chains_num")
@@ -99,7 +103,11 @@ impl Default for TelemetryState {
                 .with_description("Total number of IBC timeout packets")
                 .init()
                 .bind(HANDLER_ALL.as_ref()),
-        };
-        telemetry_state
+            ibc_client_misbehaviour: meter
+                .u64_counter("hermes_ibc_client_misbehaviour")
+                .with_description("Total number of client misbehaviours")
+                .init()
+                .bind(HANDLER_ALL.as_ref()),
+        }
     }
 }

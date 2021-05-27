@@ -8,16 +8,19 @@ use crate::{
     chain::handle::ChainHandlePair,
     link::{Link, LinkParameters},
     object::UnidirectionalChannelPath,
+    telemetry::TelemetryHandle,
     util::retry::{retry_with_index, RetryResult},
     worker::retry_strategy,
 };
 
 use super::WorkerCmd;
 
+#[derive(Debug)]
 pub struct UniChanPathWorker {
     path: UnidirectionalChannelPath,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
+    telemetry: TelemetryHandle,
 }
 
 impl UniChanPathWorker {
@@ -25,11 +28,13 @@ impl UniChanPathWorker {
         path: UnidirectionalChannelPath,
         chains: ChainHandlePair,
         cmd_rx: Receiver<WorkerCmd>,
+        telemetry: TelemetryHandle,
     ) -> Self {
         Self {
             path,
             chains,
             cmd_rx,
+            telemetry,
         }
     }
 
