@@ -63,10 +63,22 @@ impl ClientWorker {
             thread::sleep(Duration::from_millis(600));
 
             // Run client refresh, exit only if expired or frozen
-            if let Err(e @ ForeignClientError::ExpiredOrFrozen(..)) = client.refresh() {
-                error!("failed to refresh client '{}': {}", client, e);
-                continue;
-            }
+            match client.refresh() {
+                Ok(Some(_)) => {
+                    metric!(
+                        self.telemetry,
+                        IbcClientUpdate(
+                            self.client.dst_chain_id.clone(),
+                            self.client.dst_client_id.clone()
+                        )
+                    );
+                }
+                Err(e @ ForeignClientError::ExpiredOrFrozen(..)) => {
+                    error!("failed to refresh client '{}': {}", client, e);
+                    continue;
+                }
+                _ => (),
+            };
 
             if skip_misbehaviour {
                 continue;

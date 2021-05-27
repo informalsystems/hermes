@@ -131,7 +131,7 @@ impl UniChanPathWorker {
             .filter(|e| matches!(e, IbcEvent::WriteAcknowledgement(_)))
             .count();
 
-        ibc_telemetry::MetricUpdate::ReceivePacket(
+        ibc_telemetry::MetricUpdate::IbcReceivePacket(
             self.path.src_chain_id.clone(),
             self.path.src_channel_id.clone(),
             self.path.src_port_id.clone(),

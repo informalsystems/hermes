@@ -16,6 +16,9 @@ pub struct TelemetryState {
     /// Number of workers per object
     pub workers: UpDownCounter<i64>,
 
+    /// Number of client updates per client
+    pub ibc_client_updates: Counter<u64>,
+
     /// Number of client misbehaviours per client
     pub ibc_client_misbehaviours: Counter<u64>,
 
@@ -29,6 +32,15 @@ impl TelemetryState {
         self.workers.add(op.to_i64(), labels);
     }
 
+    pub fn ibc_client_update(&self, chain: &ChainId, client: &ClientId) {
+        let labels = &[
+            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("client", client.to_string()),
+        ];
+
+        self.ibc_client_updates.add(1, labels);
+    }
+
     pub fn ibc_client_misbehaviour(&self, chain: &ChainId, client: &ClientId) {
         let labels = &[
             KeyValue::new("chain", chain.to_string()),
@@ -38,7 +50,7 @@ impl TelemetryState {
         self.ibc_client_misbehaviours.add(1, labels);
     }
 
-    pub fn receive_packets(
+    pub fn ibc_receive_packets(
         &self,
         src_chain: &ChainId,
         src_channel: &ChannelId,
@@ -55,17 +67,6 @@ impl TelemetryState {
     }
 }
 
-// Supervisor:
-// - [x] number of workers per type (gauge)
-//
-// Client:
-// - [x] misbehaviors per client (counter)
-// - [ ] updates per client (counter) √
-//
-// Packet:
-// - [ ] write acknowledgment events per object, wo/ destination (counter) √
-// => `receive_packets`
-
 impl Default for TelemetryState {
     fn default() -> Self {
         let exporter = opentelemetry_prometheus::exporter().init();
@@ -79,13 +80,18 @@ impl Default for TelemetryState {
                 .with_description("Number of workers per object")
                 .init(),
 
+            ibc_client_updates: meter
+                .u64_counter("ibc_client_updates")
+                .with_description("Number of client updates performed per client")
+                .init(),
+
             ibc_client_misbehaviours: meter
                 .u64_counter("ibc_client_misbehaviours")
                 .with_description("Number of misbehaviours detected per client")
                 .init(),
 
             receive_packets: meter
-                .u64_counter("receive_packets")
+                .u64_counter("ibc_receive_packets")
                 .with_description("Number of receive packets relayed per channel")
                 .init(),
         }

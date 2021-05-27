@@ -30,12 +30,18 @@ impl TelemetryService {
         use MetricUpdate::*;
 
         match update {
-            Worker(worker_type, op) => self.state.worker(worker_type, op),
+            Worker(worker_type, op) => {
+                self.state.worker(worker_type, op);
+            }
+            IbcClientUpdate(chain, client) => {
+                self.state.ibc_client_update(&chain, &client);
+            }
             IbcClientMisbehaviour(chain, client) => {
                 self.state.ibc_client_misbehaviour(&chain, &client)
             }
-            ReceivePacket(chain, channel, port, count) => {
-                self.state.receive_packets(&chain, &channel, &port, count)
+            IbcReceivePacket(chain, channel, port, count) => {
+                self.state
+                    .ibc_receive_packets(&chain, &channel, &port, count);
             }
         }
     }

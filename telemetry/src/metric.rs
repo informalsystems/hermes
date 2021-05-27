@@ -6,7 +6,8 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 pub enum MetricUpdate {
     Worker(WorkerType, Op),
     IbcClientMisbehaviour(ChainId, ClientId),
-    ReceivePacket(ChainId, ChannelId, PortId, u64),
+    IbcClientUpdate(ChainId, ClientId),
+    IbcReceivePacket(ChainId, ChannelId, PortId, u64),
 }
 
 #[derive(Copy, Clone, Debug)]
