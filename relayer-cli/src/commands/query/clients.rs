@@ -76,7 +76,7 @@ impl Runnable for QueryAllClientsCmd {
                         match self.omit_chain_ids {
                             true => {
                                 // Omit chain identifiers
-                                info!(
+                                debug!(
                                     "printing identifiers of all clients hosted on chain {}",
                                     self.chain_id
                                 );
@@ -86,7 +86,7 @@ impl Runnable for QueryAllClientsCmd {
                             }
                             false => {
                                 // Include chain identifiers
-                                info!("printing identifiers (and target chain identifiers) of all clients hosted on chain {}", self.chain_id);
+                                debug!("printing identifiers (and target chain identifiers) of all clients hosted on chain {}", self.chain_id);
                                 let out: Vec<ClientChain> = clients
                                     .into_iter()
                                     .map(|cs| ClientChain {
@@ -99,7 +99,7 @@ impl Runnable for QueryAllClientsCmd {
                         };
                     }
                     Some(source_chain_id) => {
-                        info!(
+                        debug!(
                             "printing identifiers of all clients hosted on chain {} which target chain {}",
                             self.chain_id, source_chain_id
                         );
