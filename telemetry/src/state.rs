@@ -1,46 +1,70 @@
-use once_cell::sync::Lazy;
-use opentelemetry::{global, metrics::BoundCounter, KeyValue};
+use opentelemetry::{
+    global,
+    metrics::{Counter, UpDownCounter},
+    KeyValue,
+};
 use opentelemetry_prometheus::PrometheusExporter;
 
-static HANDLER_ALL: Lazy<[KeyValue; 1]> = Lazy::new(|| [KeyValue::new("hermes", "all")]);
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 
-#[derive(Clone, Debug)]
+use crate::metric::{Op, WorkerType};
+
+#[derive(Debug)]
 pub struct TelemetryState {
     pub exporter: PrometheusExporter,
 
-    // Number of chains the relay is connecting to
-    pub relay_chains_num: BoundCounter<'static, u64>,
+    /// Number of workers per object
+    pub workers: UpDownCounter<i64>,
 
-    // Number of channels the relay is connecting to
-    pub relay_channels_num: BoundCounter<'static, u64>,
+    /// Number of client misbehaviours per client
+    pub ibc_client_misbehaviours: Counter<u64>,
 
-    // Total number of IBC packets acknowledged
-    pub tx_msg_ibc_acknowledge_packet: BoundCounter<'static, u64>,
-
-    // Total number of txs processed via relay tx
-    pub tx_count: BoundCounter<'static, u64>,
-
-    // Total number of successful txs processed via relay tx
-    pub tx_successful: BoundCounter<'static, u64>,
-
-    // Total number of failed txs processed via relay tx
-    pub tx_failed: BoundCounter<'static, u64>,
-
-    // Total number of IBC transfers sent from a chain (source or sink)
-    pub ibc_transfer_send: BoundCounter<'static, u64>,
-
-    // Total number of IBC transfers received to a chain (source or sink)
-    pub ibc_transfer_receive: BoundCounter<'static, u64>,
-
-    // Total number of IBC packets received
-    pub tx_msg_ibc_recv_packet: BoundCounter<'static, u64>,
-
-    // Total number of IBC timeout packets
-    pub ibc_timeout_packet: BoundCounter<'static, u64>,
-
-    // Total number of client misbehaviours
-    pub ibc_client_misbehaviour: BoundCounter<'static, u64>,
+    /// Number of receive packets relayed, per channel
+    pub receive_packets: Counter<u64>,
 }
+
+impl TelemetryState {
+    pub fn worker(&self, worker_type: WorkerType, op: Op) {
+        let labels = &[KeyValue::new("type", worker_type.to_string())];
+        self.workers.add(op.to_i64(), labels);
+    }
+
+    pub fn ibc_client_misbehaviour(&self, chain: &ChainId, client: &ClientId) {
+        let labels = &[
+            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("client", client.to_string()),
+        ];
+
+        self.ibc_client_misbehaviours.add(1, labels);
+    }
+
+    pub fn receive_packets(
+        &self,
+        src_chain: &ChainId,
+        src_channel: &ChannelId,
+        src_port: &PortId,
+        count: u64,
+    ) {
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("src_port", src_port.to_string()),
+        ];
+
+        self.receive_packets.add(count, labels);
+    }
+}
+
+// Supervisor:
+// - [x] number of workers per type (gauge)
+//
+// Client:
+// - [x] misbehaviors per client (counter)
+// - [ ] updates per client (counter) √
+//
+// Packet:
+// - [ ] write acknowledgment events per object, wo/ destination (counter) √
+// => `receive_packets`
 
 impl Default for TelemetryState {
     fn default() -> Self {
@@ -49,65 +73,21 @@ impl Default for TelemetryState {
 
         Self {
             exporter,
-            relay_chains_num: meter
-                .u64_counter("hermes_chains_num")
-                .with_description("Number of chains the relay is connecting to")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            relay_channels_num: meter
-                .u64_counter("hermes_channels_num")
-                .with_description("Number of channels the relay is connecting to")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            tx_msg_ibc_acknowledge_packet: meter
-                .u64_counter("hermes_tx_msg_ibc_acknowledge_packet")
-                .with_description("Total number of IBC packets acknowledged")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            tx_count: meter
-                .u64_counter("hermes_tx_count")
-                .with_description("Total number of txs processed via relay tx")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            tx_successful: meter
-                .u64_counter("hermes_tx_successful")
-                .with_description("Total number of successful txs processed via relay tx")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            tx_failed: meter
-                .u64_counter("hermes_tx_failed")
-                .with_description("Total number of failed txs processed via relay tx")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            ibc_transfer_send: meter
-                .u64_counter("hermes_ibc_transfer_send")
-                .with_description(
-                    "Total number of IBC transfers sent from a chain (source or sink)",
-                )
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            ibc_transfer_receive: meter
-                .u64_counter("hermes_ibc_transfer_receive")
-                .with_description(
-                    "Total number of IBC transfers received to a chain (source or sink)",
-                )
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            tx_msg_ibc_recv_packet: meter
-                .u64_counter("hermes_tx_msg_ibc_recv_packet")
-                .with_description("Total number of IBC packets received")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            ibc_timeout_packet: meter
-                .u64_counter("hermes_ibc_timeout_packet")
-                .with_description("Total number of IBC timeout packets")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
-            ibc_client_misbehaviour: meter
-                .u64_counter("hermes_ibc_client_misbehaviour")
-                .with_description("Total number of client misbehaviours")
-                .init()
-                .bind(HANDLER_ALL.as_ref()),
+
+            workers: meter
+                .i64_up_down_counter("workers")
+                .with_description("Number of workers per object")
+                .init(),
+
+            ibc_client_misbehaviours: meter
+                .u64_counter("ibc_client_misbehaviours")
+                .with_description("Number of misbehaviours detected per client")
+                .init(),
+
+            receive_packets: meter
+                .u64_counter("receive_packets")
+                .with_description("Number of receive packets relayed per channel")
+                .init(),
         }
     }
 }

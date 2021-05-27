@@ -29,6 +29,10 @@ fn spawn_supervisor(config: Config) -> Supervisor {
 
 #[cfg(not(feature = "telemetry"))]
 fn spawn_supervisor(config: Config) -> Supervisor {
+    if config.telemetry.enabled {
+        warn!("telemetry enabled in the config but Hermes was built without telemetry support");
+    }
+
     let telemetry = ibc_relayer::telemetry::TelemetryDisabled;
     Supervisor::spawn(config, telemetry)
 }

@@ -30,17 +30,13 @@ impl TelemetryService {
         use MetricUpdate::*;
 
         match update {
-            TxCount(n) => self.state.tx_count.add(n),
-            TxSuccess(n) => self.state.tx_successful.add(n),
-            TxFailed(n) => self.state.tx_failed.add(n),
-            RelayChainsNumber(n) => self.state.relay_chains_num.add(n),
-            RelayChannelsNumber(n) => self.state.relay_channels_num.add(n),
-            TimeoutPacket(n) => self.state.ibc_timeout_packet.add(n),
-            IbcAcknowledgePacket(n) => self.state.tx_msg_ibc_acknowledge_packet.add(n),
-            IbcRecvPacket(n) => self.state.tx_msg_ibc_recv_packet.add(n),
-            IbcTransferSend(n) => self.state.ibc_transfer_send.add(n),
-            IbcTransferReceive(n) => self.state.ibc_transfer_receive.add(n),
-            IbcClientMisbehaviour(n) => self.state.ibc_client_misbehaviour.add(n),
+            Worker(worker_type, op) => self.state.worker(worker_type, op),
+            IbcClientMisbehaviour(chain, client) => {
+                self.state.ibc_client_misbehaviour(&chain, &client)
+            }
+            ReceivePacket(chain, channel, port, count) => {
+                self.state.receive_packets(&chain, &channel, &port, count)
+            }
         }
     }
 }

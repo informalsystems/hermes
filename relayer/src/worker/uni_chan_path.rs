@@ -2,11 +2,13 @@ use std::{thread, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
+use ibc::events::IbcEvent;
 use tracing::{error, warn};
 
 use crate::{
     chain::handle::ChainHandlePair,
-    link::{Link, LinkParameters},
+    link::{Link, LinkParameters, RelaySummary},
+    metric,
     object::UnidirectionalChannelPath,
     telemetry::TelemetryHandle,
     util::retry::{retry_with_index, RetryResult},
@@ -40,14 +42,12 @@ impl UniChanPathWorker {
 
     /// Run the event loop for events associated with a [`UnidirectionalChannelPath`].
     pub fn run(self) -> Result<(), BoxError> {
-        let rx = self.cmd_rx;
-
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
             self.chains.b.clone(),
             LinkParameters {
-                src_port_id: self.path.src_port_id,
-                src_channel_id: self.path.src_channel_id,
+                src_port_id: self.path.src_port_id.clone(),
+                src_channel_id: self.path.src_channel_id.clone(),
             },
         )?;
 
@@ -61,20 +61,26 @@ impl UniChanPathWorker {
             thread::sleep(Duration::from_millis(200));
 
             let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                Self::step(rx.try_recv().ok(), &mut link, index)
+                Self::step(self.cmd_rx.try_recv().ok(), &mut link, index)
             });
 
-            if let Err(retries) = result {
-                return Err(format!(
-                    "UnidirectionalChannelPath worker failed after {} retries",
-                    retries
-                )
-                .into());
+            match result {
+                Ok(summary) => {
+                    metric!(self.telemetry, self.receive_packet_metric(&summary));
+                }
+
+                Err(retries) => {
+                    return Err(format!(
+                        "UnidirectionalChannelPath worker failed after {} retries",
+                        retries
+                    )
+                    .into());
+                }
             }
         }
     }
 
-    fn step(cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<(), u64> {
+    fn step(cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<RelaySummary, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
                 WorkerCmd::IbcEvents { batch } => {
@@ -98,12 +104,13 @@ impl UniChanPathWorker {
             .refresh_schedule()
             .and_then(|_| link.a_to_b.execute_schedule());
 
-        if let Err(e) = result {
-            error!("{}", e);
-            return RetryResult::Retry(index);
+        match result {
+            Ok(summary) => RetryResult::Ok(summary),
+            Err(e) => {
+                error!("{}", e);
+                RetryResult::Retry(index)
+            }
         }
-
-        RetryResult::Ok(())
     }
 
     /// Get a reference to the uni chan path worker's chains.
@@ -114,5 +121,21 @@ impl UniChanPathWorker {
     /// Get a reference to the client worker's object.
     pub fn object(&self) -> &UnidirectionalChannelPath {
         &self.path
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn receive_packet_metric(&self, summary: &RelaySummary) -> ibc_telemetry::MetricUpdate {
+        let count = summary
+            .events
+            .iter()
+            .filter(|e| matches!(e, IbcEvent::WriteAcknowledgement(_)))
+            .count();
+
+        ibc_telemetry::MetricUpdate::ReceivePacket(
+            self.path.src_chain_id.clone(),
+            self.path.src_channel_id.clone(),
+            self.path.src_port_id.clone(),
+            count as u64,
+        )
     }
 }

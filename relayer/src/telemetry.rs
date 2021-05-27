@@ -30,7 +30,7 @@ macro_rules! metric {
         #[cfg(feature = "telemetry")]
         #[allow(unused_imports)]
         {
-            use ibc_telemetry::{MetricUpdate, MetricUpdate::*};
+            use ibc_telemetry::{metric::Op, MetricUpdate, MetricUpdate::*};
             $t.send($e);
         }
 

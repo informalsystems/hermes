@@ -82,7 +82,13 @@ impl ClientWorker {
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         if self.detect_misbehaviour(&client, Some(update)) {
-                            metric!(self.telemetry, IbcClientMisbehaviour(1));
+                            metric!(
+                                self.telemetry,
+                                IbcClientMisbehaviour(
+                                    self.client.dst_chain_id.clone(),
+                                    self.client.dst_client_id.clone()
+                                )
+                            );
                         }
                     }
                 }

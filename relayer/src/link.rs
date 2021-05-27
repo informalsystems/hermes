@@ -1699,7 +1699,9 @@ impl Link {
 
 #[derive(Clone, Debug)]
 pub struct RelaySummary {
-    events: Vec<IbcEvent>,
+    pub events: Vec<IbcEvent>,
+    // errors: todo!(),
+    // timings: todo!(),
 }
 
 impl RelaySummary {

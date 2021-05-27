@@ -3,9 +3,11 @@ use std::collections::HashMap;
 use crossbeam_channel::Sender;
 
 use ibc::ics24_host::identifier::ChainId;
+use ibc_telemetry::metric::WorkerType;
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
+    metric,
     object::Object,
     telemetry::TelemetryHandle,
 };
@@ -40,6 +42,7 @@ impl WorkerMap {
     /// the map and wait for its thread to terminate.
     pub fn remove_stopped(&mut self, object: &Object) -> bool {
         if let Some(handle) = self.workers.remove(object) {
+            metric!(self.telemetry, Worker(metric_type(object), Op::Sub(1)));
             let _ = handle.join();
             true
         } else {
@@ -87,11 +90,22 @@ impl WorkerMap {
         dst: Box<dyn ChainHandle>,
         object: &Object,
     ) -> WorkerHandle {
+        metric!(self.telemetry, Worker(metric_type(object), Op::Add(1)));
+
         Worker::spawn(
             ChainHandlePair { a: src, b: dst },
             object.clone(),
             self.msg_tx.clone(),
             self.telemetry.clone(),
         )
+    }
+}
+
+#[cfg(feature = "telemetry")]
+fn metric_type(o: &Object) -> WorkerType {
+    match o {
+        Object::Client(_) => WorkerType::Client,
+        Object::Channel(_) => WorkerType::Channel,
+        Object::UnidirectionalChannelPath(_) => WorkerType::Packet,
     }
 }

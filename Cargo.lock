@@ -1472,6 +1472,7 @@ name = "ibc-telemetry"
 version = "0.1.0"
 dependencies = [
  "crossbeam-channel 0.5.1",
+ "ibc",
  "once_cell",
  "opentelemetry",
  "opentelemetry-prometheus",

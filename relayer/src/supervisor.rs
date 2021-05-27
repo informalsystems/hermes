@@ -20,7 +20,6 @@ use crate::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
     },
-    metric,
     object::{Channel, Client, Object, UnidirectionalChannelPath},
     registry::Registry,
     telemetry::TelemetryHandle,
@@ -41,6 +40,8 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
+
+    #[allow(dead_code)]
     telemetry: TelemetryHandle,
 }
 
@@ -147,15 +148,11 @@ impl Supervisor {
                 }
                 IbcEvent::TimeoutPacket(ref packet) => {
                     if let Ok(object) = Object::for_timeout_packet(packet, src_chain) {
-                        // TODO: Is this the right place to record the telemetry metric ?
-                        metric!(self.telemetry, TimeoutPacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
                 IbcEvent::WriteAcknowledgement(ref packet) => {
                     if let Ok(object) = Object::for_write_ack(packet, src_chain) {
-                        // TODO: Is this the right place to record the telemetry metric ?
-                        metric!(self.telemetry, IbcAcknowledgePacket(1));
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
@@ -185,10 +182,7 @@ impl Supervisor {
 
         for chain_id in chain_ids {
             let chain = match self.registry.get_or_spawn(&chain_id) {
-                Ok(chain_handle) => {
-                    metric!(self.telemetry, RelayChainsNumber(1));
-                    chain_handle
-                }
+                Ok(chain_handle) => chain_handle,
                 Err(e) => {
                     error!("skipping workers for chain id {}. reason: failed to spawn chain runtime with error: {}", chain_id, e);
                     continue;
@@ -196,10 +190,7 @@ impl Supervisor {
             };
 
             let channels = match chain.query_channels(req.clone()) {
-                Ok(channels) => {
-                    metric!(self.telemetry, RelayChannelsNumber(1));
-                    channels
-                }
+                Ok(channels) => channels,
                 Err(e) => {
                     error!("failed to query channels from {}: {}", chain_id, e);
                     continue;
