@@ -5,17 +5,6 @@ use std::str::FromStr;
 
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
-
-
-// pub struct CommitmentProof{
-
-// }
-// #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-// pub struct MerkleProof{
-//   proofs: Vec<CommitmentProof>
-// }
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::error::Kind;
@@ -23,6 +12,8 @@ use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
 
@@ -36,13 +27,15 @@ pub struct MsgUpgradeAnyClient {
     pub proof_upgrade_consensus_state: RawMerkleProof,
     pub signer: Signer,
 }
-impl MsgUpgradeAnyClient{
-    pub fn new(client_id: ClientId, 
-                client_state: AnyClientState, 
-                consensus_state: AnyConsensusState,
-                proof_upgrade_client: RawMerkleProof,
-                proof_upgrade_consensus_state: RawMerkleProof,
-                signer: Signer) -> Self {
+impl MsgUpgradeAnyClient {
+    pub fn new(
+        client_id: ClientId,
+        client_state: AnyClientState,
+        consensus_state: AnyConsensusState,
+        proof_upgrade_client: RawMerkleProof,
+        proof_upgrade_consensus_state: RawMerkleProof,
+        signer: Signer,
+    ) -> Self {
         MsgUpgradeAnyClient {
             client_id,
             client_state,
@@ -112,16 +105,22 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
         })
     }
 }
-//ics23_commitment::commitment::test_util::get_dummy_merkle_proof, 
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
-    //use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-
-    use crate::{ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height}, ics24_host::identifier::ClientId, mock::{client_state::{MockClientState, MockConsensusState}, header::MockHeader}, test_utils::{get_dummy_bech32_account, get_dummy_proof}};
     use super::MsgUpgradeAnyClient;
-
+    use crate::{
+        ics02_client::{
+            client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
+        },
+        ics24_host::identifier::ClientId,
+        mock::{
+            client_state::{MockClientState, MockConsensusState},
+            header::MockHeader,
+        },
+        test_utils::{get_dummy_bech32_account, get_dummy_proof},
+    };
+    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
     /// Extends the implementation with additional helper methods.
     impl MsgUpgradeAnyClient {
@@ -130,16 +129,17 @@ pub mod test_util {
             MsgUpgradeAnyClient { client_id, ..self }
         }
     }
-    
+
     /// Returns a dummy `RawMsgAcknowledgement`, for testing only!
-    /// The `height` parametrizes both the proof height as well as the timeout height.
-    pub fn get_dummy_raw_msg_upgrade_client(height :Height) -> RawMsgUpgradeClient {
+    pub fn get_dummy_raw_msg_upgrade_client(height: Height) -> RawMsgUpgradeClient {
         RawMsgUpgradeClient {
             client_id: "tendermint".parse().unwrap(),
-            client_state: Some(AnyClientState::Mock(MockClientState(MockHeader::new(
-                height))).into()),
-            consensus_state: Some(AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
-                height))).into()),
+            client_state: Some(
+                AnyClientState::Mock(MockClientState(MockHeader::new(height))).into(),
+            ),
+            consensus_state: Some(
+                AnyConsensusState::Mock(MockConsensusState(MockHeader::new(height))).into(),
+            ),
             proof_upgrade_client: get_dummy_proof(),
             proof_upgrade_consensus_state: get_dummy_proof(),
             signer: get_dummy_bech32_account(),
@@ -149,16 +149,21 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
-   // use ibc_proto::ibc::core::client::v1::MsgUpgradeClient;
-
-    use crate::{ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height}, ics23_commitment::commitment::test_util::get_dummy_merkle_proof, mock::{client_state::{MockClientState, MockConsensusState}, header::MockHeader}};
     use crate::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
     use crate::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_account_id;
+    use crate::{
+        ics02_client::{
+            client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
+        },
+        ics23_commitment::commitment::test_util::get_dummy_merkle_proof,
+        mock::{
+            client_state::{MockClientState, MockConsensusState},
+            header::MockHeader,
+        },
+    };
     use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
-
+    use std::convert::TryFrom;
 
     #[test]
     fn msg_upgrade_client_serialization() {
@@ -167,22 +172,22 @@ mod tests {
 
         let height = Height::new(1, 1);
 
-        let client_state =  AnyClientState::Mock(MockClientState(MockHeader::new(
-            height))); 
-        let consensus_state = AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
-            height)));
+        let client_state = AnyClientState::Mock(MockClientState(MockHeader::new(height)));
+        let consensus_state = AnyConsensusState::Mock(MockConsensusState(MockHeader::new(height)));
 
-        let proof = get_dummy_merkle_proof(); 
+        let proof = get_dummy_merkle_proof();
 
-        let msg = MsgUpgradeAnyClient::new(client_id, 
-            client_state, 
+        let msg = MsgUpgradeAnyClient::new(
+            client_id,
+            client_state,
             consensus_state,
-            proof.clone(), 
-            proof, 
-            signer);
-        let raw :RawMsgUpgradeClient = RawMsgUpgradeClient::from(msg.clone());
+            proof.clone(),
+            proof,
+            signer,
+        );
+        let raw: RawMsgUpgradeClient = RawMsgUpgradeClient::from(msg.clone());
         let msg_back = MsgUpgradeAnyClient::try_from(raw.clone()).unwrap();
-        let raw_back : RawMsgUpgradeClient = RawMsgUpgradeClient::from(msg_back.clone());
+        let raw_back: RawMsgUpgradeClient = RawMsgUpgradeClient::from(msg_back.clone());
         assert_eq!(msg, msg_back);
         assert_eq!(raw, raw_back);
     }

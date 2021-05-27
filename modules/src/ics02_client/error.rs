@@ -11,7 +11,6 @@ pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum Kind {
-
     #[error("unknown client type: {0}")]
     UnknownClientType(String),
 
@@ -92,12 +91,12 @@ pub enum Kind {
         state_type: ClientType,
         consensus_type: ClientType,
     },
-    
+
     #[error("upgrade verification failed")]
     UpgradeVerificationFailure,
 
     #[error("upgraded client height {0} must be at greater than current client height {1}")]
-    LowUgradeHeight(Height, Height),
+    LowUpgradeHeight(Height, Height),
 }
 
 impl Kind {

@@ -41,7 +41,7 @@ pub fn process(
     let upgrade_client_state = msg.client_state.clone();
 
     if client_state.latest_height() >= upgrade_client_state.latest_height() {
-        return Err(Kind::LowUgradeHeight(
+        return Err(Kind::LowUpgradeHeight(
             client_state.latest_height(),
             upgrade_client_state.latest_height(),
         )
@@ -216,7 +216,7 @@ mod tests {
             Err(err) => {
                 assert_eq!(
                     err.kind(),
-                    &Kind::LowUgradeHeight(Height::new(0, 42), msg.client_state.latest_height())
+                    &Kind::LowUpgradeHeight(Height::new(0, 42), msg.client_state.latest_height())
                 );
             }
         }

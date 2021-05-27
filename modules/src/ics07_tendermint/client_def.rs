@@ -143,11 +143,13 @@ impl ClientDef for TendermintClient {
         todo!()
     }
 
-    fn verify_upgrade_and_update_state(&self, 
-        _client_state: &Self::ClientState, 
-        _consensus_state: &Self::ConsensusState, 
-        _proof_upgrade_client: MerkleProof, 
-        _proof_upgrade_consensus_state: MerkleProof) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+    fn verify_upgrade_and_update_state(
+        &self,
+        _client_state: &Self::ClientState,
+        _consensus_state: &Self::ConsensusState,
+        _proof_upgrade_client: MerkleProof,
+        _proof_upgrade_consensus_state: MerkleProof,
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
         todo!()
     }
 }
