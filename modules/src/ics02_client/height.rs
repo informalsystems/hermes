@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::convert::{Infallible, TryFrom};
+use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
@@ -16,6 +17,46 @@ pub struct Height {
 
     /// The height of a block
     pub revision_height: u64,
+}
+
+// A hack to indicate that a height is non-zero.
+// TODO: Make all height non-zero and use Option<Height> for
+//   optional height parameter:
+//   https://github.com/informalsystems/ibc-rs/issues/1009
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub struct NonZeroHeight(Height);
+
+impl NonZeroHeight {
+    pub fn new(height: Height) -> Option<Self> {
+        if height == Height::zero() {
+            None
+        } else {
+            Some(NonZeroHeight(height))
+        }
+    }
+
+    /// Unsafe creation of a NonZeroHeight that may be zero.
+    /// This unfortunate counterintuitive function is due to the code base
+    /// right now using zero height to indicate for both the absense of height
+    /// and also zero height.
+    ///
+    /// Use this function to create zero height that bypass all checks that
+    /// behave differently on zero height by treating them as absense of height.
+    ///
+    /// This function can also be used for unfailable creation of
+    /// non-zero heights without the use of panics. The invariants
+    /// then have to be guaranteed by the caller.
+    ///
+    /// This function is unsafe, because we may be accidentally be converting
+    /// zero heights that are meant to indicate absense on height to actual
+    /// zero height and cause unexpected behavior.
+    pub fn unsafe_new(height: Height) -> Self {
+        NonZeroHeight(height)
+    }
+
+    pub fn height(self) -> Height {
+        self.0
+    }
 }
 
 impl Height {
@@ -123,7 +164,7 @@ impl From<Height> for RawHeight {
     }
 }
 
-impl std::fmt::Debug for Height {
+impl Debug for Height {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("Height")
             .field("revision", &self.revision_number)
@@ -132,10 +173,15 @@ impl std::fmt::Debug for Height {
     }
 }
 
-/// Custom debug output to omit the packet data
-impl std::fmt::Display for Height {
+impl Display for Height {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}-{}", self.revision_number, self.revision_height)
+    }
+}
+
+impl Display for NonZeroHeight {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
     }
 }
 

@@ -16,7 +16,7 @@ use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
-use ibc::Height;
+use ibc::{Height, NonZeroHeight};
 
 use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
@@ -515,7 +515,10 @@ impl Channel {
         self.step_state(state, index)
     }
 
-    pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_update_client_on_dst(
+        &self,
+        height: NonZeroHeight,
+    ) -> Result<Vec<Any>, ChannelError> {
         let client = ForeignClient::restore(
             self.dst_client_id().clone(),
             self.dst_chain().clone(),
@@ -716,8 +719,11 @@ impl Channel {
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
             .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
 
+        let proof_height = NonZeroHeight::new(proofs.height())
+            .ok_or_else(|| ChannelError::Failed("unexpected zero height".to_string()))?;
+
         // Build message(s) to update client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proof_height)?;
 
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
@@ -824,8 +830,11 @@ impl Channel {
                 ))
             })?;
 
+        let proof_height = NonZeroHeight::new(proofs.height())
+            .ok_or_else(|| ChannelError::Failed("unexpected zero height".to_string()))?;
+
         // Build message(s) to update client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proof_height)?;
 
         // Get signer
         let signer = self.dst_chain().get_signer().map_err(|e| {
@@ -910,8 +919,11 @@ impl Channel {
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
             .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
 
+        let proof_height = NonZeroHeight::new(proofs.height())
+            .ok_or_else(|| ChannelError::Failed("unexpected zero height".to_string()))?;
+
         // Build message(s) to update client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proof_height)?;
 
         // Get signer
         let signer = self.dst_chain().get_signer().map_err(|e| {
@@ -1052,8 +1064,11 @@ impl Channel {
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
             .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
 
+        let proof_height = NonZeroHeight::new(proofs.height())
+            .ok_or_else(|| ChannelError::Failed("unexpected zero height".to_string()))?;
+
         // Build message(s) to update client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proof_height)?;
 
         // Get signer
         let signer = self.dst_chain().get_signer().map_err(|e| {

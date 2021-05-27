@@ -18,6 +18,7 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
+use tracing::debug;
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -1169,6 +1170,11 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
         let connection_end = ConnectionEnd::decode_vec(&res.value)
             .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
+
+        debug!(
+            "got proven connection response for connection {} at height {}: {:#?}",
+            connection_id, height, res
+        );
 
         Ok((
             connection_end,

@@ -421,14 +421,18 @@ impl MockContext {
     }
 
     pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
-        self.clients[client_id]
-            .consensus_states
-            .iter()
-            .map(|(k, v)| AnyConsensusStateWithHeight {
-                height: *k,
-                consensus_state: v.clone(),
-            })
-            .collect()
+        match self.clients.get(client_id) {
+            Some(client) =>
+                client
+                    .consensus_states
+                    .iter()
+                    .map(|(k, v)| AnyConsensusStateWithHeight {
+                        height: *k,
+                        consensus_state: v.clone(),
+                    })
+                    .collect(),
+            None => Vec::new(),
+        }
     }
 }
 

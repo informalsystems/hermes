@@ -27,7 +27,7 @@ use ibc::{
     signer::Signer,
     timestamp::ZERO_DURATION,
     tx_msg::Msg,
-    Height,
+    Height, NonZeroHeight,
 };
 
 use ibc_proto::ibc::core::channel::v1::{
@@ -144,7 +144,8 @@ impl OperationalData {
 
         // For zero delay we prepend the client update msgs.
         if relay_path.zero_delay() {
-            let update_height = self.proofs_height.increment();
+            let update_height = NonZeroHeight::new(self.proofs_height.increment())
+                .ok_or_else(|| LinkError::Failed("unexpected zero height".to_string()))?;
 
             info!(
                 "[{}] prepending {} client update @ height {}",
@@ -314,15 +315,25 @@ impl RelayPath {
         self.channel.ordering == Order::Ordered
     }
 
-    pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
+    pub fn build_update_client_on_dst(&self, height: NonZeroHeight) -> Result<Vec<Any>, LinkError> {
         let client = self.restore_dst_client();
+
+        client
+            .wait_src_chain_reach_height(height)
+            .map_err(LinkError::ClientError)?;
+
         client
             .build_update_client(height)
             .map_err(LinkError::ClientError)
     }
 
-    pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
+    pub fn build_update_client_on_src(&self, height: NonZeroHeight) -> Result<Vec<Any>, LinkError> {
         let client = self.restore_src_client();
+
+        client
+            .wait_src_chain_reach_height(height)
+            .map_err(LinkError::ClientError)?;
+
         client
             .build_update_client(height)
             .map_err(LinkError::ClientError)
@@ -800,12 +811,16 @@ impl RelayPath {
     }
 
     /// Handles updating the client on the destination chain
-    fn update_client_dst(&self, src_chain_height: Height) -> Result<(), LinkError> {
+    fn update_client_dst(&self, src_chain_height: NonZeroHeight) -> Result<(), LinkError> {
         // Handle the update on the destination chain
         // Check if a consensus state at update_height exists on destination chain already
         if self
             .dst_chain()
-            .proven_client_consensus(self.dst_client_id(), src_chain_height, Height::zero())
+            .proven_client_consensus(
+                self.dst_client_id(),
+                src_chain_height.height(),
+                Height::zero(),
+            )
             .is_ok()
         {
             return Ok(());
@@ -844,10 +859,14 @@ impl RelayPath {
     }
 
     /// Handles updating the client on the source chain
-    fn update_client_src(&self, dst_chain_height: Height) -> Result<(), LinkError> {
+    fn update_client_src(&self, dst_chain_height: NonZeroHeight) -> Result<(), LinkError> {
         if self
             .src_chain()
-            .proven_client_consensus(self.src_client_id(), dst_chain_height, Height::zero())
+            .proven_client_consensus(
+                self.src_client_id(),
+                dst_chain_height.height(),
+                Height::zero(),
+            )
             .is_ok()
         {
             return Ok(());
@@ -1396,7 +1415,9 @@ impl RelayPath {
 
         // Update clients ahead of scheduling the operational data, if the delays are non-zero.
         if !self.zero_delay() {
-            let target_height = od.proofs_height.increment();
+            let target_height = NonZeroHeight::new(od.proofs_height.increment())
+                .ok_or_else(|| LinkError::Failed("unexpected zero height".to_string()))?;
+
             match od.target {
                 OperationalDataTarget::Source => self.update_client_src(target_height)?,
                 OperationalDataTarget::Destination => self.update_client_dst(target_height)?,

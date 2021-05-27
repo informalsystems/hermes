@@ -3,6 +3,7 @@ use abscissa_core::{Command, Options, Runnable};
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::NonZeroHeight;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
@@ -67,52 +68,73 @@ pub struct TxUpdateClientCmd {
     trusted_height: Option<u64>,
 }
 
-impl Runnable for TxUpdateClientCmd {
-    fn run(&self) {
+impl TxUpdateClientCmd {
+    fn execute(&self) -> Result<Option<IbcEvent>, String> {
         let config = app_config();
 
-        let dst_chain = match spawn_chain_runtime(&config, &self.dst_chain_id) {
-            Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
-        };
+        let dst_chain =
+            spawn_chain_runtime(&config, &self.dst_chain_id).map_err(|e| format!("{}", e))?;
 
-        let src_chain_id =
-            match dst_chain.query_client_state(&self.dst_client_id, ibc::Height::zero()) {
-                Ok(cs) => cs.chain_id(),
-                Err(e) => {
-                    return Output::error(format!(
-                        "Query of client '{}' on chain '{}' failed with error: {}",
-                        self.dst_client_id, self.dst_chain_id, e
-                    ))
-                    .exit()
-                }
-            };
+        let src_chain_id = dst_chain
+            .query_client_state(&self.dst_client_id, ibc::Height::zero())
+            .map_err(|e| {
+                format!(
+                    "Query of client '{}' on chain '{}' failed with error: {}",
+                    self.dst_client_id, self.dst_chain_id, e
+                )
+            })?
+            .chain_id();
 
-        let src_chain = match spawn_chain_runtime(&config, &src_chain_id) {
-            Ok(handle) => handle,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
-        };
+        let src_chain =
+            spawn_chain_runtime(&config, &src_chain_id).map_err(|e| format!("{}", e))?;
 
-        let height = match self.target_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
-
-        let trusted_height = match self.trusted_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let src_chain_id = src_chain.id().version();
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
-            .unwrap_or_else(exit_with_unrecoverable_error);
+            .map_err(|e| format!("failed to find foreign client: {}", e))?;
 
-        let res: Result<IbcEvent, Error> = client
-            .build_update_client_and_send(height, trusted_height)
-            .map_err(|e| Kind::Tx.context(e).into());
+        let m_target_height = self
+            .target_height
+            .and_then(|h| NonZeroHeight::new(ibc::Height::new(src_chain_id, h)));
 
-        match res {
+        let m_trusted_height = self.trusted_height.map(|h| {
+            // Allow trusted height parameter to be zero if force provided
+            NonZeroHeight::unsafe_new(ibc::Height::new(src_chain_id, h))
+        });
+
+        let target_height = match m_target_height {
+            Some(height) => {
+                client.wait_src_chain_reach_height(height).map_err(|e| {
+                    format!(
+                        "failed to wait for client to reach height {}: {}",
+                        height, e
+                    )
+                })?;
+                height
+            }
+            None => client
+                .latest_src_chain_height()
+                .map_err(|e| e.to_string())?,
+        };
+
+        let trusted_height = match m_trusted_height {
+            Some(h) => h,
+            None => client
+                .latest_consensus_state_height()
+                .map_err(|e| e.to_string())?,
+        };
+
+        client
+            .build_update_client_and_send(target_height, trusted_height)
+            .map_err(|e| e.to_string())
+    }
+}
+
+impl Runnable for TxUpdateClientCmd {
+    fn run(&self) {
+        match self.execute() {
             Ok(receipt) => Output::success(receipt).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }

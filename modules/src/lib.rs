@@ -53,6 +53,7 @@ mod serializers;
 
 /// Re-export of ICS 002 Height domain type
 pub type Height = crate::ics02_client::height::Height;
+pub type NonZeroHeight = crate::ics02_client::height::NonZeroHeight;
 
 #[cfg(test)]
 mod test;

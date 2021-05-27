@@ -17,7 +17,7 @@ use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
-use ibc::Height as ICSHeight;
+use ibc::{Height as ICSHeight, NonZeroHeight};
 
 use crate::chain::handle::ChainHandle;
 use crate::error::Error;
@@ -411,14 +411,20 @@ impl Connection {
         Ok(dst_expected_connection)
     }
 
-    pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
+    pub fn build_update_client_on_src(
+        &self,
+        height: NonZeroHeight,
+    ) -> Result<Vec<Any>, ConnectionError> {
         let client = self.restore_src_client();
         client.build_update_client(height).map_err(|e| {
             ConnectionError::ClientOperation(self.src_client_id().clone(), self.src_chain().id(), e)
         })
     }
 
-    pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
+    pub fn build_update_client_on_dst(
+        &self,
+        height: NonZeroHeight,
+    ) -> Result<Vec<Any>, ConnectionError> {
         let client = self.restore_dst_client();
         client.build_update_client(height).map_err(|e| {
             ConnectionError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)
@@ -520,6 +526,10 @@ impl Connection {
             .dst_chain()
             .query_latest_height()
             .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
+
+        let src_client_target_height = NonZeroHeight::new(src_client_target_height)
+            .ok_or_else(|| ConnectionError::Failed("unexpected zero height".to_string()))?;
+
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
         self.src_chain()
             .send_msgs(client_msgs)
@@ -541,8 +551,11 @@ impl Connection {
                 ConnectionError::Failed(format!("failed to build connection proofs: {}", e))
             })?;
 
+        let proof_height = NonZeroHeight::new(proofs.height())
+            .ok_or_else(|| ConnectionError::Failed("unexpected zero height".to_string()))?;
+
         // Build message(s) for updating client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proof_height)?;
 
         let counterparty_versions = if src_connection.versions().is_empty() {
             self.src_chain()
@@ -637,7 +650,12 @@ impl Connection {
             .dst_chain()
             .query_latest_height()
             .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
+
+        let src_client_target_height = NonZeroHeight::new(src_client_target_height)
+            .ok_or_else(|| ConnectionError::Failed("unexpected zero height".to_string()))?;
+
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
+
         self.src_chain()
             .send_msgs(client_msgs)
             .map_err(|e| ConnectionError::SubmitError(self.src_chain().id(), e))?;
@@ -658,8 +676,11 @@ impl Connection {
                 ConnectionError::Failed(format!("failed to build connection proofs: {}", e))
             })?;
 
+        let proof_height = NonZeroHeight::new(proofs.height())
+            .ok_or_else(|| ConnectionError::Failed("unexpected zero height".to_string()))?;
+
         // Build message(s) for updating client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proof_height)?;
 
         // Get signer
         let signer = self.dst_chain().get_signer().map_err(|e| {
@@ -748,8 +769,11 @@ impl Connection {
                 ConnectionError::Failed(format!("failed to build connection proofs: {}", e))
             })?;
 
+        let proof_height = NonZeroHeight::new(proofs.height())
+            .ok_or_else(|| ConnectionError::Failed("unexpected zero height".to_string()))?;
+
         // Build message(s) for updating client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proof_height)?;
 
         // Get signer
         let signer = self.dst_chain().get_signer().map_err(|e| {
