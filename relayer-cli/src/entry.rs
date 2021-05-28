@@ -15,10 +15,6 @@ where
     #[options(short = "c", help = "path to configuration file")]
     pub config: Option<PathBuf>,
 
-    /// Obtain help about the current command
-    #[options(short = "h", help = "print help message")]
-    pub help: bool,
-
     /// Toggle JSON output mode one verbosity setting
     #[options(short = "j", help = "enable JSON output")]
     pub json: bool,
@@ -61,9 +57,18 @@ where
         "hermes"
     }
 
-    /// Description of this program
+    /// Description of this program.
+    /// Used whenever a command's usage is printed
+    /// (i.e., after the user invoked a command wrongly).
+    ///
+    /// # Note:
+    ///     Any new line or extra white spaces in the returned &str
+    ///     here will be trimmed (see [`Usage`]), so the returned
+    ///     &str should be a concise one-liner help message.
     fn description() -> &'static str {
-        Cmd::description()
+        r#"
+        For help, run `hermes [<FLAGS>] help <COMMAND>`, for example: `hermes help create client`
+        "#
     }
 
     /// Version of this program
