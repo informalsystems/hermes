@@ -10,16 +10,16 @@ version() {
 
 config_defaults() {
     GLOBAL_GAIAD_BINARY="$(which gaiad || echo "${GOPATH:-./gaiad}")"
-    GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
     DEFAULT_PORTS_START_AT=27000
     GLOBAL_HOME_DIR="${HOME}/.gm"
-    GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
     GLOBAL_AUTO_MAINTAIN_CONFIG="true"
     GLOBAL_ADD_TO_HERMES="false"
     GLOBAL_WALLET_MNEMONIC=""
     GLOBAL_WALLET_HDPATH=""
-    GLOBAL_HERMES_STRATEGY="all"
+    GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
+    GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
+    GLOBAL_HERMES_STRATEGY="naive"
     GLOBAL_HERMES_LOG_LEVEL="info"
 }
 
@@ -176,23 +176,23 @@ load_config() {
   fi
   config_defaults
   GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.gaiad_binary || echo "$GLOBAL_GAIAD_BINARY")")"
-  GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes_binary || echo "$GLOBAL_HERMES_BINARY")")"
   GLOBAL_HOME_DIR="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.home_dir || echo "$GLOBAL_HOME_DIR")")"
-  GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes_config || echo "$GLOBAL_HERMES_CONFIG")")"
   GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -sq "$CONFIG_FILE" global.auto_maintain_config || echo "$GLOBAL_AUTO_MAINTAIN_CONFIG")"
   GLOBAL_ADD_TO_HERMES="$(stoml -sq "$CONFIG_FILE" global.add_to_hermes || echo "$GLOBAL_ADD_TO_HERMES")"
   GLOBAL_WALLET_MNEMONIC="$(stoml -sq "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
   GLOBAL_WALLET_HDPATH="$(stoml -sq "$CONFIG_FILE" global.wallet_hdpath || echo "$GLOBAL_WALLET_HDPATH")"
-  GLOBAL_HERMES_STRATEGY="$(stoml -sq "$CONFIG_FILE" global.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
-  GLOBAL_HERMES_LOG_LEVEL="$(stoml -sq "$CONFIG_FILE" global.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
+  GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.binary || echo "$GLOBAL_HERMES_BINARY")")"
+  GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.config || echo "$GLOBAL_HERMES_CONFIG")")"
+  GLOBAL_HERMES_STRATEGY="$(stoml -sq "$CONFIG_FILE" global.hermes.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
+  GLOBAL_HERMES_LOG_LEVEL="$(stoml -sq "$CONFIG_FILE" global.hermes.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
   export GLOBAL_GAIAD_BINARY
-  export GLOBAL_HERMES_BINARY
   export GLOBAL_HOME_DIR
-  export GLOBAL_HERMES_CONFIG
   export GLOBAL_AUTO_MAINTAIN_CONFIG
   export GLOBAL_ADD_TO_HERMES
   export GLOBAL_WALLET_MNEMONIC
   export GLOBAL_WALLET_HDPATH
+  export GLOBAL_HERMES_BINARY
+  export GLOBAL_HERMES_CONFIG
   export GLOBAL_HERMES_STRATEGY
   export GLOBAL_HERMES_LOG_LEVEL
   if [ "$FRESH_CONFIG" = "yes" ]; then
@@ -213,7 +213,7 @@ load_config() {
     ALL_HERMES_NODES=""
     for i in $RAW_SECTIONS
     do
-      if [ "$i" = "global" ]; then
+      if [ "$i" = "global" ] || [ "$i" = "global.hermes" ]; then
         continue
       fi
       if [ -z "$(stoml "$CONFIG_FILE" "${i}.network")" ]; then
@@ -265,10 +265,15 @@ ports_start_at=$DEFAULT_PORTS_START_AT
 home_dir="$GLOBAL_HOME_DIR"
 auto_maintain_config=$GLOBAL_AUTO_MAINTAIN_CONFIG
 add_to_hermes=$GLOBAL_ADD_TO_HERMES
-hermes_binary="$GLOBAL_HERMES_BINARY"
-hermes_config="$GLOBAL_HERMES_CONFIG"
 wallet_mnemonic="$GLOBAL_WALLET_MNEMONIC"
 wallet_hdpath="$GLOBAL_WALLET_HDPATH"
+
+[global.hermes]
+binary="$GLOBAL_HERMES_BINARY"
+config="$GLOBAL_HERMES_CONFIG"
+strategy="$GLOBAL_HERMES_STRATEGY"
+log_level="$GLOBAL_HERMES_LOG_LEVEL"
+
 EOF
   set -e
 }
@@ -744,7 +749,7 @@ get_cointype() {
 hermes_keys() {
   ID="$(get_chain_id "$1")"
   NETWORK_HOME_DIR="$(get_home_dir "$ID")"
-  test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config."
+  test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config"
   WALLET_HDPATH="$(get_wallet_hdpath "$1")"
   COINTYPE="$(get_cointype "$1")"
   if [ -n "$WALLET_HDPATH" ] && [ -z "${COINTYPE}" ]; then
