@@ -32,5 +32,5 @@ pub(crate) mod components;
 pub(crate) mod conclude;
 pub(crate) mod entry;
 
-/// The path to the default configuration file.
+/// The path to the default configuration file, relative to the home directory.
 pub const DEFAULT_CONFIG_PATH: &str = ".hermes/config.toml";
