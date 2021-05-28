@@ -122,11 +122,11 @@ impl UniChanPathWorker {
         &self.path
     }
 
-    #[cfg(feature = "telemetry")]
     fn packet_metrics(&self, summary: &RelaySummary) {
         metric!(self.receive_packet_metrics(&summary));
         metric!(self.acknowledgment_metrics(&summary));
         metric!(self.timeout_metrics(&summary));
+        let _ = summary;
     }
 
     #[cfg(feature = "telemetry")]
