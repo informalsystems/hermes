@@ -61,9 +61,9 @@ where
     /// Used whenever a command's usage is printed
     /// (i.e., after the user invoked a command wrongly).
     ///
-    /// # Note:
+    /// Note:
     ///     Any new line or extra white spaces in the returned &str
-    ///     here will be trimmed (see [`Usage`]), so the returned
+    ///     here will be trimmed (see `Usage`), so the returned
     ///     &str should be a concise one-liner help message.
     fn description() -> &'static str {
         r#"
