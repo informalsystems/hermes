@@ -42,6 +42,12 @@ pub struct TelemetryState {
 
     /// Number of receive packets relayed, per channel
     receive_packets: Counter<u64>,
+
+    /// Number of acknowledgment packets relayed, per channel
+    acknowledgment_packets: Counter<u64>,
+
+    /// Number of timeout packets relayed, per channel
+    timeout_packets: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -92,6 +98,38 @@ impl TelemetryState {
 
         self.receive_packets.add(count, labels);
     }
+
+    pub fn ibc_acknowledgment_packets(
+        &self,
+        src_chain: &ChainId,
+        src_channel: &ChannelId,
+        src_port: &PortId,
+        count: u64,
+    ) {
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("src_port", src_port.to_string()),
+        ];
+
+        self.acknowledgment_packets.add(count, labels);
+    }
+
+    pub fn ibc_timeout_packets(
+        &self,
+        src_chain: &ChainId,
+        src_channel: &ChannelId,
+        src_port: &PortId,
+        count: u64,
+    ) {
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("src_port", src_port.to_string()),
+        ];
+
+        self.timeout_packets.add(count, labels);
+    }
 }
 
 impl Default for TelemetryState {
@@ -120,6 +158,16 @@ impl Default for TelemetryState {
             receive_packets: meter
                 .u64_counter("ibc_receive_packets")
                 .with_description("Number of receive packets relayed per channel")
+                .init(),
+
+            acknowledgment_packets: meter
+                .u64_counter("ibc_acknowledgment_packets")
+                .with_description("Number of acknowledgment packets relayed per channel")
+                .init(),
+
+            timeout_packets: meter
+                .u64_counter("ibc_timeout_packets")
+                .with_description("Number of timeout packets relayed per channel")
                 .init(),
         }
     }

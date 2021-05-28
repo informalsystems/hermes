@@ -65,8 +65,7 @@ impl UniChanPathWorker {
 
             match result {
                 Ok(summary) => {
-                    metric!(self.receive_packet_metric(&summary));
-                    let _ = summary;
+                    self.packet_metrics(&summary);
                 }
 
                 Err(retries) => {
@@ -124,7 +123,14 @@ impl UniChanPathWorker {
     }
 
     #[cfg(feature = "telemetry")]
-    fn receive_packet_metric(&self, summary: &RelaySummary) {
+    fn packet_metrics(&self, summary: &RelaySummary) {
+        metric!(self.receive_packet_metrics(&summary));
+        metric!(self.acknowledgment_metrics(&summary));
+        metric!(self.timeout_metrics(&summary));
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn receive_packet_metrics(&self, summary: &RelaySummary) {
         use ibc::events::IbcEvent::WriteAcknowledgement;
 
         let count = summary
@@ -134,6 +140,41 @@ impl UniChanPathWorker {
             .count();
 
         self.telemetry.ibc_receive_packets(
+            &self.path.src_chain_id,
+            &self.path.src_channel_id,
+            &self.path.src_port_id,
+            count as u64,
+        )
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn acknowledgment_metrics(&self, summary: &RelaySummary) {
+        use ibc::events::IbcEvent::AcknowledgePacket;
+
+        let count = summary
+            .events
+            .iter()
+            .filter(|e| matches!(e, AcknowledgePacket(_)))
+            .count();
+
+        self.telemetry.ibc_acknowledgment_packets(
+            &self.path.src_chain_id,
+            &self.path.src_channel_id,
+            &self.path.src_port_id,
+            count as u64,
+        )
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn timeout_metrics(&self, summary: &RelaySummary) {
+        use ibc::events::IbcEvent::TimeoutPacket;
+        let count = summary
+            .events
+            .iter()
+            .filter(|e| matches!(e, TimeoutPacket(_)))
+            .count();
+
+        self.telemetry.ibc_timeout_packets(
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
