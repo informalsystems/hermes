@@ -5,7 +5,7 @@ use crossbeam_channel::Receiver;
 use tracing::{debug, warn};
 
 use crate::channel::Channel as RelayChannel;
-use crate::telemetry::TelemetryHandle;
+use crate::telemetry::Telemetry;
 use crate::{
     chain::handle::ChainHandlePair, object::Channel, util::retry::retry_with_index,
     worker::retry_strategy,
@@ -18,9 +18,8 @@ pub struct ChannelWorker {
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
 
-    // no metrics for this worker yet
     #[allow(dead_code)]
-    telemetry: TelemetryHandle,
+    telemetry: Telemetry,
 }
 
 impl ChannelWorker {
@@ -28,7 +27,7 @@ impl ChannelWorker {
         channel: Channel,
         chains: ChainHandlePair,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: TelemetryHandle,
+        telemetry: Telemetry,
     ) -> Self {
         Self {
             channel,

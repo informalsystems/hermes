@@ -3,7 +3,7 @@ use std::fmt;
 use crossbeam_channel::Sender;
 use tracing::{debug, error, info};
 
-use crate::{chain::handle::ChainHandlePair, object::Object, telemetry::TelemetryHandle};
+use crate::{chain::handle::ChainHandlePair, object::Object, telemetry::Telemetry};
 
 pub mod retry_strategy;
 
@@ -49,7 +49,7 @@ impl Worker {
         chains: ChainHandlePair,
         object: Object,
         msg_tx: Sender<WorkerMsg>,
-        telemetry: TelemetryHandle,
+        telemetry: Telemetry,
     ) -> WorkerHandle {
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 

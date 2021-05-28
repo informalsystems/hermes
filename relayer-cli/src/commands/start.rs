@@ -23,14 +23,22 @@ impl Runnable for StartCmd {
 
 #[cfg(feature = "telemetry")]
 fn spawn_supervisor(config: Config) -> Supervisor {
-    let telemetry = ibc_telemetry::spawn(config.telemetry.port, config.telemetry.enabled);
-    Supervisor::spawn(config, telemetry)
+    let state = ibc_telemetry::new_state();
+
+    if config.telemetry.enabled {
+        ibc_telemetry::spawn(config.telemetry.port, state.clone());
+    }
+
+    Supervisor::spawn(config, state)
 }
 
 #[cfg(not(feature = "telemetry"))]
 fn spawn_supervisor(config: Config) -> Supervisor {
     if config.telemetry.enabled {
-        warn!("telemetry enabled in the config but Hermes was built without telemetry support");
+        warn!(
+            "telemetry enabled in the config but Hermes was built without telemetry support, \
+             build Hermes with --features=telemetry to enable telemetry support."
+        );
     }
 
     let telemetry = ibc_relayer::telemetry::TelemetryDisabled;

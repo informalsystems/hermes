@@ -1,6 +1,6 @@
-// If the `telemetry` feature is enableb, re-export the `ibc-telemetry` handle.
+// If the `telemetry` feature is enabled, re-export the `ibc-telemetry` state.
 #[cfg(feature = "telemetry")]
-pub type TelemetryHandle = ibc_telemetry::TelemetryHandle;
+pub type Telemetry = std::sync::Arc<ibc_telemetry::TelemetryState>;
 
 // Otherwise, define and export a dummy type.
 #[cfg(not(feature = "telemetry"))]
@@ -8,7 +8,7 @@ pub type TelemetryHandle = ibc_telemetry::TelemetryHandle;
 pub struct TelemetryDisabled;
 
 #[cfg(not(feature = "telemetry"))]
-pub type TelemetryHandle = TelemetryDisabled;
+pub type Telemetry = TelemetryDisabled;
 
 /// A macro to send metric updates via a telemetry handle,
 /// only if the `telemetry` feature is enabled.
@@ -26,17 +26,12 @@ pub type TelemetryHandle = TelemetryDisabled;
 /// ```
 #[macro_export]
 macro_rules! metric {
-    ($t:expr, $e:expr) => {
+    ($e:expr) => {
         #[cfg(feature = "telemetry")]
         #[allow(unused_imports)]
         {
-            use ibc_telemetry::{metric::Op, MetricUpdate, MetricUpdate::*};
-            $t.send($e);
-        }
-
-        #[cfg(not(feature = "telemetry"))]
-        {
-            let _ = &$t;
+            use ibc_telemetry::state::WorkerType;
+            $e;
         }
     };
 }

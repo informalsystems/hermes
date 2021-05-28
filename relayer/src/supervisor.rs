@@ -22,7 +22,7 @@ use crate::{
     },
     object::{Channel, Client, Object, UnidirectionalChannelPath},
     registry::Registry,
-    telemetry::TelemetryHandle,
+    telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
@@ -42,12 +42,12 @@ pub struct Supervisor {
     worker_msg_rx: Receiver<WorkerMsg>,
 
     #[allow(dead_code)]
-    telemetry: TelemetryHandle,
+    telemetry: Telemetry,
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(config: Config, telemetry: TelemetryHandle) -> Self {
+    pub fn spawn(config: Config, telemetry: Telemetry) -> Self {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());

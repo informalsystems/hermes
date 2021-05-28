@@ -2,7 +2,6 @@ use std::{thread, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
-use ibc::events::IbcEvent;
 use tracing::{error, warn};
 
 use crate::{
@@ -10,7 +9,7 @@ use crate::{
     link::{Link, LinkParameters, RelaySummary},
     metric,
     object::UnidirectionalChannelPath,
-    telemetry::TelemetryHandle,
+    telemetry::Telemetry,
     util::retry::{retry_with_index, RetryResult},
     worker::retry_strategy,
 };
@@ -22,7 +21,7 @@ pub struct UniChanPathWorker {
     path: UnidirectionalChannelPath,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
-    telemetry: TelemetryHandle,
+    telemetry: Telemetry,
 }
 
 impl UniChanPathWorker {
@@ -30,7 +29,7 @@ impl UniChanPathWorker {
         path: UnidirectionalChannelPath,
         chains: ChainHandlePair,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: TelemetryHandle,
+        telemetry: Telemetry,
     ) -> Self {
         Self {
             path,
@@ -66,7 +65,8 @@ impl UniChanPathWorker {
 
             match result {
                 Ok(summary) => {
-                    metric!(self.telemetry, self.receive_packet_metric(&summary));
+                    metric!(self.receive_packet_metric(&summary));
+                    let _ = summary;
                 }
 
                 Err(retries) => {
@@ -124,17 +124,19 @@ impl UniChanPathWorker {
     }
 
     #[cfg(feature = "telemetry")]
-    fn receive_packet_metric(&self, summary: &RelaySummary) -> ibc_telemetry::MetricUpdate {
+    fn receive_packet_metric(&self, summary: &RelaySummary) {
+        use ibc::events::IbcEvent::WriteAcknowledgement;
+
         let count = summary
             .events
             .iter()
-            .filter(|e| matches!(e, IbcEvent::WriteAcknowledgement(_)))
+            .filter(|e| matches!(e, WriteAcknowledgement(_)))
             .count();
 
-        ibc_telemetry::MetricUpdate::IbcReceivePacket(
-            self.path.src_chain_id.clone(),
-            self.path.src_channel_id.clone(),
-            self.path.src_port_id.clone(),
+        self.telemetry.ibc_receive_packets(
+            &self.path.src_chain_id,
+            &self.path.src_channel_id,
+            &self.path.src_port_id,
             count as u64,
         )
     }

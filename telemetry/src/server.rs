@@ -27,7 +27,7 @@ pub fn run(telemetry_state: Arc<TelemetryState>, port: u16) {
             Route::Metrics => {
                 let mut buffer = vec![];
                 let encoder = TextEncoder::new();
-                let metric_families = telemetry_state.exporter.registry().gather();
+                let metric_families = telemetry_state.gather();
                 encoder.encode(&metric_families, &mut buffer).unwrap();
 
                 rouille::Response::from_data(encoder.format_type().to_string(), buffer)

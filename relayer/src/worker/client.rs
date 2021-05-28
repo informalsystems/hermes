@@ -11,7 +11,7 @@ use crate::{
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     metric,
     object::Client,
-    telemetry::TelemetryHandle,
+    telemetry::Telemetry,
 };
 
 use super::WorkerCmd;
@@ -20,7 +20,9 @@ pub struct ClientWorker {
     client: Client,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
-    telemetry: TelemetryHandle,
+
+    #[allow(dead_code)]
+    telemetry: Telemetry,
 }
 
 impl ClientWorker {
@@ -28,7 +30,7 @@ impl ClientWorker {
         client: Client,
         chains: ChainHandlePair,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: TelemetryHandle,
+        telemetry: Telemetry,
     ) -> Self {
         Self {
             client,
@@ -65,13 +67,11 @@ impl ClientWorker {
             // Run client refresh, exit only if expired or frozen
             match client.refresh() {
                 Ok(Some(_)) => {
-                    metric!(
-                        self.telemetry,
-                        IbcClientUpdate(
-                            self.client.dst_chain_id.clone(),
-                            self.client.dst_client_id.clone()
-                        )
-                    );
+                    metric!(self.telemetry.ibc_client_update(
+                        &self.client.dst_chain_id,
+                        &self.client.dst_client_id,
+                        1
+                    ));
                 }
                 Err(e @ ForeignClientError::ExpiredOrFrozen(..)) => {
                     error!("failed to refresh client '{}': {}", client, e);
@@ -94,13 +94,11 @@ impl ClientWorker {
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         if self.detect_misbehaviour(&client, Some(update)) {
-                            metric!(
-                                self.telemetry,
-                                IbcClientMisbehaviour(
-                                    self.client.dst_chain_id.clone(),
-                                    self.client.dst_client_id.clone()
-                                )
-                            );
+                            metric!(self.telemetry.ibc_client_misbehaviour(
+                                &self.client.dst_chain_id,
+                                &self.client.dst_client_id,
+                                1
+                            ));
                         }
                     }
                 }

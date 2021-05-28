@@ -1,3 +1,5 @@
+use std::fmt;
+
 use opentelemetry::{
     global,
     metrics::{Counter, UpDownCounter},
@@ -6,50 +8,75 @@ use opentelemetry::{
 use opentelemetry_prometheus::PrometheusExporter;
 
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use prometheus::proto::MetricFamily;
 
-use crate::metric::{Op, WorkerType};
+#[derive(Copy, Clone, Debug)]
+pub enum WorkerType {
+    Client,
+    Channel,
+    Packet,
+}
+
+impl fmt::Display for WorkerType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Client => write!(f, "client"),
+            Self::Channel => write!(f, "channel"),
+            Self::Packet => write!(f, "packet"),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct TelemetryState {
-    pub exporter: PrometheusExporter,
+    exporter: PrometheusExporter,
 
     /// Number of workers per object
-    pub workers: UpDownCounter<i64>,
+    workers: UpDownCounter<i64>,
 
     /// Number of client updates per client
-    pub ibc_client_updates: Counter<u64>,
+    ibc_client_updates: Counter<u64>,
 
     /// Number of client misbehaviours per client
-    pub ibc_client_misbehaviours: Counter<u64>,
+    ibc_client_misbehaviours: Counter<u64>,
 
     /// Number of receive packets relayed, per channel
-    pub receive_packets: Counter<u64>,
+    receive_packets: Counter<u64>,
 }
 
 impl TelemetryState {
-    pub fn worker(&self, worker_type: WorkerType, op: Op) {
+    /// Gather the metrics for export
+    pub fn gather(&self) -> Vec<MetricFamily> {
+        self.exporter.registry().gather()
+    }
+
+    /// Update the number of workers per object
+    pub fn worker(&self, worker_type: WorkerType, count: i64) {
         let labels = &[KeyValue::new("type", worker_type.to_string())];
-        self.workers.add(op.to_i64(), labels);
+        self.workers.add(count, labels);
     }
 
-    pub fn ibc_client_update(&self, chain: &ChainId, client: &ClientId) {
+    /// Update the number of client updates per client
+    pub fn ibc_client_update(&self, chain: &ChainId, client: &ClientId, count: u64) {
         let labels = &[
             KeyValue::new("chain", chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
 
-        self.ibc_client_updates.add(1, labels);
+        self.ibc_client_updates.add(count, labels);
     }
 
-    pub fn ibc_client_misbehaviour(&self, chain: &ChainId, client: &ClientId) {
+    /// Number of client misbehaviours per client
+    pub fn ibc_client_misbehaviour(&self, chain: &ChainId, client: &ClientId, count: u64) {
         let labels = &[
             KeyValue::new("chain", chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
 
-        self.ibc_client_misbehaviours.add(1, labels);
+        self.ibc_client_misbehaviours.add(count, labels);
     }
 
+    /// Number of receive packets relayed, per channel
     pub fn ibc_receive_packets(
         &self,
         src_chain: &ChainId,
