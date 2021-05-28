@@ -17,7 +17,8 @@
 
 - [ibc-relayer]
   - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
-- [#975] gm tool: Import hermes keys properly even if wallet HD derivation path is set.
+- [gaia-manager]
+  - Import hermes keys properly even if wallet HD derivation path is set ([#975])
 
 ### BREAKING CHANGES
 
