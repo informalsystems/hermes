@@ -8,6 +8,9 @@
 ### FEATURES
 - Separated hermes configuration into the `global.hermes` section in the configuration
 
+### Dependencies
+- Requires stoml 0.7.0 or above
+
 [#993]: https://github.com/informalsystems/ibc-rs/issues/993
 
 ## v0.0.2
