@@ -511,10 +511,9 @@ impl Chain for CosmosSdkChain {
 
         // Sort by client identifier counter
         clients.sort_by(|a, b| {
-            a.client_id
-                .suffix()
+            client_id_suffix(&a.client_id)
                 .unwrap_or(0) // Fallback to `0` suffix (no sorting) if client id is malformed
-                .cmp(&b.client_id.suffix().unwrap_or(0))
+                .cmp(&client_id_suffix(&b.client_id).unwrap_or(0))
         });
 
         Ok(clients)
@@ -1504,4 +1503,16 @@ fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error
         .map_err(Kind::Bech32Encoding)?;
 
     Ok(encoded)
+}
+
+/// Returns the suffix counter for a CosmosSDK client id.
+/// Returns `None` if the client identifier is malformed
+/// and the suffix could not be parsed.
+pub fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
+    client_id
+        .as_str()
+        .split('-')
+        .last()
+        .map(|e| e.parse::<u64>().ok())
+        .flatten()
 }
