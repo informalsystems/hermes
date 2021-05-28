@@ -1,5 +1,15 @@
 # Gaiad Manager Change Log
 
+## v0.0.3
+
+### BUGFIXES
+- Apply defaults to missing configuration options ([#993])
+
+### FEATURES
+- Separated hermes configuration into the `global.hermes` section in the configuration
+
+[#993]: https://github.com/informalsystems/ibc-rs/issues/993
+
 ## v0.0.2
 
 ### BUGFIXES

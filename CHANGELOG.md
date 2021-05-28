@@ -22,6 +22,7 @@
   - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
 - [gaia-manager]
   - Import hermes keys properly even if wallet HD derivation path is set ([#975])
+  - Apply default values to missing configuration parameters ([#993])
 
 ### BREAKING CHANGES
 
@@ -35,6 +36,7 @@
 [#975]: https://github.com/informalsystems/ibc-rs/issues/975
 [#983]: https://github.com/informalsystems/ibc-rs/issues/983
 [#996]: https://github.com/informalsystems/ibc-rs/issues/996
+[#993]: https://github.com/informalsystems/ibc-rs/issues/993
 
 ## v0.3.2
 *May 21st, 2021*
