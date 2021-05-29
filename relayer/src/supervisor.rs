@@ -82,6 +82,20 @@ impl Supervisor {
                     }
                 }
 
+                IbcEvent::OpenInitConnection(..) | IbcEvent::OpenTryConnection(..) => {
+                    if !self.handshake_enabled() {
+                        continue;
+                    }
+
+                    let object = event
+                        .connection_attributes()
+                        .map(|attr| Object::connection_from_chan_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
+                        collected.per_object.entry(object).or_default().push(event);
+                    }
+                }
+
                 IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                     if !self.handshake_enabled() {
                         continue;

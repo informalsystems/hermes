@@ -92,6 +92,31 @@ pub fn channel_connection_client(
     Ok(ChannelConnectionClient::new(channel, connection, client))
 }
 
+
+pub fn get_counterparty_chain_from_connection(
+    src_chain: &dyn ChainHandle,
+    src_connection_id: &ConnectionId,
+) -> Result<ChainId, Error> {
+
+
+
+
+        let connection_end = src_chain
+        .query_connection(&src_connection_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        let client_id = connection_end.client_id();
+        let client_state = src_chain
+            .query_client_state(&client_id, Height::zero())
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        trace!(
+            chain_id=%src_chain.id(), connection_id=%src_connection_id,
+            "counterparty chain: {}", client_state.chain_id()
+        );
+        Ok(client_state.chain_id())
+}
+
 pub fn get_counterparty_chain(
     src_chain: &dyn ChainHandle,
     src_channel_id: &ChannelId,

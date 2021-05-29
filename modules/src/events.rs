@@ -8,6 +8,8 @@ use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics04_channel::events::Attributes as ChannelAttributes;
+use crate::ics03_connection::events::Attributes as ConnectionAttributes;
+
 use crate::Height;
 use prost::alloc::fmt::Formatter;
 use std::fmt;
@@ -194,6 +196,15 @@ impl IbcEvent {
             IbcEvent::OpenTryChannel(ev) => Some(ev.attributes()),
             IbcEvent::OpenAckChannel(ev) => Some(ev.attributes()),
             IbcEvent::OpenConfirmChannel(ev) => Some(ev.attributes()),
+            _ => None,
+        }
+    }
+    pub fn connection_attributes(&self) -> Option<&ConnectionAttributes> {
+        match self {
+            IbcEvent::OpenInitConnection(ev) => Some(ev.attributes()),
+            IbcEvent::OpenTryConnection(ev) => Some(ev.attributes()),
+            IbcEvent::OpenAckConnection(ev) => Some(ev.attributes()),
+            IbcEvent::OpenConfirmConnection(ev) => Some(ev.attributes()),
             _ => None,
         }
     }

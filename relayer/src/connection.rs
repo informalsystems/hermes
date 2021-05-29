@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anomaly::BoxError;
 use prost_types::Any;
 use serde::Serialize;
 use thiserror::Error;
@@ -132,7 +133,55 @@ impl Connection {
 
         Ok(c)
     }
+    pub fn restore_from_event(
+        chain: Box<dyn ChainHandle>,
+        counterparty_chain: Box<dyn ChainHandle>,
+        connection_open_event: IbcEvent,
+    ) -> Result<Connection, BoxError> {
+        let connection_event_attributes =
+            connection_open_event.connection_attributes().ok_or_else(|| {
+                ConnectionError::Failed(
+                    "A channel object must be build only from a channel event ".to_string(),
+                )
+            })?;
 
+
+     
+        let connection_id = connection_event_attributes.connection_id.clone();
+
+        // let version = counterparty_chain
+        //     .module_version(&port_id)
+        //     .map_err(|e| ChannelError::QueryError(counterparty_chain.id(), e))?;
+
+        // let connection_id = channel_event_attributes.connection_id.clone();
+        let connection = chain.query_connection(&connection_id, Height::zero())?;
+        let connection_counterparty = connection.counterparty();
+
+        // let counterparty_connection_id = connection_counterparty
+        //     .connection_id()
+        //     .ok_or(ChannelError::MissingCounterpartyConnection)?;
+
+        Ok(Connection {
+            // The event does not include the channel ordering.
+            // The message handlers `build_chan_open..` determine the order included in the handshake
+            // message from channel query.
+            delay_period: Default::default(),
+            a_side: ConnectionSide::new(
+                chain.clone(),
+                connection.client_id().clone(),
+                connection_id,
+                port_id,
+                channel_id,
+            ),
+            b_side: ConnectionSide::new(
+                counterparty_chain.clone(),
+                connection.counterparty().client_id().clone(),
+                counterparty_connection_id.clone(),
+                channel_event_attributes.counterparty_port_id.clone(),
+                channel_event_attributes.counterparty_channel_id.clone(),
+            ),
+        })
+    }
     pub fn find(
         a_client: ForeignClient,
         b_client: ForeignClient,
