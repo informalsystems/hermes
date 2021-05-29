@@ -23,6 +23,7 @@ use ibc::Height as ICSHeight;
 use crate::chain::handle::ChainHandle;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
+use crate::object::Connection as WorkerConnectionObject;
 
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
@@ -36,6 +37,12 @@ pub enum ConnectionError {
 
     #[error("connection constructor error: {0}")]
     ConstructorFailed(String),
+
+    #[error("failed due to missing local channel id")]
+    MissingLocalConnectionId,
+
+    #[error("failed due to missing counterparty connection id ")]
+    MissingCounterpartyConnectionId,
 
     #[error("failed during a query to chain id {0} due to underlying error: {1}")]
     QueryError(ChainId, Error),
@@ -141,47 +148,127 @@ impl Connection {
         let connection_event_attributes =
             connection_open_event.connection_attributes().ok_or_else(|| {
                 ConnectionError::Failed(
-                    "A channel object must be build only from a channel event ".to_string(),
+                    "A connection object must be build only from a connection event ".to_string(),
                 )
             })?;
 
-
-     
-        let connection_id = connection_event_attributes.connection_id.clone();
-
-        // let version = counterparty_chain
-        //     .module_version(&port_id)
-        //     .map_err(|e| ChannelError::QueryError(counterparty_chain.id(), e))?;
-
-        // let connection_id = channel_event_attributes.connection_id.clone();
-        let connection = chain.query_connection(&connection_id, Height::zero())?;
-        let connection_counterparty = connection.counterparty();
-
-        // let counterparty_connection_id = connection_counterparty
-        //     .connection_id()
-        //     .ok_or(ChannelError::MissingCounterpartyConnection)?;
+        //TODO: it can be None 
+        let connection_id = connection_event_attributes.connection_id.ok_or(ConnectionError::MissingLocalConnectionId)?;
+        //TODO: it can be None 
+        let counterparty_connection_id = connection_event_attributes.counterparty_connection_id.ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+        let client_id = connection_event_attributes.client_id.clone();
+        let counterparty_client_id = connection_event_attributes.counterparty_client_id.clone();
 
         Ok(Connection {
-            // The event does not include the channel ordering.
-            // The message handlers `build_chan_open..` determine the order included in the handshake
-            // message from channel query.
+            // The event does not include the connection delay.
+            // The message handlers `build_conn_open..` determine the order included in the handshake
+            // message from connection query.
             delay_period: Default::default(),
             a_side: ConnectionSide::new(
-                chain.clone(),
-                connection.client_id().clone(),
-                connection_id,
-                port_id,
-                channel_id,
-            ),
+                chain, client_id, connection_id.clone()),
             b_side: ConnectionSide::new(
-                counterparty_chain.clone(),
-                connection.counterparty().client_id().clone(),
-                counterparty_connection_id.clone(),
-                channel_event_attributes.counterparty_port_id.clone(),
-                channel_event_attributes.counterparty_channel_id.clone(),
-            ),
+                counterparty_chain, counterparty_client_id, counterparty_connection_id),
         })
     }
+
+/// Recreates a 'Channel' object from the worker's object built from chain state scanning.
+    /// The channel must exist on chain and its connection must be initialized on both chains.
+    pub fn restore_from_state(
+        chain: Box<dyn ChainHandle>,
+        counterparty_chain: Box<dyn ChainHandle>,
+        connection: WorkerConnectionObject,
+        height: Height,
+    ) -> Result<(Connection, State), BoxError> {
+        // let a_channel =
+        //     chain.query_channel(&channel.src_port_id, &channel.src_channel_id, height)?;
+
+        let a_connection =
+                chain.query_connection(&connection.src_connection_id, height)?;
+        let client_id = a_connection.client_id();
+        let delay_period = a_connection.delay_period();
+
+        let counterpary_connection_id = a_connection.counterparty().connection_id().ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+        let counterpary_client_id = a_connection.counterparty().client_id();
+
+        // let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
+        //     WorkerChannelError::MissingConnectionHops(channel.src_channel_id.clone(), chain.id())
+        // })?;
+
+        // let a_connection = chain.query_connection(&a_connection_id, Height::zero())?;
+        // let b_connection_id = a_connection
+        //     .counterparty()
+        //     .connection_id()
+        //     .cloned()
+        //     .ok_or_else(|| {
+        //         WorkerChannelError::ChannelConnectionUninitialized(
+        //             channel.src_channel_id.clone(),
+        //             chain.id(),
+        //             a_connection.counterparty(),
+        //         )
+        //     })?;
+
+        let mut handshake_connection = Connection {
+            delay_period: Default::default(),
+            a_side: ConnectionSide::new(chain, client_id.clone(), connection.src_connection_id),
+            b_side: ConnectionSide::new(counterparty_chain, counterpary_client_id.clone(), counterpary_connection_id.clone()),
+        //     ordering: *a_channel.ordering(),
+        //     a_side: ChannelSide::new(
+        //         chain.clone(),
+        //         a_connection.client_id().clone(),
+        //         a_connection_id.clone(),
+        //         channel.src_port_id.clone(),
+        //         Some(channel.src_channel_id.clone()),
+        //     ),
+        //     b_side: ChannelSide::new(
+        //         counterparty_chain.clone(),
+        //         a_connection.counterparty().client_id().clone(),
+        //         b_connection_id.clone(),
+        //         a_channel.remote.port_id.clone(),
+        //         a_channel.remote.channel_id.clone(),
+        //     ),
+        //     connection_delay: a_connection.delay_period(),
+        //     version: Some(a_channel.version.clone()),
+        };
+
+        if a_connection.state_matches(&State::Init) && counterpary_connection.is_none() {
+            let req = QueryConnectionsRequest {
+                        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                    };
+            let connections: Vec<ConnectionId> =
+                counterparty_chain.query_connections(req)?;
+
+            for conn in connections {
+                if let Some(remote_connection_id) = conn.connection_end.counterparty.connection_id() {
+                    if remote_connection_id == &connection.src_connection_id {
+                        handshake_connection.b_side.connection_id = conn.connection_id;//Some(conn.connection_id);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
+        //     let req = QueryConnectionChannelsRequest {
+        //         connection: b_connection_id.to_string(),
+        //         pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        //     };
+
+        //     let channels: Vec<IdentifiedChannelEnd> =
+        //         counterparty_chain.query_connection_channels(req)?;
+
+        //     for chan in channels {
+        //         if let Some(remote_channel_id) = chan.channel_end.remote.channel_id() {
+        //             if remote_channel_id == &channel.src_channel_id {
+        //                 handshake_channel.b_side.channel_id = Some(chan.channel_id);
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
+
+        Ok((handshake_connection, a_connection.state))
+    }
+
     pub fn find(
         a_client: ForeignClient,
         b_client: ForeignClient,
