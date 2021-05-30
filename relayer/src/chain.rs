@@ -159,7 +159,7 @@ pub trait Chain: Sized {
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error>;
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_client_connections(

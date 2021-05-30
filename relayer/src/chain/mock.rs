@@ -4,6 +4,7 @@ use std::thread;
 use std::time::Duration;
 
 use crossbeam_channel as channel;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use prost_types::Any;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
@@ -170,7 +171,7 @@ impl Chain for MockChain {
     fn query_connections(
         &self,
         _request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         unimplemented!()
     }
 

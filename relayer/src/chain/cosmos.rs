@@ -6,6 +6,7 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -706,7 +707,7 @@ impl Chain for CosmosSdkChain {
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -727,13 +728,19 @@ impl Chain for CosmosSdkChain {
         // TODO: add warnings for any identifiers that fail to parse (below).
         //      similar to the parsing in `query_connection_channels`.
 
-        let ids = response
+        // let _ids = response
+        //     .connections
+        //     .iter()
+        //     .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
+        //     .collect();
+
+        let connections = response
             .connections
-            .iter()
-            .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
+            .into_iter()
+            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
             .collect();
 
-        Ok(ids)
+        Ok(connections)
     }
 
     fn query_connection(

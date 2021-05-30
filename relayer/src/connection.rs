@@ -234,7 +234,7 @@ impl Connection {
             let req = QueryConnectionsRequest {
                         pagination: ibc_proto::cosmos::base::query::pagination::all(),
                     };
-            let connections: Vec<ConnectionId> =
+            let connections: Vec<IdentifiedConnectionEnd> =
                 counterparty_chain.query_connections(req)?;
 
             for conn in connections {

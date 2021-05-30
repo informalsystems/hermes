@@ -1,12 +1,15 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
+use std::u64;
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{
-    ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
+    IdentifiedConnection as RawIdentifiedConnection,
+    ConnectionEnd as RawConnectionEnd, 
+    Counterparty as RawCounterparty,
 };
 
 use crate::ics03_connection::error::Kind;
@@ -193,6 +196,9 @@ impl IdentifiedConnectionEnd {
     }
 }
 
+
+
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
@@ -318,5 +324,50 @@ impl TryFrom<i32> for State {
 impl From<State> for i32 {
     fn from(value: State) -> Self {
         value.into()
+    }
+}
+
+
+impl Protobuf<RawIdentifiedConnection> for IdentifiedConnectionEnd {}
+
+impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(value: RawIdentifiedConnection) -> Result<Self, Self::Error> {
+        let raw_connection_end = RawConnectionEnd {
+            client_id: value.client_id.to_string(),
+            versions: value
+                .versions
+                .iter()
+                .map(|v| From::from(v.clone()))
+                .collect(),
+            state: value.state, 
+            counterparty:value.counterparty,
+            delay_period: value.delay_period,
+        };
+
+        Ok(IdentifiedConnectionEnd {
+            connection_id: value
+                .id
+                .parse()
+                .map_err(|_| Kind::IdentifierError)?,
+            connection_end: raw_connection_end.try_into()?,
+        })
+    }
+}
+
+impl From<IdentifiedConnectionEnd> for RawIdentifiedConnection {
+    fn from(value: IdentifiedConnectionEnd) -> Self {
+        RawIdentifiedConnection {
+            id: value.connection_id.to_string(),
+            client_id: value.connection_end.client_id.to_string(),
+            versions: value.connection_end.clone().versions
+            .iter()
+            .map(|v| From::from(v.clone()))
+            .collect(),
+            state:value.connection_end.clone().state as i32,
+            delay_period: value.connection_end.clone().delay_period.as_nanos() as u64,
+            counterparty: Some(value.connection_end.counterparty().into()),
+        }
     }
 }
