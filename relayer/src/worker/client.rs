@@ -56,7 +56,7 @@ impl ClientWorker {
             // Run client refresh, exit only if expired or frozen
             if let Err(e @ ForeignClientError::ExpiredOrFrozen(..)) = client.refresh() {
                 error!("failed to refresh client '{}': {}", client, e);
-                continue;
+                return Err(Box::new(e));
             }
 
             if skip_misbehaviour {
