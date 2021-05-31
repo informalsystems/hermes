@@ -6,12 +6,9 @@ use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
-use ibc::{
-    events::IbcEvent, ics02_client::client_state::ClientState,
-    ics04_channel::channel::IdentifiedChannelEnd, ics24_host::identifier::ChainId, Height,
-};
+use ibc::{Height, events::IbcEvent, ics02_client::client_state::ClientState, ics03_connection::connection::IdentifiedConnectionEnd, ics04_channel::channel::IdentifiedChannelEnd, ics24_host::identifier::ChainId};
 
-use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
+use ibc_proto::ibc::core::{channel::v1::QueryChannelsRequest, connection::v1::QueryConnectionsRequest};
 
 use crate::{
     chain::{counterparty::channel_connection_client, handle::ChainHandle},
@@ -197,6 +194,37 @@ impl Supervisor {
                 }
             };
 
+
+            let conn_req = QueryConnectionsRequest {
+                pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            };
+
+            let connections = match chain.query_connections(conn_req.clone()) {
+                Ok(connections) => connections,
+                Err(e) => {
+                    error!("failed to query connections from {}: {}", chain_id, e);
+                    continue;
+                }
+            };
+
+            for connection in connections {
+                match self.spawn_workers_for_connection(chain.clone(), connection.clone()) {
+                    Ok(()) => debug!(
+                        "done spawning workers for channel {} on chain {}",
+                        chain.id(),
+                        connection.connection_id
+                    ),
+                    Err(e) => error!(
+                        "skipped workers for channel {} on chain {} due to error {}",
+                        chain.id(),
+                        connection.connection_id,
+                        e
+                    ),
+                }
+            }
+
+
+            
             let channels = match chain.query_channels(req.clone()) {
                 Ok(channels) => channels,
                 Err(e) => {
@@ -221,6 +249,73 @@ impl Supervisor {
                 }
             }
         }
+    }
+
+
+
+
+     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+     fn spawn_workers_for_connection(
+        &mut self,
+        chain: Box<dyn ChainHandle>,
+        connection: IdentifiedConnectionEnd,
+    ) -> Result<(), BoxError> {
+        trace!(
+            "fetching client for connection {:?} of chain {}",
+            connection,
+            chain.id()
+        );
+
+        let client_res = connection_client(chain.as_ref(), &connection);
+
+        let client = match client_res {
+            Ok(conn_client) => conn_client.client,
+            Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelUninitialized(..)) => {
+                // These errors are silent.
+                // Simply ignore the channel and return without spawning the workers.
+                warn!(
+                    "ignoring channel {} because it is not open (or its connection is not open)",
+                    connection
+                );
+
+                return Ok(());
+            }
+            Err(e) => {
+                // Propagate errors.
+                return Err(format!(
+                    "unable to spawn workers for channel/chain pair '{}'/'{}' due to error: {:?}",
+                    connection,
+                    chain.id(),
+                    e
+                )
+                .into());
+            }
+        };
+
+        trace!("Obtained client id {:?}", client.client_id);
+
+        if self
+            .config
+            .find_chain(&client.client_state.chain_id())
+            .is_none()
+        {
+            // Ignore channel, since it does not correspond to any chain in the config file
+            return Ok(());
+        }
+
+        let counterparty_chain = self
+            .registry
+            .get_or_spawn(&client.client_state.chain_id())?;
+
+        let connection_object = Object::Connection(Connection {
+            dst_chain_id: client.client_state.chain_id(),
+            src_chain_id: chain.id(),
+            src_connection_id: connection.clone(),
+        });
+
+        self.worker_for_object(connection_object, chain.clone(), counterparty_chain.clone());
+
+        Ok(())
     }
 
     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
