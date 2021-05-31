@@ -43,7 +43,6 @@ crossbeam-channel = "0.5.1"
 subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.0"
-crossbeam-utils = "0.8.5"
 
 [dependencies.tendermint-proto]
 version = "=0.19.0"
