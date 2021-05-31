@@ -228,3 +228,42 @@ pub fn connection_state_on_destination(
         };
     Ok(counterparty_state)
 }
+
+
+pub fn connection_client(
+    chain: &dyn ChainHandle,
+    connection_id: &ConnectionId,
+) -> Result<IdentifiedAnyClientState, Error> {
+    trace!(
+        chain_id = %chain.id(),
+        connection_id = %connection_id,
+        "getting counterparty chain"
+    );
+
+    let connection_end = chain
+        .query_connection(&connection_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    if !connection_end.is_uninitilized() {
+        return Err(Error::ConnectionUninitialized(
+            connection_id.clone(),
+            chain.id(),
+        ));
+    }
+
+    let client_id = connection_end.client_id();
+    let client_state = chain
+        .query_client_state(&client_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    trace!(
+        chain_id=%chain.id(), connection_id=%connection_id,
+        "counterparty chain: {}", client_state.chain_id()
+    );
+
+    let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
+    //let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
+
+    //Ok(ConnectionClient::new(connection, client))
+    Ok(client)
+}

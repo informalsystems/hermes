@@ -3,6 +3,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::u64;
 
+use anomaly::fail;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -12,7 +13,7 @@ use ibc_proto::ibc::core::connection::v1::{
     Counterparty as RawCounterparty,
 };
 
-use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::error::{self, Error, Kind};
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
@@ -21,7 +22,7 @@ use crate::timestamp::ZERO_DURATION;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
-    state: State,
+    pub state: State,
     client_id: ClientId,
     counterparty: Counterparty,
     versions: Vec<Version>,
@@ -139,6 +140,10 @@ impl ConnectionEnd {
 
     pub fn is_open(&self) -> bool {
         self.state_matches(&State::Open)
+    }
+
+    pub fn is_uninitilized(&self) -> bool {
+        self.state_matches(&State::Uninitialized)
     }
 
     /// Helper function to compare the state of this end with another state.
@@ -305,6 +310,19 @@ impl State {
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
         }
+    }
+    // Parses the State out from a i32.
+    pub fn from_i32(s: i32) -> Result<Self, Error> {
+        match s {
+            0 => Ok(Self::Uninitialized),
+            1 => Ok(Self::Init),
+            2 => Ok(Self::TryOpen),
+            3 => Ok(Self::Open),
+            _ => fail!(error::Kind::InvalidState(s),s),
+        }
+    }
+    pub fn is_open(self) -> bool {
+        self == State::Open
     }
 }
 

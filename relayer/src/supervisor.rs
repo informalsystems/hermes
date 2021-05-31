@@ -10,18 +10,10 @@ use ibc::{Height, events::IbcEvent, ics02_client::client_state::ClientState, ics
 
 use ibc_proto::ibc::core::{channel::v1::QueryChannelsRequest, connection::v1::QueryConnectionsRequest};
 
-use crate::{
-    chain::{counterparty::channel_connection_client, handle::ChainHandle},
-    config::Config,
-    event::{
+use crate::{chain::{counterparty::{channel_connection_client, connection_client, connection_state_on_destination}, handle::ChainHandle}, config::Config, event::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
-    },
-    object::{Channel, Client, Object, UnidirectionalChannelPath},
-    registry::Registry,
-    util::try_recv_multiple,
-    worker::{WorkerMap, WorkerMsg},
-};
+    }, object::{Channel, Client, Connection, Object, UnidirectionalChannelPath}, registry::Registry, util::try_recv_multiple, worker::{WorkerMap, WorkerMsg}};
 
 pub mod error;
 use crate::chain::counterparty::channel_state_on_destination;
@@ -266,16 +258,16 @@ impl Supervisor {
             chain.id()
         );
 
-        let client_res = connection_client(chain.as_ref(), &connection);
+        let client_res = connection_client(chain.as_ref(), &connection.connection_id);
 
         let client = match client_res {
-            Ok(conn_client) => conn_client.client,
+            Ok(conn_client) => conn_client,
             Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelUninitialized(..)) => {
                 // These errors are silent.
-                // Simply ignore the channel and return without spawning the workers.
+                // Simply ignore the connection and return without spawning the workers.
                 warn!(
-                    "ignoring channel {} because it is not open (or its connection is not open)",
-                    connection
+                    "ignoring connection {} because it is uninitialized ",
+                    connection.connection_id
                 );
 
                 return Ok(());
@@ -283,8 +275,8 @@ impl Supervisor {
             Err(e) => {
                 // Propagate errors.
                 return Err(format!(
-                    "unable to spawn workers for channel/chain pair '{}'/'{}' due to error: {:?}",
-                    connection,
+                    "unable to spawn workers for connection/chain pair '{}'/'{}' due to error: {:?}",
+                    connection.connection_id,
                     chain.id(),
                     e
                 )
@@ -307,13 +299,37 @@ impl Supervisor {
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
 
-        let connection_object = Object::Connection(Connection {
-            dst_chain_id: client.client_state.chain_id(),
-            src_chain_id: chain.id(),
-            src_connection_id: connection.clone(),
-        });
 
-        self.worker_for_object(connection_object, chain.clone(), counterparty_chain.clone());
+
+        let conn_state_src = connection.connection_end.state;
+        let conn_state_dst =
+            connection_state_on_destination(connection.clone(), counterparty_chain.as_ref())?;
+
+        debug!(
+            "connection {} on chain {} is: {:?}; state on dest. chain ({}) is: {:?}",
+            connection.connection_id,
+            chain.id(),
+            conn_state_src,
+            counterparty_chain.id(),
+            conn_state_dst
+        );
+
+        if conn_state_src.is_open() && conn_state_dst.is_open() {
+            
+        } else if !conn_state_dst.is_open()
+            && conn_state_dst as u32 <= conn_state_src as u32
+            && self.handshake_enabled()
+        {
+            // create worker for connection handshake that will advance the remote state
+            let connection_object = Object::Connection(Connection {
+                    dst_chain_id: client.client_state.chain_id(),
+                    src_chain_id: chain.id(),
+                    src_connection_id: connection.connection_id.clone(),
+                });
+
+            self.workers
+                .get_or_spawn(connection_object, chain.clone(), counterparty_chain.clone());
+        }
 
         Ok(())
     }
