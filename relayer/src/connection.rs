@@ -167,7 +167,13 @@ impl Connection {
         //TODO: it can be None 
         let connection_id = connection_event_attributes.connection_id.as_ref().ok_or(ConnectionError::MissingLocalConnectionId)?;
         //TODO: it can be None 
-        let counterparty_connection_id = connection_event_attributes.counterparty_connection_id.as_ref().ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+        let mut counterparty_connection_id = Default::default();
+        //connection_event_attributes.counterparty_connection_id.as_ref().ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+        
+        if connection_event_attributes.counterparty_connection_id.is_some() {
+            counterparty_connection_id = connection_event_attributes.clone().counterparty_connection_id.unwrap()
+        }
+        
         let client_id = connection_event_attributes.client_id.clone();
         let counterparty_client_id = connection_event_attributes.counterparty_client_id.clone();
 
@@ -197,16 +203,22 @@ impl Connection {
         let client_id = a_connection.client_id();
         let delay_period = a_connection.delay_period();
 
-        //let counterpary_connection_id = a_connection.counterparty().connection_id();
+        //let counterparty_connection_id = a_connection.counterparty().connection_id();
         // The above returns Option<&ConnectionId>
-        let counterpary_connection_id = a_connection.counterparty().clone().connection_id.ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
-        let counterpary_client_id = a_connection.counterparty().client_id();
+        //let counterparty_connection_id = a_connection.counterparty().clone().connection_id.ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+        let mut counterparty_connection_id = Default::default();
+        
+        if a_connection.counterparty().clone().connection_id.is_some() {
+            counterparty_connection_id = a_connection.counterparty().clone().connection_id.unwrap()
+        }
+
+        let counterparty_client_id = a_connection.counterparty().client_id();
 
 
         let mut handshake_connection = Connection {
             delay_period,
             a_side: ConnectionSide::new(chain.clone(), client_id.clone(), connection.clone().src_connection_id),//Some(connection.src_connection_id)
-            b_side: ConnectionSide::new(counterparty_chain.clone(), counterpary_client_id.clone(), counterpary_connection_id),
+            b_side: ConnectionSide::new(counterparty_chain.clone(), counterparty_client_id.clone(), counterparty_connection_id),
         };
 
         if a_connection.state_matches(&State::Init) { // && counterpary_connection.is_none() {

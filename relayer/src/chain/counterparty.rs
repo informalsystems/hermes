@@ -245,7 +245,7 @@ pub fn connection_client(
         .query_connection(&connection_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    if !connection_end.is_uninitilized() {
+    if connection_end.is_uninitilized() {
         return Err(Error::ConnectionUninitialized(
             connection_id.clone(),
             chain.id(),

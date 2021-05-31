@@ -242,7 +242,7 @@ impl Object {
 
 
     /// Build the Connection object associated with the given [`Open`] connection event.
-    pub fn connection_from_chan_open_events(
+    pub fn connection_from_conn_open_events(
         e: &ConnectionAttributes,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
