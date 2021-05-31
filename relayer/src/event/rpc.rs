@@ -2,7 +2,7 @@ use std::{collections::HashMap, convert::TryFrom};
 
 use anomaly::BoxError;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
-use tracing::warn;
+use tracing::trace;
 
 use ibc::ics02_client::events::NewBlock;
 use ibc::ics02_client::height::Height;
@@ -49,7 +49,7 @@ pub fn get_all_events(
                     events.clone(),
                 )) {
                     Ok(event) => vals.push((height, event)),
-                    Err(e) => warn!("error while building event {}", e.to_string()),
+                    Err(e) => trace!("error while building event {}", e.to_string()),
                 }
             }
         }
