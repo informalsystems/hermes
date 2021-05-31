@@ -157,8 +157,8 @@ impl ConnectionEnd {
     }
 
     /// Getter for the counterparty. Returns a `clone()`.
-    pub fn counterparty(&self) -> Counterparty {
-        self.counterparty.clone()
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.counterparty
     }
 
     /// Getter for the delay_period field. This represents the duration, at minimum,
@@ -175,8 +175,8 @@ impl ConnectionEnd {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct IdentifiedConnectionEnd {
-    connection_id: ConnectionId,
-    connection_end: ConnectionEnd,
+    pub connection_id: ConnectionId,
+    pub connection_end: ConnectionEnd,
 }
 
 impl IdentifiedConnectionEnd {
@@ -202,7 +202,7 @@ impl IdentifiedConnectionEnd {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
-    connection_id: Option<ConnectionId>,
+    pub connection_id: Option<ConnectionId>,
     prefix: CommitmentPrefix,
 }
 
@@ -288,7 +288,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,
@@ -367,7 +367,7 @@ impl From<IdentifiedConnectionEnd> for RawIdentifiedConnection {
             .collect(),
             state:value.connection_end.clone().state as i32,
             delay_period: value.connection_end.clone().delay_period.as_nanos() as u64,
-            counterparty: Some(value.connection_end.counterparty().into()),
+            counterparty: Some(value.connection_end.counterparty().clone().into()),
         }
     }
 }

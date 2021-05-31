@@ -1,6 +1,8 @@
 use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
@@ -258,6 +260,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
                             self.query_connection(connection_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConnections { request, reply_to }) => {
+                            self.query_connections(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannels { request, reply_to }) => {
@@ -582,6 +588,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let connection_end = self.chain.query_connection(&connection_id, height);
 
         reply_to.send(connection_end).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_connections(request);
+
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }

@@ -232,7 +232,7 @@ impl Channel {
                 WorkerChannelError::ChannelConnectionUninitialized(
                     channel.src_channel_id.clone(),
                     chain.id(),
-                    a_connection.counterparty(),
+                    a_connection.counterparty().clone(),
                 )
             })?;
 

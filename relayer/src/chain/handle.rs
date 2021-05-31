@@ -3,6 +3,8 @@ use std::sync::Arc;
 
 use crossbeam_channel as channel;
 use dyn_clone::DynClone;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
@@ -178,6 +180,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<ConnectionEnd>,
     },
 
+    QueryConnections {
+        request: QueryConnectionsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
+    },
+
     QueryChannels {
         request: QueryChannelsRequest,
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
@@ -317,6 +324,12 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
+
+
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
 
     fn query_connection_channels(
         &self,

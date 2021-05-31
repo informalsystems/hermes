@@ -247,7 +247,7 @@ impl Object {
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
         let connection_id = e
-            .connection_id
+            .connection_id.as_ref()
             .ok_or_else(|| format!("connection_id missing in OpenInit event '{:?}'", e))?;
 
         let dst_chain_id = get_counterparty_chain_from_connection(src_chain, &connection_id)
