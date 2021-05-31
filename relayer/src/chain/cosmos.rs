@@ -51,9 +51,10 @@ use ibc_proto::cosmos::upgrade::v1beta1::{
     QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -825,6 +826,34 @@ impl Chain for CosmosSdkChain {
         })?;
 
         Ok(channel_end)
+    }
+
+    fn query_channel_client_state(
+        &self,
+        request: QueryChannelClientStateRequest,
+    ) -> Result<Option<IdentifiedAnyClientState>, Error> {
+        crate::time!("query_channel_client_state");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.channel_client_state(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let client_state: Option<IdentifiedAnyClientState> = response
+            .identified_client_state
+            .map_or_else(|| None, |proto_cs| proto_cs.try_into().ok());
+
+        Ok(client_state)
     }
 
     /// Queries the packet commitment hashes associated with a channel.

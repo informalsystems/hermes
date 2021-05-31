@@ -11,7 +11,7 @@ use ibc::{
     events::IbcEvent,
     ics02_client::{
         client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
-        client_state::AnyClientState,
+        client_state::{AnyClientState, IdentifiedAnyClientState},
         events::UpdateClient,
         header::AnyHeader,
         misbehaviour::AnyMisbehaviour,
@@ -34,8 +34,10 @@ use ibc_proto::ibc::core::{
         PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
         QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
         QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        QueryChannelClientStateRequest,
     },
-    client::v1::QueryConsensusStatesRequest,
+    client::v1::{QueryConsensusStatesRequest, QueryClientStatesRequest},
+    connection::v1::QueryClientConnectionsRequest,
     commitment::v1::MerkleProof,
 };
 
@@ -119,6 +121,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Height>,
     },
 
+    QueryClients {
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
+    },
+
     BuildHeader {
         trusted_height: Height,
         target_height: Height,
@@ -158,6 +165,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<AnyClientState>,
     },
 
+    QueryClientConnections {
+        request: QueryClientConnectionsRequest,
+        reply_to: ReplyTo<Vec<ConnectionId>>,
+    },
+
     QueryConsensusStates {
         request: QueryConsensusStatesRequest,
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
@@ -194,13 +206,13 @@ pub enum ChainRequest {
         reply_to: ReplyTo<ConnectionEnd>,
     },
 
-    QueryChannels {
-        request: QueryChannelsRequest,
+    QueryConnectionChannels {
+        request: QueryConnectionChannelsRequest,
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     },
 
-    QueryConnectionChannels {
-        request: QueryConnectionChannelsRequest,
+    QueryChannels {
+        request: QueryChannelsRequest,
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     },
 
@@ -209,6 +221,11 @@ pub enum ChainRequest {
         channel_id: ChannelId,
         height: Height,
         reply_to: ReplyTo<ChannelEnd>,
+    },
+
+    QueryChannelClientState {
+        request: QueryChannelClientStateRequest,
+        reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
     },
 
     QueryNextSequenceReceive {
@@ -296,11 +313,21 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
+
     fn query_client_state(
         &self,
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyClientState, Error>;
+
+    fn query_client_connections(
+        &self,
+        request: QueryClientConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error>;
 
     fn query_consensus_states(
         &self,
@@ -355,6 +382,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<ChannelEnd, Error>;
+
+    fn query_channel_client_state(
+        &self,
+        request: QueryChannelClientStateRequest,
+    ) -> Result<Option<IdentifiedAnyClientState>, Error>;
 
     fn proven_client_state(
         &self,
