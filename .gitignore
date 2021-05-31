@@ -20,3 +20,5 @@ data
 # Ignore Python artifacts
 .mypy_cache/
 __pycache__/
+
+.modelator

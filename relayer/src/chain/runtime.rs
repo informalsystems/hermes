@@ -170,7 +170,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                                 .broadcast(Arc::new(event_batch))
                                 .map_err(Kind::channel)?;
                         },
-                        Err(e) => error!("received error via event bus: {}", e),
+                        Err(e) => {
+                            error!("received error via event bus: {}", e);
+                            return Err(Kind::Channel.into());
+                        },
                     }
                 },
                 recv(self.request_receiver) -> event => {

@@ -935,6 +935,7 @@ mod test {
     use std::str::FromStr;
     use std::sync::Arc;
 
+    use test_env_log::test;
     use tokio::runtime::Runtime as TokioRuntime;
 
     use ibc::events::IbcEvent;

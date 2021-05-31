@@ -132,6 +132,7 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
+    use test_env_log::test;
 
     use crate::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
     use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;

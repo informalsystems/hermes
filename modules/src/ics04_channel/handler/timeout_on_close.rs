@@ -156,6 +156,7 @@ mod tests {
     use crate::mock::context::MockContext;
 
     use std::convert::TryFrom;
+    use test_env_log::test;
 
     #[test]
     fn timeout_on_close_packet_processing() {
