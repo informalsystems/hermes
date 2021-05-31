@@ -214,8 +214,9 @@ pub fn connection_state_on_destination(
                 )
                 .map_err(|e| Error::QueryFailed(format!("{}", e)))?
                 .state().clone()
-        } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
-            connection_on_destination(
+        } else //if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
+            {
+                connection_on_destination(
                 &connection.connection_id,
                 counterparty_chain,
             )?
@@ -223,9 +224,9 @@ pub fn connection_state_on_destination(
                 || ConnectionState::Uninitialized,
                 |remote_connection| remote_connection.state().clone(),
             )
-        } else {
-            ConnectionState::Uninitialized
-        };
+        }; // else {
+       //     ConnectionState::Uninitialized
+       // };
     Ok(counterparty_state)
 }
 
