@@ -832,7 +832,7 @@ impl Chain for CosmosSdkChain {
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
-        crate::time!("query_connections");
+        crate::time!("query_channel_client_state");
 
         let mut client = self
             .block_on(
@@ -851,7 +851,7 @@ impl Chain for CosmosSdkChain {
 
         let client_state: Option<IdentifiedAnyClientState> = response
             .identified_client_state
-            .map_or_else(|| None, |cs| cs.try_into().ok());
+            .map_or_else(|| None, |proto_cs| proto_cs.try_into().ok());
 
         Ok(client_state)
     }

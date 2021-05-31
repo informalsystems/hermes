@@ -31,6 +31,7 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 use crate::{
     connection::ConnectionMsgType,
@@ -39,7 +40,6 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {

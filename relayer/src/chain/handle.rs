@@ -33,6 +33,8 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
+
 pub use prod::ProdChainHandle;
 
 use crate::{
@@ -41,7 +43,6 @@ use crate::{
     event::monitor::{EventBatch, Result as MonitorResult},
     keyring::KeyEntry,
 };
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 mod prod;
 

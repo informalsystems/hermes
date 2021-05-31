@@ -5,11 +5,10 @@ use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, warn};
 
-pub use error::Error;
 use ibc::{
     events::IbcEvent,
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::IdentifiedConnectionEnd,
+    ics03_connection::connection::{IdentifiedConnectionEnd, State},
     ics04_channel::channel::IdentifiedChannelEnd,
     ics24_host::identifier::ChainId,
     Height,
@@ -32,9 +31,9 @@ use crate::{
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
-use ibc::ics03_connection::connection::State;
 
-pub mod error;
+mod error;
+pub use error::Error;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -168,7 +167,7 @@ impl Supervisor {
     }
 
     fn spawn_workers(&mut self) {
-        let req = QueryClientStatesRequest {
+        let clients_req = QueryClientStatesRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
@@ -192,12 +191,12 @@ impl Supervisor {
                 }
             };
 
-            let clients = match chain.query_clients(req.clone()) {
+            let clients = match chain.query_clients(clients_req.clone()) {
                 Ok(clients) => clients,
                 Err(e) => {
                     error!(
                         "skipping workers for chain {}. \
-                    reason: failed to query clients with error: {}",
+                        reason: failed to query clients with error: {}",
                         chain_id, e
                     );
                     continue;
@@ -210,11 +209,11 @@ impl Supervisor {
                     continue;
                 }
 
-                let req = QueryClientConnectionsRequest {
+                let conns_req = QueryClientConnectionsRequest {
                     client_id: client.client_id.to_string(),
                 };
 
-                let client_connections = match chain.query_client_connections(req) {
+                let client_connections = match chain.query_client_connections(conns_req) {
                     Ok(connections) => connections,
                     Err(e) => {
                         error!(
@@ -243,21 +242,22 @@ impl Supervisor {
                         continue;
                     }
 
-                    let connection_channels =
-                        match chain.query_connection_channels(QueryConnectionChannelsRequest {
-                            connection: connection_id.to_string(),
-                            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-                        }) {
-                            Ok(channels) => channels,
-                            Err(e) => {
-                                error!(
-                                    "skipping workers for chain {} and connection {}. \
+                    let chans_req = QueryConnectionChannelsRequest {
+                        connection: connection_id.to_string(),
+                        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+                    };
+
+                    let connection_channels = match chain.query_connection_channels(chans_req) {
+                        Ok(channels) => channels,
+                        Err(e) => {
+                            error!(
+                                "skipping workers for chain {} and connection {}. \
                                      reason: failed to query its channels: {}",
-                                    chain_id, connection_id, e
-                                );
-                                continue;
-                            }
-                        };
+                                chain_id, connection_id, e
+                            );
+                            continue;
+                        }
+                    };
 
                     let connection =
                         IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
