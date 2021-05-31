@@ -31,14 +31,14 @@ use ibc::{
 
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-        QueryChannelClientStateRequest,
+        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+        QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
-    client::v1::{QueryConsensusStatesRequest, QueryClientStatesRequest},
-    connection::v1::QueryClientConnectionsRequest,
+    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
+    connection::v1::QueryClientConnectionsRequest,
 };
 
 pub use prod::ProdChainHandle;
