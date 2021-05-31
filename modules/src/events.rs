@@ -6,9 +6,9 @@ use serde_derive::{Deserialize, Serialize};
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
+use crate::ics03_connection::events::Attributes as ConnectionAttributes;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics04_channel::events::Attributes as ChannelAttributes;
-use crate::ics03_connection::events::Attributes as ConnectionAttributes;
 
 use crate::Height;
 use prost::alloc::fmt::Formatter;

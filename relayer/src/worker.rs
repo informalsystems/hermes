@@ -66,7 +66,9 @@ impl Worker {
 
         let worker = match object {
             Object::Client(client) => Self::Client(ClientWorker::new(client, chains, cmd_rx)),
-            Object::Connection(connection) => Self::Connection(ConnectionWorker::new(connection, chains, cmd_rx)),
+            Object::Connection(connection) => {
+                Self::Connection(ConnectionWorker::new(connection, chains, cmd_rx))
+            }
             Object::Channel(channel) => Self::Channel(ChannelWorker::new(channel, chains, cmd_rx)),
             Object::UnidirectionalChannelPath(path) => {
                 Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx))

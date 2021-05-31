@@ -6,14 +6,33 @@ use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, trace, warn};
 
-use ibc::{Height, events::IbcEvent, ics02_client::client_state::ClientState, ics03_connection::connection::IdentifiedConnectionEnd, ics04_channel::channel::IdentifiedChannelEnd, ics24_host::identifier::ChainId};
+use ibc::{
+    events::IbcEvent, ics02_client::client_state::ClientState,
+    ics03_connection::connection::IdentifiedConnectionEnd,
+    ics04_channel::channel::IdentifiedChannelEnd, ics24_host::identifier::ChainId, Height,
+};
 
-use ibc_proto::ibc::core::{channel::v1::QueryChannelsRequest, connection::v1::QueryConnectionsRequest};
+use ibc_proto::ibc::core::{
+    channel::v1::QueryChannelsRequest, connection::v1::QueryConnectionsRequest,
+};
 
-use crate::{chain::{counterparty::{channel_connection_client, connection_client, connection_state_on_destination}, handle::ChainHandle}, config::Config, event::{
+use crate::{
+    chain::{
+        counterparty::{
+            channel_connection_client, connection_client, connection_state_on_destination,
+        },
+        handle::ChainHandle,
+    },
+    config::Config,
+    event::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
-    }, object::{Channel, Client, Connection, Object, UnidirectionalChannelPath}, registry::Registry, util::try_recv_multiple, worker::{WorkerMap, WorkerMsg}};
+    },
+    object::{Channel, Client, Connection, Object, UnidirectionalChannelPath},
+    registry::Registry,
+    util::try_recv_multiple,
+    worker::{WorkerMap, WorkerMsg},
+};
 
 pub mod error;
 use crate::chain::counterparty::channel_state_on_destination;
@@ -86,7 +105,6 @@ impl Supervisor {
                 }
 
                 IbcEvent::OpenAckConnection(..) => {
-
                     if !self.handshake_enabled() {
                         continue;
                     }
@@ -102,7 +120,6 @@ impl Supervisor {
                             .push(event);
                     }
                 }
-
 
                 IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                     if !self.handshake_enabled() {
@@ -205,7 +222,6 @@ impl Supervisor {
                 }
             };
 
-
             let conn_req = QueryConnectionsRequest {
                 pagination: ibc_proto::cosmos::base::query::pagination::all(),
             };
@@ -234,8 +250,6 @@ impl Supervisor {
                 }
             }
 
-
-            
             let channels = match chain.query_channels(req.clone()) {
                 Ok(channels) => channels,
                 Err(e) => {
@@ -262,11 +276,8 @@ impl Supervisor {
         }
     }
 
-
-
-
-     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
-     fn spawn_workers_for_connection(
+    /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+    fn spawn_workers_for_connection(
         &mut self,
         chain: Box<dyn ChainHandle>,
         connection: IdentifiedConnectionEnd,
@@ -318,8 +329,6 @@ impl Supervisor {
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
 
-
-
         let conn_state_src = connection.connection_end.state;
         let conn_state_dst =
             connection_state_on_destination(connection.clone(), counterparty_chain.as_ref())?;
@@ -334,17 +343,16 @@ impl Supervisor {
         );
 
         if conn_state_src.is_open() && conn_state_dst.is_open() {
-            
         } else if !conn_state_dst.is_open()
             && conn_state_dst as u32 <= conn_state_src as u32
             && self.handshake_enabled()
         {
             // create worker for connection handshake that will advance the remote state
             let connection_object = Object::Connection(Connection {
-                    dst_chain_id: client.client_state.chain_id(),
-                    src_chain_id: chain.id(),
-                    src_connection_id: connection.connection_id.clone(),
-                });
+                dst_chain_id: client.client_state.chain_id(),
+                src_chain_id: chain.id(),
+                src_connection_id: connection.connection_id,
+            });
 
             self.workers
                 .get_or_spawn(connection_object, chain.clone(), counterparty_chain.clone());

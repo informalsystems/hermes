@@ -183,7 +183,6 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryConnections { request, reply_to })
     }
 
-
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,

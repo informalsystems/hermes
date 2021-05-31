@@ -1,10 +1,21 @@
 use anomaly::BoxError;
 
-use ibc::{Height, ics02_client::{client_state::ClientState, events::UpdateClient}, ics03_connection::events::Attributes as ConnectionAttributes, ics04_channel::events::{
+use ibc::{
+    ics02_client::{client_state::ClientState, events::UpdateClient},
+    ics03_connection::events::Attributes as ConnectionAttributes,
+    ics04_channel::events::{
         Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
-    }, ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId}};
+    },
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    Height,
+};
 
-use crate::chain::{counterparty::{channel_connection_client, get_counterparty_chain, get_counterparty_chain_from_connection}, handle::ChainHandle};
+use crate::chain::{
+    counterparty::{
+        channel_connection_client, get_counterparty_chain, get_counterparty_chain_from_connection,
+    },
+    handle::ChainHandle,
+};
 
 /// Client
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -30,7 +41,6 @@ impl Client {
     }
 }
 
-
 /// Connection
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Connection {
@@ -42,7 +52,6 @@ pub struct Connection {
 
     /// Source connection identifier.
     pub src_connection_id: ConnectionId,
-
 }
 
 impl Connection {
@@ -53,7 +62,7 @@ impl Connection {
         )
     }
 }
- 
+
 /// Channel
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Channel {
@@ -240,14 +249,14 @@ impl Object {
         .into())
     }
 
-
     /// Build the Connection object associated with the given [`Open`] connection event.
     pub fn connection_from_conn_open_events(
         e: &ConnectionAttributes,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
         let connection_id = e
-            .connection_id.as_ref()
+            .connection_id
+            .as_ref()
             .ok_or_else(|| format!("connection_id missing in OpenInit event '{:?}'", e))?;
 
         let dst_chain_id = get_counterparty_chain_from_connection(src_chain, &connection_id)
@@ -260,7 +269,6 @@ impl Object {
         }
         .into())
     }
-
 
     /// Build the Channel object associated with the given [`Open`] channel event.
     pub fn channel_from_chan_open_events(

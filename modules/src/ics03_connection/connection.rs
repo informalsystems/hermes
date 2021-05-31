@@ -8,9 +8,8 @@ use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{
+    ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
     IdentifiedConnection as RawIdentifiedConnection,
-    ConnectionEnd as RawConnectionEnd, 
-    Counterparty as RawCounterparty,
 };
 
 use crate::ics03_connection::error::{self, Error, Kind};
@@ -201,9 +200,6 @@ impl IdentifiedConnectionEnd {
     }
 }
 
-
-
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
@@ -318,7 +314,7 @@ impl State {
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            _ => fail!(error::Kind::InvalidState(s),s),
+            _ => fail!(error::Kind::InvalidState(s), s),
         }
     }
     pub fn is_open(self) -> bool {
@@ -345,7 +341,6 @@ impl From<State> for i32 {
     }
 }
 
-
 impl Protobuf<RawIdentifiedConnection> for IdentifiedConnectionEnd {}
 
 impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
@@ -354,21 +349,17 @@ impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
     fn try_from(value: RawIdentifiedConnection) -> Result<Self, Self::Error> {
         let raw_connection_end = RawConnectionEnd {
             client_id: value.client_id.to_string(),
-            versions: value
-                .versions
-                .iter()
-                .map(|v| From::from(v.clone()))
-                .collect(),
-            state: value.state, 
-            counterparty:value.counterparty,
+            versions: value.versions,
+            // .iter()
+            // .map(|v| From::from(v.clone()))
+            //  .collect(),
+            state: value.state,
+            counterparty: value.counterparty,
             delay_period: value.delay_period,
         };
 
         Ok(IdentifiedConnectionEnd {
-            connection_id: value
-                .id
-                .parse()
-                .map_err(|_| Kind::IdentifierError)?,
+            connection_id: value.id.parse().map_err(|_| Kind::IdentifierError)?,
             connection_end: raw_connection_end.try_into()?,
         })
     }
@@ -379,12 +370,14 @@ impl From<IdentifiedConnectionEnd> for RawIdentifiedConnection {
         RawIdentifiedConnection {
             id: value.connection_id.to_string(),
             client_id: value.connection_end.client_id.to_string(),
-            versions: value.connection_end.clone().versions
-            .iter()
-            .map(|v| From::from(v.clone()))
-            .collect(),
-            state:value.connection_end.clone().state as i32,
-            delay_period: value.connection_end.clone().delay_period.as_nanos() as u64,
+            versions: value
+                .connection_end
+                .versions
+                .iter()
+                .map(|v| From::from(v.clone()))
+                .collect(),
+            state: value.connection_end.state as i32,
+            delay_period: value.connection_end.delay_period.as_nanos() as u64,
             counterparty: Some(value.connection_end.counterparty().clone().into()),
         }
     }

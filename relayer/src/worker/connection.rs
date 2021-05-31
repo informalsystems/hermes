@@ -19,7 +19,11 @@ pub struct ConnectionWorker {
 }
 
 impl ConnectionWorker {
-    pub fn new(connection: Connection, chains: ChainHandlePair, cmd_rx: Receiver<WorkerCmd>) -> Self {
+    pub fn new(
+        connection: Connection,
+        chains: ChainHandlePair,
+        cmd_rx: Receiver<WorkerCmd>,
+    ) -> Self {
         Self {
             connection,
             chains,
@@ -77,12 +81,13 @@ impl ConnectionWorker {
 
                         let height = current_height.decrement()?;
 
-                        let (mut handshake_connection, state) = RelayConnection::restore_from_state(
-                            a_chain.clone(),
-                            b_chain.clone(),
-                            self.connection.clone(),
-                            height,
-                        )?;
+                        let (mut handshake_connection, state) =
+                            RelayConnection::restore_from_state(
+                                a_chain.clone(),
+                                b_chain.clone(),
+                                self.connection.clone(),
+                                height,
+                            )?;
 
                         retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                             handshake_connection.step_state(state, index)

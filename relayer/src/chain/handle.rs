@@ -325,7 +325,6 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
 
-
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,

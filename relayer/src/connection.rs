@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use crate::chain::counterparty::connection_state_on_destination;
+use crate::util::retry::RetryResult;
 use anomaly::BoxError;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use prost_types::Any;
@@ -7,8 +9,6 @@ use serde::Serialize;
 use thiserror::Error;
 use tracing::debug;
 use tracing::{error, warn};
-use crate::chain::counterparty::connection_state_on_destination;
-use crate::util::retry::RetryResult;
 
 use ibc::events::IbcEvent;
 use ibc::ics02_client::height::Height;
@@ -66,7 +66,6 @@ pub struct ConnectionSide {
     client_id: ClientId,
     connection_id: ConnectionId,
     //connection_id: Option<ConnectionId>,
-
 }
 
 impl ConnectionSide {
@@ -96,8 +95,7 @@ impl Serialize for ConnectionSide {
         struct ConnectionSide<'a> {
             client_id: &'a ClientId,
             connection_id: &'a ConnectionId,
-    //        connection_id: &'a Option<ConnectionId>,
-
+            //        connection_id: &'a Option<ConnectionId>,
         }
 
         let value = ConnectionSide {
@@ -157,23 +155,33 @@ impl Connection {
         counterparty_chain: Box<dyn ChainHandle>,
         connection_open_event: IbcEvent,
     ) -> Result<Connection, BoxError> {
-        let connection_event_attributes =
-            connection_open_event.connection_attributes().ok_or_else(|| {
+        let connection_event_attributes = connection_open_event
+            .connection_attributes()
+            .ok_or_else(|| {
                 ConnectionError::Failed(
                     "A connection object must be build only from a connection event ".to_string(),
                 )
             })?;
 
-        //TODO: it can be None 
-        let connection_id = connection_event_attributes.connection_id.as_ref().ok_or(ConnectionError::MissingLocalConnectionId)?;
-        //TODO: it can be None 
+        //TODO: it can be None
+        let connection_id = connection_event_attributes
+            .connection_id
+            .as_ref()
+            .ok_or(ConnectionError::MissingLocalConnectionId)?;
+        //TODO: it can be None
         let mut counterparty_connection_id = Default::default();
         //connection_event_attributes.counterparty_connection_id.as_ref().ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
-        
-        if connection_event_attributes.counterparty_connection_id.is_some() {
-            counterparty_connection_id = connection_event_attributes.clone().counterparty_connection_id.unwrap()
+
+        if connection_event_attributes
+            .counterparty_connection_id
+            .is_some()
+        {
+            counterparty_connection_id = connection_event_attributes
+                .clone()
+                .counterparty_connection_id
+                .unwrap()
         }
-        
+
         let client_id = connection_event_attributes.client_id.clone();
         let counterparty_client_id = connection_event_attributes.counterparty_client_id.clone();
 
@@ -182,10 +190,12 @@ impl Connection {
             // The message handlers `build_conn_open..` determine the order included in the handshake
             // message from connection query.
             delay_period: Default::default(),
-            a_side: ConnectionSide::new(
-                chain, client_id, connection_id.clone()),
+            a_side: ConnectionSide::new(chain, client_id, connection_id.clone()),
             b_side: ConnectionSide::new(
-                counterparty_chain, counterparty_client_id, counterparty_connection_id.clone()),
+                counterparty_chain,
+                counterparty_client_id,
+                counterparty_connection_id,
+            ),
         })
     }
 
@@ -197,9 +207,7 @@ impl Connection {
         connection: WorkerConnectionObject,
         height: Height,
     ) -> Result<(Connection, State), BoxError> {
-        
-        let a_connection =
-                chain.query_connection(&connection.src_connection_id, height)?;
+        let a_connection = chain.query_connection(&connection.src_connection_id, height)?;
         let client_id = a_connection.client_id();
         let delay_period = a_connection.delay_period();
 
@@ -207,29 +215,39 @@ impl Connection {
         // The above returns Option<&ConnectionId>
         //let counterparty_connection_id = a_connection.counterparty().clone().connection_id.ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
         let mut counterparty_connection_id = Default::default();
-        
+
         if a_connection.counterparty().clone().connection_id.is_some() {
             counterparty_connection_id = a_connection.counterparty().clone().connection_id.unwrap()
         }
 
         let counterparty_client_id = a_connection.counterparty().client_id();
 
-
         let mut handshake_connection = Connection {
             delay_period,
-            a_side: ConnectionSide::new(chain.clone(), client_id.clone(), connection.clone().src_connection_id),//Some(connection.src_connection_id)
-            b_side: ConnectionSide::new(counterparty_chain.clone(), counterparty_client_id.clone(), counterparty_connection_id),
+            a_side: ConnectionSide::new(
+                chain.clone(),
+                client_id.clone(),
+                connection.clone().src_connection_id,
+            ), //Some(connection.src_connection_id)
+            b_side: ConnectionSide::new(
+                counterparty_chain.clone(),
+                counterparty_client_id.clone(),
+                counterparty_connection_id,
+            ),
         };
 
-        if a_connection.state_matches(&State::Init) { // && counterpary_connection.is_none() {
+        if a_connection.state_matches(&State::Init) {
+            // && counterpary_connection.is_none() {
             let req = QueryConnectionsRequest {
-                        pagination: ibc_proto::cosmos::base::query::pagination::all(),
-                    };
+                pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            };
             let connections: Vec<IdentifiedConnectionEnd> =
                 counterparty_chain.query_connections(req)?;
 
             for conn in connections {
-                if let Some(remote_connection_id) = conn.connection_end.counterparty().connection_id() {
+                if let Some(remote_connection_id) =
+                    conn.connection_end.counterparty().connection_id()
+                {
                     if remote_connection_id == &connection.src_connection_id {
                         handshake_connection.b_side.connection_id = conn.connection_id; //Some(conn.connection_id);
                         break;
@@ -238,8 +256,7 @@ impl Connection {
             }
         }
 
-
-        Ok((handshake_connection, a_connection.state().clone()))
+        Ok((handshake_connection, *a_connection.state()))
     }
 
     pub fn find(
@@ -339,7 +356,7 @@ impl Connection {
         &self.b_side.client_id
     }
 
-    pub fn src_connection_id(&self) -> &ConnectionId{
+    pub fn src_connection_id(&self) -> &ConnectionId {
         &self.a_side.connection_id
     }
 
@@ -420,10 +437,7 @@ impl Connection {
                 continue;
             }
 
-            match (
-                a_connection.unwrap().state().clone(),
-                b_connection.unwrap().state().clone(),
-            ) {
+            match (a_connection.unwrap().state(), b_connection.unwrap().state()) {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                     // Ack to a_chain
                     match self.flipped().build_conn_ack_and_send() {
@@ -469,11 +483,11 @@ impl Connection {
     }
     pub fn counterparty_state(&self) -> Result<State, ConnectionError> {
         // Source channel ID must be specified
-        let connection_id = self
-            .src_connection_id();
-            //.ok_or(ConnectionError::MissingLocalConnectionId)?;
+        let connection_id = self.src_connection_id();
+        //.ok_or(ConnectionError::MissingLocalConnectionId)?;
 
-        let connection_end = self.src_chain()
+        let connection_end = self
+            .src_chain()
             .query_connection(&connection_id, Height::zero())
             .map_err(|_| {
                 ConnectionError::Failed(format!(
@@ -482,13 +496,12 @@ impl Connection {
                 ))
             })?;
 
-        let connection = IdentifiedConnectionEnd { connection_end, connection_id: connection_id.clone() };
+        let connection = IdentifiedConnectionEnd {
+            connection_end,
+            connection_id: connection_id.clone(),
+        };
 
-        connection_state_on_destination(
-            connection,
-            self.dst_chain().as_ref(),
-        )
-        .map_err(|_| {
+        connection_state_on_destination(connection, self.dst_chain().as_ref()).map_err(|_| {
             ConnectionError::Failed(format!(
                 "failed to query the connection state on destination for {}",
                 connection_id
@@ -1030,8 +1043,7 @@ fn check_destination_connection_state(
         && existing_connection.counterparty().client_id()
             == expected_connection.counterparty().client_id();
 
-    let good_state =
-        existing_connection.state().clone() as u32 <= expected_connection.state().clone() as u32;
+    let good_state = *existing_connection.state() as u32 <= *expected_connection.state() as u32;
 
     let good_connection_ids = existing_connection.counterparty().connection_id().is_none()
         || existing_connection.counterparty().connection_id()
