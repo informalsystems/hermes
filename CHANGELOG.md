@@ -16,6 +16,7 @@
 - [ibc-relayer-cli]
   - Improve config loading message ([#996])
   - Improve Hermes worker spawn time for `start` command ([#998])
+  - Better Hermes help message when command is unrecognized ([#1003])
 
 ### BUG FIXES
 
@@ -38,6 +39,7 @@
 [#983]: https://github.com/informalsystems/ibc-rs/issues/983
 [#996]: https://github.com/informalsystems/ibc-rs/issues/996
 [#998]: https://github.com/informalsystems/ibc-rs/issues/998
+[#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
 
 ## v0.3.2
 *May 21st, 2021*
