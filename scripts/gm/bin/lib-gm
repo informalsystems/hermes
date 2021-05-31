@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" == "2" ]; then
 fi
 
 version() {
-  echo "v0.0.1"
+  echo "v0.0.2"
 }
 
 config_defaults() {
@@ -18,6 +18,8 @@ config_defaults() {
     GLOBAL_ADD_TO_HERMES="false"
     GLOBAL_WALLET_MNEMONIC=""
     GLOBAL_WALLET_HDPATH=""
+    GLOBAL_HERMES_STRATEGY="all"
+    GLOBAL_HERMES_LOG_LEVEL="info"
 }
 
 install() {
@@ -48,17 +50,29 @@ install() {
 }
 
 enforce_requirements() {
-  if [ -z "$(which stoml)" ]; then
-    exit_with_error "missing stoml, install it from https://github.com/freshautomations/stoml/releases"
-  fi
   if [ -z "$(which sconfig)" ]; then
     exit_with_error "missing sconfig, install it from https://github.com/freshautomations/sconfig/releases"
   fi
-  if [ -z "$(which sed)" ]; then
-    exit_with_error "missing sed, please install it (this requirement will be removed in the future)"
+  SED="$(which sed)"
+  if [ -z "$SED" ]; then
+    exit_with_error "missing sed, please install it"
   fi
   if [ -z "$(which tr)" ]; then
-    exit_with_error "missing tr, please install it (this requirement will be removed in the future)"
+    exit_with_error "missing tr, please install it"
+  fi
+  if [ -z "$(which dirname)" ]; then
+    exit_with_error "missing dirname, please install it"
+  fi
+  STOML="$(which stoml)"
+  if [ -z "$STOML" ]; then
+    exit_with_error "missing stoml, install it from https://github.com/freshautomations/stoml/releases"
+  fi
+  STOML_VERSION="$("$STOML" --version | "$SED" 's/^stoml version //')"
+  MAJOR="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\1/")"
+  MINOR="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\2/")"
+  PATCH="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\3/")"
+  if [ $((MAJOR)) -eq 0 ] && [ $((MINOR)) -lt 6 ] || { [ $((MAJOR)) -eq 0 ] && [ $((MINOR)) -eq 6 ] && [ $((PATCH)) -lt 2 ]; }; then
+    exit_with_error "stoml too old, install 0.6.2 or newer from https://github.com/freshautomations/stoml/releases"
   fi
 }
 
@@ -187,6 +201,8 @@ load_config() {
   GLOBAL_ADD_TO_HERMES="$(stoml -q "$CONFIG_FILE" global.add_to_hermes || echo "$GLOBAL_ADD_TO_HERMES")"
   GLOBAL_WALLET_MNEMONIC="$(stoml -q "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
   GLOBAL_WALLET_HDPATH="$(stoml -q "$CONFIG_FILE" global.wallet_hdpath || echo "$GLOBAL_WALLET_HDPATH")"
+  GLOBAL_HERMES_STRATEGY="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
+  GLOBAL_HERMES_LOG_LEVEL="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
   export GLOBAL_GAIAD_BINARY
   export GLOBAL_HERMES_BINARY
   export GLOBAL_HOME_DIR
@@ -692,10 +708,14 @@ list_keys() {
 }
 
 hermes_config() {
+  HERMES_DIR="$(dirname "$GLOBAL_HERMES_CONFIG")"
+  if [ ! -d "$HERMES_DIR" ]; then
+    mkdir -p "$HERMES_DIR"
+  fi
   cat <<EOF > "$GLOBAL_HERMES_CONFIG"
 [global]
-strategy = 'naive'
-log_level = 'info'
+strategy = '${GLOBAL_HERMES_STRATEGY}'
+log_level = '${GLOBAL_HERMES_LOG_LEVEL}'
 
 EOF
   for i in $ALL_NODES
@@ -726,14 +746,39 @@ EOF
     done
 }
 
+# This is a helper function that extracts the coinType from an absolute hdpath (m/44'/118'/0'/0/0) for hermes.
+get_cointype() {
+  WALLET_HDPATH="$(get_wallet_hdpath "$1")"
+  if [ -n "$WALLET_HDPATH" ]; then
+    COINTYPE=$(echo "$WALLET_HDPATH" | sed 's,^m/[0-9][0-9]*'\''/\([0-9][0-9]*\)'\''/[0-9][0-9]*'\''/[0-9][0-9]*/[0-9][0-9]*$,\1,')
+    if [ "$COINTYPE" != "$WALLET_HDPATH" ]; then
+      echo "$COINTYPE"
+    fi
+  fi
+}
+
 hermes_keys() {
   ID="$(get_chain_id "$1")"
   NETWORK_HOME_DIR="$(get_home_dir "$ID")"
   test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config."
-  if [ -z "$GLOBAL_HERMES_CONFIG" ]; then
-    "$GLOBAL_HERMES_BINARY" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+  WALLET_HDPATH="$(get_wallet_hdpath "$1")"
+  COINTYPE="$(get_cointype "$1")"
+  if [ -n "$WALLET_HDPATH" ] && [ -z "${COINTYPE}" ]; then
+      warn "cointype could not be parsed. Reverting to default coin type."
+  fi
+  if [ -z "${COINTYPE}" ]; then
+    if [ -z "$GLOBAL_HERMES_CONFIG" ]; then
+      "$GLOBAL_HERMES_BINARY" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+    else
+      "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+    fi
   else
-    "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+    MNEMONIC="$(stoml "${NETWORK_HOME_DIR}/wallet_seed.json" "mnemonic")"
+    if [ -z "$GLOBAL_HERMES_CONFIG" ]; then
+      "$GLOBAL_HERMES_BINARY" keys restore "$ID" -t "$COINTYPE" -m "$MNEMONIC"
+    else
+      "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys restore "$ID" -t "$COINTYPE" -m "$MNEMONIC"
+    fi
   fi
 }
 
