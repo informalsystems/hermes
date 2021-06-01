@@ -192,7 +192,7 @@ impl EventMonitor {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
-            trace!("subscribing to query: {}", query);
+            trace!(chain.id = %self.chain_id, "subscribing to query: {}", query);
 
             let subscription = self
                 .rt
@@ -204,14 +204,14 @@ impl EventMonitor {
 
         self.subscriptions = Box::new(select_all(subscriptions));
 
-        trace!("subscribed to all queries");
+        trace!(chain.id = %self.chain_id, "subscribed to all queries");
 
         Ok(())
     }
 
     fn try_reconnect(&mut self) -> Result<()> {
-        trace!(
-            "trying to reconnect to WebSocket endpoint: {}",
+        trace!(chain.id = %self.chain_id,
+            "trying to reconnect to WebSocket endpoint {}",
             self.node_addr
         );
 
@@ -228,27 +228,28 @@ impl EventMonitor {
         std::mem::swap(&mut self.client, &mut client);
         std::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
-        trace!("reconnected to WebSocket endpoint: {}", self.node_addr);
+        trace!(
+            chain.id = %self.chain_id,
+            "reconnected to WebSocket endpoint {}",
+            self.node_addr,
+        );
 
         // Shut down previous client
-        trace!("gracefully shutting down previous client");
-        if let Err(e) = client.close() {
-            trace!("previous websocket client closing failure: {}", e);
-        }
+        trace!(chain.id = %self.chain_id, "gracefully shutting down previous client");
+        let _ = client.close();
 
         self.rt
             .block_on(driver_handle)
             .map_err(|e| Error::ClientTerminationFailed(Arc::new(e)))?;
 
-        trace!("previous client successfully shutdown");
+        trace!(chain.id = %self.chain_id, "previous client successfully shutdown");
 
         Ok(())
     }
 
     /// Try to resubscribe to events
     fn try_resubscribe(&mut self) -> Result<()> {
-        trace!("trying to resubscribe to events");
-
+        trace!(chain.id = %self.chain_id, "trying to resubscribe to events");
         self.subscribe()
     }
 
@@ -260,13 +261,13 @@ impl EventMonitor {
         let result = retry_with_index(retry_strategy::default(), |index| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
-                trace!("error when reconnecting: {}", e);
+                trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
                 return RetryResult::Retry(index);
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
-                trace!("error when reconnecting: {}", e);
+                trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
                 return RetryResult::Retry(index);
             }
 
@@ -274,8 +275,16 @@ impl EventMonitor {
         });
 
         match result {
-            Ok(()) => info!("successfully reconnected to WebSocket endpoint"),
-            Err(retries) => error!("failed to reconnect after {} retries", retries),
+            Ok(()) => info!(
+                chain.id = %self.chain_id,
+                "successfully reconnected to WebSocket endpoint {}",
+                self.node_addr
+            ),
+            Err(retries) => error!(
+                chain.id = %self.chain_id,
+                "failed to reconnect to {} after {} retries",
+                self.node_addr, retries
+            ),
         }
     }
 
@@ -306,10 +315,10 @@ impl EventMonitor {
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
-                    error!("failed to process event batch: {}", e);
+                    error!(chain.id = %self.chain_id, "failed to process event batch: {}", e);
                 }),
                 Err(e) => {
-                    error!("failed to collect events: {}", e);
+                    error!(chain.id = %self.chain_id, "failed to collect events: {}", e);
 
                     // Restart the event monitor
                     self.restart();
