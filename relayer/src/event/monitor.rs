@@ -292,6 +292,14 @@ impl EventMonitor {
     pub fn run(mut self) {
         debug!(chain.id = %self.chain_id, "starting event monitor");
 
+        // Continuously run the event loop, so that when it aborts
+        // because of WebSocket client restart, we pick up the work again.
+        loop {
+            self.run_loop();
+        }
+    }
+
+    fn run_loop(&mut self) {
         // Take ownership of the subscriptions
         let subscriptions =
             std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
@@ -324,11 +332,7 @@ impl EventMonitor {
                     // and subscribe again to the queries.
                     self.restart();
 
-                    // Restart the event loop.
-                    self.run();
-
-                    // This will never be reached, but indicates that this event loop can
-                    // be considered to have stopped.
+                    // Abort this event loop, and start a new one.
                     return;
                 }
             }
