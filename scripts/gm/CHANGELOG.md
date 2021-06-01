@@ -4,7 +4,6 @@
 
 ### BUGFIXES
 - Apply defaults to missing configuration options ([#993])
-- The `samoleans` token was renamed to `samolean`.
 
 ### FEATURES
 - Separated hermes configuration into the `global.hermes` section in the configuration
