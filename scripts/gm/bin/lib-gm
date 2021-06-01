@@ -19,7 +19,7 @@ config_defaults() {
     GLOBAL_WALLET_HDPATH=""
     GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
-    GLOBAL_HERMES_STRATEGY="naive"
+    GLOBAL_HERMES_STRATEGY="packets"
     GLOBAL_HERMES_LOG_LEVEL="info"
 }
 
