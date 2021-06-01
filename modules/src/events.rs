@@ -66,11 +66,11 @@ pub enum IbcEvent {
 }
 
 /// For use in debug messages
-pub struct VecIbcEvents(pub Vec<IbcEvent>);
-impl fmt::Display for VecIbcEvents {
+pub struct PrettyEvents<'a>(pub &'a [IbcEvent]);
+impl<'a> fmt::Display for PrettyEvents<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "events:")?;
-        for v in &self.0 {
+        for v in self.0 {
             writeln!(f, "\t{}", v)?;
         }
         Ok(())

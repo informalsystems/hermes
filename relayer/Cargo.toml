@@ -14,10 +14,12 @@ description = """
 
 [features]
 profiling = []
+telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc       = { version = "0.3.2", path = "../modules" }
-ibc-proto = { version = "0.8.0", path = "../proto" }
+ibc           = { version = "0.3.2", path = "../modules" }
+ibc-proto     = { version = "0.8.0", path = "../proto" }
+ibc-telemetry = { version = "0.1.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
 anomaly = "0.2.0"
