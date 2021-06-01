@@ -41,12 +41,3 @@ trusting_period = '14days'
 numerator = '1'
 denominator = '3'
 
-[[connections]]
-a_chain = 'chain_A'
-b_chain = 'chain_B'
-
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
-
-

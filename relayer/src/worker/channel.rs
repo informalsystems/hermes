@@ -5,6 +5,7 @@ use crossbeam_channel::Receiver;
 use tracing::{debug, warn};
 
 use crate::channel::Channel as RelayChannel;
+use crate::telemetry::Telemetry;
 use crate::{
     chain::handle::ChainHandlePair, object::Channel, util::retry::retry_with_index,
     worker::retry_strategy,
@@ -16,14 +17,23 @@ pub struct ChannelWorker {
     channel: Channel,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
+
+    #[allow(dead_code)]
+    telemetry: Telemetry,
 }
 
 impl ChannelWorker {
-    pub fn new(channel: Channel, chains: ChainHandlePair, cmd_rx: Receiver<WorkerCmd>) -> Self {
+    pub fn new(
+        channel: Channel,
+        chains: ChainHandlePair,
+        cmd_rx: Receiver<WorkerCmd>,
+        telemetry: Telemetry,
+    ) -> Self {
         Self {
             channel,
             chains,
             cmd_rx,
+            telemetry,
         }
     }
 
@@ -31,8 +41,6 @@ impl ChannelWorker {
     pub(crate) fn run(self) -> Result<(), BoxError> {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
-
-        let mut handshake_channel;
 
         // Flag that indicates if the worker should actively resume handshake.
         // Set on start or when event based handshake fails.
@@ -48,13 +56,15 @@ impl ChannelWorker {
                         // process the last event, the one with highest "rank".
                         let last_event = batch.events.last();
                         debug!("channel worker starts processing {:#?}", last_event);
+
                         match last_event {
                             Some(event) => {
-                                handshake_channel = RelayChannel::restore_from_event(
+                                let mut handshake_channel = RelayChannel::restore_from_event(
                                     a_chain.clone(),
                                     b_chain.clone(),
                                     event.clone(),
                                 )?;
+
                                 retry_with_index(
                                     retry_strategy::worker_default_strategy(),
                                     |index| handshake_channel.step_event(event.clone(), index),
@@ -70,6 +80,7 @@ impl ChannelWorker {
                         if !resume_handshake {
                             continue;
                         }
+
                         debug!(
                             "channel worker starts processing block event at {:#?}",
                             current_height

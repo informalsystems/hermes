@@ -28,6 +28,7 @@ use crate::{
     },
     object::{Channel, Client, Object, UnidirectionalChannelPath},
     registry::Registry,
+    telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
@@ -43,20 +44,25 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
+
+    #[allow(dead_code)]
+    telemetry: Telemetry,
 }
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(config: Config) -> Result<Self, BoxError> {
+    pub fn spawn(config: Config, telemetry: Telemetry) -> Self {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
+        let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
 
-        Ok(Self {
+        Self {
             config,
             registry,
-            workers: WorkerMap::new(worker_msg_tx),
+            workers,
             worker_msg_rx,
-        })
+            telemetry,
+        }
     }
 
     fn handshake_enabled(&self) -> bool {
