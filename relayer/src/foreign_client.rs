@@ -406,6 +406,11 @@ impl ForeignClient {
         target_height: NonZeroHeight,
     ) -> Result<(), ForeignClientError> {
         loop {
+            debug!(
+                "waiting for chain {} to reach height {}",
+                self.src_chain().id(),
+                target_height
+            );
             let current_height = self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::ClientQuery(
                     self.id.clone(),
@@ -415,6 +420,11 @@ impl ForeignClient {
             })?;
 
             if current_height >= target_height.height() {
+                debug!(
+                    "chain {} has reached height {}",
+                    self.src_chain().id(),
+                    current_height
+                );
                 return Ok(());
             } else {
                 thread::sleep(Duration::from_millis(100));
@@ -501,9 +511,15 @@ impl ForeignClient {
     pub fn build_latest_update_client_and_send(
         &self,
     ) -> Result<Option<IbcEvent>, ForeignClientError> {
-        let trusted_height = self.latest_consensus_state_height()?;
         let target_height = self.latest_src_chain_height()?;
-        self.build_update_client_and_send(trusted_height, target_height)
+        let trusted_height = self.latest_consensus_state_height()?;
+
+        debug!(
+            "build_latest_update_client_and_send with trusted_height: {}, target_height: {}",
+            trusted_height, target_height
+        );
+
+        self.build_update_client_and_send(target_height, trusted_height)
     }
 
     pub fn build_update_client_and_send(
@@ -955,7 +971,7 @@ mod test {
     use std::sync::Arc;
 
     use tokio::runtime::Runtime as TokioRuntime;
-    use test_env_log::test;
+    use tracing::debug;
 
     use ibc::events::IbcEvent;
     use ibc::ics24_host::identifier::ClientId;
@@ -1001,10 +1017,8 @@ mod test {
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.
-    #[test_env_log::test]
+    #[test]
     fn update_client_and_send_method() {
-        log::info!("update_client_and_send_method logging");
-
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
         let a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
@@ -1021,14 +1035,17 @@ mod test {
             ForeignClient::restore(ClientId::default(), b_chain.clone(), a_chain.clone());
 
         // This action should fail because no client exists (yet)
-        a_client.build_latest_update_client_and_send()
+        a_client
+            .build_latest_update_client_and_send()
             .expect_err("build_update_client_and_send was supposed to fail (no client existed)");
 
         // Remember b's height.
         let b_height_start = b_chain.clone().query_latest_height().unwrap();
+        debug!("b_height_start: {}", b_height_start);
 
         // Create a client on chain a
-        a_client.create()
+        a_client
+            .create()
             .expect("build_create_client_and_send failed (chain a)");
 
         // TODO: optionally add return events from `create` and assert on the event type, e.g.:
@@ -1038,7 +1055,8 @@ mod test {
         // This should fail because the client on chain a already has the latest headers. Chain b,
         // the source chain for the client on a, is at the same height where it was when the client
         // was created, so an update should fail here.
-        let res = a_client.build_latest_update_client_and_send()
+        let res = a_client
+            .build_latest_update_client_and_send()
             .expect("failed to update client");
 
         assert!(
@@ -1066,6 +1084,10 @@ mod test {
 
         // Remember the current height of chain a
         let mut a_height_last = a_chain.query_latest_height().unwrap();
+        debug!(
+            "a_height_last: {}, b_height_last: {}",
+            a_height_last, b_height_last
+        );
 
         // Now we can update both clients -- a ping pong, similar to ICS18 `client_update_ping_pong`
         for _i in 1..num_iterations {
