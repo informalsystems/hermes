@@ -10,6 +10,8 @@ use crate::{
     chain::handle::ChainHandlePair,
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
     object::Client,
+    telemetry,
+    telemetry::Telemetry,
 };
 
 use super::WorkerCmd;
@@ -18,14 +20,23 @@ pub struct ClientWorker {
     client: Client,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
+
+    #[allow(dead_code)]
+    telemetry: Telemetry,
 }
 
 impl ClientWorker {
-    pub fn new(client: Client, chains: ChainHandlePair, cmd_rx: Receiver<WorkerCmd>) -> Self {
+    pub fn new(
+        client: Client,
+        chains: ChainHandlePair,
+        cmd_rx: Receiver<WorkerCmd>,
+        telemetry: Telemetry,
+    ) -> Self {
         Self {
             client,
             chains,
             cmd_rx,
+            telemetry,
         }
     }
 
@@ -54,10 +65,22 @@ impl ClientWorker {
             thread::sleep(Duration::from_millis(600));
 
             // Run client refresh, exit only if expired or frozen
-            if let Err(e @ ForeignClientError::ExpiredOrFrozen(..)) = client.refresh() {
-                error!("failed to refresh client '{}': {}", client, e);
-                continue;
-            }
+            match client.refresh() {
+                Ok(Some(_)) => {
+                    telemetry! {
+                        self.telemetry.ibc_client_update(
+                            &self.client.dst_chain_id,
+                            &self.client.dst_client_id,
+                            1
+                        )
+                    };
+                }
+                Err(e @ ForeignClientError::ExpiredOrFrozen(..)) => {
+                    error!("failed to refresh client '{}': {}", client, e);
+                    continue;
+                }
+                _ => (),
+            };
 
             if skip_misbehaviour {
                 continue;
@@ -72,7 +95,15 @@ impl ClientWorker {
 
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
-                        self.detect_misbehaviour(&client, Some(update));
+                        if self.detect_misbehaviour(&client, Some(update)) {
+                            telemetry! {
+                                self.telemetry.ibc_client_misbehaviour(
+                                    &self.client.dst_chain_id,
+                                    &self.client.dst_client_id,
+                                    1
+                                )
+                            };
+                        }
                     }
                 }
             }

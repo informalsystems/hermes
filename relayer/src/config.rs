@@ -39,6 +39,8 @@ pub mod default {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
     pub global: GlobalConfig,
+    #[serde(default)]
+    pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
 }
@@ -83,6 +85,21 @@ impl Default for GlobalConfig {
         Self {
             strategy: Strategy::default(),
             log_level: "info".to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TelemetryConfig {
+    pub enabled: bool,
+    pub port: u16,
+}
+
+impl Default for TelemetryConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            port: 3001,
         }
     }
 }

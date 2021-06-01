@@ -1,39 +1,45 @@
-use std::fmt::Debug;
-use std::sync::Arc;
+use std::{
+    fmt::{self, Debug},
+    sync::Arc,
+};
 
 use crossbeam_channel as channel;
 use dyn_clone::DynClone;
 use serde::{Serialize, Serializer};
 
-use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::query::QueryTxRequest;
 use ibc::{
     events::IbcEvent,
-    ics02_client::header::AnyHeader,
+    ics02_client::{
+        client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
+        client_state::{AnyClientState, IdentifiedAnyClientState},
+        events::UpdateClient,
+        header::AnyHeader,
+        misbehaviour::AnyMisbehaviour,
+    },
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
-        channel::ChannelEnd,
+        channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
     },
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    query::QueryTxRequest,
     signer::Signer,
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
-    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+
+use ibc_proto::ibc::core::{
+    channel::v1::{
+        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+        QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    },
+    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
+    commitment::v1::MerkleProof,
+    connection::v1::QueryClientConnectionsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 pub use prod::ProdChainHandle;
 
@@ -60,6 +66,15 @@ impl ChainHandlePair {
             a: self.b,
             b: self.a,
         }
+    }
+}
+
+impl Debug for ChainHandlePair {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ChainHandlePair")
+            .field("a", &self.a.id())
+            .field("b", &self.b.id())
+            .finish()
     }
 }
 
