@@ -9,7 +9,6 @@ Implementation of `hermes`, an IBC Relayer developed in Rust.
 
 FLAGS:
     -c, --config CONFIG       path to configuration file
-    -h, --help                print help message
     -j, --json                enable JSON output
 ```
 
