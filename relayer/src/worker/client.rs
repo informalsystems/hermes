@@ -9,8 +9,8 @@ use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 use crate::{
     chain::handle::ChainHandlePair,
     foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
-    metric,
     object::Client,
+    telemetry,
     telemetry::Telemetry,
 };
 
@@ -67,11 +67,13 @@ impl ClientWorker {
             // Run client refresh, exit only if expired or frozen
             match client.refresh() {
                 Ok(Some(_)) => {
-                    metric!(self.telemetry.ibc_client_update(
-                        &self.client.dst_chain_id,
-                        &self.client.dst_client_id,
-                        1
-                    ));
+                    telemetry! {
+                        self.telemetry.ibc_client_update(
+                            &self.client.dst_chain_id,
+                            &self.client.dst_client_id,
+                            1
+                        )
+                    };
                 }
                 Err(e @ ForeignClientError::ExpiredOrFrozen(..)) => {
                     error!("failed to refresh client '{}': {}", client, e);
@@ -94,11 +96,13 @@ impl ClientWorker {
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         if self.detect_misbehaviour(&client, Some(update)) {
-                            metric!(self.telemetry.ibc_client_misbehaviour(
-                                &self.client.dst_chain_id,
-                                &self.client.dst_client_id,
-                                1
-                            ));
+                            telemetry! {
+                                self.telemetry.ibc_client_misbehaviour(
+                                    &self.client.dst_chain_id,
+                                    &self.client.dst_client_id,
+                                    1
+                                )
+                            };
                         }
                     }
                 }

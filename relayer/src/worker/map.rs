@@ -6,8 +6,8 @@ use ibc::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
-    metric,
     object::Object,
+    telemetry,
     telemetry::Telemetry,
 };
 
@@ -41,7 +41,7 @@ impl WorkerMap {
     /// the map and wait for its thread to terminate.
     pub fn remove_stopped(&mut self, object: &Object) -> bool {
         if let Some(handle) = self.workers.remove(object) {
-            metric!(self.telemetry.worker(metric_type(object), -1));
+            telemetry!(self.telemetry.worker(metric_type(object), -1));
             let _ = handle.join();
             true
         } else {
@@ -89,7 +89,7 @@ impl WorkerMap {
         dst: Box<dyn ChainHandle>,
         object: &Object,
     ) -> WorkerHandle {
-        metric!(self.telemetry.worker(metric_type(object), 1));
+        telemetry!(self.telemetry.worker(metric_type(object), 1));
 
         Worker::spawn(
             ChainHandlePair { a: src, b: dst },

@@ -7,8 +7,8 @@ use tracing::{error, warn};
 use crate::{
     chain::handle::ChainHandlePair,
     link::{Link, LinkParameters, RelaySummary},
-    metric,
     object::UnidirectionalChannelPath,
+    telemetry,
     telemetry::Telemetry,
     util::retry::{retry_with_index, RetryResult},
     worker::retry_strategy,
@@ -64,8 +64,8 @@ impl UniChanPathWorker {
             });
 
             match result {
-                Ok(summary) => {
-                    self.packet_metrics(&summary);
+                Ok(_summary) => {
+                    telemetry!(self.packet_metrics(&_summary));
                 }
 
                 Err(retries) => {
@@ -122,11 +122,11 @@ impl UniChanPathWorker {
         &self.path
     }
 
+    #[cfg(feature = "telemetry")]
     fn packet_metrics(&self, summary: &RelaySummary) {
-        metric!(self.receive_packet_metrics(&summary));
-        metric!(self.acknowledgment_metrics(&summary));
-        metric!(self.timeout_metrics(&summary));
-        let _ = summary;
+        self.receive_packet_metrics(&summary);
+        self.acknowledgment_metrics(&summary);
+        self.timeout_metrics(&summary);
     }
 
     #[cfg(feature = "telemetry")]

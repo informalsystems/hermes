@@ -12,25 +12,22 @@ pub type Telemetry = TelemetryDisabled;
 
 /// A macro to send metric updates via a telemetry handle,
 /// only if the `telemetry` feature is enabled.
-/// Otherwise, it compiles to a no-op which still
-/// references the given field to avoid dead_code
-/// warnings.
+/// Otherwise, it compiles to a no-op.
 ///
 /// ## Note
-/// The macro imports `ibc_telemetry::MetricUpdate` into scope and all its variants.
+/// Equivalent to `#[cfg(feature = "telemetry")]`, but
+/// should be preferred over the latter.
 ///
 /// ## Example
 ///
 /// ```rust,ignore
-/// metric!(self.telemetry, TxCount(1));
+/// telemetry!(self.telemetry.tx_count(1));
 /// ```
 #[macro_export]
-macro_rules! metric {
+macro_rules! telemetry {
     ($e:expr) => {
         #[cfg(feature = "telemetry")]
-        #[allow(unused_imports)]
         {
-            use ibc_telemetry::state::WorkerType;
             $e;
         }
     };
