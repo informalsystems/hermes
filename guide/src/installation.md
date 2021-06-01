@@ -154,7 +154,6 @@ SUBCOMMANDS:
     update     Update objects (clients) on chains
     upgrade    Upgrade objects (clients) after chain upgrade
     start      Start the relayer
-    start-multi Start the relayer in multi-chain mode. Handles packet relaying across all open channels between all chains in the config.
     query      Query objects from the chain
     tx         Create and send IBC transactions
     listen     Listen to and display IBC events emitted by a chain
