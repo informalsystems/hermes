@@ -1051,7 +1051,7 @@ impl Chain for CosmosSdkChain {
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
-        crate::time!("query_connections");
+        crate::time!("query_channel_client_state");
 
         let mut client = self
             .block_on(
@@ -1070,7 +1070,7 @@ impl Chain for CosmosSdkChain {
 
         let client_state: Option<IdentifiedAnyClientState> = response
             .identified_client_state
-            .map_or_else(|| None, |cs| cs.try_into().ok());
+            .map_or_else(|| None, |proto_cs| proto_cs.try_into().ok());
 
         Ok(client_state)
     }
@@ -1747,35 +1747,6 @@ async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAc
 
     Ok(base_account)
 }
-
-// pub fn tx_result_to_event(
-//     chain_id: &ChainId,
-//     response: Response,
-// ) -> Result<Vec<IbcEvent>, anomaly::Error<Kind>> {
-//     let mut result = vec![];
-//
-//     // Verify the return codes from check_tx and deliver_tx
-//     if response.check_tx.code.is_err() {
-//         return Ok(vec![IbcEvent::ChainError(format!(
-//             "check_tx reports error: log={:?}",
-//             response.check_tx.log
-//         ))]);
-//     }
-//     if response.deliver_tx.code.is_err() {
-//         return Ok(vec![IbcEvent::ChainError(format!(
-//             "deliver_tx reports error: log={:?}",
-//             response.deliver_tx.log
-//         ))]);
-//     }
-//
-//     let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-//     for event in response.deliver_tx.events {
-//         if let Some(ibc_ev) = from_tx_response_event(height, &event) {
-//             result.push(ibc_ev);
-//         }
-//     }
-//     Ok(result)
-// }
 
 fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
     let account =
