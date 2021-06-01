@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info, trace, warn};
 
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 
@@ -76,8 +76,11 @@ impl ClientWorker {
                     };
                 }
                 Err(e @ ForeignClientError::ExpiredOrFrozen(..)) => {
-                    error!("failed to refresh client '{}': {}", client, e);
-                    return Err(Box::new(e));
+                    warn!("failed to refresh client '{}': {}", client, e);
+
+                    // This worker has completed its job as the client cannot be refreshed any
+                    // further, and can therefore exit without an error.
+                    return Ok(());
                 }
                 _ => (),
             };
