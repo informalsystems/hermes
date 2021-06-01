@@ -37,7 +37,7 @@ class ClientUpdated:
 
 
 @dataclass
-@cmd("tx raw update-client")
+@cmd("update client")
 class TxUpdateClient(Cmd[ClientUpdated]):
     dst_chain_id: ChainId
     dst_client_id: ClientId
