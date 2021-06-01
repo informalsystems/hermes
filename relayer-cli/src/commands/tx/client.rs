@@ -61,11 +61,15 @@ pub struct TxUpdateClientCmd {
     )]
     dst_client_id: ClientId,
 
-    #[options(help = "the target height of the client update", short = "h")]
-    target_height: Option<u64>,
+    #[options(required, help = "the target height of the client update", short = "h")]
+    target_height: u64,
 
-    #[options(help = "the trusted height of the client update", short = "t")]
-    trusted_height: Option<u64>,
+    #[options(
+        required,
+        help = "the trusted height of the client update",
+        short = "t"
+    )]
+    trusted_height: u64,
 }
 
 impl TxUpdateClientCmd {
@@ -93,36 +97,11 @@ impl TxUpdateClientCmd {
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .map_err(|e| format!("failed to find foreign client: {}", e))?;
 
-        let m_target_height = self
-            .target_height
-            .and_then(|h| NonZeroHeight::new(ibc::Height::new(src_chain_id, h)));
+        let target_height =
+            NonZeroHeight::unsafe_new(ibc::Height::new(src_chain_id, self.target_height));
 
-        let m_trusted_height = self.trusted_height.map(|h| {
-            // Allow trusted height parameter to be zero if force provided
-            NonZeroHeight::unsafe_new(ibc::Height::new(src_chain_id, h))
-        });
-
-        let target_height = match m_target_height {
-            Some(height) => {
-                client.wait_src_chain_reach_height(height).map_err(|e| {
-                    format!(
-                        "failed to wait for client to reach height {}: {}",
-                        height, e
-                    )
-                })?;
-                height
-            }
-            None => client
-                .latest_src_chain_height()
-                .map_err(|e| e.to_string())?,
-        };
-
-        let trusted_height = match m_trusted_height {
-            Some(h) => h,
-            None => client
-                .latest_consensus_state_height()
-                .map_err(|e| e.to_string())?,
-        };
+        let trusted_height =
+            NonZeroHeight::unsafe_new(ibc::Height::new(src_chain_id, self.trusted_height));
 
         client
             .build_update_client_and_send(target_height, trusted_height)
