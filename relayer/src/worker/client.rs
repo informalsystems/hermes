@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, info, trace, warn};
 
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 
