@@ -14,6 +14,7 @@
   - Started `unwrap` cleanup ([#871])
 
 - [ibc-relayer-cli]
+  - Include chain-id in `query clients` command, and sort output by client counter ([#992])
   - Improve config loading message ([#996])
   - Improve Hermes worker spawn time for `start` command ([#998])
   - Better Hermes help message when command is unrecognized ([#1003])
@@ -37,6 +38,7 @@
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
 [#975]: https://github.com/informalsystems/ibc-rs/issues/975
 [#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#992]: https://github.com/informalsystems/ibc-rs/issues/992
 [#996]: https://github.com/informalsystems/ibc-rs/issues/996
 [#998]: https://github.com/informalsystems/ibc-rs/issues/998
 [#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
