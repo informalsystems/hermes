@@ -332,7 +332,10 @@ impl EventMonitor {
                     // and subscribe again to the queries.
                     self.restart();
 
-                    // Abort this event loop, and start a new one.
+                    // Abort this event loop, the `run` method will start a new one.
+                    // We can't just write `return self.run()` here because Rust
+                    // does not perform tail call optimization, and we would
+                    // thus potentially blow up the stack after many restarts.
                     return;
                 }
             }
