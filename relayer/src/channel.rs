@@ -45,6 +45,9 @@ pub enum ChannelError {
     #[error("failed due to missing counterparty connection")]
     MissingCounterpartyConnection,
 
+    #[error("failed due to missing local connection")]
+    MissingLocalConnection,
+
     #[error("failed during an operation on client ({0}) hosted by chain ({1}) with error: {2}")]
     ClientOperation(ClientId, ChainId, ForeignClientError),
 
@@ -130,19 +133,26 @@ impl Channel {
                 .map_err(|e| ChannelError::QueryError(b_side_chain.id(), e))?,
         );
 
+        let src_connection_id = connection
+            .src_connection_id()
+            .ok_or(ChannelError::MissingLocalConnection)?;
+        let dst_connection_id = connection
+            .dst_connection_id()
+            .ok_or(ChannelError::MissingLocalConnection)?;
+
         let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
                 connection.src_chain().clone(),
                 connection.src_client_id().clone(),
-                connection.src_connection_id().clone(),
+                src_connection_id.clone(),
                 a_port,
                 Default::default(),
             ),
             b_side: ChannelSide::new(
                 connection.dst_chain().clone(),
                 connection.dst_client_id().clone(),
-                connection.dst_connection_id().clone(),
+                dst_connection_id.clone(),
                 b_port,
                 Default::default(),
             ),
@@ -693,11 +703,12 @@ impl Channel {
         if src_channel.counterparty().port_id() != self.dst_port_id() {
             return Err(ChannelError::Failed(format!(
                 "channel open try to chain `{}` and destination port `{}` does not match \
-                the source chain `{}` counterparty port `{}`",
+                the source chain `{}` counterparty port `{}`for channel_id {}",
                 self.dst_chain().id(),
                 self.dst_port_id(),
                 self.src_chain().id(),
                 src_channel.counterparty().port_id,
+                src_channel_id
             )));
         }
 
