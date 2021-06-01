@@ -50,6 +50,10 @@ pub enum Kind {
     #[error("Store error")]
     Store,
 
+    /// Tx simulate errors
+    #[error("Tx simulate error {0}")]
+    TxSimulate(String),
+
     /// Event error (raised by the event monitor)
     #[error("Bad Notification")]
     Event,
@@ -77,6 +81,10 @@ pub enum Kind {
     /// Unable to build the client state
     #[error("Failed to create client state")]
     BuildClientStateFailure,
+
+    /// Tx failure
+    #[error("Failed Tx {0}")]
+    Tx(String),
 
     /// Create client failure
     #[error("Failed to create client {0}")]

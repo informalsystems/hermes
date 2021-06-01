@@ -6,19 +6,6 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
-use prost::Message;
-use prost_types::Any;
-use tendermint::abci::Path as TendermintABCIPath;
-use tendermint::account::Id as AccountId;
-use tendermint::block::Height;
-use tendermint::consensus::Params;
-use tendermint_light_client::types::LightBlock as TMLightBlock;
-use tendermint_proto::Protobuf;
-use tendermint_rpc::query::Query;
-use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
-use tokio::runtime::Runtime as TokioRuntime;
-use tonic::codegen::http::Uri;
-
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
@@ -39,10 +26,9 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
-use ibc::query::QueryTxRequest;
+use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-// Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
@@ -61,6 +47,20 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use prost::Message;
+use prost_types::Any;
+use tendermint::abci::Path as TendermintABCIPath;
+use tendermint::account::Id as AccountId;
+use tendermint::block::Height;
+use tendermint::consensus::Params;
+use tendermint_light_client::types::LightBlock as TMLightBlock;
+use tendermint_proto::Protobuf;
+use tendermint_rpc::endpoint::tx_search::ResultTx;
+use tendermint_rpc::query::Query;
+use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
+use tokio::runtime::Runtime as TokioRuntime;
+use tonic::codegen::http::Uri;
+use tracing::trace;
 
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
@@ -71,8 +71,6 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 
 use super::Chain;
-use tendermint_rpc::endpoint::broadcast;
-use tendermint_rpc::endpoint::tx_search::ResultTx;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -80,12 +78,27 @@ const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
 const DEFAULT_GAS_FEE_AMOUNT: u64 = 1000;
 
+const MAX_RETRIES: usize = 30;
+
 pub struct CosmosSdkChain {
     config: ChainConfig,
     rpc_client: HttpClient,
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
+    acct_seq: u64,
+}
+
+fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, Vec<u8>), Error> {
+    let auth_info = AuthInfo {
+        signer_infos: vec![signer_info],
+        fee: Some(fee),
+    };
+
+    // A protobuf serialization of a AuthInfo
+    let mut auth_buf = Vec::new();
+    prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
+    Ok((auth_info, auth_buf))
 }
 
 impl CosmosSdkChain {
@@ -143,109 +156,71 @@ impl CosmosSdkChain {
         self.rt.block_on(f)
     }
 
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
+    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
 
-        let key = self
-            .keybase()
-            .get_key(&self.config.key_name)
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        // Create TxBody
-        let body = TxBody {
-            messages: proto_msgs.to_vec(),
-            memo: "".to_string(),
-            timeout_height: 0_u64,
-            extension_options: Vec::<Any>::new(),
-            non_critical_extension_options: Vec::<Any>::new(),
+        let acct_response = self.account()?;
+        if self.acct_seq == 0 {
+            self.acct_seq = acct_response.sequence;
         };
 
-        // A protobuf serialization of a TxBody
-        let mut body_buf = Vec::new();
-        prost::Message::encode(&body, &mut body_buf).unwrap();
+        let signer_info = self.signer(self.acct_seq)?;
+        let fee = self.default_fee();
+        let (_body, body_buf) = self.tx_body(proto_msgs)?;
 
-        let mut pk_buf = Vec::new();
-        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
+        // let (_auth_info, _auth_buf) = auth_info_and_bytes(signer_info.clone(), fee.clone())?;
+        // let mut signed_doc =
+        //     self.signed_doc(body_buf.clone(), auth_buf, acct_response.account_number)?;
+        // let simulate_response = self.send_tx_simulate(SimulateRequest {
+        //     tx: Some(Tx {
+        //         body: Some(body),
+        //         auth_info: Some(auth_info),
+        //         signatures: vec![signed_doc.clone()],
+        //     }),
+        // });
+        //
+        // let gas_used = simulate_response.unwrap().gas_info.unwrap().gas_used;
+        // if gas_used > self.max_gas() {
+        //     return Err(Kind::TxSimulate(format!(
+        //         "gas required {} is bigger than maximum gas {} on {}",
+        //         gas_used,
+        //         self.max_gas(),
+        //         self.config.id
+        //     ))
+        //     .into());
+        // }
+        // let adjusted_fee = self.fee_with_gas_limit(gas_used);
 
-        crate::time!("PK {:?}", hex::encode(key.public_key.public_key.to_bytes()));
-
-        // Create a MsgSend proto Any message
-        let pk_any = Any {
-            type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-            value: pk_buf,
-        };
-
-        let acct_response = self
-            .block_on(query_account(self, key.account))
-            .map_err(|e| Kind::Grpc.context(e))?;
-
-        let single = Single { mode: 1 };
-        let sum_single = Some(Sum::Single(single));
-        let mode = Some(ModeInfo { sum: sum_single });
-        let signer_info = SignerInfo {
-            public_key: Some(pk_any),
-            mode_info: mode,
-            sequence: acct_response.sequence,
-        };
-
-        let fee = Some(Fee {
-            amount: vec![self.fee()],
-            gas_limit: self.gas(),
-            payer: "".to_string(),
-            granter: "".to_string(),
-        });
-
-        let auth_info = AuthInfo {
-            signer_infos: vec![signer_info],
-            fee,
-        };
-
-        // A protobuf serialization of a AuthInfo
-        let mut auth_buf = Vec::new();
-        prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
-
-        let sign_doc = SignDoc {
-            body_bytes: body_buf.clone(),
-            auth_info_bytes: auth_buf.clone(),
-            chain_id: self.config.clone().id.to_string(),
-            account_number: acct_response.account_number,
-        };
-
-        // A protobuf serialization of a SignDoc
-        let mut signdoc_buf = Vec::new();
-        prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
-
-        // Sign doc and broadcast
-        let signed = self
-            .keybase
-            .sign_msg(&self.config.key_name, signdoc_buf)
-            .map_err(|e| Kind::KeyBase.context(e))?;
+        let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, fee)?;
+        let signed_doc = self.signed_doc(
+            body_buf.clone(),
+            auth_buf_adjusted.clone(),
+            acct_response.account_number,
+        )?;
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
-            auth_info_bytes: auth_buf,
-            signatures: vec![signed],
+            auth_info_bytes: auth_buf_adjusted,
+            signatures: vec![signed_doc],
         };
 
-        let mut txraw_buf = Vec::new();
-        prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
-
-        crate::time!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
+        let mut tx_bytes = Vec::new();
+        prost::Message::encode(&tx_raw, &mut tx_bytes).unwrap();
 
         let response = self
-            .block_on(broadcast_tx_commit(self, txraw_buf))
+            .block_on(broadcast_tx_sync(self, tx_bytes))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
-        let res = tx_result_to_event(&self.config.id, response)?;
+        self.acct_seq += 1;
 
-        Ok(res)
+        Ok(response)
     }
 
-    fn gas(&self) -> u64 {
+    fn max_gas(&self) -> u64 {
         self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
-    fn fee(&self) -> Coin {
+    fn fee_in_coins(&self) -> Coin {
         let amount = self
             .config
             .clone()
@@ -315,19 +290,46 @@ impl CosmosSdkChain {
 
         Ok((proof, height))
     }
-    /// Send one async transaction
-    pub(crate) fn send_msgs_async(&mut self, proto_msg: Any, seq: u64) -> Result<u64, Error> {
-        self.send_tx_async(vec![proto_msg], seq)
-    }
 
-    fn send_tx_async(&self, proto_msgs: Vec<Any>, seq: u64) -> Result<u64, Error> {
-        crate::time!("send_tx");
+    // fn send_tx_simulate(&self, request: SimulateRequest) -> Result<SimulateResponse, Error> {
+    //     crate::time!("tx simulate");
+    //
+    //     let mut client = self
+    //         .block_on(
+    //             ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
+    //                 self.grpc_addr.clone(),
+    //             ),
+    //         )
+    //         .map_err(|e| Kind::Grpc.context(e))?;
+    //
+    //     let request = tonic::Request::new(request);
+    //     let response = self
+    //         .block_on(client.simulate(request))
+    //         .map_err(|e| Kind::Grpc.context(e))?
+    //         .into_inner();
+    //
+    //     Ok(response)
+    // }
 
-        let key = self
+    fn key(&self) -> Result<KeyEntry, Error> {
+        Ok(self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(|e| Kind::KeyBase.context(e))?;
+            .map_err(|e| Kind::KeyBase.context(e))?)
+    }
 
+    fn key_serialized(&self, key: KeyEntry) -> Result<Vec<u8>, Error> {
+        let mut pk_buf = Vec::new();
+        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
+        Ok(pk_buf)
+    }
+
+    fn key_and_bytes(&self) -> Result<(KeyEntry, Vec<u8>), Error> {
+        let key = self.key()?;
+        Ok((key.clone(), self.key_serialized(key)?))
+    }
+
+    fn tx_body(&self, proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
         // Create TxBody
         let body = TxBody {
             messages: proto_msgs.to_vec(),
@@ -336,30 +338,24 @@ impl CosmosSdkChain {
             extension_options: Vec::<Any>::new(),
             non_critical_extension_options: Vec::<Any>::new(),
         };
-
         // A protobuf serialization of a TxBody
         let mut body_buf = Vec::new();
         prost::Message::encode(&body, &mut body_buf).unwrap();
+        Ok((body, body_buf))
+    }
 
-        let mut pk_buf = Vec::new();
-        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
+    fn account(&self) -> Result<BaseAccount, Error> {
+        Ok(self
+            .block_on(query_account(self, self.key()?.account))
+            .map_err(|e| Kind::Grpc.context(e))?)
+    }
 
-        crate::time!("PK {:?}", hex::encode(key.public_key.public_key.to_bytes()));
-
+    fn signer(&self, sequence: u64) -> Result<SignerInfo, Error> {
+        let (_key, pk_buf) = self.key_and_bytes()?;
         // Create a MsgSend proto Any message
         let pk_any = Any {
             type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
             value: pk_buf,
-        };
-
-        let acct_response = self
-            .block_on(query_account(self, key.account))
-            .map_err(|e| Kind::Grpc.context(e))?;
-
-        let sequence = if seq == 0 {
-            acct_response.sequence
-        } else {
-            seq
         };
 
         let single = Single { mode: 1 };
@@ -370,61 +366,164 @@ impl CosmosSdkChain {
             mode_info: mode,
             sequence,
         };
+        Ok(signer_info)
+    }
 
-        let fee = Some(Fee {
-            amount: vec![self.fee()],
-            gas_limit: self.gas(),
+    fn default_fee(&self) -> Fee {
+        Fee {
+            amount: vec![self.fee_in_coins()],
+            gas_limit: self.max_gas(),
             payer: "".to_string(),
             granter: "".to_string(),
-        });
+        }
+    }
 
-        let auth_info = AuthInfo {
-            signer_infos: vec![signer_info],
-            fee,
-        };
+    // fn fee_with_gas_limit(&self, gas_limit: u64) -> Fee {
+    //     Fee {
+    //         amount: vec![self.fee_in_coins()],
+    //         gas_limit,
+    //         payer: "".to_string(),
+    //         granter: "".to_string(),
+    //     }
+    // }
 
-        // A protobuf serialization of a AuthInfo
-        let mut auth_buf = Vec::new();
-        prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
-
+    fn signed_doc(
+        &self,
+        body_bytes: Vec<u8>,
+        auth_info_bytes: Vec<u8>,
+        account_number: u64,
+    ) -> Result<Vec<u8>, Error> {
         let sign_doc = SignDoc {
-            body_bytes: body_buf.clone(),
-            auth_info_bytes: auth_buf.clone(),
+            body_bytes,
+            auth_info_bytes,
             chain_id: self.config.clone().id.to_string(),
-            account_number: acct_response.account_number,
+            account_number,
         };
 
         // A protobuf serialization of a SignDoc
         let mut signdoc_buf = Vec::new();
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
-        // Sign doc and broadcast
+        // Sign doc
         let signed = self
             .keybase
             .sign_msg(&self.config.key_name, signdoc_buf)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
-        let tx_raw = TxRaw {
-            body_bytes: body_buf,
-            auth_info_bytes: auth_buf,
-            signatures: vec![signed],
-        };
+        Ok(signed)
+    }
 
-        let mut txraw_buf = Vec::new();
-        prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
+    /// Given a vector of `tendermint_rpc::endpoint::broadcast::tx_sync::Response` elements,
+    /// each including a transaction hash for one or more messages, periodically queries the chain
+    /// with the transaction hashes to get the list of IbcEvents included in those transactions.
+    pub fn wait_for_block_commits(
+        &self,
+        tx_sync_results: &mut Vec<(Response, Vec<IbcEvent>)>,
+    ) -> Result<(), Error> {
+        // events_per_tx[i] collects the events generated by the transaction from tx_sync_results[i]
+        let mut counter = 0;
 
-        let response = self
-            .block_on(broadcast_tx_sync(self, txraw_buf))
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+        while counter < MAX_RETRIES {
+            thread::sleep(Duration::from_millis(200));
+            counter += 1;
+            if all_tx_results_found(&tx_sync_results) {
+                trace!(
+                    "retrieved {} tx results after {} tries",
+                    tx_sync_results.len(),
+                    counter
+                );
+                // All transactions confirmed
+                return Ok(());
+            }
 
-        if response.code != tendermint::abci::Code::Ok {
-            println!("chk {:?}", response);
+            for sr in tx_sync_results.iter_mut() {
+                if empty_event_present(&sr.1) {
+                    // try to resolve transaction hash
+                    let events_per_tx = if sr.0.code.value() != 0 {
+                        vec![IbcEvent::ChainError(format!(
+                            "code {:?}, log {}",
+                            sr.0.code, sr.0.log
+                        ))]
+                    } else if let Ok(events_per_tx) =
+                        self.query_txs(QueryTxRequest::Transaction(QueryTxHash(sr.0.hash)))
+                    {
+                        if events_per_tx.is_empty() {
+                            sr.1.clone()
+                        } else {
+                            events_per_tx
+                        }
+                    } else {
+                        sr.1.clone()
+                    };
 
-            return Err(Kind::Rpc(self.config.rpc_addr.clone()).into());
+                    sr.1 = events_per_tx.clone();
+                }
+            }
+            thread::sleep(Duration::from_millis(300));
         }
 
-        Ok(sequence + 1)
+        if all_tx_results_found(&tx_sync_results) {
+            // All transactions confirmed
+            Ok(())
+        } else {
+            Err(Kind::Tx("no confirmation".to_string()).into())
+        }
     }
+
+    /// Send one or more transactions that include all the specified messages
+    pub fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
+        crate::time!("send_msgs");
+
+        if proto_msgs.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut tx_sync_results = vec![];
+
+        let mut n = 0;
+        let mut size = 0;
+        let mut msg_batch = vec![];
+        for msg in proto_msgs.iter() {
+            msg_batch.push(msg.clone());
+            let mut buf = Vec::new();
+            prost::Message::encode(msg, &mut buf).unwrap();
+            n += 1;
+            size += buf.len();
+            if n >= self.max_msg_num() || size >= self.max_tx_size() {
+                let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
+                let tx_sync_result = self.send_tx(msg_batch)?;
+                tx_sync_results.push((tx_sync_result, events_per_tx));
+                n = 0;
+                size = 0;
+                msg_batch = vec![];
+            }
+        }
+        if !msg_batch.is_empty() {
+            let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
+            let tx_sync_result = self.send_tx(msg_batch)?;
+            tx_sync_results.push((tx_sync_result, events_per_tx));
+        }
+
+        self.wait_for_block_commits(&mut tx_sync_results)?;
+        let events = tx_sync_results
+            .into_iter()
+            .map(|el| el.1)
+            .flatten()
+            .collect();
+        Ok(events)
+    }
+}
+
+fn empty_event_present(events: &[IbcEvent]) -> bool {
+    events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
+}
+
+fn all_tx_results_found(tx_sync_results: &[(Response, Vec<IbcEvent>)]) -> bool {
+    for tx_res in tx_sync_results {
+        if empty_event_present(&tx_res.1) {
+            return false;
+        }
+    }
+    true
 }
 
 impl Chain for CosmosSdkChain {
@@ -450,6 +549,7 @@ impl Chain for CosmosSdkChain {
             grpc_addr,
             rt,
             keybase,
+            acct_seq: 0,
         })
     }
 
@@ -506,33 +606,41 @@ impl Chain for CosmosSdkChain {
         crate::time!("send_msgs");
 
         if proto_msgs.is_empty() {
-            return Ok(vec![IbcEvent::Empty("No messages to send".to_string())]);
+            return Ok(vec![]);
         }
-        let mut res = vec![];
+        let mut tx_sync_results = vec![];
 
         let mut n = 0;
         let mut size = 0;
         let mut msg_batch = vec![];
         for msg in proto_msgs.iter() {
-            msg_batch.append(&mut vec![msg.clone()]);
+            msg_batch.push(msg.clone());
             let mut buf = Vec::new();
             prost::Message::encode(msg, &mut buf).unwrap();
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let mut result = self.send_tx(msg_batch)?;
-                res.append(&mut result);
+                let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
+                let tx_sync_result = self.send_tx(msg_batch)?;
+                tx_sync_results.push((tx_sync_result, events_per_tx));
                 n = 0;
                 size = 0;
                 msg_batch = vec![];
             }
         }
         if !msg_batch.is_empty() {
-            let mut result = self.send_tx(msg_batch)?;
-            res.append(&mut result);
+            let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
+            let tx_sync_result = self.send_tx(msg_batch)?;
+            tx_sync_results.push((tx_sync_result, events_per_tx));
         }
 
-        Ok(res)
+        self.wait_for_block_commits(&mut tx_sync_results)?;
+        let events = tx_sync_results
+            .into_iter()
+            .map(|el| el.1)
+            .flatten()
+            .collect();
+        Ok(events)
     }
 
     /// Get the account for the signer
@@ -1196,6 +1304,25 @@ impl Chain for CosmosSdkChain {
 
                 Ok(event.into_iter().collect())
             }
+
+            QueryTxRequest::Transaction(tx) => {
+                let mut response = self
+                    .block_on(self.rpc_client.tx_search(
+                        tx_hash_query(&tx),
+                        false,
+                        1,
+                        1, // get only the first Tx matching the query
+                        Order::Ascending,
+                    ))
+                    .map_err(|e| Kind::Grpc.context(e))?;
+
+                if response.txs.is_empty() {
+                    Ok(vec![])
+                } else {
+                    let tx = response.txs.remove(0);
+                    Ok(all_ibc_events_from_tx_search_response(self.id(), tx))
+                }
+            }
         }
     }
 
@@ -1434,6 +1561,10 @@ fn header_query(request: &QueryClientEventRequest) -> Query {
     )
 }
 
+fn tx_hash_query(request: &QueryTxHash) -> Query {
+    tendermint_rpc::query::Query::eq("tx.hash", request.0.to_string())
+}
+
 // Extract the packet events from the query_txs RPC response. For any given
 // packet query, there is at most one Tx matching such query. Moreover, a Tx may
 // contain several events, but a single one must match the packet query.
@@ -1510,6 +1641,25 @@ fn update_client_from_tx_search_response(
         .map(IbcEvent::UpdateClient)
 }
 
+fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx) -> Vec<IbcEvent> {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    let deliver_tx_result = response.tx_result;
+    if deliver_tx_result.code.is_err() {
+        return vec![IbcEvent::ChainError(format!(
+            "deliver_tx reports error: log={:?}",
+            deliver_tx_result.log
+        ))];
+    }
+
+    let mut result = vec![];
+    for event in deliver_tx_result.events {
+        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
+            result.push(ibc_ev);
+        }
+    }
+    result
+}
+
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
 async fn abci_query(
     chain: &CosmosSdkChain,
@@ -1558,25 +1708,11 @@ async fn abci_query(
     Ok(response)
 }
 
-/// Perform a `broadcast_tx_commit`, and return the corresponding deserialized response data.
-async fn broadcast_tx_commit(
-    chain: &CosmosSdkChain,
-    data: Vec<u8>,
-) -> Result<Response, anomaly::Error<Kind>> {
-    let response = chain
-        .rpc_client()
-        .broadcast_tx_commit(data.into())
-        .await
-        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
-
-    Ok(response)
-}
-
-/// Perform a `broadcast_tx_commit`, and return the corresponding deserialized response data.
+/// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
 async fn broadcast_tx_sync(
     chain: &CosmosSdkChain,
     data: Vec<u8>,
-) -> Result<broadcast::tx_sync::Response, anomaly::Error<Kind>> {
+) -> Result<Response, anomaly::Error<Kind>> {
     let response = chain
         .rpc_client()
         .broadcast_tx_sync(data.into())
@@ -1612,34 +1748,34 @@ async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-pub fn tx_result_to_event(
-    chain_id: &ChainId,
-    response: Response,
-) -> Result<Vec<IbcEvent>, anomaly::Error<Kind>> {
-    let mut result = vec![];
-
-    // Verify the return codes from check_tx and deliver_tx
-    if response.check_tx.code.is_err() {
-        return Ok(vec![IbcEvent::ChainError(format!(
-            "check_tx reports error: log={:?}",
-            response.check_tx.log
-        ))]);
-    }
-    if response.deliver_tx.code.is_err() {
-        return Ok(vec![IbcEvent::ChainError(format!(
-            "deliver_tx reports error: log={:?}",
-            response.deliver_tx.log
-        ))]);
-    }
-
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    for event in response.deliver_tx.events {
-        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
-            result.push(ibc_ev);
-        }
-    }
-    Ok(result)
-}
+// pub fn tx_result_to_event(
+//     chain_id: &ChainId,
+//     response: Response,
+// ) -> Result<Vec<IbcEvent>, anomaly::Error<Kind>> {
+//     let mut result = vec![];
+//
+//     // Verify the return codes from check_tx and deliver_tx
+//     if response.check_tx.code.is_err() {
+//         return Ok(vec![IbcEvent::ChainError(format!(
+//             "check_tx reports error: log={:?}",
+//             response.check_tx.log
+//         ))]);
+//     }
+//     if response.deliver_tx.code.is_err() {
+//         return Ok(vec![IbcEvent::ChainError(format!(
+//             "deliver_tx reports error: log={:?}",
+//             response.deliver_tx.log
+//         ))]);
+//     }
+//
+//     let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+//     for event in response.deliver_tx.events {
+//         if let Some(ibc_ev) = from_tx_response_event(height, &event) {
+//             result.push(ibc_ev);
+//         }
+//     }
+//     Ok(result)
+// }
 
 fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
     let account =
