@@ -80,6 +80,7 @@ impl Worker {
     /// Run the worker event loop.
     fn run(self, msg_tx: Sender<WorkerMsg>) {
         let object = self.object();
+        let name = object.short_name();
 
         let result = match self {
             Self::Client(w) => w.run(),
@@ -88,14 +89,17 @@ impl Worker {
         };
 
         if let Err(e) = result {
-            error!("worker error: {}", e);
+            error!("[{}] worker aborted with error: {}", name, e);
         }
 
         if let Err(e) = msg_tx.send(WorkerMsg::Stopped(object)) {
-            error!("failed to notify supervisor that worker stopped: {}", e);
+            error!(
+                "[{}] failed to notify supervisor that worker stopped: {}",
+                name, e
+            );
         }
 
-        info!("worker stopped");
+        info!("[{}] worker stopped", name);
     }
 
     fn chains(&self) -> &ChainHandlePair {
