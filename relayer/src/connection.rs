@@ -205,7 +205,7 @@ impl Connection {
                 chain.clone(),
                 client_id.clone(),
                 Some(connection.src_connection_id.clone()),
-            ),  
+            ),
             b_side: ConnectionSide::new(
                 counterparty_chain.clone(),
                 counterparty_client_id.clone(),
