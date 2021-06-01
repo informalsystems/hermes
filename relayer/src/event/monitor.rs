@@ -320,8 +320,16 @@ impl EventMonitor {
                 Err(e) => {
                     error!(chain.id = %self.chain_id, "failed to collect events: {}", e);
 
-                    // Restart the event monitor
+                    // Restart the event monitor, reconnect to the WebSocket endpoint,
+                    // and subscribe again to the queries.
                     self.restart();
+
+                    // Restart the event loop.
+                    self.run();
+
+                    // This will never be reached, but indicates that this event loop can
+                    // be considered to have stopped.
+                    return;
                 }
             }
         }
