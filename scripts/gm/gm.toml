@@ -36,7 +36,7 @@ binary="./hermes"
 config="$HOME/.hermes/config.toml"
 
 # Hermes configuration strategy paremeter.
-strategy="naive"
+strategy="packets"
 
 # Hermes configuration log_level parameter.
 log_level="info"
