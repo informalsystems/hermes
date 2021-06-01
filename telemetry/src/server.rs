@@ -21,7 +21,7 @@ impl Route {
 }
 
 pub fn run(telemetry_state: Arc<TelemetryState>, port: u16) {
-    rouille::start_server(("localhost", port), move |request| {
+    rouille::start_server(("0.0.0.0", port), move |request| {
         match Route::from_request(request) {
             // The prometheus endpoint
             Route::Metrics => {
