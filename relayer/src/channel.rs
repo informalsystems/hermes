@@ -4,7 +4,7 @@ use prost_types::Any;
 use serde::Serialize;
 use std::time::Duration;
 use thiserror::Error;
-use tracing::{info, debug, error};
+use tracing::{debug, error, info};
 
 use ibc::events::IbcEvent;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State};
