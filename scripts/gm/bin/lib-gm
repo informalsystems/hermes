@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" == "2" ]; then
 fi
 
 version() {
-  echo "v0.0.3"
+  echo "v0.0.4"
 }
 
 config_defaults() {
@@ -21,6 +21,8 @@ config_defaults() {
     GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
     GLOBAL_HERMES_STRATEGY="packets"
     GLOBAL_HERMES_LOG_LEVEL="info"
+    GLOBAL_HERMES_TELEMETRY_ENABLED="true"
+    GLOBAL_HERMES_TELEMETRY_PORT="3001"
 }
 
 install() {
@@ -185,6 +187,8 @@ load_config() {
   GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.config || echo "$GLOBAL_HERMES_CONFIG")")"
   GLOBAL_HERMES_STRATEGY="$(stoml -sq "$CONFIG_FILE" global.hermes.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
   GLOBAL_HERMES_LOG_LEVEL="$(stoml -sq "$CONFIG_FILE" global.hermes.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
+  GLOBAL_HERMES_TELEMETRY_ENABLED="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_enabled || echo "$GLOBAL_HERMES_TELEMETRY_ENABLED")"
+  GLOBAL_HERMES_TELEMETRY_PORT="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_port || echo "$GLOBAL_HERMES_TELEMETRY_PORT")"
   export GLOBAL_GAIAD_BINARY
   export GLOBAL_HOME_DIR
   export GLOBAL_AUTO_MAINTAIN_CONFIG
@@ -195,6 +199,8 @@ load_config() {
   export GLOBAL_HERMES_CONFIG
   export GLOBAL_HERMES_STRATEGY
   export GLOBAL_HERMES_LOG_LEVEL
+  export GLOBAL_HERMES_TELEMETRY_ENABLED
+  export GLOBAL_HERMES_TELEMETRY_PORT
   if [ "$FRESH_CONFIG" = "yes" ]; then
     write_default_config
     VALIDATORS=""
@@ -273,6 +279,8 @@ binary="$GLOBAL_HERMES_BINARY"
 config="$GLOBAL_HERMES_CONFIG"
 strategy="$GLOBAL_HERMES_STRATEGY"
 log_level="$GLOBAL_HERMES_LOG_LEVEL"
+telemetry_enabled="$GLOBAL_HERMES_TELEMETRY_ENABLED"
+telemetry_port="$GLOBAL_HERMES_TELEMETRY_PORT"
 
 EOF
   set -e
@@ -706,6 +714,10 @@ hermes_config() {
 strategy = '${GLOBAL_HERMES_STRATEGY}'
 log_level = '${GLOBAL_HERMES_LOG_LEVEL}'
 
+[telemetry]
+enabled = ${GLOBAL_HERMES_TELEMETRY_ENABLED}
+port = ${GLOBAL_HERMES_TELEMETRY_PORT}
+
 EOF
   for i in $ALL_NODES
   do
@@ -726,6 +738,10 @@ account_prefix='cosmos'
 key_name='wallet'
 store_prefix='ibc'
 fee_denom='stake'
+fee_amount=1000
+gas=300000
+clock_drift='5s'
+trusting_period='14days'
 
 [chains.trust_threshold]
 numerator = '1'
