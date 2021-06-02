@@ -40,6 +40,24 @@ strategy = 'packets'
 log_level = 'info'
 ```
 
+### `[telemetry]`
+
+The `telemetry` section defines parameters for Hermes' built-in [telemetry](telemetry.md) capabilities.
+
+#### Parameters
+
+* __enabled__: *(boolean)* Whether or not to enable the telemetry service. Default: `false`.
+
+* __port__: *(u16)* Specify the port over which the built-in HTTP server will serve the metrics gathered by the telemetry service. Default: `3001`
+
+Here is an example for the `telemetry` section:
+
+```toml
+[telemetry]
+enabled = true
+port = 3001
+```
+
 ### `[[chains]]`
 
 A `chains` section includes parameters related to a chain and the full node to which the relayer can send transactions and queries.
