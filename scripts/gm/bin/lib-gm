@@ -22,6 +22,7 @@ config_defaults() {
     GLOBAL_HERMES_STRATEGY="packets"
     GLOBAL_HERMES_LOG_LEVEL="info"
     GLOBAL_HERMES_TELEMETRY_ENABLED="true"
+    GLOBAL_HERMES_TELEMETRY_HOST="127.0.0.1"
     GLOBAL_HERMES_TELEMETRY_PORT="3001"
 }
 
@@ -188,6 +189,7 @@ load_config() {
   GLOBAL_HERMES_STRATEGY="$(stoml -sq "$CONFIG_FILE" global.hermes.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
   GLOBAL_HERMES_LOG_LEVEL="$(stoml -sq "$CONFIG_FILE" global.hermes.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
   GLOBAL_HERMES_TELEMETRY_ENABLED="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_enabled || echo "$GLOBAL_HERMES_TELEMETRY_ENABLED")"
+  GLOBAL_HERMES_TELEMETRY_HOST="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_host || echo "$GLOBAL_HERMES_TELEMETRY_HOST")"
   GLOBAL_HERMES_TELEMETRY_PORT="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_port || echo "$GLOBAL_HERMES_TELEMETRY_PORT")"
   export GLOBAL_GAIAD_BINARY
   export GLOBAL_HOME_DIR
@@ -200,6 +202,7 @@ load_config() {
   export GLOBAL_HERMES_STRATEGY
   export GLOBAL_HERMES_LOG_LEVEL
   export GLOBAL_HERMES_TELEMETRY_ENABLED
+  export GLOBAL_HERMES_TELEMETRY_HOST
   export GLOBAL_HERMES_TELEMETRY_PORT
   if [ "$FRESH_CONFIG" = "yes" ]; then
     write_default_config
@@ -280,6 +283,7 @@ config="$GLOBAL_HERMES_CONFIG"
 strategy="$GLOBAL_HERMES_STRATEGY"
 log_level="$GLOBAL_HERMES_LOG_LEVEL"
 telemetry_enabled="$GLOBAL_HERMES_TELEMETRY_ENABLED"
+telemetry_host="$GLOBAL_HERMES_TELEMETRY_HOST"
 telemetry_port="$GLOBAL_HERMES_TELEMETRY_PORT"
 
 EOF
@@ -716,6 +720,7 @@ log_level = '${GLOBAL_HERMES_LOG_LEVEL}'
 
 [telemetry]
 enabled = ${GLOBAL_HERMES_TELEMETRY_ENABLED}
+host = '${GLOBAL_HERMES_TELEMETRY_HOST}'
 port = ${GLOBAL_HERMES_TELEMETRY_PORT}
 
 EOF

@@ -117,6 +117,7 @@ the `gm.toml` file for node configuration. By default, newly created node config
 * `strategy` - The hermes configuration strategy parameter.
 * `log_level` - The hermes configuration log_level parameter.
 * `telemetry_enabled` - The hermes configuration telemetry.enabled parameter.
+* `telemetry_host` - The hermes configuration telemetry.host parameter.
 * `telemetry_port` - The hermes configuration telemetry.port parameter.
 
 **Tribal knowledge**: (things they don't tell you)
