@@ -50,6 +50,8 @@ The `telemetry` section defines parameters for Hermes' built-in [telemetry](tele
 
 * __enabled__: *(boolean)* Whether or not to enable the telemetry service. Default: `false`.
 
+* __host__: *(string)* Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics gathered by the telemetry service. Default: `127.0.0.1`
+
 * __port__: *(u16)* Specify the port over which the built-in HTTP server will serve the metrics gathered by the telemetry service. Default: `3001`
 
 Here is an example for the `telemetry` section:
@@ -57,6 +59,7 @@ Here is an example for the `telemetry` section:
 ```toml
 [telemetry]
 enabled = true
+host = '127.0.0.1'
 port = 3001
 ```
 
