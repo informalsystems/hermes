@@ -1,7 +1,7 @@
 pub mod server;
 pub mod state;
 
-use std::{sync::Arc, thread::JoinHandle};
+use std::{net::ToSocketAddrs, sync::Arc, thread::JoinHandle};
 
 pub use crate::state::TelemetryState;
 
@@ -9,6 +9,9 @@ pub fn new_state() -> Arc<TelemetryState> {
     Arc::new(TelemetryState::default())
 }
 
-pub fn spawn(port: u16, state: Arc<TelemetryState>) -> JoinHandle<()> {
-    std::thread::spawn(move || server::run(state, port))
+pub fn spawn<A>(address: A, state: Arc<TelemetryState>) -> JoinHandle<()>
+where
+    A: ToSocketAddrs + Send + 'static,
+{
+    std::thread::spawn(move || server::run(address, state))
 }

@@ -92,6 +92,7 @@ impl Default for GlobalConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TelemetryConfig {
     pub enabled: bool,
+    pub host: String,
     pub port: u16,
 }
 
@@ -99,6 +100,7 @@ impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {
             enabled: false,
+            host: "127.0.0.1".to_string(),
             port: 3001,
         }
     }

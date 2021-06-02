@@ -26,7 +26,8 @@ fn spawn_supervisor(config: Config) -> Supervisor {
     let state = ibc_telemetry::new_state();
 
     if config.telemetry.enabled {
-        ibc_telemetry::spawn(config.telemetry.port, state.clone());
+        let address = (config.telemetry.host.clone(), config.telemetry.port);
+        ibc_telemetry::spawn(address, state.clone());
     }
 
     Supervisor::spawn(config, state)
