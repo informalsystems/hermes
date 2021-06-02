@@ -70,7 +70,7 @@ impl Worker {
                 Self::Client(ClientWorker::new(client, chains, cmd_rx, telemetry))
             }            
             Object::Connection(connection) => {
-                Self::Connection(ConnectionWorker::new(connection, chains, cmd_rx))
+                Self::Connection(ConnectionWorker::new(connection, chains, cmd_rx, telemetry))
             }            
             Object::Channel(channel) => {
                 Self::Channel(ChannelWorker::new(channel, chains, cmd_rx, telemetry))
