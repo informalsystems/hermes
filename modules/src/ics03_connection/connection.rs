@@ -350,9 +350,6 @@ impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
         let raw_connection_end = RawConnectionEnd {
             client_id: value.client_id.to_string(),
             versions: value.versions,
-            // .iter()
-            // .map(|v| From::from(v.clone()))
-            //  .collect(),
             state: value.state,
             counterparty: value.counterparty,
             delay_period: value.delay_period,

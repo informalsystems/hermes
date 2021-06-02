@@ -737,12 +737,6 @@ impl Chain for CosmosSdkChain {
         // TODO: add warnings for any identifiers that fail to parse (below).
         //      similar to the parsing in `query_connection_channels`.
 
-        // let _ids = response
-        //     .connections
-        //     .iter()
-        //     .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
-        //     .collect();
-
         let connections = response
             .connections
             .into_iter()

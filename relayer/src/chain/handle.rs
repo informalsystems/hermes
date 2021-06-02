@@ -212,7 +212,7 @@ pub enum ChainRequest {
         request: QueryConnectionsRequest,
         reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
     },
-    
+
     QueryConnectionChannels {
         request: QueryConnectionChannelsRequest,
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,

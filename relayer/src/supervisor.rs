@@ -13,12 +13,29 @@ use ibc::{
     ics24_host::identifier::ChainId,
     Height,
 };
-use ibc_proto::ibc::core::{channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest, connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest}};
+use ibc_proto::ibc::core::{
+    channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest,
+    connection::v1::QueryClientConnectionsRequest,
+};
+//use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
-use crate::{chain::counterparty::channel_state_on_destination, chain::{counterparty::{connection_client, connection_state_on_destination}, handle::ChainHandle}, config::{Config, Strategy}, event::{
+use crate::{
+    chain::counterparty::channel_state_on_destination,
+    chain::{
+        counterparty::{connection_client, connection_state_on_destination},
+        handle::ChainHandle,
+    },
+    config::{Config, Strategy},
+    event::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
-    }, object::{Channel, Client, Connection, Object, UnidirectionalChannelPath}, registry::Registry, telemetry::Telemetry, util::try_recv_multiple, worker::{WorkerMap, WorkerMsg}};
+    },
+    object::{Channel, Client, Connection, Object, UnidirectionalChannelPath},
+    registry::Registry,
+    telemetry::Telemetry,
+    util::try_recv_multiple,
+    worker::{WorkerMap, WorkerMsg},
+};
 
 mod error;
 pub use error::Error;
@@ -215,36 +232,34 @@ impl Supervisor {
                 }
             };
 
-            let conn_req = QueryConnectionsRequest {
-                pagination: ibc_proto::cosmos::base::query::pagination::all(),
-            };
+            // let conn_req = QueryConnectionsRequest {
+            //     pagination: ibc_proto::cosmos::base::query::pagination::all(),
+            // };
 
-            let connections = match chain.query_connections(conn_req.clone()) {
-                Ok(connections) => connections,
-                Err(e) => {
-                    error!("failed to query connections from {}: {}", chain_id, e);
-                    continue;
-                }
-            };
+            // let connections = match chain.query_connections(conn_req.clone()) {
+            //     Ok(connections) => connections,
+            //     Err(e) => {
+            //         error!("failed to query connections from {}: {}", chain_id, e);
+            //         continue;
+            //     }
+            // };
 
-            for connection in connections {
-                match self.spawn_workers_for_connection(chain.clone(), connection.clone()) {
-                    Ok(()) => debug!(
-                        "done spawning workers for channel {} on chain {}",
-                        chain.id(),
-                        connection.connection_id
-                    ),
-                    Err(e) => error!(
-                        "skipped workers for channel {} on chain {} due to error {}",
-                        chain.id(),
-                        connection.connection_id,
-                        e
-                    ),
-                }
-            }
+            // for connection in connections {
+            //     match self.spawn_workers_for_connection(chain.clone(), connection.clone()) {
+            //         Ok(()) => debug!(
+            //             "done spawning workers for connection {} on chain {}",
+            //             chain.id(),
+            //             connection.connection_id
+            //         ),
+            //         Err(e) => error!(
+            //             "skipped workers for connection {} on chain {} due to error {}",
+            //             chain.id(),
+            //             connection.connection_id,
+            //             e
+            //         ),
+            //     }
+            // }
 
-            // let channels = match chain.query_channels(req.clone()) {
-            //     Ok(channels) => channels,
             let clients = match chain.query_clients(clients_req.clone()) {
                 Ok(clients) => clients,
                 Err(e) => {
@@ -291,6 +306,25 @@ impl Supervisor {
                                 continue;
                             }
                         };
+
+                    let connection = IdentifiedConnectionEnd {
+                        connection_id: connection_id.clone(),
+                        connection_end: connection_end.clone(),
+                    };
+
+                    match self.spawn_workers_for_connection(chain.clone(), connection.clone()) {
+                        Ok(()) => debug!(
+                            "done spawning workers for connection {} on chain {}",
+                            chain.id(),
+                            connection.connection_id
+                        ),
+                        Err(e) => error!(
+                            "skipped workers for connection {} on chain {} due to error {}",
+                            chain.id(),
+                            connection.connection_id,
+                            e
+                        ),
+                    }
 
                     if !connection_end.state_matches(&State::Open) {
                         continue;

@@ -187,7 +187,7 @@ fn connection_on_destination(
     connection_id: &ConnectionId,
     counterparty_chain: &dyn ChainHandle,
 ) -> Result<Option<ConnectionEnd>, Error> {
-    //TODO: Should we filter by client ?
+    //TODO: Is there a way to filter by client ?
     let req = QueryConnectionsRequest {
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
@@ -259,8 +259,6 @@ pub fn connection_client(
     );
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
-    //let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
 
-    //Ok(ConnectionClient::new(connection, client))
     Ok(client)
 }
