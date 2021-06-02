@@ -1,175 +1,230 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+pub type Error = anyhow::Error;
 
-pub type Error = anomaly::Error<Kind>;
+use flex_error::*;
 
 use super::packet::Sequence;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::{ics02_client, Height};
 
-#[derive(Clone, Debug, Error, Eq, PartialEq)]
-pub enum Kind {
-    #[error("channel state unknown")]
-    UnknownState,
+define_error! {
+    #[derive(Debug)]
+    ChannelError {
+        UnknownState
+        [DisplayError<Error>]
+        | _ | { format_args!("channel state unknown")},
 
-    #[error("identifier error")]
-    IdentifierError,
+        Identifier
+        [DisplayError<Error>]
+        | _ | { format_args!("identifier error")},
 
-    #[error("channel order type unknown")]
-    UnknownOrderType,
+        UnknownOrderType
+        [DisplayError<Error>]
+        | _ | { format_args!("channel order type unknown")},
 
-    #[error("invalid connection hops length: expected {0}; actual {1}")]
-    InvalidConnectionHopsLength(usize, usize),
+        InvalidConnectionHopsLength
+        {left: usize, right: usize}
+        | e | { format_args!("invalid connection hops length: expected {0}; actual {1}", e.left, e.right)},
 
-    #[error("packet destination port/channel doesn't match the counterparty's port/channel")]
-    InvalidPacketCounterparty(PortId, ChannelId),
+        InvalidPacketCounterparty
+        {port_id: PortId, channel_id: ChannelId}
+        | _ | { format_args!("packet destination port/channel doesn't match the counterparty's port/channel")},
 
-    #[error("invalid version")]
-    InvalidVersion,
+        InvalidVersion
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid version")},
 
-    #[error("invalid signer address")]
-    InvalidSigner,
+        InvalidSigner
+        | _ | { format_args!("invalid signer address")},
 
-    #[error("invalid proof")]
-    InvalidProof,
+        InvalidProof
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid proof")},
 
-    #[error("invalid proof: missing height")]
-    MissingHeight,
+        MissingHeight
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid proof: missing height")},
 
-    #[error("Missing sequence number for receiving packets")]
-    MissingNextRecvSeq,
+        MissingNextRecvSeq
+        | _ | { format_args!("Missing sequence number for receiving packets")},
 
-    #[error("packet sequence cannot be 0")]
-    ZeroPacketSequence,
+        ZeroPacketSequence
+        | _ | { format_args!("packet sequence cannot be 0")},
 
-    #[error("packet data bytes cannot be empty")]
-    ZeroPacketData,
+        ZeroPacketData
+        | _ | { format_args!("packet data bytes cannot be empty")},
 
-    #[error("packet timeout height and packet timeout timestamp cannot both be 0")]
-    ZeroPacketTimeout,
+        ZeroPacketTimeout
+        | _ | { format_args!("packet timeout height and packet timeout timestamp cannot both be 0")},
 
-    #[error("invalid timeout height for the packet")]
-    InvalidTimeoutHeight,
+        InvalidTimeoutHeight
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid timeout height for the packet")},
 
-    #[error("invalid packet")]
-    InvalidPacket,
+        InvalidPacket
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid packet")},
 
-    #[error("there is no packet in this message")]
-    MissingPacket,
+        MissingPacket
+        [DisplayError<Error>]
+        | _ | { format_args!("there is no packet in this message")},
 
-    #[error("Packet with the sequence number {0} has been already received")]
-    PacketAlreadyReceived(Sequence),
+        PacketAlreadyReceived
+        {sequence: Sequence}
+        | e | { format_args!("Packet with the sequence number {0} has been already received", e.sequence)},
 
-    #[error("missing counterparty")]
-    MissingCounterparty,
-    #[error("no commong version")]
-    NoCommonVersion,
+        MissingCounterparty
+        | _ | { format_args!("missing counterparty")},
 
-    #[error("missing channel end")]
-    MissingChannel,
+        NoCommonVersion
+        | _ | { format_args!("no commong version")},
 
-    #[error("given connection hop {0} does not exist")]
-    MissingConnection(ConnectionId),
+        MissingChannel
+        | _ | { format_args!("missing channel end")},
 
-    #[error("the port {0} has no capability associated")]
-    NoPortCapability(PortId),
+        MissingConnection
+        [DisplayError<Error>]
+        | _ | { format_args!("given connection hop does not exist")},
 
-    #[error("the module associated with the port does not have the capability it needs")]
-    InvalidPortCapability,
+        NoPortCapability
+        {port_id: PortId}
+        | e | { format_args!("the port {0} has no capability associated", e.port_id)},
 
-    #[error("single version must be negociated on connection before opening channel")]
-    InvalidVersionLengthConnection,
+        InvalidPortCapability
+        | _ | { format_args!("the module associated with the port does not have the capability it needs")},
 
-    #[error("the channel ordering is not supported by connection ")]
-    ChannelFeatureNotSuportedByConnection,
+        InvalidVersionLengthConnection
+        | _ | { format_args!("single version must be negociated on connection before opening channel")},
 
-    #[error("the channel end ({0}, {1}) does not exist")]
-    ChannelNotFound(PortId, ChannelId),
+        ChannelFeatureNotSuportedByConnection
+        | _ | { format_args!("the channel ordering is not supported by connection ")},
 
-    #[error(
-        "a different channel exists (was initialized) already for the same channel identifier {0}"
-    )]
-    ChannelMismatch(ChannelId),
+        ChannelNotFound
+        {port_id: PortId, channel_id: ChannelId}
+        [DisplayError<Error>]
+        | e | { format_args!("the channel end ({0}, {1}) does not exist", e.port_id, e.channel_id)},
 
-    #[error("the associated connection {0} is not OPEN ")]
-    ConnectionNotOpen(ConnectionId),
+        ChannelMismatch
+        {channel_id: ChannelId}
+        [DisplayError<Error>]
+        | e | { format_args!("a different channel exists (was initialized) already for the same channel identifier {0}", e.channel_id)},
 
-    #[error("Undefined counterparty connection for {0}")]
-    UndefinedConnectionCounterparty(ConnectionId),
+        ConnectionNotOpen
+        {connection_id: ConnectionId}
+        | e | { format_args!("the associated connection {0} is not OPEN ", e.connection_id)},
 
-    #[error("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")]
-    FailedChanneOpenTryVerification,
+        UndefinedConnectionCounterparty
+        {connection_id: ConnectionId}
+        | e | { format_args!("Undefined counterparty connection for {0}", e.connection_id)},
 
-    #[error("Verification fails for the packet with the sequence number {0}")]
-    PacketVerificationFailed(Sequence),
+        FailedChanneOpenTryVerification
+        [DisplayError<Error>]
+        | _ | { format_args!("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")},
 
-    #[error("Acknowledgment cannot be empty")]
-    InvalidAcknowledgement,
+        PacketVerificationFailed
+        {sequence: Sequence}
+        | e | { format_args!("Verification fails for the packet with the sequence number {0}", e.sequence)},
 
-    #[error("Packet acknowledgement exists for the packet with the sequence {0}")]
-    AcknowledgementExists(Sequence),
+        InvalidAcknowledgement
+        | _ | { format_args!("Acknowledgment cannot be empty")},
 
-    #[error("No client state associated with client id {0}")]
-    MissingClientState(ClientId),
+        AcknowledgementExists
+        {sequence: Sequence}
+        | e | { format_args!("Packet acknowledgement exists for the packet with the sequence {0}", e.sequence)},
 
-    #[error("Missing sequence number for send packets")]
-    MissingNextSendSeq,
+        MissingClientState
+        {client_id: ClientId}
+        | e | { format_args!("No client state associated with client id {0}", e.client_id)},
 
-    #[error("Invalid packet sequence {0} ≠ next send sequence {1}")]
-    InvalidPacketSequence(Sequence, Sequence),
+        MissingNextSendSeq
+        | _ | { format_args!("Missing sequence number for send packets")},
 
-    #[error("Receiving chain block height {0} >= packet timeout height {1}")]
-    LowPacketHeight(Height, Height),
+        InvalidPacketSequence
+        {sequence_left: Sequence, sequence_right: Sequence }
+        | e | { format_args!("Invalid packet sequence {0} ≠ next send sequence {1}", e.sequence_left, e.sequence_right)},
 
-    #[error("Packet timeout height {0} > chain height {1}")]
-    PacketTimeoutHeightNotReached(Height, Height),
+        LowPacketHeight
+        {height_left: Height, height_right: Height}
+        | e | { format_args!("Receiving chain block height {0} >= packet timeout height {1}", e.height_left, e.height_right)},
 
-    #[error("Packet timeout timestamp {0} > chain timestamp {1}")]
-    PacketTimeoutTimestampNotReached(u64, u64),
+        PacketTimeoutHeightNotReached
+        {height_left: Height, height_right: Height}
+        | e | { format_args!("Packet timeout height {0} > chain height {1}", e.height_left, e.height_right)},
 
-    #[error("Receiving chain block timestamp >= packet timeout timestamp")]
-    LowPacketTimestamp,
+        PacketTimeoutTimestampNotReached
+        {time_left: u64, time_right: u64}
+        | e | { format_args!("Packet timeout timestamp {0} > chain timestamp {1}", e.time_left, e.time_right)},
 
-    #[error("Invalid timestamp in consensus state; timestamp must be a positive value")]
-    ErrorInvalidConsensusState(ics02_client::error::Kind),
+        LowPacketTimestamp
+        | _ | { format_args!("Receiving chain block timestamp >= packet timeout timestamp")},
 
-    #[error("Client with id {0} is frozen")]
-    FrozenClient(ClientId),
+        ErrorInvalidConsensusState
+        { kind: ics02_client::error::ClientError }
+        | _ | { format_args!("Invalid timestamp in consensus state; timestamp must be a positive value")},
 
-    #[error("Missing client consensus state for client id {0} at height {1}")]
-    MissingClientConsensusState(ClientId, Height),
+        FrozenClient
+        {client_id: ClientId}
+        | e | { format_args!("Client with id {0} is frozen", e.client_id)},
 
-    #[error("Invalid channel id in counterparty")]
-    InvalidCounterpartyChannelId,
+        MissingClientConsensusState
+        {client_id: ClientId, height: Height}
+        | e | { format_args!("Missing client consensus state for client id {0} at height {1}", e.client_id, e.height)},
 
-    #[error("Client not found in chan open verification")]
-    ClientNotFound,
+        InvalidCounterpartyChannelId
+        | _ | { format_args!("Invalid channel id in counterparty")},
 
-    #[error("Channel {0} should not be state {1}")]
-    InvalidChannelState(ChannelId, State),
+        ClientNotFound
+        | _ | { format_args!("Client not found in chan open verification")},
 
-    #[error("Channel {0} is Closed")]
-    ChannelClosed(ChannelId),
+        InvalidChannelState
+        {channel_id: ChannelId, state: State}
+        | e | { format_args!("Channel {0} should not be state {1}", e.channel_id, e.state)},
 
-    #[error("Handshake proof verification fails at ChannelOpenAck")]
-    ChanOpenAckProofVerification,
+        ChannelClosed
+        {channel_id: ChannelId}
+        | e | { format_args!("Channel {0} is Closed", e.channel_id)},
 
-    #[error("Commitment for the packet {0} not found")]
-    PacketCommitmentNotFound(Sequence),
+        ChanOpenAckProofVerification
+        [DisplayError<Error>]
+        | _ | { format_args!("Handshake proof verification fails at ChannelOpenAck")},
 
-    #[error("Handshake proof verification fails at ChannelOpenConfirm")]
-    ChanOpenConfirmProofVerification,
+        PacketCommitmentNotFound
+        {sequence: Sequence}
+        | e | { format_args!("Commitment for the packet {0} not found", e.sequence)},
 
-    #[error("The stored commitment of the packet {0} is incorrect")]
-    IncorrectPacketCommitment(Sequence),
+        ChanOpenConfirmProofVerification
+        [DisplayError<Error>]
+        | _ | { format_args!("Handshake proof verification fails at ChannelOpenConfirm")},
 
-    #[error("Missing sequence number for ack packets")]
-    MissingNextAckSeq,
-}
+        IncorrectPacketCommitment
+        {sequence: Sequence}
+        | e | { format_args!("The stored commitment of the packet {0} is incorrect", e.sequence)},
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        MissingNextAckSeq
+        | _ | { format_args!("Missing sequence number for ack packets")},
+
+        InFallible
+        [ DisplayError<Error> ]
+        |_| { format_args!("infallible") },
+
+        Attribute
+        [ DisplayError<Error> ]
+        |e| { format_args!("{}", e.source) },
+
+        ValidationKind
+        [DisplayError<Error>]
+        | e | { format_args!("{}", e.source) },
+
+        SomeAttribute
+        [ DisplayError<Error>]
+        |e| { format_args!("{}", e.source)},
+
+        Unknown
+        | _ | { format_args!("unknown error") },
+
+        ParseInt
+        [ DisplayError<Error>]
+        |_| { format_args!("parse int error") },
+
     }
 }

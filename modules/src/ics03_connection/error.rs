@@ -1,103 +1,121 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+use flex_error::*;
 
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::Height;
+pub type Error = anyhow::Error;
 
-pub type Error = anomaly::Error<Kind>;
+define_error! {
+    #[derive(Debug)]
+    ConnectionError {
+        InvalidState
+        {id: i32}
+        | _ | { format_args!("connection state unknown") },
 
-#[derive(Clone, Debug, Error, Eq, PartialEq)]
-pub enum Kind {
-    #[error("connection state unknown")]
-    InvalidState(i32),
+        ConnectionExistsAlready
+        {connection_id: crate::ics24_host::identifier::ConnectionId}
+        | e | { format_args!("connection exists (was initialized) already: {0}", e.connection_id) },
 
-    #[error("connection exists (was initialized) already: {0}")]
-    ConnectionExistsAlready(ConnectionId),
+        ConnectionMismatch
+        {connection_id: crate::ics24_host::identifier::ConnectionId}
+        | e | { format_args!("a different connection exists (was initialized) already for the same connection identifier {0}", e.connection_id) },
 
-    #[error("a different connection exists (was initialized) already for the same connection identifier {0}")]
-    ConnectionMismatch(ConnectionId),
+        UninitializedConnection
+        {connection_id: crate::ics24_host::identifier::ConnectionId}
+        | e | { format_args!("connection end for identifier {0} was never initialized", e.connection_id) },
 
-    #[error("connection end for identifier {0} was never initialized")]
-    UninitializedConnection(ConnectionId),
+        InvalidConsensusHeight
+        {height_left: crate::Height,  height_right: crate::Height}
+        | e | { format_args!("consensus height claimed by the client on the other party is too advanced: {0} (host chain current height: {1})", e.height_left, e.height_right) },
 
-    #[error("consensus height claimed by the client on the other party is too advanced: {0} (host chain current height: {1})")]
-    InvalidConsensusHeight(Height, Height),
+        StaleConsensusHeight
+        {height_left: crate::Height,  height_right: crate::Height}
+        | e | { format_args!("consensus height claimed by the client on the other party has been pruned: {0} (host chain oldest height: {1})", e.height_left, e.height_right) },
 
-    #[error("consensus height claimed by the client on the other party has been pruned: {0} (host chain oldest height: {1})")]
-    StaleConsensusHeight(Height, Height),
+        Identifier
+        [DisplayError<Error>]
+        | _ | { format_args!("identifier error") },
 
-    #[error("identifier error")]
-    IdentifierError,
+        EmptyProtoConnectionEnd
+        | _ | { format_args!("ConnectionEnd domain object could not be constructed out of empty proto object") },
 
-    #[error("ConnectionEnd domain object could not be constructed out of empty proto object")]
-    EmptyProtoConnectionEnd,
+        InvalidVersion
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid version") },
 
-    #[error("invalid version")]
-    InvalidVersion,
+        EmptyVersions
+        [DisplayError<Error>]
+        | _ | { format_args!("empty supported versions") },
 
-    #[error("empty supported versions")]
-    EmptyVersions,
+        NoCommonVersion
+        | _ | { format_args!("no common version") },
 
-    #[error("no common version")]
-    NoCommonVersion,
+        InvalidAddress
+        | _ | { format_args!("invalid address") },
 
-    #[error("invalid address")]
-    InvalidAddress,
+        MissingProofHeight
+        | _ | { format_args!("missing consensus proof height") },
 
-    #[error("missing consensus proof height")]
-    MissingProofHeight,
+        MissingConsensusHeight
+        | _ | { format_args!("missing consensus proof height") },
 
-    #[error("missing consensus proof height")]
-    MissingConsensusHeight,
+        InvalidProof
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid connection proof") },
 
-    #[error("invalid connection proof")]
-    InvalidProof,
+        InvalidSigner
+        | _ | { format_args!("invalid signer") },
 
-    #[error("invalid signer")]
-    InvalidSigner,
+        ConnectionNotFound
+        {connection_id: crate::ics24_host::identifier::ConnectionId}
+        | e | { format_args!("no connection was found for the previous connection id provided {0}", e.connection_id) },
 
-    #[error("no connection was found for the previous connection id provided {0}")]
-    ConnectionNotFound(ConnectionId),
+        InvalidCounterparty
+        | _ | { format_args!("invalid counterparty") },
 
-    #[error("invalid counterparty")]
-    InvalidCounterparty,
+        ConnectionIdMismatch
+        { connection_id_left: crate::ics24_host::identifier::ConnectionId, connection_id_right: crate::ics24_host::identifier::ConnectionId }
+        | e | { format_args!("counterparty chosen connection id {0} is different than the connection id {1}", e.connection_id_left, e.connection_id_right) },
 
-    #[error("counterparty chosen connection id {0} is different than the connection id {1}")]
-    ConnectionIdMismatch(ConnectionId, ConnectionId),
+        MissingCounterparty
+        [DisplayError<Error>]
+        | _ | { format_args!("missing counterparty") },
 
-    #[error("missing counterparty")]
-    MissingCounterparty,
+        MissingCounterpartyPrefix
+        | _ | { format_args!("missing counterparty prefix") },
 
-    #[error("missing counterparty prefix")]
-    MissingCounterpartyPrefix,
+        MissingClient
+        {client_id: crate::ics24_host::identifier::ClientId}
+        | e | { format_args!("the client id does not match any client state: {0}", e.client_id) },
 
-    #[error("the client id does not match any client state: {0}")]
-    MissingClient(ClientId),
+        NullClientProof
+        | _ | { format_args!("client proof must be present") },
 
-    #[error("client proof must be present")]
-    NullClientProof,
+        FrozenClient
+        {client_id: crate::ics24_host::identifier::ClientId}
+        | e | { format_args!("the client {0} running locally is frozen", e.client_id) },
 
-    #[error("the client {0} running locally is frozen")]
-    FrozenClient(ClientId),
+        ConnectionVerificationFailure
+        | _ | { format_args!("the connection proof verification failed") },
 
-    #[error("the connection proof verification failed")]
-    ConnectionVerificationFailure,
+        MissingClientConsensusState
+        {height: crate::Height, client_id: crate::ics24_host::identifier::ClientId}
+        | e | { format_args!("the consensus state at height {0} for client id {1} could not be retrieved", e.height, e.client_id) },
 
-    #[error("the consensus state at height {0} for client id {1} could not be retrieved")]
-    MissingClientConsensusState(Height, ClientId),
+        MissingLocalConsensusState
+        | _ | { format_args!("the local consensus state could not be retrieved") },
 
-    #[error("the local consensus state could not be retrieved")]
-    MissingLocalConsensusState,
+        ConsensusStateVerificationFailure
+        { height: crate::Height }
+        | e | { format_args!("the consensus proof verification failed (height: {0})", e.height) },
 
-    #[error("the consensus proof verification failed (height: {0})")]
-    ConsensusStateVerificationFailure(Height),
+        ClientStateVerificationFailure
+        { client_id: crate::ics24_host::identifier::ClientId }
+        | e | { format_args!("the client state proof verification failed for client id: {0}", e.client_id) },
 
-    #[error("the client state proof verification failed for client id: {0}")]
-    ClientStateVerificationFailure(ClientId),
-}
+        Attribute
+        [ DisplayError<Error> ]
+        |e| { format_args!("{}", e.source) },
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        ValidationKind
+        [DisplayError<Error>]
+        | e | { format_args!("{}", e.source) },
     }
 }

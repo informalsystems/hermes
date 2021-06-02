@@ -5,7 +5,7 @@ use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_state::ClientState;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::{self, ClientError};
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use crate::ics24_host::identifier::ClientId;
@@ -22,16 +22,16 @@ pub struct Result {
 pub fn process(
     ctx: &dyn ClientReader,
     msg: MsgUpgradeAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+) -> HandlerResult<ClientResult, ClientError> {
     let MsgUpgradeAnyClient { client_id, .. } = msg;
 
     // Read client state from the host chain store.
     let client_state = ctx
         .client_state(&client_id)
-        .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
+        .ok_or_else(|| error::client_not_found_error(client_id.clone()))?;
 
     if client_state.is_frozen() {
-        return Err(Kind::ClientFrozen(client_id).into());
+        return Err(error::client_frozen_error(client_id));
     }
 
     // Not implemented yet: https://github.com/informalsystems/ibc-rs/issues/722

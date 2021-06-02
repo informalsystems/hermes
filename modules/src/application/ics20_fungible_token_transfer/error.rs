@@ -1,32 +1,29 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use flex_error::*;
+use std::string::String;
 
-pub type Error = anomaly::Error<Kind>;
+pub type Error = anyhow::Error;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
-    #[error("unrecognized ICS-20 transfer message type URL {0}")]
-    UnknownMessageTypeUrl(String),
+define_error! {
+    #[derive(Debug)]
+    FungibleTokenTransferError {
+        UnknownMessageTypeUrl
+        {detail: String}
+        | e | { format_args!("unrecognized ICS-20 transfer message type URL {0}", e.detail) },
 
-    #[error("error raised by message handler")]
-    HandlerRaisedError,
+        HandlerRaised
+        | _ | { format_args!("error raised by message handler") },
 
-    #[error("Sending sequence number not found for port {0} and channel {1}")]
-    SequenceSendNotFound(PortId, ChannelId),
+        SequenceSendNotFound
+        {prot_id: PortId, channel_id: ChannelId}
+        | e | { format_args!("Sending sequence number not found for port {0} and channel {1}", e.prot_id, e.channel_id) },
 
-    #[error("Missing channel for port_id {0} and channel_id {1} ")]
-    ChannelNotFound(PortId, ChannelId),
+        ChannelNotFound
+        {prot_id: PortId, channel_id: ChannelId}
+        | e | { format_args!("Missing channel for port_id {0} and channel_id {1}", e.prot_id, e.channel_id) },
 
-    #[error(
-        "Destination channel not found in the counterparty of port_id {0} and channel_id {1} "
-    )]
-    DestinationChannelNotFound(PortId, ChannelId),
-}
-
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        DestinationChannelNotFound
+        {prot_id: PortId, channel_id: ChannelId}
+        | e | { format_args!("Destination channel not found in the counterparty of port_id {0} and channel_id {1}", e.prot_id, e.channel_id) },
     }
 }

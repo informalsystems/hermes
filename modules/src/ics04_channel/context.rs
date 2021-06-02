@@ -7,10 +7,12 @@ use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
-use crate::ics04_channel::{error::Error, packet::Receipt};
+use crate::ics04_channel::{error::ChannelError, packet::Receipt};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
+use std::string::String;
+use std::vec::Vec;
 
 use super::packet::{PacketResult, Sequence};
 
@@ -34,7 +36,7 @@ pub trait ChannelReader {
         height: Height,
     ) -> Option<AnyConsensusState>;
 
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ChannelError>;
 
     fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence>;
 
@@ -66,7 +68,7 @@ pub trait ChannelReader {
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ChannelMsg`.
 pub trait ChannelKeeper {
-    fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
+    fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), ChannelError> {
         // The handler processed this channel & some modifications occurred, store the new end.
         self.store_channel(
             (result.port_id.clone(), result.channel_id.clone()),
@@ -99,7 +101,7 @@ pub trait ChannelKeeper {
         Ok(())
     }
 
-    fn store_packet_result(&mut self, general_result: PacketResult) -> Result<(), Error> {
+    fn store_packet_result(&mut self, general_result: PacketResult) -> Result<(), ChannelError> {
         match general_result {
             PacketResult::Send(res) => {
                 self.store_next_sequence_send(
@@ -175,58 +177,60 @@ pub trait ChannelKeeper {
         timestamp: u64,
         heigh: Height,
         data: Vec<u8>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
-    fn delete_packet_commitment(&mut self, key: (PortId, ChannelId, Sequence))
-        -> Result<(), Error>;
+    fn delete_packet_commitment(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+    ) -> Result<(), ChannelError>;
 
     fn store_packet_receipt(
         &mut self,
         key: (PortId, ChannelId, Sequence),
         receipt: Receipt,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
     fn store_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
         ack: Vec<u8>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
     fn delete_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
     fn store_connection_channels(
         &mut self,
         conn_id: ConnectionId,
         port_channel_id: &(PortId, ChannelId),
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
     /// Stores the given channel_end at a path associated with the port_id and channel_id.
     fn store_channel(
         &mut self,
         port_channel_id: (PortId, ChannelId),
         channel_end: &ChannelEnd,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
     fn store_next_sequence_send(
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
     fn store_next_sequence_recv(
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
     fn store_next_sequence_ack(
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ChannelError>;
 
     /// Called upon channel identifier creation (Init or Try message processing).
     /// Increases the counter which keeps track of how many channels have been created.

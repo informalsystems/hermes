@@ -1,12 +1,14 @@
 use std::convert::TryFrom;
 use std::fmt;
+use std::prelude::v1::format;
+use std::vec::Vec;
 
 use serde::{Deserialize, Serialize};
 use subtle_encoding::{Encoding, Hex};
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
-use crate::ics23_commitment::error::{Error, Kind};
+use crate::ics23_commitment::error::{self, CommitmentError};
 
 #[derive(Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
@@ -88,12 +90,15 @@ impl From<RawMerkleProof> for CommitmentProofBytes {
 }
 
 impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
-    type Error = Error;
+    type Error = CommitmentError;
 
     fn try_from(value: CommitmentProofBytes) -> Result<Self, Self::Error> {
         let value: Vec<u8> = value.into();
-        let res: RawMerkleProof = prost::Message::decode(value.as_ref())
-            .map_err(|e| Kind::InvalidRawMerkleProof.context(e))?;
+        let res: RawMerkleProof = prost::Message::decode(value.as_ref()).map_err(|_| {
+            error::invalid_raw_merkle_proof_error(anyhow::anyhow!(
+                "RawMerkleProof: invalid raw merkle proof error"
+            ))
+        })?;
         Ok(res)
     }
 }

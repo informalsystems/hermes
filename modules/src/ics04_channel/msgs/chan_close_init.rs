@@ -1,10 +1,11 @@
 use std::convert::TryFrom;
-
+use std::string::String;
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::{self, ChannelError};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -40,7 +41,7 @@ impl MsgChannelCloseInit {
 }
 
 impl Msg for MsgChannelCloseInit {
-    type ValidationError = Error;
+    type ValidationError = ChannelError;
     type Raw = RawMsgChannelCloseInit;
 
     fn route(&self) -> String {
@@ -55,18 +56,16 @@ impl Msg for MsgChannelCloseInit {
 impl Protobuf<RawMsgChannelCloseInit> for MsgChannelCloseInit {}
 
 impl TryFrom<RawMsgChannelCloseInit> for MsgChannelCloseInit {
-    type Error = anomaly::Error<Kind>;
+    type Error = ChannelError;
 
     fn try_from(raw_msg: RawMsgChannelCloseInit) -> Result<Self, Self::Error> {
         Ok(MsgChannelCloseInit {
-            port_id: raw_msg
-                .port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: raw_msg
-                .channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            port_id: raw_msg.port_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("port id: identifier error"))
+            })?,
+            channel_id: raw_msg.channel_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("channel id: identifier error"))
+            })?,
             signer: raw_msg.signer.into(),
         })
     }

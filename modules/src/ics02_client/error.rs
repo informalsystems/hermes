@@ -1,100 +1,124 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::error::Kind as Ics23Kind;
+use crate::ics23_commitment::error::CommitmentError;
 use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
+use flex_error::*;
+use std::string::String;
 
-pub type Error = anomaly::Error<Kind>;
+pub type Error = anyhow::Error;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
-    #[error("unknown client type: {0}")]
-    UnknownClientType(String),
+define_error! {
+    #[derive(Debug)]
+    ClientError {
+        UnknownClientType
+        {detail: String}
+        | e | { format_args!("unknown client type: {0}", e.detail) },
 
-    #[error("Client identifier constructor failed for type {0} with counter {1}")]
-    ClientIdentifierConstructor(ClientType, u64),
+        ClientIdentifierConstructor
+        {client_type: ClientType, id: u64}
+        | e | { format_args!("Client identifier constructor failed for type {0} with counter {1}", e.client_type, e.id) },
 
-    #[error("client already exists: {0}")]
-    ClientAlreadyExists(ClientId),
+        ClientAlreadyExists
+        {client_type: ClientType}
+        | e | { format_args!("client already exists: {0}", e.client_type) },
 
-    #[error("client not found: {0}")]
-    ClientNotFound(ClientId),
+        ClientNotFound
+        {client_type: ClientId}
+        | e | {  format_args!("client not found: {0}", e.client_type) },
 
-    #[error("client is frozen: {0}")]
-    ClientFrozen(ClientId),
+        ClientFrozen
+        {client_type: ClientId}
+        | e | { format_args!("client is frozen: {0}", e.client_type) },
 
-    #[error("consensus state not found at: {0} at height {1}")]
-    ConsensusStateNotFound(ClientId, Height),
+        ConsensusStateNotFound
+        {client_id: ClientId, height: Height}
+        | e | { format_args!("consensus state not found at: {0} at height {1}", e.client_id, e.height) },
 
-    #[error("implementation specific")]
-    ImplementationSpecific,
+        ImplementationSpecific
+        | _ | {  format_args!("implementation specific") },
 
-    #[error("Negative timestamp in consensus state {0}; timestamp must be a positive value")]
-    NegativeConsensusStateTimestamp(String),
+        NegativeConsensusStateTimestamp
+        {detail: String}
+        | e | { format_args!("Negative timestamp in consensus state {0}; timestamp must be a positive value", e.detail)},
 
-    #[error("header verification failed")]
-    HeaderVerificationFailure,
+        HeaderVerificationFailure
+        | _ | { format_args!("header verification failed")},
 
-    #[error("unknown client state type: {0}")]
-    UnknownClientStateType(String),
+        UnknownClientStateType
+        {detail : String}
+        | e | { format_args!("unknown client state type: {0}", e.detail)},
 
-    #[error("the client state was not found")]
-    EmptyClientStateResponse,
+        EmptyClientStateResponse
+        | _ | { format_args!("the client state was not found")},
 
-    #[error("unknown client consensus state type: {0}")]
-    UnknownConsensusStateType(String),
+        UnknownConsensusStateType
+        { detail: String }
+        | e | { format_args!("unknown client consensus state type: {0}", e.detail) },
 
-    #[error("the client consensus state was not found")]
-    EmptyConsensusStateResponse,
+        EmptyConsensusStateResponse
+        | _ | { format_args!("the client consensus state was not found") },
 
-    #[error("unknown header type: {0}")]
-    UnknownHeaderType(String),
+        UnknownHeaderType
+        {detail: String}
+        | e | { format_args!("unknown header type: {0}", e.detail) },
 
-    #[error("unknown misbehaviour type: {0}")]
-    UnknownMisbehaviourType(String),
+        UnknownMisbehaviourType
+        { detail: String }
+        | e | { format_args!("unknown misbehaviour type: {0}", e.detail) },
 
-    #[error("invalid raw client state")]
-    InvalidRawClientState,
+        InvalidRawClientState
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid raw client state") },
 
-    #[error("invalid raw client consensus state")]
-    InvalidRawConsensusState,
+        InvalidRawConsensusState
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid raw client consensus state") },
 
-    #[error("invalid client identifier: validation error: {0}")]
-    InvalidClientIdentifier(ValidationKind),
+        InvalidClientIdentifier
+        {validation_kind: ValidationKind}
+        | e | { format_args!("invalid client identifier: validation error: {0}", e.validation_kind) },
 
-    #[error("invalid raw header")]
-    InvalidRawHeader,
+        InvalidRawHeader
+        | _ | { format_args!("invalid raw header") },
 
-    #[error("invalid raw misbehaviour")]
-    InvalidRawMisbehaviour,
+        InvalidRawMisbehaviour
+        | _ | { format_args!("invalid raw misbehaviour") },
 
-    #[error("invalid height result")]
-    InvalidHeightResult,
+        InvalidHeightResult
+        [DisplayError<Error>]
+        | _ | { format_args!("invalid height result") },
 
-    #[error("invalid address")]
-    InvalidAddress,
+        InvalidAddress
+        | _ | { format_args!("invalid address") },
 
-    #[error("invalid proof for the upgraded client state")]
-    InvalidUpgradeClientProof(Ics23Kind),
+        InvalidUpgradeClientProof
+        { ics23kind: CommitmentError }
+        | _ | { format_args!("invalid proof for the upgraded client state") },
 
-    #[error("invalid proof for the upgraded consensus state")]
-    InvalidUpgradeConsensusStateProof(Ics23Kind),
+        InvalidUpgradeConsensusStateProof
+        {ics23kind: CommitmentError}
+        | _ | { format_args!("invalid proof for the upgraded consensus state") },
 
-    #[error("mismatch between client and arguments types, expected: {0:?}")]
-    ClientArgsTypeMismatch(ClientType),
+        ClientArgsTypeMismatch
+        {client_type: ClientType}
+        | e | { format_args!("mismatch between client and arguments types, expected: {0:?}", e.client_type) },
 
-    #[error("mismatch raw client consensus state")]
-    RawClientAndConsensusStateTypesMismatch {
-        state_type: ClientType,
-        consensus_type: ClientType,
-    },
-}
+        RawClientAndConsensusStateTypesMismatch
+        {state_type: ClientType, consensus_type: ClientType}
+        | _ | { format_args!("mismatch raw client consensus state") },
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        Attribute
+        [ DisplayError<Error> ]
+        |e| { format_args!("{}", e.source) },
+
+        ValidationKind
+        [DisplayError<Error>]
+        | e | { format_args!("{}", e.source) },
+
+        InFallible
+        [ DisplayError<Error> ]
+        |_| { format_args!("infallible") },
     }
+
 }

@@ -21,6 +21,7 @@ pub mod conn_open_ack;
 pub mod conn_open_confirm;
 pub mod conn_open_init;
 pub mod conn_open_try;
+use std::boxed::Box;
 
 /// Enumeration of all possible messages that the ICS3 protocol processes.
 #[derive(Clone, Debug, PartialEq, Eq)]

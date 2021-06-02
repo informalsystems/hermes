@@ -1,12 +1,12 @@
 use core::marker::{Send, Sync};
-use std::convert::TryFrom;
-
 use prost_types::Any;
 use serde::Serialize;
+use std::convert::TryFrom;
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::{self, ClientError};
 
 use crate::ics07_tendermint::client_state;
 use crate::ics24_host::identifier::ChainId;
@@ -68,24 +68,30 @@ impl AnyClientState {
 impl Protobuf<Any> for AnyClientState {}
 
 impl TryFrom<Any> for AnyClientState {
-    type Error = Error;
+    type Error = ClientError;
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            "" => Err(Kind::EmptyClientStateResponse.into()),
+            "" => Err(error::empty_client_state_response_error()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                client_state::ClientState::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
+                client_state::ClientState::decode_vec(&raw.value).map_err(|_| {
+                    error::invalid_raw_client_state_error(anyhow::anyhow!(
+                        "client state: invalid raw client state error"
+                    ))
+                })?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
-                MockClientState::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
+                MockClientState::decode_vec(&raw.value).map_err(|_| {
+                    error::invalid_raw_client_state_error(anyhow::anyhow!(
+                        "MockClientState: invalid raw client state error"
+                    ))
+                })?,
             )),
 
-            _ => Err(Kind::UnknownClientStateType(raw.type_url).into()),
+            _ => Err(error::unknown_client_state_type_error(raw.type_url)),
         }
     }
 }

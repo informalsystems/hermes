@@ -5,12 +5,13 @@
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics03_connection::error::Error;
+use crate::ics03_connection::error::ConnectionError;
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
+use std::vec::Vec;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ConnectionMsg`.
 pub trait ConnectionReader {
@@ -64,7 +65,7 @@ pub trait ConnectionReader {
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ConnectionMsg`.
 pub trait ConnectionKeeper {
-    fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Error> {
+    fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), ConnectionError> {
         self.store_connection(result.connection_id.clone(), &result.connection_end)?;
 
         // If we generated an identifier, increase the counter & associate this new identifier
@@ -87,14 +88,14 @@ pub trait ConnectionKeeper {
         &mut self,
         connection_id: ConnectionId,
         connection_end: &ConnectionEnd,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ConnectionError>;
 
     /// Stores the given connection_id at a path associated with the client_id.
     fn store_connection_to_client(
         &mut self,
         connection_id: ConnectionId,
         client_id: &ClientId,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ConnectionError>;
 
     /// Called upon connection identifier creation (Init or Try process).
     /// Increases the counter which keeps track of how many connections have been created.

@@ -4,10 +4,11 @@ use crate::events::IbcEvent;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::header::AnyHeader;
 
-use crate::ics18_relayer::error::Error;
+use crate::ics18_relayer::error::RelayerError;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::Height;
+use std::vec::Vec;
 
 /// Trait capturing all dependencies (i.e., the context) which algorithms in ICS18 require to
 /// relay packets between chains. This trait comprises the dependencies towards a single chain.
@@ -27,7 +28,7 @@ pub trait Ics18Context {
 
     /// Interface that the relayer uses to submit a datagram to this chain.
     /// One can think of this as wrapping around the `/broadcast_tx_commit` ABCI endpoint.
-    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, RelayerError>;
 
     /// Temporary solution. Similar to `CosmosSDKChain::key_and_signer()` but simpler.
     fn signer(&self) -> Signer;

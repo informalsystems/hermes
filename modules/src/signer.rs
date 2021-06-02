@@ -1,3 +1,5 @@
+use std::string::String;
+use std::string::ToString;
 use std::{convert::Infallible, fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
@@ -34,3 +36,10 @@ impl FromStr for Signer {
         Ok(Self(s.to_string()))
     }
 }
+//
+// #[cfg(not(feature = "std"))]
+// impl ToString for Signer {
+//     fn to_string(&self) -> String {
+//         self.0.to_string()
+//     }
+// }

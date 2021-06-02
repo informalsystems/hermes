@@ -1,5 +1,7 @@
+use std::boxed::Box;
+use std::convert::From;
 use std::convert::TryFrom;
-use std::time::SystemTime;
+use tendermint::primitives::SystemTime;
 
 use chrono::{TimeZone, Utc};
 use prost_types::Timestamp;
@@ -11,7 +13,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensus
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::error::{self, TendermintError};
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 
@@ -41,7 +43,7 @@ impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn validate_basic(&self) -> Result<(), Box<dyn flex_error::StdErr>> {
         unimplemented!()
     }
 
@@ -53,24 +55,32 @@ impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
 impl Protobuf<RawConsensusState> for ConsensusState {}
 
 impl TryFrom<RawConsensusState> for ConsensusState {
-    type Error = Error;
+    type Error = TendermintError;
 
     fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
-        let proto_timestamp = raw
-            .timestamp
-            .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing timestamp"))?;
+        let proto_timestamp = raw.timestamp.ok_or_else(|| {
+            error::invalid_raw_consensus_state_error(anyhow::anyhow!("missing timestamp"))
+        })?;
 
         Ok(Self {
             root: raw
                 .root
-                .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing commitment root"))?
+                .ok_or_else(|| {
+                    error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                        "missing commitment root"
+                    ))
+                })?
                 .hash
                 .into(),
             timestamp: Utc
                 .timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32)
                 .into(),
             next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
-                .map_err(|e| Kind::InvalidRawConsensusState.context(e.to_string()))?,
+                .map_err(|_| {
+                    error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                        "next validator hash: invalid raw consensus state error"
+                    ))
+                })?,
         })
     }
 }

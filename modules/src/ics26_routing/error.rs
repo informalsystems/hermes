@@ -1,25 +1,35 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+use crate::application::ics20_fungible_token_transfer;
+use crate::ics02_client;
+use crate::ics03_connection;
+use crate::ics04_channel;
+use flex_error::*;
+use std::string::String;
 
-pub type Error = anomaly::Error<Kind>;
+define_error! {
+    #[derive(Debug)]
+    RoutingError {
+        Ics02Client
+        [ DisplayError<ics02_client::error::ClientError> ]
+        | _ | { format_args!("ICS02 client error")},
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
-    #[error("error raised by message handler")]
-    HandlerRaisedError,
+        Ics03Connection
+        [ DisplayError<ics03_connection::error::ConnectionError> ]
+        | _ | { format_args!("ICS03 connection error") },
 
-    #[error("error raised by the keeper functionality in message handler")]
-    KeeperRaisedError,
+        Ics04Channel
+        [ DisplayError<ics04_channel::error::ChannelError>]
+        | _ | { format_args!("ICS04 channel error") },
 
-    #[error("unknown type URL {0}")]
-    UnknownMessageTypeUrl(String),
+        Ics20FungibleTokenTransfer
+        [ DisplayError<ics20_fungible_token_transfer::error::FungibleTokenTransferError>]
+        | _ | { format_args!("ICS20 fungible token transfer error") },
 
-    #[error("the message is malformed and cannot be decoded")]
-    MalformedMessageBytes,
-}
+        UnknowMessageTypeUrl
+        { url: String }
+        | e | { format_args!("unknown type URL {0}", e.url) },
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        MalformedMessageBytes
+        [ DisplayError<tendermint_proto::Error> ]
+        | _ | { format_args!("the message is malformed and cannot be decode") },
     }
 }

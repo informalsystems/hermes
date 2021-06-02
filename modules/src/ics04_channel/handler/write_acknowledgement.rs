@@ -1,12 +1,16 @@
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::WriteAcknowledgement;
 use crate::ics04_channel::packet::{Packet, PacketResult, Sequence};
-use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
+use crate::ics04_channel::{
+    context::ChannelReader,
+    error::{self, ChannelError},
+};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::{
     events::IbcEvent,
     handler::{HandlerOutput, HandlerResult},
 };
+use std::vec::Vec;
 
 #[derive(Clone, Debug)]
 pub struct WriteAckPacketResult {
@@ -20,7 +24,7 @@ pub fn process(
     ctx: &dyn ChannelReader,
     packet: Packet,
     ack: Vec<u8>,
-) -> HandlerResult<PacketResult, Error> {
+) -> HandlerResult<PacketResult, ChannelError> {
     let mut output = HandlerOutput::builder();
 
     let dest_channel_end = ctx
@@ -29,16 +33,18 @@ pub fn process(
             packet.destination_channel.clone(),
         ))
         .ok_or_else(|| {
-            Kind::ChannelNotFound(
+            error::channel_not_found_error(
                 packet.destination_port.clone(),
                 packet.destination_channel.clone(),
+                anyhow::anyhow!("channel not found"),
             )
         })?;
 
     if !dest_channel_end.state_matches(&State::Open) {
-        return Err(
-            Kind::InvalidChannelState(packet.source_channel, dest_channel_end.state).into(),
-        );
+        return Err(error::invalid_channel_state_error(
+            packet.source_channel,
+            dest_channel_end.state,
+        ));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
@@ -54,11 +60,11 @@ pub fn process(
         ))
         .is_some()
     {
-        return Err(Kind::AcknowledgementExists(packet.sequence).into());
+        return Err(error::acknowledgement_exists_error(packet.sequence));
     }
 
     if ack.is_empty() {
-        return Err(Kind::InvalidAcknowledgement.into());
+        return Err(error::invalid_acknowledgement_error());
     }
 
     let result = PacketResult::WriteAck(WriteAckPacketResult {

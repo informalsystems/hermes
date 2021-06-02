@@ -1,9 +1,11 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
 use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
+use crate::ics04_channel::error::{self, ChannelError};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::{attribute, some_attribute};
-use anomaly::BoxError;
+use crate::some_attribute;
+use std::prelude::v1::format;
+
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -102,18 +104,45 @@ impl From<Attributes> for OpenInit {
     }
 }
 
+#[macro_export]
+macro_rules! connection_attribute {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()?
+    }};
+}
+#[macro_export]
+macro_rules! connection_attribute_validation_kind {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: crate::ics24_host::error::ValidationKind| {
+                error::validation_kind_error(anyhow::anyhow!(e))
+            })?
+    }};
+}
+
 impl TryFrom<RawObject> for OpenInit {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(Attributes {
             height: obj.height,
             connection_id: some_attribute!(obj, "connection_open_init.connection_id"),
-            client_id: attribute!(obj, "connection_open_init.client_id"),
+            client_id: connection_attribute_validation_kind!(obj, "connection_open_init.client_id"),
             counterparty_connection_id: some_attribute!(
                 obj,
                 "connection_open_init.counterparty_connection_id"
             ),
-            counterparty_client_id: attribute!(obj, "connection_open_init.counterparty_client_id"),
+            counterparty_client_id: connection_attribute_validation_kind!(
+                obj,
+                "connection_open_init.counterparty_client_id"
+            ),
         }))
     }
 }
@@ -146,17 +175,20 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(Attributes {
             height: obj.height,
             connection_id: some_attribute!(obj, "connection_open_try.connection_id"),
-            client_id: attribute!(obj, "connection_open_try.client_id"),
+            client_id: connection_attribute_validation_kind!(obj, "connection_open_try.client_id"),
             counterparty_connection_id: some_attribute!(
                 obj,
                 "connection_open_try.counterparty_connection_id"
             ),
-            counterparty_client_id: attribute!(obj, "connection_open_try.counterparty_client_id"),
+            counterparty_client_id: connection_attribute_validation_kind!(
+                obj,
+                "connection_open_try.counterparty_client_id"
+            ),
         }))
     }
 }
@@ -189,17 +221,20 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(Attributes {
             height: obj.height,
             connection_id: some_attribute!(obj, "connection_open_ack.connection_id"),
-            client_id: attribute!(obj, "connection_open_ack.client_id"),
+            client_id: connection_attribute_validation_kind!(obj, "connection_open_ack.client_id"),
             counterparty_connection_id: some_attribute!(
                 obj,
                 "connection_open_ack.counterparty_connection_id"
             ),
-            counterparty_client_id: attribute!(obj, "connection_open_ack.counterparty_client_id"),
+            counterparty_client_id: connection_attribute_validation_kind!(
+                obj,
+                "connection_open_ack.counterparty_client_id"
+            ),
         }))
     }
 }
@@ -232,17 +267,20 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(Attributes {
             height: obj.height,
             connection_id: some_attribute!(obj, "connection_open_confirm.connection_id"),
-            client_id: attribute!(obj, "connection_open_confirm.client_id"),
+            client_id: connection_attribute_validation_kind!(
+                obj,
+                "connection_open_confirm.client_id"
+            ),
             counterparty_connection_id: some_attribute!(
                 obj,
                 "connection_open_confirm.counterparty_connection_id"
             ),
-            counterparty_client_id: attribute!(
+            counterparty_client_id: connection_attribute_validation_kind!(
                 obj,
                 "connection_open_confirm.counterparty_client_id"
             ),

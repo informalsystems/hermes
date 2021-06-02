@@ -3,7 +3,7 @@
 use crate::handler::HandlerOutput;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
-use crate::ics04_channel::error::Error;
+use crate::ics04_channel::error::ChannelError;
 use crate::ics04_channel::msgs::ChannelMsg;
 use crate::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::ics05_port::capabilities::Capability;
@@ -48,7 +48,7 @@ pub struct ChannelResult {
 pub fn channel_dispatch<Ctx>(
     ctx: &Ctx,
     msg: ChannelMsg,
-) -> Result<HandlerOutput<ChannelResult>, Error>
+) -> Result<HandlerOutput<ChannelResult>, ChannelError>
 where
     Ctx: ChannelReader,
 {
@@ -63,7 +63,10 @@ where
 }
 
 /// Dispatcher for processing any type of message related to the ICS4 packet protocols.
-pub fn packet_dispatch<Ctx>(ctx: &Ctx, msg: PacketMsg) -> Result<HandlerOutput<PacketResult>, Error>
+pub fn packet_dispatch<Ctx>(
+    ctx: &Ctx,
+    msg: PacketMsg,
+) -> Result<HandlerOutput<PacketResult>, ChannelError>
 where
     Ctx: ChannelReader,
 {

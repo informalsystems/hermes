@@ -1,11 +1,12 @@
 use crate::ics04_channel::channel::validate_version;
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::{self, ChannelError};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
-
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
+use std::prelude::v1::*;
+use std::string::String;
 use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
@@ -66,7 +67,7 @@ impl MsgChannelOpenAck {
 }
 
 impl Msg for MsgChannelOpenAck {
-    type ValidationError = Error;
+    type ValidationError = ChannelError;
     type Raw = RawMsgChannelOpenAck;
 
     fn route(&self) -> String {
@@ -81,7 +82,7 @@ impl Msg for MsgChannelOpenAck {
 impl Protobuf<RawMsgChannelOpenAck> for MsgChannelOpenAck {}
 
 impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
-    type Error = anomaly::Error<Kind>;
+    type Error = ChannelError;
 
     fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -91,25 +92,28 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
             None,
             raw_msg
                 .proof_height
-                .ok_or(Kind::MissingHeight)?
+                .ok_or(error::missing_height_error(anyhow::anyhow!(
+                    "proof height: missing height error"
+                )))?
                 .try_into()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .map_err(|_| {
+                    error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error"))
+                })?,
         )
-        .map_err(|e| Kind::InvalidProof.context(e))?;
+        .map_err(|_| {
+            error::invalid_proof_error(anyhow::anyhow!("Construct Proofs: invalid proof error"))
+        })?;
 
         Ok(MsgChannelOpenAck {
-            port_id: raw_msg
-                .port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: raw_msg
-                .channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_channel_id: raw_msg
-                .counterparty_channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            port_id: raw_msg.port_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("port id: identifier error"))
+            })?,
+            channel_id: raw_msg.channel_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("channel id: identifier error"))
+            })?,
+            counterparty_channel_id: raw_msg.counterparty_channel_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("counterpart channel id: identifier error"))
+            })?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
             signer: raw_msg.signer.into(),

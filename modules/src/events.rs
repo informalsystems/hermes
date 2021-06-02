@@ -1,6 +1,8 @@
-use std::collections::HashMap;
+use std::collections::btree_map::BTreeMap as HashMap;
+use std::string::String;
+use std::vec::Vec;
 
-use anomaly::BoxError;
+use flex_error::BoxError;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::events as ClientEvents;
@@ -9,6 +11,7 @@ use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::Height;
 use prost::alloc::fmt::Formatter;
+use std::borrow::ToOwned;
 use std::fmt;
 
 /// Events types
@@ -209,8 +212,8 @@ impl RawObject {
     }
 }
 
-pub fn extract_events<S: ::std::hash::BuildHasher>(
-    events: &HashMap<String, Vec<String>, S>,
+pub fn extract_events(
+    events: &HashMap<String, Vec<String>>,
     action_string: &str,
 ) -> Result<(), BoxError> {
     if let Some(message_action) = events.get("message.action") {
@@ -227,10 +230,10 @@ macro_rules! make_event {
     ($a:ident, $b:literal) => {
         #[derive(Debug, Deserialize, Serialize, Clone)]
         pub struct $a {
-            pub data: ::std::collections::HashMap<String, Vec<String>>,
+            pub data: ::std::collections::btree_map::BTreeMap<String, Vec<String>>,
         }
         impl ::std::convert::TryFrom<$crate::events::RawObject> for $a {
-            type Error = ::anomaly::BoxError;
+            type Error = ::anyhow::BoxError;
 
             fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
                 match $crate::events::extract_events(&result.events, $b) {
@@ -247,13 +250,27 @@ macro_rules! make_event {
 #[macro_export]
 macro_rules! attribute {
     ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse()?
+        $a.events
+            .get($b)
+            .ok_or(crate::ics04_channel::error::validation_kind_error(
+                anyhow::anyhow!($b),
+            ))?[$a.idx]
+            .parse()
+            .map_err(|e| {
+                crate::ics04_channel::error::validation_kind_error(anyhow::anyhow!("parse error"))
+            })?
     };
 }
 
 #[macro_export]
 macro_rules! some_attribute {
     ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse().ok()
+        $a.events
+            .get($b)
+            .ok_or(crate::ics04_channel::error::some_attribute_error(
+                anyhow::anyhow!($b),
+            ))?[$a.idx]
+            .parse()
+            .ok()
     };
 }

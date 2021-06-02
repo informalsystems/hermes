@@ -2,13 +2,17 @@ use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use crate::ics23_commitment::error::Error;
+use crate::ics23_commitment::error::CommitmentError;
+use std::boxed::Box;
+use std::prelude::v1::*;
+use std::string::String;
+use std::vec::Vec;
 use tendermint::merkle::proof::Proof;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
     mut path: Vec<String>,
-) -> Result<MerklePath, Box<dyn std::error::Error>> {
+) -> Result<MerklePath, Box<dyn flex_error::StdErr>> {
     if prefix.is_empty() {
         return Err("empty prefix".into());
     }
@@ -125,7 +129,7 @@ use prost::Message;
 
 pub fn convert_tm_to_ics_merkle_proof(
     tm_proof: Option<Proof>,
-) -> Result<Option<RawMerkleProof>, Error> {
+) -> Result<Option<RawMerkleProof>, CommitmentError> {
     if let Some(proof) = tm_proof {
         let mut mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![];
         for (_i, op) in proof.ops.iter().enumerate() {

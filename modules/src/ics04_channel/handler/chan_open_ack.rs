@@ -4,26 +4,37 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::ics04_channel::context::ChannelReader;
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::{self, ChannelError};
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+use std::prelude::v1::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: MsgChannelOpenAck,
-) -> HandlerResult<ChannelResult, Error> {
+) -> HandlerResult<ChannelResult, ChannelError> {
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end and validate it against the message.
     let mut channel_end = ctx
         .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
-        .ok_or_else(|| Kind::ChannelNotFound(msg.port_id.clone(), msg.channel_id().clone()))?;
+        .ok_or_else(|| {
+            error::channel_not_found_error(
+                msg.port_id.clone(),
+                msg.channel_id().clone(),
+                anyhow::anyhow!("channel not found"),
+            )
+        })?;
 
     // Validate that the channel end is in a state where it can be ack.
     if !channel_end.state_matches(&State::Init) && !channel_end.state_matches(&State::TryOpen) {
-        return Err(Kind::InvalidChannelState(msg.channel_id().clone(), channel_end.state).into());
+        return Err(error::invalid_channel_state_error(
+            msg.channel_id().clone(),
+            channel_end.state,
+        )
+        .into());
     }
 
     // Channel capabilities
@@ -32,17 +43,25 @@ pub(crate) fn process(
     // An OPEN IBC connection running on the local (host) chain should exist.
 
     if channel_end.connection_hops().len() != 1 {
-        return Err(
-            Kind::InvalidConnectionHopsLength(1, channel_end.connection_hops().len()).into(),
-        );
+        return Err(error::invalid_connection_hops_length_error(
+            1,
+            channel_end.connection_hops().len(),
+        )
+        .into());
     }
 
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
-        .ok_or_else(|| Kind::MissingConnection(channel_end.connection_hops()[0].clone()))?;
+        .ok_or_else(|| {
+            error::missing_connection_error(anyhow::anyhow!(
+                channel_end.connection_hops()[0].clone()
+            ))
+        })?;
 
     if !conn.state_matches(&ConnectionState::Open) {
-        return Err(Kind::ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
+        return Err(
+            error::connection_not_open_error(channel_end.connection_hops()[0].clone()).into(),
+        );
     }
 
     // Proof verification in two steps:
@@ -53,7 +72,7 @@ pub(crate) fn process(
 
     let counterparty = conn.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
-        Kind::UndefinedConnectionCounterparty(channel_end.connection_hops()[0].clone())
+        error::undefined_connection_counterparty_error(channel_end.connection_hops()[0].clone())
     })?;
 
     let expected_connection_hops = vec![ccid.clone()];
@@ -73,7 +92,11 @@ pub(crate) fn process(
         &expected_channel_end,
         &msg.proofs(),
     )
-    .map_err(|e| Kind::ChanOpenAckProofVerification.context(e))?;
+    .map_err(|_| {
+        error::chan_open_ack_proof_verification_error(anyhow::anyhow!(
+            "verify channel proofs : chan open ack proof verification error"
+        ))
+    })?;
 
     output.log("success: channel open ack ");
 

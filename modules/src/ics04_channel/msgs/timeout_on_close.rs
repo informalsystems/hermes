@@ -1,10 +1,11 @@
+use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
 use std::convert::{TryFrom, TryInto};
-
+use std::prelude::v1::*;
+use std::string::String;
+use std::vec::Vec;
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
-
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::{self, ChannelError};
 use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -40,7 +41,7 @@ impl MsgTimeoutOnClose {
 }
 
 impl Msg for MsgTimeoutOnClose {
-    type ValidationError = Error;
+    type ValidationError = ChannelError;
     type Raw = RawMsgTimeoutOnClose;
 
     fn route(&self) -> String {
@@ -55,7 +56,7 @@ impl Msg for MsgTimeoutOnClose {
 impl Protobuf<RawMsgTimeoutOnClose> for MsgTimeoutOnClose {}
 
 impl TryFrom<RawMsgTimeoutOnClose> for MsgTimeoutOnClose {
-    type Error = anomaly::Error<Kind>;
+    type Error = ChannelError;
 
     fn try_from(raw_msg: RawMsgTimeoutOnClose) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -65,20 +66,30 @@ impl TryFrom<RawMsgTimeoutOnClose> for MsgTimeoutOnClose {
             None,
             raw_msg
                 .proof_height
-                .ok_or(Kind::MissingHeight)?
+                .ok_or(error::missing_height_error(anyhow::anyhow!(
+                    "proof height: missing height error"
+                )))?
                 .try_into()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .map_err(|_| {
+                    error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error"))
+                })?,
         )
-        .map_err(|e| Kind::InvalidProof.context(e))?;
+        .map_err(|_| {
+            error::invalid_proof_error(anyhow::anyhow!("Construct Proofs: invalid proof error"))
+        })?;
 
         // TODO: Domain type verification for the next sequence: this should probably be > 0.
 
         Ok(MsgTimeoutOnClose {
             packet: raw_msg
                 .packet
-                .ok_or(Kind::MissingPacket)?
+                .ok_or(error::missing_packet_error(anyhow::anyhow!(
+                    "packet: missing packet error"
+                )))?
                 .try_into()
-                .map_err(|e| Kind::InvalidPacket.context(e))?,
+                .map_err(|_| {
+                    error::invalid_packet_error(anyhow::anyhow!("packet: invalid packet error"))
+                })?,
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),
             signer: raw_msg.signer.into(),
             proofs,

@@ -2,7 +2,8 @@
 
 use std::convert::TryFrom;
 use std::str::FromStr;
-
+use std::string::String;
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
@@ -10,7 +11,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
-use crate::ics02_client::error::Kind;
+use crate::ics02_client::error::{self, ClientError};
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
@@ -61,28 +62,42 @@ impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
 }
 
 impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
-    type Error = Kind;
+    type Error = ClientError;
 
     fn try_from(proto_msg: RawMsgUpgradeClient) -> Result<Self, Self::Error> {
-        let raw_client_state = proto_msg.client_state.ok_or(Kind::InvalidRawClientState)?;
-        let raw_consensus_state = proto_msg
-            .consensus_state
-            .ok_or(Kind::InvalidRawConsensusState)?;
+        let raw_client_state =
+            proto_msg
+                .client_state
+                .ok_or(error::invalid_raw_client_state_error(anyhow::anyhow!(
+                    "client state: invalid raw client state error"
+                )))?;
+        let raw_consensus_state =
+            proto_msg
+                .consensus_state
+                .ok_or(error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                    "consensus state: invalid raw consensus state error"
+                )))?;
 
         let c_bytes = CommitmentProofBytes::from(proto_msg.proof_upgrade_client);
         let cs_bytes = CommitmentProofBytes::from(proto_msg.proof_upgrade_consensus_state);
 
         Ok(MsgUpgradeAnyClient {
             client_id: ClientId::from_str(&proto_msg.client_id)
-                .map_err(|e| Kind::InvalidClientIdentifier(e.kind().clone()))?,
-            client_state: AnyClientState::try_from(raw_client_state)
-                .map_err(|_| Kind::InvalidRawClientState)?,
-            consensus_state: AnyConsensusState::try_from(raw_consensus_state)
-                .map_err(|_| Kind::InvalidRawConsensusState)?,
+                .map_err(|e| error::invalid_client_identifier_error(e.kind().clone()))?,
+            client_state: AnyClientState::try_from(raw_client_state).map_err(|_| {
+                error::invalid_raw_client_state_error(anyhow::anyhow!(
+                    "AnyClientState: invalid raw client state error"
+                ))
+            })?,
+            consensus_state: AnyConsensusState::try_from(raw_consensus_state).map_err(|_| {
+                error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                    "AnyConsensusState: invalid raw consensus state error"
+                ))
+            })?,
             proof_upgrade_client: MerkleProof::try_from(c_bytes)
-                .map_err(|e| Kind::InvalidUpgradeClientProof(e.kind().clone()))?,
+                .map_err(|e| error::invalid_upgrade_client_proof_error(e))?,
             proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes)
-                .map_err(|e| Kind::InvalidUpgradeConsensusStateProof(e.kind().clone()))?,
+                .map_err(|e| error::invalid_upgrade_consensus_state_proof_error(e))?,
             signer: proto_msg.signer.into(),
         })
     }

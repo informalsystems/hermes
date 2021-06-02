@@ -1,12 +1,14 @@
 //! This is the definition of a transfer messages that an application submits to a chain.
 
 use std::convert::{TryFrom, TryInto};
+use std::string::String;
+use std::string::ToString;
 
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
-use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
+use crate::application::ics20_fungible_token_transfer::error::FungibleTokenTransferError;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
@@ -38,7 +40,7 @@ pub struct MsgTransfer {
 }
 
 impl Msg for MsgTransfer {
-    type ValidationError = Error;
+    type ValidationError = FungibleTokenTransferError;
     type Raw = RawMsgTransfer;
 
     fn route(&self) -> String {
@@ -53,7 +55,7 @@ impl Msg for MsgTransfer {
 impl Protobuf<RawMsgTransfer> for MsgTransfer {}
 
 impl TryFrom<RawMsgTransfer> for MsgTransfer {
-    type Error = anomaly::Error<Kind>;
+    type Error = FungibleTokenTransferError;
 
     fn try_from(raw_msg: RawMsgTransfer) -> Result<Self, Self::Error> {
         Ok(MsgTransfer {

@@ -1,14 +1,16 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+use displaydoc::Display;
+use std::string::String;
 
-pub type ValidationError = anomaly::Error<ValidationKind>;
+pub type ValidationError = ValidationKind;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
+impl flex_error::StdErr for ValidationKind {}
+
+#[derive(Clone, Debug, Display, PartialEq, Eq)]
 pub enum ValidationKind {
-    #[error("identifier {id} cannot contain separator '/'")]
+    /// identifier {id} cannot contain separator '/'
     ContainsSeparator { id: String },
 
-    #[error("identifier {id} has invalid length {length} must be between {min}-{max} characters")]
+    /// identifier {id} has invalid length {length} must be between {min}-{max} characters
     InvalidLength {
         id: String,
         length: usize,
@@ -16,16 +18,16 @@ pub enum ValidationKind {
         max: usize,
     },
 
-    #[error("identifier {id} must only contain alphanumeric characters or `.`, `_`, `+`, `-`, `#`, - `[`, `]`, `<`, `>`")]
+    /// identifier {id} must only contain alphanumeric characters or `.`, `_`, `+`, `-`, `#`, - `[`, `]`, `<`, `>`
     InvalidCharacter { id: String },
 
-    #[error("identifier cannot be empty")]
+    /// identifier cannot be empty
     Empty,
 
-    #[error("chain identifiers are expected to be in epoch format {id}")]
+    /// chain identifiers are expected to be in epoch format {id}
     ChainIdInvalidFormat { id: String },
 
-    #[error("Invalid channel id in counterparty")]
+    /// Invalid channel id in counterparty
     InvalidCounterpartyChannelId,
 }
 
@@ -55,7 +57,11 @@ impl ValidationKind {
         Self::ChainIdInvalidFormat { id }
     }
 
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+    pub fn wrap_error(self) -> anyhow::Error {
+        anyhow::anyhow!(self)
+    }
+
+    pub fn kind(&self) -> &Self {
+        &self
     }
 }

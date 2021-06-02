@@ -1,16 +1,17 @@
-use core::marker::{Send, Sync};
-use std::convert::{TryFrom, TryInto};
-
 use chrono::{DateTime, Utc};
+use core::marker::{Send, Sync};
 use prost_types::Any;
 use serde::Serialize;
+use std::boxed::Box;
+use std::convert::{TryFrom, TryInto};
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 
 use crate::events::IbcEventType;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::{self, ClientError};
 use crate::ics02_client::height::Height;
 use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
@@ -32,7 +33,7 @@ pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
     fn root(&self) -> &CommitmentRoot;
 
     /// Performs basic validation of the consensus state
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>>;
+    fn validate_basic(&self) -> Result<(), Box<dyn flex_error::StdErr>>;
 
     /// Wrap into an `AnyConsensusState`
     fn wrap_any(self) -> AnyConsensusState;
@@ -48,13 +49,13 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
-    pub fn timestamp(&self) -> Result<u64, Kind> {
+    pub fn timestamp(&self) -> Result<u64, ClientError> {
         match self {
             Self::Tendermint(cs_state) => {
                 let date: DateTime<Utc> = cs_state.timestamp.into();
                 let value = date.timestamp();
                 u64::try_from(value)
-                    .map_err(|_| Kind::NegativeConsensusStateTimestamp(value.to_string()))
+                    .map_err(|_| error::negative_consensus_state_timestamp_error(value.to_string()))
             }
 
             #[cfg(any(test, feature = "mocks"))]
@@ -75,24 +76,30 @@ impl AnyConsensusState {
 impl Protobuf<Any> for AnyConsensusState {}
 
 impl TryFrom<Any> for AnyConsensusState {
-    type Error = Error;
+    type Error = ClientError;
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
-            "" => Err(Kind::EmptyConsensusStateResponse.into()),
+            "" => Err(error::empty_consensus_state_response_error()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                consensus_state::ConsensusState::decode_vec(&value.value)
-                    .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
+                consensus_state::ConsensusState::decode_vec(&value.value).map_err(|_| {
+                    error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                        "consensus state: invalid raw consensus state eror"
+                    ))
+                })?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
-                MockConsensusState::decode_vec(&value.value)
-                    .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
+                MockConsensusState::decode_vec(&value.value).map_err(|_| {
+                    error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                        "MockConsensusState: invalid raw consensus state error"
+                    ))
+                })?,
             )),
 
-            _ => Err(Kind::UnknownConsensusStateType(value.type_url).into()),
+            _ => Err(error::unknown_consensus_state_type_error(value.type_url)),
         }
     }
 }
@@ -122,18 +129,27 @@ pub struct AnyConsensusStateWithHeight {
 impl Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {}
 
 impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
-    type Error = Error;
+    type Error = ClientError;
 
     fn try_from(value: ConsensusStateWithHeight) -> Result<Self, Self::Error> {
         let state = value
             .consensus_state
             .map(AnyConsensusState::try_from)
             .transpose()
-            .map_err(|e| Kind::InvalidRawConsensusState.context(e))?
-            .ok_or(Kind::EmptyConsensusStateResponse)?;
+            .map_err(|_| {
+                error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                    "consensus state: invalid raw consensus state error"
+                ))
+            })?
+            .ok_or(error::empty_consensus_state_response_error())?;
 
         Ok(AnyConsensusStateWithHeight {
-            height: value.height.ok_or(Kind::InvalidHeightResult)?.try_into()?,
+            height: value
+                .height
+                .ok_or(error::invalid_height_result_error(anyhow::anyhow!(
+                    "height: invalid height result error"
+                )))?
+                .try_into()?,
             consensus_state: state,
         })
     }
@@ -157,7 +173,7 @@ impl ConsensusState for AnyConsensusState {
         todo!()
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn validate_basic(&self) -> Result<(), Box<dyn flex_error::StdErr>> {
         todo!()
     }
 

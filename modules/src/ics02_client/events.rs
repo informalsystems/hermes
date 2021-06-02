@@ -1,14 +1,16 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use std::convert::{TryFrom, TryInto};
+use std::prelude::v1::format;
+use std::string::String;
 
-use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
-use crate::attribute;
+// use crate::attribute;
 use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::{self, ClientError};
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
@@ -157,14 +159,52 @@ impl From<Attributes> for CreateClient {
     }
 }
 
+#[macro_export]
+macro_rules! client_attribute {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()?
+    }};
+}
+
+#[macro_export]
+macro_rules! c_attribute_validation_kind {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: crate::ics24_host::error::ValidationKind| {
+                error::validation_kind_error(anyhow::anyhow!(e))
+            })?
+    }};
+}
+
+#[macro_export]
+macro_rules! c_attribute_infallible {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?
+    }};
+}
+
 impl TryFrom<RawObject> for CreateClient {
-    type Error = BoxError;
+    type Error = ClientError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let consensus_height_str: String = attribute!(obj, "create_client.consensus_height");
+        let consensus_height_str: String =
+            c_attribute_infallible!(obj, "create_client.consensus_height");
         Ok(CreateClient(Attributes {
             height: obj.height,
-            client_id: attribute!(obj, "create_client.client_id"),
-            client_type: attribute!(obj, "create_client.client_type"),
+            client_id: c_attribute_validation_kind!(obj, "create_client.client_id"),
+            client_type: client_attribute!(obj, "create_client.client_type"),
             consensus_height: consensus_height_str.as_str().try_into()?,
         }))
     }
@@ -220,17 +260,18 @@ impl From<Attributes> for UpdateClient {
 }
 
 impl TryFrom<RawObject> for UpdateClient {
-    type Error = BoxError;
+    type Error = ClientError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let header_str: String = attribute!(obj, "update_client.header");
+        let header_str: String = c_attribute_infallible!(obj, "update_client.header");
         let header_bytes = hex::decode(header_str).unwrap();
         let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
-        let consensus_height_str: String = attribute!(obj, "update_client.consensus_height");
+        let consensus_height_str: String =
+            c_attribute_infallible!(obj, "update_client.consensus_height");
         Ok(UpdateClient {
             common: Attributes {
                 height: obj.height,
-                client_id: attribute!(obj, "update_client.client_id"),
-                client_type: attribute!(obj, "update_client.client_type"),
+                client_id: c_attribute_validation_kind!(obj, "update_client.client_id"),
+                client_type: client_attribute!(obj, "update_client.client_type"),
                 consensus_height: consensus_height_str.as_str().try_into()?,
             },
             header: Some(header),
@@ -268,13 +309,14 @@ impl ClientMisbehaviour {
 }
 
 impl TryFrom<RawObject> for ClientMisbehaviour {
-    type Error = BoxError;
+    type Error = ClientError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let consensus_height_str: String = attribute!(obj, "client_misbehaviour.consensus_height");
+        let consensus_height_str: String =
+            c_attribute_infallible!(obj, "client_misbehaviour.consensus_height");
         Ok(ClientMisbehaviour(Attributes {
             height: obj.height,
-            client_id: attribute!(obj, "client_misbehaviour.client_id"),
-            client_type: attribute!(obj, "client_misbehaviour.client_type"),
+            client_id: c_attribute_validation_kind!(obj, "client_misbehaviour.client_id"),
+            client_type: client_attribute!(obj, "client_misbehaviour.client_type"),
             consensus_height: consensus_height_str.as_str().try_into()?,
         }))
     }
