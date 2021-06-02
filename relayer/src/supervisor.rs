@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, log::trace, warn};
 
 use ibc::{
     events::IbcEvent,
@@ -13,25 +13,12 @@ use ibc::{
     ics24_host::identifier::ChainId,
     Height,
 };
-use ibc_proto::ibc::core::{
-    channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest,
-    connection::v1::QueryClientConnectionsRequest,
-};
+use ibc_proto::ibc::core::{channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest, connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest}};
 
-use crate::{
-    chain::counterparty::channel_state_on_destination,
-    chain::handle::ChainHandle,
-    config::{Config, Strategy},
-    event::{
+use crate::{chain::counterparty::channel_state_on_destination, chain::{counterparty::{connection_client, connection_state_on_destination}, handle::ChainHandle}, config::{Config, Strategy}, event::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
-    },
-    object::{Channel, Client, Connection, Object, UnidirectionalChannelPath},
-    registry::Registry,
-    telemetry::Telemetry,
-    util::try_recv_multiple,
-    worker::{WorkerMap, WorkerMsg},
-};
+    }, object::{Channel, Client, Connection, Object, UnidirectionalChannelPath}, registry::Registry, telemetry::Telemetry, util::try_recv_multiple, worker::{WorkerMap, WorkerMsg}};
 
 mod error;
 pub use error::Error;
