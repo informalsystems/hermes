@@ -228,7 +228,7 @@ These levels correspond to the tracing sub-component of the relayer-cli,
 [see here](https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html).
 
 The relayer will _always_ print a last line summarizing the result of its
-operation for queries of transactions. In addition to  this last line,
+operation for queries or transactions. In addition to this last line,
 arbitrary debug, info, or other outputs may be produced.  Example, with
 `log_level = 'debug'` and JSON output:
 
