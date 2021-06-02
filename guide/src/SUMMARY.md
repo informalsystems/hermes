@@ -11,6 +11,7 @@
    - [Pre-requisites](./pre_requisites.md)
    - [Installation](./installation.md)
    - [Configuration](./config.md)
+- [Telemetry](./telemetry.md)
 - [Tutorials](./tutorials/index.md)
    - [Local chains](./tutorials/local-chains/index.md)
      - [Install Gaia](./tutorials/local-chains/gaia.md)

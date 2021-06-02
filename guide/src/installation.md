@@ -118,6 +118,16 @@ The last of these crates contains the `hermes` binary.
 cargo build --release --bin hermes
 ```
 
+<a name="telemetry-support"></a>
+
+> By default, Hermes bundles a [telemetry service and server](./telemetry.md).
+> To build Hermes without telemetry support, and get a smaller executable,
+> supply the `--no-default-features flag` to `cargo build`:
+>
+> ```shell
+> cargo build --release --no-default-features --bin hermes
+> ```
+
 If the build is successful, the `hermes` executable will be located in the following location:
 
 ```shell
