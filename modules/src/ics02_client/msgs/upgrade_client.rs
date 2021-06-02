@@ -5,6 +5,9 @@ use std::str::FromStr;
 
 use tendermint_proto::Protobuf;
 
+use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::error::Kind;
@@ -12,8 +15,6 @@ use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
-use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
 
@@ -108,7 +109,8 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
 
 #[cfg(test)]
 pub mod test_util {
-    use super::MsgUpgradeAnyClient;
+    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+
     use crate::{
         ics02_client::{
             client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
@@ -120,7 +122,8 @@ pub mod test_util {
         },
         test_utils::{get_dummy_bech32_account, get_dummy_proof},
     };
-    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+
+    use super::MsgUpgradeAnyClient;
 
     /// Extends the implementation with additional helper methods.
     impl MsgUpgradeAnyClient {
@@ -130,7 +133,7 @@ pub mod test_util {
         }
     }
 
-    /// Returns a dummy `RawMsgAcknowledgement`, for testing only!
+    /// Returns a dummy `RawMsgUpgradeClient`, for testing only!
     pub fn get_dummy_raw_msg_upgrade_client(height: Height) -> RawMsgUpgradeClient {
         RawMsgUpgradeClient {
             client_id: "tendermint".parse().unwrap(),
@@ -149,21 +152,23 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
-    use crate::ics24_host::identifier::ClientId;
-    use crate::test_utils::get_dummy_account_id;
+    use std::convert::TryFrom;
+
+    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+
     use crate::{
         ics02_client::{
             client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
+            msgs::upgrade_client::MsgUpgradeAnyClient,
         },
         ics23_commitment::commitment::test_util::get_dummy_merkle_proof,
+        ics24_host::identifier::ClientId,
         mock::{
             client_state::{MockClientState, MockConsensusState},
             header::MockHeader,
         },
+        test_utils::get_dummy_account_id,
     };
-    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
-    use std::convert::TryFrom;
 
     #[test]
     fn msg_upgrade_client_serialization() {
