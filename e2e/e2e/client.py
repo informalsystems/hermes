@@ -46,7 +46,10 @@ class TxUpdateClient(Cmd[ClientUpdated]):
         return [self.dst_chain_id, self.dst_client_id]
 
     def process(self, result: Any) -> ClientUpdated:
-        return from_dict(ClientUpdated, result['UpdateClient']['common'])
+        if 'UpdateClient' not in result:
+            return None
+        else:
+            return from_dict(ClientUpdated, result['UpdateClient']['common'])
 
 
 # -----------------------------------------------------------------------------
@@ -109,7 +112,10 @@ def update_client(c: Config, dst: ChainId, client_id: ClientId) -> ClientUpdated
     cmd = TxUpdateClient(dst_chain_id=dst,
                          dst_client_id=client_id)
     res = cmd.run(c).success()
-    l.info(f'Updated client to: {res.consensus_height}')
+    if res is None:
+        l.info('Client is already updated')
+    else:
+        l.info(f'Updated client to: {res.consensus_height}')
     return res
 
 

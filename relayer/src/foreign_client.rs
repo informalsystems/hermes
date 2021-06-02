@@ -387,7 +387,6 @@ impl ForeignClient {
                 if elapsed > refresh_window {
                     info!("[{}] client requires refresh", self);
                     self.build_latest_update_client_and_send()
-                        .map_or_else(Err, |ev| Ok(Some(ev)))
                 } else {
                     Ok(None)
                 }
@@ -439,7 +438,7 @@ impl ForeignClient {
             // Get highest height smaller than target height
             cs_heights
                 .into_iter()
-                .find(|h| h < &target_height)
+                .find(|h| h <= &target_height)
                 .ok_or_else(|| {
                     ForeignClientError::ClientUpdate(format!(
                         "chain {} is missing trusted state smaller than target height {}",
@@ -501,7 +500,9 @@ impl ForeignClient {
         Ok(vec![new_msg.to_any()])
     }
 
-    pub fn build_latest_update_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {
+    pub fn build_latest_update_client_and_send(
+        &self,
+    ) -> Result<Option<IbcEvent>, ForeignClientError> {
         self.build_update_client_and_send(Height::zero(), Height::zero())
     }
 
@@ -509,7 +510,7 @@ impl ForeignClient {
         &self,
         height: Height,
         trusted_height: Height,
-    ) -> Result<IbcEvent, ForeignClientError> {
+    ) -> Result<Option<IbcEvent>, ForeignClientError> {
         let h = if height == Height::zero() {
             self.src_chain.query_latest_height().map_err(|e| {
                 ForeignClientError::ClientUpdate(format!(
@@ -524,12 +525,14 @@ impl ForeignClient {
 
         let new_msgs = self.build_update_client_with_trusted(h, trusted_height)?;
         if new_msgs.is_empty() {
-            return Err(ForeignClientError::ClientUpdate(format!(
+            debug!(
                 "Client {} is already up-to-date with chain {}@{}",
                 self.id,
                 self.src_chain.id(),
                 h
-            )));
+            );
+
+            return Ok(None);
         }
 
         let mut events = self.dst_chain().send_msgs(new_msgs).map_err(|e| {
@@ -542,7 +545,7 @@ impl ForeignClient {
 
         assert!(!events.is_empty());
 
-        Ok(events.pop().unwrap())
+        Ok(events.pop())
     }
 
     /// Attempts to update a client using header from the latest height of its source chain.
@@ -1023,11 +1026,9 @@ mod test {
         // This should fail because the client on chain a already has the latest headers. Chain b,
         // the source chain for the client on a, is at the same height where it was when the client
         // was created, so an update should fail here.
-        let res = a_client.build_latest_update_client_and_send();
-        assert!(
-            res.is_err(),
-            "build_update_client_and_send was supposed to fail",
-        );
+        a_client
+            .build_latest_update_client_and_send()
+            .expect("build_create_client_and_send failed (chain a)");
 
         // Remember b's height.
         let b_height_last = b_chain.query_latest_height().unwrap();
@@ -1058,7 +1059,10 @@ mod test {
                 "build_update_client_and_send failed (chain a) with error: {:?}",
                 res
             );
-            assert!(matches!(res.as_ref().unwrap(), IbcEvent::UpdateClient(_)));
+            assert!(matches!(
+                res.as_ref().unwrap(),
+                Some(IbcEvent::UpdateClient(_))
+            ));
 
             let a_height_current = a_chain.query_latest_height().unwrap();
             a_height_last = a_height_last.increment();
@@ -1074,7 +1078,10 @@ mod test {
                 "build_update_client_and_send failed (chain b) with error: {:?}",
                 res
             );
-            assert!(matches!(res.as_ref().unwrap(), IbcEvent::UpdateClient(_)));
+            assert!(matches!(
+                res.as_ref().unwrap(),
+                Some(IbcEvent::UpdateClient(_))
+            ));
 
             let b_height_current = b_chain.query_latest_height().unwrap();
             b_height_last = b_height_last.increment();

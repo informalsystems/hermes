@@ -106,7 +106,7 @@ impl Runnable for TxUpdateClientCmd {
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let res: Result<IbcEvent, Error> = client
+        let res: Result<Option<IbcEvent>, Error> = client
             .build_update_client_and_send(height, trusted_height)
             .map_err(|e| Kind::Tx.context(e).into());
 
