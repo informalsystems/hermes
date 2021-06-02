@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+Special thanks to Colin Axnér (@colin-axner) and Jongwhan Lee (@leejw51crypto)
+for raising multiple issues that helped us improve the reliability of Hermes.
+
 ### FEATURES
 
 - [ibc-relayer]
@@ -14,12 +17,20 @@
   - Started `unwrap` cleanup ([#871])
 
 - [ibc-relayer-cli]
+  - Include chain-id in `query clients` command, and sort output by client counter ([#992])
   - Improve config loading message ([#996])
+  - Improve Hermes worker spawn time for `start` command ([#998])
+  - Better Hermes help message when command is unrecognized ([#1003])
 
 ### BUG FIXES
 
 - [ibc-relayer]
   - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
+  - Client worker aborts gracefully if the client is expired or frozen ([#1022])
+
+- [gaiad-manager]
+  - Import hermes keys properly even if wallet HD derivation path is set ([#975])
+  - Apply default values to missing configuration parameters ([#993])
 
 ### BREAKING CHANGES
 
@@ -30,8 +41,15 @@
 [#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
+[#975]: https://github.com/informalsystems/ibc-rs/issues/975
 [#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#992]: https://github.com/informalsystems/ibc-rs/issues/992
 [#996]: https://github.com/informalsystems/ibc-rs/issues/996
+[#993]: https://github.com/informalsystems/ibc-rs/issues/993
+[#998]: https://github.com/informalsystems/ibc-rs/issues/998
+[#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
+[#1022]: https://github.com/informalsystems/ibc-rs/issues/1022
+[gaiad-manager]: https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/README.md
 
 ## v0.3.2
 *May 21st, 2021*

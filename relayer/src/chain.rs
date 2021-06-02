@@ -23,9 +23,10 @@ use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -203,6 +204,11 @@ pub trait Chain: Sized {
             "".to_string()
         }
     }
+
+    fn query_channel_client_state(
+        &self,
+        request: QueryChannelClientStateRequest,
+    ) -> Result<Option<IdentifiedAnyClientState>, Error>;
 
     fn query_packet_commitments(
         &self,

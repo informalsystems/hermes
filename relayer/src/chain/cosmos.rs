@@ -52,9 +52,10 @@ use ibc_proto::cosmos::upgrade::v1beta1::{
     QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -503,11 +504,19 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
-        let clients = response
+        // Deserialize into domain type
+        let mut clients: Vec<IdentifiedAnyClientState> = response
             .client_states
             .into_iter()
             .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
             .collect();
+
+        // Sort by client identifier counter
+        clients.sort_by(|a, b| {
+            client_id_suffix(&a.client_id)
+                .unwrap_or(0) // Fallback to `0` suffix (no sorting) if client id is malformed
+                .cmp(&client_id_suffix(&b.client_id).unwrap_or(0))
+        });
 
         Ok(clients)
     }
@@ -832,6 +841,34 @@ impl Chain for CosmosSdkChain {
         })?;
 
         Ok(channel_end)
+    }
+
+    fn query_channel_client_state(
+        &self,
+        request: QueryChannelClientStateRequest,
+    ) -> Result<Option<IdentifiedAnyClientState>, Error> {
+        crate::time!("query_channel_client_state");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.channel_client_state(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let client_state: Option<IdentifiedAnyClientState> = response
+            .identified_client_state
+            .map_or_else(|| None, |proto_cs| proto_cs.try_into().ok());
+
+        Ok(client_state)
     }
 
     /// Queries the packet commitment hashes associated with a channel.
@@ -1502,4 +1539,16 @@ fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error
         .map_err(Kind::Bech32Encoding)?;
 
     Ok(encoded)
+}
+
+/// Returns the suffix counter for a CosmosSDK client id.
+/// Returns `None` if the client identifier is malformed
+/// and the suffix could not be parsed.
+pub fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
+    client_id
+        .as_str()
+        .split('-')
+        .last()
+        .map(|e| e.parse::<u64>().ok())
+        .flatten()
 }

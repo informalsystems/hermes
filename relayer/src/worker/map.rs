@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
 use crossbeam_channel::Sender;
+
 use ibc::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
     object::Object,
+    telemetry,
+    telemetry::Telemetry,
 };
 
 use super::{Worker, WorkerHandle, WorkerMsg};
@@ -15,15 +18,17 @@ use super::{Worker, WorkerHandle, WorkerMsg};
 pub struct WorkerMap {
     workers: HashMap<Object, WorkerHandle>,
     msg_tx: Sender<WorkerMsg>,
+    telemetry: Telemetry,
 }
 
 impl WorkerMap {
     /// Create a new worker map, which will spawn workers with
     /// the given channel for sending messages back to the [`Supervisor`].
-    pub fn new(msg_tx: Sender<WorkerMsg>) -> Self {
+    pub fn new(msg_tx: Sender<WorkerMsg>, telemetry: Telemetry) -> Self {
         Self {
             workers: HashMap::new(),
             msg_tx,
+            telemetry,
         }
     }
 
@@ -36,6 +41,7 @@ impl WorkerMap {
     /// the map and wait for its thread to terminate.
     pub fn remove_stopped(&mut self, object: &Object) -> bool {
         if let Some(handle) = self.workers.remove(object) {
+            telemetry!(self.telemetry.worker(metric_type(object), -1));
             let _ = handle.join();
             true
         } else {
@@ -72,9 +78,34 @@ impl WorkerMap {
         if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
-            let handles = ChainHandlePair { a: src, b: dst };
-            let worker = Worker::spawn(handles, object.clone(), self.msg_tx.clone());
+            let worker = self.spawn_worker(src, dst, &object);
             self.workers.entry(object).or_insert(worker)
         }
+    }
+
+    fn spawn_worker(
+        &mut self,
+        src: Box<dyn ChainHandle>,
+        dst: Box<dyn ChainHandle>,
+        object: &Object,
+    ) -> WorkerHandle {
+        telemetry!(self.telemetry.worker(metric_type(object), 1));
+
+        Worker::spawn(
+            ChainHandlePair { a: src, b: dst },
+            object.clone(),
+            self.msg_tx.clone(),
+            self.telemetry.clone(),
+        )
+    }
+}
+
+#[cfg(feature = "telemetry")]
+fn metric_type(o: &Object) -> ibc_telemetry::state::WorkerType {
+    use ibc_telemetry::state::WorkerType::*;
+    match o {
+        Object::Client(_) => Client,
+        Object::Channel(_) => Channel,
+        Object::UnidirectionalChannelPath(_) => Packet,
     }
 }

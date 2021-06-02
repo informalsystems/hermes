@@ -26,11 +26,20 @@ auto_maintain_config=true
 # This node should be part of the hermes config.
 add_to_hermes=false
 
-# (Optional) Path to the `hermes` binary to use. Global-only variable. Ignored in sub-sections.
-hermes_binary="./hermes"
+# the global.hermes section defines hermes configuration items. These are global-only variables.
+[global.hermes]
 
-# (Optional) Hermes configuration file path. Ignored in sub-sections.
-hermes_config="$HOME/.hermes/config.toml"
+# (Optional) Path to the `hermes` binary to use.
+binary="./hermes"
+
+# (Optional) Hermes configuration file path.
+config="$HOME/.hermes/config.toml"
+
+# Hermes configuration strategy paremeter.
+strategy="packets"
+
+# Hermes configuration log_level parameter.
+log_level="info"
 
 ##
 ## Sub-section (node) definitions and parameter redefinitons below.

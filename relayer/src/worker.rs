@@ -3,7 +3,7 @@ use std::fmt;
 use crossbeam_channel::Sender;
 use tracing::{debug, error, info};
 
-use crate::{chain::handle::ChainHandlePair, object::Object};
+use crate::{chain::handle::ChainHandlePair, object::Object, telemetry::Telemetry};
 
 pub mod retry_strategy;
 
@@ -53,6 +53,7 @@ impl Worker {
         chains: ChainHandlePair,
         object: Object,
         msg_tx: Sender<WorkerMsg>,
+        telemetry: Telemetry,
     ) -> WorkerHandle {
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 
@@ -65,13 +66,17 @@ impl Worker {
         );
 
         let worker = match object {
-            Object::Client(client) => Self::Client(ClientWorker::new(client, chains, cmd_rx)),
+            Object::Client(client) => {
+                Self::Client(ClientWorker::new(client, chains, cmd_rx, telemetry))
+            }            
             Object::Connection(connection) => {
                 Self::Connection(ConnectionWorker::new(connection, chains, cmd_rx))
+            }            
+            Object::Channel(channel) => {
+                Self::Channel(ChannelWorker::new(channel, chains, cmd_rx, telemetry))
             }
-            Object::Channel(channel) => Self::Channel(ChannelWorker::new(channel, chains, cmd_rx)),
             Object::UnidirectionalChannelPath(path) => {
-                Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx))
+                Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx, telemetry))
             }
         };
 
@@ -82,6 +87,7 @@ impl Worker {
     /// Run the worker event loop.
     fn run(self, msg_tx: Sender<WorkerMsg>) {
         let object = self.object();
+        let name = object.short_name();
 
         let result = match self {
             Self::Client(w) => w.run(),
@@ -91,14 +97,17 @@ impl Worker {
         };
 
         if let Err(e) = result {
-            error!("worker error: {}", e);
+            error!("[{}] worker aborted with error: {}", name, e);
         }
 
         if let Err(e) = msg_tx.send(WorkerMsg::Stopped(object)) {
-            error!("failed to notify supervisor that worker stopped: {}", e);
+            error!(
+                "[{}] failed to notify supervisor that worker stopped: {}",
+                name, e
+            );
         }
 
-        info!("worker stopped");
+        info!("[{}] worker stopped", name);
     }
 
     fn chains(&self) -> &ChainHandlePair {

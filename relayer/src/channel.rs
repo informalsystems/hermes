@@ -23,7 +23,7 @@ use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::object::Channel as WorkerChannelObject;
-use crate::supervisor::error::Error as WorkerChannelError;
+use crate::supervisor::Error as WorkerChannelError;
 
 const MAX_RETRIES: usize = 5;
 

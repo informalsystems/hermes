@@ -8,7 +8,7 @@ __gm_get_nodes() {
     local NODES=""
     for i in $(grep '^\[.\+\]$' "$HOME/.gm/gm.toml")
     do
-      if [ "$i" = "[global]" ]; then
+      if [ "$i" = "[global]" ] || [ "$i" = "[global.hermes]" ]; then
         continue
       fi
       o="${i##[}"

@@ -18,41 +18,45 @@ fi
 enforce_requirements
 
 usage() {
-  echo "Gaiad Manager $(version)"
-  echo
-  echo "Usage:"
-  echo "  gm <COMMAND> [[<PARAMS>]...]"
-  echo
-  echo "COMMANDS     DESCRIPTION"
-  echo
-  echo "help         print this help and exit"
-  echo "hermes       sub-command for hermes-related configuration"
-  echo "install      install the script for the local user"
-  echo "keys         print the keys of validator nodes"
-  echo "log          print the log of a node"
-  echo "ports        print the ports of a (running) node"
-  echo "start        start one or more nodes (starts all nodes if no parameter is given)"
-  echo "status       print the status of nodes"
-  echo "stop         stop one or more nodes (stops all nodes if no parameter is given)"
-  echo "reset        reset one or more nodes' database (resets all nodes if no parameter is given)"
-  echo "rm           delete the configuration of a node"
-  echo "version      print the application version"
-  echo
+  cat <<EOF
+Gaiad Manager $(version)
+
+Usage:
+  gm <COMMAND> [[<PARAMS>]...]
+
+COMMANDS    DESCRIPTION
+
+help        print this help and exit
+hermes      sub-command for hermes-related configuration
+install     install the script for the local user
+keys        print the keys of validator nodes
+log         print the log of a node
+ports       print the ports of a (running) node
+start       start one or more nodes (starts all nodes if no parameter is given)
+status      print the status of nodes
+stop        stop one or more nodes (stops all nodes if no parameter is given)
+reset       reset one or more nodes' database (resets all nodes if no parameter is given)"
+rm          delete the configuration of a node"
+version     print the application version"
+
+EOF
 }
 
 hermes_usage() {
-  echo "Gaiad Manager $(version) - hermes subcommand"
-  echo
-  echo "Usage:"
-  echo "  gm hermes <SUBCOMMAND> [[<PARAMS>]...]"
-  echo
-  echo "SUBCOMMANDS  DESCRIPTION"
-  echo
-  echo "help         print this help and exit"
-  echo "config       update hermes config.toml with the current gm network details"
-  echo "keys         add keys to $HOME/.hermes"
-  echo "cc           print a list of hermes commands to create IBC connections"
-  echo
+  cat <<EOF
+Gaiad Manager $(version) - hermes subcommand
+
+Usage:
+  gm hermes <SUBCOMMAND> [[<PARAMS>]...]
+
+SUBCOMMANDS  DESCRIPTION
+
+cc           print a list of hermes commands to create IBC connections
+config       update hermes config.toml with the current gm network details
+help         print this help and exit
+keys         add keys to $HOME/.hermes
+
+EOF
 }
 
 case "${1:-help}" in

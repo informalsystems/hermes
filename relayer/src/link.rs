@@ -9,10 +9,9 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 
-use ibc::events::VecIbcEvents;
 use ibc::{
     downcast,
-    events::{IbcEvent, IbcEventType},
+    events::{IbcEvent, IbcEventType, PrettyEvents},
     ics03_connection::connection::State as ConnectionState,
     ics04_channel::{
         channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
@@ -590,7 +589,7 @@ impl RelayPath {
     fn relay_from_operational_data(
         &mut self,
         initial_od: OperationalData,
-    ) -> Result<Vec<IbcEvent>, LinkError> {
+    ) -> Result<RelaySummary, LinkError> {
         // We will operate on potentially different operational data if the initial one fails.
         let mut odata = initial_od;
 
@@ -607,16 +606,17 @@ impl RelayPath {
 
             // Consume the operational data by attempting to send its messages
             match self.send_from_operational_data(odata.clone()) {
-                Ok(events) => {
+                Ok(summary) => {
                     // Done with this op. data
                     info!("[{}] success", self);
-                    return Ok(events);
+
+                    return Ok(summary);
                 }
                 Err(LinkError::SendError(ev)) => {
                     // This error means we can retry
                     error!("[{}] error {}", self, ev);
                     match self.regenerate_operational_data(odata.clone()) {
-                        None => return Ok(vec![]), // Nothing to retry
+                        None => return Ok(RelaySummary::empty()), // Nothing to retry
                         Some(new_od) => odata = new_od,
                     }
                 }
@@ -626,7 +626,8 @@ impl RelayPath {
                 }
             }
         }
-        Ok(vec![])
+
+        Ok(RelaySummary::empty())
     }
 
     /// Helper for managing retries of the `relay_from_operational_data` method.
@@ -712,10 +713,10 @@ impl RelayPath {
     fn send_from_operational_data(
         &mut self,
         odata: OperationalData,
-    ) -> Result<Vec<IbcEvent>, LinkError> {
+    ) -> Result<RelaySummary, LinkError> {
         if odata.batch.is_empty() {
             error!("[{}] ignoring empty operational data!", self);
-            return Ok(vec![]);
+            return Ok(RelaySummary::empty());
         }
 
         let target = match odata.target {
@@ -726,7 +727,7 @@ impl RelayPath {
         let msgs = odata.assemble_msgs(self)?;
 
         let tx_events = target.send_msgs(msgs)?;
-        info!("[{}] result {}\n", self, VecIbcEvents(tx_events.clone()));
+        info!("[{}] result {}\n", self, PrettyEvents(&tx_events));
 
         let ev = tx_events
             .clone()
@@ -735,7 +736,7 @@ impl RelayPath {
 
         match ev {
             Some(ev) => Err(LinkError::SendError(Box::new(ev))),
-            None => Ok(tx_events),
+            None => Ok(RelaySummary::from_events(tx_events)),
         }
     }
 
@@ -822,11 +823,7 @@ impl RelayPath {
             );
 
             let dst_tx_events = self.dst_chain().send_msgs(dst_update)?;
-            info!(
-                "[{}] result {}\n",
-                self,
-                VecIbcEvents(dst_tx_events.clone())
-            );
+            info!("[{}] result {}\n", self, PrettyEvents(&dst_tx_events));
 
             dst_err_ev = dst_tx_events
                 .into_iter()
@@ -867,11 +864,7 @@ impl RelayPath {
             );
 
             let src_tx_events = self.src_chain().send_msgs(src_update)?;
-            info!(
-                "[{}] result {}\n",
-                self,
-                VecIbcEvents(src_tx_events.clone())
-            );
+            info!("[{}] result {}\n", self, PrettyEvents(&src_tx_events));
 
             src_err_ev = src_tx_events
                 .into_iter()
@@ -1280,17 +1273,20 @@ impl RelayPath {
 
     /// Checks if there are any operational data items ready, and if so performs the relaying
     /// of corresponding packets to the target chain.
-    pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
+    pub fn execute_schedule(&mut self) -> Result<RelaySummary, LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
+
+        let mut summary = RelaySummary::empty();
+
         for od in dst_ods {
-            self.relay_from_operational_data(od)?;
+            summary.extend(self.relay_from_operational_data(od)?);
         }
 
         for od in src_ods {
-            self.relay_from_operational_data(od)?;
+            summary.extend(self.relay_from_operational_data(od)?);
         }
 
-        Ok(())
+        Ok(summary)
     }
 
     /// Refreshes the scheduled batches.
@@ -1680,7 +1676,7 @@ impl Link {
         // Block waiting for all of the scheduled data (until `None` is returned)
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
             let mut last_res = self.a_to_b.relay_from_operational_data(odata)?;
-            results.append(&mut last_res);
+            results.append(&mut last_res.events);
         }
 
         Ok(results)
@@ -1694,9 +1690,30 @@ impl Link {
         // Block waiting for all of the scheduled data
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
             let mut last_res = self.a_to_b.relay_from_operational_data(odata)?;
-            results.append(&mut last_res);
+            results.append(&mut last_res.events);
         }
 
         Ok(results)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct RelaySummary {
+    pub events: Vec<IbcEvent>,
+    // errors: todo!(),
+    // timings: todo!(),
+}
+
+impl RelaySummary {
+    pub fn empty() -> Self {
+        Self { events: vec![] }
+    }
+
+    pub fn from_events(events: Vec<IbcEvent>) -> Self {
+        Self { events }
+    }
+
+    pub fn extend(&mut self, other: RelaySummary) {
+        self.events.extend(other.events)
     }
 }
