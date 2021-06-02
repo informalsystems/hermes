@@ -600,6 +600,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "displaydoc"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3274a6bc8a6a4521291b53b9dcb8345e963fe931c3fc462a7d3ead71d7ccd30d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "dyn-clonable"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -695,6 +706,16 @@ dependencies = [
  "bitvec 0.18.5",
  "rand_core 0.5.1",
  "subtle",
+]
+
+[[package]]
+name = "flex-error"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e529c5becee73150e0c7a487f3680ee99c0b1b13e55388e685916146975f6fb5"
+dependencies = [
+ "anyhow",
+ "paste",
 ]
 
 [[package]]
@@ -1179,12 +1200,15 @@ dependencies = [
 name = "ibc"
 version = "0.2.0"
 dependencies = [
- "anomaly",
+ "anyhow",
  "bytes",
  "chrono",
+ "displaydoc",
  "dyn-clonable",
+ "flex-error",
  "ibc-proto",
  "modelator",
+ "no-std-compat",
  "prost",
  "prost-types",
  "regex",
@@ -1197,7 +1221,6 @@ dependencies = [
  "tendermint-proto",
  "tendermint-rpc",
  "tendermint-testgen",
- "thiserror",
  "tracing",
 ]
 
@@ -1535,6 +1558,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "no-std-compat"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b93853da6d84c2e3c7d730d6473e8817692dd89be387eb01b94d7f108ecb5b8c"
+
+[[package]]
 name = "nom"
 version = "6.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1689,6 +1718,12 @@ dependencies = [
  "smallvec 1.6.1",
  "winapi",
 ]
+
+[[package]]
+name = "paste"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acbf547ad0c65e31259204bd90935776d1c693cec2f4ff7abb7a1bbbd40dfe58"
 
 [[package]]
 name = "pbkdf2"

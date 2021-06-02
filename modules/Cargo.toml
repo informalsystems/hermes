@@ -18,25 +18,40 @@ description = """
 # Depends on the `testgen` suite for generating Tendermint light blocks.
 mocks = [ "tendermint-testgen", "sha2" ]
 default = ["std"]
-std = []
+std = [
+    "anyhow/std",
+    "flex-error/std",
+    "chrono/std",
+    "serde/std",
+    "serde_json/std",
+    "tracing/std",
+    "prost/std",
+    "prost-types/std",
+    "bytes/std",
+    "regex/std",
+    "subtle-encoding/std",
+    "sha2/std",
+]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.8.0", path = "../proto" }
-anomaly = "0.2.0"
-chrono = "0.4"
-thiserror = "1.0.24"
+anyhow = {version = "1.0", default-features = false}
+flex-error = { version = "0.1.1", default-features = false, features = ["anyhow_tracer"] }
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
 serde_derive = "1.0.104"
-serde = "1.0.125"
-serde_json = "1"
-tracing = "0.1.13"
-prost = "0.7"
-prost-types = "0.7"
-bytes = "1.0.0"
+serde = { version = "1", default-features = false, features = ["derive"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+tracing = {version = "0.1.13", default-features = false}
+prost = { version = "0.7", default-features = false }
+prost-types = { version = "0.7", default-features = false }
+bytes = { version = "1.0", default-features = false }
 dyn-clonable = "0.9.0"
-regex = "1"
-subtle-encoding = "0.5"
-sha2 = { version = "0.9.3", optional = true }
+regex = {version = "1", default-features = false }
+subtle-encoding = { version = "0.5", default-features = false, features = ["bech32-preview"] }
+sha2 = { version = "0.9.3", default-features = false, optional = true }
+no-std-compat = { version = "0.4.1", features = [ "alloc" ] }
+displaydoc = {version = "0.2", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.19.0"
