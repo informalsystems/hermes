@@ -420,7 +420,7 @@ impl Supervisor {
             .find_chain(&client.client_state.chain_id())
             .is_none()
         {
-            // Ignore channel, since it does not correspond to any chain in the config file
+            // Ignore connection, since it does not correspond to any chain in the config file
             return Ok(());
         }
 
