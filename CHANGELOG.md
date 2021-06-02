@@ -25,8 +25,9 @@ for raising multiple issues that helped us improve the reliability of Hermes.
 ### BUG FIXES
 
 - [ibc-relayer]
-  - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
-  - Client worker aborts gracefully if the client is expired or frozen ([#1022])
+  - Fix client worker initialization error ([#972])
+  - Fix `hermes start` panic when all chains are unreachable ([#972])
+  - Ensure expired or frozen client worker logs message and terminates ([#1022])
 
 - [gaia-manager]
   - Import hermes keys properly even if wallet HD derivation path is set ([#975])
@@ -47,6 +48,7 @@ for raising multiple issues that helped us improve the reliability of Hermes.
 [#998]: https://github.com/informalsystems/ibc-rs/issues/998
 [#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
 [#1022]: https://github.com/informalsystems/ibc-rs/issues/1022
+[gaia-manager]: https://github.com/informalsystems/ibc-rs/tree/master/scripts/gm
 
 ## v0.3.2
 *May 21st, 2021*
