@@ -29,6 +29,7 @@ for raising multiple issues that helped us improve the reliability of Hermes.
   - Fix client worker initialization error ([#972])
   - Fix `hermes start` panic when all chains are unreachable ([#972])
   - Ensure expired or frozen client worker logs message and terminates ([#1022])
+  - Fix regression where Hermes would not recover after a node went down and up again ([#1026])
 
 - [gaiad-manager]
   - Import hermes keys properly even if wallet HD derivation path is set ([#975])
@@ -52,6 +53,7 @@ for raising multiple issues that helped us improve the reliability of Hermes.
 [#998]: https://github.com/informalsystems/ibc-rs/issues/998
 [#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
 [#1022]: https://github.com/informalsystems/ibc-rs/issues/1022
+[#1026]: https://github.com/informalsystems/ibc-rs/issues/1026
 [#1032]: https://github.com/informalsystems/ibc-rs/issues/1032
 [gaiad-manager]: https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/README.md
 
