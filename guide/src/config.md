@@ -22,15 +22,17 @@ The configuration file must have one `global` section, and one `chains` section 
 
 ### `[global]`
 
-The global section has parameters that apply globally to the relayer operation.
+The `global` section has parameters that apply globally to the relayer operation.
 
 #### Parameters
 
-* __strategy__: Specify the strategy to be used by the relayer. Currently only `naive` is supported.
+* __strategy__: Specify the strategy to be used by the relayer. Default: `all`
+  Two options are currently supported:
+    - `all`: Relay packets and perform channel handshakes.
+    - `packets`: Relay packets only.
 
 * __log_level__: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
-For more information on parametrizing the log output, see the section
-  [help/log-level][log-level].
+  For more information on parametrizing the log output, see the section [help/log-level][log-level].
 
 Here is an example for the `global` section:
 
