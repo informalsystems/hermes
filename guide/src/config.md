@@ -26,12 +26,12 @@ The `global` section has parameters that apply globally to the relayer operation
 
 #### Parameters
 
-* __strategy__: Specify the strategy to be used by the relayer. Default: `all`
+* __strategy__: *(string)* Specify the strategy to be used by the relayer. Default: `all`
   Two options are currently supported:
     - `all`: Relay packets and perform channel handshakes.
     - `packets`: Relay packets only.
 
-* __log_level__: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
+* __log_level__: *(string)* Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
   For more information on parametrizing the log output, see the section [help/log-level][log-level].
 
 Here is an example for the `global` section:
@@ -66,31 +66,31 @@ A `chains` section includes parameters related to a chain and the full node to w
 
 #### Parameters
 
-* __id__: Specify the chain ID. For example `ibc-0`
+* __id__: *(string)* Specify the chain ID. For example `ibc-0`
 
-* __rpc_addr__: Specify the RPC address and port where the chain RPC server listens on. For example `http://localhost:26657`
+* __rpc_addr__: *(string)* Specify the RPC address and port where the chain RPC server listens on. For example `http://localhost:26657`
 
-* __grpc_addr__: Specify the GRPC address and port where the chain GRPC server listens on. For example `http://localhost:9090`
+* __grpc_addr__: *(string)* Specify the GRPC address and port where the chain GRPC server listens on. For example `http://localhost:9090`
 
-* __websocket_addr__: Specify the WebSocket address and port where the chain WebSocket server listens on. For example `ws://localhost:26657/websocket`
+* __websocket_addr__: *(string)* Specify the WebSocket address and port where the chain WebSocket server listens on. For example `ws://localhost:26657/websocket`
 
-* __rpc_timeout__: Specify the maximum amount of time (duration) that the RPC requests should take before timing out. Default value is `10s` (10 seconds).
+* __rpc_timeout__: *(string)* Specify the maximum amount of time (duration) that the RPC requests should take before timing out. Default value is `10s` (10 seconds).
 
-* __account_prefix__: Specify the prefix used by the chain. For example `cosmos`
+* __account_prefix__: *(string)* Specify the prefix used by the chain. For example `cosmos`
 
-* __key_name__: Specify the name of the private key JSON file. This is the filename for the private key used to sign transactions on this chain. Don't specify the file extension, for example if the filename for the private key is `testkey.json`, specify only `testkey` for this parameter.
+* __key_name__: *(string)* Specify the name of the private key to use for signing transactions. See the [Adding Keys](commands/keys/index.md#adding-keys) chapter for for more information about managing signing keys.
 
-* __store_prefix__: Specify the store prefix used by the on-chain IBC modules. For example `ibc`.
+* __store_prefix__: *(string)* Specify the store prefix used by the on-chain IBC modules. For example `ibc`.
 
-* __gas__: Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is `300000`
+* __gas__: *(u64)* Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is `300000`
 
-* __fee_denom__: Specify the denom to be used in the fee for a transaction.
+* __fee_denom__: *(string)* Specify the denom to be used in the fee for a transaction.
 
-* __fee_amount__: Specify the amount value to be used in the fee for a transaction. Default value is `1000`
+* __fee_amount__: *(u64)* Specify the amount value to be used in the fee for a transaction. Default value is `1000`
 
-* __clock_drift__: Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is `5s`
+* __clock_drift__: *(string)*  Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is `5s`
 
-* __trusting_period__: Specify the amount of time to be used as the trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default value is `14days` (336 hours)
+* __trusting_period__: *(string)* Specify the amount of time to be used as the trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default value is `14days` (336 hours)
 
 For example if you want to add a configuration for a chain named `ibc-0`:
 
