@@ -8,6 +8,7 @@ for raising multiple issues that helped us improve the reliability of Hermes.
 ### FEATURES
 
 - [ibc-relayer]
+  - Add telemetry and Prometheus endpoint ([#868], [#1032])
   - Add support for event based channel relaying ([#822])
   - Graceful handling of packet events in the presence of multiple relayers ([#983])
 
@@ -39,6 +40,7 @@ for raising multiple issues that helped us improve the reliability of Hermes.
   - Promote `start-multi` command to `start` ([#911])
 
 [#822]: https://github.com/informalsystems/ibc-rs/issues/822
+[#868]: https://github.com/informalsystems/ibc-rs/issues/868
 [#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
@@ -50,6 +52,7 @@ for raising multiple issues that helped us improve the reliability of Hermes.
 [#998]: https://github.com/informalsystems/ibc-rs/issues/998
 [#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
 [#1022]: https://github.com/informalsystems/ibc-rs/issues/1022
+[#1032]: https://github.com/informalsystems/ibc-rs/issues/1032
 [gaiad-manager]: https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/README.md
 
 ## v0.3.2
