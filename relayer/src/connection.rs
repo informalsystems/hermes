@@ -171,8 +171,6 @@ impl Connection {
 
         Ok(Connection {
             // The event does not include the connection delay.
-            // The message handlers `build_conn_open..` determine the order included in the handshake
-            // message from connection query.
             delay_period: Default::default(),
             a_side: ConnectionSide::new(chain, client_id, connection_id),
             b_side: ConnectionSide::new(
@@ -279,13 +277,11 @@ impl Connection {
                 chain: a_client.dst_chain.clone(),
                 client_id: a_client.id.clone(),
                 connection_id: Some(conn_end_a.id().clone()),
-                //connection_id: conn_end_a.id().clone(),
             },
             b_side: ConnectionSide {
                 chain: b_client.dst_chain.clone(),
                 client_id: b_client.id.clone(),
                 connection_id: Some(b_conn_id),
-                //connection_id: b_conn_id,
             },
         };
 
@@ -457,7 +453,7 @@ impl Connection {
         )))
     }
     pub fn counterparty_state(&self) -> Result<State, ConnectionError> {
-        // Source channel ID must be specified
+        // Source connection ID must be specified
         let connection_id = self
             .src_connection_id()
             .ok_or(ConnectionError::MissingLocalConnectionId)?;
