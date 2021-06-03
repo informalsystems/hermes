@@ -2,8 +2,27 @@
 
 ## Unreleased
 
-Special thanks to Colin Axnér (@colin-axner) and Jongwhan Lee (@leejw51crypto)
-for raising multiple issues that helped us improve the reliability of Hermes.
+> Nothing yet.
+
+## v0.4.0
+*June 3rd, 2021*
+
+- This release of Hermes features an internal [telemetry service][telemetry]
+  which can export metrics about the relayer to Prometheus.
+- A new [relaying strategy][strategy] is now available, which enables Hermes to
+  complete channel handshakes in an event-based fashion.
+- Hermes now checks if another relayer may have already processed a packet event,
+  and will not attempt to process it itself, which improves performance.
+- The startup time of the relayer has been substantially improved.
+- The `start-multi` command has been promoted to `start`, which means
+  that the worker-based relayer is not experimental anymore.
+- A regression where Hermes would not recover after a node went down and up again was fixed.
+
+[telemetry]: https://hermes.informal.systems/telemetry.html
+[strategy]: http://hermes.informal.systems/config.html?highlight=strategy#global
+
+> Special thanks to Colin Axnér (@colin-axner) and Jongwhan Lee (@leejw51crypto)
+> for raising multiple issues that helped us improve the reliability of Hermes.
 
 ### FEATURES
 
