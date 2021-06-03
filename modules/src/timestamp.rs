@@ -192,6 +192,7 @@ mod tests {
     use std::convert::TryInto;
     use std::thread::sleep;
     use std::time::Duration;
+    use test_env_log::test;
 
     use super::{Expiry, Timestamp, ZERO_DURATION};
 

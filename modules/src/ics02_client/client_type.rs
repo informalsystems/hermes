@@ -49,6 +49,7 @@ impl std::str::FromStr for ClientType {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+    use test_env_log::test;
 
     use super::ClientType;
 

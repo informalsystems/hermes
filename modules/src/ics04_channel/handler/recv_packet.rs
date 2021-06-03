@@ -136,6 +136,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use test_env_log::test;
 
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;

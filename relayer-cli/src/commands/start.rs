@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc_relayer::config::Config;
@@ -13,27 +15,39 @@ impl Runnable for StartCmd {
     fn run(&self) {
         let config = app_config();
 
-        let supervisor = spawn_supervisor(config.clone());
-        match supervisor.run() {
+        match spawn_supervisor(config.clone()).and_then(|s| s.run()) {
             Ok(()) => Output::success_msg("done").exit(),
-            Err(e) => Output::error(e).exit(),
+            Err(e) => Output::error(format!("Hermes failed to start, last error: {}", e)).exit(),
         }
     }
 }
 
 #[cfg(feature = "telemetry")]
-fn spawn_supervisor(config: Config) -> Supervisor {
+fn spawn_supervisor(config: Config) -> Result<Supervisor, Box<dyn Error + Send + Sync>> {
     let state = ibc_telemetry::new_state();
 
     if config.telemetry.enabled {
-        ibc_telemetry::spawn(config.telemetry.port, state.clone());
+        let address = (config.telemetry.host.clone(), config.telemetry.port);
+
+        match ibc_telemetry::spawn(address, state.clone()) {
+            Ok((addr, _)) => {
+                info!(
+                    "telemetry service running, exposing metrics at {}/metrics",
+                    addr
+                );
+            }
+            Err(e) => {
+                error!("telemetry service failed to start: {}", e);
+                return Err(e);
+            }
+        }
     }
 
-    Supervisor::spawn(config, state)
+    Ok(Supervisor::spawn(config, state))
 }
 
 #[cfg(not(feature = "telemetry"))]
-fn spawn_supervisor(config: Config) -> Supervisor {
+fn spawn_supervisor(config: Config) -> Result<Supervisor, Box<dyn Error + Send + Sync>> {
     if config.telemetry.enabled {
         warn!(
             "telemetry enabled in the config but Hermes was built without telemetry support, \
@@ -42,5 +56,5 @@ fn spawn_supervisor(config: Config) -> Supervisor {
     }
 
     let telemetry = ibc_relayer::telemetry::TelemetryDisabled;
-    Supervisor::spawn(config, telemetry)
+    Ok(Supervisor::spawn(config, telemetry))
 }

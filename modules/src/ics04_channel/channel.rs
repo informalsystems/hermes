@@ -468,6 +468,7 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
+    use test_env_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 

@@ -56,6 +56,7 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use test_env_log::test;
 
     use crate::events::IbcEvent;
     use crate::ics03_connection::connection::State;
