@@ -26,7 +26,7 @@ The `global` section has parameters that apply globally to the relayer operation
 
 #### Parameters
 
-* __strategy__: *(string)* Specify the strategy to be used by the relayer. Default: `all`
+* __strategy__: *(string)* Specify the strategy to be used by the relayer. Default: `packets`
   Two options are currently supported:
     - `all`: Relay packets and perform channel handshakes.
     - `packets`: Relay packets only.

@@ -74,7 +74,8 @@ Docker images to Docker Hub.
 
 - [ibc-relayer]
   - Add support for multiple keys to the keyring ([#963])
-
+  - Add telemetry and Prometheus endpoint ([#868])
+  
 - [release]
   - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
   - Automatically deploy Docker Hub image during release ([#967])
@@ -93,6 +94,7 @@ Docker images to Docker Hub.
 
 > Nothing
 
+[#868]: https://github.com/informalsystems/ibc-rs/issues/868
 [#894]: https://github.com/informalsystems/ibc-rs/pull/894
 [#957]: https://github.com/informalsystems/ibc-rs/issues/957
 [#960]: https://github.com/informalsystems/ibc-rs/issues/960
