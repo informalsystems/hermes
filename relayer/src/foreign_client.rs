@@ -543,8 +543,6 @@ impl ForeignClient {
             ))
         })?;
 
-        assert!(!events.is_empty());
-
         Ok(events.pop())
     }
 
