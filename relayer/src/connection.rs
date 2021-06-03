@@ -370,7 +370,7 @@ impl Connection {
         let highest_state = match msg_type {
             ConnectionMsgType::OpenAck => State::TryOpen,
             ConnectionMsgType::OpenConfirm => State::TryOpen,
-            _ => State::Uninitialized,
+            ConnectionMsgType::OpenTry => State::Init,
         };
 
         let versions = self
@@ -391,16 +391,6 @@ impl Connection {
             .dst_chain()
             .query_connection(self.dst_connection_id(), ICSHeight::default())
             .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
-
-        // Check if a connection is expected to exist on destination chain
-        // A connection must exist on destination chain for Ack and Confirm Tx-es to succeed
-        if dst_connection.state_matches(&State::Uninitialized) {
-            return Err(ConnectionError::Failed(format!(
-                "missing connection {} on source chain {}",
-                self.src_connection_id().clone(),
-                self.dst_chain().id()
-            )));
-        }
 
         check_destination_connection_state(
             self.dst_connection_id().clone(),

@@ -14,7 +14,6 @@ use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::timestamp::ZERO_DURATION;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -25,33 +24,17 @@ pub struct ConnectionEnd {
     delay_period: Duration,
 }
 
-impl Default for ConnectionEnd {
-    fn default() -> Self {
-        Self {
-            state: State::Uninitialized,
-            client_id: Default::default(),
-            counterparty: Default::default(),
-            versions: vec![],
-            delay_period: ZERO_DURATION,
-        }
-    }
-}
-
 impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
-        let state = value.state.try_into()?;
-        if state == State::Uninitialized {
-            return Ok(ConnectionEnd::default());
-        }
         if value.client_id.is_empty() {
             return Err(Kind::EmptyProtoConnectionEnd.into());
         }
 
         Ok(Self::new(
-            state,
+            value.state.try_into()?,
             value
                 .client_id
                 .parse()
@@ -284,7 +267,6 @@ impl Counterparty {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum State {
-    Uninitialized = 0,
     Init = 1,
     TryOpen = 2,
     Open = 3,
@@ -294,7 +276,6 @@ impl State {
     /// Yields the State as a string.
     pub fn as_string(&self) -> &'static str {
         match self {
-            Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
@@ -306,7 +287,6 @@ impl TryFrom<i32> for State {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),

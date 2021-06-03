@@ -4,7 +4,6 @@ use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::{
-    ics03_connection::connection::State,
     ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, PortChannelId},
 };
@@ -51,17 +50,7 @@ impl Runnable for QueryConnectionEndCmd {
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
         let res = chain.query_connection(&self.connection_id, height);
         match res {
-            Ok(connection_end) => {
-                if connection_end.state_matches(&State::Uninitialized) {
-                    Output::error(format!(
-                        "connection '{}' does not exist",
-                        self.connection_id
-                    ))
-                    .exit()
-                } else {
-                    Output::success(connection_end).exit()
-                }
-            }
+            Ok(connection_end) => Output::success(connection_end).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }

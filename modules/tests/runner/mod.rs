@@ -14,7 +14,7 @@ use ibc::ics02_client::header::AnyHeader;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
-use ibc::ics03_connection::connection::{Counterparty, State as ConnectionState};
+use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::error::Kind as Ics03ErrorKind;
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
@@ -251,11 +251,7 @@ impl IbcTestRunner {
                     .connections
                     .into_iter()
                     .all(|(connection_id, connection)| {
-                        if connection.state == ConnectionState::Uninitialized {
-                            // if the connection has not yet been initialized, then
-                            // there's nothing to check
-                            true
-                        } else if let Some(connection_end) =
+                        if let Some(connection_end) =
                             ctx.connection_end(&Self::connection_id(connection_id))
                         {
                             // states must match
