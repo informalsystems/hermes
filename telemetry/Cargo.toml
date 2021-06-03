@@ -1,8 +1,16 @@
 [package]
-name    = "ibc-telemetry"
-version = "0.1.0"
-authors = ["Informal Systems <hello@informal.systems>"]
-edition = "2018"
+name       = "ibc-telemetry"
+version    = "0.4.0"
+edition    = "2018"
+license    = "Apache-2.0"
+readme     = "README.md"
+keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint", "telemetry"]
+repository = "https://github.com/informalsystems/ibc-rs"
+authors    = ["Informal Systems <hello@informal.systems>"]
+
+description = """
+    Telemetry service for the Hermes IBC relayer
+"""
 
 [dependencies]
 ibc = { version = "0.4.0", path = "../modules" }
