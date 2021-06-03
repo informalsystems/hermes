@@ -14,8 +14,8 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- MacOS: `hermes-v0.3.2-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-v0.3.2-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- MacOS: `hermes-v0.4.0-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-v0.4.0-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
  
@@ -47,7 +47,7 @@ hermes version
 ```
 
 ```
-hermes 0.3.2
+hermes 0.4.0
 ```
 
 ## Install via Cargo
@@ -81,7 +81,7 @@ hermes version
 ```
 
 ```
-hermes 0.3.2
+hermes 0.4.0
 ```
 
 ## Build from source
@@ -103,10 +103,10 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `v0.3.2` then execute the command:
+Then checkout the release, for example if the most recent release is `v0.4.0` then execute the command:
 
 ```shell
-git checkout v0.3.2
+git checkout v0.4.0
 ```
 
 ### Building with `cargo build`
@@ -117,6 +117,16 @@ The last of these crates contains the `hermes` binary.
 ```shell
 cargo build --release --bin hermes
 ```
+
+<a name="telemetry-support"></a>
+
+> By default, Hermes bundles a [telemetry service and server](./telemetry.md).
+> To build Hermes without telemetry support, and get a smaller executable,
+> supply the `--no-default-features flag` to `cargo build`:
+>
+> ```shell
+> cargo build --release --no-default-features --bin hermes
+> ```
 
 If the build is successful, the `hermes` executable will be located in the following location:
 
@@ -141,7 +151,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes 0.3.2
+hermes 0.4.0
 Informal Systems <hello@informal.systems>
 
 USAGE:
@@ -154,7 +164,6 @@ SUBCOMMANDS:
     update     Update objects (clients) on chains
     upgrade    Upgrade objects (clients) after chain upgrade
     start      Start the relayer
-    start-multi Start the relayer in multi-chain mode. Handles packet relaying across all open channels between all chains in the config.
     query      Query objects from the chain
     tx         Create and send IBC transactions
     listen     Listen to and display IBC events emitted by a chain

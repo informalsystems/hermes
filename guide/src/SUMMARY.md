@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.3.2)
+# Hermes (v0.4.0)
 
 ---
 - [Introduction](./index.md)
@@ -11,6 +11,7 @@
    - [Pre-requisites](./pre_requisites.md)
    - [Installation](./installation.md)
    - [Configuration](./config.md)
+- [Telemetry](./telemetry.md)
 - [Tutorials](./tutorials/index.md)
    - [Local chains](./tutorials/local-chains/index.md)
      - [Install Gaia](./tutorials/local-chains/gaia.md)
@@ -18,9 +19,7 @@
      - [Identifiers](./tutorials/local-chains/identifiers.md)
      - [Connect the chains using relay paths](./tutorials/local-chains/relay-paths/index.md)
        - [Create a new path](./tutorials/local-chains/relay-paths/create-new-path.md)
-       - [Packet relaying on existing path](./tutorials/local-chains/relay-paths/existing-path.md)
-       - [Packet relaying on new path](./tutorials/local-chains/relay-paths/new-path.md)
-       - [Concurrent packet relaying on multiple paths](./tutorials/local-chains/relay-paths/multiple-paths.md)
+       - [Relay packets on multiple paths](./tutorials/local-chains/relay-paths/multiple-paths.md)
      - [Connect the chains using raw transactions](./tutorials/local-chains/raw/index.md)
        - [Configure clients](./tutorials/local-chains/raw/client.md)
        - [Connection handshake](./tutorials/local-chains/raw/connection.md)
@@ -33,7 +32,9 @@
      - [Clients](./commands/path-setup/clients.md)
      - [Connections](./commands/path-setup/connections.md)
      - [Channels](./commands/path-setup/channels.md)
-   - [Packet relaying](./commands/relaying.md)
+   - [Relaying](commands/relaying/index.md)
+     - [Packet Messages](./commands/relaying/packets.md)
+     - [Channel Open Handshake Messages](commands/relaying/channel.md)
    - [Listen mode](./commands/listen/index.md)
    - [Client upgrade](./commands/upgrade/index.md)
      - [Testing client upgrade](./commands/upgrade/test.md)

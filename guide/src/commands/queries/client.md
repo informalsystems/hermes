@@ -12,10 +12,14 @@ USAGE:
     hermes query clients <OPTIONS>
 
 DESCRIPTION:
-    Query clients
+    Query the identifiers of all clients on a chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
+
+FLAGS:
+    -s, --src-chain-id ID     filter for clients which target a specific chain id (implies '-o')
+    -o, --omit-chain-ids      omit printing the source chain for each client (default: false)
 ```
 
 __Example__
@@ -26,10 +30,40 @@ Query all clients on `ibc-1`:
 hermes query clients ibc-1
 ```
 
-```rust
+```json
 Success: [
-    ClientId("07-tendermint-0"),
-    ClientId("07-tendermint-1"),
+    ClientChain {
+        client_id: ClientId(
+            "07-tendermint-0",
+        ),
+        chain_id: ChainId {
+            id: "ibc-0",
+            version: 0,
+        },
+    },
+    ClientChain {
+        client_id: ClientId(
+            "07-tendermint-1",
+        ),
+        chain_id: ChainId {
+            id: "ibc-2",
+            version: 2,
+        },
+    },
+]
+```
+
+Query all clients on `ibc-1` having `ibc-2` as their source chain:
+
+```shell
+hermes query clients ibc-1 -s ibc-2
+```
+
+```json
+Success: [
+    ClientId(
+        "07-tendermint-1",
+    ),
 ]
 ```
 

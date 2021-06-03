@@ -5,7 +5,6 @@ use std::{fs, fs::File, io::Write, path::Path, time::Duration};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::timestamp::ZERO_DURATION;
 
@@ -29,10 +28,6 @@ pub mod default {
 
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
-    }
-
-    pub fn channel_ordering() -> Order {
-        Order::Unordered
     }
 }
 
