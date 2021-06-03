@@ -3,9 +3,14 @@
 This section includes a summary of the supported and planned features.
 A feature matrix and comparison between the Rust and Go relayer implementations can be found in the [Feature Matrix](./features/matrix.md)
 
+> **Cosmos SDK compatibility:**
+> Hermes supports Cosmos SDK chains implementing the [IBC v1.0][ibcv1] protocol specification.
+> Cosmos SDK versions `0.41.3` to `0.42.4` are officially supported.
+
+[ibcv1]: https://github.com/cosmos/ibc-go/tree/main/proto/ibc
+
 ## Supported Features
-- Support for cosmos-SDK chains implementing [IBCv1.0](https://github.com/cosmos/ibc-go/tree/main/proto/ibc) protocol specification
-    - supports versions `v0.41.3` to `v0.42.4`
+
 - Basic features
     - create and update clients
     - refresh clients to prevent expiration
