@@ -1,5 +1,10 @@
 # Gaiad Manager Change Log
 
+## v0.0.4
+
+### FEATURES
+- Updated hermes configuration with the hermes 0.4.0 configuration parameters.
+
 ## v0.0.3
 
 ### BUGFIXES

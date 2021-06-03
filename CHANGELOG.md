@@ -34,6 +34,7 @@ for raising multiple issues that helped us improve the reliability of Hermes.
 - [gaiad-manager]
   - Import hermes keys properly even if wallet HD derivation path is set ([#975])
   - Apply default values to missing configuration parameters ([#993])
+  - `gm hermes config` now creates hermes 0.4.0 compatible configuration ([#1039])
 
 ### BREAKING CHANGES
 
@@ -56,6 +57,7 @@ for raising multiple issues that helped us improve the reliability of Hermes.
 [#1026]: https://github.com/informalsystems/ibc-rs/issues/1026
 [#1032]: https://github.com/informalsystems/ibc-rs/issues/1032
 [gaiad-manager]: https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/README.md
+[#1039]: https://github.com/informalsystems/ibc-rs/issues/1039
 
 ## v0.3.2
 *May 21st, 2021*
