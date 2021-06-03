@@ -114,8 +114,11 @@ the `gm.toml` file for node configuration. By default, newly created node config
   setting up the hermes configuration and are only used in the `hermes` sub-command.
 * `binary` - Path to the `hermes` binary to use.
 * `config` - The hermes configuration file path.
-* `strategy` - The hermes configuration strategy paremeter.
-* `log_level` - The hermes configuration log_level paremeter.
+* `strategy` - The hermes configuration strategy parameter.
+* `log_level` - The hermes configuration log_level parameter.
+* `telemetry_enabled` - The hermes configuration telemetry.enabled parameter.
+* `telemetry_host` - The hermes configuration telemetry.host parameter.
+* `telemetry_port` - The hermes configuration telemetry.port parameter.
 
 **Tribal knowledge**: (things they don't tell you)
 * the user is welcome to create additional nodes outside the scope of `gm` on the local machine but `gm` will only
