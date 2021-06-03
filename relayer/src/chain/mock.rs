@@ -42,7 +42,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use crate::chain::Chain;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::EventReceiver;
+use crate::event::monitor::{EventReceiver, EventSender};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
@@ -53,6 +53,10 @@ use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
+
+    // keep a reference to event sender to prevent it from being dropped
+    _event_sender: EventSender,
+    event_receiver: EventReceiver,
 }
 
 impl Chain for MockChain {
@@ -62,6 +66,7 @@ impl Chain for MockChain {
     type ClientState = TendermintClientState;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
+        let (sender, receiver) = channel::unbounded();
         Ok(MockChain {
             config: config.clone(),
             context: MockContext::new(
@@ -70,6 +75,8 @@ impl Chain for MockChain {
                 50,
                 Height::new(config.id.version(), 20),
             ),
+            _event_sender: sender,
+            event_receiver: receiver,
         })
     }
 
@@ -81,8 +88,7 @@ impl Chain for MockChain {
         &self,
         _rt: Arc<Runtime>,
     ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
-        let (_, rx) = channel::unbounded();
-        Ok((rx, None))
+        Ok((self.event_receiver.clone(), None))
     }
 
     fn id(&self) -> &ChainId {

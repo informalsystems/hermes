@@ -90,6 +90,7 @@ type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + 
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+pub type EventSender = channel::Sender<Result<EventBatch>>;
 pub type EventReceiver = channel::Receiver<Result<EventBatch>>;
 
 /// Connect to a Tendermint node, subscribe to a set of queries,

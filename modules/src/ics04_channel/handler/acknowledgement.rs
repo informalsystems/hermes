@@ -143,6 +143,7 @@ mod tests {
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
+    use test_env_log::test;
 
     use std::convert::TryFrom;
 

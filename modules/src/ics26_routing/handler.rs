@@ -240,6 +240,7 @@ where
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use test_env_log::test;
 
     use crate::application::ics20_fungible_token_transfer::msgs::transfer::test_util::get_dummy_msg_transfer;
     use crate::events::IbcEvent;

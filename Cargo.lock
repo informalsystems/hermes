@@ -825,6 +825,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "env_logger"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17392a012ea30ef05a610aa97dfb49496e71c9f676b27879922ea5bdf60d9d3f"
+dependencies = [
+ "atty",
+ "humantime",
+ "log",
+ "regex",
+ "termcolor",
+]
+
+[[package]]
 name = "ff"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1350,6 +1363,7 @@ dependencies = [
  "bytes",
  "chrono",
  "dyn-clonable",
+ "env_logger",
  "ibc-proto",
  "ics23",
  "modelator",
@@ -1365,8 +1379,10 @@ dependencies = [
  "tendermint-proto",
  "tendermint-rpc",
  "tendermint-testgen",
+ "test-env-log",
  "thiserror",
  "tracing",
+ "tracing-subscriber 0.2.18",
 ]
 
 [[package]]
@@ -1396,6 +1412,7 @@ dependencies = [
  "dirs-next",
  "dyn-clonable",
  "dyn-clone",
+ "env_logger",
  "futures",
  "hdpath",
  "hex",
@@ -1422,12 +1439,14 @@ dependencies = [
  "tendermint-proto",
  "tendermint-rpc",
  "tendermint-testgen",
+ "test-env-log",
  "thiserror",
  "tiny-bip39",
  "tokio",
  "toml",
  "tonic",
  "tracing",
+ "tracing-subscriber 0.2.18",
 ]
 
 [[package]]
@@ -3155,6 +3174,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dfed899f0eb03f32ee8c6a0aabdb8a7949659e3466561fc0adf54e26d88c5f4"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test-env-log"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3e4b132a630cc8a0d06cfcb400da67adef3d0087a94b3332d4692908f0c2544"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
