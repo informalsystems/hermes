@@ -552,9 +552,17 @@ create() {
     "$GAIAD_BINARY" add-genesis-account validator "100000000${DENOM},100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
     "$GAIAD_BINARY" add-genesis-account wallet "100000000${DENOM},100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
     # Create gentx
-    "$GAIAD_BINARY" gentx validator "10000000${DENOM}" --keyring-backend test --keyring-dir "${HOME_DIR}" --home "${HOME_DIR}" --chain-id "$1" > /dev/null
+    "$GAIAD_BINARY" gentx validator "10000000${DENOM}" --keyring-backend test --keyring-dir "${HOME_DIR}" --home "${HOME_DIR}" --chain-id "$1" 2> /dev/null
     # Collect gentxs
-    "$GAIAD_BINARY" collect-gentxs --home "${HOME_DIR}" > /dev/null
+    "$GAIAD_BINARY" collect-gentxs --home "${HOME_DIR}" 2> /dev/null
+    # Override token denom - experimental
+    sconfig -sq "${HOME_DIR}/config/genesis.json" "app_state.mint.params.mint_denom=${DENOM}"
+    sconfig -sq "${HOME_DIR}/config/genesis.json" "app_state.crisis.constant_fee.denom=${DENOM}"
+    # app_state.gov.deposit_params.min_deposit[0].denom
+    # {
+    #  "denom": "stake",
+    #  "amount": "10000000"
+    # }
     # Validate genesis
     "$GAIAD_BINARY" validate-genesis --home "${HOME_DIR}" > /dev/null
   else
