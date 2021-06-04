@@ -38,14 +38,6 @@ wallet_mnemonic=""
 # This is defined in cases where the chain's coin type is not the default - so Hermes can also install the correct address.
 wallet_hdpath=""
 
-# The denomination of the tokens used on the network.
-# WARNING: currently this is half-baked, do not use it to override the denomination of a network.
-#          use it only to define the denomination for Hermes instead of the default "stake"
-denom="stake"
-
-# The account_prefix used on the network for account addresses. Used by Hermes.
-account_prefix="cosmos"
-
 # Automatically update the `persistent_peers` and `unconditional_peer_ids` sections of the node configuration.
 auto_maintain_config=true
 

@@ -22,8 +22,6 @@ set_config_defaults() {
     GLOBAL_VALIDATOR_HDPATH=""
     GLOBAL_WALLET_MNEMONIC=""
     GLOBAL_WALLET_HDPATH=""
-    GLOBAL_DENOM="stake"
-    GLOBAL_ACCOUNT_PREFIX="cosmos"
     GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
     GLOBAL_HERMES_STRATEGY="packets"
@@ -60,10 +58,6 @@ parse_config_file() {
   export GLOBAL_WALLET_MNEMONIC="$(stoml -sq "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
   # shellcheck disable=SC2155
   export GLOBAL_WALLET_HDPATH="$(stoml -sq "$CONFIG_FILE" global.wallet_hdpath || echo "$GLOBAL_WALLET_HDPATH")"
-  # shellcheck disable=SC2155
-  export GLOBAL_DENOM="$(stoml -sq "$CONFIG_FILE" global.denom || echo "$GLOBAL_DENOM")"
-  # shellcheck disable=SC2155
-  export GLOBAL_ACCOUNT_PREFIX="$(stoml -sq "$CONFIG_FILE" global.account_prefix || echo "$GLOBAL_ACCOUNT_PREFIX")"
   # shellcheck disable=SC2155
   export GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.binary || echo "$GLOBAL_HERMES_BINARY")")"
   # shellcheck disable=SC2155
@@ -429,82 +423,20 @@ get_wallet_hdpath() {
   fi
 }
 
-get_denom() {
-  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.denom")"
-  if [ -z "$RESULT" ]; then
-    echo "$GLOBAL_DENOM"
-  else
-    echo "$RESULT"
-  fi
+get_staking_denom() {
+  NETWORK="$(get_chain_id "$1")"
+  NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
+  stoml "${NETWORK_HOME_DIR}/config/genesis.json" app_state.staking.params.bond_denom
 }
 
-get_account_prefix() {
-  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.account_prefix")"
-  if [ -z "$RESULT" ]; then
-    echo "$GLOBAL_ACCOUNT_PREFIX"
-  else
-    echo "$RESULT"
-  fi
-}
-
-create_old() {
-  i="$1"
-  echo "Creating $i config..."
-  GAIAD_BINARY="$(get_gaiad_binary "$i")"
-  HOME_DIR="$(get_home_dir "$i")"
-  HOME_ROOT="${HOME_DIR%%${i}}"
-  if a_in_b "$i" "$VALIDATORS"; then
-    # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
-    NODE_DIR_PREFIX="$(echo "${i}v" | tr -d '-')"
-    EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$i" --keyring-backend test --node-dir-prefix "$NODE_DIR_PREFIX" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
-    if [ "$EXEC_RESULT" != "Successfully initialized 1 node directories" ]; then
-      warn "could not create config for ${i}: \"$EXEC_RESULT\", skipping..."
-      return 1
-    else
-      mv "${HOME_ROOT}/${NODE_DIR_PREFIX}0" "${HOME_DIR}"
-      mv "${HOME_ROOT}/gentxs" "${HOME_DIR}"
-      WALLET_MNEMONIC="$(get_wallet_mnemonic "$i")"
-      WALLET_HDPATH="$(get_wallet_hdpath "$i")"
-      if [ -z "$WALLET_MNEMONIC" ]; then
-        if [ -z "$WALLET_HDPATH" ]; then
-          "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-        else
-          "$GAIAD_BINARY" keys add "wallet" --hd-path "$WALLET_HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-        fi
-      else
-        if [ -z "$WALLET_HDPATH" ]; then
-          echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-        else
-          echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$WALLET_HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-        fi
-        sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
-      fi
-      "$GAIAD_BINARY" add-genesis-account "wallet" "10000000stake,100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
-      # Workaround for https://github.com/cosmos/cosmos-sdk/issues/9372 : remove supply from genesis
-      sconfig "${HOME_DIR}/config/genesis.json" -t stringSlice app_state.bank.supply=remove_supply 1> /dev/null
-      OS="$(uname -s)"
-      if [ "$OS" = "Darwin" ]; then
-        sed -i '' 's/\"remove_supply\"//' "$HOME_DIR/config/genesis.json"
-      else
-        sed -i'' 's/\"remove_supply\"//' "$HOME_DIR/config/genesis.json"
-      fi
-      # End of workaround
-    fi
-  else
-    NETWORK="$(get_network "$i")"
-    # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
-    NODE_DIR_PREFIX="$(echo "${i}n" | tr -d '-')"
-    EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$NETWORK" --keyring-backend test --node-dir-prefix "$NODE_DIR_PREFIX" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
-    if [ "$EXEC_RESULT" != "Successfully initialized 1 node directories" ]; then
-      warn "could not create config for ${i}: \"$EXEC_RESULT\", skipping..."
-      return 1
-    fi
-    mv "${HOME_ROOT}/${NODE_DIR_PREFIX}0" "${HOME_DIR}"
-    rm -rf "${HOME_ROOT}/gentxs"
-  fi
-  configure "$i"
-  sconfig "$HOME_DIR/config/config.toml" p2p.addr_book_strict=false 1> /dev/null
-  sconfig "$HOME_DIR/config/config.toml" p2p.allow_duplicate_ip=true 1> /dev/null
+get_wallet_account_prefix() {
+  NETWORK="$(get_chain_id "$1")"
+  NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
+  WALLET_ADDRESS="$(stoml "${NETWORK_HOME_DIR}/wallet_seed.json" address)"
+  IFS=1 read -r account_prefix _ <<EOF
+$WALLET_ADDRESS
+EOF
+  echo "$account_prefix"
 }
 
 create() {
@@ -548,25 +480,13 @@ create() {
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
     fi
     # Add accounts to genesis
-    DENOM="$(get_denom "$1")"
+    DENOM="$(get_staking_denom "$1")"
     "$GAIAD_BINARY" add-genesis-account validator "100000000${DENOM},100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
     "$GAIAD_BINARY" add-genesis-account wallet "100000000${DENOM},100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
     # Create gentx
     "$GAIAD_BINARY" gentx validator "10000000${DENOM}" --keyring-backend test --keyring-dir "${HOME_DIR}" --home "${HOME_DIR}" --chain-id "$1" 2> /dev/null
     # Collect gentxs
     "$GAIAD_BINARY" collect-gentxs --home "${HOME_DIR}" 2> /dev/null
-    # Override token denom - experimental
-    sconfig -s "${HOME_DIR}/config/genesis.json" "app_state.mint.params.mint_denom=${DENOM}" 1> /dev/null
-    sconfig -s "${HOME_DIR}/config/genesis.json" "app_state.crisis.constant_fee.denom=${DENOM}" 1> /dev/null
-    sconfig -s "${HOME_DIR}/config/genesis.json" "app_state.staking.params.bond_denom=${DENOM}" 1> /dev/null
-    # Issue: sconfig does not support array of hashmaps
-    # Workaround: sed
-    # app_state.gov.deposit_params.min_deposit[0].denom
-    # {
-    #  "denom": "stake",
-    #  "amount": "10000000"
-    # }
-    sed -i.bak "s/\"denom\": *\"stake\"/\"denom\": \"${DENOM}\"/" "${HOME_DIR}/config/genesis.json"
     # Validate genesis
     "$GAIAD_BINARY" validate-genesis --home "${HOME_DIR}" > /dev/null
   else
@@ -834,8 +754,8 @@ EOF
     RPC="$(get_rpc_port "$i")"
     GRPC="$(get_grpc_port "$i")"
     ID="$(get_chain_id "$i")"
-    ACCOUNT_PREFIX="$(get_account_prefix "$i")"
-    DENOM="$(get_denom "$i")"
+    ACCOUNT_PREFIX="$(get_wallet_account_prefix "$i")"
+    DENOM="$(get_staking_denom "$i")"
     cat <<EOF >> "$GLOBAL_HERMES_CONFIG"
 [[chains]]
 id='${ID}'
