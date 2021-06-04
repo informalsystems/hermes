@@ -82,6 +82,9 @@ pub enum Kind {
     #[error("Failed to create client {0}")]
     CreateClient(String),
 
+    #[error("Connection not found: {0}")]
+    ConnNotFound(ConnectionId),
+
     /// Common failures to all connection messages
     #[error("Failed to build conn open message {0}: {1}")]
     ConnOpen(ConnectionId, String),

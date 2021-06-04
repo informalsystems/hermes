@@ -231,18 +231,17 @@ impl Supervisor {
                     }
                 };
                 for connection_id in client_connections {
-                    let connection_end =
-                        match chain.query_connection(&connection_id, Height::zero()) {
-                            Ok(connection_end) => connection_end,
-                            Err(e) => {
-                                error!(
-                                    "skipping workers for chain {} and connection {}. \
+                    let connection_end = match chain.query_connection(&connection_id) {
+                        Ok(connection_end) => connection_end,
+                        Err(e) => {
+                            error!(
+                                "skipping workers for chain {} and connection {}. \
                                     reason: failed to query connection end: {}",
-                                    chain_id, connection_id, e
-                                );
-                                continue;
-                            }
-                        };
+                                chain_id, connection_id, e
+                            );
+                            continue;
+                        }
+                    };
 
                     if !connection_end.state_matches(&State::Open) {
                         continue;

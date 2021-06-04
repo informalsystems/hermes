@@ -131,7 +131,7 @@ impl CreateChannelCommand {
         // Query the connection end.
         let height = Height::new(chain_a.id().version(), 0);
         let conn_end = chain_a
-            .query_connection(connection_a_id, height)
+            .query_connection(connection_a_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Query the client state, obtain the identifier of chain b.

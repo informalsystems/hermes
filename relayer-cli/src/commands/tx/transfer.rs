@@ -185,7 +185,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         };
 
         let conn_end = src_chain
-            .query_connection(conn_id, Height::zero())
+            .query_connection(conn_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         debug!("connection hop underlying the channel: {:?}", conn_end);

@@ -4,7 +4,6 @@ use ibc::events::IbcEvent;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::Height;
 use ibc_relayer::channel::{Channel, ChannelSide};
 
 use crate::cli_utils::ChainHandlePair;
@@ -23,10 +22,7 @@ macro_rules! tx_chan_cmd {
         };
 
         // Retrieve the connection
-        let dst_connection = match chains
-            .dst
-            .query_connection(&$self.dst_conn_id, Height::default())
-        {
+        let dst_connection = match chains.dst.query_connection(&$self.dst_conn_id) {
             Ok(connection) => connection,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };

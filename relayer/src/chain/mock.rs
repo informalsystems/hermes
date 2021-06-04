@@ -160,11 +160,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_connection(
-        &self,
-        _connection_id: &ConnectionId,
-        _height: Height,
-    ) -> Result<ConnectionEnd, Error> {
+    fn query_connection(&self, _connection_id: &ConnectionId) -> Result<ConnectionEnd, Error> {
         unimplemented!()
     }
 

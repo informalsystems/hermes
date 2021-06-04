@@ -267,8 +267,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_compatible_versions(reply_to)?
                         },
 
-                        Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
-                            self.query_connection(connection_id, height, reply_to)?
+                        Ok(ChainRequest::QueryConnection { connection_id, reply_to }) => {
+                            self.query_connection(connection_id, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConnectionChannels { request, reply_to }) => {
@@ -606,10 +606,9 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn query_connection(
         &self,
         connection_id: ConnectionId,
-        height: Height,
         reply_to: ReplyTo<ConnectionEnd>,
     ) -> Result<(), Error> {
-        let connection_end = self.chain.query_connection(&connection_id, height);
+        let connection_end = self.chain.query_connection(&connection_id);
 
         reply_to.send(connection_end).map_err(Kind::channel)?;
 

@@ -178,14 +178,9 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryCompatibleVersions { reply_to })
     }
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error> {
+    fn query_connection(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Error> {
         self.send(|reply_to| ChainRequest::QueryConnection {
             connection_id: connection_id.clone(),
-            height,
             reply_to,
         })
     }

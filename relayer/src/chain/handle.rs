@@ -202,7 +202,6 @@ pub enum ChainRequest {
 
     QueryConnection {
         connection_id: ConnectionId,
-        height: Height,
         reply_to: ReplyTo<ConnectionEnd>,
     },
 
@@ -355,11 +354,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
 
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error>;
+    fn query_connection(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Error>;
 
     fn query_connection_channels(
         &self,

@@ -1635,7 +1635,7 @@ impl Link {
         }
 
         let a_connection_id = a_channel.connection_hops()[0].clone();
-        let a_connection = a_chain.query_connection(&a_connection_id, Height::zero())?;
+        let a_connection = a_chain.query_connection(&a_connection_id)?;
 
         if !a_connection.state_matches(&ConnectionState::Open) {
             return Err(LinkError::Failed(format!(

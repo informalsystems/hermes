@@ -22,9 +22,6 @@ pub struct QueryConnectionEndCmd {
 
     #[options(free, required, help = "identifier of the connection to query")]
     connection_id: ConnectionId,
-
-    #[options(help = "height of the state to query", short = "h")]
-    height: Option<u64>,
 }
 
 // cargo run --bin hermes -- query connection end ibc-test connectionidone --height 3
@@ -48,8 +45,7 @@ impl Runnable for QueryConnectionEndCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
 
-        let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
-        let res = chain.query_connection(&self.connection_id, height);
+        let res = chain.query_connection(&self.connection_id);
         match res {
             Ok(connection_end) => {
                 if connection_end.state_matches(&State::Uninitialized) {
