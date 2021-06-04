@@ -84,59 +84,7 @@ the `gm.toml` file for node configuration. By default, newly created node config
 
 **Description**: This file contains all the high-level node configuration that `gm` is aware of.
 
-**Entries**:
-* `[global]` - the global section defines application-wide defaults. All the entries here can be overridden on a
-  per-node basis, except if indicated otherwise.
-* `gaiad_binary` - Path to the `gaiad` binary to use.
-* `ports_start_at`
-  * In the global section this defines the first free port to use for newly created nodes.
-    The value will be incremented (by 10) when a new node requires ports.
-  * In the per-node configuration this is the first port to allocate for the node.
-    A total of 10 ports will be allocated per node.
-* `home_dir`
-  * In the global section this defines the default folder where all node folders will be created.
-  * In the per-node configuration this is the folder for the node configuration.
-* `wallet_mnemonic`
-  * Optional variable.
-  * define a 24-word seed phrase to use for wallet address(es) instead of creating random wallets.
-* `wallet_hdpath`
-  * Optional variable.
-  * Change the HD derivation path for the wallet address.
-* `auto_maintain_config` - automatically update the `persistent_peers` and `unconditional_peer_ids` sections of the node
-  configuration.
-* `add_to_hermes` - this node should be part of the hermes config.
-* `network`
-  * This is a sub-sections-only variable. It will be ignored in the `global` section.
-  * Defines the network (the validator connection) for the full node.
-  * **Mandatory for full nodes**, does not exist for validator nodes.
-
-* `[global.hermes]` - the hermes section of the global configuration. These global-only parameters are used in
-  setting up the hermes configuration and are only used in the `hermes` sub-command.
-* `binary` - Path to the `hermes` binary to use.
-* `config` - The hermes configuration file path.
-* `strategy` - The hermes configuration strategy parameter.
-* `log_level` - The hermes configuration log_level parameter.
-* `telemetry_enabled` - The hermes configuration telemetry.enabled parameter.
-* `telemetry_host` - The hermes configuration telemetry.host parameter.
-* `telemetry_port` - The hermes configuration telemetry.port parameter.
-
-**Tribal knowledge**: (things they don't tell you)
-* the user is welcome to create additional nodes outside the scope of `gm` on the local machine but `gm` will only
-  manage nodes that are added to the configuration file.
-* one quirk of the underlying tools is that if global variables are set, you can't unset them locally: empty values
-  in a node configuration will revert back to the global setting.
-* The shortest node definition is a named subsection like this `[mynode1]`. Ths inherently defines the following things:
-  * this node is a validator
-  * the chain_id of the network is `mynode1`
-  * a wallet is generated with extra tokens that can be used by the developer (or by hermes)
-* If you want to create a full-node, you have to define the `network="myvalidator"` option in the node configuration. If
-  you do, the following things are inherently defined:
-  * the node is connected to a validator called `myvalidator`
-  * the `genesis.json` file is copied from that validator and the `persistent_peers` section is updated to point to the
-    validator
-  * if Hermes is pointed to this node in the configuration (by adding the `add_to_hermes=true` option), Hermes will get
-    the wallet details from the validator node and use that wallet for transactions
-
+**Entries**: All entries are defined and documented in the [gm.toml](gm.toml) example configuration file.
 
 ### The network configuration
 **Where**: Default is the folder `$HOME/.gm/<node_name>`, but it can be configured in `gm.toml` using the `home_dir`
@@ -151,7 +99,7 @@ config. The persistent_peers section is automatically managed if the node has th
   enabled in `gm.toml`.
 * `data` - The data folder.
 * `keyring-test` - the keyring folder as defined by `gaiad testnet` with the "test" keyring-backend.
-* `key_seed.json` - the node's signing and wallet key as defined using the `gaiad testnet` command.
+* `validator_seed.json` - the validaotr node's signing and wallet key.
 * `wallet_seed.json` - an extra wallet mnemonic defined on validator nodes with some tokens for developer use.
 * `pid` - the file that contains the process ID of the running node. (a la `/var/run`) Use `gm status` to see.
 * `log` - the log file that contains the output of the running node. Use `gm log <node>` to see.
@@ -183,6 +131,23 @@ node4 GRPCW: http://localhost:27055
 ```
 
 Note: The GRPC-Web port was recently introduced (after gaiad v4.2.1). It will be ignored in earlier versions.
+
+## Tribal knowledge (things they don't tell you)
+* the user is welcome to create additional nodes outside the scope of `gm` on the local machine but `gm` will only
+  manage nodes that are added to the configuration file.
+* one quirk of the underlying tools is that if global variables are set, you can't unset them locally: empty values
+  in a node configuration will revert back to the global setting.
+* The shortest node definition is a named subsection like this `[mynode1]`. Ths inherently defines the following things:
+  * this node is a validator
+  * the chain_id of the network is `mynode1`
+  * a wallet is generated with extra tokens that can be used by the developer (or by hermes)
+* If you want to create a full-node, you have to define the `network="myvalidator"` option in the node configuration. If
+  you do, the following things are inherently defined:
+  * the node is connected to a validator called `myvalidator`
+  * the `genesis.json` file is copied from that validator and the `persistent_peers` section is updated to point to the
+    validator
+  * if Hermes is pointed to this node in the configuration (by adding the `add_to_hermes=true` option), Hermes will get
+    the wallet details from the validator node and use that wallet for transactions
 
 ## Execution manual
 ### `gm help`
@@ -283,12 +248,9 @@ The same is true for `hermes_binary`.
 ```toml
 [global]
 gaiad_binary="$GOPATH/bin/gaiad"
-ports_start_at=27000
-home_dir="$HOME/.gm"
-auto_maintain_config=true
-add_to_hermes=false
-hermes_binary="./hermes"
-hermes_config="$HOME/.hermes/config.toml"
+
+[global.hermes]
+binary="./hermes"
 
 [network1]
 [network2]
