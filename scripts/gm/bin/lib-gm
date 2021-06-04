@@ -179,8 +179,15 @@ install() {
   if [ -z "$(which sconfig)" ]; then
     warn "missing mandatory sconfig, install it from https://github.com/freshautomations/sconfig/releases"
   fi
-  if [ ! -d /usr/local/etc/bash_completion.d ]; then
-    warn "run \"brew install bash-completion\" to install optional bash completion"
+  OS="$(uname -s)"
+  if [ "$OS" = "Darwin" ]; then
+    if [ ! -d /usr/local/etc/bash_completion.d ]; then
+      warn "run \"brew install bash-completion\" to install optional bash completion"
+    fi
+  else
+    if [ ! -d /etc/bash_completion.d ]; then
+      warn "run \"apt-get install bash-completion || yum install bash-completion\" to install optional bash completion"
+    fi
   fi
   echo "Please add \"source $HOME/.gm/bin/shell-support\" to your .profile, .bash_profile or other startup script and restart your shell."
 }
