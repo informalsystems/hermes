@@ -41,7 +41,6 @@ parse_config_file() {
   fi
   # File integrity check
   stoml -s "$CONFIG_FILE" global 1> /dev/null || exit_with_error invalid config file. Make sure all strings are quoted and the global section exits
-  test -x "$GLOBAL_GAIAD_BINARY" || exit_with_error "gaiad binary cannot be executed: $GLOBAL_GAIAD_BINARY"
   # Note:
   #   Shellcheck SC2155: Declare and assign separately to avoid masking return values.
   #   This is irrelevant here, because the return code is taken into account.
