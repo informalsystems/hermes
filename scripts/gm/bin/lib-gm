@@ -556,13 +556,17 @@ create() {
     # Collect gentxs
     "$GAIAD_BINARY" collect-gentxs --home "${HOME_DIR}" 2> /dev/null
     # Override token denom - experimental
-    sconfig -sq "${HOME_DIR}/config/genesis.json" "app_state.mint.params.mint_denom=${DENOM}"
-    sconfig -sq "${HOME_DIR}/config/genesis.json" "app_state.crisis.constant_fee.denom=${DENOM}"
+    sconfig -s "${HOME_DIR}/config/genesis.json" "app_state.mint.params.mint_denom=${DENOM}" 1> /dev/null
+    sconfig -s "${HOME_DIR}/config/genesis.json" "app_state.crisis.constant_fee.denom=${DENOM}" 1> /dev/null
+    sconfig -s "${HOME_DIR}/config/genesis.json" "app_state.staking.params.bond_denom=${DENOM}" 1> /dev/null
+    # Issue: sconfig does not support array of hashmaps
+    # Workaround: sed
     # app_state.gov.deposit_params.min_deposit[0].denom
     # {
     #  "denom": "stake",
     #  "amount": "10000000"
     # }
+    sed -i.bak "s/\"denom\": *\"stake\"/\"denom\": \"${DENOM}\"/" "${HOME_DIR}/config/genesis.json"
     # Validate genesis
     "$GAIAD_BINARY" validate-genesis --home "${HOME_DIR}" > /dev/null
   else
