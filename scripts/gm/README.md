@@ -99,7 +99,7 @@ config. The persistent_peers section is automatically managed if the node has th
   enabled in `gm.toml`.
 * `data` - The data folder.
 * `keyring-test` - the keyring folder as defined by `gaiad testnet` with the "test" keyring-backend.
-* `validator_seed.json` - the validaotr node's signing and wallet key.
+* `validator_seed.json` - the validator node's signing and wallet key.
 * `wallet_seed.json` - an extra wallet mnemonic defined on validator nodes with some tokens for developer use.
 * `pid` - the file that contains the process ID of the running node. (a la `/var/run`) Use `gm status` to see.
 * `log` - the log file that contains the output of the running node. Use `gm log <node>` to see.
