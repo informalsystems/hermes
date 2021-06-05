@@ -25,18 +25,13 @@ home_dir="$HOME/.gm"
 # (Optional) The validator node's operator address will be created from this 24-word seed phrase instead of a random address.
 validator_mnemonic=""
 
-# (Optional) The HD derivation path for the validator operator address.
-# Default using `gaiad` is "m/44'/118'/0'/0/0" which defines ATOM.
-# This is rarely overwritten as the binary automatically sets the correct hdpath for the specific chain.
-validator_hdpath=""
-
 # (Optional) The wallet address will be created from this 24-word seed phrase instead of a random address.
 wallet_mnemonic=""
 
-# (Optional) The HD derivation path for the wallet address.
-# Default using `gaiad` is "m/44'/118'/0'/0/0" which defines ATOM.
-# This is defined in cases where the chain's coin type is not the default - so Hermes can also install the correct address.
-wallet_hdpath=""
+# (Optional) The HD derivation path for network addresses.
+# This is automatically set on a chain but Hermes needs to be informed of it, if it is not the default.
+# The default is "m/44'/118'/0'/0/0" which defines the Cosmos Hub ATOM.
+hdpath=""
 
 # Automatically update the `persistent_peers` and `unconditional_peer_ids` sections of the node configuration.
 auto_maintain_config=true

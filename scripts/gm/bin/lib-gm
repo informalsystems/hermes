@@ -19,9 +19,8 @@ set_config_defaults() {
     GLOBAL_AUTO_MAINTAIN_CONFIG="true"
     GLOBAL_ADD_TO_HERMES="false"
     GLOBAL_VALIDATOR_MNEMONIC=""
-    GLOBAL_VALIDATOR_HDPATH=""
     GLOBAL_WALLET_MNEMONIC=""
-    GLOBAL_WALLET_HDPATH=""
+    GLOBAL_HDPATH=""
     GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
     GLOBAL_HERMES_STRATEGY="packets"
@@ -53,11 +52,9 @@ parse_config_file() {
   # shellcheck disable=SC2155
   export GLOBAL_VALIDATOR_MNEMONIC="$(stoml -sq "$CONFIG_FILE" global.validator_mnemonic || echo "$GLOBAL_VALIDATOR_MNEMONIC")"
   # shellcheck disable=SC2155
-  export GLOBAL_VALIDATOR_HDPATH="$(stoml -sq "$CONFIG_FILE" global.validator_hdpath || echo "$GLOBAL_VALIDATOR_HDPATH")"
-  # shellcheck disable=SC2155
   export GLOBAL_WALLET_MNEMONIC="$(stoml -sq "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
   # shellcheck disable=SC2155
-  export GLOBAL_WALLET_HDPATH="$(stoml -sq "$CONFIG_FILE" global.wallet_hdpath || echo "$GLOBAL_WALLET_HDPATH")"
+  export GLOBAL_HDPATH="$(stoml -sq "$CONFIG_FILE" global.hdpath || echo "$GLOBAL_HDPATH")"
   # shellcheck disable=SC2155
   export GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.binary || echo "$GLOBAL_HERMES_BINARY")")"
   # shellcheck disable=SC2155
@@ -101,8 +98,27 @@ parse_config_file() {
     fi
     FULL_NODES="${FULL_NODES} $i"
     if get_add_to_hermes "$i"; then
-      # Todo: Check if any of the previously added nodes are on the same network.
-      ALL_HERMES_NODES="$ALL_HERMES_NODES $i"
+      ADD="yes"
+      for j in $ALL_HERMES_NODES
+      do
+        if a_in_b "$j" "$VALIDATORS"; then
+          if [ "$NODE_NETWORK" = "$j" ]; then
+            warn "$i is a node on network $NODE_NETWORK and there is already a node for that network in the hermes config, skipping..."
+            ADD="no"
+            break
+          fi
+        else
+          J_NODE_NETWORK="$(get_network "$j")"
+          if [ "$NODE_NETWORK" = "$J_NODE_NETWORK" ]; then
+            warn "$i is a node on network $NODE_NETWORK and there is already a node for that network in the hermes config, skipping..."
+            ADD="no"
+            break
+          fi
+        fi
+      done
+      if [ "$ADD" = "yes" ]; then
+        ALL_HERMES_NODES="$ALL_HERMES_NODES $i"
+      fi
     fi
   done
   VALIDATORS="${VALIDATORS## }"
@@ -396,15 +412,6 @@ get_validator_mnemonic() {
   fi
 }
 
-get_validator_hdpath() {
-  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.validator_hdpath")"
-  if [ -z "$RESULT" ]; then
-    echo "$GLOBAL_VALIDATOR_HDPATH"
-  else
-    echo "$RESULT"
-  fi
-}
-
 get_wallet_mnemonic() {
   RESULT="$(stoml -q "$CONFIG_FILE" "${1}.wallet_mnemonic")"
   if [ -z "$RESULT" ]; then
@@ -414,10 +421,10 @@ get_wallet_mnemonic() {
   fi
 }
 
-get_wallet_hdpath() {
-  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.wallet_hdpath")"
+get_hdpath() {
+  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.hdpath")"
   if [ -z "$RESULT" ]; then
-    echo "$GLOBAL_WALLET_HDPATH"
+    echo "$GLOBAL_HDPATH"
   else
     echo "$RESULT"
   fi
@@ -451,32 +458,31 @@ create() {
     return 1
   fi
   if a_in_b "$1" "$VALIDATORS"; then
+    HDPATH="$(get_hdpath "$1")"
     # Create validator key
     VALIDATOR_MNEMONIC="$(get_validator_mnemonic "$1")"
-    VALIDATOR_HDPATH="$(get_validator_hdpath "$1")"
-    if [ -z "$VALIDATOR_MNEMONIC" ] && [ -z "$VALIDATOR_HDPATH" ]; then
+    if [ -z "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
       "$GAIAD_BINARY" keys add "validator" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
-    elif [ -z "$VALIDATOR_MNEMONIC" ] && [ -n "$VALIDATOR_HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "validator" --hd-path "$VALIDATOR_HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
-    elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -z "$VALIDATOR_HDPATH" ]; then
+    elif [ -z "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
+      "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+    elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
       echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
       sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
-    elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -n "$VALIDATOR_HDPATH" ]; then
-      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --hd-path "$VALIDATOR_HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+    elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
+      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
       sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
     fi
     # Create wallet key
     WALLET_MNEMONIC="$(get_wallet_mnemonic "$1")"
-    WALLET_HDPATH="$(get_wallet_hdpath "$1")"
-    if [ -z "$WALLET_MNEMONIC" ] && [ -z "$WALLET_HDPATH" ]; then
+    if [ -z "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
       "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-    elif [ -z "$WALLET_MNEMONIC" ] && [ -n "$WALLET_HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "wallet" --hd-path "$WALLET_HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-    elif [ -n "$WALLET_MNEMONIC" ] && [ -z "$WALLET_HDPATH" ]; then
+    elif [ -z "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
+      "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+    elif [ -n "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
       echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
-    elif [ -n "$WALLET_MNEMONIC" ] && [ -n "$WALLET_HDPATH" ]; then
-      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$WALLET_HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+    elif [ -n "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
+      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
     fi
     # Add accounts to genesis
@@ -773,19 +779,20 @@ clock_drift='5s'
 trusting_period='14days'
 
 [chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+numerator='1'
+denominator='3'
 
 EOF
     done
 }
 
 # This is a helper function that extracts the coinType from an absolute hdpath (m/44'/118'/0'/0/0) for hermes.
+# This will be obsolete after https://github.com/informalsystems/ibc-rs/issues/1049 .
 get_cointype() {
-  WALLET_HDPATH="$(get_wallet_hdpath "$1")"
-  if [ -n "$WALLET_HDPATH" ]; then
-    COINTYPE=$(echo "$WALLET_HDPATH" | sed 's,^m/[0-9][0-9]*'\''/\([0-9][0-9]*\)'\''/[0-9][0-9]*'\''/[0-9][0-9]*/[0-9][0-9]*$,\1,')
-    if [ "$COINTYPE" != "$WALLET_HDPATH" ]; then
+  HDPATH="$(get_hdpath "$1")"
+  if [ -n "$HDPATH" ]; then
+    COINTYPE=$(echo "$HDPATH" | sed 's,^m/[0-9][0-9]*'\''/\([0-9][0-9]*\)'\''/[0-9][0-9]*'\''/[0-9][0-9]*/[0-9][0-9]*$,\1,')
+    if [ "$COINTYPE" != "$HDPATH" ]; then
       echo "$COINTYPE"
     fi
   fi
@@ -795,9 +802,9 @@ hermes_keys() {
   ID="$(get_chain_id "$1")"
   NETWORK_HOME_DIR="$(get_home_dir "$ID")"
   test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config"
-  WALLET_HDPATH="$(get_wallet_hdpath "$1")"
+  HDPATH="$(get_hdpath "$1")"
   COINTYPE="$(get_cointype "$1")"
-  if [ -n "$WALLET_HDPATH" ] && [ -z "${COINTYPE}" ]; then
+  if [ -n "$HDPATH" ] && [ -z "${COINTYPE}" ]; then
       warn "cointype could not be parsed. Reverting to default coin type."
   fi
   if [ -z "${COINTYPE}" ]; then

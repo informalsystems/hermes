@@ -4,18 +4,20 @@
 
 ### FEATURES
 - Reorganized the documentation and moved the configuration file documentation into the example configuration.
-- Added the `denom` and `prefix` options for easier customization of different networks.
-- Added `validator_mnemonic` and `validator_hdpath` parameters to customize validator operator keys.
+- Added auto-configuration of the `denom` and `prefix` options in hermes config.
 
 ### BUGFIXES
 - Fixed a small bug with the DEBUG features (used `==` instead of `=` when testing for the `DEBUG` flag.)
 - Fixed the 5-network mesh example configuration in the documentation.
 - Removed `--x-crisis-skip-assert-invariants` as not all networks support it.
+- Only add node to the hermes config if there is no node already for that network
 
 ### REFACTORS
 - Reorganized the `lib-gm` file to make it slightly easier to add configuration options.
 - Simplified the empty "default" config that gets created if no config exists.
 - Moved away from the `testnet` command as not all networks support it.
+- Renamed `wallet_hdpath` configuration item to `hdpath` to reflect that the validator address is also impacted during
+  creation.
 
 ## v0.0.4
 
