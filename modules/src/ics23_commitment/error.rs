@@ -1,16 +1,9 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+use flex_error::*;
 
-pub type Error = anomaly::Error<Kind>;
+pub type Error = anyhow::Error;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
-    #[error("invalid raw merkle proof")]
-    InvalidRawMerkleProof,
-}
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
-    }
+define_error! { KindError;
+    InvalidRawMerkleProof
+    | _ | { format_args!("invalid raw merkle proof")},
 }

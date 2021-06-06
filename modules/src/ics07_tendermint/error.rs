@@ -1,48 +1,48 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+// use anomaly::{BoxError, Context};
+// use thiserror::Error;
+use displaydoc::Display;
+use flex_error::*;
 
 use crate::ics24_host::error::ValidationKind;
 
-pub type Error = anomaly::Error<Kind>;
+pub type Error = anyhow::Error;
 
-#[derive(Clone, Debug, Error)]
-pub enum Kind {
-    #[error("invalid trusting period")]
-    InvalidTrustingPeriod,
+// #[derive(Clone, Debug, Error)]
+// pub enum Kind {
+define_error! {KindError;
 
-    #[error("invalid unbonding period")]
-    InvalidUnboundingPeriod,
+    InvalidTrustingPeriod
+    | _ | { format_args!("invalid trusting period")},
 
-    #[error("invalid address")]
-    InvalidAddress,
+    InvalidUnboundingPeriod
+    | _ | { format_args!("invalid unbonding period")},
 
-    #[error("invalid header, failed basic validation")]
-    InvalidHeader,
+    InvalidAddress
+    | _ | { format_args!("invalid address")},
 
-    #[error("validation error")]
-    ValidationError,
+    InvalidHeader
+    | _ | { format_args!("invalid header, failed basic validation")},
 
-    #[error("invalid raw client state")]
-    InvalidRawClientState,
+    ValidationError
+    | _ | { format_args!("validation error")},
 
-    #[error("invalid chain identifier: raw value {0} with underlying validation error: {1}")]
-    InvalidChainId(String, ValidationKind),
+    InvalidRawClientState
+    | _ | { format_args!("invalid raw client state")},
 
-    #[error("invalid raw height")]
-    InvalidRawHeight,
+    InvalidChainId
+    {value: String, validation_kind: ValidationKind}
+    | e | { format_args!("invalid chain identifier: raw value {0} with underlying validation error: {1}", e.value, e.validation_kind)},
 
-    #[error("invalid raw client consensus state")]
-    InvalidRawConsensusState,
+    InvalidRawHeight
+    | _ | { format_args!("invalid raw height")},
 
-    #[error("invalid raw header")]
-    InvalidRawHeader,
+    InvalidRawConsensusState
+    | _ | { format_args!("invalid raw client consensus state")},
 
-    #[error("invalid raw misbehaviour")]
-    InvalidRawMisbehaviour,
+    InvalidRawHeader
+    | _ | { format_args!("invalid raw header")},
+
+    InvalidRawMisbehaviour
+    | _ | { format_args!("invalid raw misbehaviour")},
 }
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
-    }
-}

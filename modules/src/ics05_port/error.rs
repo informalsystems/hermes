@@ -1,16 +1,9 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+use displaydoc::Display;
+use flex_error::*;
 
-pub type Error = anomaly::Error<Kind>;
+pub type Error = anyhow::Error;
 
-#[derive(Clone, Debug, Error)]
-pub enum Kind {
-    #[error("port unknown")]
-    UnknownPort,
-}
-
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
-    }
+define_error! {
+    UnknownPort
+    | _ | { format_args!("pot unknown") },
 }
