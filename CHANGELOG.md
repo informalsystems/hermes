@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-> Nothing yet.
+### BUG FIXES
+
+- [gaiad-manager]
+  - Removed the testnet command as not all networks support it.
 
 ## v0.4.0
 *June 3rd, 2021*

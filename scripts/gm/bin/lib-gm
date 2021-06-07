@@ -1,22 +1,26 @@
 #!/usr/bin/env sh
 set -eu
-if [ "${DEBUG:-}" == "2" ]; then
+if [ "${DEBUG:-}" = "2" ]; then
   set -x
 fi
 
 version() {
-  echo "v0.0.4"
+  echo "v0.0.5"
 }
 
-config_defaults() {
+# Configuration Management
+###
+
+set_config_defaults() {
     GLOBAL_GAIAD_BINARY="$(which gaiad || echo "${GOPATH:-./gaiad}")"
     #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
     DEFAULT_PORTS_START_AT=27000
     GLOBAL_HOME_DIR="${HOME}/.gm"
     GLOBAL_AUTO_MAINTAIN_CONFIG="true"
     GLOBAL_ADD_TO_HERMES="false"
+    GLOBAL_VALIDATOR_MNEMONIC=""
     GLOBAL_WALLET_MNEMONIC=""
-    GLOBAL_WALLET_HDPATH=""
+    GLOBAL_HDPATH=""
     GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
     GLOBAL_HERMES_STRATEGY="packets"
@@ -25,6 +29,144 @@ config_defaults() {
     GLOBAL_HERMES_TELEMETRY_HOST="127.0.0.1"
     GLOBAL_HERMES_TELEMETRY_PORT="3001"
 }
+
+parse_config_file() {
+  set_config_defaults
+  find_config_file
+  if [ ! -f "$CONFIG_FILE" ]; then
+    write_default_config_file
+  fi
+  # File integrity check
+  stoml -s "$CONFIG_FILE" global 1> /dev/null || exit_with_error invalid config file. Make sure all strings are quoted and the global section exits
+  # Note:
+  #   Shellcheck SC2155: Declare and assign separately to avoid masking return values.
+  #   This is irrelevant here, because the return code is taken into account.
+  # shellcheck disable=SC2155
+  export GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.gaiad_binary || echo "$GLOBAL_GAIAD_BINARY")")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HOME_DIR="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.home_dir || echo "$GLOBAL_HOME_DIR")")"
+  # shellcheck disable=SC2155
+  export GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -sq "$CONFIG_FILE" global.auto_maintain_config || echo "$GLOBAL_AUTO_MAINTAIN_CONFIG")"
+  # shellcheck disable=SC2155
+  export GLOBAL_ADD_TO_HERMES="$(stoml -sq "$CONFIG_FILE" global.add_to_hermes || echo "$GLOBAL_ADD_TO_HERMES")"
+  # shellcheck disable=SC2155
+  export GLOBAL_VALIDATOR_MNEMONIC="$(stoml -sq "$CONFIG_FILE" global.validator_mnemonic || echo "$GLOBAL_VALIDATOR_MNEMONIC")"
+  # shellcheck disable=SC2155
+  export GLOBAL_WALLET_MNEMONIC="$(stoml -sq "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HDPATH="$(stoml -sq "$CONFIG_FILE" global.hdpath || echo "$GLOBAL_HDPATH")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.binary || echo "$GLOBAL_HERMES_BINARY")")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.config || echo "$GLOBAL_HERMES_CONFIG")")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HERMES_STRATEGY="$(stoml -sq "$CONFIG_FILE" global.hermes.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HERMES_LOG_LEVEL="$(stoml -sq "$CONFIG_FILE" global.hermes.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HERMES_TELEMETRY_ENABLED="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_enabled || echo "$GLOBAL_HERMES_TELEMETRY_ENABLED")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HERMES_TELEMETRY_HOST="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_host || echo "$GLOBAL_HERMES_TELEMETRY_HOST")"
+  # shellcheck disable=SC2155
+  export GLOBAL_HERMES_TELEMETRY_PORT="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_port || echo "$GLOBAL_HERMES_TELEMETRY_PORT")"
+
+  RAW_SECTIONS="$(load_all_sections || echo "")"
+  VALIDATORS=""
+  RAW_NODES=""
+  ALL_HERMES_NODES=""
+  for i in $RAW_SECTIONS
+  do
+    if [ "$i" = "global" ] || [ "$i" = "global.hermes" ]; then
+      continue
+    fi
+    if [ -z "$(stoml "$CONFIG_FILE" "${i}.network")" ]; then
+      VALIDATORS="$VALIDATORS $i"
+      if get_add_to_hermes "$i"; then
+        ALL_HERMES_NODES="$ALL_HERMES_NODES $i"
+      fi
+    else
+      RAW_NODES="$RAW_NODES $i"
+    fi
+  done
+  FULL_NODES=""
+  for i in $RAW_NODES
+  do
+    NODE_NETWORK="$(stoml "$CONFIG_FILE" "${i}.network")"
+    if ! a_in_b "${NODE_NETWORK}" "$VALIDATORS"; then
+      warn "invalid full node: $i, invalid network entry: ${NODE_NETWORK}, skipping..."
+      continue
+    fi
+    FULL_NODES="${FULL_NODES} $i"
+    if get_add_to_hermes "$i"; then
+      ADD="yes"
+      for j in $ALL_HERMES_NODES
+      do
+        if a_in_b "$j" "$VALIDATORS"; then
+          if [ "$NODE_NETWORK" = "$j" ]; then
+            warn "$i is a node on network $NODE_NETWORK and there is already a node for that network in the hermes config, skipping..."
+            ADD="no"
+            break
+          fi
+        else
+          J_NODE_NETWORK="$(get_network "$j")"
+          if [ "$NODE_NETWORK" = "$J_NODE_NETWORK" ]; then
+            warn "$i is a node on network $NODE_NETWORK and there is already a node for that network in the hermes config, skipping..."
+            ADD="no"
+            break
+          fi
+        fi
+      done
+      if [ "$ADD" = "yes" ]; then
+        ALL_HERMES_NODES="$ALL_HERMES_NODES $i"
+      fi
+    fi
+  done
+  VALIDATORS="${VALIDATORS## }"
+  FULL_NODES="${FULL_NODES## }"
+  ALL_HERMES_NODES="${ALL_HERMES_NODES## }"
+  export VALIDATORS
+  export FULL_NODES
+  export ALL_HERMES_NODES
+  export ALL_NODES="$VALIDATORS $FULL_NODES"
+  # Workaround for issue: https://github.com/spf13/viper/issues/1131
+  #   Fix "stoml" so it reads empty sections too.
+  for v in $VALIDATORS
+  do
+    # This will fill in the ports_start_at entry in all sections so empty sections have at least one entry.
+    get_ports_start_at "$v" 1> /dev/null
+  done
+  # End of workaround
+}
+
+write_default_config_file() {
+  set +e
+  cat <<EOF > "$CONFIG_FILE"
+[global]
+gaiad_binary="$GLOBAL_GAIAD_BINARY"
+
+[global.hermes]
+binary="$GLOBAL_HERMES_BINARY"
+
+EOF
+  set -e
+}
+
+find_config_file() {
+  if [ -f "${SCRIPT_DIR}gm.toml" ]; then
+    export CONFIG_FILE="${SCRIPT_DIR}gm.toml"
+  elif [ -f "${HOME}/.gm/gm.toml" ]; then
+    export CONFIG_FILE="${HOME}/.gm/gm.toml"
+  else
+    if [ -d "${HOME}/.gm" ]; then
+      export CONFIG_FILE="${HOME}/.gm/gm.toml"
+    else
+      export CONFIG_FILE="${SCRIPT_DIR}gm.toml"
+    fi
+  fi
+}
+
+# End Configuration Management
+###
 
 install() {
   mkdir -p "${HOME}/.gm/bin"
@@ -38,8 +180,8 @@ install() {
   if [ -f "$CONFIG_FILE" ]; then
     warn "Config file already exists. Please double-check the documentation to see if all necessary configuration items are set."
   else
-    config_defaults
-    write_default_config
+    set_config_defaults
+    write_default_config_file
   fi
   if [ -z "$(which stoml)" ]; then
     warn "missing mandatory stoml, install it from https://github.com/freshautomations/stoml/releases"
@@ -47,8 +189,15 @@ install() {
   if [ -z "$(which sconfig)" ]; then
     warn "missing mandatory sconfig, install it from https://github.com/freshautomations/sconfig/releases"
   fi
-  if [ ! -d /usr/local/etc/bash_completion.d ]; then
-    warn "run \"brew install bash-completion\" to install optional bash completion"
+  OS="$(uname -s)"
+  if [ "$OS" = "Darwin" ]; then
+    if [ ! -d /usr/local/etc/bash_completion.d ]; then
+      warn "run \"brew install bash-completion\" to install optional bash completion"
+    fi
+  else
+    if [ ! -d /etc/bash_completion.d ]; then
+      warn "run \"apt-get install bash-completion || yum install bash-completion\" to install optional bash completion"
+    fi
   fi
   echo "Please add \"source $HOME/.gm/bin/shell-support\" to your .profile, .bash_profile or other startup script and restart your shell."
 }
@@ -74,7 +223,7 @@ enforce_requirements() {
   STOML_VERSION="$("$STOML" --version | "$SED" 's/^stoml version //')"
   MAJOR="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\1/")"
   MINOR="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\2/")"
-  PATCH="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\3/")"
+  #PATCH="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\3/")"
   if [ $((MAJOR)) -eq 0 ] && [ $((MINOR)) -lt 7 ]; then
     exit_with_error "stoml too old, install 0.7.0 or newer from https://github.com/freshautomations/stoml/releases"
   fi
@@ -109,6 +258,9 @@ exit_with_error() {
   return 1
 }
 
+# Functions
+###
+
 # Is string A in space-separated list B?
 a_in_b() {
   test -n "$(echo "$2" | grep '\(^\| \+\)'"${1}"'\( \+\|$\)')"
@@ -137,157 +289,13 @@ n_from_a() {
   return 1
 }
 
-# Todo: do we want to use this?
-is_configuration_valid() {
-  if ! a_in_b "$1" "$ALL_NODES"; then
-    return 1
-  fi
-  HOME_DIR="$(get_home_dir "$1")"
-  for d in "$HOME_DIR" "${HOME_DIR}/config" "${HOME_DIR}/data"
-  do
-    if [ ! -d "$d" ]; then
-      return 1
-    fi
-  done
-  for f in "${HOME_DIR}/config/config.toml" "${HOME_DIR}/config/app.toml" "${HOME_DIR}/config/node_key.json"
-  do
-    if [ ! -f "$f" ]; then
-      return 1
-    fi
-  done
-  return 0
-}
+# End Functions
+###
 
 # Function to work around https://github.com/spf13/viper/issues/1131
+# This function can be replaced with `stoml -q "$CONFIG_FILE" .` after the issue is fixed.
 load_all_sections() {
   grep '^ *\[.\+\] *$' "$CONFIG_FILE" | sed 's/^ *\[\([^]]*\)\] *$/\1/'
-}
-
-load_config() {
-  FRESH_CONFIG=no
-  if [ -f "${SCRIPT_DIR}gm.toml" ]; then
-    export CONFIG_FILE="${SCRIPT_DIR}gm.toml"
-  elif [ -f "${HOME}/.gm/gm.toml" ]; then
-    export CONFIG_FILE="${HOME}/.gm/gm.toml"
-  else
-    FRESH_CONFIG=yes
-    if [ -d "${HOME}/.gm" ]; then
-      export CONFIG_FILE="${HOME}/.gm/gm.toml"
-    else
-      export CONFIG_FILE="${SCRIPT_DIR}gm.toml"
-    fi
-  fi
-  config_defaults
-  GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.gaiad_binary || echo "$GLOBAL_GAIAD_BINARY")")"
-  GLOBAL_HOME_DIR="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.home_dir || echo "$GLOBAL_HOME_DIR")")"
-  GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -sq "$CONFIG_FILE" global.auto_maintain_config || echo "$GLOBAL_AUTO_MAINTAIN_CONFIG")"
-  GLOBAL_ADD_TO_HERMES="$(stoml -sq "$CONFIG_FILE" global.add_to_hermes || echo "$GLOBAL_ADD_TO_HERMES")"
-  GLOBAL_WALLET_MNEMONIC="$(stoml -sq "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
-  GLOBAL_WALLET_HDPATH="$(stoml -sq "$CONFIG_FILE" global.wallet_hdpath || echo "$GLOBAL_WALLET_HDPATH")"
-  GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.binary || echo "$GLOBAL_HERMES_BINARY")")"
-  GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.config || echo "$GLOBAL_HERMES_CONFIG")")"
-  GLOBAL_HERMES_STRATEGY="$(stoml -sq "$CONFIG_FILE" global.hermes.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
-  GLOBAL_HERMES_LOG_LEVEL="$(stoml -sq "$CONFIG_FILE" global.hermes.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
-  GLOBAL_HERMES_TELEMETRY_ENABLED="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_enabled || echo "$GLOBAL_HERMES_TELEMETRY_ENABLED")"
-  GLOBAL_HERMES_TELEMETRY_HOST="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_host || echo "$GLOBAL_HERMES_TELEMETRY_HOST")"
-  GLOBAL_HERMES_TELEMETRY_PORT="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_port || echo "$GLOBAL_HERMES_TELEMETRY_PORT")"
-  export GLOBAL_GAIAD_BINARY
-  export GLOBAL_HOME_DIR
-  export GLOBAL_AUTO_MAINTAIN_CONFIG
-  export GLOBAL_ADD_TO_HERMES
-  export GLOBAL_WALLET_MNEMONIC
-  export GLOBAL_WALLET_HDPATH
-  export GLOBAL_HERMES_BINARY
-  export GLOBAL_HERMES_CONFIG
-  export GLOBAL_HERMES_STRATEGY
-  export GLOBAL_HERMES_LOG_LEVEL
-  export GLOBAL_HERMES_TELEMETRY_ENABLED
-  export GLOBAL_HERMES_TELEMETRY_HOST
-  export GLOBAL_HERMES_TELEMETRY_PORT
-  if [ "$FRESH_CONFIG" = "yes" ]; then
-    write_default_config
-    VALIDATORS=""
-    FULL_NODES=""
-    ALL_HERMES_NODES=""
-  else
-    stoml -s "$CONFIG_FILE" global 1> /dev/null || exit_with_error invalid config file. Make sure all strings are quoted and the global section exits
-    test -x "$GLOBAL_GAIAD_BINARY" || exit_with_error "gaiad binary cannot be executed: $GLOBAL_GAIAD_BINARY"
-    # Workaround for issue: https://github.com/spf13/viper/issues/1131
-    #   Fix "stoml" so it reads empty sections too.
-    #RAW_SECTIONS="$(stoml -q "$CONFIG_FILE" . || echo "")"
-    RAW_SECTIONS="$(load_all_sections || echo "")"
-    # End of workaround
-    VALIDATORS=""
-    RAW_NODES=""
-    ALL_HERMES_NODES=""
-    for i in $RAW_SECTIONS
-    do
-      if [ "$i" = "global" ] || [ "$i" = "global.hermes" ]; then
-        continue
-      fi
-      if [ -z "$(stoml "$CONFIG_FILE" "${i}.network")" ]; then
-        VALIDATORS="$VALIDATORS $i"
-        if get_add_to_hermes "$i"; then
-          ALL_HERMES_NODES="$ALL_HERMES_NODES $i"
-        fi
-      else
-        RAW_NODES="$RAW_NODES $i"
-      fi
-    done
-    FULL_NODES=""
-    for i in $RAW_NODES
-    do
-      NODE_NETWORK="$(stoml "$CONFIG_FILE" "${i}.network")"
-      if ! a_in_b "${NODE_NETWORK}" "$VALIDATORS"; then
-        warn "invalid full node: $i, invalid network entry: ${NODE_NETWORK}, skipping..."
-        continue
-      fi
-      FULL_NODES="${FULL_NODES} $i"
-      if get_add_to_hermes "$i"; then
-        ALL_HERMES_NODES="$ALL_HERMES_NODES $i"
-      fi
-    done
-  fi
-  VALIDATORS="${VALIDATORS## }"
-  FULL_NODES="${FULL_NODES## }"
-  ALL_HERMES_NODES="${ALL_HERMES_NODES## }"
-  export VALIDATORS
-  export FULL_NODES
-  export ALL_HERMES_NODES
-  export ALL_NODES="$VALIDATORS $FULL_NODES"
-  # Workaround for issue: https://github.com/spf13/viper/issues/1131
-  #   Fix "stoml" so it reads empty sections too.
-  for v in $VALIDATORS
-  do
-    # This will fill in the ports_start_at entry in all sections so empty sections have at least one entry.
-    get_ports_start_at "$v" 1> /dev/null
-  done
-  # End of workaround
-}
-
-write_default_config() {
-  set +e
-  cat <<EOF > "$CONFIG_FILE"
-[global]
-gaiad_binary="$GLOBAL_GAIAD_BINARY"
-ports_start_at=$DEFAULT_PORTS_START_AT
-home_dir="$GLOBAL_HOME_DIR"
-auto_maintain_config=$GLOBAL_AUTO_MAINTAIN_CONFIG
-add_to_hermes=$GLOBAL_ADD_TO_HERMES
-wallet_mnemonic="$GLOBAL_WALLET_MNEMONIC"
-wallet_hdpath="$GLOBAL_WALLET_HDPATH"
-
-[global.hermes]
-binary="$GLOBAL_HERMES_BINARY"
-config="$GLOBAL_HERMES_CONFIG"
-strategy="$GLOBAL_HERMES_STRATEGY"
-log_level="$GLOBAL_HERMES_LOG_LEVEL"
-telemetry_enabled="$GLOBAL_HERMES_TELEMETRY_ENABLED"
-telemetry_host="$GLOBAL_HERMES_TELEMETRY_HOST"
-telemetry_port="$GLOBAL_HERMES_TELEMETRY_PORT"
-
-EOF
-  set -e
 }
 
 get_gaiad_binary() {
@@ -387,12 +395,20 @@ get_add_to_hermes() {
 get_node_id() {
   GAIAD_BINARY="$(get_gaiad_binary "$1")"
   HOME_DIR="$(get_home_dir "$1")"
-  # Todo: Shall we change this to is_configuration_valid?
   if [ ! -f "${HOME_DIR}/config/node_key.json" ]; then
     warn "Invalid configuration: no node key found for $1"
     echo "DEADBEEFDEADBEEF"
   else
     "$GAIAD_BINARY" tendermint show-node-id --home "$HOME_DIR"
+  fi
+}
+
+get_validator_mnemonic() {
+  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.validator_mnemonic")"
+  if [ -z "$RESULT" ]; then
+    echo "$GLOBAL_VALIDATOR_MNEMONIC"
+  else
+    echo "$RESULT"
   fi
 }
 
@@ -405,71 +421,90 @@ get_wallet_mnemonic() {
   fi
 }
 
-get_wallet_hdpath() {
-  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.wallet_hdpath")"
+get_hdpath() {
+  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.hdpath")"
   if [ -z "$RESULT" ]; then
-    echo "$GLOBAL_WALLET_HDPATH"
+    echo "$GLOBAL_HDPATH"
   else
     echo "$RESULT"
   fi
 }
 
+get_staking_denom() {
+  NETWORK="$(get_chain_id "$1")"
+  NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
+  stoml "${NETWORK_HOME_DIR}/config/genesis.json" app_state.staking.params.bond_denom
+}
+
+get_wallet_account_prefix() {
+  NETWORK="$(get_chain_id "$1")"
+  NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
+  WALLET_ADDRESS="$(stoml "${NETWORK_HOME_DIR}/wallet_seed.json" address)"
+  IFS=1 read -r account_prefix _ <<EOF
+$WALLET_ADDRESS
+EOF
+  echo "$account_prefix"
+}
+
 create() {
-  i="$1"
-  echo "Creating $i config..."
-  GAIAD_BINARY="$(get_gaiad_binary "$i")"
-  HOME_DIR="$(get_home_dir "$i")"
-  HOME_ROOT="${HOME_DIR%%${i}}"
-  if a_in_b "$i" "$VALIDATORS"; then
-    # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
-    NODE_DIR_PREFIX="$(echo "${i}v" | tr -d '-')"
-    EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$i" --keyring-backend test --node-dir-prefix "$NODE_DIR_PREFIX" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
-    if [ "$EXEC_RESULT" != "Successfully initialized 1 node directories" ]; then
-      warn "could not create config for ${i}: \"$EXEC_RESULT\", skipping..."
-      return 1
-    else
-      mv "${HOME_ROOT}/${NODE_DIR_PREFIX}0" "${HOME_DIR}"
-      mv "${HOME_ROOT}/gentxs" "${HOME_DIR}"
-      WALLET_MNEMONIC="$(get_wallet_mnemonic "$i")"
-      WALLET_HDPATH="$(get_wallet_hdpath "$i")"
-      if [ -z "$WALLET_MNEMONIC" ]; then
-        if [ -z "$WALLET_HDPATH" ]; then
-          "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-        else
-          "$GAIAD_BINARY" keys add "wallet" --hd-path "$WALLET_HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-        fi
-      else
-        if [ -z "$WALLET_HDPATH" ]; then
-          echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-        else
-          echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$WALLET_HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
-        fi
-        sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
-      fi
-      "$GAIAD_BINARY" add-genesis-account "wallet" "10000000stake,100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
-      # Workaround for https://github.com/cosmos/cosmos-sdk/issues/9372 : remove supply from genesis
-      sconfig "${HOME_DIR}/config/genesis.json" -t stringSlice app_state.bank.supply=remove_supply 1> /dev/null
-      OS="$(uname -s)"
-      if [ "$OS" = "Darwin" ]; then
-        sed -i '' 's/\"remove_supply\"//' "$HOME_DIR/config/genesis.json"
-      else
-        sed -i'' 's/\"remove_supply\"//' "$HOME_DIR/config/genesis.json"
-      fi
-      # End of workaround
-    fi
-  else
-    NETWORK="$(get_network "$i")"
-    # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
-    NODE_DIR_PREFIX="$(echo "${i}n" | tr -d '-')"
-    EXEC_RESULT="$("$GAIAD_BINARY" testnet --chain-id "$NETWORK" --keyring-backend test --node-dir-prefix "$NODE_DIR_PREFIX" -o "$HOME_ROOT" --node-daemon-home . --v 1 2>&1)"
-    if [ "$EXEC_RESULT" != "Successfully initialized 1 node directories" ]; then
-      warn "could not create config for ${i}: \"$EXEC_RESULT\", skipping..."
-      return 1
-    fi
-    mv "${HOME_ROOT}/${NODE_DIR_PREFIX}0" "${HOME_DIR}"
-    rm -rf "${HOME_ROOT}/gentxs"
+  echo "Creating $1 config..."
+  GAIAD_BINARY="$(get_gaiad_binary "$1")"
+  HOME_DIR="$(get_home_dir "$1")"
+  NETWORK="$(get_chain_id "$1")"
+  EXEC_RESULT="$("$GAIAD_BINARY" init "$1" --chain-id "$NETWORK" --home "$HOME_DIR" 2>&1)"
+  echo "$EXEC_RESULT" > "${HOME_DIR}/init.json"
+  if [ "$(stoml "${HOME_DIR}/init.json" moniker)" != "$1" ]; then
+    warn "could not create config for ${1}: \"$EXEC_RESULT\", skipping..."
+    return 1
   fi
-  configure "$i"
+  if a_in_b "$1" "$VALIDATORS"; then
+    HDPATH="$(get_hdpath "$1")"
+    # Create validator key
+    VALIDATOR_MNEMONIC="$(get_validator_mnemonic "$1")"
+    if [ -z "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
+      "$GAIAD_BINARY" keys add "validator" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+    elif [ -z "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
+      "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+    elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
+      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
+    elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
+      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
+    fi
+    # Create wallet key
+    WALLET_MNEMONIC="$(get_wallet_mnemonic "$1")"
+    if [ -z "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
+      "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+    elif [ -z "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
+      "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+    elif [ -n "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
+      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
+    elif [ -n "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
+      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
+    fi
+    # Add accounts to genesis
+    DENOM="$(get_staking_denom "$1")"
+    "$GAIAD_BINARY" add-genesis-account validator "100000000${DENOM},100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
+    "$GAIAD_BINARY" add-genesis-account wallet "100000000${DENOM},100000000samoleans" --keyring-backend test --home "${HOME_DIR}"
+    # Create gentx
+    "$GAIAD_BINARY" gentx validator "10000000${DENOM}" --keyring-backend test --keyring-dir "${HOME_DIR}" --home "${HOME_DIR}" --chain-id "$1" 2> /dev/null
+    # Collect gentxs
+    "$GAIAD_BINARY" collect-gentxs --home "${HOME_DIR}" 2> /dev/null
+    # Validate genesis
+    "$GAIAD_BINARY" validate-genesis --home "${HOME_DIR}" > /dev/null
+  else
+    NETWORK_HOME_DIR="$(get_home_dir "$NETWORK")"
+    if [ -f "$NETWORK_HOME_DIR/config/genesis.json" ]; then
+      cp "$NETWORK_HOME_DIR/config/genesis.json" "$HOME_DIR/config/genesis.json"
+    else
+      warn "${NETWORK} does not have a valid genesis.json yet"
+      rm -f "${HOME_DIR}/config/genesis.json"
+    fi
+  fi
+  configure "$1"
   sconfig "$HOME_DIR/config/config.toml" p2p.addr_book_strict=false 1> /dev/null
   sconfig "$HOME_DIR/config/config.toml" p2p.allow_duplicate_ip=true 1> /dev/null
 }
@@ -488,12 +523,7 @@ configure() {
   # Workaround for https://github.com/spf13/viper/issues/1132
   #   Viper does not support writing array of arrays so we clean out the variable
   sconfig "$HOME_DIR/config/app.toml" -t stringSlice "telemetry.global-labels=panic gaiad" 1> /dev/null
-  OS="$(uname -s)"
-  if [ "$OS" = "Darwin" ]; then
-    sed -i '' 's/  global-labels = \["panic","gaiad"\]/  global-labels = []/' "$HOME_DIR/config/app.toml"
-  else
-    sed -i'' 's/  global-labels = \["panic","gaiad"\]/  global-labels = []/' "$HOME_DIR/config/app.toml"
-  fi
+  sed -i.bak 's/  global-labels = \["panic","gaiad"\]/  global-labels = []/' "$HOME_DIR/config/app.toml"
   # End of workaround
   sconfig "$HOME_DIR/config/app.toml" "api.address=tcp://0.0.0.0:${APP}" 1> /dev/null
   sconfig "$HOME_DIR/config/app.toml" "grpc.address=0.0.0.0:${GRPC}" 1> /dev/null
@@ -550,7 +580,7 @@ start() {
       warn "invalid genesis.json for ${1}. Please check the log and fix manually. Skipping..."
       return 0
     fi
-    nohup "$GAIAD_BINARY" start --x-crisis-skip-assert-invariants --home "$HOME_DIR" > "$GAIAD_LOG" 2>&1 &
+    nohup "$GAIAD_BINARY" start --home "$HOME_DIR" > "$GAIAD_LOG" 2>&1 &
     GAIAD_PID=$!
     echo "$GAIAD_PID" > "$HOME_DIR/pid"
     echo "$i started, PID: $GAIAD_PID, LOG: $GAIAD_LOG"
@@ -659,7 +689,6 @@ ports() {
 
 list_keys() {
   HOME_DIR="$(get_home_dir "$1")"
-  # Todo: Should we change this to is_configuration_valid?
   if [ ! -d "$HOME_DIR" ]; then
     warn "No configuration at ${HOME_DIR}. Skipping..."
     return 0
@@ -683,11 +712,9 @@ list_keys() {
         echo "$line"
       fi
     elif [ "$MNEMONIC" != "$line" ]; then
-      # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
-      if a_in_b "${KEY_NAME%%v0}" "$VALIDATORS" || a_in_b "${KEY_NAME%%v0}" "$(echo "$VALIDATORS" | tr -d '-')"; then
+      if a_in_b "${KEY_NAME%%v0}" "$VALIDATORS"; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
-      # Removing '-' to work around https://github.com/cosmos/cosmos-sdk/issues/9373
-      elif a_in_b "${KEY_NAME%%n0}" "$FULL_NODES" || a_in_b "${KEY_NAME%%n0}" "$(echo "$FULL_NODES" | tr -d '-')"; then
+      elif a_in_b "${KEY_NAME%%n0}" "$FULL_NODES"; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/key_seed.json" secret)\""
       elif [ -f "${HOME_DIR}/${KEY_NAME}_seed.json" ]; then
         echo "mnemonic: \"$(stoml "${HOME_DIR}/${KEY_NAME}_seed.json" mnemonic)\""
@@ -708,6 +735,7 @@ list_keys() {
   done
 }
 
+# Todo: Instead of overwriting the hermes config, let's try to make minimal changes.
 hermes_config() {
   HERMES_DIR="$(dirname "$GLOBAL_HERMES_CONFIG")"
   if [ ! -d "$HERMES_DIR" ]; then
@@ -732,6 +760,8 @@ EOF
     RPC="$(get_rpc_port "$i")"
     GRPC="$(get_grpc_port "$i")"
     ID="$(get_chain_id "$i")"
+    ACCOUNT_PREFIX="$(get_wallet_account_prefix "$i")"
+    DENOM="$(get_staking_denom "$i")"
     cat <<EOF >> "$GLOBAL_HERMES_CONFIG"
 [[chains]]
 id='${ID}'
@@ -739,29 +769,30 @@ rpc_addr='http://localhost:${RPC}'
 grpc_addr='https://localhost:${GRPC}'
 websocket_addr='ws://localhost:${RPC}/websocket'
 rpc_timeout='1s'
-account_prefix='cosmos'
+account_prefix='${ACCOUNT_PREFIX}'
 key_name='wallet'
 store_prefix='ibc'
-fee_denom='stake'
+fee_denom='${DENOM}'
 fee_amount=1000
-gas=300000
+gas=500000
 clock_drift='5s'
 trusting_period='14days'
 
 [chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+numerator='1'
+denominator='3'
 
 EOF
     done
 }
 
 # This is a helper function that extracts the coinType from an absolute hdpath (m/44'/118'/0'/0/0) for hermes.
+# This will be obsolete after https://github.com/informalsystems/ibc-rs/issues/1049 .
 get_cointype() {
-  WALLET_HDPATH="$(get_wallet_hdpath "$1")"
-  if [ -n "$WALLET_HDPATH" ]; then
-    COINTYPE=$(echo "$WALLET_HDPATH" | sed 's,^m/[0-9][0-9]*'\''/\([0-9][0-9]*\)'\''/[0-9][0-9]*'\''/[0-9][0-9]*/[0-9][0-9]*$,\1,')
-    if [ "$COINTYPE" != "$WALLET_HDPATH" ]; then
+  HDPATH="$(get_hdpath "$1")"
+  if [ -n "$HDPATH" ]; then
+    COINTYPE=$(echo "$HDPATH" | sed 's,^m/[0-9][0-9]*'\''/\([0-9][0-9]*\)'\''/[0-9][0-9]*'\''/[0-9][0-9]*/[0-9][0-9]*$,\1,')
+    if [ "$COINTYPE" != "$HDPATH" ]; then
       echo "$COINTYPE"
     fi
   fi
@@ -771,9 +802,9 @@ hermes_keys() {
   ID="$(get_chain_id "$1")"
   NETWORK_HOME_DIR="$(get_home_dir "$ID")"
   test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config"
-  WALLET_HDPATH="$(get_wallet_hdpath "$1")"
+  HDPATH="$(get_hdpath "$1")"
   COINTYPE="$(get_cointype "$1")"
-  if [ -n "$WALLET_HDPATH" ] && [ -z "${COINTYPE}" ]; then
+  if [ -n "$HDPATH" ] && [ -z "${COINTYPE}" ]; then
       warn "cointype could not be parsed. Reverting to default coin type."
   fi
   if [ -z "${COINTYPE}" ]; then
@@ -823,7 +854,6 @@ reset() {
   GAIAD_BINARY="$(get_gaiad_binary "$1")"
   HOME_DIR="$(get_home_dir "$1")"
   echo "Resetting $1..."
-  # Todo: Should we change this to is_configuration_valid?
   if [ ! -d "$HOME_DIR" ]; then
     warn "No configuration at ${HOME_DIR}. Skipping..."
     return 0
