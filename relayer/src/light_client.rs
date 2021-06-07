@@ -25,11 +25,14 @@ pub trait LightClient<C: Chain>: Send + Sync {
         client_state: &AnyClientState,
     ) -> Result<C::LightBlock, error::Error>;
 
+    /// Given a client update event that includes the header used in a client update,
+    /// look for misbehaviour by fetching a header at same or latest height.
     fn check_misbehaviour(
         &mut self,
         update: UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<AnyMisbehaviour>, error::Error>;
+
     /// Fetch a header from the chain at the given height, without verifying it
     fn fetch(&mut self, height: ibc::Height) -> Result<C::LightBlock, error::Error>;
 }

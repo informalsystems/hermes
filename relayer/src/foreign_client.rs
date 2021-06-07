@@ -12,7 +12,6 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::header::Header;
 use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
@@ -468,7 +467,7 @@ impl ForeignClient {
             return Ok(vec![]);
         }
 
-        let header = self
+        let (header, _support) = self
             .src_chain()
             .build_header(trusted_height, target_height, client_state)
             .map_err(|e| {
@@ -476,8 +475,7 @@ impl ForeignClient {
                     "failed building header with error: {}",
                     e
                 ))
-            })?
-            .wrap_any();
+            })?;
 
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ForeignClientError::ClientUpdate(format!(

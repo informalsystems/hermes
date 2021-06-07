@@ -130,7 +130,7 @@ pub enum ChainRequest {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        reply_to: ReplyTo<AnyHeader>,
+        reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
     },
 
     BuildClientState {
@@ -412,7 +412,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-    ) -> Result<AnyHeader, Error>;
+    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
 
     /// Constructs a client state at the given height
     fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error>;

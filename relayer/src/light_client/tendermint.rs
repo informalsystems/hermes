@@ -64,9 +64,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         self.fetch_light_block(AtHeight::At(height))
     }
 
-    /// Given a client update event that includes the header used in a client update.
-    /// it looks for misbehaviour by fetching a header at same or latest height.
-    /// TODO - return also intermediate headers.
+    /// Given a client update event that includes the header used in a client update,
+    /// look for misbehaviour by fetching a header at same or latest height.
+    ///
+    /// ## TODO
+    /// - [ ] Return intermediate headers as well
     fn check_misbehaviour(
         &mut self,
         update: UpdateClient,

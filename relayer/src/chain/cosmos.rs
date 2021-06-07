@@ -41,7 +41,7 @@ use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
-use ibc::Height as ICSHeight;
+use ibc::Height as IcsHeight;
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
@@ -265,7 +265,7 @@ impl CosmosSdkChain {
         self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
     }
 
-    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
+    fn query(&self, data: Path, height: IcsHeight, prove: bool) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
@@ -292,7 +292,7 @@ impl CosmosSdkChain {
         &self,
         data: ClientUpgradePath,
         height: Height,
-    ) -> Result<(MerkleProof, ICSHeight), Error> {
+    ) -> Result<(MerkleProof, IcsHeight), Error> {
         let prev_height =
             Height::try_from(height.value() - 1).map_err(|e| Kind::InvalidHeight.context(e))?;
 
@@ -307,7 +307,7 @@ impl CosmosSdkChain {
 
         let proof = response.proof.ok_or(Kind::EmptyResponseProof)?;
 
-        let height = ICSHeight::new(
+        let height = IcsHeight::new(
             self.config.id.version(),
             response.height.increment().value(),
         );
@@ -461,7 +461,7 @@ impl Chain for CosmosSdkChain {
     }
 
     /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<ICSHeight, Error> {
+    fn query_latest_height(&self) -> Result<IcsHeight, Error> {
         crate::time!("query_latest_height");
 
         let status = self
@@ -477,7 +477,7 @@ impl Chain for CosmosSdkChain {
             );
         }
 
-        Ok(ICSHeight {
+        Ok(IcsHeight {
             revision_number: ChainId::chain_version(status.node_info.network.as_str()),
             revision_height: u64::from(status.sync_info.latest_block_height),
         })
@@ -523,7 +523,7 @@ impl Chain for CosmosSdkChain {
     fn query_client_state(
         &self,
         client_id: &ClientId,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<Self::ClientState, Error> {
         crate::time!("query_client_state");
 
@@ -543,7 +543,7 @@ impl Chain for CosmosSdkChain {
 
     fn query_upgraded_client_state(
         &self,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
 
@@ -588,7 +588,7 @@ impl Chain for CosmosSdkChain {
 
     fn query_upgraded_consensus_state(
         &self,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         crate::time!("query_upgraded_consensus_state");
 
@@ -668,8 +668,8 @@ impl Chain for CosmosSdkChain {
     fn query_consensus_state(
         &self,
         client_id: ClientId,
-        consensus_height: ICSHeight,
-        query_height: ICSHeight,
+        consensus_height: IcsHeight,
+        query_height: IcsHeight,
     ) -> Result<AnyConsensusState, Error> {
         crate::time!("query_chain_clients");
 
@@ -748,7 +748,7 @@ impl Chain for CosmosSdkChain {
     fn query_connection(
         &self,
         connection_id: &ConnectionId,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<ConnectionEnd, Error> {
         let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
         let connection_end = ConnectionEnd::decode_vec(&res.value)
@@ -822,7 +822,7 @@ impl Chain for CosmosSdkChain {
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<ChannelEnd, Error> {
         let res = self.query(
             Path::ChannelEnds(port_id.clone(), channel_id.clone()),
@@ -868,7 +868,7 @@ impl Chain for CosmosSdkChain {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+    ) -> Result<(Vec<PacketState>, IcsHeight), Error> {
         crate::time!("query_packet_commitments");
 
         let mut client = self
@@ -927,7 +927,7 @@ impl Chain for CosmosSdkChain {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+    ) -> Result<(Vec<PacketState>, IcsHeight), Error> {
         crate::time!("query_packet_acknowledgements");
 
         let mut client = self
@@ -1099,7 +1099,7 @@ impl Chain for CosmosSdkChain {
     fn proven_client_state(
         &self,
         client_id: &ClientId,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("proven_client_state");
 
@@ -1126,8 +1126,8 @@ impl Chain for CosmosSdkChain {
     fn proven_client_consensus(
         &self,
         client_id: &ClientId,
-        consensus_height: ICSHeight,
-        height: ICSHeight,
+        consensus_height: IcsHeight,
+        height: IcsHeight,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         crate::time!("proven_client_consensus");
 
@@ -1162,7 +1162,7 @@ impl Chain for CosmosSdkChain {
     fn proven_connection(
         &self,
         connection_id: &ConnectionId,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
         let res = self
             .query(Path::Connections(connection_id.clone()), height, true)
@@ -1182,7 +1182,7 @@ impl Chain for CosmosSdkChain {
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<(ChannelEnd, MerkleProof), Error> {
         let res = self
             .query(
@@ -1209,7 +1209,7 @@ impl Chain for CosmosSdkChain {
         port_id: PortId,
         channel_id: ChannelId,
         sequence: Sequence,
-        height: ICSHeight,
+        height: IcsHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         let data = match packet_type {
             PacketMsgType::Recv => Path::Commitments {
@@ -1249,7 +1249,7 @@ impl Chain for CosmosSdkChain {
         Ok((res.value, commitment_proof_bytes))
     }
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+    fn build_client_state(&self, height: IcsHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
         Ok(ClientState::new(
             self.id().clone(),
@@ -1258,7 +1258,7 @@ impl Chain for CosmosSdkChain {
             self.unbonding_period()?,
             self.config.clock_drift,
             height,
-            ICSHeight::zero(),
+            IcsHeight::zero(),
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {
                 after_expiry: true,
@@ -1279,18 +1279,31 @@ impl Chain for CosmosSdkChain {
 
     fn build_header(
         &self,
-        trusted_height: ICSHeight,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
+        trusted_height: IcsHeight,
+        target_height: IcsHeight,
+        client_state: &AnyClientState,
+        light_client: &mut dyn LightClient<Self>,
+    ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
-        Ok(TmHeader {
+        // Get the light block at trusted_height + 1 from chain.
+        //
+        // NOTE: This is needed to get the next validator set. While there is a next validator set
+        //       in the light block at trusted height, the proposer is not known/set in this set.
+        let succ_trusted = light_client.fetch(trusted_height.increment())?;
+
+        // Get the light block at target_height from chain.
+        let target = light_client.verify(trusted_height, target_height, client_state)?;
+
+        // Try to build the header, return first error encountered.
+        let header = TmHeader {
             trusted_height,
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: target_light_block.validators,
-            trusted_validator_set: trusted_light_block.validators,
-        })
+            signed_header: target.signed_header.clone(),
+            validator_set: target.validators,
+            trusted_validator_set: succ_trusted.validators,
+        };
+
+        Ok((header, Vec::new()))
     }
 }
 
@@ -1344,8 +1357,8 @@ fn packet_from_tx_search_response(
     seq: Sequence,
     response: ResultTx,
 ) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
+    let height = IcsHeight::new(chain_id.version(), u64::from(response.height));
+    if request.height != IcsHeight::zero() && height > request.height {
         return None;
     }
 
@@ -1385,8 +1398,8 @@ fn update_client_from_tx_search_response(
     request: &QueryClientEventRequest,
     response: ResultTx,
 ) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
+    let height = IcsHeight::new(chain_id.version(), u64::from(response.height));
+    if request.height != IcsHeight::zero() && height > request.height {
         return None;
     }
 
@@ -1515,7 +1528,7 @@ pub fn tx_result_to_event(
         ))]);
     }
 
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    let height = IcsHeight::new(chain_id.version(), u64::from(response.height));
     for event in response.deliver_tx.events {
         if let Some(ibc_ev) = from_tx_response_event(height, &event) {
             result.push(ibc_ev);

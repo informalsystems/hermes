@@ -325,15 +325,21 @@ impl Chain for MockChain {
     fn build_header(
         &self,
         trusted_height: Height,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
-        Ok(Self::Header {
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: target_light_block.validators,
+        target_height: Height,
+        client_state: &AnyClientState,
+        light_client: &mut dyn LightClient<Self>,
+    ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
+        let trusted = light_client.fetch(trusted_height)?;
+        let target = light_client.verify(trusted_height, target_height, client_state)?;
+
+        let header = Self::Header {
+            signed_header: target.signed_header.clone(),
+            validator_set: target.validators,
             trusted_height,
-            trusted_validator_set: trusted_light_block.validators,
-        })
+            trusted_validator_set: trusted.validators,
+        };
+
+        Ok((header, Vec::new()))
     }
 
     fn query_consensus_states(

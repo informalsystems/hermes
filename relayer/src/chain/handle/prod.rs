@@ -275,7 +275,7 @@ impl ChainHandle for ProdChainHandle {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-    ) -> Result<AnyHeader, Error> {
+    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
         self.send(|reply_to| ChainRequest::BuildHeader {
             trusted_height,
             target_height,
