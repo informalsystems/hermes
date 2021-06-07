@@ -816,8 +816,6 @@ impl ForeignClient {
                 })?;
 
             if misbehavior.is_some() {
-                // TODO - add updateClient messages if light blocks are returned from
-                //  `src_chain.check_misbehaviour` call above i.e. supporting headers are required
                 return Ok(misbehavior);
             }
 
@@ -829,11 +827,14 @@ impl ForeignClient {
                     self,
                     start_time.elapsed()
                 );
+
                 return Ok(None);
             }
+
             // Clear the update
             update = None;
         }
+
         debug!("[{}] finished misbehaviour checking", self);
 
         Ok(None)
