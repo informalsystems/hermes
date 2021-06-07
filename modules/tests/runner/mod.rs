@@ -1,7 +1,6 @@
 pub mod step;
 
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt::Debug;
 use std::time::Duration;
 
@@ -24,10 +23,10 @@ use ibc::ics03_connection::msgs::ConnectionMsg;
 use ibc::ics03_connection::version::Version;
 use ibc::ics04_channel::context::ChannelReader;
 use ibc::ics18_relayer::context::Ics18Context;
-use ibc::ics18_relayer::error::{Error as Ics18Error, Kind as Ics18ErrorKind};
+use ibc::ics18_relayer::error as relayer_error;
+use ibc::ics26_routing::error as routing_error;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc::ics26_routing::error::{RoutingError, RoutingErrorDetail};
 use ibc::ics26_routing::msgs::Ics26Envelope;
 use ibc::mock::client_state::{MockClientState, MockConsensusState};
 use ibc::mock::context::MockContext;
@@ -83,42 +82,41 @@ impl IbcTestRunner {
             .expect("chain context should have been initialized")
     }
 
-    pub fn extract_ics02_error_kind(ics18_result: Result<(), Ics18Error>) -> Ics02ErrorKind {
+    pub fn extract_ics02_error_kind(ics18_result: Result<(), relayer_error::Error>) -> Ics02ErrorKind {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
-        assert!(matches!(
-            ics18_error.kind(),
-            Ics18ErrorKind::TransactionFailed
-        ));
-        let ics26_error = ics18_error
-            .source()
-            .expect("expected source in ICS18 error")
-            .downcast_ref::<RoutingError>()
-            .expect("ICS18 source should be an ICS26 error");
-
-        match &ics26_error.detail {
-            RoutingErrorDetail::Ics02Client(ics02_error) => ics02_error.source.kind().clone(),
-            _ => {
-                panic!("Expect ICS02 error wrapped inside ICS26 error");
+        match ics18_error.detail {
+            relayer_error::ErrorDetail::TransactionFailed(e) => {
+                match e.source {
+                    routing_error::ErrorDetail::Ics02Client(e) => {
+                        e.source.kind().clone()
+                    }
+                    e => {
+                        panic!("Expected Ics02Client error, instead got {:?}", e);
+                    }
+                }
+            }
+            e => {
+                panic!("Expected TransactionFailed error, instead got {:?}", e);
             }
         }
     }
 
-    pub fn extract_ics03_error_kind(ics18_result: Result<(), Ics18Error>) -> Ics03ErrorKind {
+    pub fn extract_ics03_error_kind(ics18_result: Result<(), relayer_error::Error>) -> Ics03ErrorKind {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
-        assert!(matches!(
-            ics18_error.kind(),
-            Ics18ErrorKind::TransactionFailed
-        ));
-        let ics26_error = ics18_error
-            .source()
-            .expect("expected source in ICS18 error")
-            .downcast_ref::<RoutingError>()
-            .expect("ICS18 source should be an ICS26 error");
 
-        match &ics26_error.detail {
-            RoutingErrorDetail::Ics03Connection(ics03_error) => ics03_error.source.kind().clone(),
-            _ => {
-                panic!("Expect ICS02 error wrapped inside ICS26 error");
+        match ics18_error.detail {
+            relayer_error::ErrorDetail::TransactionFailed(e) => {
+                match e.source {
+                    routing_error::ErrorDetail::Ics03Connection(e) => {
+                        e.source.kind().clone()
+                    }
+                    e => {
+                        panic!("Expected Ics02Client error, instead got {:?}", e);
+                    }
+                }
+            }
+            e => {
+                panic!("Expected TransactionFailed error, instead got {:?}", e);
             }
         }
     }
@@ -307,7 +305,7 @@ impl IbcTestRunner {
         })
     }
 
-    pub fn apply(&mut self, action: Action) -> Result<(), Ics18Error> {
+    pub fn apply(&mut self, action: Action) -> Result<(), relayer_error::Error> {
         match action {
             Action::None => panic!("unexpected action type"),
             Action::Ics02CreateClient {

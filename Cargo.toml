@@ -12,7 +12,8 @@ exclude = [
     "proto-compiler"
 ]
 
-# [patch.crates-io]
+[patch.crates-io]
+# flex-error = { path = "/mnt/gamma/development/flex-error/flex-error" }
 # tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 # tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 # tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }

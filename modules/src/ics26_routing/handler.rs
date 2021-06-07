@@ -27,7 +27,7 @@ use crate::ics26_routing::msgs::Ics26Envelope::{
 /// info or signature checks here.
 /// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
 /// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, error::RoutingError>
+pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, error::Error>
 where
     Ctx: Ics26Context,
 {
@@ -166,7 +166,7 @@ where
 pub fn dispatch<Ctx>(
     ctx: &mut Ctx,
     msg: Ics26Envelope,
-) -> Result<HandlerOutput<()>, error::RoutingError>
+) -> Result<HandlerOutput<()>, error::Error>
 where
     Ctx: Ics26Context,
 {

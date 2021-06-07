@@ -2,9 +2,9 @@ use crate::application::ics20_fungible_token_transfer;
 use crate::ics02_client;
 use crate::ics03_connection;
 use crate::ics04_channel;
-use flex_error::*;
+use flex_error::{define_error, DisplayError};
 
-define_error! { RoutingError;
+define_error! { Error;
     Ics02Client
     [ DisplayError<ics02_client::error::Error> ]
     | _ | { format_args!("ICS02 client error") },
