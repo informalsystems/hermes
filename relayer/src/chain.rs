@@ -21,7 +21,7 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
-use ibc::Height as IcsHeight;
+use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
@@ -118,7 +118,7 @@ pub trait Chain: Sized {
     }
 
     /// Query the latest height the chain is at
-    fn query_latest_height(&self) -> Result<IcsHeight, Error>;
+    fn query_latest_height(&self) -> Result<ICSHeight, Error>;
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(
@@ -129,7 +129,7 @@ pub trait Chain: Sized {
     fn query_client_state(
         &self,
         client_id: &ClientId,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<Self::ClientState, Error>;
 
     fn query_consensus_states(
@@ -142,18 +142,18 @@ pub trait Chain: Sized {
     fn query_consensus_state(
         &self,
         client_id: ClientId,
-        consensus_height: IcsHeight,
-        query_height: IcsHeight,
+        consensus_height: ICSHeight,
+        query_height: ICSHeight,
     ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<(Self::ClientState, MerkleProof), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
@@ -171,7 +171,7 @@ pub trait Chain: Sized {
     fn query_connection(
         &self,
         connection_id: &ConnectionId,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<ConnectionEnd, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels associated with a connection.
@@ -190,7 +190,7 @@ pub trait Chain: Sized {
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<ChannelEnd, Error>;
 
     // TODO: Introduce a newtype for the module version string
@@ -213,7 +213,7 @@ pub trait Chain: Sized {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, IcsHeight), Error>;
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
 
     fn query_unreceived_packets(
         &self,
@@ -223,7 +223,7 @@ pub trait Chain: Sized {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, IcsHeight), Error>;
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
 
     fn query_unreceived_acknowledgements(
         &self,
@@ -241,27 +241,27 @@ pub trait Chain: Sized {
     fn proven_client_state(
         &self,
         client_id: &ClientId,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<(Self::ClientState, MerkleProof), Error>;
 
     fn proven_connection(
         &self,
         connection_id: &ConnectionId,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<(ConnectionEnd, MerkleProof), Error>;
 
     fn proven_client_consensus(
         &self,
         client_id: &ClientId,
-        consensus_height: IcsHeight,
-        height: IcsHeight,
+        consensus_height: ICSHeight,
+        height: ICSHeight,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
 
     fn proven_channel(
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<(ChannelEnd, MerkleProof), Error>;
 
     fn proven_packet(
@@ -270,10 +270,10 @@ pub trait Chain: Sized {
         port_id: PortId,
         channel_id: ChannelId,
         sequence: Sequence,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error>;
 
-    fn build_client_state(&self, height: IcsHeight) -> Result<Self::ClientState, Error>;
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
 
     fn build_consensus_state(
         &self,
@@ -287,8 +287,8 @@ pub trait Chain: Sized {
     /// header, for use when building a `ClientUpdate` message.
     fn build_header(
         &self,
-        trusted_height: IcsHeight,
-        target_height: IcsHeight,
+        trusted_height: ICSHeight,
+        target_height: ICSHeight,
         client_state: &AnyClientState,
         light_client: &mut dyn LightClient<Self>,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error>;
@@ -300,7 +300,7 @@ pub trait Chain: Sized {
         message_type: ConnectionMsgType,
         connection_id: &ConnectionId,
         client_id: &ClientId,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
         let (connection_end, connection_proof) = self.proven_connection(&connection_id, height)?;
 
@@ -379,7 +379,7 @@ pub trait Chain: Sized {
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<Proofs, Error> {
         // Collect all proofs as required
         let channel_proof =
@@ -398,7 +398,7 @@ pub trait Chain: Sized {
         port_id: PortId,
         channel_id: ChannelId,
         sequence: Sequence,
-        height: IcsHeight,
+        height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
         let channel_proof = if packet_type == PacketMsgType::TimeoutOnClose {
             Some(CommitmentProofBytes::from(
