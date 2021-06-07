@@ -4,7 +4,7 @@ use crate::downcast;
 use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::Kind;
+use crate::ics02_client::error;
 use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
@@ -181,7 +181,7 @@ impl ClientDef for AnyClient {
                     client_state => AnyClientState::Tendermint,
                     header => AnyHeader::Tendermint,
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 let (new_state, new_consensus) =
                     client.check_header_and_update_state(client_state, header)?;
@@ -198,7 +198,7 @@ impl ClientDef for AnyClient {
                     client_state => AnyClientState::Mock,
                     header => AnyHeader::Mock,
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 let (new_state, new_consensus) =
                     client.check_header_and_update_state(client_state, header)?;
@@ -226,7 +226,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 client.verify_client_consensus_state(
                     client_state,
@@ -244,7 +244,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 client.verify_client_consensus_state(
                     client_state,
@@ -271,7 +271,7 @@ impl ClientDef for AnyClient {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                    .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 client.verify_connection_state(
                     client_state,
@@ -286,7 +286,7 @@ impl ClientDef for AnyClient {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Mock)
-                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                    .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 client.verify_connection_state(
                     client_state,
@@ -313,7 +313,7 @@ impl ClientDef for AnyClient {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                    .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 client.verify_channel_state(
                     client_state,
@@ -329,7 +329,7 @@ impl ClientDef for AnyClient {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Mock)
-                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                    .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 client.verify_channel_state(
                     client_state,
@@ -359,7 +359,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 client.verify_client_full_state(
                     client_state,
@@ -377,7 +377,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 client.verify_client_full_state(
                     client_state,
@@ -406,7 +406,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 client.verify_packet_data(
                     client_state,
@@ -424,7 +424,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 client.verify_packet_data(
                     client_state,
@@ -454,7 +454,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 client.verify_packet_acknowledgement(
                     client_state,
@@ -472,7 +472,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 client.verify_packet_acknowledgement(
                     client_state,
@@ -501,7 +501,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 client.verify_next_sequence_recv(
                     client_state,
@@ -518,7 +518,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 client.verify_next_sequence_recv(
                     client_state,
@@ -545,7 +545,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 client.verify_packet_receipt_absence(
                     client_state,
@@ -562,7 +562,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 client.verify_packet_receipt_absence(
                     client_state,
@@ -589,7 +589,7 @@ impl ClientDef for AnyClient {
                     client_state => AnyClientState::Tendermint,
                     consensus_state => AnyConsensusState::Tendermint,
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
 
                 let (new_state, new_consensus) = client.verify_upgrade_and_update_state(
                     client_state,
@@ -610,7 +610,7 @@ impl ClientDef for AnyClient {
                     client_state => AnyClientState::Mock,
                     consensus_state => AnyConsensusState::Mock,
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Mock))?;
 
                 let (new_state, new_consensus) = client.verify_upgrade_and_update_state(
                     client_state,

@@ -9,7 +9,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error;
 use crate::ics07_tendermint::client_state;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChainId, ClientId};
@@ -89,24 +89,24 @@ impl AnyClientState {
 impl Protobuf<Any> for AnyClientState {}
 
 impl TryFrom<Any> for AnyClientState {
-    type Error = Error;
+    type Error = error::Error;
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            "" => Err(Kind::EmptyClientStateResponse.into()),
+            "" => Err(error::empty_client_state_response_error()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 client_state::ClientState::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
+                    .map_err(error::decode_raw_client_state_error)?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
                 MockClientState::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
+                    .map_err(error::decode_raw_client_state_error)?,
             )),
 
-            _ => Err(Kind::UnknownClientStateType(raw.type_url).into()),
+            _ => Err(error::unknown_client_state_type_error(raw.type_url)),
         }
     }
 }
@@ -182,16 +182,16 @@ impl IdentifiedAnyClientState {
 impl Protobuf<IdentifiedClientState> for IdentifiedAnyClientState {}
 
 impl TryFrom<IdentifiedClientState> for IdentifiedAnyClientState {
-    type Error = Error;
+    type Error = error::Error;
 
     fn try_from(raw: IdentifiedClientState) -> Result<Self, Self::Error> {
         Ok(IdentifiedAnyClientState {
             client_id: raw.client_id.parse().map_err(|e: ValidationError| {
-                Kind::InvalidRawClientId(raw.client_id.clone(), e.kind().clone())
+                error::invalid_raw_client_id_error(raw.client_id.clone(), e)
             })?,
             client_state: raw
                 .client_state
-                .ok_or_else(|| Kind::InvalidRawClientState.context("missing client state"))?
+                .ok_or_else(error::missing_raw_client_state_error)?
                 .try_into()?,
         })
     }

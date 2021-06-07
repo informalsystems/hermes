@@ -8,7 +8,7 @@ use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::context::ClientReader;
-use ibc::ics02_client::error::Kind as Ics02ErrorKind;
+use ibc::ics02_client::error as client_error;
 use ibc::ics02_client::header::AnyHeader;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -82,13 +82,15 @@ impl IbcTestRunner {
             .expect("chain context should have been initialized")
     }
 
-    pub fn extract_ics02_error_kind(ics18_result: Result<(), relayer_error::Error>) -> Ics02ErrorKind {
+    pub fn extract_ics02_error_kind(ics18_result: Result<(), relayer_error::Error>)
+        -> client_error::ErrorDetail
+    {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
         match ics18_error.detail {
             relayer_error::ErrorDetail::TransactionFailed(e) => {
                 match e.source {
                     routing_error::ErrorDetail::Ics02Client(e) => {
-                        e.source.kind().clone()
+                        e.source.detail
                     }
                     e => {
                         panic!("Expected Ics02Client error, instead got {:?}", e);
@@ -463,11 +465,11 @@ impl modelator::runner::TestRunner<Step> for IbcTestRunner {
             ActionOutcome::Ics02UpdateOk => result.is_ok(),
             ActionOutcome::Ics02ClientNotFound => matches!(
                 Self::extract_ics02_error_kind(result),
-                Ics02ErrorKind::ClientNotFound(_)
+                client_error::ErrorDetail::ClientNotFound(_)
             ),
             ActionOutcome::Ics02HeaderVerificationFailure => matches!(
                 Self::extract_ics02_error_kind(result),
-                Ics02ErrorKind::HeaderVerificationFailure
+                client_error::ErrorDetail::HeaderVerificationFailure(_)
             ),
             ActionOutcome::Ics03ConnectionOpenInitOk => result.is_ok(),
             ActionOutcome::Ics03MissingClient => matches!(

@@ -6,7 +6,7 @@ use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error;
 use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -25,14 +25,15 @@ pub struct Result {
 pub fn process(
     ctx: &dyn ClientReader,
     msg: MsgCreateAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+) -> HandlerResult<ClientResult, error::Error> {
     let mut output = HandlerOutput::builder();
 
     // Construct this client's identifier
     let id_counter = ctx.client_counter();
-    let client_id = ClientId::new(msg.client_state().client_type(), id_counter).map_err(|e| {
-        Kind::ClientIdentifierConstructor(msg.client_state().client_type(), id_counter).context(e)
-    })?;
+    let client_id = ClientId::new(msg.client_state().client_type(), id_counter)
+        .map_err(|e| {
+            error::client_identifier_constructor_error(msg.client_state().client_type(), id_counter, e)
+        })?;
 
     output.log(format!(
         "success: generated new client identifier: {}",

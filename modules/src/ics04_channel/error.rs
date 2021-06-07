@@ -7,7 +7,7 @@ use super::packet::Sequence;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::timestamp::Timestamp;
-use crate::{ics02_client, Height};
+use crate::Height;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
@@ -139,7 +139,7 @@ pub enum Kind {
     InvalidPacketTimestamp,
 
     #[error("Invalid timestamp in consensus state; timestamp must be a positive value")]
-    ErrorInvalidConsensusState(ics02_client::error::Kind),
+    ErrorInvalidConsensusState,
 
     #[error("Client with id {0} is frozen")]
     FrozenClient(ClientId),

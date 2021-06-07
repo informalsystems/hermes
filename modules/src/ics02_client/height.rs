@@ -7,7 +7,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
@@ -48,11 +48,9 @@ impl Height {
         self.add(1)
     }
 
-    pub fn sub(&self, delta: u64) -> Result<Height, Error> {
+    pub fn sub(&self, delta: u64) -> Result<Height, error::Error> {
         if self.revision_height <= delta {
-            return Err(Kind::InvalidHeightResult
-                .context("height cannot end up zero or negative")
-                .into());
+            return Err(error::invalid_height_result_error());
         }
 
         Ok(Height {
@@ -61,7 +59,7 @@ impl Height {
         })
     }
 
-    pub fn decrement(&self) -> Result<Height, Error> {
+    pub fn decrement(&self) -> Result<Height, error::Error> {
         self.sub(1)
     }
 
@@ -140,17 +138,17 @@ impl std::fmt::Display for Height {
 }
 
 impl TryFrom<&str> for Height {
-    type Error = Kind;
+    type Error = error::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();
         Ok(Height {
             revision_number: split[0]
                 .parse::<u64>()
-                .map_err(|e| Kind::HeightConversion(value.to_owned(), e))?,
+                .map_err(|e| error::height_conversion_error(value.to_owned(), e))?,
             revision_height: split[1]
                 .parse::<u64>()
-                .map_err(|e| Kind::HeightConversion(value.to_owned(), e))?,
+                .map_err(|e| error::height_conversion_error(value.to_owned(), e))?,
         })
     }
 }
@@ -162,7 +160,7 @@ impl From<Height> for String {
 }
 
 impl FromStr for Height {
-    type Err = Kind;
+    type Err = error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Height::try_from(s)

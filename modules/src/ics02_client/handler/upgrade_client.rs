@@ -4,10 +4,9 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::{AnyClient, ClientDef};
-use crate::ics02_client::client_state::AnyClientState;
-use crate::ics02_client::client_state::ClientState;
+use crate::ics02_client::client_state::{ClientState, AnyClientState};
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error;
 use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
@@ -25,32 +24,31 @@ pub struct Result {
 pub fn process(
     ctx: &dyn ClientReader,
     msg: MsgUpgradeAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+) -> HandlerResult<ClientResult, error::Error> {
     let mut output = HandlerOutput::builder();
     let MsgUpgradeAnyClient { client_id, .. } = msg;
 
     // Read client state from the host chain store.
     let client_state = ctx
         .client_state(&client_id)
-        .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
+        .ok_or_else(|| error::client_not_found_error(client_id.clone()))?;
 
     if client_state.is_frozen() {
-        return Err(Kind::ClientFrozen(client_id).into());
+        return Err(error::client_frozen_error(client_id));
     }
 
     let upgrade_client_state = msg.client_state.clone();
 
     if client_state.latest_height() >= upgrade_client_state.latest_height() {
-        return Err(Kind::LowUpgradeHeight(
+        return Err(error::low_upgrade_height_error(
             client_state.latest_height(),
             upgrade_client_state.latest_height(),
-        )
-        .into());
+        ));
     }
 
     let client_type = ctx
         .client_type(&client_id)
-        .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
+        .ok_or_else(|| error::client_not_found_error(client_id.clone()))?;
 
     let client_def = AnyClient::from_client_type(client_type);
 
@@ -61,7 +59,7 @@ pub fn process(
             msg.proof_upgrade_client.clone(),
             msg.proof_upgrade_consensus_state,
         )
-        .map_err(|e| Kind::UpgradeVerificationFailure.context(e.to_string()))?;
+        .map_err(|e| error::upgrade_verification_failure_error(e.to_string()))?;
 
     // Not implemented yet: https://github.com/informalsystems/ibc-rs/issues/722
     // todo!()
@@ -86,7 +84,7 @@ mod tests {
 
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::ics02_client::error::Kind;
+    use crate::ics02_client::error;
     use crate::ics02_client::handler::dispatch;
     use crate::ics02_client::handler::ClientResult::Upgrade;
     use crate::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
@@ -180,7 +178,14 @@ mod tests {
                 panic!("unexpected success (expected error)");
             }
             Err(err) => {
-                assert_eq!(err.kind(), &Kind::ClientNotFound(msg.client_id));
+                match err.detail {
+                    error::ErrorDetail::ClientNotFound(e) => {
+                        assert_eq!(e.client_id, msg.client_id);
+                    }
+                    _ => {
+                        panic!("unexpected suberror {}", err);
+                    }
+                }
             }
         }
     }
@@ -214,10 +219,15 @@ mod tests {
                 panic!("unexpected success (expected error)");
             }
             Err(err) => {
-                assert_eq!(
-                    err.kind(),
-                    &Kind::LowUpgradeHeight(Height::new(0, 42), msg.client_state.latest_height())
-                );
+                match err.detail {
+                    error::ErrorDetail::LowUpgradeHeight(e) => {
+                        assert_eq!(e.upgraded_height, Height::zero());
+                        assert_eq!(e.client_height, msg.client_state.latest_height());
+                    }
+                    _ => {
+                        panic!("unexpected suberror {}", err);
+                    }
+                }
             }
         }
     }

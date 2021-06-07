@@ -29,11 +29,12 @@ impl TryFrom<RawMockHeader> for MockHeader {
         Ok(MockHeader {
             height: raw
                 .height
-                .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
+                .ok_or_else(error::missing_raw_header_error)?
                 .try_into()
-                .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
+                .map_err(|e| match e {})?,
+
             timestamp: Timestamp::from_nanoseconds(raw.timestamp)
-                .map_err(|_| error::Kind::InvalidPacketTimestamp)?,
+                .map_err(error::invalid_packet_timestamp_error)?,
         })
     }
 }
