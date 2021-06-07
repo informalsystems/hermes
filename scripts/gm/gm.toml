@@ -1,0 +1,65 @@
+# Example configuration with one validator and one full node
+
+# the global section defines application-wide defaults. All the entries here can be overridden on a per-node basis,
+# except if otherwise noted.
+[global]
+
+# Path to the `gaiad` binary to use.
+gaiad_binary="$GOPATH/bin/gaiad"
+
+# The first free port to use for newly created nodes.
+# The value will be incremented (by 10) when a new node requires ports.
+ports_start_at=27000
+
+# The default folder where all node folders will be created.
+home_dir="$HOME/.gm"
+
+# (Optional) The wallet address will be created from this 24-word seed phrase instead of a random address.
+wallet_mnemonic=""
+
+# (Optional) The HD derivation path for the wallet (default is "m/44'/118'/0'/0/0" for ATOM.)
+wallet_hdpath=""
+
+# Automatically update the `persistent_peers` and `unconditional_peer_ids` sections of the node configuration.
+auto_maintain_config=true
+
+# This node should be part of the hermes config.
+add_to_hermes=false
+
+# the global.hermes section defines hermes configuration items. These are global-only variables.
+[global.hermes]
+
+# (Optional) Path to the `hermes` binary to use.
+binary="./hermes"
+
+# (Optional) Hermes configuration file path.
+config="$HOME/.hermes/config.toml"
+
+# Hermes configuration strategy paremeter.
+strategy="packets"
+
+# Hermes configuration log_level parameter.
+log_level="info"
+
+# Hermes configuration telemetry.enabled parameter.
+telemetry_enabled=true
+
+# Hermes configuration telemetry.host parameter.
+telemetry_host='127.0.0.1'
+
+# Hermes configuration telemetry.port parameter.
+telemetry_port=3001
+
+##
+## Sub-section (node) definitions and parameter redefinitons below.
+##
+
+# A validator node that uses the default configuration.
+[validator1]
+
+# A full node with some configuration
+# A full node is defined by adding the `network` property to the section.
+[node1]
+# Define the network (the validator connection) for the full node.
+network="validator1"
+add_to_hermes=true

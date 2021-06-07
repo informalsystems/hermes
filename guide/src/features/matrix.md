@@ -39,7 +39,7 @@ __Feature comparison between Hermes and the Go relayer__
 | Conn_Open_Handshake_P  | ❌    | ❌     |
 |                        |       |        |
 | Chan_Open_Handshake_A  | ✅    | ✅     |
-| Chan_Open_Handshake_P  | ❌    | ❌     |
+| Chan_Open_Handshake_P  | ✅    | ❌     |
 | Chan_Open_Handshake_Optimistic  | ❌    | ❌     | open a channel on a non-Open connection
 |                        |       |        |
 | Chan_Close_Handshake_P | ✅    | ✅     | 

@@ -4,19 +4,18 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
         client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
-        client_state::{AnyClientState, ClientState},
+        client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
         events::UpdateClient,
         header::{AnyHeader, Header},
         misbehaviour::AnyMisbehaviour,
     },
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
-        channel::ChannelEnd,
+        channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
     },
     ics23_commitment::commitment::CommitmentPrefix,
@@ -26,15 +25,16 @@ use ibc::{
     signer::Signer,
     Height,
 };
-
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+        QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
         QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
         QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
-    client::v1::QueryConsensusStatesRequest,
+    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
+    connection::v1::QueryClientConnectionsRequest,
 };
 
 use crate::{
@@ -170,7 +170,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                                 .broadcast(Arc::new(event_batch))
                                 .map_err(Kind::channel)?;
                         },
-                        Err(e) => error!("received error via event bus: {}", e),
+                        Err(e) => {
+                            error!("received error via event bus: {}", e);
+                            return Err(Kind::Channel.into());
+                        },
                     }
                 },
                 recv(self.request_receiver) -> event => {
@@ -228,6 +231,14 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_latest_height(reply_to)?
                         }
 
+                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
+                            self.query_clients(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryClientConnections { request, reply_to }) => {
+                            self.query_client_connections(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
@@ -260,12 +271,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_connection(connection_id, height, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryConnectionChannels { request, reply_to }) => {
+                            self.query_connection_channels(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryChannels { request, reply_to }) => {
                             self.query_channels(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
                             self.query_channel(port_id, channel_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
+                            self.query_channel_client_state(request, reply_to)?
                         },
 
                         Ok(ChainRequest::ProvenClientState { client_id, height, reply_to }) => {
@@ -479,6 +498,30 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_clients(request);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_client_connections(
+        &self,
+        request: QueryClientConnectionsRequest,
+        reply_to: ReplyTo<Vec<ConnectionId>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_client_connections(request);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
     fn query_client_state(
         &self,
         client_id: ClientId,
@@ -582,6 +625,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_connection_channels(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
@@ -602,6 +659,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<ChannelEnd>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel(&port_id, &channel_id, height);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_channel_client_state(
+        &self,
+        request: QueryChannelClientStateRequest,
+        reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_channel_client_state(request);
 
         reply_to.send(result).map_err(Kind::channel)?;
 

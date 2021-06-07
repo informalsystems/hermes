@@ -82,6 +82,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryInto;
+    use test_env_log::test;
 
     use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;

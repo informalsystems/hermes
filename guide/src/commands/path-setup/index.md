@@ -11,7 +11,7 @@ This section describes a number of commands that can be used to manage clients, 
 
 
 ## Create
-Use the `create` commands to create a new clients, connections and channels.
+Use the `create` commands to create new clients, connections and channels.
 
 ```shell
 USAGE:

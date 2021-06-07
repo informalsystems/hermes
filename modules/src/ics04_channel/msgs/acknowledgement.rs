@@ -131,6 +131,7 @@ pub mod test_util {
 #[cfg(test)]
 mod test {
     use std::convert::TryInto;
+    use test_env_log::test;
 
     use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 

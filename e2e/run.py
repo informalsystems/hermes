@@ -2,8 +2,9 @@
 
 import argparse
 import logging as l
-
+from typing import Tuple
 from pathlib import Path
+import toml
 
 import e2e.channel as channel
 import e2e.client as client
@@ -14,42 +15,39 @@ from e2e.cmd import Config
 from e2e.common import *
 
 
-def loop(c: Config):
-    IBC_0 = ChainId('ibc-0')
-    IBC_1 = ChainId('ibc-1')
-
-    TRANSFER = PortId('transfer')
-    IBC_0_CHANNEL = ChannelId('channel-0')
-    IBC_1_CHANNEL = ChannelId('channel-1')
+def passive_packets(
+    c: Config,
+    ibc0: ChainId, ibc1: ChainId, port_id: PortId,
+    ibc0_channel_id: ChannelId, ibc1_channel_id: ChannelId):
 
     # 1. create some unreceived acks
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 2
-    packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
-                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=2)
+    packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
+                       src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=2)
 
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 2
-    packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
-                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=2)
+    packet.packet_send(c, src=ibc1, dst=ibc0 , src_port=port_id,
+                       src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=2)
     sleep(5.0)
 
     # hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
-    packet.packet_recv(c, src=IBC_0, dst=IBC_1,
-                       src_port=TRANSFER, src_channel=IBC_0_CHANNEL)
+    packet.packet_recv(c, src=ibc0 , dst=ibc1,
+                       src_port=port_id, src_channel=ibc0_channel_id)
 
     # hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
-    packet.packet_recv(c, src=IBC_1, dst=IBC_0,
-                       src_port=TRANSFER, src_channel=IBC_1_CHANNEL)
+    packet.packet_recv(c, src=ibc1, dst=ibc0 ,
+                       src_port=port_id, src_channel=ibc1_channel_id)
 
     # 2. create some unreceived packets
 
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 3
-    packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
-                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=3)
+    packet.packet_send(c, src=ibc1, dst=ibc0 , src_port=port_id,
+                       src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
-    packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
-                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=4)
+    packet.packet_send(c, src=ibc0 , dst=ibc1, src_port=port_id,
+                       src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=4)
 
     sleep(10.0)
 
@@ -57,117 +55,117 @@ def loop(c: Config):
 
     # hermes query packet unreceived-packets ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
-        c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
+        c, chain=ibc0 , port=port_id, channel=ibc0_channel_id)
 
     assert (len(unreceived) == 3), (unreceived, "unreceived packet mismatch")
 
     # hermes query packet unreceived-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
-        c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
+        c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
 
     # hermes query packet unreceived-packets ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_packets(
-        c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
+        c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 4), (unreceived, "unreceived packet mismatch")
 
     # hermes query packet unreceived-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
-        c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
+        c, chain=ibc0 , port=port_id, channel=ibc0_channel_id)
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
-
-    sleep(5.0)
 
     # 4. start relaying - it should clear the unreceived packets
     proc = relayer.start(c)
 
-    sleep(5.0)
+    # 5. wait for the relayer to initialize and pick up pending packets
+    sleep(10.0)
 
-    # 5. wait a bit and make sure there are no pending packets
-
+    # 6. verify that there are no pending packets
     # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 3
-    packet.packet_send(c, src=IBC_1, dst=IBC_0, src_port=TRANSFER,
-                       src_channel=IBC_1_CHANNEL, amount=10000, height_offset=1000, number_msgs=3)
+    packet.packet_send(c, src=ibc1, dst=ibc0 , src_port=port_id,
+                       src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
 
     # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
-    packet.packet_send(c, src=IBC_0, dst=IBC_1, src_port=TRANSFER,
-                       src_channel=IBC_0_CHANNEL, amount=10000, height_offset=1000, number_msgs=4)
+    packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
+                       src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=4)
 
     sleep(10.0)
 
     # hermes query packet unreceived-packets ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_packets(
-        c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
+        c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packets mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
 
     # hermes query packet unreceived-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
-        c, chain=IBC_1, port=TRANSFER, channel=IBC_1_CHANNEL)
+        c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived acks mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
 
     # hermes query packet unreceived-packets ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
-        c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
+        c, chain=ibc0 , port=port_id, channel=ibc0_channel_id)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived packets mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
 
     # hermes query packet unreceived-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
-        c, chain=IBC_0, port=TRANSFER, channel=IBC_0_CHANNEL)
+        c, chain=ibc0 , port=port_id, channel=ibc0_channel_id)
 
-    assert (len(unreceived) == 0), (unreceived, "unreceived acks mismatch (expected 0)")
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
 
-    # 6. All good, stop the relayer
+    # 7.Stop the relayer
     proc.kill()
 
 
-def raw(c: Config):
-    IBC_0 = ChainId('ibc-0')
-    IBC_1 = ChainId('ibc-1')
-
-    ibc0_client_id = client.create_update_query_client(c, IBC_0, IBC_1)
+def raw(c: Config, ibc0: ChainId, ibc1: ChainId, port_id: PortId) -> Tuple[ ClientId, ConnectionId, ChannelId, ClientId, ConnectionId, ChannelId]:
+    ibc0_client_id = client.create_update_query_client(c, ibc0, ibc1)
 
     # Allocate first IDs on ibc-1
-    ibc1_client_id = client.create_update_query_client(c, IBC_1, IBC_0)
+    ibc1_client_id = client.create_update_query_client(c, ibc1, ibc0)
     ibc1_conn_id = connection.conn_init(
-        c, IBC_1, IBC_0, ibc1_client_id, ibc0_client_id)
+        c, ibc1, ibc0 , ibc1_client_id, ibc0_client_id)
     ibc1_chan_id = channel.chan_open_init(
-        c, dst=IBC_1, src=IBC_0, dst_conn=ibc1_conn_id)
+        c, dst=ibc1, src=ibc0 , dst_conn=ibc1_conn_id)
 
-    ibc1_client_id = client.create_update_query_client(c, IBC_1, IBC_0)
+    ibc1_client_id = client.create_update_query_client(c, ibc1, ibc0)
 
     split()
 
     ibc0_conn_id, ibc1_conn_id = connection.handshake(
-        c, IBC_0, IBC_1, ibc0_client_id, ibc1_client_id)
+        c, ibc0, ibc1, ibc0_client_id, ibc1_client_id)
 
     split()
 
     ibc0_chan_id, ibc1_chan_id = channel.handshake(
-        c, IBC_0, IBC_1, ibc0_conn_id, ibc1_conn_id)
+        c, ibc0, ibc1, ibc0_conn_id, ibc1_conn_id, port_id)
 
     split()
 
-    packet.ping_pong(c, IBC_0, IBC_1, ibc0_chan_id, ibc1_chan_id)
+    packet.ping_pong(c, ibc0, ibc1, ibc0_chan_id, ibc1_chan_id)
 
     split()
 
     sleep(5)
 
-    packet.timeout(c, IBC_0, IBC_1, ibc0_chan_id, ibc1_chan_id)
+    packet.timeout(c, ibc0, ibc1, ibc0_chan_id, ibc1_chan_id)
 
     split()
 
     # The ChannelCloseInit message is currently denied by Gaia,
     # and requires a patch to be accepted.
-    # channel.close(c, IBC_0, IBC_1, ibc0_conn_id,
+    # channel.close(c, ibc0 , ibc1, ibc0_conn_id,
     #               ibc1_conn_id, ibc0_chan_id, ibc1_chan_id)
 
+    return ibc0_client_id, ibc0_conn_id, ibc0_chan_id, ibc1_client_id, ibc1_conn_id, ibc1_chan_id
 
 def main():
     parser = argparse.ArgumentParser(
@@ -206,9 +204,26 @@ def main():
         format='%(asctime)s [%(levelname)8s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
-    raw(config)
-    loop(config)
+    chains = toml.load(config.config_file)['chains']
 
+    ibc0  = chains[0]['id']
+    ibc1 = chains[1]['id']
+    port_id = PortId('transfer')
+
+    ibc0_client_id, ibc0_conn_id, ibc0_chan_id, ibc1_client_id, ibc1_conn_id, ibc1_chan_id = raw(config, ibc0 , ibc1, port_id)
+    sleep(2.0)
+
+    passive_packets(config, ibc0, ibc1, port_id, ibc0_chan_id, ibc1_chan_id)
+    sleep(2.0)
+
+    channel.passive_channel_start_then_init(config, ibc1, ibc0, ibc1_conn_id, port_id)
+    sleep(2.0)
+
+    channel.passive_channel_init_then_start(config, ibc1, ibc0, ibc1_conn_id, port_id)
+    sleep(2.0)
+
+    channel.passive_channel_try_then_start(config, ibc1, ibc0, ibc1_conn_id, ibc0_conn_id, port_id)
+    sleep(2.0)
 
 if __name__ == "__main__":
     main()

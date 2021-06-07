@@ -119,7 +119,7 @@ Below is an example of a configuration file.
 
 ```toml
 [global]
-strategy = "naive"
+strategy = "packets"
 log_level = "error"
 
 [[chains]]
@@ -152,31 +152,6 @@ log_level = "error"
   gas_price = "0.025stake"
   trusting_period = "336h"
 
-[[connections]]
-
-[connections.src]
-  client_id = "clB1"
-  connection_id = "connAtoB"
-
-[connections.dest]
-  client_id = "clA1"
-  connection_id = "connBtoA"
-
-[[connections.paths]]
-  src_port = "portA1"
-  dest_port = "portB1"
-  direction = "unidirectional"
-
-[[connections.paths]]
-  src_port = "portA2"
-  dest_port = "portB2"
-  direction = "bidirectional"
-
-[[connections.paths]]
-  src_port = "portA3"
-  dest_port = "portB3"
-  src_channel = "chan3-on-A"
-  dest_channel = "chan3-on-B"
 ```
 The main sections of the configuration file are:
 - `global`:
@@ -200,7 +175,8 @@ pub struct Config {
 }
 
 pub enum Strategy {
-    Naive,
+    Packets,
+    HandshakeAndPackets,
 }
 
 pub struct GlobalConfig {

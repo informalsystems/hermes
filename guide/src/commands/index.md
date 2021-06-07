@@ -12,7 +12,7 @@ Commands to manage keys (private keys) for each chain.
 
 Commands to manage clients, connections, channels.
 
-**[Packet Relaying](./relaying.md)**
+**[Relaying](./relaying/index.md)**
 
 Commands to start the relayer and relay packets.
 

@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.3.1"
+version    = "0.4.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -24,7 +24,7 @@ ibc-proto = { version = "0.8.0", path = "../proto" }
 ics23 = "0.6.5"
 anomaly = "0.2.0"
 chrono = "0.4.19"
-thiserror = "1.0.24"
+thiserror = "1.0.25"
 serde_derive = "1.0.104"
 serde = "1.0.125"
 serde_json = "1"
@@ -48,6 +48,9 @@ version = "=0.19.0"
 optional = true
 
 [dev-dependencies]
+env_logger = "0.8.3"
+tracing-subscriber = "0.2.18"
+test-env-log = { version = "0.2.7", features = ["trace"] }
 modelator = { git = "https://github.com/informalsystems/modelator", rev = "99f656fa8b3cf46a2aa0b6513e4e140d1778c4bd" }
 tendermint-rpc = { version = "=0.19.0", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.19.0" } # Needed for generating (synthetic) light blocks.

@@ -5,8 +5,7 @@ use std::{fs, fs::File, io::Write, path::Path, time::Duration};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics04_channel::channel::Order;
-use ibc::ics24_host::identifier::{ChainId, PortId};
+use ibc::ics24_host::identifier::ChainId;
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
@@ -30,19 +29,15 @@ pub mod default {
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
-
-    pub fn channel_ordering() -> Order {
-        Order::Unordered
-    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
     pub global: GlobalConfig,
+    #[serde(default)]
+    pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub connections: Option<Vec<Connection>>, // use all for default
 }
 
 impl Config {
@@ -53,30 +48,20 @@ impl Config {
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
     }
-
-    pub fn first_matching_path(
-        &self,
-        src_chain: &ChainId,
-        dst_chain: &ChainId,
-    ) -> Option<(&Connection, &RelayPath)> {
-        let connection = self.connections.as_ref()?.iter().find(|c| {
-            c.a_chain == *src_chain && c.b_chain == *dst_chain
-                || c.a_chain == *dst_chain && c.b_chain == *src_chain
-        });
-
-        connection.and_then(|conn| conn.paths.as_ref().map(|paths| (conn, &paths[0])))
-    }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum Strategy {
-    #[serde(rename = "naive")]
-    Naive,
+    #[serde(rename = "packets")]
+    Packets,
+
+    #[serde(rename = "all")]
+    HandshakeAndPackets,
 }
 
 impl Default for Strategy {
     fn default() -> Self {
-        Self::Naive
+        Self::Packets
     }
 }
 
@@ -95,6 +80,23 @@ impl Default for GlobalConfig {
         Self {
             strategy: Strategy::default(),
             log_level: "info".to_string(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TelemetryConfig {
+    pub enabled: bool,
+    pub host: String,
+    pub port: u16,
+}
+
+impl Default for TelemetryConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            host: "127.0.0.1".to_string(),
+            port: 3001,
         }
     }
 }
@@ -121,23 +123,6 @@ pub struct ChainConfig {
     pub trusting_period: Duration,
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Connection {
-    pub a_chain: ChainId,
-    pub b_chain: ChainId,
-    #[serde(default = "default::connection_delay", with = "humantime_serde")]
-    pub delay: Duration,
-    pub paths: Option<Vec<RelayPath>>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RelayPath {
-    pub a_port: PortId,
-    pub b_port: PortId,
-    #[serde(default = "default::channel_ordering")]
-    pub ordering: Order,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
@@ -176,6 +161,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::{parse, store_writer};
+    use test_env_log::test;
 
     #[test]
     fn parse_valid_config() {

@@ -24,7 +24,11 @@ FLAGS:
 
 ```
 
-__Example__
+## Examples
+
+### New connection over new clients
+
+Create a new connection between `ibc-0` and `ibc-1` over new clients:
 
 ```shell
 hermes create connection ibc-0 ibc-1
@@ -192,6 +196,20 @@ Success: Connection {
 }
 ```
 
+### New connection over existing clients
+
+Create a new connection between `ibc-0` and `ibc-1` over existing clients,
+both with client id `07-tendermint-0`:
+
+```shell
+hermes create connection ibc-0 --client-a 07-tendermint-0 --client-b
+07-tendermint-0
+```
+
+
+Notice that one can omit the destination chain parameter, as Hermes will automatically
+figure it out by looking up the given client on `ibc-0`.
+
 ## Non-zero Delay Connection
 
-A connection can be created with a delay period parameter. This parameter specifies a period of time that must elpase after a successful client state update and before a packet with proofs using its commitment root can pe processed on chain. For more information see [how packet delay works](../relaying.md#packet-delay) and the [connection delay specification](https://github.com/cosmos/ibc/tree/master/spec/core/ics-003-connection-semantics).
+A connection can be created with a delay period parameter. This parameter specifies a period of time that must elpase after a successful client state update and before a packet with proofs using its commitment root can pe processed on chain. For more information see [how packet delay works](../relaying/index.md#packet-delay) and the [connection delay specification](https://github.com/cosmos/ibc/tree/master/spec/core/ics-003-connection-semantics).

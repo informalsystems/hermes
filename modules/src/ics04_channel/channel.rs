@@ -404,6 +404,9 @@ impl State {
             _ => fail!(error::Kind::UnknownState, s),
         }
     }
+    pub fn is_open(self) -> bool {
+        self == State::Open
+    }
 }
 
 /// Provides a `to_string` method.
@@ -465,6 +468,7 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
+    use test_env_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 

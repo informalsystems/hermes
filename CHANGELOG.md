@@ -2,22 +2,129 @@
 
 ## Unreleased
 
-### BUG FIXES
+### IMPROVEMENTS
 
-- [ibc-relayer-cli]
-  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel. ([#960])
 - [documentation]
-  - e2e documentation was updated to build hermes in a docker container ([#965])
+  - Update documentation to build Hermes in a Docker container ([#965])
+
+[#965]: https://github.com/informalsystems/ibc-rs/issues/965
+
+## v0.4.0
+*June 3rd, 2021*
+
+- This release of Hermes features an internal [telemetry service][telemetry]
+  which can export metrics about the relayer to Prometheus.
+- A new [relaying strategy][strategy] is now available, which enables Hermes to
+  complete channel handshakes in an event-based fashion.
+- Hermes now checks if another relayer may have already processed a packet event,
+  and will not attempt to process it itself, which improves performance.
+- The startup time of the relayer has been substantially improved.
+- The `start-multi` command has been promoted to `start`, which means
+  that the worker-based relayer is not experimental anymore.
+- A regression where Hermes would not recover after a node went down and up again was fixed.
+
+[telemetry]: https://hermes.informal.systems/telemetry.html
+[strategy]: http://hermes.informal.systems/config.html?highlight=strategy#global
+
+> Special thanks to Colin Axnér (@colin-axner) and Jongwhan Lee (@leejw51crypto)
+> for raising multiple issues that helped us improve the reliability of Hermes.
 
 ### FEATURES
 
+- [ibc-relayer]
+  - Add telemetry and Prometheus endpoint ([#868], [#1032])
+  - Add support for event based channel relaying ([#822])
+  - Graceful handling of packet events in the presence of multiple relayers ([#983])
+
+### IMPROVEMENTS
+
+- [ibc]
+  - Started `unwrap` cleanup ([#871])
+
+- [ibc-relayer-cli]
+  - Include chain-id in `query clients` command, and sort output by client counter ([#992])
+  - Improve config loading message ([#996])
+  - Improve Hermes worker spawn time for `start` command ([#998])
+  - Better Hermes help message when command is unrecognized ([#1003])
+
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix client worker initialization error ([#972])
+  - Fix `hermes start` panic when all chains are unreachable ([#972])
+  - Ensure expired or frozen client worker logs message and terminates ([#1022])
+  - Fix regression where Hermes would not recover after a node went down and up again ([#1026])
+
+- [gaiad-manager]
+  - Import hermes keys properly even if wallet HD derivation path is set ([#975])
+  - Apply default values to missing configuration parameters ([#993])
+  - `gm hermes config` now creates hermes 0.4.0 compatible configuration ([#1039])
+
+### BREAKING CHANGES
+
+  - Promote `start-multi` command to `start` ([#911])
+
+[#822]: https://github.com/informalsystems/ibc-rs/issues/822
+[#868]: https://github.com/informalsystems/ibc-rs/issues/868
+[#871]: https://github.com/informalsystems/ibc-rs/issues/871
+[#911]: https://github.com/informalsystems/ibc-rs/issues/911
+[#972]: https://github.com/informalsystems/ibc-rs/issues/972
+[#975]: https://github.com/informalsystems/ibc-rs/issues/975
+[#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#992]: https://github.com/informalsystems/ibc-rs/issues/992
+[#996]: https://github.com/informalsystems/ibc-rs/issues/996
+[#993]: https://github.com/informalsystems/ibc-rs/issues/993
+[#998]: https://github.com/informalsystems/ibc-rs/issues/998
+[#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
+[#1022]: https://github.com/informalsystems/ibc-rs/issues/1022
+[#1026]: https://github.com/informalsystems/ibc-rs/issues/1026
+[#1032]: https://github.com/informalsystems/ibc-rs/issues/1032
+[gaiad-manager]: https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/README.md
+[#1039]: https://github.com/informalsystems/ibc-rs/issues/1039
+
+## v0.3.2
+*May 21st, 2021*
+
+This is minor release which brings substantial performance improvements
+to the relayer (relaying 1000 packets now takes 2-5min instead of 1h+),
+better UX for the `ft-transfer` command, and automatic deployment of
+Docker images to Docker Hub.
+
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Add a `--key` option to the tx raw ft-transfer command to override the account used for sending messages ([#963])
+
+- [ibc-relayer]
+  - Add support for multiple keys to the keyring ([#963])
+  - Add telemetry and Prometheus endpoint ([#868])
+  
 - [release]
-  - Official hermes image on Docker Hub. ([#894])
+  - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
+  - Automatically deploy Docker Hub image during release ([#967])
 
+### IMPROVEMENTS
 
-[#960]: https://github.com/informalsystems/ibc-rs/issues/960
+- [ibc-relayer]
+  - Batch together all events from all transactions included in a block ([#957])
+
+### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Prevent sending `ft-transfer` MsgTransfer on a non-Open channel ([#960])
+
+### BREAKING CHANGES
+
+> Nothing
+
+[#868]: https://github.com/informalsystems/ibc-rs/issues/868
 [#894]: https://github.com/informalsystems/ibc-rs/pull/894
-[#965]: https://github.com/informalsystems/ibc-rs/issues/965
+[#957]: https://github.com/informalsystems/ibc-rs/issues/957
+[#960]: https://github.com/informalsystems/ibc-rs/issues/960
+[#963]: https://github.com/informalsystems/ibc-rs/issues/963
+[#967]: https://github.com/informalsystems/ibc-rs/issues/967
+
+[hermes-docker]: https://hub.docker.com/r/informalsystems/hermes
 
 ## v0.3.1
 *May 14h, 2021*
@@ -27,6 +134,9 @@ to delay periods, and adds support for packet timeouts based on timestamps,
 as well as support Protobuf-encoded keys.
 
 ### FEATURES
+
+- [scripts]
+  - Created the Gaiad Manager `gm` CLI tool for managing gaiad instances on the local machine ([#902])
 
 - [ibc-relayer]
   - Add support for packet timeout based on timeout timestamp ([#937])
@@ -47,9 +157,12 @@ as well as support Protobuf-encoded keys.
 
 ### BREAKING CHANGES
 
+> Nothing
+
 
 [#875]: https://github.com/informalsystems/ibc-rs/issues/875
 [#920]: https://github.com/informalsystems/ibc-rs/issues/920
+[#902]: https://github.com/informalsystems/ibc-rs/issues/902
 [#921]: https://github.com/informalsystems/ibc-rs/issues/921
 [#925]: https://github.com/informalsystems/ibc-rs/issues/925
 [#927]: https://github.com/informalsystems/ibc-rs/issues/927

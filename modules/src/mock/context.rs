@@ -817,6 +817,7 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::mock::host::HostType;
     use crate::Height;
+    use test_env_log::test;
 
     #[test]
     fn test_history_manipulation() {
