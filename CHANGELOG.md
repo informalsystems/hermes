@@ -62,6 +62,7 @@
 
 ### BREAKING CHANGES
 
+- [ibc-relayer-cli]
   - Promote `start-multi` command to `start` ([#911])
 
 [#822]: https://github.com/informalsystems/ibc-rs/issues/822
