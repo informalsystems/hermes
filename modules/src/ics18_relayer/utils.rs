@@ -2,7 +2,7 @@ use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics02_client::msgs::ClientMsg;
 use crate::ics18_relayer::context::Ics18Context;
-use crate::ics18_relayer::error::{ self, Error };
+use crate::ics18_relayer::error::{self, Error};
 use crate::ics24_host::identifier::ClientId;
 
 /// Builds a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`

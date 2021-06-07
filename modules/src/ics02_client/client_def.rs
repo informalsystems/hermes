@@ -271,7 +271,9 @@ impl ClientDef for AnyClient {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
+                    .ok_or_else(|| {
+                        error::client_args_type_mismatch_error(ClientType::Tendermint)
+                    })?;
 
                 client.verify_connection_state(
                     client_state,
@@ -313,7 +315,9 @@ impl ClientDef for AnyClient {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| error::client_args_type_mismatch_error(ClientType::Tendermint))?;
+                    .ok_or_else(|| {
+                        error::client_args_type_mismatch_error(ClientType::Tendermint)
+                    })?;
 
                 client.verify_channel_state(
                     client_state,

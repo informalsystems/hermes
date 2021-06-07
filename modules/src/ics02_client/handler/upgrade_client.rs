@@ -4,7 +4,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::{AnyClient, ClientDef};
-use crate::ics02_client::client_state::{ClientState, AnyClientState};
+use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error;
 use crate::ics02_client::events::Attributes;
@@ -177,16 +177,14 @@ mod tests {
             Ok(_) => {
                 panic!("unexpected success (expected error)");
             }
-            Err(err) => {
-                match err.detail {
-                    error::ErrorDetail::ClientNotFound(e) => {
-                        assert_eq!(e.client_id, msg.client_id);
-                    }
-                    _ => {
-                        panic!("unexpected suberror {}", err);
-                    }
+            Err(err) => match err.detail {
+                error::ErrorDetail::ClientNotFound(e) => {
+                    assert_eq!(e.client_id, msg.client_id);
                 }
-            }
+                _ => {
+                    panic!("unexpected suberror {}", err);
+                }
+            },
         }
     }
 
@@ -218,17 +216,15 @@ mod tests {
             Ok(_) => {
                 panic!("unexpected success (expected error)");
             }
-            Err(err) => {
-                match err.detail {
-                    error::ErrorDetail::LowUpgradeHeight(e) => {
-                        assert_eq!(e.upgraded_height, Height::zero());
-                        assert_eq!(e.client_height, msg.client_state.latest_height());
-                    }
-                    _ => {
-                        panic!("unexpected suberror {}", err);
-                    }
+            Err(err) => match err.detail {
+                error::ErrorDetail::LowUpgradeHeight(e) => {
+                    assert_eq!(e.upgraded_height, Height::zero());
+                    assert_eq!(e.client_height, msg.client_state.latest_height());
                 }
-            }
+                _ => {
+                    panic!("unexpected suberror {}", err);
+                }
+            },
         }
     }
 }

@@ -42,7 +42,8 @@ impl TryFrom<RawMsgSubmitMisbehaviour> for MsgSubmitAnyMisbehaviour {
     type Error = error::Error;
 
     fn try_from(raw: RawMsgSubmitMisbehaviour) -> Result<Self, Self::Error> {
-        let raw_misbehaviour = raw.misbehaviour
+        let raw_misbehaviour = raw
+            .misbehaviour
             .ok_or_else(error::missing_raw_misbehaviour_error)?;
 
         Ok(MsgSubmitAnyMisbehaviour {

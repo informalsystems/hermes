@@ -163,10 +163,7 @@ where
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
 /// Returns a handler output with empty result of type `HandlerOutput<()>` which contains the log
 /// and events produced after processing the input `msg`.
-pub fn dispatch<Ctx>(
-    ctx: &mut Ctx,
-    msg: Ics26Envelope,
-) -> Result<HandlerOutput<()>, error::Error>
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, error::Error>
 where
     Ctx: Ics26Context,
 {

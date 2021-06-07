@@ -26,7 +26,7 @@ use crate::ics05_port::capabilities::Capability;
 use crate::ics05_port::context::PortReader;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::Ics18Context;
-use crate::ics18_relayer::error::{ self, Error as Ics18Error};
+use crate::ics18_relayer::error::{self, Error as Ics18Error};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::ics26_routing::context::Ics26Context;
@@ -799,8 +799,7 @@ impl Ics18Context for MockContext {
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {
         // Forward call to Ics26 delivery method.
-        let events =
-            deliver(self, msgs).map_err(error::transaction_failed_error)?;
+        let events = deliver(self, msgs).map_err(error::transaction_failed_error)?;
 
         self.advance_host_chain_height(); // Advance chain height
         Ok(events)

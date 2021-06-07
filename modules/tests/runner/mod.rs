@@ -24,9 +24,9 @@ use ibc::ics03_connection::version::Version;
 use ibc::ics04_channel::context::ChannelReader;
 use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics18_relayer::error as relayer_error;
-use ibc::ics26_routing::error as routing_error;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::ics26_routing::error as routing_error;
 use ibc::ics26_routing::msgs::Ics26Envelope;
 use ibc::mock::client_state::{MockClientState, MockConsensusState};
 use ibc::mock::context::MockContext;
@@ -82,41 +82,35 @@ impl IbcTestRunner {
             .expect("chain context should have been initialized")
     }
 
-    pub fn extract_ics02_error_kind(ics18_result: Result<(), relayer_error::Error>)
-        -> client_error::ErrorDetail
-    {
+    pub fn extract_ics02_error_kind(
+        ics18_result: Result<(), relayer_error::Error>,
+    ) -> client_error::ErrorDetail {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
         match ics18_error.detail {
-            relayer_error::ErrorDetail::TransactionFailed(e) => {
-                match e.source {
-                    routing_error::ErrorDetail::Ics02Client(e) => {
-                        e.source.detail
-                    }
-                    e => {
-                        panic!("Expected Ics02Client error, instead got {:?}", e);
-                    }
+            relayer_error::ErrorDetail::TransactionFailed(e) => match e.source {
+                routing_error::ErrorDetail::Ics02Client(e) => e.source.detail,
+                e => {
+                    panic!("Expected Ics02Client error, instead got {:?}", e);
                 }
-            }
+            },
             e => {
                 panic!("Expected TransactionFailed error, instead got {:?}", e);
             }
         }
     }
 
-    pub fn extract_ics03_error_kind(ics18_result: Result<(), relayer_error::Error>) -> Ics03ErrorKind {
+    pub fn extract_ics03_error_kind(
+        ics18_result: Result<(), relayer_error::Error>,
+    ) -> Ics03ErrorKind {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
 
         match ics18_error.detail {
-            relayer_error::ErrorDetail::TransactionFailed(e) => {
-                match e.source {
-                    routing_error::ErrorDetail::Ics03Connection(e) => {
-                        e.source.kind().clone()
-                    }
-                    e => {
-                        panic!("Expected Ics02Client error, instead got {:?}", e);
-                    }
+            relayer_error::ErrorDetail::TransactionFailed(e) => match e.source {
+                routing_error::ErrorDetail::Ics03Connection(e) => e.source.kind().clone(),
+                e => {
+                    panic!("Expected Ics02Client error, instead got {:?}", e);
                 }
-            }
+            },
             e => {
                 panic!("Expected TransactionFailed error, instead got {:?}", e);
             }

@@ -157,16 +157,14 @@ mod tests {
             Ok(_) => {
                 panic!("unexpected success (expected error)");
             }
-            Err(err) => {
-                match err.detail {
-                    error::ErrorDetail::ClientNotFound(e) => {
-                        assert_eq!(e.client_id, msg.client_id);
-                    }
-                    _ => {
-                        panic!("unexpected suberror {}", err);
-                    }
+            Err(err) => match err.detail {
+                error::ErrorDetail::ClientNotFound(e) => {
+                    assert_eq!(e.client_id, msg.client_id);
                 }
-            }
+                _ => {
+                    panic!("unexpected suberror {}", err);
+                }
+            },
         }
     }
 

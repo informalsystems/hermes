@@ -83,7 +83,8 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
     type Error = error::Error;
 
     fn try_from(proto_msg: RawMsgUpgradeClient) -> Result<Self, Self::Error> {
-        let raw_client_state = proto_msg.client_state
+        let raw_client_state = proto_msg
+            .client_state
             .ok_or_else(error::missing_raw_client_state_error)?;
 
         let raw_consensus_state = proto_msg

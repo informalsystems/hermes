@@ -74,8 +74,7 @@ impl TryFrom<Any> for AnyHeader {
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                MockHeader::decode_vec(&raw.value)
-                    .map_err(error::invalid_raw_header_error)?,
+                MockHeader::decode_vec(&raw.value).map_err(error::invalid_raw_header_error)?,
             )),
 
             _ => Err(error::unknown_header_type_error(raw.type_url)),
