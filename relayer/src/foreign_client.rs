@@ -467,7 +467,7 @@ impl ForeignClient {
             return Ok(vec![]);
         }
 
-        let (header, _support) = self
+        let (header, support) = self
             .src_chain()
             .build_header(trusted_height, target_height, client_state)
             .map_err(|e| {
@@ -490,13 +490,29 @@ impl ForeignClient {
             self, target_height, trusted_height
         );
 
-        let new_msg = MsgUpdateAnyClient {
-            client_id: self.id.clone(),
-            header,
-            signer,
-        };
+        let mut msgs = vec![];
 
-        Ok(vec![new_msg.to_any()])
+        for header in support {
+            msgs.push(
+                MsgUpdateAnyClient {
+                    header,
+                    client_id: self.id.clone(),
+                    signer: signer.clone(),
+                }
+                .to_any(),
+            );
+        }
+
+        msgs.push(
+            MsgUpdateAnyClient {
+                header,
+                signer,
+                client_id: self.id.clone(),
+            }
+            .to_any(),
+        );
+
+        Ok(msgs)
     }
 
     pub fn build_latest_update_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {
