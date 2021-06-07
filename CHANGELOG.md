@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-> Nothing yet.
+### IMPROVEMENTS
+
+- [ibc]
+  - Enable code formatter when generating protobuf definitions ([#1047])
+
+[#1047]: https://github.com/informalsystems/ibc-rs/pull/1047
 
 ## v0.4.0
 *June 3rd, 2021*
@@ -94,7 +99,7 @@ Docker images to Docker Hub.
 - [ibc-relayer]
   - Add support for multiple keys to the keyring ([#963])
   - Add telemetry and Prometheus endpoint ([#868])
-  
+
 - [release]
   - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
   - Automatically deploy Docker Hub image during release ([#967])
