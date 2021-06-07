@@ -68,10 +68,10 @@ pub fn process(
 
     // Verify packet commitment
     let packet_commitment = ctx
-        .get_packet_commitment(&(
+        .get_packet_commitment(
             PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone()),
             packet.sequence,
-        ))
+        )
         .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
 
     let input = format!(
@@ -94,7 +94,7 @@ pub fn process(
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
         let next_seq_ack = ctx
-            .get_next_sequence_ack(&port_channel_id)
+            .get_next_sequence_ack(port_channel_id)
             .ok_or(Kind::MissingNextAckSeq)?;
 
         if packet.sequence != next_seq_ack {

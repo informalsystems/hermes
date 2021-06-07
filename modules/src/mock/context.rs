@@ -464,28 +464,46 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn get_next_sequence_send(&self, port_channel_id: &PortChannelId) -> Option<Sequence> {
-        self.next_sequence_send.get(port_channel_id).cloned()
+    fn get_next_sequence_send(&self, port_channel_id: PortChannelId) -> Option<Sequence> {
+        self.next_sequence_send.get(&port_channel_id).cloned()
     }
 
-    fn get_next_sequence_recv(&self, port_channel_id: &PortChannelId) -> Option<Sequence> {
-        self.next_sequence_recv.get(port_channel_id).cloned()
+    fn get_next_sequence_recv(&self, port_channel_id: PortChannelId) -> Option<Sequence> {
+        self.next_sequence_recv.get(&port_channel_id).cloned()
     }
 
-    fn get_next_sequence_ack(&self, port_channel_id: &PortChannelId) -> Option<Sequence> {
-        self.next_sequence_ack.get(port_channel_id).cloned()
+    fn get_next_sequence_ack(&self, port_channel_id: PortChannelId) -> Option<Sequence> {
+        self.next_sequence_ack.get(&port_channel_id).cloned()
     }
 
-    fn get_packet_commitment(&self, key: &(PortChannelId, Sequence)) -> Option<String> {
-        self.packet_commitment.get(key).cloned()
+    fn get_packet_commitment(
+        &self,
+        port_channel_id: PortChannelId,
+        sequence: Sequence,
+    ) -> Option<String> {
+        self.packet_commitment
+            .get(&(port_channel_id, sequence))
+            .cloned()
     }
 
-    fn get_packet_receipt(&self, key: &(PortChannelId, Sequence)) -> Option<Receipt> {
-        self.packet_receipt.get(key).cloned()
+    fn get_packet_receipt(
+        &self,
+        port_channel_id: PortChannelId,
+        sequence: Sequence,
+    ) -> Option<Receipt> {
+        self.packet_receipt
+            .get(&(port_channel_id, sequence))
+            .cloned()
     }
 
-    fn get_packet_acknowledgement(&self, key: &(PortChannelId, Sequence)) -> Option<String> {
-        self.packet_acknowledgement.get(key).cloned()
+    fn get_packet_acknowledgement(
+        &self,
+        port_channel_id: PortChannelId,
+        sequence: Sequence,
+    ) -> Option<String> {
+        self.packet_acknowledgement
+            .get(&(port_channel_id, sequence))
+            .cloned()
     }
 
     fn hash(&self, input: String) -> String {

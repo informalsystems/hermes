@@ -47,13 +47,13 @@ pub fn process(
     // the OnRecvPacket callback so we need to check if the acknowledgement is already
     // set on the store and return an error if so.
     if ctx
-        .get_packet_acknowledgement(&(
+        .get_packet_acknowledgement(
             PortChannelId::new(
                 packet.destination_port.clone(),
                 packet.destination_channel.clone(),
             ),
             packet.sequence,
-        ))
+        )
         .is_some()
     {
         return Err(Kind::AcknowledgementExists(packet.sequence).into());

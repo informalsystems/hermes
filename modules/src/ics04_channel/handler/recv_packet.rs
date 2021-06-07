@@ -87,7 +87,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
-            .get_next_sequence_recv(&PortChannelId::new(
+            .get_next_sequence_recv(PortChannelId::new(
                 packet.source_port.clone(),
                 packet.source_channel.clone(),
             ))
@@ -105,10 +105,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
             receipt: None,
         })
     } else {
-        let packet_rec = ctx.get_packet_receipt(&(
+        let packet_rec = ctx.get_packet_receipt(
             PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone()),
             packet.sequence,
-        ));
+        );
 
         match packet_rec {
             Some(_receipt) => return Err(Kind::PacketAlreadyReceived(packet.sequence).into()),

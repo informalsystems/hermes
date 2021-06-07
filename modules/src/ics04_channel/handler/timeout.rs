@@ -85,10 +85,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
 
     //verify packet commitment
     let packet_commitment = ctx
-        .get_packet_commitment(&(
+        .get_packet_commitment(
             PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone()),
             packet.sequence,
-        ))
+        )
         .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
 
     let input = format!(

@@ -55,10 +55,10 @@ pub fn process(
 
     //verify the packet was sent, check the store
     let packet_commitment = ctx
-        .get_packet_commitment(&(
+        .get_packet_commitment(
             PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone()),
             packet.sequence,
-        ))
+        )
         .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
 
     let input = format!(

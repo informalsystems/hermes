@@ -37,17 +37,29 @@ pub trait ChannelReader {
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
 
-    fn get_next_sequence_send(&self, port_channel_id: &PortChannelId) -> Option<Sequence>;
+    fn get_next_sequence_send(&self, port_channel_id: PortChannelId) -> Option<Sequence>;
 
-    fn get_next_sequence_recv(&self, port_channel_id: &PortChannelId) -> Option<Sequence>;
+    fn get_next_sequence_recv(&self, port_channel_id: PortChannelId) -> Option<Sequence>;
 
-    fn get_next_sequence_ack(&self, port_channel_id: &PortChannelId) -> Option<Sequence>;
+    fn get_next_sequence_ack(&self, port_channel_id: PortChannelId) -> Option<Sequence>;
 
-    fn get_packet_commitment(&self, key: &(PortChannelId, Sequence)) -> Option<String>;
+    fn get_packet_commitment(
+        &self,
+        port_channel_id: PortChannelId,
+        sequence: Sequence,
+    ) -> Option<String>;
 
-    fn get_packet_receipt(&self, key: &(PortChannelId, Sequence)) -> Option<Receipt>;
+    fn get_packet_receipt(
+        &self,
+        port_channel_id: PortChannelId,
+        sequence: Sequence,
+    ) -> Option<Receipt>;
 
-    fn get_packet_acknowledgement(&self, key: &(PortChannelId, Sequence)) -> Option<String>;
+    fn get_packet_acknowledgement(
+        &self,
+        port_channel_id: PortChannelId,
+        sequence: Sequence,
+    ) -> Option<String>;
 
     /// A hashing function for packet commitments
     fn hash(&self, value: String) -> String;

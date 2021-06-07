@@ -16,11 +16,9 @@ where
 {
     let port_channel_id = PortChannelId::new(msg.source_port.clone(), msg.source_channel.clone());
 
-    let source_channel_end = ctx
-        .channel_end(&port_channel_id)
-        .ok_or_else(|| {
-            Kind::ChannelNotFound(msg.source_port.clone(), msg.source_channel.clone())
-        })?;
+    let source_channel_end = ctx.channel_end(&port_channel_id).ok_or_else(|| {
+        Kind::ChannelNotFound(msg.source_port.clone(), msg.source_channel.clone())
+    })?;
 
     let destination_port = source_channel_end.counterparty().port_id().clone();
     let destination_channel = source_channel_end
@@ -31,11 +29,9 @@ where
         })?;
 
     // get the next sequence
-    let sequence = ctx
-        .get_next_sequence_send(&port_channel_id)
-        .ok_or_else(|| {
-            Kind::SequenceSendNotFound(msg.source_port.clone(), msg.source_channel.clone())
-        })?;
+    let sequence = ctx.get_next_sequence_send(port_channel_id).ok_or_else(|| {
+        Kind::SequenceSendNotFound(msg.source_port.clone(), msg.source_channel.clone())
+    })?;
 
     //TODO: Application LOGIC.
 

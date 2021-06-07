@@ -88,7 +88,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     // check sequence number
     let next_seq_send = ctx
-        .get_next_sequence_send(&port_channel_id)
+        .get_next_sequence_send(port_channel_id)
         .ok_or(Kind::MissingNextSendSeq)?;
 
     if packet.sequence != next_seq_send {
