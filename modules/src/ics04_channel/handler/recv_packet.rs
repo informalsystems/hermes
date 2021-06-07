@@ -9,7 +9,7 @@ use crate::ics04_channel::events::ReceivePacket;
 use crate::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::ics04_channel::packet::{PacketResult, Receipt, Sequence};
-use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics24_host::identifier::{ChannelId, PortChannelId, PortId};
 use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
@@ -27,7 +27,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     let packet = &msg.packet;
 
     let dest_channel_end = ctx
-        .channel_end(&(
+        .channel_end(&PortChannelId::new(
             packet.destination_port.clone(),
             packet.destination_channel.clone(),
         ))
@@ -87,7 +87,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
-            .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))
+            .get_next_sequence_recv(&PortChannelId::new(
+                packet.source_port.clone(),
+                packet.source_channel.clone(),
+            ))
             .ok_or(Kind::MissingNextRecvSeq)?;
 
         if packet.sequence != next_seq_recv {
@@ -103,8 +106,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         })
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
-            packet.source_port.clone(),
-            packet.source_channel.clone(),
+            PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone()),
             packet.sequence,
         ));
 
@@ -147,7 +149,7 @@ mod tests {
     use crate::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
     use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
     use crate::ics18_relayer::context::Ics18Context;
-    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortChannelId, PortId};
     use crate::mock::context::MockContext;
     use crate::test_utils::get_dummy_account_id;
     use crate::timestamp::Timestamp;
@@ -222,11 +224,9 @@ mod tests {
             Test {
                 name: "Processing fails because the port does not have a capability associated"
                     .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    dest_channel_end.clone(),
-                ),
+                ctx: context
+                    .clone()
+                    .with_channel(PortChannelId::default(), dest_channel_end.clone()),
                 msg: msg.clone(),
                 want_pass: false,
             },
@@ -238,21 +238,27 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
-                        packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        PortChannelId::new(
+                            packet.destination_port.clone(),
+                            packet.destination_channel.clone(),
+                        ),
                         dest_channel_end.clone(),
                     )
                     .with_send_sequence(
-                        packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        PortChannelId::new(
+                            packet.destination_port.clone(),
+                            packet.destination_channel.clone(),
+                        ),
                         1.into(),
                     )
                     .with_height(host_height)
                     .with_timestamp(Timestamp::from_nanoseconds(1).unwrap())
                     // This `with_recv_sequence` is required for ordered channels
                     .with_recv_sequence(
-                        packet.destination_port.clone(),
-                        packet.destination_channel,
+                        PortChannelId::new(
+                            packet.destination_port.clone(),
+                            packet.destination_channel,
+                        ),
                         packet.sequence,
                     ),
                 msg,
@@ -264,8 +270,8 @@ mod tests {
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
-                    .with_channel(PortId::default(), ChannelId::default(), dest_channel_end)
-                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into())
+                    .with_channel(PortChannelId::default(), dest_channel_end)
+                    .with_send_sequence(PortChannelId::default(), 1.into())
                     .with_height(host_height)
                     .with_timestamp(Timestamp::from_nanoseconds(3).unwrap()),
                 msg: msg_packet_old,

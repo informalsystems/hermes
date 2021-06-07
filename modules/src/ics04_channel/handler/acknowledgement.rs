@@ -9,7 +9,7 @@ use crate::ics04_channel::handler::verify::verify_packet_acknowledgement_proofs;
 use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
-use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics24_host::identifier::{ChannelId, PortChannelId, PortId};
 
 #[derive(Clone, Debug)]
 pub struct AckPacketResult {
@@ -27,12 +27,13 @@ pub fn process(
 
     let packet = &msg.packet;
 
-    let source_channel_end = ctx
-        .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
-        .ok_or_else(|| {
-            Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
-                .context(packet.source_channel.to_string())
-        })?;
+    let port_channel_id =
+        PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone());
+
+    let source_channel_end = ctx.channel_end(&port_channel_id).ok_or_else(|| {
+        Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
+            .context(packet.source_channel.to_string())
+    })?;
 
     if !source_channel_end.state_matches(&State::Open) {
         return Err(Kind::ChannelClosed(packet.source_channel.clone()).into());
@@ -68,8 +69,7 @@ pub fn process(
     // Verify packet commitment
     let packet_commitment = ctx
         .get_packet_commitment(&(
-            packet.source_port.clone(),
-            packet.source_channel.clone(),
+            PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone()),
             packet.sequence,
         ))
         .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
@@ -94,7 +94,7 @@ pub fn process(
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
         let next_seq_ack = ctx
-            .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))
+            .get_next_sequence_ack(&port_channel_id)
             .ok_or(Kind::MissingNextAckSeq)?;
 
         if packet.sequence != next_seq_ack {
@@ -140,7 +140,7 @@ mod tests {
     use crate::ics04_channel::handler::acknowledgement::process;
     use crate::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
     use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
     use test_env_log::test;
@@ -207,11 +207,9 @@ mod tests {
             Test {
                 name: "Processing fails because the port does not have a capability associated"
                     .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    source_channel_end.clone(),
-                ),
+                ctx: context
+                    .clone()
+                    .with_channel(PortChannelId::default(), source_channel_end.clone()),
                 msg: msg.clone(),
                 want_pass: false,
             },
@@ -222,19 +220,19 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
-                        packet.source_port.clone(),
-                        packet.source_channel.clone(),
+                        PortChannelId::new(
+                            packet.source_port.clone(),
+                            packet.source_channel.clone(),
+                        ),
                         source_channel_end,
                     )
                     .with_packet_commitment(
-                        packet.source_port,
-                        packet.source_channel,
+                        PortChannelId::new(packet.source_port, packet.source_channel),
                         packet.sequence,
                         data,
                     ) //with_ack_sequence required for ordered channels
                     .with_ack_sequence(
-                        packet.destination_port,
-                        packet.destination_channel,
+                        PortChannelId::new(packet.destination_port, packet.destination_channel),
                         1.into(),
                     ),
                 msg,

@@ -6,7 +6,7 @@ use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
-use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics24_host::identifier::{ChannelId, PortChannelId, PortId};
 use crate::timestamp::{Expiry, Timestamp};
 use crate::Height;
 
@@ -24,12 +24,13 @@ pub struct SendPacketResult {
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let source_channel_end = ctx
-        .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
-        .ok_or_else(|| {
-            Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
-                .context(packet.source_channel.clone().to_string())
-        })?;
+    let port_channel_id =
+        PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone());
+
+    let source_channel_end = ctx.channel_end(&port_channel_id).ok_or_else(|| {
+        Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
+            .context(packet.source_channel.clone().to_string())
+    })?;
 
     if source_channel_end.state_matches(&State::Closed) {
         return Err(Kind::ChannelClosed(packet.source_channel).into());
@@ -87,7 +88,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     // check sequence number
     let next_seq_send = ctx
-        .get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))
+        .get_next_sequence_send(&port_channel_id)
         .ok_or(Kind::MissingNextSendSeq)?;
 
     if packet.sequence != next_seq_send {
@@ -129,7 +130,7 @@ mod tests {
     use crate::ics04_channel::handler::send_packet::send_packet;
     use crate::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::ics04_channel::packet::Packet;
-    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortChannelId, PortId};
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
 
@@ -184,11 +185,9 @@ mod tests {
             Test {
                 name: "Processing fails because the port does not have a capability associated"
                     .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    channel_end.clone(),
-                ),
+                ctx: context
+                    .clone()
+                    .with_channel(PortChannelId::default(), channel_end.clone()),
                 packet: packet.clone(),
                 want_pass: false,
             },
@@ -199,8 +198,8 @@ mod tests {
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_port_capability(PortId::default())
-                    .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
-                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
+                    .with_channel(PortChannelId::default(), channel_end.clone())
+                    .with_send_sequence(PortChannelId::default(), 1.into()),
                 packet,
                 want_pass: true,
             },
@@ -210,8 +209,8 @@ mod tests {
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
-                    .with_channel(PortId::default(), ChannelId::default(), channel_end)
-                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
+                    .with_channel(PortChannelId::default(), channel_end)
+                    .with_send_sequence(PortChannelId::default(), 1.into()),
                 packet: packet_old,
                 want_pass: false,
             },

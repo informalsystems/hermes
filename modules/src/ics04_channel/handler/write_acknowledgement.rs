@@ -2,7 +2,7 @@ use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::WriteAcknowledgement;
 use crate::ics04_channel::packet::{Packet, PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
-use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics24_host::identifier::{ChannelId, PortChannelId, PortId};
 use crate::{
     events::IbcEvent,
     handler::{HandlerOutput, HandlerResult},
@@ -24,7 +24,7 @@ pub fn process(
     let mut output = HandlerOutput::builder();
 
     let dest_channel_end = ctx
-        .channel_end(&(
+        .channel_end(&PortChannelId::new(
             packet.destination_port.clone(),
             packet.destination_channel.clone(),
         ))
@@ -48,8 +48,10 @@ pub fn process(
     // set on the store and return an error if so.
     if ctx
         .get_packet_acknowledgement(&(
-            packet.destination_port.clone(),
-            packet.destination_channel.clone(),
+            PortChannelId::new(
+                packet.destination_port.clone(),
+                packet.destination_channel.clone(),
+            ),
             packet.sequence,
         ))
         .is_some()
@@ -92,7 +94,7 @@ mod tests {
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
     use crate::ics04_channel::handler::write_acknowledgement::process;
     use crate::ics04_channel::packet::test_utils::get_dummy_raw_packet;
-    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId, PortId};
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
     use crate::{events::IbcEvent, ics04_channel::packet::Packet};
@@ -152,11 +154,9 @@ mod tests {
             Test {
                 name: "Processing fails because the port does not have a capability associated"
                     .to_string(),
-                ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
-                    dest_channel_end.clone(),
-                ),
+                ctx: context
+                    .clone()
+                    .with_channel(PortChannelId::default(), dest_channel_end.clone()),
                 packet: packet.clone(),
                 ack: ack.clone(),
                 want_pass: false,
@@ -169,8 +169,10 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
-                        packet.destination_port.clone(),
-                        packet.destination_channel.clone(),
+                        PortChannelId::new(
+                            packet.destination_port.clone(),
+                            packet.destination_channel.clone(),
+                        ),
                         dest_channel_end.clone(),
                     ),
                 packet: packet.clone(),
@@ -183,7 +185,7 @@ mod tests {
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
-                    .with_channel(PortId::default(), ChannelId::default(), dest_channel_end),
+                    .with_channel(PortChannelId::default(), dest_channel_end),
                 packet,
                 ack: ack_null,
                 want_pass: false,

@@ -9,6 +9,7 @@ use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
+use crate::ics24_host::identifier::PortChannelId;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -18,7 +19,10 @@ pub(crate) fn process(
 
     // Unwrap the old channel end and validate it against the message.
     let mut channel_end = ctx
-        .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
+        .channel_end(&PortChannelId::new(
+            msg.port_id().clone(),
+            msg.channel_id().clone(),
+        ))
         .ok_or_else(|| Kind::ChannelNotFound(msg.port_id.clone(), msg.channel_id().clone()))?;
 
     // Validate that the channel end is in a state where it can be confirmed.
@@ -114,7 +118,7 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
     use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
     use crate::ics04_channel::msgs::ChannelMsg;
-    use crate::ics24_host::identifier::{ClientId, ConnectionId};
+    use crate::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
     use crate::Height;
@@ -165,8 +169,10 @@ mod tests {
                 .with_connection(conn_id, conn_end)
                 .with_port_capability(msg_chan_confirm.port_id().clone())
                 .with_channel(
-                    msg_chan_confirm.port_id().clone(),
-                    msg_chan_confirm.channel_id().clone(),
+                    PortChannelId::new(
+                        msg_chan_confirm.port_id().clone(),
+                        msg_chan_confirm.channel_id().clone(),
+                    ),
                     chan_end,
                 ),
             msg: ChannelMsg::ChannelOpenConfirm(msg_chan_confirm),

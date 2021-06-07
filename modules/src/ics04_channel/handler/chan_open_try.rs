@@ -10,7 +10,7 @@ use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use crate::ics24_host::identifier::ChannelId;
+use crate::ics24_host::identifier::{ChannelId, PortChannelId};
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -22,7 +22,7 @@ pub(crate) fn process(
     let (mut new_channel_end, channel_id) = match msg.previous_channel_id() {
         Some(prev_id) => {
             let old_channel_end = ctx
-                .channel_end(&(msg.port_id().clone(), prev_id.clone()))
+                .channel_end(&PortChannelId::new(msg.port_id().clone(), prev_id.clone()))
                 .ok_or_else(|| Kind::ChannelNotFound(msg.port_id.clone(), prev_id.clone()))?;
 
             // Validate that existing channel end matches with the one we're trying to establish.
@@ -170,7 +170,7 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
-    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
+    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortChannelId};
     use crate::mock::context::MockContext;
     use crate::timestamp::ZERO_DURATION;
     use crate::Height;
@@ -286,7 +286,10 @@ mod tests {
                     .clone()
                     .with_connection(conn_id.clone(), conn_end.clone())
                     .with_port_capability(msg.port_id.clone())
-                    .with_channel(msg.port_id.clone(), chan_id.clone(), incorrect_chan_end_ver),
+                    .with_channel(
+                        PortChannelId::new(msg.port_id.clone(), chan_id.clone()),
+                        incorrect_chan_end_ver,
+                    ),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
                 expect_error_kind: Some(Kind::ChannelMismatch(chan_id.clone())),
@@ -298,8 +301,7 @@ mod tests {
                     .with_connection(conn_id.clone(), conn_end.clone())
                     .with_port_capability(msg.port_id.clone())
                     .with_channel(
-                        msg.port_id.clone(),
-                        chan_id.clone(),
+                        PortChannelId::new(msg.port_id.clone(), chan_id.clone()),
                         incorrect_chan_end_hops,
                     ),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
@@ -313,8 +315,7 @@ mod tests {
                     .with_connection(conn_id.clone(), conn_end.clone())
                     .with_port_capability(msg.port_id.clone())
                     .with_channel(
-                        msg.port_id.clone(),
-                        chan_id.clone(),
+                        PortChannelId::new(msg.port_id.clone(), chan_id.clone()),
                         correct_chan_end.clone(),
                     ),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
@@ -328,7 +329,10 @@ mod tests {
                     .with_client(&client_id, Height::new(0, proof_height))
                     .with_connection(conn_id.clone(), conn_end.clone())
                     .with_port_capability(msg.port_id.clone())
-                    .with_channel(msg.port_id.clone(), chan_id, correct_chan_end),
+                    .with_channel(
+                        PortChannelId::new(msg.port_id.clone(), chan_id),
+                        correct_chan_end,
+                    ),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: true,
                 expect_error_kind: None,

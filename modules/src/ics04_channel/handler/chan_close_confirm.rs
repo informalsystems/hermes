@@ -9,6 +9,7 @@ use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
+use crate::ics24_host::identifier::PortChannelId;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -18,7 +19,10 @@ pub(crate) fn process(
 
     // Retrieve the old channel end and validate it against the message.
     let mut channel_end = ctx
-        .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
+        .channel_end(&PortChannelId::new(
+            msg.port_id.clone(),
+            msg.channel_id.clone(),
+        ))
         .ok_or_else(|| Kind::ChannelNotFound(msg.port_id.clone(), msg.channel_id().clone()))?;
 
     // Validate that the channel end is in a state where it can be closed.

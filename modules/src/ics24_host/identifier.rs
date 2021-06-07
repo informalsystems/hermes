@@ -388,6 +388,21 @@ impl PartialEq<str> for ChannelId {
 /// A pair of [`PortId`] and [`ChannelId`] are used together for sending IBC packets.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct PortChannelId {
-    pub channel_id: ChannelId,
     pub port_id: PortId,
+    pub channel_id: ChannelId,
+}
+
+impl PortChannelId {
+    pub fn new(port_id: PortId, channel_id: ChannelId) -> PortChannelId {
+        PortChannelId {
+            port_id,
+            channel_id,
+        }
+    }
+}
+
+impl Default for PortChannelId {
+    fn default() -> Self {
+        PortChannelId::new(PortId::default(), ChannelId::default())
+    }
 }

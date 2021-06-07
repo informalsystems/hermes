@@ -12,6 +12,7 @@ use crate::ics04_channel::packet::PacketResult;
 use crate::ics04_channel::{
     context::ChannelReader, error::Error, error::Kind, handler::timeout::TimeoutPacketResult,
 };
+use crate::ics24_host::identifier::PortChannelId;
 
 pub fn process(
     ctx: &dyn ChannelReader,
@@ -22,7 +23,10 @@ pub fn process(
     let packet = &msg.packet;
 
     let source_channel_end = ctx
-        .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
+        .channel_end(&PortChannelId::new(
+            packet.source_port.clone(),
+            packet.source_channel.clone(),
+        ))
         .ok_or_else(|| {
             Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
                 .context(packet.source_channel.to_string())
@@ -52,8 +56,7 @@ pub fn process(
     //verify the packet was sent, check the store
     let packet_commitment = ctx
         .get_packet_commitment(&(
-            packet.source_port.clone(),
-            packet.source_channel.clone(),
+            PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone()),
             packet.sequence,
         ))
         .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
@@ -150,7 +153,7 @@ mod tests {
     use crate::ics04_channel::handler::timeout_on_close::process;
     use crate::ics04_channel::msgs::timeout_on_close::test_util::get_dummy_raw_msg_timeout_on_close;
     use crate::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
-    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
     use crate::timestamp::ZERO_DURATION;
 
     use crate::mock::context::MockContext;
@@ -223,11 +226,7 @@ mod tests {
                 name: "Processing fails no packet commitment is found".to_string(),
                 ctx: context
                     .clone()
-                    .with_channel(
-                        PortId::default(),
-                        ChannelId::default(),
-                        source_channel_end.clone(),
-                    )
+                    .with_channel(PortChannelId::default(), source_channel_end.clone())
                     .with_port_capability(packet.destination_port.clone())
                     .with_connection(ConnectionId::default(), connection_end.clone()),
                 msg: msg.clone(),
@@ -240,13 +239,14 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
-                        packet.source_port.clone(),
-                        packet.source_channel,
+                        PortChannelId::new(packet.source_port.clone(), packet.source_channel),
                         source_channel_end,
                     )
                     .with_packet_commitment(
-                        msg.packet.source_port.clone(),
-                        msg.packet.source_channel.clone(),
+                        PortChannelId::new(
+                            msg.packet.source_port.clone(),
+                            msg.packet.source_channel.clone(),
+                        ),
                         msg.packet.sequence,
                         data,
                     ),

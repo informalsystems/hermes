@@ -9,7 +9,7 @@ use crate::ics04_channel::handler::verify::{
 use crate::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
-use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics24_host::identifier::{ChannelId, PortChannelId, PortId};
 use crate::timestamp::Expiry;
 
 #[derive(Clone, Debug)]
@@ -26,7 +26,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
     let packet = &msg.packet;
 
     let mut source_channel_end = ctx
-        .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
+        .channel_end(&PortChannelId::new(
+            packet.source_port.clone(),
+            packet.source_channel.clone(),
+        ))
         .ok_or_else(|| {
             Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
                 .context(packet.source_channel.to_string())
@@ -83,8 +86,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<Packet
     //verify packet commitment
     let packet_commitment = ctx
         .get_packet_commitment(&(
-            packet.source_port.clone(),
-            packet.source_channel.clone(),
+            PortChannelId::new(packet.source_port.clone(), packet.source_channel.clone()),
             packet.sequence,
         ))
         .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
@@ -154,7 +156,7 @@ mod tests {
     use crate::ics04_channel::handler::timeout::process;
     use crate::ics04_channel::msgs::timeout::test_util::get_dummy_raw_msg_timeout;
     use crate::ics04_channel::msgs::timeout::MsgTimeout;
-    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
     use crate::timestamp::ZERO_DURATION;
 
     use crate::mock::context::MockContext;
@@ -230,8 +232,7 @@ mod tests {
                 name: "Processing fails because the client does not have a consensus state for the required height"
                     .to_string(),
                 ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
+                    PortChannelId::default(),
                     source_channel_end.clone(),
                 )
                 .with_port_capability(packet.destination_port.clone())
@@ -243,8 +244,7 @@ mod tests {
                 name: "Processing fails because the proof's timeout has not been reached "
                     .to_string(),
                 ctx: context.clone().with_channel(
-                    PortId::default(),
-                    ChannelId::default(),
+                    PortChannelId::default(),
                     source_channel_end.clone(),
                 )
                 .with_client(&ClientId::default(), client_height)
@@ -260,13 +260,15 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
-                        packet.source_port.clone(),
-                        packet.source_channel.clone(),
+                        PortChannelId::new(
+                            packet.source_port.clone(),
+                            packet.source_channel.clone()),
                         source_channel_end,
                     )
                     .with_packet_commitment(
-                        msg_ok.packet.source_port.clone(),
-                        msg_ok.packet.source_channel.clone(),
+                        PortChannelId::new(
+                            msg_ok.packet.source_port.clone(),
+                            msg_ok.packet.source_channel.clone()),
                         msg_ok.packet.sequence,
                         data.clone(),
                     ),
@@ -280,19 +282,22 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(packet.destination_port.clone())
                     .with_channel(
-                        packet.source_port.clone(),
-                        packet.source_channel,
+                        PortChannelId::new(
+                            packet.source_port.clone(),
+                            packet.source_channel),
                         source_ordered_channel_end,
                     )
                     .with_packet_commitment(
-                        msg_ok.packet.source_port.clone(),
-                        msg_ok.packet.source_channel.clone(),
+                        PortChannelId::new(
+                            msg_ok.packet.source_port.clone(),
+                            msg_ok.packet.source_channel.clone()),
                         msg_ok.packet.sequence,
                         data,
                     )
                     .with_ack_sequence(
-                         packet.destination_port,
-                         packet.destination_channel,
+                         PortChannelId::new(
+                            packet.destination_port,
+                            packet.destination_channel),
                          1.into(),
                      ),
                 msg: msg_ok,

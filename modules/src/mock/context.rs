@@ -28,7 +28,7 @@ use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_clien
 use crate::ics18_relayer::context::Ics18Context;
 use crate::ics18_relayer::error::{Error as Ics18Error, Kind as Ics18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
-use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use crate::ics24_host::identifier::{ChainId, ClientId, ConnectionId, PortChannelId, PortId};
 use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::handler::{deliver, dispatch};
 use crate::ics26_routing::msgs::Ics26Envelope;
@@ -78,33 +78,33 @@ pub struct MockContext {
     connection_ids_counter: u64,
 
     /// Association between connection ids and channel ids.
-    connection_channels: HashMap<ConnectionId, Vec<(PortId, ChannelId)>>,
+    connection_channels: HashMap<ConnectionId, Vec<PortChannelId>>,
 
     /// Counter for channel identifiers (see `increase_channel_counter`).
     channel_ids_counter: u64,
 
     /// All the channels in the store. TODO Make new key PortId X ChanneId
-    channels: HashMap<(PortId, ChannelId), ChannelEnd>,
+    channels: HashMap<PortChannelId, ChannelEnd>,
 
     /// Tracks the sequence number for the next packet to be sent.
-    next_sequence_send: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_send: HashMap<PortChannelId, Sequence>,
 
     /// Tracks the sequence number for the next packet to be received.
-    next_sequence_recv: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_recv: HashMap<PortChannelId, Sequence>,
 
     /// Tracks the sequence number for the next packet to be acknowledged.
-    next_sequence_ack: HashMap<(PortId, ChannelId), Sequence>,
+    next_sequence_ack: HashMap<PortChannelId, Sequence>,
 
-    packet_acknowledgement: HashMap<(PortId, ChannelId, Sequence), String>,
+    packet_acknowledgement: HashMap<(PortChannelId, Sequence), String>,
 
     /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: HashMap<(PortId, ChannelId, Sequence), String>,
+    packet_commitment: HashMap<(PortChannelId, Sequence), String>,
 
     // Used by unordered channel
-    packet_receipt: HashMap<(PortId, ChannelId, Sequence), Receipt>,
+    packet_receipt: HashMap<(PortChannelId, Sequence), Receipt>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -252,53 +252,33 @@ impl MockContext {
     }
 
     /// Associates a channel (in an arbitrary state) to this context.
-    pub fn with_channel(
-        self,
-        port_id: PortId,
-        chan_id: ChannelId,
-        channel_end: ChannelEnd,
-    ) -> Self {
+    pub fn with_channel(self, port_channe_id: PortChannelId, channel_end: ChannelEnd) -> Self {
         let mut channels = self.channels.clone();
-        channels.insert((port_id, chan_id), channel_end);
+        channels.insert(port_channe_id, channel_end);
         Self { channels, ..self }
     }
 
-    pub fn with_send_sequence(
-        self,
-        port_id: PortId,
-        chan_id: ChannelId,
-        seq_number: Sequence,
-    ) -> Self {
+    pub fn with_send_sequence(self, port_channe_id: PortChannelId, seq_number: Sequence) -> Self {
         let mut next_sequence_send = self.next_sequence_send.clone();
-        next_sequence_send.insert((port_id, chan_id), seq_number);
+        next_sequence_send.insert(port_channe_id, seq_number);
         Self {
             next_sequence_send,
             ..self
         }
     }
 
-    pub fn with_recv_sequence(
-        self,
-        port_id: PortId,
-        chan_id: ChannelId,
-        seq_number: Sequence,
-    ) -> Self {
+    pub fn with_recv_sequence(self, port_channe_id: PortChannelId, seq_number: Sequence) -> Self {
         let mut next_sequence_recv = self.next_sequence_recv.clone();
-        next_sequence_recv.insert((port_id, chan_id), seq_number);
+        next_sequence_recv.insert(port_channe_id, seq_number);
         Self {
             next_sequence_recv,
             ..self
         }
     }
 
-    pub fn with_ack_sequence(
-        self,
-        port_id: PortId,
-        chan_id: ChannelId,
-        seq_number: Sequence,
-    ) -> Self {
+    pub fn with_ack_sequence(self, port_channe_id: PortChannelId, seq_number: Sequence) -> Self {
         let mut next_sequence_ack = self.next_sequence_send.clone();
-        next_sequence_ack.insert((port_id, chan_id), seq_number);
+        next_sequence_ack.insert(port_channe_id, seq_number);
         Self {
             next_sequence_ack,
             ..self
@@ -331,13 +311,12 @@ impl MockContext {
 
     pub fn with_packet_commitment(
         self,
-        port_id: PortId,
-        chan_id: ChannelId,
+        port_channe_id: PortChannelId,
         seq: Sequence,
         data: String,
     ) -> Self {
         let mut packet_commitment = self.packet_commitment.clone();
-        packet_commitment.insert((port_id, chan_id, seq), data);
+        packet_commitment.insert((port_channe_id, seq), data);
         Self {
             packet_commitment,
             ..self
@@ -447,7 +426,7 @@ impl PortReader for MockContext {
 }
 
 impl ChannelReader for MockContext {
-    fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Option<ChannelEnd> {
+    fn channel_end(&self, pcid: &PortChannelId) -> Option<ChannelEnd> {
         self.channels.get(pcid).cloned()
     }
 
@@ -455,7 +434,7 @@ impl ChannelReader for MockContext {
         self.connections.get(cid).cloned()
     }
 
-    fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
+    fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<PortChannelId>> {
         self.connection_channels.get(cid).cloned()
     }
 
@@ -485,27 +464,27 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+    fn get_next_sequence_send(&self, port_channel_id: &PortChannelId) -> Option<Sequence> {
         self.next_sequence_send.get(port_channel_id).cloned()
     }
 
-    fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+    fn get_next_sequence_recv(&self, port_channel_id: &PortChannelId) -> Option<Sequence> {
         self.next_sequence_recv.get(port_channel_id).cloned()
     }
 
-    fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+    fn get_next_sequence_ack(&self, port_channel_id: &PortChannelId) -> Option<Sequence> {
         self.next_sequence_ack.get(port_channel_id).cloned()
     }
 
-    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+    fn get_packet_commitment(&self, key: &(PortChannelId, Sequence)) -> Option<String> {
         self.packet_commitment.get(key).cloned()
     }
 
-    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<Receipt> {
+    fn get_packet_receipt(&self, key: &(PortChannelId, Sequence)) -> Option<Receipt> {
         self.packet_receipt.get(key).cloned()
     }
 
-    fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+    fn get_packet_acknowledgement(&self, key: &(PortChannelId, Sequence)) -> Option<String> {
         self.packet_acknowledgement.get(key).cloned()
     }
 
@@ -530,7 +509,7 @@ impl ChannelReader for MockContext {
 impl ChannelKeeper for MockContext {
     fn store_packet_commitment(
         &mut self,
-        key: (PortId, ChannelId, Sequence),
+        key: (PortChannelId, Sequence),
         timeout_timestamp: Timestamp,
         timeout_height: Height,
         data: Vec<u8>,
@@ -543,7 +522,7 @@ impl ChannelKeeper for MockContext {
 
     fn store_packet_acknowledgement(
         &mut self,
-        key: (PortId, ChannelId, Sequence),
+        key: (PortChannelId, Sequence),
         ack: Vec<u8>,
     ) -> Result<(), Ics4Error> {
         let input = format!("{:?}", ack);
@@ -554,7 +533,7 @@ impl ChannelKeeper for MockContext {
 
     fn delete_packet_acknowledgement(
         &mut self,
-        key: (PortId, ChannelId, Sequence),
+        key: (PortChannelId, Sequence),
     ) -> Result<(), Ics4Error> {
         self.packet_acknowledgement.remove(&key);
         Ok(())
@@ -563,7 +542,7 @@ impl ChannelKeeper for MockContext {
     fn store_connection_channels(
         &mut self,
         cid: ConnectionId,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: &PortChannelId,
     ) -> Result<(), Ics4Error> {
         self.connection_channels
             .entry(cid)
@@ -574,7 +553,7 @@ impl ChannelKeeper for MockContext {
 
     fn store_channel(
         &mut self,
-        port_channel_id: (PortId, ChannelId),
+        port_channel_id: PortChannelId,
         channel_end: &ChannelEnd,
     ) -> Result<(), Ics4Error> {
         self.channels.insert(port_channel_id, channel_end.clone());
@@ -583,7 +562,7 @@ impl ChannelKeeper for MockContext {
 
     fn store_next_sequence_send(
         &mut self,
-        port_channel_id: (PortId, ChannelId),
+        port_channel_id: PortChannelId,
         seq: Sequence,
     ) -> Result<(), Ics4Error> {
         self.next_sequence_send.insert(port_channel_id, seq);
@@ -592,7 +571,7 @@ impl ChannelKeeper for MockContext {
 
     fn store_next_sequence_recv(
         &mut self,
-        port_channel_id: (PortId, ChannelId),
+        port_channel_id: PortChannelId,
         seq: Sequence,
     ) -> Result<(), Ics4Error> {
         self.next_sequence_recv.insert(port_channel_id, seq);
@@ -601,7 +580,7 @@ impl ChannelKeeper for MockContext {
 
     fn store_next_sequence_ack(
         &mut self,
-        port_channel_id: (PortId, ChannelId),
+        port_channel_id: PortChannelId,
         seq: Sequence,
     ) -> Result<(), Ics4Error> {
         self.next_sequence_ack.insert(port_channel_id, seq);
@@ -614,7 +593,7 @@ impl ChannelKeeper for MockContext {
 
     fn delete_packet_commitment(
         &mut self,
-        key: (PortId, ChannelId, Sequence),
+        key: (PortChannelId, Sequence),
     ) -> Result<(), Ics4Error> {
         self.packet_commitment.remove(&key);
         Ok(())
@@ -622,7 +601,7 @@ impl ChannelKeeper for MockContext {
 
     fn store_packet_receipt(
         &mut self,
-        key: (PortId, ChannelId, Sequence),
+        key: (PortChannelId, Sequence),
         receipt: Receipt,
     ) -> Result<(), Ics4Error> {
         self.packet_receipt.insert(key, receipt);

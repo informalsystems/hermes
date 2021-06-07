@@ -5,6 +5,7 @@ use crate::handler::HandlerOutput;
 use crate::ics04_channel::handler::send_packet::send_packet;
 use crate::ics04_channel::packet::Packet;
 use crate::ics04_channel::packet::PacketResult;
+use crate::ics24_host::identifier::PortChannelId;
 
 pub(crate) fn send_transfer<Ctx>(
     ctx: &Ctx,
@@ -13,8 +14,10 @@ pub(crate) fn send_transfer<Ctx>(
 where
     Ctx: Ics20Context,
 {
+    let port_channel_id = PortChannelId::new(msg.source_port.clone(), msg.source_channel.clone());
+
     let source_channel_end = ctx
-        .channel_end(&(msg.source_port.clone(), msg.source_channel.clone()))
+        .channel_end(&port_channel_id)
         .ok_or_else(|| {
             Kind::ChannelNotFound(msg.source_port.clone(), msg.source_channel.clone())
         })?;
@@ -29,7 +32,7 @@ where
 
     // get the next sequence
     let sequence = ctx
-        .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()))
+        .get_next_sequence_send(&port_channel_id)
         .ok_or_else(|| {
             Kind::SequenceSendNotFound(msg.source_port.clone(), msg.source_channel.clone())
         })?;
