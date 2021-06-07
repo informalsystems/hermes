@@ -12,7 +12,7 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -723,7 +723,7 @@ impl ForeignClient {
     pub fn detect_misbehaviour(
         &self,
         mut update: Option<UpdateClient>,
-    ) -> Result<Option<AnyMisbehaviour>, ForeignClientError> {
+    ) -> Result<Option<MisbehaviourEvidence>, ForeignClientError> {
         thread::sleep(Duration::from_millis(100));
 
         // Get the latest client state on destination.
@@ -841,7 +841,7 @@ impl ForeignClient {
 
     fn submit_evidence(
         &self,
-        misbehaviour: AnyMisbehaviour,
+        evidence: MisbehaviourEvidence,
     ) -> Result<Vec<IbcEvent>, ForeignClientError> {
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ForeignClientError::Misbehaviour(format!(
@@ -851,22 +851,35 @@ impl ForeignClient {
             ))
         })?;
 
-        let msg = MsgSubmitAnyMisbehaviour {
-            client_id: self.id.clone(),
-            misbehaviour,
-            signer,
-        };
+        let mut msgs = vec![];
 
-        let events = self
-            .dst_chain()
-            .send_msgs(vec![msg.to_any()])
-            .map_err(|e| {
-                ForeignClientError::Misbehaviour(format!(
-                    "failed sending evidence to destination chain ({}), error: {}",
-                    self.dst_chain.id(),
-                    e
-                ))
-            })?;
+        for header in evidence.supporting_headers {
+            msgs.push(
+                MsgUpdateAnyClient {
+                    header,
+                    client_id: self.id.clone(),
+                    signer: signer.clone(),
+                }
+                .to_any(),
+            );
+        }
+
+        msgs.push(
+            MsgSubmitAnyMisbehaviour {
+                misbehaviour: evidence.misbehaviour,
+                client_id: self.id.clone(),
+                signer,
+            }
+            .to_any(),
+        );
+
+        let events = self.dst_chain().send_msgs(msgs).map_err(|e| {
+            ForeignClientError::Misbehaviour(format!(
+                "failed sending evidence to destination chain ({}), error: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })?;
 
         Ok(events)
     }
@@ -879,12 +892,13 @@ impl ForeignClient {
         let result = match self.detect_misbehaviour(update_event.clone()) {
             Err(e) => Err(e),
             Ok(None) => Ok(vec![]), // no evidence found
-            Ok(Some(misbehaviour)) => {
+            Ok(Some(detected)) => {
                 error!(
                     "[{}] MISBEHAVIOUR DETECTED {}, sending evidence",
-                    self, misbehaviour
+                    self, detected.misbehaviour
                 );
-                self.submit_evidence(misbehaviour)
+
+                self.submit_evidence(detected)
             }
         };
 

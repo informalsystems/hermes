@@ -5,7 +5,7 @@ use crossbeam_channel as channel;
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
@@ -306,7 +306,7 @@ impl ChainHandle for ProdChainHandle {
         &self,
         update_event: UpdateClient,
         client_state: AnyClientState,
-    ) -> Result<Option<AnyMisbehaviour>, Error> {
+    ) -> Result<Option<MisbehaviourEvidence>, Error> {
         self.send(|reply_to| ChainRequest::BuildMisbehaviour {
             client_state,
             update_event,

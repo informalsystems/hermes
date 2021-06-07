@@ -1,9 +1,9 @@
 use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 
 use crate::chain::Chain;
 use crate::error;
 use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
 
 pub mod tendermint;
 
@@ -39,7 +39,7 @@ pub trait LightClient<C: Chain>: Send + Sync {
         &mut self,
         update: UpdateClient,
         client_state: &AnyClientState,
-    ) -> Result<Option<AnyMisbehaviour>, error::Error>;
+    ) -> Result<Option<MisbehaviourEvidence>, error::Error>;
 
     /// Fetch a header from the chain at the given height, without verifying it
     fn fetch(&mut self, height: ibc::Height) -> Result<C::LightBlock, error::Error>;

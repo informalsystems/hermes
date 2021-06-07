@@ -19,8 +19,8 @@ use ibc::{
         client_state::AnyClientState,
         client_type::ClientType,
         events::UpdateClient,
-        header::AnyHeader,
-        misbehaviour::{AnyMisbehaviour, Misbehaviour},
+        header::{AnyHeader, Header},
+        misbehaviour::{Misbehaviour, MisbehaviourEvidence},
     },
     ics07_tendermint::{header::Header as TmHeader, misbehaviour::Misbehaviour as TmMisbehaviour},
     ics24_host::identifier::ChainId,
@@ -89,7 +89,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         &mut self,
         update: UpdateClient,
         client_state: &AnyClientState,
-    ) -> Result<Option<AnyMisbehaviour>, Error> {
+    ) -> Result<Option<MisbehaviourEvidence>, Error> {
         crate::time!("light client check_misbehaviour");
 
         let update_header = update.header.clone().ok_or_else(|| {
@@ -99,13 +99,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             ))
         })?;
 
-        let tm_ibc_client_header =
-            downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
-                Kind::Misbehaviour(format!(
-                    "header type incompatible for chain {}",
-                    self.chain_id
-                ))
-            })?;
+        let update_header = downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
+            Kind::Misbehaviour(format!(
+                "header type incompatible for chain {}",
+                self.chain_id
+            ))
+        })?;
 
         let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
         let latest_chain_height =
@@ -113,7 +112,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         // set the target height to the minimum between the update height and latest chain height
         let target_height = std::cmp::min(update.consensus_height(), latest_chain_height);
-        let trusted_height = tm_ibc_client_header.trusted_height;
+        let trusted_height = update_header.trusted_height;
 
         // TODO - check that a consensus state at trusted_height still exists on-chain,
         // currently we don't have access to Cosmos chain query from here
@@ -128,32 +127,46 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             return Ok(None);
         }
 
-        let tm_witness_node_header = {
-            let trusted_light_block = self.fetch(trusted_height.increment())?;
-            let verified = self.verify(trusted_height, target_height, &client_state)?;
+        let succ_trusted = self.fetch(trusted_height.increment())?;
 
-            TmHeader {
-                trusted_height,
-                signed_header: verified.target.signed_header,
-                validator_set: verified.target.validators,
-                trusted_validator_set: trusted_light_block.validators,
+        let VerifiedBlock { target, supporting } =
+            self.verify(trusted_height, target_height, &client_state)?;
+
+        let witness = TmHeader {
+            trusted_height,
+            signed_header: target.signed_header,
+            validator_set: target.validators,
+            trusted_validator_set: succ_trusted.validators.clone(),
+        };
+
+        if !witness.compatible_with(&update_header) {
+            let misbehaviour = TmMisbehaviour {
+                client_id: update.client_id().clone(),
+                header1: update_header,
+                header2: witness,
             }
-        };
+            .wrap_any();
 
-        let misbehaviour = if !tm_witness_node_header.compatible_with(&tm_ibc_client_header) {
-            Some(
-                AnyMisbehaviour::Tendermint(TmMisbehaviour {
-                    client_id: update.client_id().clone(),
-                    header1: tm_ibc_client_header,
-                    header2: tm_witness_node_header,
+            let supporting_headers = supporting
+                .into_iter()
+                .map(|h| {
+                    TmHeader {
+                        trusted_height,
+                        signed_header: h.signed_header.clone(),
+                        validator_set: h.validators,
+                        trusted_validator_set: succ_trusted.validators.clone(),
+                    }
+                    .wrap_any()
                 })
-                .wrap_any(),
-            )
-        } else {
-            None
-        };
+                .collect_vec();
 
-        Ok(misbehaviour)
+            Ok(Some(MisbehaviourEvidence {
+                misbehaviour,
+                supporting_headers,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }
 

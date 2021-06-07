@@ -11,7 +11,7 @@ use ibc::{
         client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
         events::UpdateClient,
         header::{AnyHeader, Header},
-        misbehaviour::AnyMisbehaviour,
+        misbehaviour::MisbehaviourEvidence,
     },
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
@@ -455,7 +455,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         &mut self,
         update_event: UpdateClient,
         client_state: AnyClientState,
-        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+        reply_to: ReplyTo<Option<MisbehaviourEvidence>>,
     ) -> Result<(), Error> {
         let misbehaviour = self
             .light_client
