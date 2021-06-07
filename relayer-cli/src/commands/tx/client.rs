@@ -93,15 +93,15 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let height = match self.target_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let height = self
+            .target_height
+            .filter(|&height| height > 0)
+            .map(|height| ibc::Height::new(src_chain.id().version(), height));
 
-        let trusted_height = match self.trusted_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let trusted_height = self
+            .trusted_height
+            .filter(|&height| height > 0)
+            .map(|height| ibc::Height::new(src_chain.id().version(), height));
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);

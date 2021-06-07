@@ -400,7 +400,7 @@ impl ForeignClient {
         &self,
         target_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        self.build_update_client_with_trusted(target_height, Height::zero())
+        self.build_update_client_with_trusted(target_height, None)
     }
 
     /// Returns a vector with a message for updating the client to height `target_height`.
@@ -408,16 +408,19 @@ impl ForeignClient {
     pub fn build_update_client_with_trusted(
         &self,
         target_height: Height,
-        trusted_height: Height,
+        trusted_height: Option<Height>,
     ) -> Result<Vec<Any>, ForeignClientError> {
+        let latest_height = || {
+            self.src_chain().query_latest_height().map_err(|e| {
+                ForeignClientError::ClientUpdate(format!(
+                    "failed fetching src chain latest height with error: {}",
+                    e
+                ))
+            })
+        };
+
         // Wait for source chain to reach `target_height`
-        while self.src_chain().query_latest_height().map_err(|e| {
-            ForeignClientError::ClientUpdate(format!(
-                "failed fetching src chain latest height with error: {}",
-                e
-            ))
-        })? < target_height
-        {
+        while latest_height()? < target_height {
             thread::sleep(Duration::from_millis(100))
         }
 
@@ -435,9 +438,9 @@ impl ForeignClient {
         // If not specified, set trusted state to the highest height smaller than target height.
         // Otherwise ensure that a consensus state at trusted height exists on-chain.
         let cs_heights = self.consensus_state_heights()?;
-        let trusted_height = if trusted_height == Height::zero() {
+        let trusted_height = match trusted_height {
             // Get highest height smaller than target height
-            cs_heights
+            None => cs_heights
                 .into_iter()
                 .find(|h| h < &target_height)
                 .ok_or_else(|| {
@@ -446,9 +449,10 @@ impl ForeignClient {
                         self.dst_chain().id(),
                         target_height
                     ))
-                })?
-        } else {
-            cs_heights
+                })?,
+
+            // Ensure that a consensus stsate at trusted height exists on chain
+            Some(trusted_height) => cs_heights
                 .into_iter()
                 .find(|h| h == &trusted_height)
                 .ok_or_else(|| {
@@ -457,7 +461,7 @@ impl ForeignClient {
                         self.dst_chain().id(),
                         trusted_height
                     ))
-                })?
+                })?,
         };
 
         if trusted_height >= target_height {
@@ -465,6 +469,7 @@ impl ForeignClient {
                 "[{}] skipping update: trusted height ({}) >= chain target height ({})",
                 self, trusted_height, target_height
             );
+
             return Ok(vec![]);
         }
 
@@ -502,25 +507,23 @@ impl ForeignClient {
     }
 
     pub fn build_latest_update_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {
-        self.build_update_client_and_send(Height::zero(), Height::zero())
+        self.build_update_client_and_send(None, None)
     }
 
     pub fn build_update_client_and_send(
         &self,
-        height: Height,
-        trusted_height: Height,
+        height: Option<Height>,
+        trusted_height: Option<Height>,
     ) -> Result<IbcEvent, ForeignClientError> {
-        let h = if height == Height::zero() {
+        let h = height.map(Ok).unwrap_or_else(|| {
             self.src_chain.query_latest_height().map_err(|e| {
                 ForeignClientError::ClientUpdate(format!(
                     "failed while querying src chain ({}) for latest height: {}",
                     self.src_chain.id(),
                     e
                 ))
-            })?
-        } else {
-            height
-        };
+            })
+        })?;
 
         let new_msgs = self.build_update_client_with_trusted(h, trusted_height)?;
         if new_msgs.is_empty() {
