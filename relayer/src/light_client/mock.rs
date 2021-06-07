@@ -11,6 +11,8 @@ use crate::chain::mock::MockChain;
 use crate::chain::Chain;
 use crate::error::Error;
 
+use super::VerifiedBlock;
+
 /// A light client serving a mock chain.
 pub struct LightClient {
     chain_id: ChainId,
@@ -35,8 +37,11 @@ impl super::LightClient<MockChain> for LightClient {
         _trusted: Height,
         target: Height,
         _client_state: &AnyClientState,
-    ) -> Result<TmLightBlock, Error> {
-        Ok(self.light_block(target))
+    ) -> Result<VerifiedBlock<TmLightBlock>, Error> {
+        Ok(VerifiedBlock {
+            target: self.light_block(target),
+            supporting: Vec::new(),
+        })
     }
 
     fn fetch(&mut self, height: Height) -> Result<TmLightBlock, Error> {

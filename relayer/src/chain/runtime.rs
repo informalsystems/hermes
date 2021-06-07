@@ -438,11 +438,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let light_block = self.light_client.verify(trusted, target, &client_state)?;
+        let verified = self.light_client.verify(trusted, target, &client_state)?;
 
         let consensus_state = self
             .chain
-            .build_consensus_state(light_block)
+            .build_consensus_state(verified.target)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(consensus_state).map_err(Kind::channel)?;

@@ -1,5 +1,7 @@
 use std::convert::TryFrom;
 
+use itertools::Itertools;
+
 use tendermint_light_client::{
     components::{self, io::AtHeight},
     light_client::{LightClient as TmLightClient, Options as TmOptions},
@@ -31,6 +33,8 @@ use crate::{
     error::{self, Error},
 };
 
+use super::VerifiedBlock;
+
 pub struct LightClient {
     chain_id: ChainId,
     peer_id: PeerId,
@@ -43,18 +47,30 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trusted: ibc::Height,
         target: ibc::Height,
         client_state: &AnyClientState,
-    ) -> Result<LightBlock, Error> {
+    ) -> Result<VerifiedBlock<LightBlock>, Error> {
         let target_height = TMHeight::try_from(target.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
         let client = self.prepare_client(client_state)?;
         let mut state = self.prepare_state(trusted)?;
 
-        let light_block = client
+        // Verify the target header
+        let target = client
             .verify_to_target(target_height, &mut state)
             .map_err(|e| error::Kind::LightClient(self.chain_id.to_string()).context(e))?;
 
-        Ok(light_block)
+        // Collect the verification trace for the target block
+        let target_trace = state.get_trace(target.height());
+
+        // Compute the minimal supporting set, sorted by ascending height
+        let supporting = target_trace
+            .into_iter()
+            .filter(|lb| lb.height() != target.height())
+            .unique_by(LightBlock::height)
+            .sorted_by_key(LightBlock::height)
+            .collect_vec();
+
+        Ok(VerifiedBlock { target, supporting })
     }
 
     fn fetch(&mut self, height: ibc::Height) -> Result<LightBlock, Error> {
@@ -114,11 +130,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let tm_witness_node_header = {
             let trusted_light_block = self.fetch(trusted_height.increment())?;
-            let target_light_block = self.verify(trusted_height, target_height, &client_state)?;
+            let verified = self.verify(trusted_height, target_height, &client_state)?;
+
             TmHeader {
                 trusted_height,
-                signed_header: target_light_block.signed_header,
-                validator_set: target_light_block.validators,
+                signed_header: verified.target.signed_header,
+                validator_set: verified.target.validators,
                 trusted_validator_set: trusted_light_block.validators,
             }
         };

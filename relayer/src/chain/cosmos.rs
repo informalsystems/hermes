@@ -69,6 +69,7 @@ use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
+use crate::light_client::VerifiedBlock;
 
 use super::Chain;
 use tendermint_rpc::endpoint::tx_search::ResultTx;
@@ -1293,17 +1294,27 @@ impl Chain for CosmosSdkChain {
         let succ_trusted = light_client.fetch(trusted_height.increment())?;
 
         // Get the light block at target_height from chain.
-        let target = light_client.verify(trusted_height, target_height, client_state)?;
+        let VerifiedBlock { target, supporting } =
+            light_client.verify(trusted_height, target_height, client_state)?;
 
-        // Try to build the header, return first error encountered.
-        let header = TmHeader {
+        let target_header = TmHeader {
             trusted_height,
-            signed_header: target.signed_header.clone(),
+            signed_header: target.signed_header,
             validator_set: target.validators,
-            trusted_validator_set: succ_trusted.validators,
+            trusted_validator_set: succ_trusted.validators.clone(),
         };
 
-        Ok((header, Vec::new()))
+        let supporting_headers = supporting
+            .into_iter()
+            .map(|h| TmHeader {
+                trusted_height,
+                signed_header: h.signed_header.clone(),
+                validator_set: h.validators,
+                trusted_validator_set: succ_trusted.validators.clone(),
+            })
+            .collect();
+
+        Ok((target_header, supporting_headers))
     }
 }
 
