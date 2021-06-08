@@ -80,7 +80,7 @@ pub fn add_key(config: &ChainConfig, key_name: &str, file: &Path) -> Result<KeyE
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
 
     let key_contents = fs::read_to_string(file).map_err(|_| "error reading the key file")?;
-    let key = keyring.key_from_seed_file(&key_contents)?;
+    let key = keyring.key_from_seed_file(&key_contents, None)?;
 
     keyring.add_key(key_name, key.clone())?;
     Ok(key)

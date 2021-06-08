@@ -1,13 +1,7 @@
+use std::collections::HashMap;
+use std::ffi::OsStr;
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::{
-    collections::HashMap,
-    convert::{TryFrom, TryInto},
-};
-use std::{
-    ffi::OsStr,
-    fs::{self, File},
-};
 
 use bech32::{ToBase32, Variant};
 use bip39::{Language, Mnemonic, Seed};
@@ -29,46 +23,18 @@ pub use pub_key::EncodedPubKey;
 pub mod errors;
 mod pub_key;
 
+pub type HDPath = StandardHDPath;
+
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test";
 pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 
-/// [Coin type][coin-type] associated with a key.
-///
-/// See [the list of all registered coin types][coin-types].
-///
-/// [coin-type]: https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Coin_type
-/// [coin-types]: https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct CoinType(u32);
+const DEFAULT_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
-impl CoinType {
-    /// Atom (Cosmos) coin type with number 118.
-    pub const ATOM: CoinType = CoinType(118);
-
-    pub fn new(coin_type: u32) -> Self {
-        Self(coin_type)
-    }
-
-    pub fn num(&self) -> u32 {
-        self.0
-    }
-}
-
-impl Default for CoinType {
-    fn default() -> Self {
-        Self::ATOM
-    }
-}
-
-impl FromStr for CoinType {
-    type Err = std::num::ParseIntError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.parse::<u32>().map(Self::new)
-    }
-}
-
+// /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
+// WARNING: Changing this struct in backward incompatible way
+//          will force users to re-import their keys.
+// /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
 /// Key entry stores the Private Key and Public Key as well the address
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KeyEntry {
@@ -83,11 +49,9 @@ pub struct KeyEntry {
 
     /// Address
     pub address: Vec<u8>,
-
-    /// Coin type
-    pub coin_type: CoinType,
 }
 
+/// JSON key seed file
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KeyFile {
     pub name: String,
@@ -95,24 +59,21 @@ pub struct KeyFile {
     pub address: String,
     pub pubkey: String,
     pub mnemonic: String,
-    pub coin_type: Option<CoinType>,
 }
 
-impl TryFrom<KeyFile> for KeyEntry {
-    type Error = Error;
-
-    fn try_from(key_file: KeyFile) -> Result<Self, Self::Error> {
+impl KeyEntry {
+    fn from_key_file(key_file: KeyFile, hd_path: Option<HDPath>) -> Result<Self, Error> {
         // Decode the Bech32-encoded address from the key file
         let keyfile_address_bytes = decode_bech32(&key_file.address)?;
 
         let encoded_key: EncodedPubKey = key_file.pubkey.parse()?;
         let mut keyfile_pubkey_bytes = encoded_key.into_bytes();
 
-        // Use coin type if present or default coin type (ie. Atom).
-        let coin_type = key_file.coin_type.unwrap_or_default();
+        // Use provided derivation path if any, or default one with ATOM coin type
+        let hd_path = hd_path.unwrap_or_else(|| DEFAULT_HD_PATH.parse().unwrap());
 
         // Decode the private key from the mnemonic
-        let private_key = private_key_from_mnemonic(&key_file.mnemonic, coin_type)?;
+        let private_key = private_key_from_mnemonic(&key_file.mnemonic, &hd_path)?;
         let derived_pubkey = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
         let derived_pubkey_bytes = derived_pubkey.public_key.to_bytes();
         assert!(derived_pubkey_bytes.len() <= keyfile_pubkey_bytes.len());
@@ -133,12 +94,11 @@ impl TryFrom<KeyFile> for KeyEntry {
             .into());
         }
 
-        Ok(KeyEntry {
+        Ok(Self {
             public_key: derived_pubkey,
             private_key,
             account: key_file.address,
             address: keyfile_address_bytes,
-            coin_type,
         })
     }
 }
@@ -217,11 +177,16 @@ impl KeyStore for Test {
                 .into());
         }
 
-        let file =
-            File::open(&key_file).map_err(|_| Kind::KeyStore.context("cannot open key file"))?;
+        let file = File::open(&key_file).map_err(|_| {
+            Kind::KeyStore.context(format!("cannot open key file at '{}'", key_file.display()))
+        })?;
 
-        let key_entry = serde_json::from_reader(file).map_err(|_| {
-            Kind::KeyStore.context(format!("cannot read key file at '{}'", key_file.display()))
+        let key_entry = serde_json::from_reader(file).map_err(|e| {
+            Kind::KeyStore.context(format!(
+                "invalid key file at '{}': {}",
+                key_file.display(),
+                e
+            ))
         })?;
 
         Ok(key_entry)
@@ -314,21 +279,25 @@ impl KeyRing {
     }
 
     /// Get key from seed file
-    pub fn key_from_seed_file(&self, key_file_content: &str) -> Result<KeyEntry, Error> {
+    pub fn key_from_seed_file(
+        &self,
+        key_file_content: &str,
+        hd_path: Option<HDPath>,
+    ) -> Result<KeyEntry, Error> {
         let key_file: KeyFile =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
-        key_file.try_into()
+        KeyEntry::from_key_file(key_file, hd_path)
     }
 
     /// Add a key entry in the store using a mnemonic.
     pub fn key_from_mnemonic(
         &self,
         mnemonic_words: &str,
-        coin_type: CoinType,
+        hd_path: &HDPath,
     ) -> Result<KeyEntry, Error> {
         // Get the private key from the mnemonic
-        let private_key = private_key_from_mnemonic(mnemonic_words, coin_type)?;
+        let private_key = private_key_from_mnemonic(mnemonic_words, hd_path)?;
 
         // Get the public Key from the private key
         let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
@@ -345,7 +314,6 @@ impl KeyRing {
             private_key,
             account,
             address,
-            coin_type,
         })
     }
 
@@ -373,17 +341,12 @@ impl KeyRing {
 /// Decode an extended private key from a mnemonic
 fn private_key_from_mnemonic(
     mnemonic_words: &str,
-    coin_type: CoinType,
+    hd_path: &StandardHDPath,
 ) -> Result<ExtendedPrivKey, Error> {
     let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
         .map_err(|e| Kind::InvalidMnemonic.context(e))?;
 
     let seed = Seed::new(&mnemonic, "");
-
-    // Get Private Key from seed and standard derivation path
-    let hd_path_format = format!("m/44'/{}'/0'/0/0", coin_type.num());
-    let hd_path = StandardHDPath::try_from(hd_path_format.as_str())
-        .map_err(|_| Kind::InvalidHdPath(hd_path_format))?;
 
     let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
         .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
