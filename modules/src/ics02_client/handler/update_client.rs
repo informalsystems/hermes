@@ -4,11 +4,12 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::{AnyClient, ClientDef};
-use crate::ics02_client::client_state::AnyClientState;
+use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
+use crate::ics02_client::header::Header;
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
@@ -45,10 +46,17 @@ pub fn process(
         .client_state(&client_id)
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
 
+    if client_state.is_frozen() {
+        return Err(Kind::ClientFrozen(client_id).into());
+    }
+
     let latest_height = client_state.latest_height();
     ctx.consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), latest_height))?;
 
+    if ctx.consensus_state(&client_id,header.height()).is_some(){
+        return Err(Kind::ConsensusStateNotFound(client_id.clone(), latest_height).into());
+    }
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.

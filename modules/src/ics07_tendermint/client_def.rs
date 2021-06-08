@@ -34,6 +34,18 @@ impl ClientDef for TendermintClient {
             );
         }
 
+        if !client_state.frozen_height.is_zero(){
+            return Err(
+                format!("client is frozen at height ({:?})",
+                client_state.frozen_height).into(),
+            );
+        }
+
+
+        // if ctx.consensus_state(&client_id,header.height()).is_some(){
+        //     return Err(Kind::ConsensusStateNotFound(client_id.clone(), latest_height).into());
+        // }
+
         // TODO: Additional verifications should be implemented here.
 
         Ok((
