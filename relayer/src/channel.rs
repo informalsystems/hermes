@@ -420,12 +420,24 @@ impl Channel {
         let a_channel = self
             .src_chain()
             .query_channel(&self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|_| ChannelError::Failed("Failed to query source chain".into()))?;
+            .map_err(|_| {
+                ChannelError::Failed(
+                    format!("failed to query source chain {}", self.src_chain().id()).into(),
+                )
+            })?;
 
         let b_channel = self
             .dst_chain()
             .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero())
-            .map_err(|_| ChannelError::Failed("Failed to query destination chain".into()))?;
+            .map_err(|_| {
+                ChannelError::Failed(
+                    format!(
+                        "failed to query destination chain {}",
+                        self.dst_chain().id()
+                    )
+                    .into(),
+                )
+            })?;
 
         match (a_channel.state(), b_channel.state()) {
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
@@ -457,7 +469,7 @@ impl Channel {
                 info!("done {} => {:#?}\n", self.src_chain().id(), event)
             }
             (State::Open, State::Open) => {
-                info!("Channel handshake finished for {:#?}\n", self);
+                info!("channel handshake finished for {:#?}\n", self);
             }
             _ => { /* TODO channel close */ }
         }

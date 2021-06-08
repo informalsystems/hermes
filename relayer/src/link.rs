@@ -1634,6 +1634,43 @@ impl Link {
             )));
         }
 
+        // Check that the counterparty details on the destination chain matches the source chain
+        let b_channel = b_chain
+            .query_channel(
+                &a_channel.counterparty().port_id,
+                &b_channel_id,
+                Height::default(),
+            )
+            .map_err(|e| {
+                LinkError::Failed(format!(
+                    "channel/port {}/{} does not exist on destination chain {}; context={}",
+                    b_channel_id,
+                    a_channel.counterparty().port_id,
+                    b_chain.id(),
+                    e
+                ))
+            })?;
+        match b_channel.counterparty().channel_id.clone() {
+            Some(actual_a_channel_id) => {
+                if actual_a_channel_id.ne(a_channel_id)
+                    || b_channel.counterparty().port_id != opts.src_port_id
+                {
+                    return Err(LinkError::Failed(format!("conflicting link configuration: channel/port {}/{} on destination chain {} does not point back to the source chain {}:{}/{} (but points to {}/{})",
+                                                         b_channel_id, a_channel.counterparty().port_id, b_chain.id(), a_chain.id(),
+                                                         a_channel_id, opts.src_port_id, actual_a_channel_id, b_channel.counterparty().port_id)));
+                }
+            }
+            None => {
+                return Err(LinkError::Failed(format!(
+                    "the channel/port {}/{} on destination chain {} has no counterparty channel set",
+                    b_channel_id,
+                    a_channel.counterparty().port_id,
+                    b_chain.id()
+                )));
+            }
+        }
+
+        // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
         let a_connection = a_chain.query_connection(&a_connection_id, Height::zero())?;
 
