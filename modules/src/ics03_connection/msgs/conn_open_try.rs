@@ -10,7 +10,7 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnecti
 
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::Counterparty;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error;
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -78,7 +78,7 @@ impl MsgConnectionOpenTry {
 }
 
 impl Msg for MsgConnectionOpenTry {
-    type ValidationError = Error;
+    type ValidationError = error::Error;
     type Raw = RawMsgConnectionOpenTry;
 
     fn route(&self) -> String {
@@ -93,29 +93,29 @@ impl Msg for MsgConnectionOpenTry {
 impl Protobuf<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {}
 
 impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
-    type Error = Error;
+    type Error = error::Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
         let previous_connection_id = Some(msg.previous_connection_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+            .map_err(error::invalid_identifier_error)?;
 
         let consensus_height = msg
             .consensus_height
-            .ok_or(Kind::MissingConsensusHeight)?
+            .ok_or_else(error::missing_consensus_height_error)?
             .try_into() // Cast from the raw height type into the domain type.
-            .map_err(|e| Kind::InvalidProof.context(e))?;
+            .map_err(|e| match e {})?;
 
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
-            .map_err(|e| Kind::InvalidProof.context(e))?;
+            .map_err(error::invalid_proof_error)?;
 
         let proof_height = msg
             .proof_height
-            .ok_or(Kind::MissingProofHeight)?
+            .ok_or_else(error::missing_proof_height_error)?
             .try_into()
-            .map_err(|e| Kind::InvalidProof.context(e))?;
+            .map_err(|e| match e {})?;
 
         let client_proof = Some(msg.proof_client)
             .filter(|x| !x.is_empty())
@@ -125,13 +125,10 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             .counterparty_versions
             .into_iter()
             .map(Version::try_from)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| Kind::InvalidVersion.context(e))?;
+            .collect::<Result<Vec<_>, _>>()?;
 
         if counterparty_versions.is_empty() {
-            return Err(Kind::EmptyVersions
-                .context("empty counterparty versions in try message".to_string())
-                .into());
+            return Err(error::empty_versions_error());
         }
 
         Ok(Self {
@@ -139,15 +136,15 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             client_id: msg
                 .client_id
                 .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+                .map_err(error::invalid_identifier_error)?,
             client_state: msg
                 .client_state
                 .map(AnyClientState::try_from)
                 .transpose()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .map_err(error::ics02_client_error)?,
             counterparty: msg
                 .counterparty
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or_else(error::missing_counterparty_error)?
                 .try_into()?,
             counterparty_versions,
             proofs: Proofs::new(
@@ -157,7 +154,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 None,
                 proof_height,
             )
-            .map_err(|e| Kind::InvalidProof.context(e))?,
+            .map_err(error::invalid_proof_error)?,
             delay_period: Duration::from_nanos(msg.delay_period),
             signer: msg.signer.into(),
         })

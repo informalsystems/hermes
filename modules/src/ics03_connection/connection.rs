@@ -9,7 +9,7 @@ use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
 };
 
-use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::error;
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
@@ -40,14 +40,14 @@ impl Default for ConnectionEnd {
 impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
-    type Error = anomaly::Error<Kind>;
+    type Error = error::Error;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
         let state = value.state.try_into()?;
         if state == State::Uninitialized {
             return Ok(ConnectionEnd::default());
         }
         if value.client_id.is_empty() {
-            return Err(Kind::EmptyProtoConnectionEnd.into());
+            return Err(error::empty_proto_connection_end_error());
         }
 
         Ok(Self::new(
@@ -55,17 +55,16 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
             value
                 .client_id
                 .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+                .map_err(error::invalid_identifier_error)?,
             value
                 .counterparty
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or_else(error::missing_counterparty_error)?
                 .try_into()?,
             value
                 .versions
                 .into_iter()
                 .map(Version::try_from)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+                .collect::<Result<Vec<_>, _>>()?,
             Duration::from_nanos(value.delay_period),
         ))
     }
@@ -213,23 +212,23 @@ impl Default for Counterparty {
 // Converts from the wire format RawCounterparty. Typically used from the relayer side
 // during queries for response validation and to extract the Counterparty structure.
 impl TryFrom<RawCounterparty> for Counterparty {
-    type Error = anomaly::Error<Kind>;
+    type Error = error::Error;
 
     fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
         let connection_id = Some(value.connection_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+            .map_err(error::invalid_identifier_error)?;
         Ok(Counterparty::new(
             value
                 .client_id
                 .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+                .map_err(error::invalid_identifier_error)?,
             connection_id,
             value
                 .prefix
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or_else(error::missing_counterparty_error)?
                 .key_prefix
                 .into(),
         ))
@@ -303,14 +302,14 @@ impl State {
 }
 
 impl TryFrom<i32> for State {
-    type Error = anomaly::Error<Kind>;
+    type Error = error::Error;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            _ => Err(Kind::InvalidState(value).into()),
+            _ => Err(error::invalid_state_error(value)),
         }
     }
 }

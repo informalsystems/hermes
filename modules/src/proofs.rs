@@ -2,6 +2,17 @@ use serde::Serialize;
 
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::Height;
+use flex_error::define_error;
+
+define_error! {
+    #[derive(Debug, PartialEq, Eq)]
+    ProofError {
+        ZeroHeight
+            | _ | { format_args!("proof height cannot be zero") },
+        EmptyProof
+            | _ | { format_args!("proof cannot be empty") },
+    }
+}
 
 /// Structure comprising proofs in a message. Proofs are typically present in messages for
 /// handshake protocols, e.g., ICS3 connection (open) handshake or ICS4 channel (open and close)
@@ -25,13 +36,13 @@ impl Proofs {
         consensus_proof: Option<ConsensusProof>,
         other_proof: Option<CommitmentProofBytes>,
         height: Height,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, ProofError> {
         if height.is_zero() {
-            return Err("Proofs height cannot be zero".to_string());
+            return Err(zero_height_error());
         }
 
         if object_proof.is_empty() {
-            return Err("Object proof cannot be empty".to_string());
+            return Err(empty_proof_error());
         }
 
         Ok(Self {
@@ -76,12 +87,12 @@ impl ConsensusProof {
     pub fn new(
         consensus_proof: CommitmentProofBytes,
         consensus_height: Height,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, ProofError> {
         if consensus_height.is_zero() {
-            return Err("Consensus height cannot be zero".to_string());
+            return Err(zero_height_error());
         }
         if consensus_proof.is_empty() {
-            return Err("Proof cannot be empty".to_string());
+            return Err(empty_proof_error());
         }
 
         Ok(Self {

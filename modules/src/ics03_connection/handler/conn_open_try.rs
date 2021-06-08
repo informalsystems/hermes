@@ -4,7 +4,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error;
 use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
@@ -14,7 +14,7 @@ use crate::ics24_host::identifier::ConnectionId;
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenTry,
-) -> HandlerResult<ConnectionResult, Error> {
+) -> HandlerResult<ConnectionResult, error::Error> {
     let mut output = HandlerOutput::builder();
 
     // Check that consensus height (for client proof) in message is not too advanced nor too old.
@@ -26,7 +26,7 @@ pub(crate) fn process(
         Some(prev_id) => {
             let old_connection_end = ctx
                 .connection_end(prev_id)
-                .ok_or_else(|| Kind::ConnectionNotFound(prev_id.clone()))?;
+                .ok_or_else(|| error::connection_not_found_error(prev_id.clone()))?;
 
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_connection_end.state_matches(&State::Init)
@@ -42,9 +42,7 @@ pub(crate) fn process(
                 Ok((old_connection_end, prev_id.clone()))
             } else {
                 // A ConnectionEnd already exists and validation failed.
-                Err(Into::<Error>::into(Kind::ConnectionMismatch(
-                    prev_id.clone(),
-                )))
+                Err(error::connection_mismatch_error(prev_id.clone()))
             }
         }
         // No prev. connection id was supplied, create a new connection end and conn id.
@@ -93,7 +91,7 @@ pub(crate) fn process(
     // Pick the version.
     new_connection_end.set_version(
         ctx.pick_version(ctx.get_compatible_versions(), msg.counterparty_versions())
-            .ok_or(Kind::NoCommonVersion)?,
+            .ok_or_else(error::no_common_version_error)?,
     );
 
     assert_eq!(new_connection_end.versions().len(), 1);

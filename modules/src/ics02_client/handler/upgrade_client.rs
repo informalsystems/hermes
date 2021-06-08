@@ -218,7 +218,7 @@ mod tests {
             }
             Err(err) => match err.detail {
                 error::ErrorDetail::LowUpgradeHeight(e) => {
-                    assert_eq!(e.upgraded_height, Height::zero());
+                    assert_eq!(e.upgraded_height, Height::new(0, 42));
                     assert_eq!(e.client_height, msg.client_state.latest_height());
                 }
                 _ => {

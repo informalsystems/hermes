@@ -5,7 +5,7 @@ use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
@@ -17,7 +17,7 @@ pub fn verify_proofs(
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
-) -> Result<(), Error> {
+) -> Result<(), error::Error> {
     verify_connection_proof(
         ctx,
         connection_end,
@@ -36,7 +36,7 @@ pub fn verify_proofs(
             proofs
                 .client_proof()
                 .as_ref()
-                .ok_or(Kind::NullClientProof)?,
+                .ok_or_else(error::null_client_proof_error)?,
         )?;
     }
 
@@ -62,15 +62,17 @@ pub fn verify_connection_proof(
     expected_conn: &ConnectionEnd,
     proof_height: Height,
     proof: &CommitmentProofBytes,
-) -> Result<(), Error> {
+) -> Result<(), error::Error> {
     // Fetch the client state (IBC client on the local/host chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
-        .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
+        .ok_or_else(|| error::missing_client_error(connection_end.client_id().clone()))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
+        return Err(error::frozen_client_error(
+            connection_end.client_id().clone(),
+        ));
     }
 
     // The client must have the consensus state for the height where this proof was created.
@@ -78,11 +80,10 @@ pub fn verify_connection_proof(
         .client_consensus_state(connection_end.client_id(), proof_height)
         .is_none()
     {
-        return Err(Kind::MissingClientConsensusState(
+        return Err(error::missing_client_consensus_state_error(
             proof_height,
             connection_end.client_id().clone(),
-        )
-        .into());
+        ));
     }
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
@@ -90,7 +91,7 @@ pub fn verify_connection_proof(
     // Verify the proof for the connection state against the expected connection end.
     // A counterparty connection id of None causes `unwrap()` below and indicates an internal
     // error as this is the connection id on the counterparty chain that must always be present.
-    Ok(client_def
+    client_def
         .verify_connection_state(
             &client_state,
             proof_height,
@@ -99,7 +100,7 @@ pub fn verify_connection_proof(
             connection_end.counterparty().connection_id(),
             expected_conn,
         )
-        .map_err(|_| Kind::InvalidProof)?)
+        .map_err(error::verify_connection_state_error)
 }
 
 /// Verifies the client `proof` from a connection handshake message, typically from a
@@ -115,25 +116,30 @@ pub fn verify_client_proof(
     expected_client_state: AnyClientState,
     proof_height: Height,
     proof: &CommitmentProofBytes,
-) -> Result<(), Error> {
+) -> Result<(), error::Error> {
     // Fetch the local client state (IBC client running on the host chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
-        .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
+        .ok_or_else(|| error::missing_client_error(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
+        return Err(error::frozen_client_error(
+            connection_end.client_id().clone(),
+        ));
     }
 
     let consensus_state = ctx
         .client_consensus_state(connection_end.client_id(), proof_height)
         .ok_or_else(|| {
-            Kind::MissingClientConsensusState(proof_height, connection_end.client_id().clone())
+            error::missing_client_consensus_state_error(
+                proof_height,
+                connection_end.client_id().clone(),
+            )
         })?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
-    Ok(client_def
+    client_def
         .verify_client_full_state(
             &client_state,
             proof_height,
@@ -144,9 +150,8 @@ pub fn verify_client_proof(
             &expected_client_state,
         )
         .map_err(|e| {
-            Kind::ClientStateVerificationFailure(connection_end.client_id().clone())
-                .context(e.to_string())
-        })?)
+            error::client_state_verification_failure_error(connection_end.client_id().clone(), e)
+        })
 }
 
 pub fn verify_consensus_proof(
@@ -154,24 +159,26 @@ pub fn verify_consensus_proof(
     connection_end: &ConnectionEnd,
     proof_height: Height,
     proof: &ConsensusProof,
-) -> Result<(), Error> {
+) -> Result<(), error::Error> {
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
-        .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
+        .ok_or_else(|| error::missing_client_error(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
+        return Err(error::frozen_client_error(
+            connection_end.client_id().clone(),
+        ));
     }
 
     // Fetch the expected consensus state from the historical (local) header data.
     let expected_consensus = ctx
         .host_consensus_state(proof.height())
-        .ok_or_else(|| Kind::MissingLocalConsensusState.context(proof.height().to_string()))?;
+        .ok_or_else(|| error::missing_local_consensus_state_error(proof.height()))?;
 
     let client = AnyClient::from_client_type(client_state.client_type());
 
-    Ok(client
+    client
         .verify_client_consensus_state(
             &client_state,
             proof_height,
@@ -181,9 +188,7 @@ pub fn verify_consensus_proof(
             proof.height(),
             &expected_consensus,
         )
-        .map_err(|e| {
-            Kind::ConsensusStateVerificationFailure(proof.height()).context(e.to_string())
-        })?)
+        .map_err(|e| error::consensus_state_verification_failure_error(proof.height(), e))
 }
 
 /// Checks that `claimed_height` is within normal bounds, i.e., fresh enough so that the chain has
@@ -191,15 +196,21 @@ pub fn verify_consensus_proof(
 pub fn check_client_consensus_height(
     ctx: &dyn ConnectionReader,
     claimed_height: Height,
-) -> Result<(), Error> {
+) -> Result<(), error::Error> {
     if claimed_height > ctx.host_current_height() {
         // Fail if the consensus height is too advanced.
-        return Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()).into());
+        return Err(error::invalid_consensus_height_error(
+            claimed_height,
+            ctx.host_current_height(),
+        ));
     }
 
     if claimed_height < ctx.host_oldest_height() {
         // Fail if the consensus height is too old (has been pruned).
-        return Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_oldest_height()).into());
+        return Err(error::stale_consensus_height_error(
+            claimed_height,
+            ctx.host_oldest_height(),
+        ));
     }
 
     // Height check is within normal bounds, check passes.

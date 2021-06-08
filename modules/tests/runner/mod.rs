@@ -14,7 +14,7 @@ use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
 use ibc::ics03_connection::connection::{Counterparty, State as ConnectionState};
-use ibc::ics03_connection::error::Kind as Ics03ErrorKind;
+use ibc::ics03_connection::error as connection_error;
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -101,12 +101,12 @@ impl IbcTestRunner {
 
     pub fn extract_ics03_error_kind(
         ics18_result: Result<(), relayer_error::Error>,
-    ) -> Ics03ErrorKind {
+    ) -> connection_error::ErrorDetail {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
 
         match ics18_error.detail {
             relayer_error::ErrorDetail::TransactionFailed(e) => match e.source {
-                routing_error::ErrorDetail::Ics03Connection(e) => e.source.kind().clone(),
+                routing_error::ErrorDetail::Ics03Connection(e) => e.source.detail,
                 e => {
                     panic!("Expected Ics02Client error, instead got {:?}", e);
                 }
@@ -468,33 +468,33 @@ impl modelator::runner::TestRunner<Step> for IbcTestRunner {
             ActionOutcome::Ics03ConnectionOpenInitOk => result.is_ok(),
             ActionOutcome::Ics03MissingClient => matches!(
                 Self::extract_ics03_error_kind(result),
-                Ics03ErrorKind::MissingClient(_)
+                connection_error::ErrorDetail::MissingClient(_)
             ),
             ActionOutcome::Ics03ConnectionOpenTryOk => result.is_ok(),
             ActionOutcome::Ics03InvalidConsensusHeight => matches!(
                 Self::extract_ics03_error_kind(result),
-                Ics03ErrorKind::InvalidConsensusHeight(_, _)
+                connection_error::ErrorDetail::InvalidConsensusHeight(_)
             ),
             ActionOutcome::Ics03ConnectionNotFound => matches!(
                 Self::extract_ics03_error_kind(result),
-                Ics03ErrorKind::ConnectionNotFound(_)
+                connection_error::ErrorDetail::ConnectionNotFound(_)
             ),
             ActionOutcome::Ics03ConnectionMismatch => matches!(
                 Self::extract_ics03_error_kind(result),
-                Ics03ErrorKind::ConnectionMismatch(_)
+                connection_error::ErrorDetail::ConnectionMismatch(_)
             ),
             ActionOutcome::Ics03MissingClientConsensusState => matches!(
                 Self::extract_ics03_error_kind(result),
-                Ics03ErrorKind::MissingClientConsensusState(_, _)
+                connection_error::ErrorDetail::MissingClientConsensusState(_)
             ),
             ActionOutcome::Ics03InvalidProof => matches!(
                 Self::extract_ics03_error_kind(result),
-                Ics03ErrorKind::InvalidProof
+                connection_error::ErrorDetail::InvalidProof(_)
             ),
             ActionOutcome::Ics03ConnectionOpenAckOk => result.is_ok(),
             ActionOutcome::Ics03UninitializedConnection => matches!(
                 Self::extract_ics03_error_kind(result),
-                Ics03ErrorKind::UninitializedConnection(_)
+                connection_error::ErrorDetail::UninitializedConnection(_)
             ),
             ActionOutcome::Ics03ConnectionOpenConfirmOk => result.is_ok(),
         };

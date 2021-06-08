@@ -5,7 +5,7 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnect
 use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::connection::Counterparty;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error;
 use crate::ics03_connection::version::Version;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
@@ -38,7 +38,7 @@ impl MsgConnectionOpenInit {
 }
 
 impl Msg for MsgConnectionOpenInit {
-    type ValidationError = Error;
+    type ValidationError = error::Error;
     type Raw = RawMsgConnectionOpenInit;
 
     fn route(&self) -> String {
@@ -53,23 +53,22 @@ impl Msg for MsgConnectionOpenInit {
 impl Protobuf<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {}
 
 impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
-    type Error = anomaly::Error<Kind>;
+    type Error = error::Error;
 
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
         Ok(Self {
             client_id: msg
                 .client_id
                 .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+                .map_err(error::invalid_identifier_error)?,
             counterparty: msg
                 .counterparty
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or_else(error::missing_counterparty_error)?
                 .try_into()?,
             version: msg
                 .version
-                .ok_or(Kind::InvalidVersion)?
-                .try_into()
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+                .ok_or_else(error::empty_versions_error)?
+                .try_into()?,
             delay_period: Duration::from_nanos(msg.delay_period),
             signer: msg.signer.into(),
         })

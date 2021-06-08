@@ -872,9 +872,9 @@ dependencies = [
 
 [[package]]
 name = "flex-error"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "143b30178819ee561176864740e7aba41c442bccb4211445c6dbdc30f52a0e9c"
+checksum = "431f579d1c92791fcaf7753d9beac4b8b2338965eca57b11aea6932f5d9785ea"
 dependencies = [
  "anyhow",
  "eyre",
