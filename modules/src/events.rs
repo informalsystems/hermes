@@ -1,6 +1,8 @@
-use std::collections::HashMap;
+use std::collections::btree_map::BTreeMap as HashMap;
+use std::string::String;
+use std::vec::Vec;
 
-use anomaly::BoxError;
+use anyhow::BoxError;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::events as ClientEvents;
@@ -209,8 +211,8 @@ impl RawObject {
     }
 }
 
-pub fn extract_events<S: ::std::hash::BuildHasher>(
-    events: &HashMap<String, Vec<String>, S>,
+pub fn extract_events(
+    events: &HashMap<String, Vec<String>>,
     action_string: &str,
 ) -> Result<(), BoxError> {
     if let Some(message_action) = events.get("message.action") {

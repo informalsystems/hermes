@@ -25,6 +25,7 @@
 //! - ICS 26: Routing
 //! - Applications:
 //!    - ICS 20: Fungible Token Transfer
+extern crate no_std_compat as std;
 
 pub mod application;
 pub mod events;

@@ -36,7 +36,7 @@ std = [
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.8.0", path = "../proto" }
-anyhow = {version = "1.0", default-features = false}
+anyhow = {version = "1.0", default-features = false, git = "https://github.com/DaviRain-Su/anyhow.git", branch = "open-stderror", commit = "444c0a9b7da5efc24ae7124733b82e367fc28be0"}
 flex-error = { version = "0.1.1", default-features = false, features = ["anyhow_tracer"] }
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
 serde_derive = "1.0.104"

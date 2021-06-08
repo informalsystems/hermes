@@ -2,7 +2,7 @@
 
 use crate::handler::HandlerOutput;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::Error;
+use crate::ics02_client::error::ClientError;
 use crate::ics02_client::msgs::ClientMsg;
 
 pub mod create_client;
@@ -17,7 +17,7 @@ pub enum ClientResult {
 }
 
 /// General entry point for processing any message related to ICS2 (client functions) protocols.
-pub fn dispatch<Ctx>(ctx: &Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientResult>, Error>
+pub fn dispatch<Ctx>(ctx: &Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientResult>, ClientError>
 where
     Ctx: ClientReader,
 {

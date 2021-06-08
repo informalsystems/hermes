@@ -101,6 +101,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28b2cd92db5cbd74e8e5028f7e27dd7aa3090e89e4f2a197cc7c8dfb69c7063b"
 
 [[package]]
+name = "anyhow"
+version = "1.0.40"
+source = "git+https://github.com/DaviRain-Su/anyhow.git?branch=open-stderror#444c0a9b7da5efc24ae7124733b82e367fc28be0"
+
+[[package]]
 name = "arrayvec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -714,7 +719,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e529c5becee73150e0c7a487f3680ee99c0b1b13e55388e685916146975f6fb5"
 dependencies = [
- "anyhow",
+ "anyhow 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "paste",
 ]
 
@@ -1200,7 +1205,7 @@ dependencies = [
 name = "ibc"
 version = "0.2.0"
 dependencies = [
- "anyhow",
+ "anyhow 1.0.40 (git+https://github.com/DaviRain-Su/anyhow.git?branch=open-stderror)",
  "bytes",
  "chrono",
  "displaydoc",
@@ -1854,7 +1859,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "169a15f3008ecb5160cba7d37bcd690a7601b6d30cfb87a117d45e59d52af5d4"
 dependencies = [
- "anyhow",
+ "anyhow 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.9.0",
  "proc-macro2",
  "quote",
@@ -2680,7 +2685,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9e44c4759bae7f1032e286a7ef990bd9ed23fe831b7eeba0beb97484c2e59b8"
 dependencies = [
- "anyhow",
+ "anyhow 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "hmac 0.8.1",
  "once_cell",
  "pbkdf2",

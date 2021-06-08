@@ -2,7 +2,7 @@ pub mod step;
 
 use std::collections::HashMap;
 use std::error::Error;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::time::Duration;
 
 use ibc::ics02_client::client_consensus::AnyConsensusState;
@@ -27,7 +27,7 @@ use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics18_relayer::error::{Error as Ics18Error, Kind as Ics18ErrorKind};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc::ics26_routing::error::{Error as Ics26Error, Kind as Ics26ErrorKind};
+use ibc::ics26_routing::error::{RoutingError, RoutingErrorDetail};
 use ibc::ics26_routing::msgs::Ics26Envelope;
 use ibc::mock::client_state::{MockClientState, MockConsensusState};
 use ibc::mock::context::MockContext;
@@ -82,10 +82,7 @@ impl IbcTestRunner {
             .expect("chain context should have been initialized")
     }
 
-    pub fn extract_handler_error_kind<K>(ics18_result: Result<(), Ics18Error>) -> K
-    where
-        K: Clone + Debug + Display + Into<anomaly::BoxError> + 'static,
-    {
+    pub fn extract_ics02_error_kind<K>(ics18_result: Result<(), Ics18Error>) -> Ics02ErrorKind {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
         assert!(matches!(
             ics18_error.kind(),
@@ -94,19 +91,36 @@ impl IbcTestRunner {
         let ics26_error = ics18_error
             .source()
             .expect("expected source in ICS18 error")
-            .downcast_ref::<Ics26Error>()
+            .downcast_ref::<RoutingError>()
             .expect("ICS18 source should be an ICS26 error");
+
+        match &ics26_error.detail {
+            RoutingErrorDetail::Ics02Client(ics02_error) => ics02_error.soure.kind().clone(),
+            _ => {
+                panic!("Expect ICS02 error wrapped inside ICS26 error");
+            }
+        }
+    }
+    pub fn extract_ics03_error_kind(ics18_result: Result<(), Ics18Error>) -> Ics03ErrorKind {
+        let ics18_error = ics18_result.expect_err("ICS18 error expected");
+
         assert!(matches!(
-            ics26_error.kind(),
-            Ics26ErrorKind::HandlerRaisedError,
+            ics18_error.kind(),
+            ICS18ErrorKind::TransactionFailed
         ));
-        ics26_error
+
+        let ics26_error = ics18_error
             .source()
-            .expect("expected source in ICS26 error")
-            .downcast_ref::<anomaly::Error<K>>()
-            .expect("ICS26 source should be an handler error")
-            .kind()
-            .clone()
+            .expect("expected source in ICS18 error")
+            .downcast_ref::<RoutingError>()
+            .expect("ICS18 source should be an ICS16 error");
+
+        match &ics26_error.detail {
+            RoutingErrorDetail::Ics03Connection(ics03_error) => ics03_error.source.kind().clone(),
+            _ => {
+                panic!("Expect ICS02 error wrapped inside ICS26 error");
+            }
+        }
     }
 
     pub fn chain_id(chain_id: String) -> ChainId {
@@ -450,42 +464,42 @@ impl modelator::runner::TestRunner<Step> for IbcTestRunner {
             ActionOutcome::Ics02CreateOk => result.is_ok(),
             ActionOutcome::Ics02UpdateOk => result.is_ok(),
             ActionOutcome::Ics02ClientNotFound => matches!(
-                Self::extract_handler_error_kind::<Ics02ErrorKind>(result),
+                Self::extract_ics02_error_kind(result),
                 Ics02ErrorKind::ClientNotFound(_)
             ),
             ActionOutcome::Ics02HeaderVerificationFailure => matches!(
-                Self::extract_handler_error_kind::<Ics02ErrorKind>(result),
+                Self::extract_ics02_error_kind(result),
                 Ics02ErrorKind::HeaderVerificationFailure
             ),
             ActionOutcome::Ics03ConnectionOpenInitOk => result.is_ok(),
             ActionOutcome::Ics03MissingClient => matches!(
-                Self::extract_handler_error_kind::<Ics03ErrorKind>(result),
+                Self::extract_ics03_error_kind(result),
                 Ics03ErrorKind::MissingClient(_)
             ),
             ActionOutcome::Ics03ConnectionOpenTryOk => result.is_ok(),
             ActionOutcome::Ics03InvalidConsensusHeight => matches!(
-                Self::extract_handler_error_kind::<Ics03ErrorKind>(result),
+                Self::extract_ics03_error_kind(result),
                 Ics03ErrorKind::InvalidConsensusHeight(_, _)
             ),
             ActionOutcome::Ics03ConnectionNotFound => matches!(
-                Self::extract_handler_error_kind::<Ics03ErrorKind>(result),
+                Self::extract_ics03_error_kind(result),
                 Ics03ErrorKind::ConnectionNotFound(_)
             ),
             ActionOutcome::Ics03ConnectionMismatch => matches!(
-                Self::extract_handler_error_kind::<Ics03ErrorKind>(result),
+                Self::extract_ics03_error_kind(result),
                 Ics03ErrorKind::ConnectionMismatch(_)
             ),
             ActionOutcome::Ics03MissingClientConsensusState => matches!(
-                Self::extract_handler_error_kind::<Ics03ErrorKind>(result),
+                Self::extract_ics03_error_kind(result),
                 Ics03ErrorKind::MissingClientConsensusState(_, _)
             ),
             ActionOutcome::Ics03InvalidProof => matches!(
-                Self::extract_handler_error_kind::<Ics03ErrorKind>(result),
+                Self::extract_ics03_error_kind(result),
                 Ics03ErrorKind::InvalidProof
             ),
             ActionOutcome::Ics03ConnectionOpenAckOk => result.is_ok(),
             ActionOutcome::Ics03UninitializedConnection => matches!(
-                Self::extract_handler_error_kind::<Ics03ErrorKind>(result),
+                Self::extract_ics03_error_kind(result),
                 Ics03ErrorKind::UninitializedConnection(_)
             ),
             ActionOutcome::Ics03ConnectionOpenConfirmOk => result.is_ok(),

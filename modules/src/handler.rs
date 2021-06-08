@@ -1,5 +1,8 @@
 use crate::events::IbcEvent;
 use std::marker::PhantomData;
+use std::prelude::v1::*;
+use std::string::String;
+use std::vec::Vec;
 
 pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
 

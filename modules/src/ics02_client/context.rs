@@ -5,7 +5,7 @@
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::Error;
+use crate::ics02_client::error::ClientError;
 use crate::ics02_client::handler::ClientResult::{self, Create, Update, Upgrade};
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
@@ -23,7 +23,7 @@ pub trait ClientReader {
 
 /// Defines the write-only part of ICS2 (client functions) context.
 pub trait ClientKeeper {
-    fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
+    fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), ClientError> {
         match handler_res {
             Create(res) => {
                 let client_id = res.client_id.clone();
@@ -56,14 +56,14 @@ pub trait ClientKeeper {
         &mut self,
         client_id: ClientId,
         client_type: ClientType,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ClientError>;
 
     /// Called upon successful client creation and update
     fn store_client_state(
         &mut self,
         client_id: ClientId,
         client_state: AnyClientState,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ClientError>;
 
     /// Called upon successful client creation and update
     fn store_consensus_state(
@@ -71,7 +71,7 @@ pub trait ClientKeeper {
         client_id: ClientId,
         height: Height,
         consensus_state: AnyConsensusState,
-    ) -> Result<(), Error>;
+    ) -> Result<(), ClientError>;
 
     /// Called upon client creation.
     /// Increases the counter which keeps track of how many clients have been created.

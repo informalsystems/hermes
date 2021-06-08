@@ -1,8 +1,9 @@
 use crate::ics04_channel::channel::ChannelEnd;
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::{self, ChannelError};
 use crate::ics24_host::identifier::PortId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+use std::string::String;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use tendermint_proto::Protobuf;
@@ -42,7 +43,7 @@ impl MsgChannelOpenInit {
 }
 
 impl Msg for MsgChannelOpenInit {
-    type ValidationError = Error;
+    type ValidationError = ChannelError;
     type Raw = RawMsgChannelOpenInit;
 
     fn route(&self) -> String {
@@ -57,15 +58,15 @@ impl Msg for MsgChannelOpenInit {
 impl Protobuf<RawMsgChannelOpenInit> for MsgChannelOpenInit {}
 
 impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
-    type Error = anomaly::Error<Kind>;
+    type Error = ChannelError;
 
     fn try_from(raw_msg: RawMsgChannelOpenInit) -> Result<Self, Self::Error> {
         Ok(MsgChannelOpenInit {
-            port_id: raw_msg
-                .port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
+            port_id: raw_msg.port_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("port id: identifier error")))?,
+            channel: raw_msg
+                .channel
+                .ok_or(error::missing_channel_error())?
+                .try_into()?,
             signer: raw_msg.signer.into(),
         })
     }

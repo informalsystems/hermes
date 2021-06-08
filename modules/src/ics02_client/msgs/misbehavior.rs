@@ -1,10 +1,11 @@
 use std::convert::TryFrom;
+use std::string::String;
 
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour;
 
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::{self, ClientError};
 use crate::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
@@ -39,10 +40,12 @@ impl Msg for MsgSubmitAnyMisbehaviour {
 impl Protobuf<RawMsgSubmitMisbehaviour> for MsgSubmitAnyMisbehaviour {}
 
 impl TryFrom<RawMsgSubmitMisbehaviour> for MsgSubmitAnyMisbehaviour {
-    type Error = Error;
+    type Error = ClientError;
 
     fn try_from(raw: RawMsgSubmitMisbehaviour) -> Result<Self, Self::Error> {
-        let raw_misbehaviour = raw.misbehaviour.ok_or(Kind::InvalidRawMisbehaviour)?;
+        let raw_misbehaviour = raw
+            .misbehaviour
+            .ok_or(error::invalid_raw_misbehaviour_error())?;
 
         Ok(MsgSubmitAnyMisbehaviour {
             client_id: raw.client_id.parse().unwrap(),

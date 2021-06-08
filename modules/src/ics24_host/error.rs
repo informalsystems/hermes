@@ -1,6 +1,9 @@
 use displaydoc::Display;
+use std::string::String;
 
-pub type ValidationError = anyhow::Error;
+pub type ValidationError = ValidationKind;
+
+impl anyhow::StdError for ValidationKind {}
 
 #[derive(Clone, Debug, Display, PartialEq, Eq)]
 pub enum ValidationKind {
@@ -54,7 +57,11 @@ impl ValidationKind {
         Self::ChainIdInvalidFormat { id }
     }
 
-    pub fn wrap_error(self) -> ValidationError {
+    pub fn wrap_error(self) -> anyhow::Error {
         anyhow::anyhow!(self)
+    }
+
+    pub fn  kind(&self) -> &Self {
+        &self
     }
 }

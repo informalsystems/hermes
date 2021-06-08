@@ -5,17 +5,19 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::ics04_channel::context::ChannelReader;
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::{self, ChannelError};
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::ics24_host::identifier::ChannelId;
+use std::prelude::v1::format;
+use std::prelude::v1::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: MsgChannelOpenTry,
-) -> HandlerResult<ChannelResult, Error> {
+) -> HandlerResult<ChannelResult, ChannelError> {
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end (if any) and validate it against the message.
@@ -23,7 +25,9 @@ pub(crate) fn process(
         Some(prev_id) => {
             let old_channel_end = ctx
                 .channel_end(&(msg.port_id().clone(), prev_id.clone()))
-                .ok_or_else(|| Kind::ChannelNotFound(msg.port_id.clone(), prev_id.clone()))?;
+                .ok_or_else(|| {
+                    error::channel_not_found_error(msg.port_id.clone(), prev_id.clone(), anyhow::anyhow!("channel not found"))
+                })?;
 
             // Validate that existing channel end matches with the one we're trying to establish.
             if old_channel_end.state_matches(&State::Init)
@@ -37,15 +41,14 @@ pub(crate) fn process(
             } else {
                 // TODO(ADI) Fix this: no need for context!
                 // A ConnectionEnd already exists and validation failed.
-                Err(Into::<Error>::into(
-                    Kind::ChannelMismatch(prev_id.clone()).context(
-                        old_channel_end
-                            .counterparty()
-                            .channel_id()
-                            .clone()
-                            .unwrap()
-                            .to_string(),
-                    ),
+                Err(error::channel_mismatch_error(
+                    prev_id.clone(),
+                    anyhow::anyhow!(old_channel_end
+                        .counterparty()
+                        .channel_id()
+                        .clone()
+                        .unwrap()
+                        .to_string(),),
                 ))
             }
         }
@@ -74,36 +77,41 @@ pub(crate) fn process(
 
     // An IBC connection running on the local (host) chain should exist.
     if msg.channel.connection_hops().len() != 1 {
-        return Err(
-            Kind::InvalidConnectionHopsLength(1, msg.channel.connection_hops().len()).into(),
-        );
+        return Err(error::invalid_connection_hops_length_error(
+            1,
+            msg.channel.connection_hops().len(),
+        )
+        .into());
     }
 
     let connection_end_opt = ctx.connection_end(&msg.channel().connection_hops()[0]);
 
-    let conn = connection_end_opt
-        .ok_or_else(|| Kind::MissingConnection(msg.channel().connection_hops()[0].clone()))?;
+    let conn = connection_end_opt.ok_or_else(|| {
+        error::missing_connection_error(anyhow::anyhow!(msg.channel().connection_hops()[0].clone()))
+    })?;
 
     if !conn.state_matches(&ConnectionState::Open) {
-        return Err(Kind::ConnectionNotOpen(msg.channel.connection_hops()[0].clone()).into());
+        return Err(
+            error::connection_not_open_error(msg.channel.connection_hops()[0].clone()).into(),
+        );
     }
 
     let get_versions = conn.versions();
     let version = match get_versions.as_slice() {
         [version] => version,
-        _ => return Err(Kind::InvalidVersionLengthConnection.into()),
+        _ => return Err(error::invalid_version_length_connection_error()),
     };
 
     let channel_feature = msg.channel().ordering().to_string();
     if !version.is_supported_feature(channel_feature) {
-        return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
+        return Err(error::channel_feature_not_suported_by_connection_error());
     }
 
     // Channel capabilities
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     if msg.channel().version().is_empty() {
-        return Err(Kind::InvalidVersion.into());
+        return Err(error::invalid_version_error(anyhow::anyhow!("invalid version")));
     }
 
     // Proof verification in two steps:
@@ -113,7 +121,7 @@ pub(crate) fn process(
     let expected_counterparty = Counterparty::new(msg.port_id().clone(), None);
     let counterparty = conn.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
-        Kind::UndefinedConnectionCounterparty(msg.channel().connection_hops()[0].clone())
+        error::undefined_connection_counterparty_error(msg.channel().connection_hops()[0].clone())
     })?;
     let expected_connection_hops = vec![ccid.clone()];
 
@@ -134,7 +142,7 @@ pub(crate) fn process(
         &expected_channel_end,
         &msg.proofs(),
     )
-    .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
+    .map_err(|_|error::failed_channe_open_try_verification_error(anyhow::anyhow!("verify channel proof: failed channe open try verification error")))?;
 
     output.log("success: channel open try ");
 

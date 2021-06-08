@@ -3,6 +3,7 @@
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
 use std::fmt::{Display, Formatter, Result};
+use std::vec::Vec;
 
 use crate::ics04_channel::packet::Sequence;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};

@@ -5,11 +5,12 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnect
 use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::connection::Counterparty;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error::{self, ConnectionError};
 use crate::ics03_connection::version::Version;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+use std::string::String;
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
 
@@ -38,7 +39,7 @@ impl MsgConnectionOpenInit {
 }
 
 impl Msg for MsgConnectionOpenInit {
-    type ValidationError = Error;
+    type ValidationError = ConnectionError;
     type Raw = RawMsgConnectionOpenInit;
 
     fn route(&self) -> String {
@@ -53,23 +54,20 @@ impl Msg for MsgConnectionOpenInit {
 impl Protobuf<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {}
 
 impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
-    type Error = anomaly::Error<Kind>;
+    type Error = ConnectionError;
 
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
         Ok(Self {
-            client_id: msg
-                .client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_id: msg.client_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("client id: identifier error")))?,
             counterparty: msg
                 .counterparty
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or(error::missing_counterparty_error(anyhow::anyhow!("counterparty: missing counterparty error")))?
                 .try_into()?,
             version: msg
                 .version
-                .ok_or(Kind::InvalidVersion)?
+                .ok_or(error::invalid_version_error(anyhow::anyhow!("version : invalid version error")))?
                 .try_into()
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+                .map_err(|_|error::invalid_version_error(anyhow::anyhow!("version : invalid version error")))?,
             delay_period: Duration::from_secs(msg.delay_period),
             signer: msg.signer.into(),
         })

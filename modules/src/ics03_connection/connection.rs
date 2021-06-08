@@ -1,15 +1,16 @@
+use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+use std::prelude::v1::*;
 use std::str::FromStr;
 use std::time::Duration;
-
-use serde::{Deserialize, Serialize};
+use std::vec::Vec;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
 };
 
-use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::error::{self, ConnectionError};
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
@@ -39,10 +40,10 @@ impl Default for ConnectionEnd {
 impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
-    type Error = anomaly::Error<Kind>;
+    type Error = ConnectionError;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
         if value.client_id.is_empty() {
-            return Err(Kind::EmptyProtoConnectionEnd.into());
+            return Err(error::empty_proto_connection_end_error());
         }
 
         let state = value.state.try_into()?;
@@ -51,20 +52,17 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
         }
         Ok(Self::new(
             state,
-            value
-                .client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            value.client_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("client id: identifier error")))?,
             value
                 .counterparty
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or(error::missing_counterparty_error(anyhow::anyhow!("counterparty: missing counterparty error")))?
                 .try_into()?,
             value
                 .versions
                 .into_iter()
                 .map(Version::try_from)
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+                .map_err(|_|error::invalid_version_error(anyhow::anyhow!("version: invalid version error")))?,
             Duration::from_secs(value.delay_period),
         ))
     }
@@ -208,23 +206,20 @@ impl Default for Counterparty {
 // Converts from the wire format RawCounterparty. Typically used from the relayer side
 // during queries for response validation and to extract the Counterparty structure.
 impl TryFrom<RawCounterparty> for Counterparty {
-    type Error = anomaly::Error<Kind>;
+    type Error = ConnectionError;
 
     fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
         let connection_id = Some(value.connection_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+            .map_err(|_|error::identifier_error(anyhow::anyhow!("connection id: identifier error")))?;
         Ok(Counterparty::new(
-            value
-                .client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            value.client_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("client id: identifier error")))?,
             connection_id,
             value
                 .prefix
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or(error::missing_counterparty_error(anyhow::anyhow!("prefix: missing counterparty error")))?
                 .key_prefix
                 .into(),
         ))
@@ -298,14 +293,14 @@ impl State {
 }
 
 impl TryFrom<i32> for State {
-    type Error = anomaly::Error<Kind>;
+    type Error = ConnectionError;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            _ => Err(Kind::InvalidState(value).into()),
+            _ => Err(error::invalid_state_error(value)),
         }
     }
 }

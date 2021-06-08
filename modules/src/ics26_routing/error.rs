@@ -1,27 +1,26 @@
-// use anomaly::{BoxError, Context};
-// use thiserror::Error;
 use crate::application::ics20_fungible_token_transfer;
 use crate::ics02_client;
 use crate::ics03_connection;
 use crate::ics04_channel;
 use flex_error::*;
+use std::string::String;
 
 // pub type Error = anomaly::Error<Kind>;
 define_error! { RoutingError;
     Ics02Client
-    [ DisplayError<ics02_client::error::Error> ]
+    [ DisplayError<ics02_client::error::ClientError> ]
     | _ | { format_args!("ICS02 client error")},
 
     Ics03Connection
-    [ DisplayError<ics03_connection::error::Error> ]
+    [ DisplayError<ics03_connection::error::ConnectionError> ]
     | _ | { format_args!("ICS03 connection error") },
 
     Ics04Channel
-    [ DisplayError<ics04_channel::error::Error>]
+    [ DisplayError<ics04_channel::error::ChannelError>]
     | _ | { format_args!("ICS04 channel error") },
 
     Ics20FungibleTokenTransfer
-    [ DisplayError<ics20_fungible_token_transfer::error::Error>]
+    [ DisplayError<ics20_fungible_token_transfer::error::FungibleTokenTransferError>]
     | _ | { format_args!("ICS20 fungible token transfer error") },
 
     UnknowMessageTypeUrl
