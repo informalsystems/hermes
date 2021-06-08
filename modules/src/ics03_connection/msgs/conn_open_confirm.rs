@@ -1,5 +1,5 @@
 use std::convert::{TryFrom, TryInto};
-
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;

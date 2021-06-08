@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::string::String;
 use std::time::Duration;
 use std::vec::Vec;
-
+use std::string::ToString;
 use serde::Serialize;
 use tendermint::trust_threshold::{
     TrustThresholdFraction as TrustThreshold, TrustThresholdFraction,

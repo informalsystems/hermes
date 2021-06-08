@@ -8,12 +8,13 @@ use std::prelude::v1::*;
 use std::string::String;
 use std::vec::Vec;
 use tendermint::merkle::proof::Proof;
+
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
     mut path: Vec<String>,
 ) -> Result<MerklePath, Box<dyn anyhow::StdError>> {
     if prefix.is_empty() {
-        return Err("empty prefix".into());
+        return Err(Box::new(anyhow::anyhow!("empty prefix")));
     }
 
     let mut result: Vec<String> = vec![format!("{:?}", prefix)];

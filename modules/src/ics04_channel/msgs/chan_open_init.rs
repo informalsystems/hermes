@@ -4,6 +4,7 @@ use crate::ics24_host::identifier::PortId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 use std::string::String;
+use std::string::ToString;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use tendermint_proto::Protobuf;

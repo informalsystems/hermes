@@ -1,6 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
-
+use std::string::ToString;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use tendermint_proto::Protobuf;
 

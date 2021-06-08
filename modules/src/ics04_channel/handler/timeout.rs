@@ -14,6 +14,8 @@ use crate::ics04_channel::{
 };
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use std::prelude::v1::format;
+use std::string::ToString;
+
 #[derive(Clone, Debug)]
 pub struct TimeoutPacketResult {
     pub port_id: PortId,

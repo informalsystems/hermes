@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
     time::Duration,
 };
-
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;

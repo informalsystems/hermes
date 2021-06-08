@@ -1,7 +1,7 @@
 use std::fmt;
 
 use serde_derive::{Deserialize, Serialize};
-
+use std::string::ToString;
 use super::error;
 use crate::ics02_client::error::ClientError;
 

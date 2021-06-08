@@ -2,6 +2,7 @@
 
 use std::convert::{TryFrom, TryInto};
 use std::string::String;
+use std::string::ToString;
 
 use tendermint_proto::Protobuf;
 

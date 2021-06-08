@@ -105,4 +105,17 @@ define_error! { ClientError;
     RawClientAndConsensusStateTypesMismatch
     {state_type: ClientType, consensus_type: ClientType}
     | _ | { format_args!("mismatch raw client consensus state") },
+
+    Attribute
+    [ DisplayError<Error> ]
+    |e| { format_args!("{}", e.source) },
+
+    ValidationKind
+    [DisplayError<Error>]
+    | e | { format_args!("{}", e.source) },
+
+    InFallible
+    [ DisplayError<Error> ]
+    |_| { format_args!("infallible") },
+
 }

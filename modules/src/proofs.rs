@@ -3,6 +3,7 @@ use serde::Serialize;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::Height;
 use std::string::String;
+use std::string::ToString;
 
 /// Structure comprising proofs in a message. Proofs are typically present in messages for
 /// handshake protocols, e.g., ICS3 connection (open) handshake or ICS4 channel (open and close)

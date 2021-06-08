@@ -4,7 +4,7 @@
 ///
 use std::fmt::{Display, Formatter, Result};
 use std::vec::Vec;
-
+use std::string::ToString;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 

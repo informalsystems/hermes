@@ -1,4 +1,5 @@
 use super::error::{ValidationError, ValidationKind};
+use std::string::ToString;
 
 /// Bails from the current function with the given error kind.
 macro_rules! bail {

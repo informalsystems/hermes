@@ -1,6 +1,6 @@
 use core::marker::{Send, Sync};
 use std::convert::TryFrom;
-
+use std::string::ToString;
 use prost_types::Any;
 use serde::Serialize;
 use tendermint_proto::Protobuf;

@@ -3,8 +3,9 @@ use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::{attribute, some_attribute};
-use anyhow::BoxError;
+use crate::some_attribute;
+
+use crate::ics04_channel::error::{self, ChannelError};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::prelude::v1::format;
@@ -197,15 +198,48 @@ impl From<Attributes> for OpenInit {
     }
 }
 
+#[macro_export]
+macro_rules! channel_attribute {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse()?
+    }};
+}
+
+#[macro_export]
+macro_rules! p_attribute_validation_kind {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e: crate::ics24_host::error::ValidationKind | error::validation_kind_error(anyhow::anyhow!(e)))?
+    }};
+}
+
+#[macro_export]
+macro_rules! p_attribute_parser_int_error {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e : std::num::ParseIntError| error::parse_int_error(anyhow::anyhow!(e)))?
+    }};
+}
+
+#[macro_export]
+macro_rules! p_attribute_infallible {
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e: std::convert::Infallible | error::in_fallible_error(anyhow::anyhow!(e)))?
+    }};
+}
+
+
 impl TryFrom<RawObject> for OpenInit {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(Attributes {
             height: obj.height,
-            port_id: attribute!(obj, "channel_open_init.port_id"),
+            port_id: p_attribute_validation_kind!(obj, "channel_open_init.port_id"),
             channel_id: some_attribute!(obj, "channel_open_init.channel_id"),
-            connection_id: attribute!(obj, "channel_open_init.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_init.counterparty_port_id"),
+            connection_id: p_attribute_validation_kind!(obj, "channel_open_init.connection_id"),
+            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_open_init.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_open_init.counterparty_channel_id"
@@ -242,14 +276,14 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(Attributes {
             height: obj.height,
-            port_id: attribute!(obj, "channel_open_try.port_id"),
+            port_id: p_attribute_validation_kind!(obj, "channel_open_try.port_id"),
             channel_id: some_attribute!(obj, "channel_open_try.channel_id"),
-            connection_id: attribute!(obj, "channel_open_try.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_try.counterparty_port_id"),
+            connection_id: p_attribute_validation_kind!(obj, "channel_open_try.connection_id"),
+            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_open_try.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_open_try.counterparty_channel_id"
@@ -286,14 +320,14 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(Attributes {
             height: obj.height,
-            port_id: attribute!(obj, "channel_open_ack.port_id"),
+            port_id: p_attribute_validation_kind!(obj, "channel_open_ack.port_id"),
             channel_id: some_attribute!(obj, "channel_open_ack.channel_id"),
-            connection_id: attribute!(obj, "channel_open_ack.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_ack.counterparty_port_id"),
+            connection_id: p_attribute_validation_kind!(obj, "channel_open_ack.connection_id"),
+            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_open_ack.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_open_ack.counterparty_channel_id"
@@ -330,14 +364,14 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(Attributes {
             height: obj.height,
-            port_id: attribute!(obj, "channel_open_confirm.port_id"),
+            port_id: p_attribute_validation_kind!(obj, "channel_open_confirm.port_id"),
             channel_id: some_attribute!(obj, "channel_open_confirm.channel_id"),
-            connection_id: attribute!(obj, "channel_open_confirm.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_confirm.counterparty_port_id"),
+            connection_id: p_attribute_validation_kind!(obj, "channel_open_confirm.connection_id"),
+            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_open_confirm.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_open_confirm.counterparty_channel_id"
@@ -392,14 +426,14 @@ impl From<Attributes> for CloseInit {
 }
 
 impl TryFrom<RawObject> for CloseInit {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseInit(Attributes {
             height: obj.height,
-            port_id: attribute!(obj, "channel_close_init.port_id"),
+            port_id: p_attribute_validation_kind!(obj, "channel_close_init.port_id"),
             channel_id: some_attribute!(obj, "channel_close_init.channel_id"),
-            connection_id: attribute!(obj, "channel_close_init.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_close_init.counterparty_port_id"),
+            connection_id: p_attribute_validation_kind!(obj, "channel_close_init.connection_id"),
+            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_close_init.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_close_init.counterparty_channel_id"
@@ -448,14 +482,14 @@ impl From<Attributes> for CloseConfirm {
 }
 
 impl TryFrom<RawObject> for CloseConfirm {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseConfirm(Attributes {
             height: obj.height,
-            port_id: attribute!(obj, "channel_close_confirm.port_id"),
+            port_id: p_attribute_validation_kind!(obj, "channel_close_confirm.port_id"),
             channel_id: some_attribute!(obj, "channel_close_confirm.channel_id"),
-            connection_id: attribute!(obj, "channel_close_confirm.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_close_confirm.counterparty_port_id"),
+            connection_id: p_attribute_validation_kind!(obj, "channel_close_confirm.connection_id"),
+            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_close_confirm.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_close_confirm.counterparty_channel_id"
@@ -470,28 +504,22 @@ impl From<CloseConfirm> for IbcEvent {
     }
 }
 
-#[macro_export]
-macro_rules! p_attribute {
-    ($a:ident, $b:literal) => {{
-        let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(nb)?[$a.idx].parse()?
-    }};
-}
+
 
 impl TryFrom<RawObject> for Packet {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height_str: String = p_attribute!(obj, "packet_timeout_height");
-        let sequence: u64 = p_attribute!(obj, "packet_sequence");
+        let height_str: String = p_attribute_infallible!(obj, "packet_timeout_height");
+        let sequence: u64 = p_attribute_parser_int_error!(obj, "packet_sequence");
         Ok(Packet {
             sequence: sequence.into(),
-            source_port: p_attribute!(obj, "packet_src_port"),
-            source_channel: p_attribute!(obj, "packet_src_channel"),
-            destination_port: p_attribute!(obj, "packet_dst_port"),
-            destination_channel: p_attribute!(obj, "packet_dst_channel"),
+            source_port: p_attribute_validation_kind!(obj, "packet_src_port"),
+            source_channel: p_attribute_validation_kind!(obj, "packet_src_channel"),
+            destination_port: p_attribute_validation_kind!(obj, "packet_dst_port"),
+            destination_channel: p_attribute_validation_kind!(obj, "packet_dst_channel"),
             data: vec![],
-            timeout_height: height_str.as_str().try_into()?,
-            timeout_timestamp: p_attribute!(obj, "packet_timeout_timestamp"),
+            timeout_height: height_str.as_str().try_into().map_err(|_| error::unknown_error())?,
+            timeout_timestamp: p_attribute_parser_int_error!(obj, "packet_timeout_timestamp"),
         })
     }
 }
@@ -512,10 +540,10 @@ impl SendPacket {
 }
 
 impl TryFrom<RawObject> for SendPacket {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
+        let data_str: String = p_attribute_infallible!(obj, "packet_data");
         let mut packet = Packet::try_from(obj)?;
         packet.data = Vec::from(data_str.as_str().as_bytes());
         Ok(SendPacket { height, packet })
@@ -550,10 +578,10 @@ impl ReceivePacket {
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
+        let data_str: String = p_attribute_infallible!(obj, "packet_data");
         let mut packet = Packet::try_from(obj)?;
         packet.data = Vec::from(data_str.as_str().as_bytes());
         Ok(ReceivePacket { height, packet })
@@ -590,11 +618,11 @@ impl WriteAcknowledgement {
 }
 
 impl TryFrom<RawObject> for WriteAcknowledgement {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
-        let ack_str: String = p_attribute!(obj, "packet_ack");
+        let data_str: String = p_attribute_infallible!(obj, "packet_data");
+        let ack_str: String = p_attribute_infallible!(obj, "packet_ack");
         let mut packet = Packet::try_from(obj)?;
         packet.data = Vec::from(data_str.as_str().as_bytes());
         Ok(WriteAcknowledgement {
@@ -633,7 +661,7 @@ impl AcknowledgePacket {
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let packet = Packet::try_from(obj)?;
@@ -675,7 +703,7 @@ impl TimeoutPacket {
 }
 
 impl TryFrom<RawObject> for TimeoutPacket {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutPacket {
             height: obj.height,
@@ -712,7 +740,7 @@ impl TimeoutOnClosePacket {
 }
 
 impl TryFrom<RawObject> for TimeoutOnClosePacket {
-    type Error = BoxError;
+    type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutOnClosePacket {
             height: obj.height,

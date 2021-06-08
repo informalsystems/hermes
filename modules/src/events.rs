@@ -12,6 +12,7 @@ use crate::ics04_channel::events as ChannelEvents;
 use crate::Height;
 use prost::alloc::fmt::Formatter;
 use std::fmt;
+use std::borrow::ToOwned;
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -229,10 +230,10 @@ macro_rules! make_event {
     ($a:ident, $b:literal) => {
         #[derive(Debug, Deserialize, Serialize, Clone)]
         pub struct $a {
-            pub data: ::std::collections::HashMap<String, Vec<String>>,
+            pub data: ::std::collections::btree_map::BTreeMap<String, Vec<String>>,
         }
         impl ::std::convert::TryFrom<$crate::events::RawObject> for $a {
-            type Error = ::anomaly::BoxError;
+            type Error = ::anyhow::BoxError;
 
             fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
                 match $crate::events::extract_events(&result.events, $b) {
@@ -249,13 +250,13 @@ macro_rules! make_event {
 #[macro_export]
 macro_rules! attribute {
     ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse()?
+        $a.events.get($b).ok_or(crate::ics04_channel::error::validation_kind_error(anyhow::anyhow!($b)))?[$a.idx].parse().map_err(|e| crate::ics04_channel::error::validation_kind_error(anyhow::anyhow!("parse error")))?
     };
 }
 
 #[macro_export]
 macro_rules! some_attribute {
     ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse().ok()
+        $a.events.get($b).ok_or(crate::ics04_channel::error::some_attribute_error(anyhow::anyhow!($b)))?[$a.idx].parse().ok()
     };
 }

@@ -1,6 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 use std::string::String;
-
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;

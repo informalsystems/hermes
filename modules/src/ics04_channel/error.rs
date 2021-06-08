@@ -201,4 +201,27 @@ define_error! { ChannelError;
 
     MissingNextAckSeq
     | _ | { format_args!("Missing sequence number for ack packets")},
+
+    InFallible
+    [ DisplayError<Error> ]
+    |_| { format_args!("infallible") },
+
+    Attribute
+    [ DisplayError<Error> ]
+    |e| { format_args!("{}", e.source) },
+
+    ValidationKind
+    [DisplayError<Error>]
+    | e | { format_args!("{}", e.source) },
+
+    SomeAttribute
+    [ DisplayError<Error>]
+    |e| { format_args!("{}", e.source)},
+
+    Unknown
+    | _ | { format_args!("unknown error") },
+
+    ParseInt
+    [ DisplayError<Error>]
+    |_| { format_args!("parse int error") },
 }

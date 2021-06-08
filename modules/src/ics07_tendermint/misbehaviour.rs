@@ -1,5 +1,5 @@
 use std::convert::{TryFrom, TryInto};
-
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;

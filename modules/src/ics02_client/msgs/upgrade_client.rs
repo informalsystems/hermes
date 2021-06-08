@@ -3,7 +3,7 @@
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::string::String;
-
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;

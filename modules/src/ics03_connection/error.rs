@@ -109,4 +109,12 @@ define_error! { ConnectionError;
     ClientStateVerificationFailure
     { client_id: crate::ics24_host::identifier::ClientId }
     | e | { format_args!("the client state proof verification failed for client id: {0}", e.client_id) },
+
+    Attribute
+    [ DisplayError<Error> ]
+    |e| { format_args!("{}", e.source) },
+
+    ValidationKind
+    [DisplayError<Error>]
+    | e | { format_args!("{}", e.source) },
 }
