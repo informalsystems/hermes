@@ -2,13 +2,13 @@
 
 ## Unreleased
 
-> Nothing yet.
-
 ### IMPROVEMENTS
 
 - [ibc-relayer]
   - Update the on-chain IBC client with supporting headers when light client verification
     does bisection when verifying a header for a client update or a misbehaviour detection ([#673])
+
+[#673]: https://github.com/informalsystems/ibc-rs/issues/673
 
 ## v0.4.0
 *June 3rd, 2021*
