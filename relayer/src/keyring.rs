@@ -29,8 +29,6 @@ pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test";
 pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 
-const DEFAULT_HD_PATH: &str = "m/44'/118'/0'/0/0";
-
 // /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
 // WARNING: Changing this struct in backward incompatible way
 //          will force users to re-import their keys.
@@ -62,18 +60,15 @@ pub struct KeyFile {
 }
 
 impl KeyEntry {
-    fn from_key_file(key_file: KeyFile, hd_path: Option<HDPath>) -> Result<Self, Error> {
+    fn from_key_file(key_file: KeyFile, hd_path: &HDPath) -> Result<Self, Error> {
         // Decode the Bech32-encoded address from the key file
         let keyfile_address_bytes = decode_bech32(&key_file.address)?;
 
         let encoded_key: EncodedPubKey = key_file.pubkey.parse()?;
         let mut keyfile_pubkey_bytes = encoded_key.into_bytes();
 
-        // Use provided derivation path if any, or default one with ATOM coin type
-        let hd_path = hd_path.unwrap_or_else(|| DEFAULT_HD_PATH.parse().unwrap());
-
         // Decode the private key from the mnemonic
-        let private_key = private_key_from_mnemonic(&key_file.mnemonic, &hd_path)?;
+        let private_key = private_key_from_mnemonic(&key_file.mnemonic, hd_path)?;
         let derived_pubkey = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
         let derived_pubkey_bytes = derived_pubkey.public_key.to_bytes();
         assert!(derived_pubkey_bytes.len() <= keyfile_pubkey_bytes.len());
@@ -282,7 +277,7 @@ impl KeyRing {
     pub fn key_from_seed_file(
         &self,
         key_file_content: &str,
-        hd_path: Option<HDPath>,
+        hd_path: &HDPath,
     ) -> Result<KeyEntry, Error> {
         let key_file: KeyFile =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;

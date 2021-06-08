@@ -21,17 +21,17 @@ pub struct KeyRestoreCmd {
     mnemonic: String,
 
     #[options(
+        short = "n",
+        help = "name of the key (defaults to the `key_name` defined in the config)"
+    )]
+    name: Option<String>,
+
+    #[options(
         short = "p",
         help = "derivation path for this key",
         default = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,
-
-    #[options(
-        short = "n",
-        help = "name of the key (defaults to the `key_name` defined in the config)"
-    )]
-    name: Option<String>,
 }
 
 #[derive(Clone, Debug)]
