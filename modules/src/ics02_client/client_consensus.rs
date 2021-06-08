@@ -33,7 +33,7 @@ pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
     fn root(&self) -> &CommitmentRoot;
 
     /// Performs basic validation of the consensus state
-    fn validate_basic(&self) -> Result<(), Box<dyn anyhow::StdError>>;
+    fn validate_basic(&self) -> Result<(), Box<dyn flex_error::StdErr>>;
 
     /// Wrap into an `AnyConsensusState`
     fn wrap_any(self) -> AnyConsensusState;
@@ -161,7 +161,7 @@ impl ConsensusState for AnyConsensusState {
         todo!()
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn anyhow::StdError>> {
+    fn validate_basic(&self) -> Result<(), Box<dyn flex_error::StdErr>> {
         todo!()
     }
 

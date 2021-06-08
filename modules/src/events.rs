@@ -2,7 +2,7 @@ use std::collections::btree_map::BTreeMap as HashMap;
 use std::string::String;
 use std::vec::Vec;
 
-use anyhow::BoxError;
+use flex_error::BoxError;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::events as ClientEvents;

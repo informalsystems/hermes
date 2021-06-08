@@ -3,7 +3,7 @@ use std::string::String;
 
 pub type ValidationError = ValidationKind;
 
-impl anyhow::StdError for ValidationKind {}
+impl flex_error::StdErr for ValidationKind {}
 
 #[derive(Clone, Debug, Display, PartialEq, Eq)]
 pub enum ValidationKind {

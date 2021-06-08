@@ -12,9 +12,9 @@ use tendermint::merkle::proof::Proof;
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
     mut path: Vec<String>,
-) -> Result<MerklePath, Box<dyn anyhow::StdError>> {
+) -> Result<MerklePath, Box<dyn flex_error::StdErr>> {
     if prefix.is_empty() {
-        return Err(Box::new(anyhow::anyhow!("empty prefix")));
+        return Err("empty prefix".into());
     }
 
     let mut result: Vec<String> = vec![format!("{:?}", prefix)];

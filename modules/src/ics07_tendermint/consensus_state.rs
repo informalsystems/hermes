@@ -1,6 +1,7 @@
 use std::boxed::Box;
 use std::convert::TryFrom;
-use std::time::SystemTime;
+use crate::primitives::SystemTime;
+use std::convert::From;
 
 use chrono::{TimeZone, Utc};
 use prost_types::Timestamp;
@@ -42,7 +43,7 @@ impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn anyhow::StdError>> {
+    fn validate_basic(&self) -> Result<(), Box<dyn flex_error::StdErr>> {
         unimplemented!()
     }
 
