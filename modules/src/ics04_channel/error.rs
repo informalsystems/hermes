@@ -126,7 +126,7 @@ define_error! {
         | e | { format_args!("Verification fails for the packet with the sequence number {0}", e.sequence)},
 
         InvalidAcknowledgement
-        | e | { format_args!("Acknowledgment cannot be empty")},
+        | _ | { format_args!("Acknowledgment cannot be empty")},
 
         AcknowledgementExists
         {sequence: Sequence}

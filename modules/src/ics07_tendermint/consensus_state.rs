@@ -1,6 +1,6 @@
 use std::boxed::Box;
 use std::convert::TryFrom;
-use crate::primitives::SystemTime;
+use tendermint::primitives::SystemTime;
 use std::convert::From;
 
 use chrono::{TimeZone, Utc};

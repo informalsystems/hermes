@@ -35,8 +35,8 @@ std = [
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.8.0", path = "../proto" }
-anyhow = {version = "1.0", default-features = false}
+ibc-proto = { version = "0.8.0", path = "../proto"}
+anyhow = { version = "1.0", default-features = false }
 flex-error = { version = "0.2.0", default-features = false, features = ["anyhow_tracer"], git = "https://github.com/DaviRain-Su/flex-error.git", branch = "stderror-feature", commit = "e927961fa7b58a106b509729aaeba47598ba4aff"}
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
 serde_derive = "1.0.104"
@@ -55,6 +55,9 @@ displaydoc = {version = "0.2", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.19.0"
+git = "https://github.com/octopus-network/tendermint-rs.git"
+branch = "octpus-no-std-flex-error"
+commit = "d49781cb111b4b4cead3b4f58ba69d06d3a18231"
 
 [dependencies.tendermint-proto]
 version = "=0.19.0"

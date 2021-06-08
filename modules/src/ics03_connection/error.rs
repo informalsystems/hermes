@@ -9,7 +9,7 @@ define_error! {
     ConnectionError {
         InvalidState
         {id: i32}
-        | e | { format_args!("connection state unknown") },
+        | _ | { format_args!("connection state unknown") },
 
         ConnectionExistsAlready
         {connection_id: crate::ics24_host::identifier::ConnectionId}
@@ -36,7 +36,7 @@ define_error! {
         | _ | { format_args!("identifier error") },
 
         EmptyProtoConnectionEnd
-        | e | { format_args!("ConnectionEnd domain object could not be constructed out of empty proto object") },
+        | _ | { format_args!("ConnectionEnd domain object could not be constructed out of empty proto object") },
 
         InvalidVersion
         [DisplayError<Error>]
