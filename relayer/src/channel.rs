@@ -70,6 +70,9 @@ pub enum ChannelError {
         "failed during a transaction submission step to chain id {0} with underlying error: {1}"
     )]
     SubmitError(ChainId, Error),
+
+    #[error("the channel is partially open ({0}, {1})")]
+    PartialOpenHandshake(State, State),
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -407,7 +410,10 @@ impl Channel {
         Ok(())
     }
 
-    fn do_channel_handshake(&mut self) -> Result<(), ChannelError> {
+    /// Returns `Ok(())` when both channel ends are in state `Open`.
+    /// Also returns `Ok(())` if the channel is undergoing a closing handshake.
+    /// Otherwise, returns an error.
+    fn do_chan_open_finalize(&self) -> Result<(), ChannelError> {
         let src_channel_id = self
             .src_channel_id()
             .ok_or(ChannelError::MissingLocalChannelId)?;
@@ -421,40 +427,45 @@ impl Channel {
             .src_chain()
             .query_channel(&self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|_| {
-                ChannelError::Failed(
-                    format!("failed to query source chain {}", self.src_chain().id()).into(),
-                )
+                ChannelError::Failed(format!(
+                    "failed to query source chain {}",
+                    self.src_chain().id()
+                ))
             })?;
 
         let b_channel = self
             .dst_chain()
             .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero())
             .map_err(|_| {
-                ChannelError::Failed(
-                    format!(
-                        "failed to query destination chain {}",
-                        self.dst_chain().id()
-                    )
-                    .into(),
-                )
+                ChannelError::Failed(format!(
+                    "failed to query destination chain {}",
+                    self.dst_chain().id()
+                ))
             })?;
 
         match (a_channel.state(), b_channel.state()) {
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                 let event = self.flipped().build_chan_open_ack_and_send().map_err(|e| {
-                    error!("Failed ChanAck {:?}: {}", self.a_side, e);
+                    error!("failed ChanAck {:?}: {}", self.a_side, e);
                     e
                 })?;
 
                 info!("done {} => {:#?}\n", self.src_chain().id(), event);
+                // One more step (confirm) left.
+                // Returning error signals that the caller should retry.
+                Err(ChannelError::PartialOpenHandshake(
+                    *a_channel.state(),
+                    *b_channel.state(),
+                ))
             }
             (State::Open, State::TryOpen) => {
                 let event = self.build_chan_open_confirm_and_send().map_err(|e| {
-                    error!("Failed ChanConfirm {:?}: {}", self.b_side, e);
+                    error!("failed ChanConfirm {:?}: {}", self.b_side, e);
                     e
                 })?;
 
                 info!("done {} => {:#?}\n", self.dst_chain().id(), event);
+                Ok(())
             }
             (State::TryOpen, State::Open) => {
                 // Confirm to a_chain
@@ -462,24 +473,30 @@ impl Channel {
                     .flipped()
                     .build_chan_open_confirm_and_send()
                     .map_err(|e| {
-                        error!("Failed ChanConfirm {:?}: {}", self.a_side, e);
+                        error!("failed ChanConfirm {:?}: {}", self.a_side, e);
                         e
                     })?;
 
-                info!("done {} => {:#?}\n", self.src_chain().id(), event)
+                info!("done {} => {:#?}\n", self.src_chain().id(), event);
+                Ok(())
             }
             (State::Open, State::Open) => {
-                info!("channel handshake finished for {:#?}\n", self);
+                info!("channel handshake already finished for {:#?}\n", self);
+                Ok(())
             }
-            _ => { /* TODO channel close */ }
+            // In all other conditions, return Ok, since the channel open handshake is done.
+            _ => Ok(()),
         }
-
-        info!("successfully opened channel");
-        Ok(())
     }
 
-    fn do_channel_handshake_with_retry(&mut self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| self.do_channel_handshake()).map_err(
+    /// Takes a partially open channel and finalizes the open handshake protocol.
+    ///
+    /// Pre-condition: the channel identifiers are already established on both ends
+    ///   (i.e., the OpenInit and OpenTry steps have been fulfilled for this channel).
+    ///
+    /// Post-condition: the channel state is `Open` on both ends if successful.
+    fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
+        retry_with_index(retry_strategy::default(), |_| self.do_chan_open_finalize()).map_err(
             |err| {
                 error!("failed to open channel after {} retries", err);
                 ChannelError::Failed(format!(
@@ -497,7 +514,7 @@ impl Channel {
     fn handshake(&mut self) -> Result<(), ChannelError> {
         self.do_chan_open_init_and_send_with_retry()?;
         self.do_chan_open_try_and_send_with_retry()?;
-        self.do_channel_handshake_with_retry()
+        self.do_chan_open_finalize_with_retry()
     }
 
     pub fn counterparty_state(&self) -> Result<State, ChannelError> {
