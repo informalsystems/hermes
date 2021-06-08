@@ -12,6 +12,7 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::header::Header;
 use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
@@ -485,14 +486,15 @@ impl ForeignClient {
             ))
         })?;
 
-        debug!(
-            "[{}] MsgUpdateAnyClient for target height {} and trusted height {}",
-            self, target_height, trusted_height
-        );
-
         let mut msgs = vec![];
 
         for header in support {
+            debug!(
+                "[{}] MsgUpdateAnyClient for intermediate height {}",
+                self,
+                header.height(),
+            );
+
             msgs.push(
                 MsgUpdateAnyClient {
                     header,
@@ -502,6 +504,13 @@ impl ForeignClient {
                 .to_any(),
             );
         }
+
+        debug!(
+            "[{}] MsgUpdateAnyClient for going from trusted height {} to target height {}",
+            self,
+            header.height(),
+            trusted_height
+        );
 
         msgs.push(
             MsgUpdateAnyClient {

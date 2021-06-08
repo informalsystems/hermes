@@ -67,9 +67,8 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
-use crate::light_client::tendermint::LightClient as TmLightClient;
-use crate::light_client::LightClient;
-use crate::light_client::VerifiedBlock;
+use crate::light_client::tendermint::{adjust_headers, LightClient as TmLightClient};
+use crate::light_client::{LightClient, VerifiedBlock};
 
 use super::Chain;
 use tendermint_rpc::endpoint::tx_search::ResultTx;
@@ -1287,32 +1286,12 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
-        // Get the light block at trusted_height + 1 from chain.
-        //
-        // NOTE: This is needed to get the next validator set. While there is a next validator set
-        //       in the light block at trusted height, the proposer is not known/set in this set.
-        let succ_trusted = light_client.fetch(trusted_height.increment())?;
-
         // Get the light block at target_height from chain.
         let VerifiedBlock { target, supporting } =
             light_client.verify(trusted_height, target_height, client_state)?;
 
-        let target_header = TmHeader {
-            trusted_height,
-            signed_header: target.signed_header,
-            validator_set: target.validators,
-            trusted_validator_set: succ_trusted.validators.clone(),
-        };
-
-        let supporting_headers = supporting
-            .into_iter()
-            .map(|h| TmHeader {
-                trusted_height,
-                signed_header: h.signed_header.clone(),
-                validator_set: h.validators,
-                trusted_validator_set: succ_trusted.validators.clone(),
-            })
-            .collect();
+        let (target_header, supporting_headers) =
+            adjust_headers(light_client, trusted_height, target, supporting)?;
 
         Ok((target_header, supporting_headers))
     }
