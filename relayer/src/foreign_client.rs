@@ -355,7 +355,7 @@ impl ForeignClient {
         Ok(())
     }
 
-    pub fn refresh(&mut self) -> Result<Option<IbcEvent>, ForeignClientError> {
+    pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
         let client_state = self
             .dst_chain
             .query_client_state(self.id(), Height::zero())
@@ -515,7 +515,7 @@ impl ForeignClient {
         Ok(msgs)
     }
 
-    pub fn build_latest_update_client_and_send(&self) -> Result<IbcEvent, ForeignClientError> {
+    pub fn build_latest_update_client_and_send(&self) -> Result<Vec<IbcEvent>, ForeignClientError> {
         self.build_update_client_and_send(Height::zero(), Height::zero())
     }
 
@@ -523,7 +523,7 @@ impl ForeignClient {
         &self,
         height: Height,
         trusted_height: Height,
-    ) -> Result<IbcEvent, ForeignClientError> {
+    ) -> Result<Vec<IbcEvent>, ForeignClientError> {
         let h = if height == Height::zero() {
             self.src_chain.query_latest_height().map_err(|e| {
                 ForeignClientError::ClientUpdate(format!(
@@ -546,7 +546,7 @@ impl ForeignClient {
             )));
         }
 
-        let mut events = self.dst_chain().send_msgs(new_msgs).map_err(|e| {
+        let events = self.dst_chain().send_msgs(new_msgs).map_err(|e| {
             ForeignClientError::ClientUpdate(format!(
                 "failed sending message to dst chain ({}) with err: {}",
                 self.dst_chain.id(),
@@ -554,9 +554,7 @@ impl ForeignClient {
             ))
         })?;
 
-        assert!(!events.is_empty());
-
-        Ok(events.pop().unwrap())
+        Ok(events)
     }
 
     /// Attempts to update a client using header from the latest height of its source chain.
@@ -1083,12 +1081,15 @@ mod test {
         // Now we can update both clients -- a ping pong, similar to ICS18 `client_update_ping_pong`
         for _i in 1..num_iterations {
             let res = a_client.build_latest_update_client_and_send();
+
             assert!(
                 res.is_ok(),
                 "build_update_client_and_send failed (chain a) with error: {:?}",
                 res
             );
-            assert!(matches!(res.as_ref().unwrap(), IbcEvent::UpdateClient(_)));
+
+            let res = res.unwrap();
+            assert!(matches!(res.last(), Some(IbcEvent::UpdateClient(_))));
 
             let a_height_current = a_chain.query_latest_height().unwrap();
             a_height_last = a_height_last.increment();
@@ -1104,7 +1105,9 @@ mod test {
                 "build_update_client_and_send failed (chain b) with error: {:?}",
                 res
             );
-            assert!(matches!(res.as_ref().unwrap(), IbcEvent::UpdateClient(_)));
+
+            let res = res.unwrap();
+            assert!(matches!(res.last(), Some(IbcEvent::UpdateClient(_))));
 
             let b_height_current = b_chain.query_latest_height().unwrap();
             b_height_last = b_height_last.increment();
