@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-> Nothing yet.
+### IMPROVEMENTS
+
+- [ibc-relayer]
+  - Enable TLS support for gRPC client ([#877])
+
+[#877]: https://github.com/informalsystems/ibc-rs/issues/877
 
 ## v0.4.0
 *June 3rd, 2021*
@@ -93,7 +98,7 @@ Docker images to Docker Hub.
 
 - [ibc-relayer]
   - Add support for multiple keys to the keyring ([#963])
-  
+
 - [release]
   - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
   - Automatically deploy Docker Hub image during release ([#967])
