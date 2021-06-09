@@ -70,7 +70,9 @@ pub fn verify_connection_proof(
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(error::frozen_client_error(connection_end.client_id().clone()));
+        return Err(error::frozen_client_error(
+            connection_end.client_id().clone(),
+        ));
     }
 
     // The client must have the consensus state for the height where this proof was created.
@@ -98,7 +100,11 @@ pub fn verify_connection_proof(
             connection_end.counterparty().connection_id(),
             expected_conn,
         )
-        .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("verify connection state : invalid proof error")))?)
+        .map_err(|_| {
+            error::invalid_proof_error(anyhow::anyhow!(
+                "verify connection state : invalid proof error"
+            ))
+        })?)
 }
 
 /// Verifies the client `proof` from a connection handshake message, typically from a

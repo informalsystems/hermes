@@ -1,7 +1,7 @@
-use std::convert::TryFrom;
-use std::string::ToString;
 use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
@@ -69,12 +69,13 @@ impl TryFrom<Any> for AnyHeader {
         match raw.type_url.as_str() {
             TENDERMINT_HEADER_TYPE_URL => Ok(AnyHeader::Tendermint(
                 TendermintHeader::decode_vec(&raw.value)
-                    .map_err(|_|error::invalid_raw_header_error())?,
+                    .map_err(|_| error::invalid_raw_header_error())?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                MockHeader::decode_vec(&raw.value).map_err(|_|error::invalid_raw_header_error())?,
+                MockHeader::decode_vec(&raw.value)
+                    .map_err(|_| error::invalid_raw_header_error())?,
             )),
 
             _ => Err(error::unknown_header_type_error(raw.type_url).into()),

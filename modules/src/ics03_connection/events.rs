@@ -1,9 +1,9 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
 use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
+use crate::ics04_channel::error::{self, ChannelError};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::some_attribute;
-use crate::ics04_channel::error::{self, ChannelError};
 use std::prelude::v1::format;
 
 use serde_derive::{Deserialize, Serialize};
@@ -108,14 +108,23 @@ impl From<Attributes> for OpenInit {
 macro_rules! connection_attribute {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse()?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()?
     }};
 }
 #[macro_export]
 macro_rules! connection_attribute_validation_kind {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e: crate::ics24_host::error::ValidationKind | error::validation_kind_error(anyhow::anyhow!(e)))?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: crate::ics24_host::error::ValidationKind| {
+                error::validation_kind_error(anyhow::anyhow!(e))
+            })?
     }};
 }
 
@@ -130,7 +139,10 @@ impl TryFrom<RawObject> for OpenInit {
                 obj,
                 "connection_open_init.counterparty_connection_id"
             ),
-            counterparty_client_id: connection_attribute_validation_kind!(obj, "connection_open_init.counterparty_client_id"),
+            counterparty_client_id: connection_attribute_validation_kind!(
+                obj,
+                "connection_open_init.counterparty_client_id"
+            ),
         }))
     }
 }
@@ -173,7 +185,10 @@ impl TryFrom<RawObject> for OpenTry {
                 obj,
                 "connection_open_try.counterparty_connection_id"
             ),
-            counterparty_client_id: connection_attribute_validation_kind!(obj, "connection_open_try.counterparty_client_id"),
+            counterparty_client_id: connection_attribute_validation_kind!(
+                obj,
+                "connection_open_try.counterparty_client_id"
+            ),
         }))
     }
 }
@@ -216,7 +231,10 @@ impl TryFrom<RawObject> for OpenAck {
                 obj,
                 "connection_open_ack.counterparty_connection_id"
             ),
-            counterparty_client_id: connection_attribute_validation_kind!(obj, "connection_open_ack.counterparty_client_id"),
+            counterparty_client_id: connection_attribute_validation_kind!(
+                obj,
+                "connection_open_ack.counterparty_client_id"
+            ),
         }))
     }
 }
@@ -254,7 +272,10 @@ impl TryFrom<RawObject> for OpenConfirm {
         Ok(OpenConfirm(Attributes {
             height: obj.height,
             connection_id: some_attribute!(obj, "connection_open_confirm.connection_id"),
-            client_id: connection_attribute_validation_kind!(obj, "connection_open_confirm.client_id"),
+            client_id: connection_attribute_validation_kind!(
+                obj,
+                "connection_open_confirm.client_id"
+            ),
             counterparty_connection_id: some_attribute!(
                 obj,
                 "connection_open_confirm.counterparty_connection_id"

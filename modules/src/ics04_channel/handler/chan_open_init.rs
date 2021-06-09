@@ -49,7 +49,9 @@ pub(crate) fn process(
 
     // TODO: Check that `version` is non empty but not necessary coherent
     if msg.channel().version().is_empty() {
-        return Err(error::invalid_version_error(anyhow::anyhow!("invalid version")));
+        return Err(error::invalid_version_error(anyhow::anyhow!(
+            "invalid version"
+        )));
     }
 
     // Channel identifier construction.

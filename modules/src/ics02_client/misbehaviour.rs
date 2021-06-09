@@ -1,6 +1,6 @@
+use prost_types::Any;
 use std::convert::TryFrom;
 use std::string::ToString;
-use prost_types::Any;
 use tendermint_proto::Protobuf;
 
 use crate::ics02_client::error::{self, ClientError};
@@ -70,13 +70,13 @@ impl TryFrom<Any> for AnyMisbehaviour {
         match raw.type_url.as_str() {
             TENDERMINT_MISBEHAVIOR_TYPE_URL => Ok(AnyMisbehaviour::Tendermint(
                 TmMisbehaviour::decode_vec(&raw.value)
-                    .map_err(|_|error::invalid_raw_misbehaviour_error())?,
+                    .map_err(|_| error::invalid_raw_misbehaviour_error())?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_MISBEHAVIOUR_TYPE_URL => Ok(AnyMisbehaviour::Mock(
                 MockMisbehaviour::decode_vec(&raw.value)
-                    .map_err(|_|error::invalid_raw_misbehaviour_error())?,
+                    .map_err(|_| error::invalid_raw_misbehaviour_error())?,
             )),
             _ => Err(error::unknown_misbehaviour_type_error(raw.type_url).into()),
         }

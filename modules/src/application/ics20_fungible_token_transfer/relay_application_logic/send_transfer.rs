@@ -54,7 +54,7 @@ where
         timeout_timestamp: msg.timeout_timestamp,
     };
 
-    let handler_output = send_packet(ctx, packet).map_err(|_|error::handler_raised_error())?;
+    let handler_output = send_packet(ctx, packet).map_err(|_| error::handler_raised_error())?;
 
     //TODO:  add event/atributes and writes to the store issued by the application logic for packet sending.
     Ok(handler_output)

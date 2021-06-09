@@ -146,9 +146,15 @@ impl TryFrom<RawPacket> for Packet {
         }
         let packet_timeout_height: Height = raw_pkt
             .timeout_height
-            .ok_or(error::missing_height_error(anyhow::anyhow!("timeout height: missing height error")))?
+            .ok_or(error::missing_height_error(anyhow::anyhow!(
+                "timeout height: missing height error"
+            )))?
             .try_into()
-            .map_err(|_|error::invalid_timeout_height_error(anyhow::anyhow!("timeout height: invalid timeout height error")))?;
+            .map_err(|_| {
+                error::invalid_timeout_height_error(anyhow::anyhow!(
+                    "timeout height: invalid timeout height error"
+                ))
+            })?;
 
         if packet_timeout_height.is_zero() && raw_pkt.timeout_timestamp == 0 {
             return Err(error::zero_packet_timeout_error());
@@ -159,22 +165,18 @@ impl TryFrom<RawPacket> for Packet {
 
         Ok(Packet {
             sequence: Sequence::from(raw_pkt.sequence),
-            source_port: raw_pkt
-                .source_port
-                .parse()
-                .map_err(|_|error::identifier_error(anyhow::anyhow!("source port: identifier error")))?,
-            source_channel: raw_pkt
-                .source_channel
-                .parse()
-                .map_err(|_|error::identifier_error(anyhow::anyhow!("source channel: identifier error")))?,
-            destination_port: raw_pkt
-                .destination_port
-                .parse()
-                .map_err(|_|error::identifier_error(anyhow::anyhow!("destination port: identifier error")))?,
-            destination_channel: raw_pkt
-                .destination_channel
-                .parse()
-                .map_err(|_|error::identifier_error(anyhow::anyhow!("destination channel: identifier error")))?,
+            source_port: raw_pkt.source_port.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("source port: identifier error"))
+            })?,
+            source_channel: raw_pkt.source_channel.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("source channel: identifier error"))
+            })?,
+            destination_port: raw_pkt.destination_port.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("destination port: identifier error"))
+            })?,
+            destination_channel: raw_pkt.destination_channel.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("destination channel: identifier error"))
+            })?,
             data: raw_pkt.data,
             timeout_height: packet_timeout_height,
             timeout_timestamp: raw_pkt.timeout_timestamp,

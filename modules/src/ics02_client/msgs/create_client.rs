@@ -79,10 +79,16 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
         })?;
 
         MsgCreateAnyClient::new(
-            AnyClientState::try_from(raw_client_state)
-                .map_err(|_|error::invalid_raw_client_state_error(anyhow::anyhow!("AnyClientState: invalid raw client state error")))?,
-            AnyConsensusState::try_from(raw_consensus_state)
-                .map_err(|_|error::invalid_raw_consensus_state_error(anyhow::anyhow!("AnyConsensusState: invalid raw consensus state error")))?,
+            AnyClientState::try_from(raw_client_state).map_err(|_| {
+                error::invalid_raw_client_state_error(anyhow::anyhow!(
+                    "AnyClientState: invalid raw client state error"
+                ))
+            })?,
+            AnyConsensusState::try_from(raw_consensus_state).map_err(|_| {
+                error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                    "AnyConsensusState: invalid raw consensus state error"
+                ))
+            })?,
             raw.signer.into(),
         )
     }

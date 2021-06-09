@@ -21,7 +21,11 @@ pub(crate) fn process(
     let mut channel_end = ctx
         .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
         .ok_or_else(|| {
-            error::channel_not_found_error(msg.port_id.clone(), msg.channel_id().clone(), anyhow::anyhow!("channel not found"))
+            error::channel_not_found_error(
+                msg.port_id.clone(),
+                msg.channel_id().clone(),
+                anyhow::anyhow!("channel not found"),
+            )
         })?;
 
     // Validate that the channel end is in a state where it can be ack.
@@ -48,7 +52,11 @@ pub(crate) fn process(
 
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
-        .ok_or_else(|| error::missing_connection_error(anyhow::anyhow!(channel_end.connection_hops()[0].clone())))?;
+        .ok_or_else(|| {
+            error::missing_connection_error(anyhow::anyhow!(
+                channel_end.connection_hops()[0].clone()
+            ))
+        })?;
 
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(
@@ -84,7 +92,11 @@ pub(crate) fn process(
         &expected_channel_end,
         &msg.proofs(),
     )
-    .map_err(|_|error::chan_open_ack_proof_verification_error(anyhow::anyhow!("verify channel proofs : chan open ack proof verification error")))?;
+    .map_err(|_| {
+        error::chan_open_ack_proof_verification_error(anyhow::anyhow!(
+            "verify channel proofs : chan open ack proof verification error"
+        ))
+    })?;
 
     output.log("success: channel open ack ");
 

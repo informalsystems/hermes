@@ -1,9 +1,9 @@
+use serde::Serialize;
 use std::convert::{TryFrom, TryInto};
 use std::string::String;
+use std::string::ToString;
 use std::time::Duration;
 use std::vec::Vec;
-use std::string::ToString;
-use serde::Serialize;
 use tendermint::trust_threshold::{
     TrustThresholdFraction as TrustThreshold, TrustThresholdFraction,
 };
@@ -175,9 +175,11 @@ impl TryFrom<RawClientState> for ClientState {
                     ))
                 })?
                 .try_into()
-                .map_err(|_| error::invalid_raw_client_state_error(anyhow::anyhow!(
-                    "negative trusting period"
-                )))?,
+                .map_err(|_| {
+                    error::invalid_raw_client_state_error(anyhow::anyhow!(
+                        "negative trusting period"
+                    ))
+                })?,
             unbonding_period: raw
                 .unbonding_period
                 .ok_or_else(|| {
@@ -186,9 +188,11 @@ impl TryFrom<RawClientState> for ClientState {
                     ))
                 })?
                 .try_into()
-                .map_err(|_| error::invalid_raw_client_state_error(anyhow::anyhow!(
-                    "negative unbonding period"
-                )))?,
+                .map_err(|_| {
+                    error::invalid_raw_client_state_error(anyhow::anyhow!(
+                        "negative unbonding period"
+                    ))
+                })?,
             max_clock_drift: raw
                 .max_clock_drift
                 .ok_or_else(|| {
@@ -197,23 +201,33 @@ impl TryFrom<RawClientState> for ClientState {
                     ))
                 })?
                 .try_into()
-                .map_err(|_|error::invalid_raw_client_state_error(anyhow::anyhow!(
-                    "negative max clock drift"
-                )))?,
+                .map_err(|_| {
+                    error::invalid_raw_client_state_error(anyhow::anyhow!(
+                        "negative max clock drift"
+                    ))
+                })?,
             latest_height: raw
                 .latest_height
                 .ok_or_else(|| {
                     error::invalid_raw_client_state_error(anyhow::anyhow!("missing latest height"))
                 })?
                 .try_into()
-                .map_err(|_|error::invalid_raw_height_error(anyhow::anyhow!("latest height: invalid raw height error")))?,
+                .map_err(|_| {
+                    error::invalid_raw_height_error(anyhow::anyhow!(
+                        "latest height: invalid raw height error"
+                    ))
+                })?,
             frozen_height: raw
                 .frozen_height
                 .ok_or_else(|| {
                     error::invalid_raw_client_state_error(anyhow::anyhow!("missing frozen height"))
                 })?
                 .try_into()
-                .map_err(|_|error::invalid_raw_height_error(anyhow::anyhow!("frozen height: invalid raw height error")))?,
+                .map_err(|_| {
+                    error::invalid_raw_height_error(anyhow::anyhow!(
+                        "frozen height: invalid raw height error"
+                    ))
+                })?,
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {
                 after_expiry: raw.allow_update_after_expiry,

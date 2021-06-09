@@ -1,8 +1,8 @@
 use core::marker::{Send, Sync};
-use std::convert::TryFrom;
-use std::string::ToString;
 use prost_types::Any;
 use serde::Serialize;
+use std::convert::TryFrom;
+use std::string::ToString;
 use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
@@ -75,14 +75,20 @@ impl TryFrom<Any> for AnyClientState {
             "" => Err(error::empty_client_state_response_error()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                client_state::ClientState::decode_vec(&raw.value)
-                    .map_err(|_|error::invalid_raw_client_state_error(anyhow::anyhow!("client state: invalid raw client state error")))?,
+                client_state::ClientState::decode_vec(&raw.value).map_err(|_| {
+                    error::invalid_raw_client_state_error(anyhow::anyhow!(
+                        "client state: invalid raw client state error"
+                    ))
+                })?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
-                MockClientState::decode_vec(&raw.value)
-                    .map_err(|_|error::invalid_raw_client_state_error(anyhow::anyhow!("MockClientState: invalid raw client state error")))?,
+                MockClientState::decode_vec(&raw.value).map_err(|_| {
+                    error::invalid_raw_client_state_error(anyhow::anyhow!(
+                        "MockClientState: invalid raw client state error"
+                    ))
+                })?,
             )),
 
             _ => Err(error::unknown_client_state_type_error(raw.type_url)),

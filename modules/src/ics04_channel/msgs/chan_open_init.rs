@@ -63,7 +63,9 @@ impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
 
     fn try_from(raw_msg: RawMsgChannelOpenInit) -> Result<Self, Self::Error> {
         Ok(MsgChannelOpenInit {
-            port_id: raw_msg.port_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("port id: identifier error")))?,
+            port_id: raw_msg.port_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("port id: identifier error"))
+            })?,
             channel: raw_msg
                 .channel
                 .ok_or(error::missing_channel_error())?

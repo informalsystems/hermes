@@ -102,18 +102,26 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
                     "missing height error"
                 )))?
                 .try_into()
-                .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error")))?,
+                .map_err(|_| {
+                    error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error"))
+                })?,
         )
-        .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("Construct Proofs: invalid proof error")))?;
+        .map_err(|_| {
+            error::invalid_proof_error(anyhow::anyhow!("Construct Proofs: invalid proof error"))
+        })?;
 
         let previous_channel_id = Some(raw_msg.previous_channel_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|_|error::identifier_error(anyhow::anyhow!("previous channel id: identifier error")))?;
+            .map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("previous channel id: identifier error"))
+            })?;
 
         let msg = MsgChannelOpenTry {
-            port_id: raw_msg.port_id.parse().map_err(|_| error::identifier_error(anyhow::anyhow!("port id: identifier error")))?,
+            port_id: raw_msg.port_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("port id: identifier error"))
+            })?,
             previous_channel_id,
             channel: raw_msg
                 .channel

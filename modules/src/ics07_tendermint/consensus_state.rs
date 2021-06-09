@@ -1,7 +1,7 @@
 use std::boxed::Box;
+use std::convert::From;
 use std::convert::TryFrom;
 use tendermint::primitives::SystemTime;
-use std::convert::From;
 
 use chrono::{TimeZone, Utc};
 use prost_types::Timestamp;
@@ -76,7 +76,11 @@ impl TryFrom<RawConsensusState> for ConsensusState {
                 .timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32)
                 .into(),
             next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
-                .map_err(|_|error::invalid_raw_consensus_state_error(anyhow::anyhow!("next validator hash: invalid raw consensus state error")))?,
+                .map_err(|_| {
+                    error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                        "next validator hash: invalid raw consensus state error"
+                    ))
+                })?,
         })
     }
 }

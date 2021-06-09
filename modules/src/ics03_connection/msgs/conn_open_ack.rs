@@ -1,8 +1,8 @@
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use std::convert::{TryFrom, TryInto};
+use std::string::ToString;
 use std::vec::Vec;
 use tendermint_proto::Protobuf;
-use std::string::ToString;
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::error::{self, ConnectionError};
@@ -87,36 +87,55 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             .consensus_height
             .ok_or(error::missing_consensus_height_error())?
             .try_into() // Cast from the raw height type into the domain type.
-            .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("consensus height: invalid proof error")))?;
+            .map_err(|_| {
+                error::invalid_proof_error(anyhow::anyhow!("consensus height: invalid proof error"))
+            })?;
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
-            .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("consensus proof obj: invalid proof error")))?;
+            .map_err(|_| {
+                error::invalid_proof_error(anyhow::anyhow!(
+                    "consensus proof obj: invalid proof error"
+                ))
+            })?;
 
         let proof_height = msg
             .proof_height
             .ok_or(error::missing_proof_height_error())?
             .try_into()
-            .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error")))?;
+            .map_err(|_| {
+                error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error"))
+            })?;
 
         let client_proof = Some(msg.proof_client)
             .filter(|x| !x.is_empty())
             .map(CommitmentProofBytes::from);
 
         Ok(Self {
-            connection_id: msg.connection_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("connection id: identifier error")))?,
-            counterparty_connection_id: msg
-                .counterparty_connection_id
-                .parse()
-                .map_err(|_|error::identifier_error(anyhow::anyhow!("counterparty connection id: identifier error")))?,
+            connection_id: msg.connection_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("connection id: identifier error"))
+            })?,
+            counterparty_connection_id: msg.counterparty_connection_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!(
+                    "counterparty connection id: identifier error"
+                ))
+            })?,
             client_state: msg
                 .client_state
                 .map(AnyClientState::try_from)
                 .transpose()
-                .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("client state : invalid proof error")))?,
+                .map_err(|_| {
+                    error::invalid_proof_error(anyhow::anyhow!(
+                        "client state : invalid proof error"
+                    ))
+                })?,
             version: msg
                 .version
-                .ok_or(error::invalid_version_error(anyhow::anyhow!("version: invalid version error")))?
+                .ok_or(error::invalid_version_error(anyhow::anyhow!(
+                    "version: invalid version error"
+                )))?
                 .try_into()
-                .map_err(|_|error::invalid_version_error(anyhow::anyhow!("version: invalid version error")))?,
+                .map_err(|_| {
+                    error::invalid_version_error(anyhow::anyhow!("version: invalid version error"))
+                })?,
             proofs: Proofs::new(
                 msg.proof_try.into(),
                 client_proof,
@@ -124,7 +143,9 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 None,
                 proof_height,
             )
-            .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("proofs: invalid proof error")))?,
+            .map_err(|_| {
+                error::invalid_proof_error(anyhow::anyhow!("proofs: invalid proof error"))
+            })?,
             signer: msg.signer.into(),
         })
     }

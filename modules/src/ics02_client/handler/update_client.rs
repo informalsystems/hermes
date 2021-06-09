@@ -54,7 +54,7 @@ pub fn process(
     // consensus_state obtained from header. These will be later persisted by the keeper.
     let (new_client_state, new_consensus_state) = client_def
         .check_header_and_update_state(client_state, header)
-        .map_err(|_|error::header_verification_failure_error())?;
+        .map_err(|_| error::header_verification_failure_error())?;
 
     let result = ClientResult::Update(Result {
         client_id: client_id.clone(),

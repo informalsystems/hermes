@@ -52,17 +52,23 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
         }
         Ok(Self::new(
             state,
-            value.client_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("client id: identifier error")))?,
+            value.client_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("client id: identifier error"))
+            })?,
             value
                 .counterparty
-                .ok_or(error::missing_counterparty_error(anyhow::anyhow!("counterparty: missing counterparty error")))?
+                .ok_or(error::missing_counterparty_error(anyhow::anyhow!(
+                    "counterparty: missing counterparty error"
+                )))?
                 .try_into()?,
             value
                 .versions
                 .into_iter()
                 .map(Version::try_from)
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|_|error::invalid_version_error(anyhow::anyhow!("version: invalid version error")))?,
+                .map_err(|_| {
+                    error::invalid_version_error(anyhow::anyhow!("version: invalid version error"))
+                })?,
             Duration::from_secs(value.delay_period),
         ))
     }
@@ -213,13 +219,19 @@ impl TryFrom<RawCounterparty> for Counterparty {
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|_|error::identifier_error(anyhow::anyhow!("connection id: identifier error")))?;
+            .map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("connection id: identifier error"))
+            })?;
         Ok(Counterparty::new(
-            value.client_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("client id: identifier error")))?,
+            value.client_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("client id: identifier error"))
+            })?,
             connection_id,
             value
                 .prefix
-                .ok_or(error::missing_counterparty_error(anyhow::anyhow!("prefix: missing counterparty error")))?
+                .ok_or(error::missing_counterparty_error(anyhow::anyhow!(
+                    "prefix: missing counterparty error"
+                )))?
                 .key_prefix
                 .into(),
         ))

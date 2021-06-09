@@ -12,8 +12,8 @@ use crate::ics04_channel::{
 };
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
-use std::vec::Vec;
 use std::string::ToString;
+use std::vec::Vec;
 #[derive(Clone, Debug)]
 pub struct SendPacketResult {
     pub port_id: PortId,
@@ -63,7 +63,9 @@ pub fn send_packet(
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
         .ok_or_else(|| {
-            error::missing_connection_error(anyhow::anyhow!(source_channel_end.connection_hops()[0].clone()))
+            error::missing_connection_error(anyhow::anyhow!(source_channel_end.connection_hops()
+                [0]
+            .clone()))
         })?;
 
     let client_id = connection_end.client_id().clone();

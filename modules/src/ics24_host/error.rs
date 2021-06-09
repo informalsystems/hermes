@@ -61,7 +61,7 @@ impl ValidationKind {
         anyhow::anyhow!(self)
     }
 
-    pub fn  kind(&self) -> &Self {
+    pub fn kind(&self) -> &Self {
         &self
     }
 }

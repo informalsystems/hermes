@@ -37,7 +37,7 @@ pub fn process(
             error::channel_not_found_error(
                 packet.destination_port.clone(),
                 packet.destination_channel.clone(),
-                anyhow::anyhow!("channel not found")
+                anyhow::anyhow!("channel not found"),
             )
         })?;
 
@@ -67,7 +67,9 @@ pub fn process(
     let connection_end = ctx
         .connection_end(&dest_channel_end.connection_hops()[0])
         .ok_or_else(|| {
-            error::missing_connection_error(anyhow::anyhow!(dest_channel_end.connection_hops()[0].clone()))
+            error::missing_connection_error(anyhow::anyhow!(
+                dest_channel_end.connection_hops()[0].clone()
+            ))
         })?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {

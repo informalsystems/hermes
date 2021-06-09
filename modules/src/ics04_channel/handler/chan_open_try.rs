@@ -26,7 +26,11 @@ pub(crate) fn process(
             let old_channel_end = ctx
                 .channel_end(&(msg.port_id().clone(), prev_id.clone()))
                 .ok_or_else(|| {
-                    error::channel_not_found_error(msg.port_id.clone(), prev_id.clone(), anyhow::anyhow!("channel not found"))
+                    error::channel_not_found_error(
+                        msg.port_id.clone(),
+                        prev_id.clone(),
+                        anyhow::anyhow!("channel not found"),
+                    )
                 })?;
 
             // Validate that existing channel end matches with the one we're trying to establish.
@@ -111,7 +115,9 @@ pub(crate) fn process(
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     if msg.channel().version().is_empty() {
-        return Err(error::invalid_version_error(anyhow::anyhow!("invalid version")));
+        return Err(error::invalid_version_error(anyhow::anyhow!(
+            "invalid version"
+        )));
     }
 
     // Proof verification in two steps:
@@ -142,7 +148,11 @@ pub(crate) fn process(
         &expected_channel_end,
         &msg.proofs(),
     )
-    .map_err(|_|error::failed_channe_open_try_verification_error(anyhow::anyhow!("verify channel proof: failed channe open try verification error")))?;
+    .map_err(|_| {
+        error::failed_channe_open_try_verification_error(anyhow::anyhow!(
+            "verify channel proof: failed channe open try verification error"
+        ))
+    })?;
 
     output.log("success: channel open try ");
 

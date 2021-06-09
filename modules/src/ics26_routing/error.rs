@@ -5,7 +5,6 @@ use crate::ics04_channel;
 use flex_error::*;
 use std::string::String;
 
-
 define_error! {
     #[derive(Debug)]
     RoutingError {

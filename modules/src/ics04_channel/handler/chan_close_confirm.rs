@@ -21,7 +21,11 @@ pub(crate) fn process(
     let mut channel_end = ctx
         .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
         .ok_or_else(|| {
-            error::channel_not_found_error(msg.port_id.clone(), msg.channel_id().clone(), anyhow::anyhow!("channel end: channel not found error"))
+            error::channel_not_found_error(
+                msg.port_id.clone(),
+                msg.channel_id().clone(),
+                anyhow::anyhow!("channel end: channel not found error"),
+            )
         })?;
 
     // Validate that the channel end is in a state where it can be closed.
@@ -41,7 +45,11 @@ pub(crate) fn process(
     }
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
-        .ok_or_else(|| error::missing_connection_error(anyhow::anyhow!(channel_end.connection_hops()[0].clone())))?;
+        .ok_or_else(|| {
+            error::missing_connection_error(anyhow::anyhow!(
+                channel_end.connection_hops()[0].clone()
+            ))
+        })?;
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(error::connection_not_open_error(
             channel_end.connection_hops()[0].clone(),
@@ -76,7 +84,11 @@ pub(crate) fn process(
         &expected_channel_end,
         &msg.proofs(),
     )
-    .map_err(|_| error::failed_channe_open_try_verification_error(anyhow::anyhow!("verify channel proof: failed channel open try verification error")))?;
+    .map_err(|_| {
+        error::failed_channe_open_try_verification_error(anyhow::anyhow!(
+            "verify channel proof: failed channel open try verification error"
+        ))
+    })?;
 
     output.log("success: channel close confirm ");
 

@@ -2,8 +2,6 @@ use flex_error::*;
 
 pub type Error = anyhow::Error;
 
-
-
 define_error! {
     #[derive(Debug)]
     ConnectionError {

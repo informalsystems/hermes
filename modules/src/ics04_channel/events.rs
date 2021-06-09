@@ -202,7 +202,10 @@ impl From<Attributes> for OpenInit {
 macro_rules! channel_attribute {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse()?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()?
     }};
 }
 
@@ -210,7 +213,13 @@ macro_rules! channel_attribute {
 macro_rules! p_attribute_validation_kind {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e: crate::ics24_host::error::ValidationKind | error::validation_kind_error(anyhow::anyhow!(e)))?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: crate::ics24_host::error::ValidationKind| {
+                error::validation_kind_error(anyhow::anyhow!(e))
+            })?
     }};
 }
 
@@ -218,7 +227,11 @@ macro_rules! p_attribute_validation_kind {
 macro_rules! p_attribute_parser_int_error {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e : std::num::ParseIntError| error::parse_int_error(anyhow::anyhow!(e)))?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: std::num::ParseIntError| error::parse_int_error(anyhow::anyhow!(e)))?
     }};
 }
 
@@ -226,10 +239,13 @@ macro_rules! p_attribute_parser_int_error {
 macro_rules! p_attribute_infallible {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e: std::convert::Infallible | error::in_fallible_error(anyhow::anyhow!(e)))?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?
     }};
 }
-
 
 impl TryFrom<RawObject> for OpenInit {
     type Error = ChannelError;
@@ -239,7 +255,10 @@ impl TryFrom<RawObject> for OpenInit {
             port_id: p_attribute_validation_kind!(obj, "channel_open_init.port_id"),
             channel_id: some_attribute!(obj, "channel_open_init.channel_id"),
             connection_id: p_attribute_validation_kind!(obj, "channel_open_init.connection_id"),
-            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_open_init.counterparty_port_id"),
+            counterparty_port_id: p_attribute_validation_kind!(
+                obj,
+                "channel_open_init.counterparty_port_id"
+            ),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_open_init.counterparty_channel_id"
@@ -283,7 +302,10 @@ impl TryFrom<RawObject> for OpenTry {
             port_id: p_attribute_validation_kind!(obj, "channel_open_try.port_id"),
             channel_id: some_attribute!(obj, "channel_open_try.channel_id"),
             connection_id: p_attribute_validation_kind!(obj, "channel_open_try.connection_id"),
-            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_open_try.counterparty_port_id"),
+            counterparty_port_id: p_attribute_validation_kind!(
+                obj,
+                "channel_open_try.counterparty_port_id"
+            ),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_open_try.counterparty_channel_id"
@@ -327,7 +349,10 @@ impl TryFrom<RawObject> for OpenAck {
             port_id: p_attribute_validation_kind!(obj, "channel_open_ack.port_id"),
             channel_id: some_attribute!(obj, "channel_open_ack.channel_id"),
             connection_id: p_attribute_validation_kind!(obj, "channel_open_ack.connection_id"),
-            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_open_ack.counterparty_port_id"),
+            counterparty_port_id: p_attribute_validation_kind!(
+                obj,
+                "channel_open_ack.counterparty_port_id"
+            ),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_open_ack.counterparty_channel_id"
@@ -371,7 +396,10 @@ impl TryFrom<RawObject> for OpenConfirm {
             port_id: p_attribute_validation_kind!(obj, "channel_open_confirm.port_id"),
             channel_id: some_attribute!(obj, "channel_open_confirm.channel_id"),
             connection_id: p_attribute_validation_kind!(obj, "channel_open_confirm.connection_id"),
-            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_open_confirm.counterparty_port_id"),
+            counterparty_port_id: p_attribute_validation_kind!(
+                obj,
+                "channel_open_confirm.counterparty_port_id"
+            ),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_open_confirm.counterparty_channel_id"
@@ -433,7 +461,10 @@ impl TryFrom<RawObject> for CloseInit {
             port_id: p_attribute_validation_kind!(obj, "channel_close_init.port_id"),
             channel_id: some_attribute!(obj, "channel_close_init.channel_id"),
             connection_id: p_attribute_validation_kind!(obj, "channel_close_init.connection_id"),
-            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_close_init.counterparty_port_id"),
+            counterparty_port_id: p_attribute_validation_kind!(
+                obj,
+                "channel_close_init.counterparty_port_id"
+            ),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_close_init.counterparty_channel_id"
@@ -489,7 +520,10 @@ impl TryFrom<RawObject> for CloseConfirm {
             port_id: p_attribute_validation_kind!(obj, "channel_close_confirm.port_id"),
             channel_id: some_attribute!(obj, "channel_close_confirm.channel_id"),
             connection_id: p_attribute_validation_kind!(obj, "channel_close_confirm.connection_id"),
-            counterparty_port_id: p_attribute_validation_kind!(obj, "channel_close_confirm.counterparty_port_id"),
+            counterparty_port_id: p_attribute_validation_kind!(
+                obj,
+                "channel_close_confirm.counterparty_port_id"
+            ),
             counterparty_channel_id: some_attribute!(
                 obj,
                 "channel_close_confirm.counterparty_channel_id"
@@ -504,8 +538,6 @@ impl From<CloseConfirm> for IbcEvent {
     }
 }
 
-
-
 impl TryFrom<RawObject> for Packet {
     type Error = ChannelError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -518,7 +550,10 @@ impl TryFrom<RawObject> for Packet {
             destination_port: p_attribute_validation_kind!(obj, "packet_dst_port"),
             destination_channel: p_attribute_validation_kind!(obj, "packet_dst_channel"),
             data: vec![],
-            timeout_height: height_str.as_str().try_into().map_err(|_| error::unknown_error())?,
+            timeout_height: height_str
+                .as_str()
+                .try_into()
+                .map_err(|_| error::unknown_error())?,
             timeout_timestamp: p_attribute_parser_int_error!(obj, "packet_timeout_timestamp"),
         })
     }

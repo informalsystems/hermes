@@ -60,11 +60,12 @@ impl TryFrom<RawMsgChannelCloseInit> for MsgChannelCloseInit {
 
     fn try_from(raw_msg: RawMsgChannelCloseInit) -> Result<Self, Self::Error> {
         Ok(MsgChannelCloseInit {
-            port_id: raw_msg.port_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("port id: identifier error")))?,
-            channel_id: raw_msg
-                .channel_id
-                .parse()
-                .map_err(|_|error::identifier_error(anyhow::anyhow!("channel id: identifier error")))?,
+            port_id: raw_msg.port_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("port id: identifier error"))
+            })?,
+            channel_id: raw_msg.channel_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("channel id: identifier error"))
+            })?,
             signer: raw_msg.signer.into(),
         })
     }

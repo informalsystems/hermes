@@ -1,7 +1,7 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use std::convert::{TryFrom, TryInto};
-use std::string::String;
 use std::prelude::v1::format;
+use std::string::String;
 
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
@@ -10,10 +10,10 @@ use tendermint_proto::Protobuf;
 // use crate::attribute;
 use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::{self, ClientError};
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
-use crate::ics02_client::error::{self, ClientError};
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
@@ -159,12 +159,14 @@ impl From<Attributes> for CreateClient {
     }
 }
 
-
 #[macro_export]
 macro_rules! client_attribute {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse()?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()?
     }};
 }
 
@@ -172,7 +174,13 @@ macro_rules! client_attribute {
 macro_rules! c_attribute_validation_kind {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e: crate::ics24_host::error::ValidationKind | error::validation_kind_error(anyhow::anyhow!(e)))?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: crate::ics24_host::error::ValidationKind| {
+                error::validation_kind_error(anyhow::anyhow!(e))
+            })?
     }};
 }
 
@@ -180,14 +188,19 @@ macro_rules! c_attribute_validation_kind {
 macro_rules! c_attribute_infallible {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx].parse().map_err(|e: std::convert::Infallible | error::in_fallible_error(anyhow::anyhow!(e)))?
+        $a.events
+            .get(&nb)
+            .ok_or(error::attribute_error(anyhow::anyhow!(nb)))?[$a.idx]
+            .parse()
+            .map_err(|e: std::convert::Infallible| error::in_fallible_error(anyhow::anyhow!(e)))?
     }};
 }
 
 impl TryFrom<RawObject> for CreateClient {
     type Error = ClientError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let consensus_height_str: String = c_attribute_infallible!(obj, "create_client.consensus_height");
+        let consensus_height_str: String =
+            c_attribute_infallible!(obj, "create_client.consensus_height");
         Ok(CreateClient(Attributes {
             height: obj.height,
             client_id: c_attribute_validation_kind!(obj, "create_client.client_id"),
@@ -252,7 +265,8 @@ impl TryFrom<RawObject> for UpdateClient {
         let header_str: String = c_attribute_infallible!(obj, "update_client.header");
         let header_bytes = hex::decode(header_str).unwrap();
         let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
-        let consensus_height_str: String = c_attribute_infallible!(obj, "update_client.consensus_height");
+        let consensus_height_str: String =
+            c_attribute_infallible!(obj, "update_client.consensus_height");
         Ok(UpdateClient {
             common: Attributes {
                 height: obj.height,
@@ -297,7 +311,8 @@ impl ClientMisbehaviour {
 impl TryFrom<RawObject> for ClientMisbehaviour {
     type Error = ClientError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let consensus_height_str: String = c_attribute_infallible!(obj, "client_misbehaviour.consensus_height");
+        let consensus_height_str: String =
+            c_attribute_infallible!(obj, "client_misbehaviour.consensus_height");
         Ok(ClientMisbehaviour(Attributes {
             height: obj.height,
             client_id: c_attribute_validation_kind!(obj, "client_misbehaviour.client_id"),

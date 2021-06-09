@@ -50,7 +50,9 @@ impl FromStr for Version {
     type Err = ChannelError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Version::decode(s.as_bytes()).map_err(|_|error::invalid_version_error(anyhow::anyhow!("Version: invalid version error")))?)
+        Ok(Version::decode(s.as_bytes()).map_err(|_| {
+            error::invalid_version_error(anyhow::anyhow!("Version: invalid version error"))
+        })?)
     }
 }
 
@@ -78,8 +80,9 @@ pub fn pick_version(
 ) -> Result<String, ChannelError> {
     let mut intersection: Vec<Version> = vec![];
     for s in supported_versions.iter() {
-        let supported_version =
-            Version::decode(s.as_bytes()).map_err(|_|error::invalid_version_error(anyhow::anyhow!("Version: invalid version error")))?;
+        let supported_version = Version::decode(s.as_bytes()).map_err(|_| {
+            error::invalid_version_error(anyhow::anyhow!("Version: invalid version error"))
+        })?;
         for c in counterparty_versions.iter() {
             let counterparty_version = Version::from_str(c.as_str())?;
             if supported_version.identifier != counterparty_version.identifier {
@@ -109,7 +112,9 @@ pub fn validate_versions(versions: Vec<String>) -> Result<Vec<String>, ChannelEr
 }
 
 pub fn validate_version(raw_version: String) -> Result<String, ChannelError> {
-    let version = Version::from_str(raw_version.as_ref()).map_err(|_|error::invalid_version_error(anyhow::anyhow!("Version : invalid version error")))?;
+    let version = Version::from_str(raw_version.as_ref()).map_err(|_| {
+        error::invalid_version_error(anyhow::anyhow!("Version : invalid version error"))
+    })?;
 
     if version.identifier.trim().is_empty() {
         return Err(error::invalid_version_error(anyhow::anyhow!(

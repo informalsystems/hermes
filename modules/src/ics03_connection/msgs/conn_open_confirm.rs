@@ -58,11 +58,16 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
             .proof_height
             .ok_or(error::missing_proof_height_error())?
             .try_into() // Cast from the raw height type into the domain type.
-            .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error")))?;
+            .map_err(|_| {
+                error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error"))
+            })?;
         Ok(Self {
-            connection_id: msg.connection_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("connection id: identifier error")))?,
-            proofs: Proofs::new(msg.proof_ack.into(), None, None, None, proof_height)
-                .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("proofs : invalid proof error")))?,
+            connection_id: msg.connection_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("connection id: identifier error"))
+            })?,
+            proofs: Proofs::new(msg.proof_ack.into(), None, None, None, proof_height).map_err(
+                |_| error::invalid_proof_error(anyhow::anyhow!("proofs : invalid proof error")),
+            )?,
             signer: msg.signer.into(),
         })
     }

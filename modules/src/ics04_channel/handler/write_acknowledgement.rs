@@ -36,7 +36,7 @@ pub fn process(
             error::channel_not_found_error(
                 packet.destination_port.clone(),
                 packet.destination_channel.clone(),
-                anyhow::anyhow!("channel not found")
+                anyhow::anyhow!("channel not found"),
             )
         })?;
 

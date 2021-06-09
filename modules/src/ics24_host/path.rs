@@ -1,12 +1,12 @@
+use crate::ics04_channel::packet::Sequence;
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 /// Path-space as listed in ICS-024
 /// https://github.com/cosmos/ics/tree/master/spec/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
 ///
 use std::fmt::{Display, Formatter, Result};
-use std::vec::Vec;
 use std::string::ToString;
-use crate::ics04_channel::packet::Sequence;
-use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use std::vec::Vec;
 
 /// ABCI Query path for the IBC sub-store
 pub const IBC_QUERY_PATH: &str = "store/ibc/key";

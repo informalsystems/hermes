@@ -1,10 +1,10 @@
+use chrono::{DateTime, Utc};
 use core::marker::{Send, Sync};
+use prost_types::Any;
+use serde::Serialize;
 use std::boxed::Box;
 use std::convert::{TryFrom, TryInto};
 use std::string::ToString;
-use chrono::{DateTime, Utc};
-use prost_types::Any;
-use serde::Serialize;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
@@ -83,14 +83,20 @@ impl TryFrom<Any> for AnyConsensusState {
             "" => Err(error::empty_consensus_state_response_error()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                consensus_state::ConsensusState::decode_vec(&value.value)
-                    .map_err(|_|error::invalid_raw_consensus_state_error(anyhow::anyhow!("consensus state: invalid raw consensus state eror")))?,
+                consensus_state::ConsensusState::decode_vec(&value.value).map_err(|_| {
+                    error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                        "consensus state: invalid raw consensus state eror"
+                    ))
+                })?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
-                MockConsensusState::decode_vec(&value.value)
-                    .map_err(|_|error::invalid_raw_consensus_state_error(anyhow::anyhow!("MockConsensusState: invalid raw consensus state error")))?,
+                MockConsensusState::decode_vec(&value.value).map_err(|_| {
+                    error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                        "MockConsensusState: invalid raw consensus state error"
+                    ))
+                })?,
             )),
 
             _ => Err(error::unknown_consensus_state_type_error(value.type_url)),
@@ -130,13 +136,19 @@ impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
             .consensus_state
             .map(AnyConsensusState::try_from)
             .transpose()
-            .map_err(|_|error::invalid_raw_consensus_state_error(anyhow::anyhow!("consensus state: invalid raw consensus state error")))?
+            .map_err(|_| {
+                error::invalid_raw_consensus_state_error(anyhow::anyhow!(
+                    "consensus state: invalid raw consensus state error"
+                ))
+            })?
             .ok_or(error::empty_consensus_state_response_error())?;
 
         Ok(AnyConsensusStateWithHeight {
             height: value
                 .height
-                .ok_or(error::invalid_height_result_error(anyhow::anyhow!("height: invalid height result error")))?
+                .ok_or(error::invalid_height_result_error(anyhow::anyhow!(
+                    "height: invalid height result error"
+                )))?
                 .try_into()?,
             consensus_state: state,
         })

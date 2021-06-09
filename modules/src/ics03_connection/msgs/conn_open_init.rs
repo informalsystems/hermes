@@ -1,7 +1,7 @@
-use std::convert::{TryFrom, TryInto};
-use std::time::Duration;
-use std::string::ToString;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+use std::convert::{TryFrom, TryInto};
+use std::string::ToString;
+use std::time::Duration;
 use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::connection::Counterparty;
@@ -58,16 +58,24 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
 
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
         Ok(Self {
-            client_id: msg.client_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("client id: identifier error")))?,
+            client_id: msg.client_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("client id: identifier error"))
+            })?,
             counterparty: msg
                 .counterparty
-                .ok_or(error::missing_counterparty_error(anyhow::anyhow!("counterparty: missing counterparty error")))?
+                .ok_or(error::missing_counterparty_error(anyhow::anyhow!(
+                    "counterparty: missing counterparty error"
+                )))?
                 .try_into()?,
             version: msg
                 .version
-                .ok_or(error::invalid_version_error(anyhow::anyhow!("version : invalid version error")))?
+                .ok_or(error::invalid_version_error(anyhow::anyhow!(
+                    "version : invalid version error"
+                )))?
                 .try_into()
-                .map_err(|_|error::invalid_version_error(anyhow::anyhow!("version : invalid version error")))?,
+                .map_err(|_| {
+                    error::invalid_version_error(anyhow::anyhow!("version : invalid version error"))
+                })?,
             delay_period: Duration::from_secs(msg.delay_period),
             signer: msg.signer.into(),
         })

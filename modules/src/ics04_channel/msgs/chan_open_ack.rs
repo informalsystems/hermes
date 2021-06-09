@@ -92,22 +92,28 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
             None,
             raw_msg
                 .proof_height
-                .ok_or(error::missing_height_error(anyhow::anyhow!("proof height: missing height error")))?
+                .ok_or(error::missing_height_error(anyhow::anyhow!(
+                    "proof height: missing height error"
+                )))?
                 .try_into()
-                .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error")))?,
+                .map_err(|_| {
+                    error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error"))
+                })?,
         )
-        .map_err(|_| error::invalid_proof_error(anyhow::anyhow!("Construct Proofs: invalid proof error")))?;
+        .map_err(|_| {
+            error::invalid_proof_error(anyhow::anyhow!("Construct Proofs: invalid proof error"))
+        })?;
 
         Ok(MsgChannelOpenAck {
-            port_id: raw_msg.port_id.parse().map_err(|_| error::identifier_error(anyhow::anyhow!("port id: identifier error")))?,
-            channel_id: raw_msg
-                .channel_id
-                .parse()
-                .map_err(|_| error::identifier_error(anyhow::anyhow!("channel id: identifier error")))?,
-            counterparty_channel_id: raw_msg
-                .counterparty_channel_id
-                .parse()
-                .map_err(|_|error::identifier_error(anyhow::anyhow!("counterpart channel id: identifier error")))?,
+            port_id: raw_msg.port_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("port id: identifier error"))
+            })?,
+            channel_id: raw_msg.channel_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("channel id: identifier error"))
+            })?,
+            counterparty_channel_id: raw_msg.counterparty_channel_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("counterpart channel id: identifier error"))
+            })?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
             signer: raw_msg.signer.into(),

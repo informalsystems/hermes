@@ -31,6 +31,7 @@ std = [
     "regex/std",
     "subtle-encoding/std",
     "sha2/std",
+    "tendermint/std",
 ]
 
 [dependencies]
@@ -55,9 +56,9 @@ displaydoc = {version = "0.2", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.19.0"
+default-features = false
 git = "https://github.com/octopus-network/tendermint-rs.git"
-branch = "octpus-no-std-flex-error"
-commit = "d49781cb111b4b4cead3b4f58ba69d06d3a18231"
+rev = "ae835fe820e0a518080f190e7c0174c23bbef2e6"
 
 [dependencies.tendermint-proto]
 version = "=0.19.0"

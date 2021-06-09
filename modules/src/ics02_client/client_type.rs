@@ -1,9 +1,9 @@
 use std::fmt;
 
-use serde_derive::{Deserialize, Serialize};
-use std::string::ToString;
 use super::error;
 use crate::ics02_client::error::ClientError;
+use serde_derive::{Deserialize, Serialize};
+use std::string::ToString;
 
 /// Type of the client, depending on the specific consensus algorithm.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

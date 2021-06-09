@@ -59,18 +59,28 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
             None,
             raw_msg
                 .proof_height
-                .ok_or(error::missing_height_error(anyhow::anyhow!("proof height: missing height error")))?
+                .ok_or(error::missing_height_error(anyhow::anyhow!(
+                    "proof height: missing height error"
+                )))?
                 .try_into()
-                .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error")))?,
+                .map_err(|_| {
+                    error::invalid_proof_error(anyhow::anyhow!("proof height: invalid proof error"))
+                })?,
         )
-        .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("Construct Proof: invalid proof error")))?;
+        .map_err(|_| {
+            error::invalid_proof_error(anyhow::anyhow!("Construct Proof: invalid proof error"))
+        })?;
 
         Ok(MsgRecvPacket {
             packet: raw_msg
                 .packet
-                .ok_or(error::missing_packet_error(anyhow::anyhow!("packet: missing packet error")))?
+                .ok_or(error::missing_packet_error(anyhow::anyhow!(
+                    "packet: missing packet error"
+                )))?
                 .try_into()
-                .map_err(|_|error::invalid_packet_error(anyhow::anyhow!("packet: invalid packet error")))?,
+                .map_err(|_| {
+                    error::invalid_packet_error(anyhow::anyhow!("packet: invalid packet error"))
+                })?,
             proofs,
             signer: raw_msg.signer.into(),
         })

@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::{From, TryFrom, TryInto};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
@@ -83,19 +83,31 @@ impl TryFrom<RawHeader> for Header {
                     error::invalid_raw_header_error(anyhow::anyhow!("missing signed header"))
                 })?
                 .try_into()
-                .map_err(|_|error::invalid_header_error(anyhow::anyhow!("signed header: invalid header error")))?,
+                .map_err(|_| {
+                    error::invalid_header_error(anyhow::anyhow!(
+                        "signed header: invalid header error"
+                    ))
+                })?,
             validator_set: raw
                 .validator_set
                 .ok_or_else(|| {
                     error::invalid_raw_header_error(anyhow::anyhow!("missing validator set"))
                 })?
                 .try_into()
-                .map_err(|_|error::invalid_raw_header_error(anyhow::anyhow!("validator set: invalid raw reader error")))?,
+                .map_err(|_| {
+                    error::invalid_raw_header_error(anyhow::anyhow!(
+                        "validator set: invalid raw reader error"
+                    ))
+                })?,
             trusted_height: raw
                 .trusted_height
                 .ok_or_else(|| error::invalid_raw_header_error(anyhow::anyhow!("missing height")))?
                 .try_into()
-                .map_err(|_|error::invalid_raw_height_error(anyhow::anyhow!("trusted height : invalid raw height error")))?,
+                .map_err(|_| {
+                    error::invalid_raw_height_error(anyhow::anyhow!(
+                        "trusted height : invalid raw height error"
+                    ))
+                })?,
             trusted_validator_set: raw
                 .trusted_validators
                 .ok_or_else(|| {
@@ -104,7 +116,11 @@ impl TryFrom<RawHeader> for Header {
                     ))
                 })?
                 .try_into()
-                .map_err(|_|error::invalid_raw_header_error(anyhow::anyhow!("trust validator set: invalid raw header error")))?,
+                .map_err(|_| {
+                    error::invalid_raw_header_error(anyhow::anyhow!(
+                        "trust validator set: invalid raw header error"
+                    ))
+                })?,
         })
     }
 }

@@ -50,7 +50,9 @@ pub fn process(
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
         .ok_or_else(|| {
-            error::missing_connection_error(anyhow::anyhow!(source_channel_end.connection_hops()[0].clone()))
+            error::missing_connection_error(anyhow::anyhow!(source_channel_end.connection_hops()
+                [0]
+            .clone()))
         })?;
 
     let client_id = connection_end.client_id().clone();

@@ -64,7 +64,9 @@ impl TryFrom<RawChannel> for ChannelEnd {
             .into_iter()
             .map(|conn_id| ConnectionId::from_str(conn_id.as_str()))
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|_|error::identifier_error(anyhow::anyhow!("connection hops: identifier error")))?;
+            .map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("connection hops: identifier error"))
+            })?;
 
         let version = validate_version(value.version)?;
 
@@ -230,9 +232,13 @@ impl TryFrom<RawCounterparty> for Counterparty {
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|_|error::identifier_error(anyhow::anyhow!("channel id: identifier error")))?;
+            .map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("channel id: identifier error"))
+            })?;
         Ok(Counterparty::new(
-            value.port_id.parse().map_err(|_|error::identifier_error(anyhow::anyhow!("port id : identifier error")))?,
+            value.port_id.parse().map_err(|_| {
+                error::identifier_error(anyhow::anyhow!("port id : identifier error"))
+            })?,
             channel_id,
         ))
     }
@@ -297,7 +303,11 @@ impl FromStr for Order {
             "uninitialized" => Ok(Self::None),
             "unordered" => Ok(Self::Unordered),
             "ordered" => Ok(Self::Ordered),
-            _ => return Err(error::unknown_order_type_error(anyhow::anyhow!(s.to_string()))),
+            _ => {
+                return Err(error::unknown_order_type_error(anyhow::anyhow!(
+                    s.to_string()
+                )))
+            }
         }
     }
 }

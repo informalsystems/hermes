@@ -54,7 +54,9 @@ pub fn verify_channel_proofs(
             &channel_end.counterparty().channel_id().unwrap(),
             expected_chan,
         )
-        .map_err(|_|error::invalid_proof_error(anyhow::anyhow!("verify channel state: invalid proof error")))?)
+        .map_err(|_| {
+            error::invalid_proof_error(anyhow::anyhow!("verify channel state: invalid proof error"))
+        })?)
 }
 
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
