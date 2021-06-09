@@ -44,6 +44,7 @@ mod tests {
 
     use serial_test::serial;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use test_env_log::test;
 
     static COUNTER: AtomicUsize = AtomicUsize::new(0);
 

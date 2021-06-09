@@ -109,19 +109,34 @@ the `gm.toml` file for node configuration. By default, newly created node config
   * This is a sub-sections-only variable. It will be ignored in the `global` section.
   * Defines the network (the validator connection) for the full node.
   * **Mandatory for full nodes**, does not exist for validator nodes.
-* `hermes_binary`
-  * Optional variable.
-  * Path to the `hermes` binary to use.
-  * Only used in the `hermes` sub-commands.
-  * This is a global-only variable. It will be ignored in sub-sections.
-* `hermes_config`
-  * Optional variable.
-  * The hermes configuration file path.
-  * Only used in the `hermes` sub-commands.
-  * This is a global-only variable. It will be ignored in sub-sections.
 
-Note: the user is welcome to create additional nodes outside the scope of `gm` on the local machine but `gm` will only
-manage nodes that are added to the configuration file.
+* `[global.hermes]` - the hermes section of the global configuration. These global-only parameters are used in
+  setting up the hermes configuration and are only used in the `hermes` sub-command.
+* `binary` - Path to the `hermes` binary to use.
+* `config` - The hermes configuration file path.
+* `strategy` - The hermes configuration strategy parameter.
+* `log_level` - The hermes configuration log_level parameter.
+* `telemetry_enabled` - The hermes configuration telemetry.enabled parameter.
+* `telemetry_host` - The hermes configuration telemetry.host parameter.
+* `telemetry_port` - The hermes configuration telemetry.port parameter.
+
+**Tribal knowledge**: (things they don't tell you)
+* the user is welcome to create additional nodes outside the scope of `gm` on the local machine but `gm` will only
+  manage nodes that are added to the configuration file.
+* one quirk of the underlying tools is that if global variables are set, you can't unset them locally: empty values
+  in a node configuration will revert back to the global setting.
+* The shortest node definition is a named subsection like this `[mynode1]`. Ths inherently defines the following things:
+  * this node is a validator
+  * the chain_id of the network is `mynode1`
+  * a wallet is generated with extra tokens that can be used by the developer (or by hermes)
+* If you want to create a full-node, you have to define the `network="myvalidator"` option in the node configuration. If
+  you do, the following things are inherently defined:
+  * the node is connected to a validator called `myvalidator`
+  * the `genesis.json` file is copied from that validator and the `persistent_peers` section is updated to point to the
+    validator
+  * if Hermes is pointed to this node in the configuration (by adding the `add_to_hermes=true` option), Hermes will get
+    the wallet details from the validator node and use that wallet for transactions
+
 
 ### The network configuration
 **Where**: Default is the folder `$HOME/.gm/<node_name>`, but it can be configured in `gm.toml` using the `home_dir`

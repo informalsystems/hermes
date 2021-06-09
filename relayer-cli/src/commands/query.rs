@@ -19,7 +19,7 @@ pub enum QueryCmd {
     #[options(help = "Query information about clients")]
     Client(QueryClientCmds),
 
-    #[options(help = "Query clients")]
+    #[options(help = "Query the identifiers of all clients on a chain")]
     Clients(clients::QueryAllClientsCmd),
 
     /// The `query connection` subcommand

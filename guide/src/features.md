@@ -3,6 +3,12 @@
 This section includes a summary of the supported and planned features.
 A feature matrix and comparison between the Rust and Go relayer implementations can be found in the [Feature Matrix](./features/matrix.md)
 
+> **Cosmos SDK compatibility:**
+> Hermes supports Cosmos SDK chains implementing the [IBC v1.0][ibcv1] protocol specification.
+> Cosmos SDK versions `0.41.3` to `0.42.4` are officially supported.
+
+[ibcv1]: https://github.com/cosmos/ibc-go/tree/main/proto/ibc
+
 ## Supported Features
 
 - Basic features
@@ -14,11 +20,10 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
     - relay packets, acknowledgments, timeout and timeout-on-close packets, with zero or non-zero delay.
     - queries for all objects
 - Packet relaying over:
-    - new path
-    - single specified path
     - multiple paths, for the chains in `config.toml`
 - Restart support
-    - clear packets on relayer restart when started for a single path or multiple paths
+    - clear packets
+    - resume channel handshake if configured to relay `all`
 - Client upgrade
     - upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
 - Packet delay:
@@ -36,15 +41,15 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
     - initiating a cross chain transfer (mainly for testing)
     - relaying sent packets, acknowledgments and timeouts
     - client upgrade
+- Channel handshake for existing channel that is not in `Open` state
+- Telemetry support
 
 ## Upcoming / Unsupported Features
 
 Planned features:
-- Connection handshake for existing connection that is not in `Open` state
-- Channel handshake for existing channel that is not in `Open` state
 - Full Passive mode: relay from all IBC events
+    - Connection handshake for existing connection that is not in `Open` state
 - Relayer support for management application (add RPC server)
-- Telemetry support
 - Dynamic configuration management
 
 Not planned:

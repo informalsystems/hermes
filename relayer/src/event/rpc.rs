@@ -2,7 +2,6 @@ use std::{collections::HashMap, convert::TryFrom};
 
 use anomaly::BoxError;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
-use tracing::trace;
 
 use ibc::ics02_client::events::NewBlock;
 use ibc::ics02_client::height::Height;
@@ -42,14 +41,13 @@ pub fn get_all_events(
 
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
-                match build_event(RawObject::new(
+                if let Ok(event) = build_event(RawObject::new(
                     height,
                     action.0,
                     action.1 as usize,
                     events.clone(),
                 )) {
-                    Ok(event) => vals.push((height, event)),
-                    Err(e) => trace!("error while building event {}", e.to_string()),
+                    vals.push((height, event));
                 }
             }
         }

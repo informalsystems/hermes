@@ -42,7 +42,7 @@ jobs:
           command: fmt
           args: --all -- --check
 
-  clippy_check:
+  clippy_all_features:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -56,6 +56,20 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features --all-targets
 
+  clippy_no_default_features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+          override: true
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --no-default-features --all-targets
+
   test-stable:
     runs-on: ubuntu-latest
     steps:
@@ -67,7 +81,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features --no-fail-fast
+          args: --all-features --no-fail-fast -- --nocapture
 
   # test-coverage:
   #   runs-on: ubuntu-latest

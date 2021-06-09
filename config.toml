@@ -5,6 +5,11 @@
 strategy = 'packets'
 log_level = 'info'
 
+[telemetry]
+enabled = true
+host = '127.0.0.1'
+port = 3001
+
 [[chains]]
 id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'

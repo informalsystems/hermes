@@ -1,11 +1,8 @@
-# Concurrent packet relaying on multiple paths
+# Relay packets on multiple paths
 
-At the moment, the `start` command relays packets over a single channel.
-To relay packets over multiple channels concurrently, one can instead use
-the `start-multi` command.
+Hermes can relay packets over all current or future paths between the configured set of chains.
 
-> __WARNING__: Relaying packets concurrently over multiple channels with the
-> `start-multi` command is currently __experimental__. Use at your own risk.
+Follow the steps below to connect three chains together and relay packets between them:
 
 1. Paste the following configuration in the standard Hermes configuration file at `~/.hermes/config.toml`:
 
@@ -206,14 +203,14 @@ the `start-multi` command.
 
     Note that the channel identifier on `ibc-1` is `channel-1`, and on `ibc-2` it is `channel-0`.
 
-3. Start Hermes using the `start-multi` command:
+3. Start Hermes using the `start` command:
 
     ```shell
-    hermes start-multi
+    hermes start
     ```
 
-   Hermes will first relay the pending packets that have not been relayed and then start passive relaying by listening
-    to and acting on packet events.
+   Hermes will first relay the pending packets that have not been relayed and then
+   start passive relaying by listening to and acting on packet events.
 
 4. In a separate terminal, use the `ft-transfer` command to send:
 

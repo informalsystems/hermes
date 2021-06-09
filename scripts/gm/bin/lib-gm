@@ -5,21 +5,25 @@ if [ "${DEBUG:-}" == "2" ]; then
 fi
 
 version() {
-  echo "v0.0.2"
+  echo "v0.0.4"
 }
 
 config_defaults() {
     GLOBAL_GAIAD_BINARY="$(which gaiad || echo "${GOPATH:-./gaiad}")"
-    GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
     #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
+    DEFAULT_PORTS_START_AT=27000
     GLOBAL_HOME_DIR="${HOME}/.gm"
-    GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
     GLOBAL_AUTO_MAINTAIN_CONFIG="true"
     GLOBAL_ADD_TO_HERMES="false"
     GLOBAL_WALLET_MNEMONIC=""
     GLOBAL_WALLET_HDPATH=""
-    GLOBAL_HERMES_STRATEGY="all"
+    GLOBAL_HERMES_BINARY="$(which hermes || echo "./hermes")"
+    GLOBAL_HERMES_CONFIG="${HOME}/.hermes/config.toml"
+    GLOBAL_HERMES_STRATEGY="packets"
     GLOBAL_HERMES_LOG_LEVEL="info"
+    GLOBAL_HERMES_TELEMETRY_ENABLED="true"
+    GLOBAL_HERMES_TELEMETRY_HOST="127.0.0.1"
+    GLOBAL_HERMES_TELEMETRY_PORT="3001"
 }
 
 install() {
@@ -71,8 +75,8 @@ enforce_requirements() {
   MAJOR="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\1/")"
   MINOR="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\2/")"
   PATCH="$(echo "${STOML_VERSION}" | "$SED" "s/^\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)$/\3/")"
-  if [ $((MAJOR)) -eq 0 ] && [ $((MINOR)) -lt 6 ] || { [ $((MAJOR)) -eq 0 ] && [ $((MINOR)) -eq 6 ] && [ $((PATCH)) -lt 2 ]; }; then
-    exit_with_error "stoml too old, install 0.6.2 or newer from https://github.com/freshautomations/stoml/releases"
+  if [ $((MAJOR)) -eq 0 ] && [ $((MINOR)) -lt 7 ]; then
+    exit_with_error "stoml too old, install 0.7.0 or newer from https://github.com/freshautomations/stoml/releases"
   fi
 }
 
@@ -103,25 +107,6 @@ warn_unknown_hermes_node() {
 exit_with_error() {
   echo "ERROR: $*, exiting..."
   return 1
-}
-
-usage() {
-  echo "Gaiad Manager $(version)"
-  echo 
-  echo "Usage:"
-  echo "  gm <COMMAND> [[<PARAMS>]...]"
-  echo
-  echo "COMMANDS    DESCRIPTION"
-  echo
-  echo "help        print this help and exit"
-  echo "install     install the script for the local user"
-  echo "keys        print the keys of validator nodes"
-  echo "log         print the log of a node"
-  echo "ports       print the ports of a (running) node"
-  echo "start       start one or more nodes (starts all nodes if no parameter is given)"
-  echo "status      print the status of nodes"
-  echo "stop        stop one or more nodes (stops all nodes if no parameter is given)"
-  echo
 }
 
 # Is string A in space-separated list B?
@@ -193,31 +178,39 @@ load_config() {
     fi
   fi
   config_defaults
-  GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -q "$CONFIG_FILE" global.gaiad_binary || echo "$GLOBAL_GAIAD_BINARY")")"
-  GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -q "$CONFIG_FILE" global.hermes_binary || echo "$GLOBAL_HERMES_BINARY")")"
-  GLOBAL_HOME_DIR="$(eval echo "$(stoml -q "$CONFIG_FILE" global.home_dir || echo "$GLOBAL_HOME_DIR")")"
-  GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -q "$CONFIG_FILE" global.hermes_config || echo "$GLOBAL_HERMES_CONFIG")")"
-  GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -q "$CONFIG_FILE" global.auto_maintain_config || echo "$GLOBAL_AUTO_MAINTAIN_CONFIG")"
-  GLOBAL_ADD_TO_HERMES="$(stoml -q "$CONFIG_FILE" global.add_to_hermes || echo "$GLOBAL_ADD_TO_HERMES")"
-  GLOBAL_WALLET_MNEMONIC="$(stoml -q "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
-  GLOBAL_WALLET_HDPATH="$(stoml -q "$CONFIG_FILE" global.wallet_hdpath || echo "$GLOBAL_WALLET_HDPATH")"
-  GLOBAL_HERMES_STRATEGY="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
-  GLOBAL_HERMES_LOG_LEVEL="$(stoml -q "$GLOBAL_HERMES_CONFIG" global.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
+  GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.gaiad_binary || echo "$GLOBAL_GAIAD_BINARY")")"
+  GLOBAL_HOME_DIR="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.home_dir || echo "$GLOBAL_HOME_DIR")")"
+  GLOBAL_AUTO_MAINTAIN_CONFIG="$(stoml -sq "$CONFIG_FILE" global.auto_maintain_config || echo "$GLOBAL_AUTO_MAINTAIN_CONFIG")"
+  GLOBAL_ADD_TO_HERMES="$(stoml -sq "$CONFIG_FILE" global.add_to_hermes || echo "$GLOBAL_ADD_TO_HERMES")"
+  GLOBAL_WALLET_MNEMONIC="$(stoml -sq "$CONFIG_FILE" global.wallet_mnemonic || echo "$GLOBAL_WALLET_MNEMONIC")"
+  GLOBAL_WALLET_HDPATH="$(stoml -sq "$CONFIG_FILE" global.wallet_hdpath || echo "$GLOBAL_WALLET_HDPATH")"
+  GLOBAL_HERMES_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.binary || echo "$GLOBAL_HERMES_BINARY")")"
+  GLOBAL_HERMES_CONFIG="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.hermes.config || echo "$GLOBAL_HERMES_CONFIG")")"
+  GLOBAL_HERMES_STRATEGY="$(stoml -sq "$CONFIG_FILE" global.hermes.strategy || echo "$GLOBAL_HERMES_STRATEGY")"
+  GLOBAL_HERMES_LOG_LEVEL="$(stoml -sq "$CONFIG_FILE" global.hermes.log_level || echo "$GLOBAL_HERMES_LOG_LEVEL")"
+  GLOBAL_HERMES_TELEMETRY_ENABLED="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_enabled || echo "$GLOBAL_HERMES_TELEMETRY_ENABLED")"
+  GLOBAL_HERMES_TELEMETRY_HOST="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_host || echo "$GLOBAL_HERMES_TELEMETRY_HOST")"
+  GLOBAL_HERMES_TELEMETRY_PORT="$(stoml -sq "$CONFIG_FILE" global.hermes.telemetry_port || echo "$GLOBAL_HERMES_TELEMETRY_PORT")"
   export GLOBAL_GAIAD_BINARY
-  export GLOBAL_HERMES_BINARY
   export GLOBAL_HOME_DIR
-  export GLOBAL_HERMES_CONFIG
   export GLOBAL_AUTO_MAINTAIN_CONFIG
   export GLOBAL_ADD_TO_HERMES
   export GLOBAL_WALLET_MNEMONIC
   export GLOBAL_WALLET_HDPATH
+  export GLOBAL_HERMES_BINARY
+  export GLOBAL_HERMES_CONFIG
+  export GLOBAL_HERMES_STRATEGY
+  export GLOBAL_HERMES_LOG_LEVEL
+  export GLOBAL_HERMES_TELEMETRY_ENABLED
+  export GLOBAL_HERMES_TELEMETRY_HOST
+  export GLOBAL_HERMES_TELEMETRY_PORT
   if [ "$FRESH_CONFIG" = "yes" ]; then
     write_default_config
     VALIDATORS=""
     FULL_NODES=""
     ALL_HERMES_NODES=""
   else
-    stoml "$CONFIG_FILE" global 1> /dev/null || exit_with_error invalid config file. Make sure all strings are quoted
+    stoml -s "$CONFIG_FILE" global 1> /dev/null || exit_with_error invalid config file. Make sure all strings are quoted and the global section exits
     test -x "$GLOBAL_GAIAD_BINARY" || exit_with_error "gaiad binary cannot be executed: $GLOBAL_GAIAD_BINARY"
     # Workaround for issue: https://github.com/spf13/viper/issues/1131
     #   Fix "stoml" so it reads empty sections too.
@@ -229,7 +222,7 @@ load_config() {
     ALL_HERMES_NODES=""
     for i in $RAW_SECTIONS
     do
-      if [ "$i" = "global" ]; then
+      if [ "$i" = "global" ] || [ "$i" = "global.hermes" ]; then
         continue
       fi
       if [ -z "$(stoml "$CONFIG_FILE" "${i}.network")" ]; then
@@ -277,14 +270,22 @@ write_default_config() {
   cat <<EOF > "$CONFIG_FILE"
 [global]
 gaiad_binary="$GLOBAL_GAIAD_BINARY"
-ports_start_at=27000
+ports_start_at=$DEFAULT_PORTS_START_AT
 home_dir="$GLOBAL_HOME_DIR"
 auto_maintain_config=$GLOBAL_AUTO_MAINTAIN_CONFIG
 add_to_hermes=$GLOBAL_ADD_TO_HERMES
-hermes_binary="$GLOBAL_HERMES_BINARY"
-hermes_config="$GLOBAL_HERMES_CONFIG"
 wallet_mnemonic="$GLOBAL_WALLET_MNEMONIC"
 wallet_hdpath="$GLOBAL_WALLET_HDPATH"
+
+[global.hermes]
+binary="$GLOBAL_HERMES_BINARY"
+config="$GLOBAL_HERMES_CONFIG"
+strategy="$GLOBAL_HERMES_STRATEGY"
+log_level="$GLOBAL_HERMES_LOG_LEVEL"
+telemetry_enabled="$GLOBAL_HERMES_TELEMETRY_ENABLED"
+telemetry_host="$GLOBAL_HERMES_TELEMETRY_HOST"
+telemetry_port="$GLOBAL_HERMES_TELEMETRY_PORT"
+
 EOF
   set -e
 }
@@ -301,7 +302,7 @@ get_gaiad_binary() {
 get_ports_start_at() {
   RESULT="$(stoml -q "$CONFIG_FILE" "${1}.ports_start_at")"
   if [ -z "$RESULT" ]; then
-    THIS_PORTS_START_AT="$(stoml -q "$CONFIG_FILE" global.ports_start_at || echo 27000)"
+    THIS_PORTS_START_AT="$(stoml -sq "$CONFIG_FILE" global.ports_start_at || echo "$DEFAULT_PORTS_START_AT")"
     sconfig "$CONFIG_FILE" -t int "global.ports_start_at=$((THIS_PORTS_START_AT+10))" 1> /dev/null
     sconfig "$CONFIG_FILE" -t int "${1}.ports_start_at=$THIS_PORTS_START_AT" 1> /dev/null
     echo "$THIS_PORTS_START_AT"
@@ -717,6 +718,11 @@ hermes_config() {
 strategy = '${GLOBAL_HERMES_STRATEGY}'
 log_level = '${GLOBAL_HERMES_LOG_LEVEL}'
 
+[telemetry]
+enabled = ${GLOBAL_HERMES_TELEMETRY_ENABLED}
+host = '${GLOBAL_HERMES_TELEMETRY_HOST}'
+port = ${GLOBAL_HERMES_TELEMETRY_PORT}
+
 EOF
   for i in $ALL_NODES
   do
@@ -737,6 +743,10 @@ account_prefix='cosmos'
 key_name='wallet'
 store_prefix='ibc'
 fee_denom='stake'
+fee_amount=1000
+gas=300000
+clock_drift='5s'
+trusting_period='14days'
 
 [chains.trust_threshold]
 numerator = '1'
@@ -760,7 +770,7 @@ get_cointype() {
 hermes_keys() {
   ID="$(get_chain_id "$1")"
   NETWORK_HOME_DIR="$(get_home_dir "$ID")"
-  test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config."
+  test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config"
   WALLET_HDPATH="$(get_wallet_hdpath "$1")"
   COINTYPE="$(get_cointype "$1")"
   if [ -n "$WALLET_HDPATH" ] && [ -z "${COINTYPE}" ]; then

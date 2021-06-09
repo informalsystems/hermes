@@ -60,6 +60,7 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::mock::host::HostType;
     use crate::Height;
+    use test_env_log::test;
 
     #[test]
     /// Serves to test both ICS 26 `dispatch` & `build_client_update_datagram` functions.

@@ -4,7 +4,41 @@
 
 ### FEATURES
 
+- [ibc-relayer-cli]
+  - Add `--hd-path` option to `keys restore` and `keys add` commands to specify
+    derivation path when importing keys ([#1049])
+
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
+
+[#868]: https://github.com/informalsystems/ibc-rs/issues/1049
+
+## v0.4.0
+*June 3rd, 2021*
+
+- This release of Hermes features an internal [telemetry service][telemetry]
+  which can export metrics about the relayer to Prometheus.
+- A new [relaying strategy][strategy] is now available, which enables Hermes to
+  complete channel handshakes in an event-based fashion.
+- Hermes now checks if another relayer may have already processed a packet event,
+  and will not attempt to process it itself, which improves performance.
+- The startup time of the relayer has been substantially improved.
+- The `start-multi` command has been promoted to `start`, which means
+  that the worker-based relayer is not experimental anymore.
+- A regression where Hermes would not recover after a node went down and up again was fixed.
+
+[telemetry]: https://hermes.informal.systems/telemetry.html
+[strategy]: http://hermes.informal.systems/config.html?highlight=strategy#global
+
+> Special thanks to Colin Axnér (@colin-axner) and Jongwhan Lee (@leejw51crypto)
+> for raising multiple issues that helped us improve the reliability of Hermes.
+
+### FEATURES
+
 - [ibc-relayer]
+  - Add telemetry and Prometheus endpoint ([#868], [#1032])
   - Add support for event based channel relaying ([#822])
   - Graceful handling of packet events in the presence of multiple relayers ([#983])
 
@@ -14,6 +48,7 @@
   - Started `unwrap` cleanup ([#871])
 
 - [ibc-relayer-cli]
+  - Include chain-id in `query clients` command, and sort output by client counter ([#992])
   - Improve config loading message ([#996])
   - Improve Hermes worker spawn time for `start` command ([#998])
   - Better Hermes help message when command is unrecognized ([#1003])
@@ -21,10 +56,15 @@
 ### BUG FIXES
 
 - [ibc-relayer]
-  - Fix for a client worker bug; Hermes `start` returns error if no chain is reachable ([#972])
+  - Fix client worker initialization error ([#972])
+  - Fix `hermes start` panic when all chains are unreachable ([#972])
+  - Ensure expired or frozen client worker logs message and terminates ([#1022])
+  - Fix regression where Hermes would not recover after a node went down and up again ([#1026])
 
-- [gaia-manager]
+- [gaiad-manager]
   - Import hermes keys properly even if wallet HD derivation path is set ([#975])
+  - Apply default values to missing configuration parameters ([#993])
+  - `gm hermes config` now creates hermes 0.4.0 compatible configuration ([#1039])
 
 ### BREAKING CHANGES
 
@@ -32,14 +72,22 @@
   - Promote `start-multi` command to `start` ([#911])
 
 [#822]: https://github.com/informalsystems/ibc-rs/issues/822
+[#868]: https://github.com/informalsystems/ibc-rs/issues/868
 [#871]: https://github.com/informalsystems/ibc-rs/issues/871
 [#911]: https://github.com/informalsystems/ibc-rs/issues/911
 [#972]: https://github.com/informalsystems/ibc-rs/issues/972
 [#975]: https://github.com/informalsystems/ibc-rs/issues/975
 [#983]: https://github.com/informalsystems/ibc-rs/issues/983
+[#992]: https://github.com/informalsystems/ibc-rs/issues/992
 [#996]: https://github.com/informalsystems/ibc-rs/issues/996
+[#993]: https://github.com/informalsystems/ibc-rs/issues/993
 [#998]: https://github.com/informalsystems/ibc-rs/issues/998
 [#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
+[#1022]: https://github.com/informalsystems/ibc-rs/issues/1022
+[#1026]: https://github.com/informalsystems/ibc-rs/issues/1026
+[#1032]: https://github.com/informalsystems/ibc-rs/issues/1032
+[gaiad-manager]: https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/README.md
+[#1039]: https://github.com/informalsystems/ibc-rs/issues/1039
 
 ## v0.3.2
 *May 21st, 2021*
@@ -75,6 +123,7 @@ Docker images to Docker Hub.
 
 > Nothing
 
+[#868]: https://github.com/informalsystems/ibc-rs/issues/868
 [#894]: https://github.com/informalsystems/ibc-rs/pull/894
 [#957]: https://github.com/informalsystems/ibc-rs/issues/957
 [#960]: https://github.com/informalsystems/ibc-rs/issues/960

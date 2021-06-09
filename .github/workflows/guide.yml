@@ -19,7 +19,7 @@ jobs:
       - name: Setup mdbook
         uses: peaceiris/actions-mdbook@v1
         with:
-          mdbook-version: "0.4.6"
+          mdbook-version: "0.4.9"
 
       - name: Setup mdbook-mermaid
         uses: actions-rs/cargo@v1
