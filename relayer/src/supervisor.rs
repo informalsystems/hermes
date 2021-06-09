@@ -298,7 +298,6 @@ impl Supervisor {
                         ),
                     }
 
-                    //TODO counterpary check too for open
                     if !connection_end.state_matches(&State::Open) {
                         debug!("drop connection not open {} ", connection.connection_id);
                         continue;
