@@ -7,7 +7,7 @@ use ibc::{
         ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
     },
     ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
-    ics24_host::identifier::{ChainId, ClientId, ConnectionId, ChannelId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     Height,
 };
 use ibc_proto::ibc::core::{
@@ -187,7 +187,6 @@ fn connection_on_destination(
     counterparty_client_id: &ClientId,
     counterparty_chain: &dyn ChainHandle,
 ) -> Result<Option<ConnectionEnd>, Error> {
- 
     //TODO: Is there a way to filter by client ?
     // let req = QueryConnectionsRequest {
     //     pagination: ibc_proto::cosmos::base::query::pagination::all(),
@@ -201,14 +200,20 @@ fn connection_on_destination(
     //     .query_connections(req)
     //     .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    let counterparty_connections =  counterparty_chain.
-            query_client_connections(req).map_err(|e| Error::QueryFailed(format!("counterparty_chain query_client {} _connections failed {}",counterparty_client_id, e)))?;
-
+    let counterparty_connections =
+        counterparty_chain
+            .query_client_connections(req)
+            .map_err(|e| {
+                Error::QueryFailed(format!(
+                    "counterparty_chain query_client {} _connections failed {}",
+                    counterparty_client_id, e
+                ))
+            })?;
 
     for counterparty_connection in counterparty_connections.into_iter() {
-
-        let counterparty_connection_end = counterparty_chain.query_connection(&counterparty_connection, Height::zero())
-                .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+        let counterparty_connection_end = counterparty_chain
+            .query_connection(&counterparty_connection, Height::zero())
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
         //let counterparty_connection_end = counterparty_connection.connection_end.clone();
 
         let local_connection_end = &counterparty_connection_end.counterparty();
@@ -235,7 +240,12 @@ pub fn connection_state_on_destination(
     } else {
         let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
 
-        connection_on_destination(&connection.connection_id, &counterparty_client_id, counterparty_chain)?.map_or_else(
+        connection_on_destination(
+            &connection.connection_id,
+            &counterparty_client_id,
+            counterparty_chain,
+        )?
+        .map_or_else(
             || ConnectionState::Uninitialized,
             |remote_connection| remote_connection.state,
         )

@@ -469,11 +469,9 @@ impl Connection {
             })?;
 
         let connection = IdentifiedConnectionEnd {
-            connection_end: connection_end.clone(),
+            connection_end,
             connection_id: connection_id.clone(),
         };
-
-        //let counterparty_client_id = connection_end.counterparty().client_id().clone(); 
 
         connection_state_on_destination(connection, self.dst_chain().as_ref()).map_err(|_| {
             ConnectionError::Failed(format!(
