@@ -5,14 +5,7 @@ use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, log::trace, warn};
 
-use ibc::{
-    events::IbcEvent,
-    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::{IdentifiedConnectionEnd, State},
-    ics04_channel::channel::IdentifiedChannelEnd,
-    ics24_host::identifier::ChainId,
-    Height,
-};
+use ibc::{Height, events::IbcEvent, ics02_client::client_state::{ClientState, IdentifiedAnyClientState}, ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State}, ics04_channel::channel::IdentifiedChannelEnd, ics24_host::identifier::ChainId};
 use ibc_proto::ibc::core::{
     channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest,
     connection::v1::QueryClientConnectionsRequest,
@@ -22,7 +15,8 @@ use ibc_proto::ibc::core::{
 use crate::{
     chain::counterparty::channel_state_on_destination,
     chain::{
-        counterparty::{connection_client, connection_state_on_destination},
+        counterparty::connection_state_on_destination,
+        counterparty::get_counterparty_chain_from_connection,
         handle::ChainHandle,
     },
     config::{Config, Strategy},
@@ -232,33 +226,6 @@ impl Supervisor {
                 }
             };
 
-            // let conn_req = QueryConnectionsRequest {
-            //     pagination: ibc_proto::cosmos::base::query::pagination::all(),
-            // };
-
-            // let connections = match chain.query_connections(conn_req.clone()) {
-            //     Ok(connections) => connections,
-            //     Err(e) => {
-            //         error!("failed to query connections from {}: {}", chain_id, e);
-            //         continue;
-            //     }
-            // };
-
-            // for connection in connections {
-            //     match self.spawn_workers_for_connection(chain.clone(), connection.clone()) {
-            //         Ok(()) => debug!(
-            //             "done spawning workers for connection {} on chain {}",
-            //             chain.id(),
-            //             connection.connection_id
-            //         ),
-            //         Err(e) => error!(
-            //             "skipped workers for connection {} on chain {} due to error {}",
-            //             chain.id(),
-            //             connection.connection_id,
-            //             e
-            //         ),
-            //     }
-            // }
 
             let clients = match chain.query_clients(clients_req.clone()) {
                 Ok(clients) => clients,
@@ -312,7 +279,7 @@ impl Supervisor {
                         connection_end: connection_end.clone(),
                     };
 
-                    match self.spawn_workers_for_connection(chain.clone(), connection.clone()) {
+                    match self.spawn_workers_for_connection(chain.clone(), client.clone(), connection.clone()) {
                         Ok(()) => debug!(
                             "done spawning workers for connection {} on chain {}",
                             chain.id(),
@@ -324,11 +291,49 @@ impl Supervisor {
                             connection.connection_id,
                             e
                         ),
-                    }
-
+                    }                    
+                    
+                    //TODO counterpary check too for open 
                     if !connection_end.state_matches(&State::Open) {
+                        debug!("drop connection not open {} ", connection.connection_id);
                         continue;
                     }
+
+                    if connection_end.counterparty().connection_id().is_none(){
+                        debug!("drop connection, counterparty not open {} ", connection.connection_id);
+                        continue;
+                    }    
+
+                    let counterparty_chain = match self.registry.get_or_spawn(&client.client_state.chain_id()) {
+                        Ok(chain_handle) => chain_handle,
+                        Err(e) => {
+                            error!(
+                                "couterparty for chain {} failed \
+                                reason: failed to spawn couterparty chain runtime with error: {}",
+                                chain_id, e
+                            );
+                            continue;
+                        }
+                    };
+
+                    let counterparty_conn = match counterparty_chain.query_connection(
+                            connection_end.counterparty().connection_id().unwrap(), Height::zero()){
+                                Ok(conn) => conn, 
+                                Err(e) => {
+                                    error!(
+                                        "couterparty chain {} failed  \
+                                        reason: failed to find counterparty connection with error: {}",
+                                        counterparty_chain.id(), e
+                                    );
+                                    continue;
+                                }
+                            };
+                    if !counterparty_conn.state_matches(&State::Open){
+                        continue;
+                    }
+                    
+                    //
+
 
                     let chans_req = QueryConnectionChannelsRequest {
                         connection: connection_id.to_string(),
@@ -379,56 +384,18 @@ impl Supervisor {
     fn spawn_workers_for_connection(
         &mut self,
         chain: Box<dyn ChainHandle>,
+        client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<(), BoxError> {
-        trace!(
-            "fetching client for connection {:?} of chain {}",
-            connection,
-            chain.id()
-        );
-
-        let client_res = connection_client(chain.as_ref(), &connection.connection_id);
-
-        let client = match client_res {
-            Ok(conn_client) => conn_client,
-            Err(Error::ConnectionNotOpen(..)) | Err(Error::ChannelUninitialized(..)) => {
-                // These errors are silent.
-                // Simply ignore the connection and return without spawning the workers.
-                warn!(
-                    "ignoring connection {} because it is uninitialized ",
-                    connection.connection_id
-                );
-
-                return Ok(());
-            }
-            Err(e) => {
-                // Propagate errors.
-                return Err(format!(
-                    "unable to spawn workers for connection/chain pair '{}'/'{}' due to error: {:?}",
-                    connection.connection_id,
-                    chain.id(),
-                    e
-                )
-                .into());
-            }
-        };
-
-        trace!("Obtained client id {:?}", client.client_id);
-
-        if self
-            .config
-            .find_chain(&client.client_state.chain_id())
-            .is_none()
-        {
-            // Ignore connection, since it does not correspond to any chain in the config file
-            return Ok(());
-        }
+        
 
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
 
         let conn_state_src = connection.connection_end.state;
+
+        //let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
         let conn_state_dst =
             connection_state_on_destination(connection.clone(), counterparty_chain.as_ref())?;
 
@@ -633,6 +600,34 @@ impl Supervisor {
 
         Ok(())
     }
+
+    // fn counterparty_connection_end( &mut self, connection_end: &ConnectionEnd, chain_id: &ChainId ){
+
+    //     let counterparty_chain = match self.registry.get_or_spawn(chain_id) {
+    //         Ok(chain_handle) => chain_handle,
+    //         Err(e) => {
+    //             error!(
+    //                 "couterparty for chain {} failed \
+    //                 reason: failed to spawn couterparty chain runtime with error: {}",
+    //                 chain_id, e
+    //             );
+    //             continue;
+    //         }
+    //     };
+    
+    //     let counterparty_conn = match counterparty_chain.query_connection(
+    //             connection_end.counterparty().connection_id().unwrap(), Height::zero()){
+    //                 Ok(conn) => conn, 
+    //                 Err(e) => {
+    //                     error!(
+    //                         "couterparty chain {} failed  \
+    //                         reason: failed to find counterparty connection with error: {}",
+    //                         counterparty_chain.id(), e
+    //                     );
+    //                     continue;
+    //                 }
+    //             };
+    // }
 }
 
 /// Describes the result of [`collect_events`].

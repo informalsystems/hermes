@@ -216,14 +216,8 @@ def main():
     passive_packets(config, ibc0, ibc1, port_id, ibc0_chan_id, ibc1_chan_id)
     sleep(2.0)
 
-    channel.passive_channel_start_then_init(config, ibc1, ibc0, ibc1_conn_id, port_id)
-    sleep(2.0)
-
-    channel.passive_channel_init_then_start(config, ibc1, ibc0, ibc1_conn_id, port_id)
-    sleep(2.0)
-
-    channel.passive_channel_try_then_start(config, ibc1, ibc0, ibc1_conn_id, ibc0_conn_id, port_id)
-    sleep(2.0)
+    connection.passive_connection_start_then_init(config, ibc1, ibc0, ibc1_client_id, ibc0_client_id)
+    sleep(2.0) 
 
 if __name__ == "__main__":
     main()

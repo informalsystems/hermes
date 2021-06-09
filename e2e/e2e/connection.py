@@ -250,3 +250,49 @@ def query_connection_end(c: Config, chain_id: ChainId, conn_id: ConnectionId) ->
     l.debug(f'Status of connection end {conn_id}: {res}')
 
     return res
+
+# =============================================================================
+# Passive CONNECTION relayer tests
+# =============================================================================
+
+def verify_state(c: Config,
+    ibc1: ChainId, ibc0: ChainId,
+    ibc1_conn_id: ConnectionId):
+
+    strategy = toml.load(c.config_file)['global']['strategy']
+    # verify connection state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
+
+    if strategy == 'all':
+        sleep(10.0)
+        for i in range(20):
+            sleep(2.0)
+            ibc1_conn_end = query_connection_end(c, ibc1, ibc1_conn_id)
+            ibc0_conn_id = ibc1_conn_end.counterparty.connection_id
+            ibc0_conn_end = query_connection_end(c, ibc0, ibc0_conn_id)
+            if ibc0_conn_end.state == 'Open' and ibc1_conn_end.state == 'Open':
+                break
+        else:
+            assert (ibc0_conn_end.state == 'Open'), (ibc0_conn_end, "state is not Open")
+            assert (ibc1_conn_end.state == 'Open'), (ibc1_conn_end, "state is not Open")
+
+    elif strategy == 'packets':
+        sleep(5.0)
+        ibc1_conn_end = query_connection_end(c, ibc1, ibc1_conn_id)
+        assert (ibc1_conn_end.state == 'Init'), (ibc1_conn_end, "state is not Init")
+
+def passive_connection_start_then_init(c: Config,
+    ibc1: ChainId, ibc0: ChainId,
+    ibc1_clinet_id: ClientId, ibc0_client_id: ClientId ):
+
+    # 1. start hermes
+    proc = relayer.start(c)
+    sleep(2.0)
+
+    # 2. create a channel in Init state
+    ibc1_conn_id = conn_open_init(c, dst=ibc1, src=ibc0, dst_client=ibc1_client_id, src_client=ibc0_client_id)
+
+    # 3. wait for channel handshake to finish and verify channel state on both chains
+    verify_state(c, ibc1, ibc0, ibc1_conn_id)
+
+    # 4. All good, stop the relayer
+    proc.kill()

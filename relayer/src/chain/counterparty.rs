@@ -7,12 +7,11 @@ use ibc::{
         ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
     },
     ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
-    ics24_host::identifier::ConnectionId,
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
+    ics24_host::identifier::{ChainId, ClientId, ConnectionId, ChannelId, PortId},
     Height,
 };
 use ibc_proto::ibc::core::{
-    channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryConnectionsRequest,
+    channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryClientConnectionsRequest,
 };
 
 use crate::supervisor::Error;
@@ -185,22 +184,37 @@ pub fn channel_state_on_destination(
 
 fn connection_on_destination(
     connection_id: &ConnectionId,
+    counterparty_client_id: &ClientId,
     counterparty_chain: &dyn ChainHandle,
 ) -> Result<Option<ConnectionEnd>, Error> {
+ 
     //TODO: Is there a way to filter by client ?
-    let req = QueryConnectionsRequest {
-        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+    // let req = QueryConnectionsRequest {
+    //     pagination: ibc_proto::cosmos::base::query::pagination::all(),
+    // };
+
+    let req = QueryClientConnectionsRequest {
+        client_id: counterparty_client_id.to_string(),
     };
 
-    let counterparty_connections = counterparty_chain
-        .query_connections(req)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+    // let counterparty_connections = counterparty_chain
+    //     .query_connections(req)
+    //     .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    let counterparty_connections =  counterparty_chain.
+            query_client_connections(req).map_err(|e| Error::QueryFailed(format!("counterparty_chain query_client {} _connections failed {}",counterparty_client_id, e)))?;
+
 
     for counterparty_connection in counterparty_connections.into_iter() {
-        let local_connection_end = &counterparty_connection.connection_end.counterparty();
+
+        let counterparty_connection_end = counterparty_chain.query_connection(&counterparty_connection, Height::zero())
+                .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+        //let counterparty_connection_end = counterparty_connection.connection_end.clone();
+
+        let local_connection_end = &counterparty_connection_end.counterparty();
         if let Some(local_connection_id) = local_connection_end.connection_id() {
             if local_connection_id == connection_id {
-                return Ok(Some(counterparty_connection.connection_end));
+                return Ok(Some(counterparty_connection_end));
             }
         }
     }
@@ -219,7 +233,9 @@ pub fn connection_state_on_destination(
             .map_err(|e| Error::QueryFailed(format!("{}", e)))?
             .state
     } else {
-        connection_on_destination(&connection.connection_id, counterparty_chain)?.map_or_else(
+        let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
+
+        connection_on_destination(&connection.connection_id, &counterparty_client_id, counterparty_chain)?.map_or_else(
             || ConnectionState::Uninitialized,
             |remote_connection| remote_connection.state,
         )
