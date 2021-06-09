@@ -22,7 +22,10 @@ use ibc::{
         header::{AnyHeader, Header},
         misbehaviour::{Misbehaviour, MisbehaviourEvidence},
     },
-    ics07_tendermint::{header::Header as TmHeader, misbehaviour::Misbehaviour as TmMisbehaviour},
+    ics07_tendermint::{
+        header::{headers_compatible, Header as TmHeader},
+        misbehaviour::Misbehaviour as TmMisbehaviour,
+    },
     ics24_host::identifier::ChainId,
 };
 
@@ -127,19 +130,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             return Ok(None);
         }
 
-        let succ_trusted = self.fetch(trusted_height.increment())?;
-
         let VerifiedBlock { target, supporting } =
             self.verify(trusted_height, target_height, &client_state)?;
 
-        let witness = TmHeader {
-            trusted_height,
-            signed_header: target.signed_header,
-            validator_set: target.validators,
-            trusted_validator_set: succ_trusted.validators.clone(),
-        };
+        if !headers_compatible(&target.signed_header, &update_header.signed_header) {
+            let (witness, supporting) = adjust_headers(self, trusted_height, target, supporting)?;
 
-        if !witness.compatible_with(&update_header) {
             let misbehaviour = TmMisbehaviour {
                 client_id: update.client_id().clone(),
                 header1: update_header,
@@ -147,22 +143,9 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             }
             .wrap_any();
 
-            let supporting_headers = supporting
-                .into_iter()
-                .map(|h| {
-                    TmHeader {
-                        trusted_height,
-                        signed_header: h.signed_header.clone(),
-                        validator_set: h.validators,
-                        trusted_validator_set: succ_trusted.validators.clone(),
-                    }
-                    .wrap_any()
-                })
-                .collect_vec();
-
             Ok(Some(MisbehaviourEvidence {
                 misbehaviour,
-                supporting_headers,
+                supporting_headers: supporting.into_iter().map(TmHeader::wrap_any).collect(),
             }))
         } else {
             Ok(None)
