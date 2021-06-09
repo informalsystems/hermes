@@ -28,6 +28,7 @@ use ibc::{
     },
     ics24_host::identifier::ChainId,
 };
+use tracing::trace;
 
 use crate::error::Kind;
 use crate::{
@@ -62,6 +63,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         target: ibc::Height,
         client_state: &AnyClientState,
     ) -> Result<Verified<LightBlock>, Error> {
+        trace!(%trusted, %target, "light client verification");
+
         let target_height = TMHeight::try_from(target.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
@@ -88,6 +91,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     }
 
     fn fetch(&mut self, height: ibc::Height) -> Result<LightBlock, Error> {
+        trace!(%height, "fetching header");
+
         let height = TMHeight::try_from(height.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
@@ -238,6 +243,11 @@ impl LightClient {
         supporting: Vec<LightBlock>,
     ) -> Result<(TmHeader, Vec<TmHeader>), Error> {
         use super::LightClient;
+
+        trace!(
+            trusted = %trusted_height, target = %target.height(),
+            "adjusting headers with {} supporting headers", supporting.len()
+        );
 
         // Get the light block at trusted_height + 1 from chain.
         //
