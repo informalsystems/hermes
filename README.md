@@ -17,9 +17,11 @@ This project comprises primarily four crates:
 - The [`ibc-relayer-cli`][relayer-cli-crate-link] is a CLI (a wrapper
   over the `ibc-relayer` library), comprising the
   [`hermes`](https://hermes.informal.systems) binary.
-- The [`ibc-proto`][ibc-proto-crate-link] is a library with Rust types generated from .proto definitions
+- Crate [`ibc-proto`][ibc-proto-crate-link] is a library with Rust types generated from .proto definitions
   necessary for interacting with [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/tree/master/proto/cosmos)
   and its [IBC structs](https://github.com/cosmos/ibc-go/tree/main/proto/ibc).
+- Crate [`ibc-telemetry`][ibc-telemetry-crate-link] is a library for use in the `hermes` CLI,
+  for gathering telemetry data and exposing that in a Prometheus endpoint.
 
 See the table below for more details.
 
@@ -31,6 +33,7 @@ Includes [TLA+ specifications](/docs/spec).
 | [ibc-relayer](./relayer)      | lib |  [![IBC Relayer Crate][relayer-crate-image]][relayer-crate-link]  | [![IBC Relayer Docs][relayer-docs-image]][relayer-docs-link] |
 | [ibc-relayer-cli](./relayer-cli)  | bin: [hermes](relayer-cli/) |  [![IBC Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]      |  [![IBC Relayer CLI Docs][relayer-cli-docs-image]][relayer-cli-docs-link] |
 | [ibc-proto](./proto)  | lib |  [![IBC Proto Crate][ibc-proto-crate-image]][ibc-proto-crate-link]      |  [![IBC Proto Docs][ibc-proto-docs-image]][ibc-proto-docs-link] |
+| [ibc-telemetry](./telemetry)  | lib |  [![IBC Telemetry Crate][ibc-telemetry-crate-image]][ibc-telemetry-crate-link]      |  [![IBC Telemetry Docs][ibc-telemetry-docs-image]][ibc-telemetry-docs-link] |
 
 
 ## Requirements
@@ -92,6 +95,10 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [ibc-proto-crate-link]: https://crates.io/crates/ibc-proto
 [ibc-proto-docs-image]: https://docs.rs/ibc-proto/badge.svg
 [ibc-proto-docs-link]: https://docs.rs/ibc-proto/
+[ibc-telemetry-crate-image]: https://img.shields.io/crates/v/ibc-telemetry.svg
+[ibc-telemetry-crate-link]: https://crates.io/crates/ibc-telemetry
+[ibc-telemetry-docs-image]: https://docs.rs/ibc-telemetry/badge.svg
+[ibc-telemetry-docs-link]: https://docs.rs/ibc-telemetry/
 
 [build-image]: https://github.com/informalsystems/ibc-rs/workflows/Rust/badge.svg
 [build-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3ARust
