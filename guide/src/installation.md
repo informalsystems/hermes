@@ -88,10 +88,10 @@ hermes 0.4.0
 
 ### Clone the repository
 
-Open a terminal and clone the following `ibc-rs` repository:
+Open a terminal and clone the `ibc-rs` repository:
 
 ```shell
-git clone https://github.com/informalsystems/ibc-rs.git`
+git clone https://github.com/informalsystems/ibc-rs.git
 ```
 
 Change to the repository directory
