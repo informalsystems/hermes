@@ -449,13 +449,18 @@ impl Channel {
             })?;
 
         match (a_channel.state(), b_channel.state()) {
+            // Handle sending the Ack message to the source chain
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                 let event = self.flipped().build_chan_open_ack_and_send().map_err(|e| {
                     error!("failed ChanAck {:?}: {}", self.a_side, e);
                     e
                 })?;
 
-                info!("done {} => {:#?}\n", self.src_chain().id(), event);
+                info!(
+                    "done with ChanAck step {} => {:#?}\n",
+                    self.src_chain().id(),
+                    event
+                );
                 // One more step (confirm) left.
                 // Returning error signals that the caller should retry.
                 Err(ChannelError::PartialOpenHandshake(
@@ -463,6 +468,28 @@ impl Channel {
                     *b_channel.state(),
                 ))
             }
+
+            // Handle sending the Ack message to the destination chain
+            (State::TryOpen, State::Init) => {
+                let event = self.build_chan_open_ack_and_send().map_err(|e| {
+                    error!("failed ChanAck {:?}: {}", self.b_side, e);
+                    e
+                })?;
+
+                info!(
+                    "done with ChanAck step {} => {:#?}\n",
+                    self.dst_chain().id(),
+                    event
+                );
+                // One more step (confirm) left.
+                // Returning error signals that the caller should retry.
+                Err(ChannelError::PartialOpenHandshake(
+                    *a_channel.state(),
+                    *b_channel.state(),
+                ))
+            }
+
+            // Handle sending the Confirm message to the destination chain
             (State::Open, State::TryOpen) => {
                 let event = self.build_chan_open_confirm_and_send().map_err(|e| {
                     error!("failed ChanConfirm {:?}: {}", self.b_side, e);
@@ -472,8 +499,9 @@ impl Channel {
                 info!("done {} => {:#?}\n", self.dst_chain().id(), event);
                 Ok(())
             }
+
+            // Send Confirm to the source chain
             (State::TryOpen, State::Open) => {
-                // Confirm to a_chain
                 let event = self
                     .flipped()
                     .build_chan_open_confirm_and_send()
@@ -482,14 +510,18 @@ impl Channel {
                         e
                     })?;
 
-                info!("done {} => {:#?}\n", self.src_chain().id(), event);
+                info!(
+                    "finalized channel open handshake {} => {:#?}\n",
+                    self.src_chain().id(),
+                    event
+                );
                 Ok(())
             }
             (State::Open, State::Open) => {
                 info!("channel handshake already finished for {:#?}\n", self);
                 Ok(())
             }
-            // In all other conditions, return Ok, since the channel open handshake is done.
+            // In all other conditions, return Ok, since the channel open handshake does not apply.
             _ => Ok(()),
         }
     }
