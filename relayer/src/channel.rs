@@ -14,7 +14,9 @@ use ibc::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use ibc::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 
@@ -73,6 +75,9 @@ pub enum ChannelError {
 
     #[error("the channel is partially open ({0}, {1})")]
     PartialOpenHandshake(State, State),
+
+    #[error("socket {0} on chain {1} expected to have counterparty {2} (but instead has {3})")]
+    MismatchingChannelEnds(PortChannelId, ChainId, PortChannelId, PortChannelId),
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -1219,4 +1224,50 @@ fn check_destination_channel_state(
             channel_id
         )))
     }
+}
+
+// Query the channel end on destination chain,
+// and verify that the counterparty channel/port on destination
+// matches channel/port id on source.
+pub fn check_channel_counterparty(
+    chain: Box<dyn ChainHandle>,
+    local_socket: &PortChannelId,
+    expected: &PortChannelId,
+) -> Result<(), ChannelError> {
+    let channel_end_dst = chain
+        .query_channel(
+            &local_socket.port_id,
+            &local_socket.channel_id,
+            Height::zero(),
+        )
+        .map_err(|e| ChannelError::QueryError(chain.id(), e))?;
+
+    match channel_end_dst.counterparty().channel_id.clone() {
+        Some(actual_remote_channel_id) => {
+            let actual = PortChannelId {
+                channel_id: actual_remote_channel_id,
+                port_id: channel_end_dst.counterparty().port_id.clone(),
+            };
+            if actual.ne(expected) {
+                return Err(ChannelError::MismatchingChannelEnds(
+                    local_socket.clone(),
+                    chain.id(),
+                    expected.clone(),
+                    actual,
+                ));
+            }
+        }
+        None => {
+            error!(
+                "socket {} on chain {} has no counterparty channel id ",
+                local_socket,
+                chain.id()
+            );
+            // TODO: The error `MissingCounterpartyChannelId` should capture its
+            //  context fully (the chain and the socket).
+            return Err(ChannelError::MissingCounterpartyChannelId);
+        }
+    }
+
+    Ok(())
 }

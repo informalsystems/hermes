@@ -36,12 +36,13 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 
 use crate::chain::handle::ChainHandle;
-use crate::channel::{Channel, ChannelError, ChannelSide};
+use crate::channel::{check_channel_counterparty, Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::transfer::PacketError;
+use ibc::ics24_host::identifier::PortChannelId;
 
 const MAX_RETRIES: usize = 5;
 
@@ -1635,40 +1636,18 @@ impl Link {
         }
 
         // Check that the counterparty details on the destination chain matches the source chain
-        let b_channel = b_chain
-            .query_channel(
-                &a_channel.counterparty().port_id,
-                &b_channel_id,
-                Height::default(),
-            )
-            .map_err(|e| {
-                LinkError::Failed(format!(
-                    "channel/port {}/{} does not exist on destination chain {}; context={}",
-                    b_channel_id,
-                    a_channel.counterparty().port_id,
-                    b_chain.id(),
-                    e
-                ))
-            })?;
-        match b_channel.counterparty().channel_id.clone() {
-            Some(actual_a_channel_id) => {
-                if actual_a_channel_id.ne(a_channel_id)
-                    || b_channel.counterparty().port_id != opts.src_port_id
-                {
-                    return Err(LinkError::Failed(format!("conflicting link configuration: channel/port {}/{} on destination chain {} does not point back to the source chain {}:{}/{} (but points to {}/{})",
-                                                         b_channel_id, a_channel.counterparty().port_id, b_chain.id(), a_chain.id(),
-                                                         a_channel_id, opts.src_port_id, actual_a_channel_id, b_channel.counterparty().port_id)));
-                }
-            }
-            None => {
-                return Err(LinkError::Failed(format!(
-                    "the channel/port {}/{} on destination chain {} has no counterparty channel set",
-                    b_channel_id,
-                    a_channel.counterparty().port_id,
-                    b_chain.id()
-                )));
-            }
-        }
+        check_channel_counterparty(
+            b_chain.clone(),
+            &PortChannelId {
+                channel_id: b_channel_id.clone(),
+                port_id: a_channel.counterparty().port_id.clone(),
+            },
+            &PortChannelId {
+                channel_id: a_channel_id.clone(),
+                port_id: opts.src_port_id.clone(),
+            },
+        )
+        .map_err(|e| LinkError::Failed(format!("counterparty verification failed: {}", e)))?;
 
         // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
