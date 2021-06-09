@@ -1226,7 +1226,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "subtle-encoding",
- "tendermint 0.19.0 (git+https://github.com/octopus-network/tendermint-rs.git?rev=ae835fe820e0a518080f190e7c0174c23bbef2e6)",
+ "tendermint 0.19.0 (git+https://github.com/octopus-network/tendermint-rs.git?rev=9d5c9409da697cc781d9ce6f4b9d126447ed6a40)",
  "tendermint-proto 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tendermint-rpc",
  "tendermint-testgen",
@@ -2542,7 +2542,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.19.0"
-source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=ae835fe820e0a518080f190e7c0174c23bbef2e6#ae835fe820e0a518080f190e7c0174c23bbef2e6"
+source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=9d5c9409da697cc781d9ce6f4b9d126447ed6a40#9d5c9409da697cc781d9ce6f4b9d126447ed6a40"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2569,7 +2569,7 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto 0.19.0 (git+https://github.com/octopus-network/tendermint-rs.git?rev=ae835fe820e0a518080f190e7c0174c23bbef2e6)",
+ "tendermint-proto 0.19.0 (git+https://github.com/octopus-network/tendermint-rs.git?rev=9d5c9409da697cc781d9ce6f4b9d126447ed6a40)",
  "toml",
  "url",
  "zeroize",
@@ -2619,7 +2619,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.19.0"
-source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=ae835fe820e0a518080f190e7c0174c23bbef2e6#ae835fe820e0a518080f190e7c0174c23bbef2e6"
+source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=9d5c9409da697cc781d9ce6f4b9d126447ed6a40#9d5c9409da697cc781d9ce6f4b9d126447ed6a40"
 dependencies = [
  "anomaly",
  "bytes",

@@ -58,7 +58,7 @@ displaydoc = {version = "0.2", default-features = false }
 version = "=0.19.0"
 default-features = false
 git = "https://github.com/octopus-network/tendermint-rs.git"
-rev = "ae835fe820e0a518080f190e7c0174c23bbef2e6"
+rev = "9d5c9409da697cc781d9ce6f4b9d126447ed6a40"
 
 [dependencies.tendermint-proto]
 version = "=0.19.0"
