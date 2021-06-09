@@ -8,12 +8,20 @@
   - Add `--hd-path` option to `keys restore` and `keys add` commands to specify
     derivation path when importing keys ([#1049])
 
+### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Fix for chain impersonation bug. ([#1038])
+  - Fix for partially open handshake bug of `channel create` CLI. ([#1064])
+
 ### BREAKING CHANGES
 
 - [ibc-relayer-cli]
   - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
 
-[#868]: https://github.com/informalsystems/ibc-rs/issues/1049
+[#1038]: https://github.com/informalsystems/ibc-rs/issues/1038
+[#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
+[#1064]: https://github.com/informalsystems/ibc-rs/issues/1064
 
 ## v0.4.0
 *June 3rd, 2021*
