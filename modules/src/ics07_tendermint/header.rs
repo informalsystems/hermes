@@ -1,4 +1,4 @@
-use std::convert::{From, TryFrom, TryInto};
+use std::convert::{TryFrom, TryInto};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
