@@ -16,22 +16,26 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup mdbook
-        uses: peaceiris/actions-mdbook@v1
+      - name: Install mdbook
+        uses: actions-rs/install@v0.1
         with:
-          mdbook-version: 'latest'
+          crate: mdbook
+          version: latest
+          use-tool-cache: true
 
-      - name: Setup mdbook-mermaid
-        uses: actions-rs/cargo@v1
+      - name: Install mdbook
+        uses: actions-rs/install@v0.1
         with:
-          command: install
-          args: mdbook-mermaid
+          crate: mdbook-mermaid
+          version: latest
+          use-tool-cache: true
 
-      - name: Setup mdbook-toc
-        uses: actions-rs/cargo@v1
+      - name: Install mdbook-toc
+        uses: actions-rs/install@v0.1
         with:
-          command: install
-          args: mdbook-toc
+          crate: mdbook-toc
+          version: latest
+          use-tool-cache: true
 
       - name: Build guide
         run: |
