@@ -506,10 +506,10 @@ impl ForeignClient {
         }
 
         debug!(
-            "[{}] MsgUpdateAnyClient for going from trusted height {} to target height {}",
+            "[{}] MsgUpdateAnyClient from trusted height {} to target height {}",
             self,
+            trusted_height,
             header.height(),
-            trusted_height
         );
 
         msgs.push(
