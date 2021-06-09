@@ -2,7 +2,18 @@
 
 ## Unreleased
 
-> Nothing yet.
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Add `--hd-path` option to `keys restore` and `keys add` commands to specify
+    derivation path when importing keys ([#1049])
+
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
+
+[#868]: https://github.com/informalsystems/ibc-rs/issues/1049
 
 ## v0.4.0
 *June 3rd, 2021*
@@ -93,7 +104,7 @@ Docker images to Docker Hub.
 
 - [ibc-relayer]
   - Add support for multiple keys to the keyring ([#963])
-  
+
 - [release]
   - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
   - Automatically deploy Docker Hub image during release ([#967])
