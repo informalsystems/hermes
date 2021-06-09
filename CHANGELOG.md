@@ -111,10 +111,7 @@ Docker images to Docker Hub.
 
 - [ibc-relayer]
   - Add support for multiple keys to the keyring ([#963])
-<<<<<<< HEAD
-=======
 
->>>>>>> master
 - [release]
   - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
   - Automatically deploy Docker Hub image during release ([#967])
