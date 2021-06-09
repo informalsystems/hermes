@@ -16,6 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: cache .cargo directory
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo
+          key: cargo-dir
+          restore-keys: |
+            cargo-
+
       - name: Install mdbook
         uses: actions-rs/install@v0.1
         with:
