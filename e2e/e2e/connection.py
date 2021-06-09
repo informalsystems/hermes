@@ -289,7 +289,45 @@ def passive_connection_start_then_init(c: Config,
     sleep(2.0)
 
     # 2. create a channel in Init state
-    ibc1_conn_id = conn_open_init(c, dst=ibc1, src=ibc0, dst_client=ibc1_client_id, src_client=ibc0_client_id)
+    ibc1_conn_id = conn_init(c, dst=ibc1, src=ibc0, dst_client=ibc1_client_id, src_client=ibc0_client_id)
+
+    # 3. wait for channel handshake to finish and verify channel state on both chains
+    verify_state(c, ibc1, ibc0, ibc1_conn_id)
+
+    # 4. All good, stop the relayer
+    proc.kill()
+
+def passive_connection_init_then_start(c: Config,
+    ibc1: ChainId, ibc0: ChainId,
+    ibc1_clinet_id: ClientId, ibc0_client_id: ClientId ):
+
+    # 1. create a channel in Init state
+    ibc1_conn_id = conn_init(c, dst=ibc1, src=ibc0, dst_client=ibc1_client_id, src_client=ibc0_client_id)
+
+    # 2. start hermes
+    proc = relayer.start(c)
+    sleep(2.0)
+
+    # 3. wait for channel handshake to finish and verify channel state on both chains
+    verify_state(c, ibc1, ibc0, ibc1_conn_id)
+
+    # 4. All good, stop the relayer
+    proc.kill()
+
+
+    def passive_connection_try_then_start(c: Config,
+    ibc1: ChainId, ibc0: ChainId,
+    ibc1_clinet_id: ClientId, ibc0_client_id: ClientId ):
+
+    # 1. create a channel in Init state
+    ibc1_conn_id = conn_init(c, dst=ibc1, src=ibc0, dst_client=ibc1_client_id, src_client=ibc0_client_id)
+
+    # 2. create a channel in Try-Open state
+    ibc1_conn_id = conn_try(c, dst=ibc0, src=ibc1, dst_client=ibc0_client_id, src_client=ibc1_client_id, src_conn_id=ibc1_conn_id)
+
+    # 2. start hermes
+    proc = relayer.start(c)
+    sleep(2.0)
 
     # 3. wait for channel handshake to finish and verify channel state on both chains
     verify_state(c, ibc1, ibc0, ibc1_conn_id)
