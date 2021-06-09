@@ -16,22 +16,30 @@ pub trait LightBlock<C: Chain>: Send + Sync {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct VerifiedBlock<LB> {
-    /// Verified target block
-    pub target: LB,
+pub struct Verified<H> {
+    /// Verified target
+    pub target: H,
     /// Supporting headers needed to verify `target`
-    pub supporting: Vec<LB>,
+    pub supporting: Vec<H>,
 }
 
 /// Defines a client from the point of view of the relayer.
 pub trait LightClient<C: Chain>: Send + Sync {
-    /// Fetch a header from the chain at the given height and verify it
+    /// Fetch and verify a header, and return its minimal supporting set.
+    fn header_and_minimal_set(
+        &mut self,
+        trusted: ibc::Height,
+        target: ibc::Height,
+        client_state: &AnyClientState,
+    ) -> Result<Verified<C::Header>, error::Error>;
+
+    /// Fetch a header from the chain at the given height and verify it.
     fn verify(
         &mut self,
         trusted: ibc::Height,
         target: ibc::Height,
         client_state: &AnyClientState,
-    ) -> Result<VerifiedBlock<C::LightBlock>, error::Error>;
+    ) -> Result<Verified<C::LightBlock>, error::Error>;
 
     /// Given a client update event that includes the header used in a client update,
     /// look for misbehaviour by fetching a header at same or latest height.

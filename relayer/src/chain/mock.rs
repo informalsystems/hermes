@@ -44,7 +44,7 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventReceiver, EventSender};
 use crate::keyring::{KeyEntry, KeyRing};
-use crate::light_client::VerifiedBlock;
+use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 /// The representation of a mocked chain as the relayer sees it.
@@ -332,7 +332,7 @@ impl Chain for MockChain {
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         let succ_trusted = light_client.fetch(trusted_height.increment())?;
 
-        let VerifiedBlock { target, supporting } =
+        let Verified { target, supporting } =
             light_client.verify(trusted_height, target_height, client_state)?;
 
         let target_header = Self::Header {

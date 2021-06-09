@@ -36,7 +36,7 @@ use crate::{
     error::{self, Error},
 };
 
-use super::VerifiedBlock;
+use super::Verified;
 
 pub struct LightClient {
     chain_id: ChainId,
@@ -45,12 +45,23 @@ pub struct LightClient {
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
+    fn header_and_minimal_set(
+        &mut self,
+        trusted: ibc::Height,
+        target: ibc::Height,
+        client_state: &AnyClientState,
+    ) -> Result<Verified<TmHeader>, Error> {
+        let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
+        let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+        Ok(Verified { target, supporting })
+    }
+
     fn verify(
         &mut self,
         trusted: ibc::Height,
         target: ibc::Height,
         client_state: &AnyClientState,
-    ) -> Result<VerifiedBlock<LightBlock>, Error> {
+    ) -> Result<Verified<LightBlock>, Error> {
         let target_height = TMHeight::try_from(target.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
@@ -73,7 +84,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             .sorted_by_key(LightBlock::height)
             .collect_vec();
 
-        Ok(VerifiedBlock { target, supporting })
+        Ok(Verified { target, supporting })
     }
 
     fn fetch(&mut self, height: ibc::Height) -> Result<LightBlock, Error> {
@@ -130,11 +141,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             return Ok(None);
         }
 
-        let VerifiedBlock { target, supporting } =
+        let Verified { target, supporting } =
             self.verify(trusted_height, target_height, &client_state)?;
 
         if !headers_compatible(&target.signed_header, &update_header.signed_header) {
-            let (witness, supporting) = adjust_headers(self, trusted_height, target, supporting)?;
+            let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
 
             let misbehaviour = TmMisbehaviour {
                 client_id: update.client_id().clone(),
@@ -219,64 +230,64 @@ impl LightClient {
                 .into()
         })
     }
-}
 
-pub fn adjust_headers(
-    light_client: &mut dyn super::LightClient<CosmosSdkChain>,
-    trusted_height: ibc::Height,
-    target: LightBlock,
-    supporting: Vec<LightBlock>,
-) -> Result<(TmHeader, Vec<TmHeader>), Error> {
-    // Get the light block at trusted_height + 1 from chain.
-    //
-    // NOTE: This is needed to get the next validator set. While there is a next validator set
-    //       in the light block at trusted height, the proposer is not known/set in this set.
-    let trusted_validator_set = light_client.fetch(trusted_height.increment())?.validators;
+    fn adjust_headers(
+        &mut self,
+        trusted_height: ibc::Height,
+        target: LightBlock,
+        supporting: Vec<LightBlock>,
+    ) -> Result<(TmHeader, Vec<TmHeader>), Error> {
+        use super::LightClient;
 
-    let mut supporting_headers = Vec::with_capacity(supporting.len());
+        // Get the light block at trusted_height + 1 from chain.
+        //
+        // NOTE: This is needed to get the next validator set. While there is a next validator set
+        //       in the light block at trusted height, the proposer is not known/set in this set.
+        let trusted_validator_set = self.fetch(trusted_height.increment())?.validators;
 
-    let mut current_trusted_height = trusted_height;
-    let mut current_trusted_validators = trusted_validator_set.clone();
+        let mut supporting_headers = Vec::with_capacity(supporting.len());
 
-    for support in supporting {
-        let header = TmHeader {
-            signed_header: support.signed_header.clone(),
-            validator_set: support.validators,
-            trusted_height: current_trusted_height,
-            trusted_validator_set: current_trusted_validators,
+        let mut current_trusted_height = trusted_height;
+        let mut current_trusted_validators = trusted_validator_set.clone();
+
+        for support in supporting {
+            let header = TmHeader {
+                signed_header: support.signed_header.clone(),
+                validator_set: support.validators,
+                trusted_height: current_trusted_height,
+                trusted_validator_set: current_trusted_validators,
+            };
+
+            // This header is now considered to be the currently trusted header
+            current_trusted_height = header.height();
+
+            // Therefore we can now trust the next validator set, see NOTE above.
+            current_trusted_validators = self.fetch(header.height().increment())?.validators;
+
+            supporting_headers.push(header);
+        }
+
+        // a) Set the trusted height of the target header to the height of the previous
+        // supporting header if any, or to the initial trusting height otherwise.
+        //
+        // b) Set the trusted validators of the target header to the validators of the successor to
+        // the last supporting header if any, or to the initial trusted validators otherwise.
+        let (latest_trusted_height, latest_trusted_validator_set) = match supporting_headers.last()
+        {
+            Some(prev_header) => {
+                let prev_succ = self.fetch(prev_header.height().increment())?;
+                (prev_header.height(), prev_succ.validators)
+            }
+            None => (trusted_height, trusted_validator_set),
         };
 
-        // This header is now considered to be the currently trusted header
-        current_trusted_height = header.height();
+        let target_header = TmHeader {
+            signed_header: target.signed_header,
+            validator_set: target.validators,
+            trusted_height: latest_trusted_height,
+            trusted_validator_set: latest_trusted_validator_set,
+        };
 
-        // Therefore we can now trust the next validator set, see NOTE above.
-        current_trusted_validators = light_client.fetch(header.height().increment())?.validators;
-
-        supporting_headers.push(header);
+        Ok((target_header, supporting_headers))
     }
-
-    // a) Set the trusted height of the target header to the height of the previous
-    // supporting header if any, or to the initial trusting height otherwise.
-    //
-    // b) Set the trusted validators of the target header to the validators of the successor to
-    // the last supporting header if any, or to the initial trusted validators otherwise.
-    let (latest_trusted_height, latest_trusted_validator_set) = match supporting_headers.last() {
-        Some(prev_header) => {
-            let prev_validators = light_client
-                .fetch(prev_header.height().increment())?
-                .validators;
-
-            (prev_header.height(), prev_validators)
-        }
-        None => (trusted_height, trusted_validator_set),
-    };
-
-    let target_header = TmHeader {
-        signed_header: target.signed_header,
-        validator_set: target.validators,
-        trusted_height: latest_trusted_height,
-        trusted_validator_set: latest_trusted_validator_set,
-    };
-
-    Ok((target_header, supporting_headers))
 }
