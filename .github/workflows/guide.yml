@@ -22,7 +22,7 @@ jobs:
           path: ~/.cargo
           key: cargo-dir
           restore-keys: |
-            cargo-
+            cargo-dir
 
       - name: Install mdbook
         uses: actions-rs/install@v0.1
@@ -31,7 +31,7 @@ jobs:
           version: latest
           use-tool-cache: true
 
-      - name: Install mdbook
+      - name: Install mdbook-mermaid
         uses: actions-rs/install@v0.1
         with:
           crate: mdbook-mermaid
