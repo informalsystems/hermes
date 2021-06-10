@@ -31,7 +31,7 @@ std = [
     "regex/std",
     "subtle-encoding/std",
     "sha2/std",
-    "tendermint/std",
+#    "tendermint/std",
     "no-std-compat/std",
 ]
 
@@ -57,16 +57,19 @@ displaydoc = {version = "0.2", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.19.0"
-default-features = false
-git = "https://github.com/octopus-network/tendermint-rs.git"
-rev = "9d5c9409da697cc781d9ce6f4b9d126447ed6a40"
+path = "../../tendermint-rs/tendermint"
+#default-features = false
+#git = "https://github.com/octopus-network/tendermint-rs.git"
+#rev = "9d5c9409da697cc781d9ce6f4b9d126447ed6a40"
 
 [dependencies.tendermint-proto]
 version = "=0.19.0"
+path = "../../tendermint-rs/proto"
 
 [dependencies.tendermint-testgen]
 version = "=0.19.0"
 optional = true
+
 
 [dev-dependencies]
 modelator = { git = "https://github.com/informalsystems/modelator", rev = "99f656fa8b3cf46a2aa0b6513e4e140d1778c4bd" }
