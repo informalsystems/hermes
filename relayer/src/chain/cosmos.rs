@@ -69,6 +69,7 @@ use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
+use crate::light_client::Verified;
 
 use super::Chain;
 use tendermint_rpc::endpoint::tx_search::ResultTx;
@@ -1280,17 +1281,17 @@ impl Chain for CosmosSdkChain {
     fn build_header(
         &self,
         trusted_height: ICSHeight,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
+        target_height: ICSHeight,
+        client_state: &AnyClientState,
+        light_client: &mut dyn LightClient<Self>,
+    ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
-        Ok(TmHeader {
-            trusted_height,
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: target_light_block.validators,
-            trusted_validator_set: trusted_light_block.validators,
-        })
+        // Get the light block at target_height from chain.
+        let Verified { target, supporting } =
+            light_client.header_and_minimal_set(trusted_height, target_height, client_state)?;
+
+        Ok((target, supporting))
     }
 }
 
