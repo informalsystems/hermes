@@ -415,10 +415,20 @@ impl Channel {
         Ok(())
     }
 
-    /// Returns `Ok(())` when both channel ends are in state `Open`.
-    /// Also returns `Ok(())` if the channel is undergoing a closing handshake.
-    /// Otherwise, returns an error.
-    fn do_chan_open_finalize(&self) -> Result<(), ChannelError> {
+    /// Does a single step towards finalizing the channel open handshake.
+    /// Covers only a step of type either Ack or Confirm.
+    /// (Assumes that the channel open handshake was previously
+    /// initialized with Init & Try steps.)
+    ///
+    /// Returns `Ok` when both channel ends are in state `Open`.
+    /// Also returns `Ok` if the channel is undergoing a closing handshake.
+    ///
+    /// An `Err` can signal two cases:
+    ///     - the attempted handshake step has failed,
+    ///     - the attempted step may have finished successfully, but further
+    ///     steps are necessary to finalize the channel open handshake.
+    /// In both `Err` cases, there should be retry calling this method.
+    fn do_chan_open_ack_confirm_step(&self) -> Result<(), ChannelError> {
         let src_channel_id = self
             .src_channel_id()
             .ok_or(ChannelError::MissingLocalChannelId)?;
@@ -533,16 +543,17 @@ impl Channel {
     ///
     /// Post-condition: the channel state is `Open` on both ends if successful.
     fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| self.do_chan_open_finalize()).map_err(
-            |err| {
-                error!("failed to open channel after {} retries", err);
-                ChannelError::Failed(format!(
-                    "Failed to finish channel handshake in {} iterations for {:?}",
-                    retry_count(&err),
-                    self
-                ))
-            },
-        )?;
+        retry_with_index(retry_strategy::default(), |_| {
+            self.do_chan_open_ack_confirm_step()
+        })
+        .map_err(|err| {
+            error!("failed to open channel after {} retries", err);
+            ChannelError::Failed(format!(
+                "Failed to finish channel handshake in {} iterations for {:?}",
+                retry_count(&err),
+                self
+            ))
+        })?;
 
         Ok(())
     }
