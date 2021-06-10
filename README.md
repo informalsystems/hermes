@@ -17,10 +17,10 @@ This project comprises primarily four crates:
 - The [`ibc-relayer-cli`][relayer-cli-crate-link] is a CLI (a wrapper
   over the `ibc-relayer` library), comprising the
   [`hermes`](https://hermes.informal.systems) binary.
-- Crate [`ibc-proto`][ibc-proto-crate-link] is a library with Rust types generated from .proto definitions
+- The [`ibc-proto`][ibc-proto-crate-link] crate is a library with Rust types generated from .proto definitions
   necessary for interacting with [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/tree/master/proto/cosmos)
   and its [IBC structs](https://github.com/cosmos/ibc-go/tree/main/proto/ibc).
-- Crate [`ibc-telemetry`][ibc-telemetry-crate-link] is a library for use in the `hermes` CLI,
+- The [`ibc-telemetry`][ibc-telemetry-crate-link] crate is a library for use in the `hermes` CLI,
   for gathering telemetry data and exposing that in a Prometheus endpoint.
 
 See the table below for more details.
@@ -48,12 +48,11 @@ The relayer CLI binary, called `hermes`, has a comprehensive guide at
 
 ## Contributing
 
-IBC is specified in English in the [cosmos/ics repo](https://github.com/cosmos/ics). Any
+IBC is specified in English in the [cosmos/ibc repo](https://github.com/cosmos/ibc). Any
 protocol changes or clarifications should be contributed there.
 
 This repo contains the TLA+ specification and Rust implementation for the IBC
-modules and relayer. If you're interested in contributing, please comment on an issue or open a new
-one!
+modules and relayer. If you're interested in contributing, please comment on an issue or open a new one!
 
 See also [CONTRIBUTING.md](./CONTRIBUTING.md).
 
@@ -67,6 +66,7 @@ under active development.
 - [IBC Website](https://cosmos.network/ibc)
 - [IBC Specification](https://github.com/cosmos/ibc)
 - [IBC Modules in Go](https://github.com/cosmos/ibc-go)
+- [IBC Relayer in Typescript](https://github.com/confio/ts-relayer)
 - [IBC Relayer in Go](https://github.com/cosmos/relayer)
 
 ## License
