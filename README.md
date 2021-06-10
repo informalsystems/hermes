@@ -14,7 +14,7 @@ This project comprises primarily four crates:
   on-chain logic for the IBC protocol.
 - The [`ibc-relayer`][relayer-crate-link] crate provides an implementation
   of an IBC relayer, as a _library_.
-- The [`ibc-relayer-cli`][relayer-cli-crate-link] is a CLI (a wrapper
+- The [`ibc-relayer-cli`][relayer-cli-crate-link] crate is a CLI (a wrapper
   over the `ibc-relayer` library), comprising the
   [`hermes`](https://hermes.informal.systems) binary.
 - The [`ibc-proto`][ibc-proto-crate-link] crate is a library with Rust types generated from .proto definitions
