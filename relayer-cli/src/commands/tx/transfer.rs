@@ -201,9 +201,8 @@ impl Runnable for TxIcs20MsgTransferCmd {
         // counterparty on the destination chain should match the
         // socket on the source chain.
         let channel_id_dest = channel_end_src
-            .counterparty()
+            .remote
             .channel_id
-            .clone()
             .ok_or(format!(
                 "the port/channel '{}'/'{}' on chain '{}' has no counterparty channel id",
                 opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
@@ -212,7 +211,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         let socket_dest = PortChannelId {
             channel_id: channel_id_dest,
-            port_id: channel_end_src.counterparty().port_id.clone(),
+            port_id: channel_end_src.remote.port_id,
         };
         let expected = PortChannelId {
             channel_id: opts.packet_src_channel_id.clone(),
