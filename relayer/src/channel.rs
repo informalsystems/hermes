@@ -4,7 +4,7 @@ use prost_types::Any;
 use serde::Serialize;
 use std::time::Duration;
 use thiserror::Error;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use ibc::events::IbcEvent;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State};
@@ -25,7 +25,22 @@ use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::Error as WorkerChannelError;
 
-const MAX_RETRIES: usize = 5;
+use crate::util::retry::{retry_count, retry_with_index};
+
+mod retry_strategy {
+    use crate::util::retry::clamp_total;
+    use retry::delay::Fibonacci;
+    use std::time::Duration;
+
+    // Default parameters for the retrying mechanism
+    const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
+    const MAX_TOTAL_DELAY: Duration = Duration::from_secs(10 * 60); // 10 minutes
+    const INITIAL_DELAY: Duration = Duration::from_secs(1); // 1 second
+
+    pub fn default() -> impl Iterator<Item = Duration> {
+        clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
+    }
+}
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::util::retry::RetryResult;
@@ -328,125 +343,149 @@ impl Channel {
         }
     }
 
+    fn do_chan_open_init_and_send(&mut self) -> Result<(), ChannelError> {
+        let event = self
+            .flipped()
+            .build_chan_open_init_and_send()
+            .map_err(|e| {
+                error!("Failed ChanInit {:?}: {:?}", self.a_side, e);
+                e
+            })?;
+
+        info!("done {} => {:#?}\n", self.src_chain().id(), event);
+
+        let channel_id = extract_channel_id(&event)?;
+        self.a_side.channel_id = Some(channel_id.clone());
+        info!("successfully opened init channel");
+
+        Ok(())
+    }
+
+    // Check that the channel was created on a_chain
+    fn do_chan_open_init_and_send_with_retry(&mut self) -> Result<(), ChannelError> {
+        retry_with_index(retry_strategy::default(), |_| {
+            self.do_chan_open_init_and_send()
+        })
+        .map_err(|err| {
+            error!("failed to open channel after {} retries", err);
+            ChannelError::Failed(format!(
+                "Failed to finish channel open init in {} iterations for {:?}",
+                retry_count(&err),
+                self
+            ))
+        })?;
+
+        Ok(())
+    }
+
+    fn do_chan_open_try_and_send(&mut self) -> Result<(), ChannelError> {
+        let event = self.build_chan_open_try_and_send().map_err(|e| {
+            error!("Failed ChanTry {:?}: {:?}", self.b_side, e);
+            e
+        })?;
+
+        let channel_id = extract_channel_id(&event)?;
+        self.b_side.channel_id = Some(channel_id.clone());
+
+        println!("done {} => {:#?}\n", self.dst_chain().id(), event);
+        Ok(())
+    }
+
+    fn do_chan_open_try_and_send_with_retry(&mut self) -> Result<(), ChannelError> {
+        retry_with_index(retry_strategy::default(), |_| {
+            self.do_chan_open_try_and_send()
+        })
+        .map_err(|err| {
+            error!("failed to open channel after {} retries", err);
+            ChannelError::Failed(format!(
+                "Failed to finish channel open try in {} iterations for {:?}",
+                retry_count(&err),
+                self
+            ))
+        })?;
+
+        Ok(())
+    }
+
+    fn do_channel_handshake(&mut self) -> Result<(), ChannelError> {
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or(ChannelError::MissingLocalChannelId)?;
+
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+
+        // Continue loop if query error
+        let a_channel = self
+            .src_chain()
+            .query_channel(&self.src_port_id(), src_channel_id, Height::zero())
+            .map_err(|_| ChannelError::Failed("Failed to query source chain".into()))?;
+
+        let b_channel = self
+            .dst_chain()
+            .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero())
+            .map_err(|_| ChannelError::Failed("Failed to query destination chain".into()))?;
+
+        match (a_channel.state(), b_channel.state()) {
+            (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
+                let event = self.flipped().build_chan_open_ack_and_send().map_err(|e| {
+                    error!("Failed ChanAck {:?}: {}", self.a_side, e);
+                    e
+                })?;
+
+                info!("done {} => {:#?}\n", self.src_chain().id(), event);
+            }
+            (State::Open, State::TryOpen) => {
+                let event = self.build_chan_open_confirm_and_send().map_err(|e| {
+                    error!("Failed ChanConfirm {:?}: {}", self.b_side, e);
+                    e
+                })?;
+
+                info!("done {} => {:#?}\n", self.dst_chain().id(), event);
+            }
+            (State::TryOpen, State::Open) => {
+                // Confirm to a_chain
+                let event = self
+                    .flipped()
+                    .build_chan_open_confirm_and_send()
+                    .map_err(|e| {
+                        error!("Failed ChanConfirm {:?}: {}", self.a_side, e);
+                        e
+                    })?;
+
+                info!("done {} => {:#?}\n", self.src_chain().id(), event)
+            }
+            (State::Open, State::Open) => {
+                info!("Channel handshake finished for {:#?}\n", self);
+            }
+            _ => { /* TODO channel close */ }
+        }
+
+        info!("successfully opened channel");
+        Ok(())
+    }
+
+    fn do_channel_handshake_with_retry(&mut self) -> Result<(), ChannelError> {
+        retry_with_index(retry_strategy::default(), |_| self.do_channel_handshake()).map_err(
+            |err| {
+                error!("failed to open channel after {} retries", err);
+                ChannelError::Failed(format!(
+                    "Failed to finish channel handshake in {} iterations for {:?}",
+                    retry_count(&err),
+                    self
+                ))
+            },
+        )?;
+
+        Ok(())
+    }
+
     /// Executes the channel handshake protocol (ICS004)
     fn handshake(&mut self) -> Result<(), ChannelError> {
-        let done = '🥳';
-
-        let a_chain = self.src_chain().clone();
-        let b_chain = self.dst_chain().clone();
-
-        // Try chanOpenInit on a_chain
-        let mut counter = 0;
-        let mut init_success = false;
-        while counter < MAX_RETRIES {
-            counter += 1;
-            match self.flipped().build_chan_open_init_and_send() {
-                Err(e) => {
-                    error!("Failed ChanInit {:?}: {:?}", self.a_side, e);
-                    continue;
-                }
-                Ok(event) => {
-                    self.a_side.channel_id = Some(extract_channel_id(&event)?.clone());
-                    println!("{}  {} => {:#?}\n", done, a_chain.id(), event);
-                    init_success = true;
-                    break;
-                }
-            }
-        }
-
-        // Check that the channel was created on a_chain
-        if !init_success {
-            return Err(ChannelError::Failed(format!(
-                "Failed to finish channel open init in {} iterations for {:?}",
-                MAX_RETRIES, self
-            )));
-        };
-
-        // Try chanOpenTry on b_chain
-        counter = 0;
-        let mut try_success = false;
-        while counter < MAX_RETRIES {
-            counter += 1;
-            match self.build_chan_open_try_and_send() {
-                Err(e) => {
-                    error!("Failed ChanTry {:?}: {:?}", self.b_side, e);
-                    continue;
-                }
-                Ok(event) => {
-                    self.b_side.channel_id = Some(extract_channel_id(&event)?.clone());
-                    println!("{}  {} => {:#?}\n", done, b_chain.id(), event);
-                    try_success = true;
-                    break;
-                }
-            }
-        }
-
-        if !try_success {
-            return Err(ChannelError::Failed(format!(
-                "Failed to finish channel open try in {} iterations for {:?}",
-                MAX_RETRIES, self
-            )));
-        };
-
-        counter = 0;
-        while counter < MAX_RETRIES {
-            counter += 1;
-
-            let src_channel_id = self
-                .src_channel_id()
-                .ok_or(ChannelError::MissingLocalChannelId)?;
-            let dst_channel_id = self
-                .dst_channel_id()
-                .ok_or(ChannelError::MissingCounterpartyChannelId)?;
-            // Continue loop if query error
-            let a_channel =
-                a_chain.query_channel(&self.src_port_id(), &src_channel_id, Height::zero());
-            if a_channel.is_err() {
-                continue;
-            }
-            let b_channel =
-                b_chain.query_channel(&self.dst_port_id(), &dst_channel_id, Height::zero());
-            if b_channel.is_err() {
-                continue;
-            }
-
-            match (a_channel.unwrap().state(), b_channel.unwrap().state()) {
-                (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
-                    // Ack to a_chain
-                    match self.flipped().build_chan_open_ack_and_send() {
-                        Err(e) => error!("Failed ChanAck {:?}: {}", self.a_side, e),
-                        Ok(event) => println!("{}  {} => {:#?}\n", done, a_chain.id(), event),
-                    }
-                }
-                (State::Open, State::TryOpen) => {
-                    // Confirm to b_chain
-                    match self.build_chan_open_confirm_and_send() {
-                        Err(e) => error!("Failed ChanConfirm {:?}: {}", self.b_side, e),
-                        Ok(event) => println!("{}  {} => {:#?}\n", done, b_chain.id(), event),
-                    }
-                }
-                (State::TryOpen, State::Open) => {
-                    // Confirm to a_chain
-                    match self.flipped().build_chan_open_confirm_and_send() {
-                        Err(e) => error!("Failed ChanConfirm {:?}: {}", self.a_side, e),
-                        Ok(event) => println!("{}  {} => {:#?}\n", done, a_chain.id(), event),
-                    }
-                }
-                (State::Open, State::Open) => {
-                    println!(
-                        "{}  {}  {}  Channel handshake finished for {:#?}\n",
-                        done, done, done, self
-                    );
-                    return Ok(());
-                }
-                _ => {} // TODO channel close
-            }
-        }
-
-        Err(ChannelError::Failed(format!(
-            "Failed to finish channel handshake in {} iterations for {:?}",
-            MAX_RETRIES, self
-        )))
+        self.do_chan_open_init_and_send_with_retry()?;
+        self.do_chan_open_try_and_send_with_retry()?;
+        self.do_channel_handshake_with_retry()
     }
 
     pub fn counterparty_state(&self) -> Result<State, ChannelError> {

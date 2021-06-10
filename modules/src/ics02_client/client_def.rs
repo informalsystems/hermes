@@ -1,3 +1,5 @@
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+
 use crate::downcast;
 use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::ics02_client::client_state::{AnyClientState, ClientState};
@@ -25,6 +27,14 @@ pub trait ClientDef: Clone {
         &self,
         client_state: Self::ClientState,
         header: Self::Header,
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>>;
+
+    fn verify_upgrade_and_update_state(
+        &self,
+        client_state: &Self::ClientState,
+        consensus_state: &Self::ConsensusState,
+        proof_upgrade_client: MerkleProof,
+        proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>>;
 
     /// Verification functions as specified in:
@@ -562,6 +572,57 @@ impl ClientDef for AnyClient {
                     channel_id,
                     seq,
                 )
+            }
+        }
+    }
+
+    fn verify_upgrade_and_update_state(
+        &self,
+        client_state: &Self::ClientState,
+        consensus_state: &Self::ConsensusState,
+        proof_upgrade_client: MerkleProof,
+        proof_upgrade_consensus_state: MerkleProof,
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+        match self {
+            Self::Tendermint(client) => {
+                let (client_state, consensus_state) = downcast!(
+                    client_state => AnyClientState::Tendermint,
+                    consensus_state => AnyConsensusState::Tendermint,
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                let (new_state, new_consensus) = client.verify_upgrade_and_update_state(
+                    client_state,
+                    consensus_state,
+                    proof_upgrade_client,
+                    proof_upgrade_consensus_state,
+                )?;
+
+                Ok((
+                    AnyClientState::Tendermint(new_state),
+                    AnyConsensusState::Tendermint(new_consensus),
+                ))
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(client) => {
+                let (client_state, consensus_state) = downcast!(
+                    client_state => AnyClientState::Mock,
+                    consensus_state => AnyConsensusState::Mock,
+                )
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+
+                let (new_state, new_consensus) = client.verify_upgrade_and_update_state(
+                    client_state,
+                    consensus_state,
+                    proof_upgrade_client,
+                    proof_upgrade_consensus_state,
+                )?;
+
+                Ok((
+                    AnyClientState::Mock(new_state),
+                    AnyConsensusState::Mock(new_consensus),
+                ))
             }
         }
     }

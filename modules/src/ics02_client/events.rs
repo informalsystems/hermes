@@ -299,6 +299,9 @@ impl UpgradeClient {
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
     }
+    pub fn client_id(&self) -> &ClientId {
+        &self.0.client_id
+    }
 }
 
 impl From<Attributes> for UpgradeClient {

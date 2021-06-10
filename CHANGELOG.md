@@ -2,12 +2,18 @@
 
 ## Unreleased
 
-### IMPROVEMENTS
+### FEATURES
 
-- [ibc]
-  - Enable code formatter when generating protobuf definitions ([#1047])
+- [ibc-relayer-cli]
+  - Add `--hd-path` option to `keys restore` and `keys add` commands to specify
+    derivation path when importing keys ([#1049])
 
-[#1047]: https://github.com/informalsystems/ibc-rs/pull/1047
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
+
+[#868]: https://github.com/informalsystems/ibc-rs/issues/1049
 
 ## v0.4.0
 *June 3rd, 2021*
@@ -98,7 +104,10 @@ Docker images to Docker Hub.
 
 - [ibc-relayer]
   - Add support for multiple keys to the keyring ([#963])
+<<<<<<< HEAD
   - Add telemetry and Prometheus endpoint ([#868])
+=======
+>>>>>>> master
 
 - [release]
   - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
