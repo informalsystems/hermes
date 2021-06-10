@@ -21,7 +21,7 @@ use tendermint_rpc::{
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
 use crate::util::{
-    retry::{retry_with_index, RetryResult},
+    retry::{retry_count, retry_with_index, RetryResult},
     stream::group_while,
 };
 
@@ -259,17 +259,17 @@ impl EventMonitor {
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
     fn restart(&mut self) {
-        let result = retry_with_index(retry_strategy::default(), |index| {
+        let result = retry_with_index(retry_strategy::default(), |_| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
                 trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
-                return RetryResult::Retry(index);
+                return RetryResult::Retry(());
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
                 trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
-                return RetryResult::Retry(index);
+                return RetryResult::Retry(());
             }
 
             RetryResult::Ok(())
@@ -284,7 +284,7 @@ impl EventMonitor {
             Err(retries) => error!(
                 chain.id = %self.chain_id,
                 "failed to reconnect to {} after {} retries",
-                self.node_addr, retries
+                self.node_addr, retry_count(&retries)
             ),
         }
     }
