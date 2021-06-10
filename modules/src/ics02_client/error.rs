@@ -45,7 +45,7 @@ define_error! {
             },
 
         ImplementationSpecific
-            | _ | { format_args!("implementation specific error") },
+            | _ | { "implementation specific error" },
 
         HeaderVerificationFailure
             { reason: String }
@@ -56,7 +56,7 @@ define_error! {
             | e | { format_args!("unknown client state type: {0}", e.client_state_type) },
 
         EmptyClientStateResponse
-            | _ | { format_args!("the client state was not found") },
+            | _ | { "the client state was not found" },
 
         UnknownConsensusStateType
             { consensus_state_type: String }
@@ -66,7 +66,7 @@ define_error! {
             },
 
         EmptyConsensusStateResponse
-            | _ | { format_args!("the client state was not found") },
+            | _ | { "the client state was not found" },
 
         UnknownHeaderType
             { header_type: String }
@@ -92,49 +92,49 @@ define_error! {
 
         DecodeRawClientState
             [ DisplayOnly<TendermintError> ]
-            | _ | { format_args!("error decoding raw client state") },
+            | _ | { "error decoding raw client state" },
 
         MissingRawClientState
-            | _ | { format_args!("missing raw client state") },
+            | _ | { "missing raw client state" },
 
         InvalidRawConsensusState
             [ DisplayOnly<TendermintError> ]
-            | _ | { format_args!("invalid raw client consensus state") },
+            | _ | { "invalid raw client consensus state" },
 
         MissingRawConsensusState
-            | _ | { format_args!("missing raw client consensus state") },
+            | _ | { "missing raw client consensus state" },
 
         InvalidMsgUpdateClientId
             [ DisplayOnly<ValidationError> ]
-            | _ | { format_args!("invalid client id in the update client message") },
+            | _ | { "invalid client id in the update client message" },
 
         MissingHeight
-            | _ | { format_args!("invalid raw client consensus state: the height field is missing") },
+            | _ | { "invalid raw client consensus state: the height field is missing" },
 
         InvalidClientIdentifier
             [ DisplayOnly<ValidationError> ]
-            | _ | { format_args!("invalid client identifier") },
+            | _ | { "invalid client identifier" },
 
         InvalidRawHeader
             [ DisplayOnly<TendermintError> ]
-            | _ | { format_args!("invalid raw header") },
+            | _ | { "invalid raw header" },
 
         MissingRawHeader
-            | _ | { format_args!("missing raw header") },
+            | _ | { "missing raw header" },
 
         DecodeRawMisbehaviour
             [ DisplayOnly<TendermintError> ]
-            | _ | { format_args!("invalid raw misbehaviour") },
+            | _ | { "invalid raw misbehaviour" },
 
         InvalidRawMisbehaviour
             [ DisplayOnly<ValidationError> ]
-            | _ | { format_args!("invalid raw misbehaviour") },
+            | _ | { "invalid raw misbehaviour" },
 
         MissingRawMisbehaviour
-            | _ | { format_args!("missing raw misbehaviour") },
+            | _ | { "missing raw misbehaviour" },
 
         InvalidHeightResult
-            | _ | { format_args!("height cannot end up zero or negative") },
+            | _ | { "height cannot end up zero or negative" },
 
         HeightConversion
             { height: String }
@@ -145,19 +145,19 @@ define_error! {
             },
 
         InvalidAddress
-            | _ | { format_args!("invalid address") },
+            | _ | { "invalid address" },
 
         InvalidUpgradeClientProof
             [ DisplayOnly<Ics23Error> ]
-            | _ | { format_args!("invalid proof for the upgraded client state") },
+            | _ | { "invalid proof for the upgraded client state" },
 
         InvalidUpgradeConsensusStateProof
             [ DisplayOnly<Ics23Error> ]
-            | _ | { format_args!("invalid proof for the upgraded consensus state") },
+            | _ | { "invalid proof for the upgraded consensus state" },
 
         InvalidPacketTimestamp
             [ DisplayOnly<TryFromIntError> ]
-            | _ | { format_args!("invalid packet timeout timestamp value") },
+            | _ | { "invalid packet timeout timestamp value" },
 
         ClientArgsTypeMismatch
             { client_type: ClientType }

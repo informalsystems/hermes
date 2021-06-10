@@ -5,7 +5,7 @@ use crate::ics04_channel::channel::Counterparty;
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
-use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
+use crate::ics04_channel::{context::ChannelReader, error, packet::Packet};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::timestamp::{Expiry, Timestamp};
 use crate::Height;
@@ -21,18 +21,23 @@ pub struct SendPacketResult {
     pub data: Vec<u8>,
 }
 
-pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
+pub fn send_packet(
+    ctx: &dyn ChannelReader,
+    packet: Packet,
+) -> HandlerResult<PacketResult, error::Error> {
     let mut output = HandlerOutput::builder();
 
     let source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or_else(|| {
-            Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
-                .context(packet.source_channel.clone().to_string())
+            error::channel_not_found_error(
+                packet.source_port.clone(),
+                packet.source_channel.clone(),
+            )
         })?;
 
     if source_channel_end.state_matches(&State::Closed) {
-        return Err(Kind::ChannelClosed(packet.source_channel).into());
+        return Err(error::channel_closed_error(packet.source_channel));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
@@ -43,26 +48,29 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
-        return Err(Kind::InvalidPacketCounterparty(
+        return Err(error::invalid_packet_counterparty_error(
             packet.destination_port.clone(),
             packet.destination_channel,
-        )
-        .into());
+        ));
     }
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .ok_or_else(|| Kind::MissingConnection(source_channel_end.connection_hops()[0].clone()))?;
+        .ok_or_else(|| {
+            error::missing_connection_error(source_channel_end.connection_hops()[0].clone())
+        })?;
 
     let client_id = connection_end.client_id().clone();
 
     let client_state = ctx
         .client_state(&client_id)
-        .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
+        .ok_or_else(|| error::missing_client_state_error(client_id.clone()))?;
 
     // prevent accidental sends with clients that cannot be updated
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
+        return Err(error::frozen_client_error(
+            connection_end.client_id().clone(),
+        ));
     }
 
     // check if packet height is newer than the height of the latest client state on the receiving chain
@@ -70,28 +78,36 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     let packet_height = packet.timeout_height;
 
     if !packet.timeout_height.is_zero() && packet_height <= latest_height {
-        return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
+        return Err(error::low_packet_height_error(
+            latest_height,
+            packet.timeout_height,
+        ));
     }
 
     //check if packet timestamp is newer than the timestamp of the latest consensus state of the receiving chain
     let consensus_state = ctx
         .client_consensus_state(&client_id, latest_height)
-        .ok_or_else(|| Kind::MissingClientConsensusState(client_id.clone(), latest_height))?;
+        .ok_or_else(|| {
+            error::missing_client_consensus_state_error(client_id.clone(), latest_height)
+        })?;
 
     let latest_timestamp = consensus_state.timestamp();
 
     let packet_timestamp = packet.timeout_timestamp;
     if let Expiry::Expired = latest_timestamp.check_expiry(&packet_timestamp) {
-        return Err(Kind::LowPacketTimestamp.into());
+        return Err(error::low_packet_timestamp_error());
     }
 
     // check sequence number
     let next_seq_send = ctx
         .get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))
-        .ok_or(Kind::MissingNextSendSeq)?;
+        .ok_or_else(error::missing_next_ack_seq_error)?;
 
     if packet.sequence != next_seq_send {
-        return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_send).into());
+        return Err(error::invalid_packet_sequence_error(
+            packet.sequence,
+            next_seq_send,
+        ));
     }
 
     output.log("success: packet send ");

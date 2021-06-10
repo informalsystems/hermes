@@ -8,19 +8,19 @@ define_error! {
     Error {
         Ics02Client
             [ DisplayError<ics02_client::error::Error> ]
-            | _ | { format_args!("ICS02 client error") },
+            | _ | { "ICS02 client error" },
 
         Ics03Connection
             [ DisplayError<ics03_connection::error::Error> ]
-            | _ | { format_args!("ICS03 connection error") },
+            | _ | { "ICS03 connection error" },
 
         Ics04Channel
             [ DisplayError<ics04_channel::error::Error> ]
-            | _ | { format_args!("ICS04 channel error") },
+            | _ | { "ICS04 channel error" },
 
         Ics20FungibleTokenTransfer
             [ DisplayError<ics20_fungible_token_transfer::error::Error> ]
-            | _ | { format_args!("ICS20 fungible token transfer error") },
+            | _ | { "ICS20 fungible token transfer error" },
 
         UnknownMessageTypeUrl
             { url: String }
@@ -28,6 +28,6 @@ define_error! {
 
         MalformedMessageBytes
             [ DisplayError<tendermint_proto::Error> ]
-            | _ | { format_args!("the message is malformed and cannot be decoded") },
+            | _ | { "the message is malformed and cannot be decoded" },
     }
 }

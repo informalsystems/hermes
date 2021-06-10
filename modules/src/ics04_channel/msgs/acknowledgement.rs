@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error;
 use crate::ics04_channel::packet::Packet;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -48,7 +48,7 @@ impl MsgAcknowledgement {
 }
 
 impl Msg for MsgAcknowledgement {
-    type ValidationError = Error;
+    type ValidationError = error::Error;
     type Raw = RawMsgAcknowledgement;
 
     fn route(&self) -> String {
@@ -63,7 +63,7 @@ impl Msg for MsgAcknowledgement {
 impl Protobuf<RawMsgAcknowledgement> for MsgAcknowledgement {}
 
 impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
-    type Error = anomaly::Error<Kind>;
+    type Error = error::Error;
 
     fn try_from(raw_msg: RawMsgAcknowledgement) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -73,18 +73,17 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
             None,
             raw_msg
                 .proof_height
-                .ok_or(Kind::MissingHeight)?
+                .ok_or_else(error::missing_height_error)?
                 .try_into()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .map_err(|e| match e {})?,
         )
-        .map_err(|e| Kind::InvalidProof.context(e))?;
+        .map_err(error::invalid_proof_error)?;
 
         Ok(MsgAcknowledgement {
             packet: raw_msg
                 .packet
-                .ok_or(Kind::MissingPacket)?
-                .try_into()
-                .map_err(|e| Kind::InvalidPacket.context(e))?,
+                .ok_or_else(error::missing_packet_error)?
+                .try_into()?,
             acknowledgement: raw_msg.acknowledgement,
             signer: raw_msg.signer.into(),
             proofs,

@@ -33,6 +33,6 @@ define_error! {
 
         TransactionFailed
             [ RoutingError ]
-            | _ | { format_args!("transaction processing by modules failed") },
+            | _ | { "transaction processing by modules failed" },
     }
 }

@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
 
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -47,7 +47,7 @@ impl MsgChannelCloseConfirm {
 }
 
 impl Msg for MsgChannelCloseConfirm {
-    type ValidationError = Error;
+    type ValidationError = error::Error;
     type Raw = RawMsgChannelCloseConfirm;
 
     fn route(&self) -> String {
@@ -62,7 +62,7 @@ impl Msg for MsgChannelCloseConfirm {
 impl Protobuf<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {}
 
 impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
-    type Error = anomaly::Error<Kind>;
+    type Error = error::Error;
 
     fn try_from(raw_msg: RawMsgChannelCloseConfirm) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -72,21 +72,18 @@ impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
             None,
             raw_msg
                 .proof_height
-                .ok_or(Kind::MissingHeight)?
+                .ok_or_else(error::missing_height_error)?
                 .try_into()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .map_err(|e| match e {})?,
         )
-        .map_err(|e| Kind::InvalidProof.context(e))?;
+        .map_err(error::invalid_proof_error)?;
 
         Ok(MsgChannelCloseConfirm {
-            port_id: raw_msg
-                .port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            port_id: raw_msg.port_id.parse().map_err(error::identifier_error)?,
             channel_id: raw_msg
                 .channel_id
                 .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+                .map_err(error::identifier_error)?,
             proofs,
             signer: raw_msg.signer.into(),
         })

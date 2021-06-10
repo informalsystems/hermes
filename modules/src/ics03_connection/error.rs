@@ -59,43 +59,45 @@ define_error! {
 
         InvalidIdentifier
             [ DisplayOnly<ValidationError> ]
-            | _ | { format_args!("identifier error") },
+            | _ | { "identifier error" },
 
         EmptyProtoConnectionEnd
-            | _ | { format_args!("ConnectionEnd domain object could not be constructed out of empty proto object") },
+            | _ | { "ConnectionEnd domain object could not be constructed out of empty proto object" },
 
+        // TODO: use more specific error source
         InvalidVersion
             [ DisplayOnly<Box<dyn std::error::Error>> ]
-            | _ | { format_args!("invalid connection version") },
+            | _ | { "invalid connection version" },
 
         EmptyVersions
-            | _ | { format_args!("empty supported versions") },
+            | _ | { "empty supported versions" },
 
         EmptyFeatures
-            | _ | { format_args!("empty supported features") },
+            | _ | { "empty supported features" },
 
         NoCommonVersion
-            | _ | { format_args!("no common version") },
+            | _ | { "no common version" },
 
         InvalidAddress
-            | _ | { format_args!("invalid address") },
+            | _ | { "invalid address" },
 
         MissingProofHeight
-            | _ | { format_args!("missing proof height") },
+            | _ | { "missing proof height" },
 
         MissingConsensusHeight
-            | _ | { format_args!("missing consensus height") },
+            | _ | { "missing consensus height" },
 
         InvalidProof
             [ ProofError ]
-            | _ | { format_args!("invalid connection proof") },
+            | _ | { "invalid connection proof" },
 
+        // TODO: use more specific error source
         VerifyConnectionState
             [ DisplayOnly<Box<dyn std::error::Error>> ]
-            | _ | { format_args!("error verifying connnection state") },
+            | _ | { "error verifying connnection state" },
 
         InvalidSigner
-            | _ | { format_args!("invalid signer") },
+            | _ | { "invalid signer" },
 
         ConnectionNotFound
             { connection_id: ConnectionId }
@@ -105,7 +107,7 @@ define_error! {
             },
 
         InvalidCounterparty
-            | _ | { format_args!("invalid signer") },
+            | _ | { "invalid signer" },
 
         ConnectionIdMismatch
             {
@@ -118,11 +120,11 @@ define_error! {
             },
 
         MissingCounterparty
-            | _ | { format_args!("missing counterparty") },
+            | _ | { "missing counterparty" },
 
 
         MissingCounterpartyPrefix
-            | _ | { format_args!("missing counterparty prefix") },
+            | _ | { "missing counterparty prefix" },
 
         MissingClient
             { client_id: ClientId }
@@ -132,7 +134,7 @@ define_error! {
             },
 
         NullClientProof
-            | _ | { format_args!("client proof must be present") },
+            | _ | { "client proof must be present" },
 
         FrozenClient
             { client_id: ClientId }
@@ -142,7 +144,7 @@ define_error! {
             },
 
         ConnectionVerificationFailure
-            | _ | { format_args!("the connection proof verification failed") },
+            | _ | { "the connection proof verification failed" },
 
         MissingClientConsensusState
             {
@@ -158,6 +160,7 @@ define_error! {
             { height: Height }
             | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
 
+        // TODO: use more specific error source
         ConsensusStateVerificationFailure
             { height: Height }
             [ DisplayOnly<Box<dyn std::error::Error>> ]
@@ -166,6 +169,7 @@ define_error! {
                     e.height)
             },
 
+        // TODO: use more specific error source
         ClientStateVerificationFailure
             {
                 client_id: ClientId,

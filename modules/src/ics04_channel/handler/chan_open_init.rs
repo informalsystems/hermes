@@ -4,7 +4,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error;
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
@@ -13,38 +13,40 @@ use crate::ics24_host::identifier::ChannelId;
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: MsgChannelOpenInit,
-) -> HandlerResult<ChannelResult, Error> {
+) -> HandlerResult<ChannelResult, error::Error> {
     let mut output = HandlerOutput::builder();
 
     // Channel capabilities
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     if msg.channel().connection_hops().len() != 1 {
-        return Err(
-            Kind::InvalidConnectionHopsLength(1, msg.channel().connection_hops().len()).into(),
-        );
+        return Err(error::invalid_connection_hops_length_error(
+            1,
+            msg.channel().connection_hops().len(),
+        ));
     }
 
     // An IBC connection running on the local (host) chain should exist.
     let connection_end = ctx.connection_end(&msg.channel().connection_hops()[0]);
 
-    let conn = connection_end
-        .ok_or_else(|| Kind::MissingConnection(msg.channel().connection_hops()[0].clone()))?;
+    let conn = connection_end.ok_or_else(|| {
+        error::missing_connection_error(msg.channel().connection_hops()[0].clone())
+    })?;
 
     let get_versions = conn.versions();
     let version = match get_versions.as_slice() {
         [version] => version,
-        _ => return Err(Kind::InvalidVersionLengthConnection.into()),
+        _ => return Err(error::invalid_version_length_connection_error()),
     };
 
     let channel_feature = msg.channel().ordering().to_string();
     if !version.is_supported_feature(channel_feature) {
-        return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
+        return Err(error::channel_feature_not_suported_by_connection_error());
     }
 
     // TODO: Check that `version` is non empty but not necessary coherent
     if msg.channel().version().is_empty() {
-        return Err(Kind::InvalidVersion.into());
+        return Err(error::empty_version_error());
     }
 
     // Channel identifier construction.
