@@ -843,6 +843,7 @@ impl RelayPath {
                 self.dst_chain().id(),
                 dst_err_ev.unwrap()
             ),
+            None,
         )))
     }
 
@@ -884,6 +885,7 @@ impl RelayPath {
                 self.src_chain().id(),
                 src_err_ev.unwrap()
             ),
+            None,
         )))
     }
 

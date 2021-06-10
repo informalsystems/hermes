@@ -39,15 +39,16 @@ pub fn spawn_chain_runtime(
     config: &Config,
     chain_id: &ChainId,
 ) -> Result<Box<dyn ChainHandle>, Error> {
-    let chain_config = config
-        .find_chain(chain_id)
-        .cloned()
-        .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))
-        .map_err(|e| Kind::Config.context(e))?;
+    let chain_config = config.find_chain(chain_id).cloned().ok_or_else(|| {
+        Kind::Config.context(format!(
+            "missing chain for id ({}) in configuration file",
+            chain_id
+        ))
+    })?;
 
     let rt = Arc::new(TokioRuntime::new().unwrap());
     let chain_res = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt)
-        .map_err(|e| Kind::Runtime.context(e));
+        .map_err(|e| Kind::Relayer(e.kind().clone()).context(e));
 
     let handle = chain_res.map(|(handle, _)| handle)?;
 

@@ -1,9 +1,8 @@
 use std::{
-    convert::TryFrom, convert::TryInto, future::Future, str::FromStr, sync::Arc, thread,
-    time::Duration,
+    convert::TryFrom, convert::TryInto, future::Future, ops::Deref, str::FromStr, sync::Arc,
+    thread, time::Duration,
 };
 
-use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use prost::Message;
@@ -471,18 +470,17 @@ impl Chain for CosmosSdkChain {
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         if status.sync_info.catching_up {
-            fail!(
-                Kind::LightClient(self.config.rpc_addr.to_string()),
-                "node at {} running chain {} not caught up",
-                self.config().rpc_addr,
-                self.config().id,
-            );
+            Err(Kind::LightClientNotUpToDate(
+                self.config.rpc_addr.clone(),
+                self.config().id.clone(),
+            )
+            .into())
+        } else {
+            Ok(ICSHeight {
+                revision_number: ChainId::chain_version(status.node_info.network.as_str()),
+                revision_height: u64::from(status.sync_info.latest_block_height),
+            })
         }
-
-        Ok(ICSHeight {
-            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
-            revision_height: u64::from(status.sync_info.latest_block_height),
-        })
     }
 
     fn query_clients(
@@ -529,17 +527,25 @@ impl Chain for CosmosSdkChain {
     ) -> Result<Self::ClientState, Error> {
         crate::time!("query_client_state");
 
-        let client_state = self
+        let response = self
             .query(ClientStatePath(client_id.clone()), height, false)
-            .map_err(|e| Kind::Query("client state".into()).context(e))
-            .and_then(|v| {
-                AnyClientState::decode_vec(&v.value)
-                    .map_err(|e| Kind::Query("client state".into()).context(e))
-            })?;
+            .map_err(|e| Kind::Query("client state".into()).context(e))?;
+
+        let raw_val = Any::decode(response.value.deref())
+            .map_err(|e| Kind::Query("client state".into()).context(e))?;
+
+        let client_state: AnyClientState =
+            raw_val
+                .try_into()
+                .map_err(|e: ibc::ics02_client::error::Error| {
+                    Kind::Ics002(e.kind().clone()).context(e)
+                })?;
+
         let client_state =
             downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
                 Kind::Query("client state".into()).context("unexpected client state type")
             })?;
+
         Ok(client_state)
     }
 

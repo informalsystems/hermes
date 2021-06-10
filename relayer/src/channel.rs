@@ -31,7 +31,7 @@ use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::Error as WorkerChannelError;
 use crate::util::retry::RetryResult;
-use crate::util::retry::{retry_count, retry_with_index};
+use crate::util::retry::{retry_count, retry_recoverable_with_index, RetryableError};
 
 mod retry_strategy {
     use std::time::Duration;
@@ -50,6 +50,7 @@ mod retry_strategy {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum ChannelError {
     #[error("failed with underlying cause: {0}")]
@@ -83,6 +84,18 @@ pub enum ChannelError {
 
     #[error("channel {0} on chain {1} expected to have counterparty {2} (but instead has {3})")]
     MismatchingChannelEnds(PortChannelId, ChainId, PortChannelId, PortChannelId),
+}
+
+impl RetryableError for ChannelError {
+    #[allow(clippy::match_like_matches_macro)]
+    fn is_retryable(&self) -> bool {
+        match self {
+            ChannelError::ClientOperation(_, _, e) => e.is_retryable(),
+
+            // TODO: actually classify the remaining variants on whether they are retryable
+            _ => true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -376,9 +389,11 @@ impl Channel {
 
     // Check that the channel was created on a_chain
     fn do_chan_open_init_and_send_with_retry(&mut self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| {
-            self.do_chan_open_init_and_send()
-        })
+        retry_recoverable_with_index(
+            "do_chan_open_init_and_send",
+            retry_strategy::default(),
+            |_| self.do_chan_open_init_and_send(),
+        )
         .map_err(|err| {
             error!("failed to open channel after {} retries", err);
             ChannelError::Failed(format!(
@@ -386,9 +401,7 @@ impl Channel {
                 retry_count(&err),
                 self
             ))
-        })?;
-
-        Ok(())
+        })
     }
 
     fn do_chan_open_try_and_send(&mut self) -> Result<(), ChannelError> {
@@ -405,9 +418,11 @@ impl Channel {
     }
 
     fn do_chan_open_try_and_send_with_retry(&mut self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| {
-            self.do_chan_open_try_and_send()
-        })
+        retry_recoverable_with_index(
+            "do_chan_open_try_and_send",
+            retry_strategy::default(),
+            |_| self.do_chan_open_try_and_send(),
+        )
         .map_err(|err| {
             error!("failed to open channel after {} retries", err);
             ChannelError::Failed(format!(
@@ -548,7 +563,7 @@ impl Channel {
     ///
     /// Post-condition: the channel state is `Open` on both ends if successful.
     fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| {
+        retry_recoverable_with_index("do_channel_handshake", retry_strategy::default(), |_| {
             self.do_chan_open_ack_confirm_step()
         })
         .map_err(|err| {

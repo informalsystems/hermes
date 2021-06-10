@@ -4,9 +4,14 @@ use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 use ibc::{
-    ics02_client::client_type::ClientType,
-    ics24_host::identifier::{ChannelId, ConnectionId},
+    ics02_client::{client_type::ClientType, error::Kind as Ics02Error},
+    ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
 };
+
+use tendermint_light_client::errors::ErrorKind as LightClientError;
+use tendermint_rpc::Url;
+
+use crate::util::retry::RetryableError;
 
 /// An error that can be raised by the relayer.
 pub type Error = anomaly::Error<Kind>;
@@ -28,11 +33,11 @@ pub enum Kind {
 
     /// RPC error (typically raised by the RPC client or the RPC requester)
     #[error("RPC error to endpoint {0}")]
-    Rpc(tendermint_rpc::Url),
+    Rpc(Url),
 
     /// Websocket error (typically raised by the Websocket client)
     #[error("Websocket error to endpoint {0}")]
-    Websocket(tendermint_rpc::Url),
+    Websocket(Url),
 
     /// Event monitor error
     #[error("event monitor error: {0}")]
@@ -44,7 +49,10 @@ pub enum Kind {
 
     /// Light client instance error, typically raised by a `Client`
     #[error("Light client error for RPC address {0}")]
-    LightClient(String),
+    LightClient(String, LightClientError),
+
+    #[error("Light client error for RPC address")]
+    LightClientNotUpToDate(Url, ChainId),
 
     /// Trusted store error, raised by instances of `Store`
     #[error("Store error")]
@@ -153,6 +161,9 @@ pub enum Kind {
     #[error("Keybase error")]
     KeyBase,
 
+    #[error("ICS 02 error: {0}")]
+    Ics002(Ics02Error),
+
     /// ICS 007 error
     #[error("ICS 007 error")]
     Ics007,
@@ -188,6 +199,40 @@ pub enum Kind {
         expected: ClientType,
         got: ClientType,
     },
+}
+
+impl RetryableError for Kind {
+    #[allow(clippy::match_like_matches_macro)]
+    fn is_retryable(&self) -> bool {
+        match self {
+            Kind::Io => true,
+            Kind::Ics002(e) => e.is_retryable(),
+            Kind::LightClient(_, e) => e.is_retryable(),
+
+            // TODO: actually classify the remaining variants on whether they are retryable
+            _ => true,
+        }
+    }
+}
+
+impl RetryableError for LightClientError {
+    #[allow(clippy::match_like_matches_macro)]
+    fn is_retryable(&self) -> bool {
+        match self {
+            // Only IO error in light client should be retried
+            LightClientError::Io(_) => true,
+            _ => false,
+        }
+    }
+}
+
+impl RetryableError for Ics02Error {
+    #[allow(clippy::match_like_matches_macro)]
+    fn is_retryable(&self) -> bool {
+        // By default all client errors are non-retryable
+        // TODO: actually classify the remaining variants on whether they are retryable
+        false
+    }
 }
 
 impl Kind {

@@ -1,9 +1,58 @@
+use anomaly::BoxError;
+use std::fmt::{Debug, Display};
 use std::time::Duration;
+use tracing::warn;
 
 pub use retry::{
     delay::{Fibonacci, Fixed},
     retry_with_index, Error as RetryError, OperationResult as RetryResult,
 };
+
+/// When encountering an error, indicates whether the relayer should
+/// perform retry on the same operation.
+pub trait RetryableError {
+    fn is_retryable(&self) -> bool;
+}
+
+impl<Kind> RetryableError for anomaly::Error<Kind>
+where
+    Kind: RetryableError + Clone + Debug + Display + Into<BoxError>,
+{
+    fn is_retryable(&self) -> bool {
+        self.kind().is_retryable()
+    }
+}
+
+pub fn retry_recoverable_with_index<I, O, R, E>(
+    name: &str,
+    iterable: I,
+    mut operation: O,
+) -> Result<R, retry::Error<E>>
+where
+    I: IntoIterator<Item = Duration>,
+    O: FnMut(u64) -> Result<R, E>,
+    E: RetryableError + Display,
+{
+    retry_with_index(iterable, |i| {
+        let res = operation(i);
+        match res {
+            Err(e) => {
+                if e.is_retryable() {
+                    warn!(
+                        "operation {} failed with recoverable error: {}. retrying at count {}",
+                        name,
+                        e,
+                        i + 1
+                    );
+                    RetryResult::Retry(e)
+                } else {
+                    RetryResult::Err(e)
+                }
+            }
+            Ok(val) => RetryResult::Ok(val),
+        }
+    })
+}
 
 pub fn retry_count<E>(err: &RetryError<E>) -> u64 {
     match err {

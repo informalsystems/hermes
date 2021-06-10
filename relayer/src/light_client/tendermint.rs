@@ -4,6 +4,7 @@ use itertools::Itertools;
 
 use tendermint_light_client::{
     components::{self, io::AtHeight},
+    errors::ErrorKind as LightClientError,
     light_client::{LightClient as TmLightClient, Options as TmOptions},
     operations,
     state::State as LightClientState,
@@ -74,7 +75,9 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         // Verify the target header
         let target = client
             .verify_to_target(target_height, &mut state)
-            .map_err(|e| error::Kind::LightClient(self.chain_id.to_string()).context(e))?;
+            .map_err(|e| {
+                error::Kind::LightClient(self.chain_id.to_string(), e.kind().clone()).context(e)
+            })?;
 
         // Collect the verification trace for the target block
         let target_trace = state.get_trace(target.height());
@@ -172,7 +175,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 impl LightClient {
     pub fn from_config(config: &ChainConfig, peer_id: PeerId) -> Result<Self, Error> {
         let rpc_client = rpc::HttpClient::new(config.rpc_addr.clone())
-            .map_err(|e| error::Kind::LightClient(config.rpc_addr.to_string()).context(e))?;
+            .map_err(|e| error::Kind::Rpc(config.rpc_addr.clone()).context(e))?;
 
         let io = components::io::ProdIo::new(peer_id, rpc_client, Some(config.rpc_timeout));
 
@@ -230,9 +233,7 @@ impl LightClient {
         use tendermint_light_client::components::io::Io;
 
         self.io.fetch_light_block(height).map_err(|e| {
-            error::Kind::LightClient(self.chain_id.to_string())
-                .context(e)
-                .into()
+            error::Kind::LightClient(self.chain_id.to_string(), LightClientError::Io(e)).into()
         })
     }
 

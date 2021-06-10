@@ -21,12 +21,14 @@ use ibc::tx_msg::Msg;
 use crate::chain::handle::ChainHandle;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
+use crate::util::retry::RetryableError;
 
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
 
 const MAX_RETRIES: usize = 5;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum ConnectionError {
     #[error("failed with underlying cause: {0}")]
@@ -45,6 +47,18 @@ pub enum ConnectionError {
         "failed during a transaction submission step to chain id {0} with underlying error: {1}"
     )]
     SubmitError(ChainId, Error),
+}
+
+impl RetryableError for ConnectionError {
+    #[allow(clippy::match_like_matches_macro)]
+    fn is_retryable(&self) -> bool {
+        match self {
+            ConnectionError::ClientOperation(_, _, e) => e.is_retryable(),
+
+            // TODO: actually classify the remaining variants on whether they are retryable
+            _ => true,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
