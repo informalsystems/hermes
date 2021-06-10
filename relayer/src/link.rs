@@ -54,6 +54,9 @@ pub enum LinkError {
     #[error("failed with underlying error: {0}")]
     Generic(#[from] Error),
 
+    #[error("link initialization failed during channel counterparty verification: {0}")]
+    Initialization(ChannelError),
+
     #[error("failed to construct packet proofs for chain {0} with error: {1}")]
     PacketProofsConstructor(ChainId, Error),
 
@@ -1647,7 +1650,7 @@ impl Link {
                 port_id: opts.src_port_id.clone(),
             },
         )
-        .map_err(|e| LinkError::Failed(format!("counterparty verification failed: {}", e)))?;
+        .map_err(LinkError::Initialization)?;
 
         // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();

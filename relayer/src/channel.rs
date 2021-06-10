@@ -1258,32 +1258,34 @@ fn check_destination_channel_state(
     }
 }
 
-// Query the channel end on destination chain,
-// and verify that the counterparty channel/port on destination
-// matches channel/port id on source.
+/// Queries a channel end on a [`ChainHandle`], and verifies
+/// that the counterparty of that channel matches an
+/// expected counterparty.
+/// Returns `Ok` if the counterparty matches, and `Err` otherwise
 pub fn check_channel_counterparty(
-    chain: Box<dyn ChainHandle>,
-    local_socket: &PortChannelId,
+    target_chain: Box<dyn ChainHandle>,
+    target_socket: &PortChannelId,
     expected: &PortChannelId,
 ) -> Result<(), ChannelError> {
-    let channel_end_dst = chain
+    let channel_end_dst = target_chain
         .query_channel(
-            &local_socket.port_id,
-            &local_socket.channel_id,
+            &target_socket.port_id,
+            &target_socket.channel_id,
             Height::zero(),
         )
-        .map_err(|e| ChannelError::QueryError(chain.id(), e))?;
+        .map_err(|e| ChannelError::QueryError(target_chain.id(), e))?;
 
-    match channel_end_dst.counterparty().channel_id.clone() {
-        Some(actual_remote_channel_id) => {
+    let counterparty = channel_end_dst.remote;
+    match counterparty.channel_id {
+        Some(actual_channel_id) => {
             let actual = PortChannelId {
-                channel_id: actual_remote_channel_id,
-                port_id: channel_end_dst.counterparty().port_id.clone(),
+                channel_id: actual_channel_id,
+                port_id: counterparty.port_id,
             };
-            if actual.ne(expected) {
+            if &actual != expected {
                 return Err(ChannelError::MismatchingChannelEnds(
-                    local_socket.clone(),
-                    chain.id(),
+                    target_socket.clone(),
+                    target_chain.id(),
                     expected.clone(),
                     actual,
                 ));
@@ -1292,8 +1294,8 @@ pub fn check_channel_counterparty(
         None => {
             error!(
                 "socket {} on chain {} has no counterparty channel id ",
-                local_socket,
-                chain.id()
+                target_socket,
+                target_chain.id()
             );
             // TODO: The error `MissingCounterpartyChannelId` should capture its
             //  context fully (the chain and the socket).
