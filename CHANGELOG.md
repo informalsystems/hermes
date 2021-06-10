@@ -8,11 +8,18 @@
   - Add `--hd-path` option to `keys restore` and `keys add` commands to specify
     derivation path when importing keys ([#1049])
 
+### IMPROVEMENTS
+
+- [ibc-relayer]
+  - Update the on-chain IBC client with supporting headers when light client verification
+    does bisection when verifying a header for a client update or a misbehaviour detection ([#673])
+
 ### BREAKING CHANGES
 
 - [ibc-relayer-cli]
   - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
 
+[#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#868]: https://github.com/informalsystems/ibc-rs/issues/1049
 
 ## v0.4.0
