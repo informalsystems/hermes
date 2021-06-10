@@ -3,6 +3,9 @@ from typing import Tuple
 from .cmd import *
 from .common import *
 
+import e2e.relayer as relayer
+
+
 
 @dataclass
 class TxConnInitRes:
