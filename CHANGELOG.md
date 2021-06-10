@@ -2,12 +2,24 @@
 
 ## Unreleased
 
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Add `--hd-path` option to `keys restore` and `keys add` commands to specify
+    derivation path when importing keys ([#1049])
+    
 ### IMPROVEMENTS
 
 - [ibc-relayer]
   - Enable TLS support for gRPC client ([#877])
 
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
+
 [#877]: https://github.com/informalsystems/ibc-rs/issues/877
+[#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
 
 ## v0.4.0
 *June 3rd, 2021*
