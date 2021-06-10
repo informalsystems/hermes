@@ -1,7 +1,7 @@
 use std::boxed::Box;
 use std::convert::From;
 use std::convert::TryFrom;
-use crate::primitives::SystemTime;
+use tendermint::primitives::SystemTime;
 
 use chrono::{TimeZone, Utc};
 use prost_types::Timestamp;
