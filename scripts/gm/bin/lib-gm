@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  echo "v0.0.5"
+  echo "v0.0.6"
 }
 
 # Configuration Management
@@ -526,6 +526,8 @@ configure() {
   sed -i.bak 's/  global-labels = \["panic","gaiad"\]/  global-labels = []/' "$HOME_DIR/config/app.toml"
   # End of workaround
   sconfig "$HOME_DIR/config/app.toml" "api.address=tcp://0.0.0.0:${APP}" 1> /dev/null
+  sconfig "$HOME_DIR/config/app.toml" "api.enable=true" 1> /dev/null
+  sconfig "$HOME_DIR/config/app.toml" "api.swagger=true" 1> /dev/null
   sconfig "$HOME_DIR/config/app.toml" "grpc.address=0.0.0.0:${GRPC}" 1> /dev/null
   sconfig "$HOME_DIR/config/app.toml" "grpc-web.address=0.0.0.0:${GRPCW}" 1> /dev/null
   if ! a_in_b "$i" "$VALIDATORS"; then
@@ -735,7 +737,6 @@ list_keys() {
   done
 }
 
-# Todo: Instead of overwriting the hermes config, let's try to make minimal changes.
 hermes_config() {
   HERMES_DIR="$(dirname "$GLOBAL_HERMES_CONFIG")"
   if [ ! -d "$HERMES_DIR" ]; then
@@ -786,40 +787,19 @@ EOF
     done
 }
 
-# This is a helper function that extracts the coinType from an absolute hdpath (m/44'/118'/0'/0/0) for hermes.
-# This will be obsolete after https://github.com/informalsystems/ibc-rs/issues/1049 .
-get_cointype() {
-  HDPATH="$(get_hdpath "$1")"
-  if [ -n "$HDPATH" ]; then
-    COINTYPE=$(echo "$HDPATH" | sed 's,^m/[0-9][0-9]*'\''/\([0-9][0-9]*\)'\''/[0-9][0-9]*'\''/[0-9][0-9]*/[0-9][0-9]*$,\1,')
-    if [ "$COINTYPE" != "$HDPATH" ]; then
-      echo "$COINTYPE"
-    fi
-  fi
-}
-
 hermes_keys() {
   ID="$(get_chain_id "$1")"
   NETWORK_HOME_DIR="$(get_home_dir "$ID")"
   test -x "$GLOBAL_HERMES_BINARY" || exit_with_error "hermes binary \"${GLOBAL_HERMES_BINARY}\" not found, check your gm.toml config"
   HDPATH="$(get_hdpath "$1")"
-  COINTYPE="$(get_cointype "$1")"
-  if [ -n "$HDPATH" ] && [ -z "${COINTYPE}" ]; then
-      warn "cointype could not be parsed. Reverting to default coin type."
-  fi
-  if [ -z "${COINTYPE}" ]; then
-    if [ -z "$GLOBAL_HERMES_CONFIG" ]; then
+  if [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
       "$GLOBAL_HERMES_BINARY" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
-    else
+  elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
       "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
-    fi
-  else
-    MNEMONIC="$(stoml "${NETWORK_HOME_DIR}/wallet_seed.json" "mnemonic")"
-    if [ -z "$GLOBAL_HERMES_CONFIG" ]; then
-      "$GLOBAL_HERMES_BINARY" keys restore "$ID" -t "$COINTYPE" -m "$MNEMONIC"
-    else
-      "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys restore "$ID" -t "$COINTYPE" -m "$MNEMONIC"
-    fi
+  elif [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
+      "$GLOBAL_HERMES_BINARY" keys add "$ID" --hd-path "$HDPATH" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+  elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
+      "$GLOBAL_HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --hd-path "$HDPATH" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
   fi
 }
 

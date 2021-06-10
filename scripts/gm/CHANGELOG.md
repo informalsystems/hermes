@@ -1,6 +1,17 @@
 # Gaiad Manager Change Log
 
-## v0.0.5
+## v0.0.6
+
+### FEATURES
+- Compatibility of hermes updated to 0.4.1 and above. ([#1049])
+- Enabled swagger page on the gaiad APP port.
+
+### BUGFIXES
+- Re-enable APP port in configuration ([comment](https://github.com/informalsystems/ibc-rs/pull/1051#issuecomment-856024919))
+
+[#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
+
+## v0.0.5 (unreleased)
 
 ### FEATURES
 - Reorganized the documentation and moved the configuration file documentation into the example configuration.
