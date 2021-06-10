@@ -47,7 +47,15 @@ pub trait ClientKeeper {
                 )?;
                 Ok(())
             }
-            Upgrade(_) => unimplemented!(),
+            Upgrade(res) => {
+                self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
+                self.store_consensus_state(
+                    res.client_id.clone(),
+                    res.client_state.latest_height(),
+                    res.consensus_state,
+                )?;
+                Ok(())
+            }
         }
     }
 

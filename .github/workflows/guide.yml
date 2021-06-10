@@ -16,22 +16,34 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup mdbook
-        uses: peaceiris/actions-mdbook@v1
+      - name: cache .cargo directory
+        uses: actions/cache@v1
         with:
-          mdbook-version: "0.4.6"
+          path: ~/.cargo
+          key: cargo-dir
+          restore-keys: |
+            cargo-dir
 
-      - name: Setup mdbook-mermaid
-        uses: actions-rs/cargo@v1
+      - name: Install mdbook
+        uses: actions-rs/install@v0.1
         with:
-          command: install
-          args: mdbook-mermaid
+          crate: mdbook
+          version: latest
+          use-tool-cache: true
 
-      - name: Setup mdbook-toc
-        uses: actions-rs/cargo@v1
+      - name: Install mdbook-mermaid
+        uses: actions-rs/install@v0.1
         with:
-          command: install
-          args: mdbook-toc
+          crate: mdbook-mermaid
+          version: latest
+          use-tool-cache: true
+
+      - name: Install mdbook-toc
+        uses: actions-rs/install@v0.1
+        with:
+          crate: mdbook-toc
+          version: latest
+          use-tool-cache: true
 
       - name: Build guide
         run: |

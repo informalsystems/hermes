@@ -209,6 +209,7 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use test_env_log::test;
 
     use prost_types::Any;
 

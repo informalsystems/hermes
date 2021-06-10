@@ -104,6 +104,7 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
+    use test_env_log::test;
 
     use crate::events::IbcEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};

@@ -59,6 +59,7 @@ pub fn process(
 mod tests {
     use std::convert::TryInto;
     use std::time::Duration;
+    use test_env_log::test;
 
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 

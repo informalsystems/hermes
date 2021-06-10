@@ -5,7 +5,6 @@ use std::{fs, fs::File, io::Write, path::Path, time::Duration};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::timestamp::ZERO_DURATION;
 
@@ -29,10 +28,6 @@ pub mod default {
 
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
-    }
-
-    pub fn channel_ordering() -> Order {
-        Order::Unordered
     }
 }
 
@@ -92,6 +87,7 @@ impl Default for GlobalConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TelemetryConfig {
     pub enabled: bool,
+    pub host: String,
     pub port: u16,
 }
 
@@ -99,6 +95,7 @@ impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {
             enabled: false,
+            host: "127.0.0.1".to_string(),
             port: 3001,
         }
     }
@@ -164,6 +161,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::{parse, store_writer};
+    use test_env_log::test;
 
     #[test]
     fn parse_valid_config() {

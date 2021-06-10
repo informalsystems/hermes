@@ -1,7 +1,7 @@
-use std::sync::Arc;
+use std::{error::Error, net::ToSocketAddrs, sync::Arc};
 
 use prometheus::{Encoder, TextEncoder};
-use rouille::Request;
+use rouille::{Request, Response, Server};
 
 use crate::state::TelemetryState;
 
@@ -20,8 +20,11 @@ impl Route {
     }
 }
 
-pub fn run(telemetry_state: Arc<TelemetryState>, port: u16) {
-    rouille::start_server(("localhost", port), move |request| {
+pub fn listen(
+    address: impl ToSocketAddrs,
+    telemetry_state: Arc<TelemetryState>,
+) -> Result<Server<impl Fn(&Request) -> Response>, Box<dyn Error + Send + Sync>> {
+    let server = Server::new(address, move |request| {
         match Route::from_request(request) {
             // The prometheus endpoint
             Route::Metrics => {
@@ -37,5 +40,7 @@ pub fn run(telemetry_state: Arc<TelemetryState>, port: u16) {
             // Return an empty response with a 404 status code.
             Route::Other => rouille::Response::empty_404(),
         }
-    })
+    })?;
+
+    Ok(server)
 }

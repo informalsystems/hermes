@@ -105,6 +105,12 @@ pub enum Kind {
         state_type: ClientType,
         consensus_type: ClientType,
     },
+
+    #[error("upgrade verification failed")]
+    UpgradeVerificationFailure,
+
+    #[error("upgraded client height {0} must be at greater than current client height {1}")]
+    LowUpgradeHeight(Height, Height),
 }
 
 impl Kind {

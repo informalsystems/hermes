@@ -41,6 +41,15 @@ strategy="packets"
 # Hermes configuration log_level parameter.
 log_level="info"
 
+# Hermes configuration telemetry.enabled parameter.
+telemetry_enabled=true
+
+# Hermes configuration telemetry.host parameter.
+telemetry_host='127.0.0.1'
+
+# Hermes configuration telemetry.port parameter.
+telemetry_port=3001
+
 ##
 ## Sub-section (node) definitions and parameter redefinitons below.
 ##

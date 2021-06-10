@@ -235,6 +235,7 @@ impl From<ClientState> for RawClientState {
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
+    use test_env_log::test;
 
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;

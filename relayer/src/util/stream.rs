@@ -50,6 +50,7 @@ where
 mod tests {
     use super::group_while;
     use futures::{executor::block_on, stream, StreamExt};
+    use test_env_log::test;
 
     #[test]
     fn group_while_non_empty() {
