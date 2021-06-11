@@ -175,7 +175,7 @@ impl Runnable for TxUpgradeClientsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let outputs = config
+        let outputs: Vec<Output> = config
             .chains
             .iter()
             .map(|chain| match self.upgrade_chain(&config, &chain.id) {
@@ -184,7 +184,7 @@ impl Runnable for TxUpgradeClientsCmd {
             })
             .collect();
 
-        Output::combined(outputs).exit()
+        Output::combined(outputs.into_iter()).exit()
     }
 }
 

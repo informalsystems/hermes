@@ -203,7 +203,9 @@ impl Output {
         Output::with_success().with_msg(msg)
     }
 
-    pub fn combined(outputs: Vec<Self>) -> Output {
+    /// Combine multiple `Output`s into a single `Output` by concatenating their results. The
+    /// combined `Output` has status `Error` if even one of the constituent `Output`s is an error.
+    pub fn combined(outputs: impl Iterator<Item = Output>) -> Output {
         let mut result = "".to_owned();
         let mut has_err = false;
 
