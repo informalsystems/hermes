@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
@@ -172,8 +172,7 @@ impl TryFrom<RawPacket> for Packet {
         let packet_timeout_height: Height = raw_pkt
             .timeout_height
             .ok_or_else(error::missing_height_error)?
-            .try_into()
-            .map_err(|e| match e {})?;
+            .into();
 
         if packet_timeout_height.is_zero() && raw_pkt.timeout_timestamp == 0 {
             return Err(error::zero_packet_timeout_error());

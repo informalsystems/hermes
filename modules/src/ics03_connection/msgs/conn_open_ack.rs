@@ -85,16 +85,14 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
         let consensus_height = msg
             .consensus_height
             .ok_or_else(error::missing_consensus_height_error)?
-            .try_into() // Cast from the raw height type into the domain type.
-            .map_err(|e| match e {})?;
+            .into();
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(error::invalid_proof_error)?;
 
         let proof_height = msg
             .proof_height
             .ok_or_else(error::missing_proof_height_error)?
-            .try_into()
-            .map_err(|e| match e {})?;
+            .into();
 
         let client_proof = Some(msg.proof_client)
             .filter(|x| !x.is_empty())

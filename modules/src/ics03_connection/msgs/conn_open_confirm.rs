@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use tendermint_proto::Protobuf;
 
@@ -56,8 +56,8 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
         let proof_height = msg
             .proof_height
             .ok_or_else(error::missing_proof_height_error)?
-            .try_into() // Cast from the raw height type into the domain type.
-            .map_err(|e| match e {})?;
+            .into();
+
         Ok(Self {
             connection_id: msg
                 .connection_id
