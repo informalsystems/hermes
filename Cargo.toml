@@ -18,3 +18,10 @@ exclude = [
 # tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 # tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 # tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+
+[patch.crates-io]
+tendermint              = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
+tendermint-rpc          = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
+tendermint-proto        = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
+tendermint-light-client = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
+tendermint-testgen      = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
