@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anomaly::BoxError;
+use flex_error::BoxError;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::events as ClientEvents;

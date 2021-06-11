@@ -7,7 +7,8 @@ use std::time::Duration;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
 use serde_derive::{Deserialize, Serialize};
-use thiserror::Error;
+use flex_error::*;
+use displaydoc::Display;
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 
@@ -125,8 +126,8 @@ impl Display for Timestamp {
     }
 }
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-#[error("Timestamp overflow when modifying with duration")]
+#[derive(Clone, Debug, Display, PartialEq, Eq)]
+/// Timestamp overflow when modifying with duration
 pub struct TimestampOverflowError;
 
 impl Add<Duration> for Timestamp {
@@ -159,25 +160,39 @@ impl Sub<Duration> for Timestamp {
     }
 }
 
-pub type ParseTimestampError = anomaly::Error<ParseTimestampErrorKind>;
+// pub type ParseTimestampError = ParseTimestampErrorKind;
+//
+// #[derive(Clone, Debug, Display, PartialEq, Eq)]
+// pub enum ParseTimestampErrorKind {
+//     /// Error parsing integer from string: {0}
+//     ParseIntError(ParseIntError),
+//
+//     /// Error converting from u64 to i64: {0}
+//     TryFromIntError(TryFromIntError),
+// }
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum ParseTimestampErrorKind {
-    #[error("Error parsing integer from string: {0}")]
-    ParseIntError(ParseIntError),
 
-    #[error("Error converting from u64 to i64: {0}")]
-    TryFromIntError(TryFromIntError),
+define_error! {
+    ParseTimestampError {
+        ParseInt
+            [ DisplayError<ParseIntError> ]
+            | _ | { "error parsing integer from string"},
+
+        TryFromInt
+            [ DisplayError<TryFromIntError> ]
+            | _ | { "error converting from u64 to i64" },
+    }
 }
+
 
 impl FromStr for Timestamp {
     type Err = ParseTimestampError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let seconds = u64::from_str(s).map_err(ParseTimestampErrorKind::ParseIntError)?;
+        let seconds = u64::from_str(s).map_err(parse_int_error)?;
 
         Timestamp::from_nanoseconds(seconds)
-            .map_err(|err| ParseTimestampErrorKind::TryFromIntError(err).into())
+            .map_err(try_from_int_error)
     }
 }
 
