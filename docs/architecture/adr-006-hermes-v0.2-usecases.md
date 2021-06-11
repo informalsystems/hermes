@@ -129,6 +129,28 @@ identifier `<client-id>` with new consensus state from up-to-date headers.
 Hermes will automatically infer the target chain of this client from
 the [client state][client-state].
 
+- Upgrade a client:
+
+```
+upgrade client <host-chain-id> <client-id>
+```
+
+**Details:**
+Submits a transaction to chain id `<host-chain-id>` to upgrade the client having
+identifier `<client-id>`. 
+Hermes will automatically infer the target chain of this client from
+the [client state][client-state].
+
+- Upgrade all clients that target a specific chain:
+
+```
+upgrade clients <target-chain-id> 
+```
+
+**Details:**
+Submits a transaction to upgrade clients of all chains in the config that target
+chain id `<target-chain-id>`.
+
 ##### Create New Connection
 
 - Minimal invocation: this will create the connection from scratch, using
