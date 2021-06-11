@@ -2,7 +2,9 @@
 use abscissa_core::{config::Override, Command, Help, Options, Runnable};
 use ibc_relayer::config::Config;
 
-use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd, TxUpgradeClientCmd};
+use crate::commands::tx::client::{
+    TxCreateClientCmd, TxUpdateClientCmd, TxUpgradeClientCmd, TxUpgradeClientsCmd,
+};
 
 mod channel;
 pub(crate) mod client;
@@ -41,6 +43,10 @@ pub enum TxRawCommands {
     /// The `tx raw upgrade-client` subcommand. Submits a MsgUpgradeClient in a transaction to a chain.
     #[options(help = "Upgrade the specified client on destination chain")]
     UpgradeClient(TxUpgradeClientCmd),
+
+    /// The `tx raw upgrade-clients` subcommand. Submits a MsgUpgradeClient in a transaction to multiple chain.
+    #[options(help = "Upgrade the specified client on all destination chains that target it")]
+    UpgradeClients(TxUpgradeClientsCmd),
 
     /// The `tx raw conn-init` subcommand
     #[options(help = "Initialize a connection (ConnectionOpenInit)")]
