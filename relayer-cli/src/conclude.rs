@@ -69,11 +69,7 @@ pub fn exit_with(out: Output) {
     let status = out.status;
 
     // Handle the output message
-    if json() {
-        println!("{}", serde_json::to_string(&out.into_json()).unwrap());
-    } else {
-        println!("{}: {}", out.status, out.result);
-    }
+    println!("{}", String::from(out));
 
     // The return code
     if status == Status::Error {
@@ -207,6 +203,24 @@ impl Output {
         Output::with_success().with_msg(msg)
     }
 
+    pub fn combined(outputs: Vec<Self>) -> Output {
+        let mut result = "".to_owned();
+        let mut has_err = false;
+
+        for output in outputs {
+            if output.status == Status::Error {
+                has_err = true;
+            }
+            result.push_str(&String::from(output));
+        }
+
+        if has_err {
+            Output::error(result)
+        } else {
+            Output::success(result)
+        }
+    }
+
     /// Exits from the process with the current output. Convenience wrapper over `exit_with`.
     pub fn exit(self) {
         exit_with(self);
@@ -248,6 +262,16 @@ fn serialize_result(res: impl Serialize + std::fmt::Debug) -> serde_json::Value 
             );
             // Package the result with the infallible `Debug` instead of `JSON`
             serde_json::Value::String(last_resort)
+        }
+    }
+}
+
+impl From<Output> for String {
+    fn from(out: Output) -> Self {
+        if json() {
+            serde_json::to_string(&out.into_json()).unwrap()
+        } else {
+            format!("{}: {}", out.status, out.result)
         }
     }
 }
