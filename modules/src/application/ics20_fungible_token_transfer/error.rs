@@ -10,7 +10,7 @@ define_error! {
 
         Ics04Channel
             [ channel_error::Error ]
-            |_ | { "error raised by message handler" },
+            |_ | { "Ics04 channel error" },
 
         SequenceSendNotFound
             { port_id: PortId, channel_id: ChannelId }

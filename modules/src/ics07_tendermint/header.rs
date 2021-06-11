@@ -10,7 +10,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
-use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::error;
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
 use std::cmp::Ordering;
@@ -79,30 +79,30 @@ impl crate::ics02_client::header::Header for Header {
 impl Protobuf<RawHeader> for Header {}
 
 impl TryFrom<RawHeader> for Header {
-    type Error = Error;
+    type Error = error::Error;
 
     fn try_from(raw: RawHeader) -> Result<Self, Self::Error> {
         Ok(Self {
             signed_header: raw
                 .signed_header
-                .ok_or_else(|| Kind::InvalidRawHeader.context("missing signed header"))?
+                .ok_or_else(|| error::invalid_raw_header_error("missing signed header".into()))?
                 .try_into()
-                .map_err(|_| Kind::InvalidHeader.context("signed header conversion"))?,
+                .map_err(|_| error::invalid_header_error("signed header conversion".into()))?,
             validator_set: raw
                 .validator_set
-                .ok_or_else(|| Kind::InvalidRawHeader.context("missing validator set"))?
+                .ok_or_else(|| error::invalid_raw_header_error("missing validator set".into()))?
                 .try_into()
-                .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+                .map_err(|_| error::invalid_raw_header_error(String::new()))?,
             trusted_height: raw
                 .trusted_height
-                .ok_or_else(|| Kind::InvalidRawHeader.context("missing height"))?
+                .ok_or_else(|| error::invalid_raw_header_error("missing height".into()))?
                 .try_into()
-                .map_err(|e| Kind::InvalidRawHeight.context(e))?,
+                .map_err(|_| error::invalid_raw_height_error())?,
             trusted_validator_set: raw
                 .trusted_validators
-                .ok_or_else(|| Kind::InvalidRawHeader.context("missing trusted validator set"))?
+                .ok_or_else(|| error::invalid_raw_header_error("missing trusted validator set".into()))?
                 .try_into()
-                .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+                .map_err(|_|error::invalid_raw_header_error(String::new()))?,
         })
     }
 }

@@ -1,48 +1,75 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
 use crate::ics24_host::error::ValidationKind;
+use flex_error::*;
 
-pub type Error = anomaly::Error<Kind>;
+define_error! {
+    Error {
+        InvalidTrustingPeriod
+            { reason: String }
+            | _ | { "invalid trusting period" },
 
-#[derive(Clone, Debug, Error)]
-pub enum Kind {
-    #[error("invalid trusting period")]
-    InvalidTrustingPeriod,
+        InvalidUnboundingPeriod
+            { reason: String }
+            | _ | { "invalid unbonding period" },
 
-    #[error("invalid unbonding period")]
-    InvalidUnboundingPeriod,
+        InvalidAddress
+            | _ | { "invalid address" },
 
-    #[error("invalid address")]
-    InvalidAddress,
+        InvalidHeader
+            {reason: String }
+            | _ | { "invalid header, failed basic validation" },
 
-    #[error("invalid header, failed basic validation")]
-    InvalidHeader,
+        Validation
+            { reason: String }
+            | _ | { "invalid header, failed basic validation" },
 
-    #[error("validation error")]
-    ValidationError,
+        InvalidRawClientState
+            {reason: String }
+            | _ | { "invalid raw client state" },
 
-    #[error("invalid raw client state")]
-    InvalidRawClientState,
+        MissingTrustingPeriod
+            | _ | { "missing trusting period" },
 
-    #[error("invalid chain identifier: raw value {0} with underlying validation error: {1}")]
-    InvalidChainId(String, ValidationKind),
+        MissingUnbondingPeriod
+            | _ | { "missing unbonding period" },
 
-    #[error("invalid raw height")]
-    InvalidRawHeight,
+        InvalidChainIdentifier
+            | _ | { "Invalid chain identifier" },
 
-    #[error("invalid raw client consensus state")]
-    InvalidRawConsensusState,
+        NegativeTrustingPeriod
+            | _ | { "negative trusting period" },
 
-    #[error("invalid raw header")]
-    InvalidRawHeader,
+        NegativeUnbondingPeriod
+            | _ | { "negative unbonding period" },
 
-    #[error("invalid raw misbehaviour")]
-    InvalidRawMisbehaviour,
-}
+        MissingMaxClockDrift
+            | _ | { "missing max clock drift" },
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        NegativeMaxClockDrift
+            | _ | {  "negative max clock drift" },
+
+        MissingLatestHeight
+            | _ | { "missing latest height" },
+
+        MissingFrozenHeight
+            | _ | { "missing frozen height" },
+
+        InvalidChainId
+            {raw_value: String, validation_kind: ValidationKind}
+            | e | { format_args!("invalid chain identifier: raw value {0} with underlying validation error: {1}", e.raw_value, e.validation_kind) },
+
+        InvalidRawHeight
+            | _ | { "invalid raw height" },
+
+        InvalidRawConsensusState
+            {reason: String }
+            | _ | { "invalid raw client consensus state" },
+
+        InvalidRawHeader
+            {reason: String }
+            | _ | { "invalid raw header" },
+
+        InvalidRawMisbehaviour
+            { reason: String }
+            | _ | { "invalid raw misbehaviour" },
     }
 }
