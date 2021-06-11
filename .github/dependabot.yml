@@ -21,10 +21,14 @@ updates:
     schedule:
       interval: "weekly"
 
-  - package-ecosystem: "cargo"
-    directory: "proto-compiler"
-    schedule:
-      interval: "weekly"
+## Disable dependabot for `proto-compiler`
+## Reason: we'll maintain the dependencies for proto-compiler
+##    manually, so that we update the binary only when we also
+##    regenerate Rust types from the .proto files.
+#  - package-ecosystem: "cargo"
+#    directory: "proto-compiler"
+#    schedule:
+#      interval: "weekly"
 
   - package-ecosystem: "cargo"
     directory: "relayer"
