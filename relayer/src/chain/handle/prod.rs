@@ -3,9 +3,9 @@ use std::fmt::Debug;
 use crossbeam_channel as channel;
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
-use ibc::ics02_client::misbehaviour::AnyMisbehaviour;
+use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
@@ -24,12 +24,14 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 use crate::{
     connection::ConnectionMsgType,
@@ -107,6 +109,13 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
     }
 
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
+        self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })
+    }
+
     fn query_client_state(
         &self,
         client_id: &ClientId,
@@ -117,6 +126,13 @@ impl ChainHandle for ProdChainHandle {
             height,
             reply_to,
         })
+    }
+
+    fn query_client_connections(
+        &self,
+        request: QueryClientConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error> {
+        self.send(|reply_to| ChainRequest::QueryClientConnections { request, reply_to })
     }
 
     fn query_consensus_states(
@@ -174,6 +190,13 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConnectionChannels { request, reply_to })
+    }
+
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
@@ -200,6 +223,13 @@ impl ChainHandle for ProdChainHandle {
             height,
             reply_to,
         })
+    }
+
+    fn query_channel_client_state(
+        &self,
+        request: QueryChannelClientStateRequest,
+    ) -> Result<Option<IdentifiedAnyClientState>, Error> {
+        self.send(|reply_to| ChainRequest::QueryChannelClientState { request, reply_to })
     }
 
     fn proven_client_state(
@@ -245,7 +275,7 @@ impl ChainHandle for ProdChainHandle {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-    ) -> Result<AnyHeader, Error> {
+    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
         self.send(|reply_to| ChainRequest::BuildHeader {
             trusted_height,
             target_height,
@@ -276,7 +306,7 @@ impl ChainHandle for ProdChainHandle {
         &self,
         update_event: UpdateClient,
         client_state: AnyClientState,
-    ) -> Result<Option<AnyMisbehaviour>, Error> {
+    ) -> Result<Option<MisbehaviourEvidence>, Error> {
         self.send(|reply_to| ChainRequest::BuildMisbehaviour {
             client_state,
             update_event,

@@ -1,6 +1,14 @@
 [global]
-strategy = 'naive'
-log_level = 'error'
+# Valid strategies:
+#   'packets': restricts relaying to packets only, or
+#   'all': relay from all types of events
+strategy = 'packets'
+log_level = 'info'
+
+[telemetry]
+enabled = true
+host = '127.0.0.1'
+port = 3001
 
 [[chains]]
 id = 'ibc-0'

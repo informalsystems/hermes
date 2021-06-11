@@ -1,5 +1,6 @@
 //! `tx` subcommand
-use abscissa_core::{Command, Help, Options, Runnable};
+use abscissa_core::{config::Override, Command, Help, Options, Runnable};
+use ibc_relayer::config::Config;
 
 use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd, TxUpgradeClientCmd};
 
@@ -11,6 +12,7 @@ mod transfer;
 mod upgrade;
 
 /// `tx` subcommand
+#[allow(clippy::large_enum_variant)]
 #[derive(Command, Debug, Options, Runnable)]
 pub enum TxCmd {
     /// The `help` subcommand
@@ -95,4 +97,22 @@ pub enum TxRawCommands {
     /// The `tx raw upgrade-chain` subcommand
     #[options(help = "Send an IBC upgrade plan")]
     UpgradeChain(upgrade::TxIbcUpgradeChainCmd),
+}
+
+impl Override<Config> for TxCmd {
+    fn override_config(&self, config: Config) -> Result<Config, abscissa_core::FrameworkError> {
+        match self {
+            Self::Raw(cmd) => cmd.override_config(config),
+            _ => Ok(config),
+        }
+    }
+}
+
+impl Override<Config> for TxRawCommands {
+    fn override_config(&self, config: Config) -> Result<Config, abscissa_core::FrameworkError> {
+        match self {
+            Self::FtTransfer(cmd) => cmd.override_config(config),
+            _ => Ok(config),
+        }
+    }
 }

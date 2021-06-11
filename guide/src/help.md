@@ -4,6 +4,8 @@ This section provides guidelines regarding troubleshooting and general
 resources for getting help with `hermes`.
 For this purpose, we recommend a few ideas that could be of help:
 
+- [hermes help][help] command, providing a CLI
+  documentation for all `hermes` commands.
 - [profile][profiling] your relayer binary to identify slow methods;
 - [configure][log-level] the `log_level` to help with debugging;
 - [patch][patching] your local gaia chain(s) to enable some corner-case methods
@@ -19,6 +21,67 @@ And if the above options do not address your specific problem:
 
 Lastly, for general questions, you can reach us at `hello@informal.systems`,
 or on Twitter [@informalinc][twitter].
+
+## Help command
+
+The CLI comprises a special `help` command, which accepts as parameter other commands, and provides guidance on what is the correct way to invoke those commands.
+
+For instance,
+
+```shell
+hermes help create
+```
+
+will provide details about all the valid invocations of the `create` CLI command.
+
+```
+hermes 0.4.0
+Informal Systems <hello@informal.systems>
+Hermes is an IBC Relayer written in Rust.
+
+USAGE:
+    hermes create <SUBCOMMAND>
+
+DESCRIPTION:
+    Create objects (client, connection, or channel) on chains
+
+SUBCOMMANDS:
+    help       Get usage information
+    client     Create a new IBC client
+    connection Create a new connection between two chains
+    channel    Create a new channel between two chains
+```
+
+This can provide further specific guidance if we add additional parameters, e.g., 
+
+```shell
+hermes help create channel
+```
+
+```
+hermes 0.4.0
+Informal Systems <hello@informal.systems>
+Hermes is an IBC Relayer written in Rust.
+
+USAGE:
+    hermes create channel <OPTIONS>
+
+DESCRIPTION:
+    Create a new channel between two chains
+
+POSITIONAL ARGUMENTS:
+    chain_a_id                identifier of the side `a` chain for the new channel
+    chain_b_id                identifier of the side `b` chain for the new channel (optional)
+
+FLAGS:
+    -c, --connection-a CONNECTION-A
+    --port-a PORT-A           identifier of the side `a` port for the new channel
+    --port-b PORT-B           identifier of the side `b` port for the new channel
+    -o, --order ORDER         the channel ordering, valid options 'unordered' (default) and 'ordered'
+    -v, --version VERSION     the version for the new channel
+```
+
+The `help` command is a replacement of the familiar `-h`/ `--help` flag typical for CLI applications.
 
 ## Profiling
 
@@ -88,7 +151,7 @@ the `profiling` feature and the [log level][log-level] should be `info` level or
 #### Example output for `tx raw conn-init` command
 
 ```
-hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
+hermes -c   config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
 ```
 
 ```
@@ -156,7 +219,7 @@ Relevant snippet:
 
 ```toml
 [global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 ```
 
@@ -165,7 +228,7 @@ These levels correspond to the tracing sub-component of the relayer-cli,
 [see here](https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html).
 
 The relayer will _always_ print a last line summarizing the result of its
-operation for queries of transactions. In addition to  this last line,
+operation for queries or transactions. In addition to this last line,
 arbitrary debug, info, or other outputs may be produced.  Example, with
 `log_level = 'debug'` and JSON output:
 
@@ -268,6 +331,7 @@ issue template.
 
 > Note that Hermes is packaged as part of the `ibc-relayer-cli` crate.
 
+[help]: ./help.md#help-command
 [feature-request]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=feature-request.md
 [bug-report]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=bug-report.md
 [twitter]: https://twitter.com/informalinc

@@ -104,7 +104,7 @@ impl CompileCmd {
         let compilation = tonic_build::configure()
             .build_client(true)
             .build_server(false)
-            .format(false)
+            .format(true)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
             .compile(&protos, &includes);
@@ -182,7 +182,7 @@ impl CompileCmd {
         let compilation = tonic_build::configure()
             .build_client(true)
             .build_server(false)
-            .format(false)
+            .format(true)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
             .compile(&protos, &includes);

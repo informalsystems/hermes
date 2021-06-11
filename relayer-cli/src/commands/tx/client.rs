@@ -34,7 +34,7 @@ impl Runnable for TxCreateClientCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let client = ForeignClient::restore(&ClientId::default(), chains.dst, chains.src);
+        let client = ForeignClient::restore(ClientId::default(), chains.dst, chains.src);
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
@@ -106,12 +106,12 @@ impl Runnable for TxUpdateClientCmd {
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let res: Result<IbcEvent, Error> = client
+        let res = client
             .build_update_client_and_send(height, trusted_height)
-            .map_err(|e| Kind::Tx.context(e).into());
+            .map_err(|e| Kind::Tx.context(e));
 
         match res {
-            Ok(receipt) => Output::success(receipt).exit(),
+            Ok(events) => Output::success(events).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }

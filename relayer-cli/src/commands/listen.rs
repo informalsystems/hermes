@@ -1,18 +1,58 @@
-use std::{ops::Deref, sync::Arc, thread};
+use std::{fmt, ops::Deref, str::FromStr, sync::Arc, thread};
 
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use tendermint_rpc::query::{EventType, Query};
+use ibc::{events::IbcEvent, ics24_host::identifier::ChainId};
 
-use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::ChainConfig,
     event::monitor::{EventMonitor, EventReceiver},
 };
 
 use crate::prelude::*;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum EventFilter {
+    NewBlock,
+    Tx,
+}
+
+impl EventFilter {
+    pub fn matches(&self, event: &IbcEvent) -> bool {
+        match self {
+            EventFilter::NewBlock => matches!(event, IbcEvent::NewBlock(_)),
+            EventFilter::Tx => {
+                !(matches!(
+                    event,
+                    IbcEvent::NewBlock(_) | IbcEvent::Empty(_) | IbcEvent::ChainError(_)
+                ))
+            }
+        }
+    }
+}
+
+impl fmt::Display for EventFilter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NewBlock => write!(f, "NewBlock"),
+            Self::Tx => write!(f, "Tx"),
+        }
+    }
+}
+
+impl FromStr for EventFilter {
+    type Err = BoxError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "NewBlock" => Ok(Self::NewBlock),
+            "Tx" => Ok(Self::Tx),
+            invalid => Err(format!("unrecognized event type: {}", invalid).into()),
+        }
+    }
+}
 
 #[derive(Command, Debug, Options)]
 pub struct ListenCmd {
@@ -22,7 +62,7 @@ pub struct ListenCmd {
 
     /// Add an event type to listen for, can be repeated. Listen for all events by default (available: Tx, NewBlock)
     #[options(short = "e", long = "event", meta = "EVENT")]
-    events: Vec<EventType>,
+    events: Vec<EventFilter>,
 }
 
 impl ListenCmd {
@@ -34,7 +74,7 @@ impl ListenCmd {
             .ok_or_else(|| format!("chain '{}' not found in configuration", self.chain_id))?;
 
         let events = if self.events.is_empty() {
-            &[EventType::Tx, EventType::NewBlock]
+            &[EventFilter::Tx, EventFilter::NewBlock]
         } else {
             self.events.as_slice()
         };
@@ -51,29 +91,52 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
-pub fn listen(config: &ChainConfig, events: &[EventType]) -> Result<(), BoxError> {
+pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> Result<(), BoxError> {
     println!(
         "[info] Listening for events `{}` on '{}'...",
-        events.iter().format(", "),
+        filters.iter().format(", "),
         config.id
     );
 
     let rt = Arc::new(TokioRuntime::new()?);
-    let queries = events.iter().cloned().map(Query::from).collect();
-    let (event_monitor, rx) = subscribe(&config, queries, rt)?;
+    let (event_monitor, rx) = subscribe(&config, rt)?;
 
     thread::spawn(|| event_monitor.run());
 
     while let Ok(event_batch) = rx.recv() {
-        println!("{:#?}", event_batch);
+        match event_batch {
+            Ok(batch) => {
+                let matching_events = batch
+                    .events
+                    .into_iter()
+                    .filter(|e| event_match(&e, filters))
+                    .collect_vec();
+
+                if matching_events.is_empty() {
+                    continue;
+                }
+
+                println!("- Event batch at height {}", batch.height);
+
+                for event in matching_events {
+                    println!("+ {:#?}", event);
+                }
+
+                println!();
+            }
+            Err(e) => println!("- Error: {}", e),
+        }
     }
 
     Ok(())
 }
 
+fn event_match(event: &IbcEvent, filters: &[EventFilter]) -> bool {
+    filters.iter().any(|f| f.matches(event))
+}
+
 fn subscribe(
     chain_config: &ChainConfig,
-    queries: Vec<Query>,
     rt: Arc<TokioRuntime>,
 ) -> Result<(EventMonitor, EventReceiver), BoxError> {
     let (mut event_monitor, rx) = EventMonitor::new(
@@ -82,8 +145,6 @@ fn subscribe(
         rt,
     )
     .map_err(|e| format!("could not initialize event monitor: {}", e))?;
-
-    event_monitor.set_queries(queries);
 
     event_monitor
         .subscribe()

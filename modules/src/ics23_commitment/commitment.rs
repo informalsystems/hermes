@@ -1,12 +1,8 @@
-use std::convert::TryFrom;
-use std::fmt;
-
-use serde::{Deserialize, Serialize};
-use subtle_encoding::{Encoding, Hex};
-
-use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
-
 use crate::ics23_commitment::error::Error;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use serde::{Deserialize, Serialize};
+use std::{convert::TryFrom, fmt};
+use subtle_encoding::{Encoding, Hex};
 
 #[derive(Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
@@ -71,7 +67,7 @@ impl From<CommitmentProofBytes> for Vec<u8> {
         p.bytes
     }
 }
-//
+
 // impl From<MerkleProof> for CommitmentProofBytes {
 //     fn from(proof: MerkleProof) -> Self {
 //         let raw_proof: RawMerkleProof = proof.into();
@@ -145,5 +141,17 @@ impl Serialize for CommitmentPrefix {
         S: serde::Serializer,
     {
         format!("{:?}", self).serialize(serializer)
+    }
+}
+
+#[cfg(test)]
+pub mod test_util {
+    use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+
+    /// Returns a dummy `RawMerkleProof`, for testing only!
+    pub fn get_dummy_merkle_proof() -> RawMerkleProof {
+        let parsed = ibc_proto::ics23::CommitmentProof { proof: None };
+        let mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![parsed];
+        RawMerkleProof { proofs: mproofs }
     }
 }
