@@ -167,7 +167,7 @@ impl Runnable for TxUpgradeClientCmd {
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxUpgradeClientsCmd {
-    #[options(free, required, help = "identifier of the chain that must be upgraded")]
+    #[options(free, required, help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded")]
     src_chain_id: ChainId,
 }
 

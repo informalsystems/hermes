@@ -31,6 +31,7 @@ reliability of Hermes ([#697]).
 
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#697]: https://github.com/informalsystems/ibc-rs/issues/697
+[#763]: https://github.com/informalsystems/ibc-rs/issues/763
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
 [#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
