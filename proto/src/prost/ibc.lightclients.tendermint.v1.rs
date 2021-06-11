@@ -26,10 +26,12 @@ pub struct ClientState {
     #[prost(message, repeated, tag = "8")]
     pub proof_specs: ::prost::alloc::vec::Vec<super::super::super::super::ics23::ProofSpec>,
     /// Path at which next upgraded client will be committed.
-    /// Each element corresponds to the key for a single CommitmentProof in the chained proof.
-    /// NOTE: ClientState must stored under `{upgradePath}/{upgradeHeight}/clientState`
-    /// ConsensusState must be stored under `{upgradepath}/{upgradeHeight}/consensusState`
-    /// For SDK chains using the default upgrade module, upgrade_path should be []string{"upgrade", "upgradedIBCState"}`
+    /// Each element corresponds to the key for a single CommitmentProof in the
+    /// chained proof. NOTE: ClientState must stored under
+    /// `{upgradePath}/{upgradeHeight}/clientState` ConsensusState must be stored
+    /// under `{upgradepath}/{upgradeHeight}/consensusState` For SDK chains using
+    /// the default upgrade module, upgrade_path should be []string{"upgrade",
+    /// "upgradedIBCState"}`
     #[prost(string, repeated, tag = "9")]
     pub upgrade_path: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// This flag, when set to true, will allow governance to recover a client

@@ -23,8 +23,9 @@ pub struct ConsensusState {
     /// public key of the solo machine
     #[prost(message, optional, tag = "1")]
     pub public_key: ::core::option::Option<::prost_types::Any>,
-    /// diversifier allows the same public key to be re-used across different solo machine clients
-    /// (potentially on different chains) without being considered misbehaviour.
+    /// diversifier allows the same public key to be re-used across different solo
+    /// machine clients (potentially on different chains) without being considered
+    /// misbehaviour.
     #[prost(string, tag = "2")]
     pub diversifier: ::prost::alloc::string::String,
     #[prost(uint64, tag = "3")]

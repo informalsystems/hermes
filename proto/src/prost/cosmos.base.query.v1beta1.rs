@@ -28,7 +28,7 @@ pub struct PageRequest {
     #[prost(bool, tag = "4")]
     pub count_total: bool,
     /// reverse is set to true indicates that, results to be returned in the descending order.
-    #[prost(bool, tag="5")]
+    #[prost(bool, tag = "5")]
     pub reverse: bool,
 }
 /// PageResponse is to be embedded in gRPC response messages where the

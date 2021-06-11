@@ -96,7 +96,7 @@ pub mod ibc {
     pub mod apps {
         pub mod transfer {
             pub mod v1 {
-                include!("prost/ibc.apps.transfer.v1.rs");
+                include!("prost/ibc.applications.transfer.v1.rs");
             }
         }
     }

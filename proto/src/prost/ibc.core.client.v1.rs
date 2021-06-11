@@ -47,10 +47,34 @@ pub struct ClientUpdateProposal {
     pub description: ::prost::alloc::string::String,
     /// the client identifier for the client to be updated if the proposal passes
     #[prost(string, tag = "3")]
-    pub client_id: ::prost::alloc::string::String,
-    /// the header used to update the client if the proposal passes
+    pub subject_client_id: ::prost::alloc::string::String,
+    /// the substitute client identifier for the client standing in for the subject
+    /// client
+    #[prost(string, tag = "4")]
+    pub substitute_client_id: ::prost::alloc::string::String,
+    /// the intital height to copy consensus states from the substitute to the
+    /// subject
+    #[prost(message, optional, tag = "5")]
+    pub initial_height: ::core::option::Option<Height>,
+}
+/// UpgradeProposal is a gov Content type for initiating an IBC breaking
+/// upgrade.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpgradeProposal {
+    #[prost(string, tag = "1")]
+    pub title: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub description: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub plan: ::core::option::Option<super::super::super::super::cosmos::upgrade::v1beta1::Plan>,
+    /// An UpgradedClientState must be provided to perform an IBC breaking upgrade.
+    /// This will make the chain commit to the correct upgraded (self) client state
+    /// before the upgrade occurs, so that connecting chains can verify that the
+    /// new upgraded client is valid by verifying a proof on the previous version
+    /// of the chain. This will allow IBC connections to persist smoothly across
+    /// planned chain upgrades
     #[prost(message, optional, tag = "4")]
-    pub header: ::core::option::Option<::prost_types::Any>,
+    pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
 }
 /// Height is a monotonically increasing data type
 /// that can be compared against another Height for the purposes of updating and
@@ -118,6 +142,195 @@ pub struct IdentifiedGenesisMetadata {
     pub client_id: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "2")]
     pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
+}
+/// MsgCreateClient defines a message to create an IBC client
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCreateClient {
+    /// light client state
+    #[prost(message, optional, tag = "1")]
+    pub client_state: ::core::option::Option<::prost_types::Any>,
+    /// consensus state associated with the client that corresponds to a given
+    /// height.
+    #[prost(message, optional, tag = "2")]
+    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgCreateClientResponse defines the Msg/CreateClient response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCreateClientResponse {}
+/// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
+/// the given header.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateClient {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// header to update the light client
+    #[prost(message, optional, tag = "2")]
+    pub header: ::core::option::Option<::prost_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateClientResponse {}
+/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
+/// state
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpgradeClient {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// upgraded client state
+    #[prost(message, optional, tag = "2")]
+    pub client_state: ::core::option::Option<::prost_types::Any>,
+    /// upgraded consensus state, only contains enough information to serve as a
+    /// basis of trust in update logic
+    #[prost(message, optional, tag = "3")]
+    pub consensus_state: ::core::option::Option<::prost_types::Any>,
+    /// proof that old chain committed to new client
+    #[prost(bytes = "vec", tag = "4")]
+    pub proof_upgrade_client: ::prost::alloc::vec::Vec<u8>,
+    /// proof that old chain committed to new consensus state
+    #[prost(bytes = "vec", tag = "5")]
+    pub proof_upgrade_consensus_state: ::prost::alloc::vec::Vec<u8>,
+    /// signer address
+    #[prost(string, tag = "6")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpgradeClientResponse {}
+/// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
+/// light client misbehaviour.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitMisbehaviour {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// misbehaviour used for freezing the light client
+    #[prost(message, optional, tag = "2")]
+    pub misbehaviour: ::core::option::Option<::prost_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
+/// type.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitMisbehaviourResponse {}
+#[doc = r" Generated client implementations."]
+pub mod msg_client {
+    #![allow(unused_variables, dead_code, missing_docs)]
+    use tonic::codegen::*;
+    #[doc = " Msg defines the ibc/client Msg service."]
+    pub struct MsgClient<T> {
+        inner: tonic::client::Grpc<T>,
+    }
+    impl MsgClient<tonic::transport::Channel> {
+        #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
+        pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
+        where
+            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D::Error: Into<StdError>,
+        {
+            let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
+            Ok(Self::new(conn))
+        }
+    }
+    impl<T> MsgClient<T>
+    where
+        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T::ResponseBody: Body + HttpBody + Send + 'static,
+        T::Error: Into<StdError>,
+        <T::ResponseBody as HttpBody>::Error: Into<StdError> + Send,
+    {
+        pub fn new(inner: T) -> Self {
+            let inner = tonic::client::Grpc::new(inner);
+            Self { inner }
+        }
+        pub fn with_interceptor(inner: T, interceptor: impl Into<tonic::Interceptor>) -> Self {
+            let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
+            Self { inner }
+        }
+        #[doc = " CreateClient defines a rpc handler method for MsgCreateClient."]
+        pub async fn create_client(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgCreateClient>,
+        ) -> Result<tonic::Response<super::MsgCreateClientResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/CreateClient");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        #[doc = " UpdateClient defines a rpc handler method for MsgUpdateClient."]
+        pub async fn update_client(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgUpdateClient>,
+        ) -> Result<tonic::Response<super::MsgUpdateClientResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/UpdateClient");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        #[doc = " UpgradeClient defines a rpc handler method for MsgUpgradeClient."]
+        pub async fn upgrade_client(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgUpgradeClient>,
+        ) -> Result<tonic::Response<super::MsgUpgradeClientResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/UpgradeClient");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        #[doc = " SubmitMisbehaviour defines a rpc handler method for MsgSubmitMisbehaviour."]
+        pub async fn submit_misbehaviour(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgSubmitMisbehaviour>,
+        ) -> Result<tonic::Response<super::MsgSubmitMisbehaviourResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/SubmitMisbehaviour");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+    }
+    impl<T: Clone> Clone for MsgClient<T> {
+        fn clone(&self) -> Self {
+            Self {
+                inner: self.inner.clone(),
+            }
+        }
+    }
+    impl<T> std::fmt::Debug for MsgClient<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "MsgClient {{ ... }}")
+        }
+    }
 }
 /// QueryClientStateRequest is the request type for the Query/ClientState RPC
 /// method
@@ -229,26 +442,51 @@ pub struct QueryConsensusStatesResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientStatusRequest {
     /// client unique identifier
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub client_id: ::prost::alloc::string::String,
 }
 /// QueryClientStatusResponse is the response type for the Query/ClientStatus RPC
 /// method. It returns the current status of the IBC client.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientStatusResponse {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub status: ::prost::alloc::string::String,
 }
 /// QueryClientParamsRequest is the request type for the Query/ClientParams RPC
 /// method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientParamsRequest {}
-/// QueryClientParamsResponse is the response type for the Query/ClientParams RPC method.
+/// QueryClientParamsResponse is the response type for the Query/ClientParams RPC
+/// method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientParamsResponse {
     /// params defines the parameters of the module.
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
+}
+/// QueryUpgradedClientStateRequest is the request type for the
+/// Query/UpgradedClientState RPC method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradedClientStateRequest {}
+/// QueryUpgradedClientStateResponse is the response type for the
+/// Query/UpgradedClientState RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradedClientStateResponse {
+    /// client state associated with the request identifier
+    #[prost(message, optional, tag = "1")]
+    pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
+}
+/// QueryUpgradedConsensusStateRequest is the request type for the
+/// Query/UpgradedConsensusState RPC method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradedConsensusStateRequest {}
+/// QueryUpgradedConsensusStateResponse is the response type for the
+/// Query/UpgradedConsensusState RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradedConsensusStateResponse {
+    /// Consensus state associated with the request identifier
+    #[prost(message, optional, tag = "1")]
+    pub upgraded_consensus_state: ::core::option::Option<::prost_types::Any>,
 }
 #[doc = r" Generated client implementations."]
 pub mod query_client {
@@ -350,6 +588,22 @@ pub mod query_client {
                 http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Query/ConsensusStates");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " Status queries the status of an IBC client."]
+        pub async fn client_status(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryClientStatusRequest>,
+        ) -> Result<tonic::Response<super::QueryClientStatusResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Query/ClientStatus");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         #[doc = " ClientParams queries all parameters of the ibc client."]
         pub async fn client_params(
             &mut self,
@@ -366,6 +620,42 @@ pub mod query_client {
                 http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Query/ClientParams");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " UpgradedClientState queries an Upgraded IBC light client."]
+        pub async fn upgraded_client_state(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryUpgradedClientStateRequest>,
+        ) -> Result<tonic::Response<super::QueryUpgradedClientStateResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.client.v1.Query/UpgradedClientState",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        #[doc = " UpgradedConsensusState queries an Upgraded IBC consensus state."]
+        pub async fn upgraded_consensus_state(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryUpgradedConsensusStateRequest>,
+        ) -> Result<tonic::Response<super::QueryUpgradedConsensusStateResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.client.v1.Query/UpgradedConsensusState",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
     impl<T: Clone> Clone for QueryClient<T> {
         fn clone(&self) -> Self {
@@ -377,192 +667,6 @@ pub mod query_client {
     impl<T> std::fmt::Debug for QueryClient<T> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "QueryClient {{ ... }}")
-        }
-    }
-}
-/// MsgCreateClient defines a message to create an IBC client
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateClient {
-    /// light client state
-    #[prost(message, optional, tag = "1")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
-    /// consensus state associated with the client that corresponds to a given
-    /// height.
-    #[prost(message, optional, tag = "2")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgCreateClientResponse defines the Msg/CreateClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateClientResponse {}
-/// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
-/// the given header.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateClient {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// header to update the light client
-    #[prost(message, optional, tag = "2")]
-    pub header: ::core::option::Option<::prost_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateClientResponse {}
-/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client state
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpgradeClient {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// upgraded client state
-    #[prost(message, optional, tag = "2")]
-    pub client_state: ::core::option::Option<::prost_types::Any>,
-    /// upgraded consensus state, only contains enough information to serve as a basis of trust in update logic
-    #[prost(message, optional, tag = "3")]
-    pub consensus_state: ::core::option::Option<::prost_types::Any>,
-    /// proof that old chain committed to new client
-    #[prost(bytes = "vec", tag = "4")]
-    pub proof_upgrade_client: ::prost::alloc::vec::Vec<u8>,
-    /// proof that old chain committed to new consensus state
-    #[prost(bytes = "vec", tag = "5")]
-    pub proof_upgrade_consensus_state: ::prost::alloc::vec::Vec<u8>,
-    /// signer address
-    #[prost(string, tag = "6")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpgradeClientResponse {}
-/// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
-/// light client misbehaviour.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitMisbehaviour {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// misbehaviour used for freezing the light client
-    #[prost(message, optional, tag = "2")]
-    pub misbehaviour: ::core::option::Option<::prost_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitMisbehaviourResponse {}
-#[doc = r" Generated client implementations."]
-pub mod msg_client {
-    #![allow(unused_variables, dead_code, missing_docs)]
-    use tonic::codegen::*;
-    #[doc = " Msg defines the ibc/client Msg service."]
-    pub struct MsgClient<T> {
-        inner: tonic::client::Grpc<T>,
-    }
-    impl MsgClient<tonic::transport::Channel> {
-        #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
-        pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
-        where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
-            D::Error: Into<StdError>,
-        {
-            let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
-            Ok(Self::new(conn))
-        }
-    }
-    impl<T> MsgClient<T>
-    where
-        T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::ResponseBody: Body + HttpBody + Send + 'static,
-        T::Error: Into<StdError>,
-        <T::ResponseBody as HttpBody>::Error: Into<StdError> + Send,
-    {
-        pub fn new(inner: T) -> Self {
-            let inner = tonic::client::Grpc::new(inner);
-            Self { inner }
-        }
-        pub fn with_interceptor(inner: T, interceptor: impl Into<tonic::Interceptor>) -> Self {
-            let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
-            Self { inner }
-        }
-        #[doc = " CreateClient defines a rpc handler method for MsgCreateClient."]
-        pub async fn create_client(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgCreateClient>,
-        ) -> Result<tonic::Response<super::MsgCreateClientResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/CreateClient");
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        #[doc = " UpdateClient defines a rpc handler method for MsgUpdateClient."]
-        pub async fn update_client(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgUpdateClient>,
-        ) -> Result<tonic::Response<super::MsgUpdateClientResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/UpdateClient");
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        #[doc = " UpgradeClient defines a rpc handler method for MsgUpgradeClient."]
-        pub async fn upgrade_client(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgUpgradeClient>,
-        ) -> Result<tonic::Response<super::MsgUpgradeClientResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/UpgradeClient");
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        #[doc = " SubmitMisbehaviour defines a rpc handler method for MsgSubmitMisbehaviour."]
-        pub async fn submit_misbehaviour(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgSubmitMisbehaviour>,
-        ) -> Result<tonic::Response<super::MsgSubmitMisbehaviourResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/SubmitMisbehaviour");
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-    }
-    impl<T: Clone> Clone for MsgClient<T> {
-        fn clone(&self) -> Self {
-            Self {
-                inner: self.inner.clone(),
-            }
-        }
-    }
-    impl<T> std::fmt::Debug for MsgClient<T> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "MsgClient {{ ... }}")
         }
     }
 }
