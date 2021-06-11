@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- [ibc-relayer-cli]
+  - Added `upgrade-clients` CLI ([#763])
 
 Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
 reliability of Hermes ([#697]).
