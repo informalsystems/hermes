@@ -795,8 +795,12 @@ commit: dbd8a6fb522c571debf958837f9113c56d418f6b
 <h2 id="next-steps-3"><a class="header" href="#next-steps-3">Next Steps</a></h2>
 <p>In the next section you will learn how to <a href="tutorials/local-chains/./start.html">start two local chains</a></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="start-the-local-chains"><a class="header" href="#start-the-local-chains">Start the local chains</a></h1>
-<p>To start the local chains, open a terminal and navigate to the <code>ibc-rs</code> repository folder</p>
-<pre><code class="language-bash">cd ibc-rs
+<p>In this chapter, you will learn how to spawn two Gaia chains, and use Hermes to relay packets between them.
+To spawn the chains and configure Hermes accordingly, we will make use of script bundled in the <code>ibc-rs</code> repository.</p>
+<p>To this end, clone the <code>ibc-rs</code> repository and check out the current version:</p>
+<pre><code class="language-bash">git clone git@github.com:informalsystems/ibc-rs.git
+cd ibc-rs
+git checkout v0.4.0
 </code></pre>
 <h3 id="stop-existing-gaiad-processes"><a class="header" href="#stop-existing-gaiad-processes">Stop existing <code>gaiad</code> processes</a></h3>
 <p>If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all <code>gaiad</code> processes:</p>
