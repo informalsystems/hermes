@@ -888,6 +888,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "431f579d1c92791fcaf7753d9beac4b8b2338965eca57b11aea6932f5d9785ea"
 dependencies = [
  "anyhow",
+ "paste",
+]
+
+[[package]]
+name = "flex-error"
+version = "0.2.0"
+source = "git+https://github.com/DaviRain-Su/flex-error.git?branch=stderror-feature#e927961fa7b58a106b509729aaeba47598ba4aff"
+dependencies = [
+ "anyhow",
  "eyre",
  "paste",
 ]
@@ -1394,9 +1403,10 @@ dependencies = [
  "anomaly",
  "bytes",
  "chrono",
+ "displaydoc",
  "dyn-clonable",
  "env_logger",
- "flex-error",
+ "flex-error 0.2.0 (git+https://github.com/DaviRain-Su/flex-error.git?branch=stderror-feature)",
  "ibc-proto",
  "ics23",
  "modelator",
@@ -3101,7 +3111,7 @@ dependencies = [
  "displaydoc",
  "ed25519",
  "ed25519-dalek",
- "flex-error",
+ "flex-error 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "funty",
  "futures",
  "k256",
