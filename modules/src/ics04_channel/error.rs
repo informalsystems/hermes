@@ -150,9 +150,6 @@ define_error! {
                     e.connection_id)
             },
 
-        FailedChanneOpenTryVerification
-            | _ | { "" },
-
         PacketVerificationFailed
             { sequence: Sequence }
             [ DisplayOnly<Box<dyn std::error::Error>> ]

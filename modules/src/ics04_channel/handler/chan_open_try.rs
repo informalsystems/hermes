@@ -372,12 +372,9 @@ mod tests {
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
                 match_error: Box::new(|e| match e {
-                    error::ErrorDetail::FailedChanneOpenTryVerification(_) => {}
+                    error::ErrorDetail::MissingClientState(_) => {}
                     _ => {
-                        panic!(
-                            "Expected FailedChanneOpenTryVerification, instead got {}",
-                            e
-                        )
+                        panic!("Expected MissingClientState, instead got {}", e)
                     }
                 }),
             },
