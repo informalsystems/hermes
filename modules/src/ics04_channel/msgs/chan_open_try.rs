@@ -98,8 +98,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             raw_msg
                 .proof_height
                 .ok_or_else(error::missing_height_error)?
-                .try_into()
-                .map_err(|e| match e {})?,
+                .into(),
         )
         .map_err(error::invalid_proof_error)?;
 

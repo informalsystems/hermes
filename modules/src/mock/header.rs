@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
@@ -30,8 +30,7 @@ impl TryFrom<RawMockHeader> for MockHeader {
             height: raw
                 .height
                 .ok_or_else(error::missing_raw_header_error)?
-                .try_into()
-                .map_err(|e| match e {})?,
+                .into(),
 
             timestamp: Timestamp::from_nanoseconds(raw.timestamp)
                 .map_err(error::invalid_packet_timestamp_error)?,

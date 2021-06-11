@@ -7,7 +7,7 @@ use crate::tx_msg::Msg;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint_proto::Protobuf;
 
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 
@@ -74,8 +74,7 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
             raw_msg
                 .proof_height
                 .ok_or_else(error::missing_height_error)?
-                .try_into()
-                .map_err(|e| match e {})?,
+                .into(),
         )
         .map_err(error::invalid_proof_error)?;
 
