@@ -160,18 +160,6 @@ impl Sub<Duration> for Timestamp {
     }
 }
 
-// pub type ParseTimestampError = ParseTimestampErrorKind;
-//
-// #[derive(Clone, Debug, Display, PartialEq, Eq)]
-// pub enum ParseTimestampErrorKind {
-//     /// Error parsing integer from string: {0}
-//     ParseIntError(ParseIntError),
-//
-//     /// Error converting from u64 to i64: {0}
-//     TryFromIntError(TryFromIntError),
-// }
-
-
 define_error! {
     ParseTimestampError {
         ParseInt
