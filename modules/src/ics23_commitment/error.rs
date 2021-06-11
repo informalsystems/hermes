@@ -1,11 +1,14 @@
 use prost::DecodeError;
-use thiserror::Error;
+use flex_error::*;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Error {
-    #[error("invalid raw merkle proof")]
-    InvalidRawMerkleProof(DecodeError),
+define_error! {
+    Error {
+        InvalidRawMerkleProof
+        [ DisplayError<DecodeError> ]
+        |_| { "invalid raw merkle proof" },
 
-    #[error("failed to decode commitment proof")]
-    CommitmentProofDecodingFailed(DecodeError),
+        CommitmentProofDecodingFailed
+        [ DisplayError<DecodeError> ]
+        |_| { "failed to decode commitment proof" },
+    }
 }
