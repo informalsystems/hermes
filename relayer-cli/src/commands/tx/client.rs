@@ -1,11 +1,12 @@
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{config, Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::foreign_client::ForeignClient;
 
-use crate::application::app_config;
+use crate::application::{app_config, CliApp};
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::{Error, Kind};
@@ -161,5 +162,66 @@ impl Runnable for TxUpgradeClientCmd {
             Ok(receipt) => Output::success(receipt).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxUpgradeClientsCmd {
+    #[options(free, required, help = "identifier of the chain that must be upgraded")]
+    src_chain_id: ChainId,
+}
+
+impl Runnable for TxUpgradeClientsCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let outputs = config
+            .chains
+            .iter()
+            .map(|chain| match self.upgrade_chain(&config, &chain.id) {
+                Ok(receipts) => Output::success(receipts),
+                Err(e) => Output::error(e),
+            })
+            .collect();
+
+        Output::combined(outputs).exit()
+    }
+}
+
+impl TxUpgradeClientsCmd {
+    fn upgrade_chain(
+        &self,
+        config: &config::Reader<CliApp>,
+        dst_chain_id: &ChainId,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        let chains = ChainHandlePair::spawn(&config, &self.src_chain_id, dst_chain_id)?;
+
+        let req = QueryClientStatesRequest {
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        };
+        let client_ids: Vec<ClientId> = chains
+            .dst
+            .query_clients(req)
+            .map_err(|e| Kind::Query.context(e))?
+            .iter()
+            .filter_map(|cs| {
+                if self.src_chain_id == cs.client_state.chain_id() {
+                    Some(cs.client_id.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        debug_assert!(client_ids.len() < 2);
+
+        let mut events = vec![];
+        if let Some(client_id) = client_ids.first() {
+            let client = ForeignClient::find(chains.src.clone(), chains.dst.clone(), client_id)
+                .map_err(|e| Kind::Query.context(e))?;
+            events = client.upgrade().map_err(|e| Kind::Query.context(e))?
+        }
+
+        Ok(events)
     }
 }
