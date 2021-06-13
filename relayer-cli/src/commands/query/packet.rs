@@ -498,7 +498,7 @@ pub struct QueryTxByHashCmd {
     hash: String,
 }
 
-// cargo run --bin hermes -- query packet commitments ibc-0 transfer ibconexfer --height 3
+// cargo run --bin hermes -- query packet tx ibc-0 B8E78AD83810239E21863AC7B5FC4F99396ABB39EB534F721EEF43A4979C2821
 impl Runnable for QueryTxByHashCmd {
     fn run(&self) {
         let config = app_config();

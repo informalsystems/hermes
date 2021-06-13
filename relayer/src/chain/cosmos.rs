@@ -6,6 +6,9 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+
+use tracing::debug;
+
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_consensus::{
@@ -32,7 +35,7 @@ use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw, SimulateRequest, Tx, SimulateResponse};
 use ibc_proto::cosmos::upgrade::v1beta1::{
     QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
 };
@@ -161,37 +164,34 @@ impl CosmosSdkChain {
 
         let acct_response = self.account()?;
         if self.acct_seq == 0 {
+            debug!("retrieved account nonce {} for {}", acct_response.sequence, self.id());
             self.acct_seq = acct_response.sequence;
         };
 
+        debug!("sending Tx with {} messages to {} using nonce {}", proto_msgs.len(), self.id(), self.acct_seq);
+
         let signer_info = self.signer(self.acct_seq)?;
         let fee = self.default_fee();
-        let (_body, body_buf) = self.tx_body(proto_msgs)?;
+        let (body, body_buf) = self.tx_body(proto_msgs)?;
 
-        // let (_auth_info, _auth_buf) = auth_info_and_bytes(signer_info.clone(), fee.clone())?;
-        // let mut signed_doc =
-        //     self.signed_doc(body_buf.clone(), auth_buf, acct_response.account_number)?;
-        // let simulate_response = self.send_tx_simulate(SimulateRequest {
-        //     tx: Some(Tx {
-        //         body: Some(body),
-        //         auth_info: Some(auth_info),
-        //         signatures: vec![signed_doc.clone()],
-        //     }),
-        // });
-        //
-        // let gas_used = simulate_response.unwrap().gas_info.unwrap().gas_used;
-        // if gas_used > self.max_gas() {
-        //     return Err(Kind::TxSimulate(format!(
-        //         "gas required {} is bigger than maximum gas {} on {}",
-        //         gas_used,
-        //         self.max_gas(),
-        //         self.config.id
-        //     ))
-        //     .into());
-        // }
-        // let adjusted_fee = self.fee_with_gas_limit(gas_used);
+        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), fee.clone())?;
+        let signed_doc =
+            self.signed_doc(body_buf.clone(), auth_buf, self.acct_seq)?;
 
-        let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, fee)?;
+        let adjusted_gas = self.send_tx_simulate(SimulateRequest {
+            tx: Some(Tx {
+                body: Some(body),
+                auth_info: Some(auth_info),
+                signatures: vec![signed_doc.clone()],
+            }),
+        })
+            .map_or(self.max_gas(), |sr| {
+                sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
+            });
+
+        let adjusted_fee = self.fee_with_gas_limit(adjusted_gas);
+        trace!("{} adjust fee from {:?} to {:?}", self.id(), fee, adjusted_fee);
+        let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
         let signed_doc = self.signed_doc(
             body_buf.clone(),
             auth_buf_adjusted.clone(),
@@ -210,9 +210,9 @@ impl CosmosSdkChain {
         let response = self
             .block_on(broadcast_tx_sync(self, tx_bytes))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+        debug!(" {} broadcast Tx sync {:?}", self.id(), response);
 
         self.acct_seq += 1;
-
         Ok(response)
     }
 
@@ -291,25 +291,25 @@ impl CosmosSdkChain {
         Ok((proof, height))
     }
 
-    // fn send_tx_simulate(&self, request: SimulateRequest) -> Result<SimulateResponse, Error> {
-    //     crate::time!("tx simulate");
-    //
-    //     let mut client = self
-    //         .block_on(
-    //             ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
-    //                 self.grpc_addr.clone(),
-    //             ),
-    //         )
-    //         .map_err(|e| Kind::Grpc.context(e))?;
-    //
-    //     let request = tonic::Request::new(request);
-    //     let response = self
-    //         .block_on(client.simulate(request))
-    //         .map_err(|e| Kind::Grpc.context(e))?
-    //         .into_inner();
-    //
-    //     Ok(response)
-    // }
+    fn send_tx_simulate(&self, request: SimulateRequest) -> Result<SimulateResponse, Error> {
+        crate::time!("tx simulate");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+        let response = self
+            .block_on(client.simulate(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        Ok(response)
+    }
 
     fn key(&self) -> Result<KeyEntry, Error> {
         Ok(self
@@ -378,14 +378,14 @@ impl CosmosSdkChain {
         }
     }
 
-    // fn fee_with_gas_limit(&self, gas_limit: u64) -> Fee {
-    //     Fee {
-    //         amount: vec![self.fee_in_coins()],
-    //         gas_limit,
-    //         payer: "".to_string(),
-    //         granter: "".to_string(),
-    //     }
-    // }
+    fn fee_with_gas_limit(&self, gas_limit: u64) -> Fee {
+        Fee {
+            amount: vec![self.fee_in_coins()],
+            gas_limit,
+            payer: "".to_string(),
+            granter: "".to_string(),
+        }
+    }
 
     fn signed_doc(
         &self,
