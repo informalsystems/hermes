@@ -78,7 +78,7 @@ pub enum ChannelError {
     #[error("the channel is partially open ({0}, {1})")]
     PartialOpenHandshake(State, State),
 
-    #[error("channel {0} on chain {1} has not counterparty channel id")]
+    #[error("channel {0} on chain {1} has no counterparty channel id")]
     IncompleteChannelState(PortChannelId, ChainId),
 
     #[error("channel {0} on chain {1} expected to have counterparty {2} (but instead has {3})")]
