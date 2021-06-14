@@ -1,9 +1,14 @@
 # Start the local chains
 
-To start the local chains, open a terminal and navigate to the `ibc-rs` repository folder
+In this chapter, you will learn how to spawn two Gaia chains, and use Hermes to relay packets between them.
+To spawn the chains and configure Hermes accordingly, we will make use of script bundled in the `ibc-rs` repository.
+
+To this end, clone the `ibc-rs` repository and check out the current version:
 
 ```bash
+git clone git@github.com:informalsystems/ibc-rs.git
 cd ibc-rs
+git checkout v0.4.0
 ```
 
 ### Stop existing `gaiad` processes
