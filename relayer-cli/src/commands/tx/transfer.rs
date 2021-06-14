@@ -5,10 +5,9 @@ use ibc::{
     events::IbcEvent,
     ics02_client::client_state::ClientState,
     ics02_client::height::Height,
-    ics24_host::identifier::{ChainId, ChannelId, PortChannelId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, PortId},
 };
 use ibc_relayer::{
-    chain::counterparty::check_channel_counterparty,
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
 };
@@ -195,30 +194,6 @@ impl Runnable for TxIcs20MsgTransferCmd {
                         self.src_chain_id,
                         src_chain_client_state.chain_id(), self.dst_chain_id)).exit();
         }
-
-        // Final verification:
-        // The port+channel pair representing the
-        // counterparty on the destination chain should match the
-        // port+channel pair on the source chain.
-        let channel_id_dest = channel_end_src
-            .remote
-            .channel_id
-            .ok_or(format!(
-                "the port/channel '{}'/'{}' on chain '{}' has no counterparty channel id",
-                opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
-            ))
-            .unwrap_or_else(exit_with_unrecoverable_error);
-
-        let pchan_dest = PortChannelId {
-            channel_id: channel_id_dest,
-            port_id: channel_end_src.remote.port_id,
-        };
-        let expected = PortChannelId {
-            channel_id: opts.packet_src_channel_id.clone(),
-            port_id: opts.packet_src_port_id.clone(),
-        };
-        check_channel_counterparty(chains.dst.clone(), &pchan_dest, &expected)
-            .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =
