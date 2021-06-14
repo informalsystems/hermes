@@ -8,7 +8,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, PortChannelId, PortId},
 };
 use ibc_relayer::{
-    channel::check_channel_counterparty,
+    chain::counterparty::check_channel_counterparty,
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
 };

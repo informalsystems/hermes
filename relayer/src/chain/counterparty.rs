@@ -1,16 +1,16 @@
 use serde::{Deserialize, Serialize};
-use tracing::trace;
+use tracing::{error, trace};
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
     ics03_connection::connection::IdentifiedConnectionEnd,
     ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
-    ics24_host::identifier::ConnectionId,
-    ics24_host::identifier::{ChainId, ChannelId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId},
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
+use crate::channel::ChannelError;
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
@@ -157,4 +157,52 @@ pub fn channel_state_on_destination(
             State::Uninitialized
         };
     Ok(counterparty_state)
+}
+
+/// Queries a channel end on a [`ChainHandle`], and verifies
+/// that the counterparty field on that channel end matches an
+/// expected counterparty.
+/// Returns `Ok` if the counterparty matches, and `Err` otherwise.
+pub fn check_channel_counterparty(
+    target_chain: Box<dyn ChainHandle>,
+    target_socket: &PortChannelId,
+    expected: &PortChannelId,
+) -> Result<(), ChannelError> {
+    let channel_end_dst = target_chain
+        .query_channel(
+            &target_socket.port_id,
+            &target_socket.channel_id,
+            Height::zero(),
+        )
+        .map_err(|e| ChannelError::QueryError(target_chain.id(), e))?;
+
+    let counterparty = channel_end_dst.remote;
+    match counterparty.channel_id {
+        Some(actual_channel_id) => {
+            let actual = PortChannelId {
+                channel_id: actual_channel_id,
+                port_id: counterparty.port_id,
+            };
+            if &actual != expected {
+                return Err(ChannelError::MismatchingChannelEnds(
+                    target_socket.clone(),
+                    target_chain.id(),
+                    expected.clone(),
+                    actual,
+                ));
+            }
+        }
+        None => {
+            error!(
+                "socket {} on chain {} has no counterparty channel id ",
+                target_socket,
+                target_chain.id()
+            );
+            // TODO: The error `MissingCounterpartyChannelId` should capture its
+            //  context fully (the chain and the socket).
+            return Err(ChannelError::MissingCounterpartyChannelId);
+        }
+    }
+
+    Ok(())
 }

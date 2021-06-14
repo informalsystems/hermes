@@ -22,27 +22,26 @@ use ibc::{
         },
         packet::{Packet, PacketMsgType, Sequence},
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     query::QueryTxRequest,
     signer::Signer,
     timestamp::ZERO_DURATION,
     tx_msg::Msg,
     Height,
 };
-
 use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
+use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
-use crate::channel::{check_channel_counterparty, Channel, ChannelError, ChannelSide};
+use crate::channel::{Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::transfer::PacketError;
-use ibc::ics24_host::identifier::PortChannelId;
 
 const MAX_RETRIES: usize = 5;
 

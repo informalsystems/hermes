@@ -1,8 +1,10 @@
 #![allow(clippy::borrowed_box)]
+
+use std::time::Duration;
+
 use anomaly::BoxError;
 use prost_types::Any;
 use serde::Serialize;
-use std::time::Duration;
 use thiserror::Error;
 use tracing::{debug, error, info};
 
@@ -19,20 +21,24 @@ use ibc::ics24_host::identifier::{
 };
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
+use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::Error as WorkerChannelError;
-
+use crate::util::retry::RetryResult;
 use crate::util::retry::{retry_count, retry_with_index};
 
 mod retry_strategy {
-    use crate::util::retry::clamp_total;
-    use retry::delay::Fibonacci;
     use std::time::Duration;
+
+    use retry::delay::Fibonacci;
+
+    use crate::util::retry::clamp_total;
 
     // Default parameters for the retrying mechanism
     const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
@@ -43,10 +49,6 @@ mod retry_strategy {
         clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
     }
 }
-
-use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
-use crate::util::retry::RetryResult;
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
@@ -1267,52 +1269,4 @@ fn check_destination_channel_state(
             channel_id
         )))
     }
-}
-
-/// Queries a channel end on a [`ChainHandle`], and verifies
-/// that the counterparty of that channel matches an
-/// expected counterparty.
-/// Returns `Ok` if the counterparty matches, and `Err` otherwise
-pub fn check_channel_counterparty(
-    target_chain: Box<dyn ChainHandle>,
-    target_socket: &PortChannelId,
-    expected: &PortChannelId,
-) -> Result<(), ChannelError> {
-    let channel_end_dst = target_chain
-        .query_channel(
-            &target_socket.port_id,
-            &target_socket.channel_id,
-            Height::zero(),
-        )
-        .map_err(|e| ChannelError::QueryError(target_chain.id(), e))?;
-
-    let counterparty = channel_end_dst.remote;
-    match counterparty.channel_id {
-        Some(actual_channel_id) => {
-            let actual = PortChannelId {
-                channel_id: actual_channel_id,
-                port_id: counterparty.port_id,
-            };
-            if &actual != expected {
-                return Err(ChannelError::MismatchingChannelEnds(
-                    target_socket.clone(),
-                    target_chain.id(),
-                    expected.clone(),
-                    actual,
-                ));
-            }
-        }
-        None => {
-            error!(
-                "socket {} on chain {} has no counterparty channel id ",
-                target_socket,
-                target_chain.id()
-            );
-            // TODO: The error `MissingCounterpartyChannelId` should capture its
-            //  context fully (the chain and the socket).
-            return Err(ChannelError::MissingCounterpartyChannelId);
-        }
-    }
-
-    Ok(())
 }
