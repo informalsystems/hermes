@@ -48,7 +48,7 @@ version = "=0.19.0"
 optional = true
 
 [dev-dependencies]
-env_logger = "0.8.3"
+env_logger = "0.8.4"
 tracing-subscriber = "0.2.18"
 test-env-log = { version = "0.2.7", features = ["trace"] }
 modelator = { git = "https://github.com/informalsystems/modelator", rev = "99f656fa8b3cf46a2aa0b6513e4e140d1778c4bd" }
