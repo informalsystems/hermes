@@ -12,7 +12,6 @@ use ibc::downcast;
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::height::Height as ICSHeight;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -164,7 +163,7 @@ impl Chain for MockChain {
     fn query_connection(
         &self,
         _connection_id: &ConnectionId,
-        _height: ICSHeight,
+        _height: Height,
     ) -> Result<ConnectionEnd, Error> {
         unimplemented!()
     }

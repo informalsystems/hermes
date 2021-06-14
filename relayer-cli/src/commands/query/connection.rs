@@ -50,7 +50,6 @@ impl Runnable for QueryConnectionEndCmd {
 
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
         let res = chain.query_connection(&self.connection_id, height);
-
         match res {
             Ok(connection_end) => {
                 if connection_end.state_matches(&State::Uninitialized) {
