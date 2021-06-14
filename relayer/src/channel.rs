@@ -187,9 +187,10 @@ impl Channel {
     ) -> Result<Channel, BoxError> {
         let channel_event_attributes =
             channel_open_event.channel_attributes().ok_or_else(|| {
-                ChannelError::Failed(
-                    "A channel object must be build only from a channel event ".to_string(),
-                )
+                ChannelError::Failed(format!(
+                    "a channel object cannot be built from {}",
+                    channel_open_event
+                ))
             })?;
 
         let port_id = channel_event_attributes.port_id.clone();

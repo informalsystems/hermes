@@ -20,6 +20,68 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::timestamp::ZERO_DURATION;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct IdentifiedConnectionEnd {
+    pub connection_id: ConnectionId,
+    pub connection_end: ConnectionEnd,
+}
+
+impl IdentifiedConnectionEnd {
+    pub fn new(connection_id: ConnectionId, connection_end: ConnectionEnd) -> Self {
+        IdentifiedConnectionEnd {
+            connection_id,
+            connection_end,
+        }
+    }
+
+    pub fn id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    pub fn end(&self) -> &ConnectionEnd {
+        &self.connection_end
+    }
+}
+
+impl Protobuf<RawIdentifiedConnection> for IdentifiedConnectionEnd {}
+
+impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(value: RawIdentifiedConnection) -> Result<Self, Self::Error> {
+        let raw_connection_end = RawConnectionEnd {
+            client_id: value.client_id.to_string(),
+            versions: value.versions,
+            state: value.state,
+            counterparty: value.counterparty,
+            delay_period: value.delay_period,
+        };
+
+        Ok(IdentifiedConnectionEnd {
+            connection_id: value.id.parse().map_err(|_| Kind::IdentifierError)?,
+            connection_end: raw_connection_end.try_into()?,
+        })
+    }
+}
+
+impl From<IdentifiedConnectionEnd> for RawIdentifiedConnection {
+    fn from(value: IdentifiedConnectionEnd) -> Self {
+        RawIdentifiedConnection {
+            id: value.connection_id.to_string(),
+            client_id: value.connection_end.client_id.to_string(),
+            versions: value
+                .connection_end
+                .versions
+                .iter()
+                .map(|v| From::from(v.clone()))
+                .collect(),
+            state: value.connection_end.state as i32,
+            delay_period: value.connection_end.delay_period.as_nanos() as u64,
+            counterparty: Some(value.connection_end.counterparty().clone().into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
     pub state: State,
     client_id: ClientId,
@@ -141,7 +203,7 @@ impl ConnectionEnd {
         self.state_matches(&State::Open)
     }
 
-    pub fn is_uninitilized(&self) -> bool {
+    pub fn is_uninitialized(&self) -> bool {
         self.state_matches(&State::Uninitialized)
     }
 
@@ -174,29 +236,6 @@ impl ConnectionEnd {
     /// TODO: Clean this up, probably not necessary.
     pub fn validate_basic(&self) -> Result<(), ValidationError> {
         self.counterparty.validate_basic()
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct IdentifiedConnectionEnd {
-    pub connection_id: ConnectionId,
-    pub connection_end: ConnectionEnd,
-}
-
-impl IdentifiedConnectionEnd {
-    pub fn new(connection_id: ConnectionId, connection_end: ConnectionEnd) -> Self {
-        IdentifiedConnectionEnd {
-            connection_id,
-            connection_end,
-        }
-    }
-
-    pub fn id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
-    pub fn end(&self) -> &ConnectionEnd {
-        &self.connection_end
     }
 }
 
@@ -338,44 +377,5 @@ impl TryFrom<i32> for State {
 impl From<State> for i32 {
     fn from(value: State) -> Self {
         value.into()
-    }
-}
-
-impl Protobuf<RawIdentifiedConnection> for IdentifiedConnectionEnd {}
-
-impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
-    type Error = anomaly::Error<Kind>;
-
-    fn try_from(value: RawIdentifiedConnection) -> Result<Self, Self::Error> {
-        let raw_connection_end = RawConnectionEnd {
-            client_id: value.client_id.to_string(),
-            versions: value.versions,
-            state: value.state,
-            counterparty: value.counterparty,
-            delay_period: value.delay_period,
-        };
-
-        Ok(IdentifiedConnectionEnd {
-            connection_id: value.id.parse().map_err(|_| Kind::IdentifierError)?,
-            connection_end: raw_connection_end.try_into()?,
-        })
-    }
-}
-
-impl From<IdentifiedConnectionEnd> for RawIdentifiedConnection {
-    fn from(value: IdentifiedConnectionEnd) -> Self {
-        RawIdentifiedConnection {
-            id: value.connection_id.to_string(),
-            client_id: value.connection_end.client_id.to_string(),
-            versions: value
-                .connection_end
-                .versions
-                .iter()
-                .map(|v| From::from(v.clone()))
-                .collect(),
-            state: value.connection_end.state as i32,
-            delay_period: value.connection_end.delay_period.as_nanos() as u64,
-            counterparty: Some(value.connection_end.counterparty().clone().into()),
-        }
     }
 }

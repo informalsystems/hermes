@@ -155,9 +155,10 @@ impl Connection {
         let connection_event_attributes = connection_open_event
             .connection_attributes()
             .ok_or_else(|| {
-                ConnectionError::Failed(
-                    "A connection object must be build only from a connection event ".to_string(),
-                )
+                ConnectionError::Failed(format!(
+                    "a connection object cannot be built from {}",
+                    connection_open_event
+                ))
             })?;
 
         let connection_id = connection_event_attributes.connection_id.clone();
@@ -362,7 +363,6 @@ impl Connection {
                 }
                 Ok(result) => {
                     self.a_side.connection_id = Some(extract_connection_id(&result)?.clone());
-                    //self.a_side.connection_id = extract_connection_id(&result)?.clone();
                     println!("🥂  {} => {:#?}\n", self.a_side.chain.id(), result);
                     break;
                 }
@@ -380,7 +380,6 @@ impl Connection {
                 }
                 Ok(result) => {
                     self.b_side.connection_id = Some(extract_connection_id(&result)?.clone());
-                    //self.b_side.connection_id = extract_connection_id(&result)?.clone();
                     println!("{}  {} => {:#?}\n", done, self.b_side.chain.id(), result);
                     break;
                 }

@@ -8,7 +8,7 @@ use tracing::{debug, error, warn};
 use ibc::{
     events::IbcEvent,
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState, State},
+    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
     ics04_channel::channel::IdentifiedChannelEnd,
     ics24_host::identifier::ChainId,
     Height,
@@ -298,18 +298,23 @@ impl Supervisor {
                         ),
                     }
 
-                    if !connection_end.state_matches(&State::Open) {
-                        debug!("drop connection not open {} ", connection.connection_id);
+                    if !connection_end.is_open() {
+                        debug!(
+                            "connection {} not open, skip workers for channels over this connetion",
+                            connection.connection_id
+                        );
                         continue;
                     }
 
-                    match self.counterparty_connection_end(client.clone(), connection.clone()) {
+                    match self.counterparty_connection_state(client.clone(), connection.clone()) {
                         Err(e) => {
                             debug!("error with counterparty: reason {}", e);
                             continue;
                         }
                         Ok(state) => {
                             if !state.eq(&ConnectionState::Open) {
+                                debug!("connection {} not open, skip workers for channels over this connetion", connection.connection_id);
+
                                 debug!(
                                     "drop connection {} because its counterparty is not open ",
                                     connection_id
@@ -583,7 +588,7 @@ impl Supervisor {
         Ok(())
     }
 
-    fn counterparty_connection_end(
+    fn counterparty_connection_state(
         &mut self,
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
@@ -592,11 +597,10 @@ impl Supervisor {
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
 
-        //let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
-        let conn_state_dst =
-            connection_state_on_destination(connection, counterparty_chain.as_ref())?;
-
-        Ok(conn_state_dst)
+        Ok(connection_state_on_destination(
+            connection,
+            counterparty_chain.as_ref(),
+        )?)
     }
 }
 

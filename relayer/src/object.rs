@@ -12,7 +12,8 @@ use ibc::{
 
 use crate::chain::{
     counterparty::{
-        channel_connection_client, get_counterparty_chain, get_counterparty_chain_from_connection,
+        channel_connection_client, counterparty_chain_from_channel,
+        counterparty_chain_from_connection,
     },
     handle::ChainHandle,
 };
@@ -259,7 +260,7 @@ impl Object {
             .as_ref()
             .ok_or_else(|| format!("connection_id missing in OpenInit event '{:?}'", e))?;
 
-        let dst_chain_id = get_counterparty_chain_from_connection(src_chain, &connection_id)
+        let dst_chain_id = counterparty_chain_from_connection(src_chain, &connection_id)
             .map_err(|_| "dest chain missing in init".to_string())?;
 
         Ok(Connection {
@@ -279,7 +280,7 @@ impl Object {
             .channel_id()
             .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
 
-        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())
+        let dst_chain_id = counterparty_chain_from_channel(src_chain, channel_id, &e.port_id())
             .map_err(|_| "dest chain missing in init".to_string())?;
 
         Ok(Channel {
@@ -293,8 +294,11 @@ impl Object {
 
     /// Build the object associated with the given [`SendPacket`] event.
     pub fn for_send_packet(e: &SendPacket, src_chain: &dyn ChainHandle) -> Result<Self, BoxError> {
-        let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)?;
+        let dst_chain_id = counterparty_chain_from_channel(
+            src_chain,
+            &e.packet.source_channel,
+            &e.packet.source_port,
+        )?;
 
         Ok(UnidirectionalChannelPath {
             dst_chain_id,
@@ -310,7 +314,7 @@ impl Object {
         e: &WriteAcknowledgement,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id = get_counterparty_chain(
+        let dst_chain_id = counterparty_chain_from_channel(
             src_chain,
             &e.packet.destination_channel,
             &e.packet.destination_port,
@@ -330,8 +334,11 @@ impl Object {
         e: &TimeoutPacket,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)?;
+        let dst_chain_id = counterparty_chain_from_channel(
+            src_chain,
+            &e.packet.source_channel,
+            &e.packet.source_port,
+        )?;
 
         Ok(UnidirectionalChannelPath {
             dst_chain_id,
@@ -347,7 +354,8 @@ impl Object {
         e: &CloseInit,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id = get_counterparty_chain(src_chain, e.channel_id(), &e.port_id())?;
+        let dst_chain_id =
+            counterparty_chain_from_channel(src_chain, e.channel_id(), &e.port_id())?;
 
         Ok(UnidirectionalChannelPath {
             dst_chain_id,
