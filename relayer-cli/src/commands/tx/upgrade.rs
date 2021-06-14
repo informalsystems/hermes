@@ -41,11 +41,19 @@ pub struct TxIbcUpgradeChainCmd {
     )]
     height_offset: u64,
 
-    #[options(short = "c", help = "new chain identifier to assign to the upgrading chain (optional)")]
-    upgraded_chain_id: Option<ChainId>,
+    #[options(
+        short = "c",
+        meta = "CHAIN-ID",
+        help = "new chain identifier to assign to the upgrading chain (optional)"
+    )]
+    new_chain_id: Option<ChainId>,
 
-    #[options(short = "u", help = "new unbonding period to assign to the upgrading chain, in seconds (default: 400 hrs)")]
-    upgraded_unbonding_period: Option<u64>,
+    #[options(
+        short = "u",
+        meta = "PERIOD",
+        help = "new unbonding period to assign to the upgrading chain, in seconds (default: 400 hrs)"
+    )]
+    new_unbonding: Option<u64>,
 }
 
 impl TxIbcUpgradeChainCmd {
@@ -64,8 +72,14 @@ impl TxIbcUpgradeChainCmd {
             src_client_id: self.src_client_id.clone(),
             amount: self.amount,
             height_offset: self.height_offset,
-            upgraded_chain_id: self.upgraded_chain_id.clone().unwrap_or(self.dst_chain_id.clone()),
-            upgraded_unbonding_period: self.upgraded_unbonding_period.map(|s| Duration::from_secs(s)).unwrap_or(Duration::from_secs(400 * 3600)),
+            upgraded_chain_id: self
+                .new_chain_id
+                .clone()
+                .unwrap_or_else(|| self.dst_chain_id.clone()),
+            upgraded_unbonding_period: self
+                .new_unbonding
+                .map(Duration::from_secs)
+                .unwrap_or_else(|| Duration::from_secs(400 * 3600)),
         };
 
         Ok(opts)
