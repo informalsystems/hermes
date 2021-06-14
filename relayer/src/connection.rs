@@ -22,7 +22,6 @@ use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
-use ibc::Height as ICSHeight;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::Error;
@@ -564,7 +563,7 @@ impl Connection {
         // Retrieve existing connection if any
         let dst_connection = self
             .dst_chain()
-            .query_connection(dst_connection_id, ICSHeight::default())
+            .query_connection(dst_connection_id, Height::zero())
             .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
 
         // Check if a connection is expected to exist on destination chain
@@ -673,7 +672,7 @@ impl Connection {
 
         let src_connection = self
             .src_chain()
-            .query_connection(&src_connection_id, ICSHeight::default())
+            .query_connection(src_connection_id, Height::zero())
             .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the try options
@@ -818,7 +817,7 @@ impl Connection {
 
         let src_connection = self
             .src_chain()
-            .query_connection(src_connection_id, ICSHeight::default())
+            .query_connection(src_connection_id, Height::zero())
             .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the ack options
@@ -923,6 +922,7 @@ impl Connection {
             .src_chain()
             .query_latest_height()
             .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+
         let _src_connection = self
             .src_chain()
             .query_connection(src_connection_id, query_height)
