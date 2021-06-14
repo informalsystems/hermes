@@ -1,6 +1,7 @@
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
+use ibc::ics02_client::height::Height;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -22,7 +23,10 @@ macro_rules! tx_chan_cmd {
         };
 
         // Retrieve the connection
-        let dst_connection = match chains.dst.query_connection(&$self.dst_conn_id) {
+        let dst_connection = match chains
+            .dst
+            .query_connection(&$self.dst_conn_id, Height::zero())
+        {
             Ok(connection) => connection,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };

@@ -316,47 +316,6 @@ impl CosmosSdkChain {
 
         Ok((proof, height))
     }
-
-    async fn do_query_connection(
-        &self,
-        connection_id: &ConnectionId,
-    ) -> Result<ConnectionEnd, Error> {
-        use ibc_proto::ibc::core::connection::v1 as connection;
-
-        let mut client = connection::query_client::QueryClient::connect(self.grpc_addr.clone())
-            .await
-            .map_err(|e| Kind::Grpc.context(e))?;
-
-        let response = client
-            .connection(connection::QueryConnectionRequest {
-                connection_id: connection_id.to_string(),
-            })
-            .await
-            .map_err(|e| {
-                if e.code() == Code::NotFound {
-                    Kind::ConnNotFound(connection_id.clone()).into()
-                } else {
-                    Kind::Grpc.context(e)
-                }
-            })?;
-
-        match response.into_inner().connection {
-            Some(raw_connection) => {
-                let connection_end = raw_connection
-                    .try_into()
-                    .map_err(|e| Kind::Grpc.context(e))?;
-
-                Ok(connection_end)
-            }
-            None => {
-                // When no connection is found, the GRPC call itself should return
-                // the NotFound error code. Nevertheless even if the call is successful,
-                // the connection field may not be present, because in protobuf3
-                // everything is optional.
-                Err(Kind::ConnNotFound(connection_id.clone()).into())
-            }
-        }
-    }
 }
 
 impl Chain for CosmosSdkChain {
@@ -788,8 +747,63 @@ impl Chain for CosmosSdkChain {
         Ok(ids)
     }
 
-    fn query_connection(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Error> {
-        self.block_on(async { self.do_query_connection(connection_id).await })
+    fn query_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: ICSHeight,
+    ) -> Result<ConnectionEnd, Error> {
+        async fn do_query_connection(
+            chain: &CosmosSdkChain,
+            connection_id: &ConnectionId,
+            height: ICSHeight,
+        ) -> Result<ConnectionEnd, Error> {
+            use ibc_proto::ibc::core::connection::v1 as connection;
+            use tonic::{metadata::MetadataValue, IntoRequest};
+
+            let mut client =
+                connection::query_client::QueryClient::connect(chain.grpc_addr.clone())
+                    .await
+                    .map_err(|e| Kind::Grpc.context(e))?;
+
+            let mut request = connection::QueryConnectionRequest {
+                connection_id: connection_id.to_string(),
+            }
+            .into_request();
+
+            let height_param = MetadataValue::from_str(&height.revision_height.to_string())
+                .map_err(|e| Kind::Grpc.context(e))?;
+
+            request
+                .metadata_mut()
+                .insert("x-cosmos-block-height", height_param);
+
+            let response = client.connection(request).await.map_err(|e| {
+                if e.code() == Code::NotFound {
+                    Kind::ConnNotFound(connection_id.clone()).into()
+                } else {
+                    Kind::Grpc.context(e)
+                }
+            })?;
+
+            match response.into_inner().connection {
+                Some(raw_connection) => {
+                    let connection_end = raw_connection
+                        .try_into()
+                        .map_err(|e| Kind::Grpc.context(e))?;
+
+                    Ok(connection_end)
+                }
+                None => {
+                    // When no connection is found, the GRPC call itself should return
+                    // the NotFound error code. Nevertheless even if the call is successful,
+                    // the connection field may not be present, because in protobuf3
+                    // everything is optional.
+                    Err(Kind::ConnNotFound(connection_id.clone()).into())
+                }
+            }
+        }
+
+        self.block_on(async { do_query_connection(self, connection_id, height).await })
     }
 
     fn query_connection_channels(

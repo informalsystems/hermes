@@ -289,11 +289,11 @@ impl Connection {
             counter += 1;
 
             // Continue loop if query error
-            let a_connection = a_chain.query_connection(&self.src_connection_id());
+            let a_connection = a_chain.query_connection(&self.src_connection_id(), Height::zero());
             if a_connection.is_err() {
                 continue;
             }
-            let b_connection = b_chain.query_connection(&self.dst_connection_id());
+            let b_connection = b_chain.query_connection(&self.dst_connection_id(), Height::zero());
             if b_connection.is_err() {
                 continue;
             }
@@ -388,7 +388,7 @@ impl Connection {
         // Retrieve existing connection if any
         let dst_connection = self
             .dst_chain()
-            .query_connection(self.dst_connection_id())
+            .query_connection(self.dst_connection_id(), Height::zero())
             .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
 
         // Check if a connection is expected to exist on destination chain
@@ -493,7 +493,7 @@ impl Connection {
     pub fn build_conn_try(&self) -> Result<Vec<Any>, ConnectionError> {
         let src_connection = self
             .src_chain()
-            .query_connection(self.src_connection_id())
+            .query_connection(self.src_connection_id(), Height::zero())
             .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the try options
@@ -625,7 +625,7 @@ impl Connection {
 
         let src_connection = self
             .src_chain()
-            .query_connection(self.src_connection_id())
+            .query_connection(self.src_connection_id(), Height::zero())
             .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the ack options
@@ -726,7 +726,7 @@ impl Connection {
 
         let _src_connection = self
             .src_chain()
-            .query_connection(self.src_connection_id())
+            .query_connection(self.src_connection_id(), query_height)
             .map_err(|_| {
                 ConnectionError::Failed(format!(
                     "missing connection {} on source chain",
