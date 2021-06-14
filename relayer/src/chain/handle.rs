@@ -14,7 +14,7 @@ use ibc::{
         client_state::{AnyClientState, IdentifiedAnyClientState},
         events::UpdateClient,
         header::AnyHeader,
-        misbehaviour::AnyMisbehaviour,
+        misbehaviour::MisbehaviourEvidence,
     },
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
@@ -130,7 +130,7 @@ pub enum ChainRequest {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        reply_to: ReplyTo<AnyHeader>,
+        reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
     },
 
     BuildClientState {
@@ -148,7 +148,7 @@ pub enum ChainRequest {
     BuildMisbehaviour {
         client_state: AnyClientState,
         update_event: UpdateClient,
-        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+        reply_to: ReplyTo<Option<MisbehaviourEvidence>>,
     },
 
     BuildConnectionProofsAndClientState {
@@ -412,7 +412,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-    ) -> Result<AnyHeader, Error>;
+    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
 
     /// Constructs a client state at the given height
     fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error>;
@@ -429,7 +429,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         update: UpdateClient,
         client_state: AnyClientState,
-    ) -> Result<Option<AnyMisbehaviour>, Error>;
+    ) -> Result<Option<MisbehaviourEvidence>, Error>;
 
     fn build_connection_proofs_and_client_state(
         &self,
