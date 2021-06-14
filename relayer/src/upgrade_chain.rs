@@ -39,6 +39,8 @@ pub struct UpgradePlanOptions {
     pub src_client_id: ClientId,
     pub amount: u64,
     pub height_offset: u64,
+    pub upgraded_chain_id: ChainId,
+    pub upgraded_unbonding_period: Duration,
 }
 
 pub fn build_and_send_ibc_upgrade_proposal(
@@ -57,7 +59,8 @@ pub fn build_and_send_ibc_upgrade_proposal(
 
     let mut upgraded_client_state = ClientState::zero_custom_fields(client_state);
     upgraded_client_state.latest_height = upgrade_height.increment();
-    upgraded_client_state.unbonding_period = Duration::from_secs(400 * 3600);
+    upgraded_client_state.unbonding_period = opts.upgraded_unbonding_period;
+    upgraded_client_state.chain_id = opts.upgraded_chain_id.clone();
 
     let raw_client_state = AnyClientState::Tendermint(upgraded_client_state);
     let proposal = UpgradeProposal {
