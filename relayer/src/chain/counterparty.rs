@@ -198,9 +198,10 @@ pub fn check_channel_counterparty(
                 target_socket,
                 target_chain.id()
             );
-            // TODO: The error `MissingCounterpartyChannelId` should capture its
-            //  context fully (the chain and the socket).
-            return Err(ChannelError::MissingCounterpartyChannelId);
+            return Err(ChannelError::IncompleteSocketState(
+                target_socket.clone(),
+                target_chain.id(),
+            ));
         }
     }
 
