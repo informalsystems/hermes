@@ -197,9 +197,9 @@ impl Runnable for TxIcs20MsgTransferCmd {
         }
 
         // Final verification:
-        // The socket (i.e., port/channel pair) representing the
+        // The port+channel pair representing the
         // counterparty on the destination chain should match the
-        // socket on the source chain.
+        // port+channel pair on the source chain.
         let channel_id_dest = channel_end_src
             .remote
             .channel_id
@@ -209,7 +209,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             ))
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let socket_dest = PortChannelId {
+        let pchan_dest = PortChannelId {
             channel_id: channel_id_dest,
             port_id: channel_end_src.remote.port_id,
         };
@@ -217,7 +217,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             channel_id: opts.packet_src_channel_id.clone(),
             port_id: opts.packet_src_port_id.clone(),
         };
-        check_channel_counterparty(chains.dst.clone(), &socket_dest, &expected)
+        check_channel_counterparty(chains.dst.clone(), &pchan_dest, &expected)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Checks pass, build and send the tx

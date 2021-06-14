@@ -78,10 +78,10 @@ pub enum ChannelError {
     #[error("the channel is partially open ({0}, {1})")]
     PartialOpenHandshake(State, State),
 
-    #[error("socket {0} on chain {1} has not counterparty channel id")]
-    IncompleteSocketState(PortChannelId, ChainId),
+    #[error("channel {0} on chain {1} has not counterparty channel id")]
+    IncompleteChannelState(PortChannelId, ChainId),
 
-    #[error("socket {0} on chain {1} expected to have counterparty {2} (but instead has {3})")]
+    #[error("channel {0} on chain {1} expected to have counterparty {2} (but instead has {3})")]
     MismatchingChannelEnds(PortChannelId, ChainId, PortChannelId, PortChannelId),
 }
 

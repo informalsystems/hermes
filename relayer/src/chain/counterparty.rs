@@ -165,13 +165,13 @@ pub fn channel_state_on_destination(
 /// Returns `Ok` if the counterparty matches, and `Err` otherwise.
 pub fn check_channel_counterparty(
     target_chain: Box<dyn ChainHandle>,
-    target_socket: &PortChannelId,
+    target_pchan: &PortChannelId,
     expected: &PortChannelId,
 ) -> Result<(), ChannelError> {
     let channel_end_dst = target_chain
         .query_channel(
-            &target_socket.port_id,
-            &target_socket.channel_id,
+            &target_pchan.port_id,
+            &target_pchan.channel_id,
             Height::zero(),
         )
         .map_err(|e| ChannelError::QueryError(target_chain.id(), e))?;
@@ -185,7 +185,7 @@ pub fn check_channel_counterparty(
             };
             if &actual != expected {
                 return Err(ChannelError::MismatchingChannelEnds(
-                    target_socket.clone(),
+                    target_pchan.clone(),
                     target_chain.id(),
                     expected.clone(),
                     actual,
@@ -194,12 +194,12 @@ pub fn check_channel_counterparty(
         }
         None => {
             error!(
-                "socket {} on chain {} has no counterparty channel id ",
-                target_socket,
+                "channel {} on chain {} has no counterparty channel id ",
+                target_pchan,
                 target_chain.id()
             );
-            return Err(ChannelError::IncompleteSocketState(
-                target_socket.clone(),
+            return Err(ChannelError::IncompleteChannelState(
+                target_pchan.clone(),
                 target_chain.id(),
             ));
         }
