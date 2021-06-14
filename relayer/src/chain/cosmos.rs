@@ -779,7 +779,7 @@ impl Chain for CosmosSdkChain {
 
             let response = client.connection(request).await.map_err(|e| {
                 if e.code() == Code::NotFound {
-                    Kind::ConnNotFound(connection_id.clone()).into()
+                    Kind::ConnectionNotFound(connection_id.clone()).into()
                 } else {
                     Kind::Grpc.context(e)
                 }
@@ -798,7 +798,7 @@ impl Chain for CosmosSdkChain {
                     // the NotFound error code. Nevertheless even if the call is successful,
                     // the connection field may not be present, because in protobuf3
                     // everything is optional.
-                    Err(Kind::ConnNotFound(connection_id.clone()).into())
+                    Err(Kind::ConnectionNotFound(connection_id.clone()).into())
                 }
             }
         }
