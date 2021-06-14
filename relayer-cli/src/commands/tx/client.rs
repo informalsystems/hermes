@@ -4,6 +4,7 @@ use ibc::events::IbcEvent;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::{app_config, CliApp};
@@ -85,7 +86,7 @@ impl Runnable for TxUpdateClientCmd {
                         "Query of client '{}' on chain '{}' failed with error: {}",
                         self.dst_client_id, self.dst_chain_id, e
                     ))
-                    .exit()
+                    .exit();
                 }
             };
 
@@ -144,7 +145,7 @@ impl Runnable for TxUpgradeClientCmd {
                     "Query of client '{}' on chain '{}' failed with error: {}",
                     self.client_id, self.chain_id, e
                 ))
-                .exit()
+                .exit();
             }
         };
 
@@ -178,54 +179,59 @@ pub struct TxUpgradeClientsCmd {
 impl Runnable for TxUpgradeClientsCmd {
     fn run(&self) {
         let config = app_config();
+        let src_chain = match spawn_chain_runtime(&config, &self.src_chain_id) {
+            Ok(handle) => handle,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         let outputs: Vec<Output> = config
             .chains
             .iter()
-            .map(|chain| match self.upgrade_chain(&config, &chain.id) {
-                Ok(receipts) => Output::success(receipts),
-                Err(e) => Output::error(e),
-            })
-            .collect();
-
-        Output::combined(outputs.into_iter()).exit()
-    }
-}
-
-impl TxUpgradeClientsCmd {
-    fn upgrade_chain(
-        &self,
-        config: &config::Reader<CliApp>,
-        dst_chain_id: &ChainId,
-    ) -> Result<Vec<IbcEvent>, Error> {
-        let chains = ChainHandlePair::spawn(&config, &self.src_chain_id, dst_chain_id)?;
-
-        let req = QueryClientStatesRequest {
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
-        let client_ids: Vec<ClientId> = chains
-            .dst
-            .query_clients(req)
-            .map_err(|e| Kind::Query.context(e))?
-            .iter()
-            .filter_map(|cs| {
-                if self.src_chain_id == cs.client_state.chain_id() {
-                    Some(cs.client_id.clone())
-                } else {
-                    None
+            .map(|chain| {
+                match self.upgrade_clients_for_chain(&config, src_chain.clone(), &chain.id) {
+                    Ok(outputs) => Output::combined(outputs),
+                    Err(e) => Output::error(e),
                 }
             })
             .collect();
 
-        debug_assert!(client_ids.len() < 2);
+        Output::combined(outputs).exit()
+    }
+}
 
-        let mut events = vec![];
-        if let Some(client_id) = client_ids.first() {
-            let client = ForeignClient::find(chains.src.clone(), chains.dst.clone(), client_id)
-                .map_err(|e| Kind::Query.context(e))?;
-            events = client.upgrade().map_err(|e| Kind::Query.context(e))?
-        }
+impl TxUpgradeClientsCmd {
+    fn upgrade_clients_for_chain(
+        &self,
+        config: &config::Reader<CliApp>,
+        src_chain: Box<dyn ChainHandle>,
+        dst_chain_id: &ChainId,
+    ) -> Result<Vec<Output>, Error> {
+        let dst_chain = spawn_chain_runtime(&config, dst_chain_id)?;
 
-        Ok(events)
+        let req = QueryClientStatesRequest {
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        };
+        let outputs = dst_chain
+            .query_clients(req)
+            .map_err(|e| Kind::Query.context(e))?
+            .into_iter()
+            .filter_map(|cs| {
+                if self.src_chain_id == cs.client_state.chain_id() {
+                    Some(cs.client_id)
+                } else {
+                    None
+                }
+            })
+            .map(|client_id| {
+                let client =
+                    ForeignClient::restore(client_id, src_chain.clone(), dst_chain.clone());
+                match client.upgrade().map_err(|e| Kind::Query.context(e)) {
+                    Ok(receipts) => Output::success(receipts),
+                    Err(e) => Output::error(e),
+                }
+            })
+            .collect();
+
+        Ok(outputs)
     }
 }
