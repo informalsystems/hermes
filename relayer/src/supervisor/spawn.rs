@@ -1,12 +1,13 @@
-use itertools::Itertools;
 use tracing::{debug, error};
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
     ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
     ics04_channel::channel::IdentifiedChannelEnd,
+    ics24_host::identifier::{ChainId, ConnectionId},
     Height,
 };
+
 use ibc_proto::ibc::core::{
     channel::v1::QueryConnectionChannelsRequest, client::v1::QueryClientStatesRequest,
     connection::v1::QueryClientConnectionsRequest,
@@ -23,138 +24,171 @@ use crate::{
 use super::Error;
 
 pub fn spawn_workers(config: &Config, registry: &mut Registry, workers: &mut WorkerMap) {
+    let chain_ids = config.chains.iter().map(|c| &c.id).cloned();
+
+    for chain_id in chain_ids {
+        spawn_workers_for_chain(config, registry, workers, chain_id);
+    }
+}
+
+fn spawn_workers_for_chain(
+    config: &Config,
+    registry: &mut Registry,
+    workers: &mut WorkerMap,
+    chain_id: ChainId,
+) {
     let clients_req = QueryClientStatesRequest {
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
 
-    let chain_ids = config.chains.iter().map(|c| c.id.clone()).collect_vec();
+    let chain = match registry.get_or_spawn(&chain_id) {
+        Ok(chain_handle) => chain_handle,
+        Err(e) => {
+            error!(
+                "skipping workers for chain {}, reason: failed to spawn chain runtime with error: {}",
+                chain_id, e
+            );
 
-    for chain_id in chain_ids {
-        let chain = match registry.get_or_spawn(&chain_id) {
-            Ok(chain_handle) => chain_handle,
-            Err(e) => {
-                error!(
-                    "skipping workers for chain {}. \
-                        reason: failed to spawn chain runtime with error: {}",
-                    chain_id, e
-                );
-
-                continue;
-            }
-        };
-
-        let clients = match chain.query_clients(clients_req.clone()) {
-            Ok(clients) => clients,
-            Err(e) => {
-                error!(
-                    "skipping workers for chain {}. \
-                        reason: failed to query clients with error: {}",
-                    chain_id, e
-                );
-
-                continue;
-            }
-        };
-
-        for client in clients {
-            let counterparty_chain_id = client.client_state.chain_id();
-            if config.find_chain(&counterparty_chain_id).is_none() {
-                continue;
-            }
-
-            let conns_req = QueryClientConnectionsRequest {
-                client_id: client.client_id.to_string(),
-            };
-
-            let client_connections = match chain.query_client_connections(conns_req) {
-                Ok(connections) => connections,
-                Err(e) => {
-                    error!(
-                        "skipping workers for chain {}. \
-                             reason: failed to query client connections for client {}: {}",
-                        chain_id, client.client_id, e
-                    );
-
-                    continue;
-                }
-            };
-
-            for connection_id in client_connections {
-                let connection_end = match chain.query_connection(&connection_id, Height::zero()) {
-                    Ok(connection_end) => connection_end,
-                    Err(e) => {
-                        error!(
-                            "skipping workers for chain {} and connection {}. \
-                                    reason: failed to query connection end: {}",
-                            chain_id, connection_id, e
-                        );
-
-                        continue;
-                    }
-                };
-
-                if !connection_end.state_matches(&ConnectionState::Open) {
-                    continue;
-                }
-
-                let chans_req = QueryConnectionChannelsRequest {
-                    connection: connection_id.to_string(),
-                    pagination: ibc_proto::cosmos::base::query::pagination::all(),
-                };
-
-                let connection_channels = match chain.query_connection_channels(chans_req) {
-                    Ok(channels) => channels,
-                    Err(e) => {
-                        error!(
-                            "skipping workers for chain {} and connection {}. \
-                                     reason: failed to query its channels: {}",
-                            chain_id, connection_id, e
-                        );
-
-                        continue;
-                    }
-                };
-
-                let connection =
-                    IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
-
-                for channel in connection_channels {
-                    match spawn_channel_workers(
-                        config,
-                        registry,
-                        workers,
-                        chain.clone(),
-                        client.clone(),
-                        connection.clone(),
-                        channel.clone(),
-                    ) {
-                        Ok(()) => debug!(
-                            "done spawning workers for chain {} and channel {}",
-                            chain.id(),
-                            channel.channel_id
-                        ),
-                        Err(e) => error!(
-                            "skipped workers for chain {} and channel {} due to error {}",
-                            chain.id(),
-                            channel.channel_id,
-                            e
-                        ),
-                    }
-                }
-            }
+            return;
         }
+    };
+
+    let clients = match chain.query_clients(clients_req) {
+        Ok(clients) => clients,
+        Err(e) => {
+            error!(
+                "skipping workers for chain {}, reason: failed to query clients with error: {}",
+                chain_id, e
+            );
+
+            return;
+        }
+    };
+
+    for client in clients {
+        spawn_workers_for_client(config, registry, workers, chain.clone(), client);
     }
 }
 
-/// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
-fn spawn_channel_workers(
+fn spawn_workers_for_client(
     config: &Config,
     registry: &mut Registry,
     workers: &mut WorkerMap,
     chain: Box<dyn ChainHandle>,
     client: IdentifiedAnyClientState,
-    connection: IdentifiedConnectionEnd,
-    channel: IdentifiedChannelEnd,
+) {
+    let counterparty_chain_id = client.client_state.chain_id();
+    if config.find_chain(&counterparty_chain_id).is_none() {
+        return;
+    }
+
+    let chain_id = chain.id();
+
+    let conns_req = QueryClientConnectionsRequest {
+        client_id: client.client_id.to_string(),
+    };
+
+    let client_connections = match chain.query_client_connections(conns_req) {
+        Ok(connections) => connections,
+        Err(e) => {
+            error!(
+                "skipping workers for chain {}, reason: failed to query client connections for client {}: {}",
+                chain_id, client.client_id, e
+            );
+
+            return;
+        }
+    };
+
+    for connection_id in client_connections {
+        spawn_workers_for_connection(
+            config,
+            registry,
+            workers,
+            chain.clone(),
+            &client,
+            connection_id,
+        );
+    }
+}
+
+fn spawn_workers_for_connection(
+    config: &Config,
+    registry: &mut Registry,
+    workers: &mut WorkerMap,
+    chain: Box<dyn ChainHandle>,
+    client: &IdentifiedAnyClientState,
+    connection_id: ConnectionId,
+) {
+    let connection_end = match chain.query_connection(&connection_id, Height::zero()) {
+        Ok(connection_end) => connection_end,
+        Err(e) => {
+            error!(
+                "skipping workers for chain {} and connection {}, reason: failed to query connection end: {}",
+                chain.id(), connection_id, e
+            );
+
+            return;
+        }
+    };
+
+    if !connection_end.state_matches(&ConnectionState::Open) {
+        return;
+    }
+
+    let chans_req = QueryConnectionChannelsRequest {
+        connection: connection_id.to_string(),
+        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+    };
+
+    let connection_channels = match chain.query_connection_channels(chans_req) {
+        Ok(channels) => channels,
+        Err(e) => {
+            error!(
+                "skipping workers for chain {} and connection {}, reason: failed to query its channels: {}",
+                chain.id(), connection_id, e
+            );
+
+            return;
+        }
+    };
+
+    let connection = IdentifiedConnectionEnd::new(connection_id, connection_end);
+
+    for channel in connection_channels {
+        match spawn_workers_for_channel(
+            config,
+            registry,
+            workers,
+            chain.clone(),
+            &client,
+            &connection,
+            &channel,
+        ) {
+            Ok(()) => debug!(
+                "done spawning workers for chain {} and channel {}",
+                chain.id(),
+                channel.channel_id
+            ),
+            Err(e) => error!(
+                "skipped workers for chain {} and channel {} due to error {}",
+                chain.id(),
+                channel.channel_id,
+                e
+            ),
+        }
+    }
+}
+
+/// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+fn spawn_workers_for_channel(
+    config: &Config,
+    registry: &mut Registry,
+    workers: &mut WorkerMap,
+    chain: Box<dyn ChainHandle>,
+    client: &IdentifiedAnyClientState,
+    connection: &IdentifiedConnectionEnd,
+    channel: &IdentifiedChannelEnd,
 ) -> Result<(), Error> {
     let counterparty_chain = registry
         .get_or_spawn(&client.client_state.chain_id())
@@ -187,26 +221,26 @@ fn spawn_channel_workers(
         //  https://github.com/informalsystems/ibc-rs/issues/901
         // create the path object and spawn worker
         let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
-            dst_chain_id: counterparty_chain.clone().id(),
+            dst_chain_id: counterparty_chain.id(),
             src_chain_id: chain.id(),
             src_channel_id: channel.channel_id.clone(),
-            src_port_id: channel.port_id,
+            src_port_id: channel.port_id.clone(),
         });
 
-        workers.get_or_spawn(path_object, chain.clone(), counterparty_chain.clone());
+        workers.get_or_spawn(path_object, chain, counterparty_chain);
     } else if !chan_state_dst.is_open()
-        && chan_state_dst as u32 <= chan_state_src as u32
+        && chan_state_dst.less_or_equal_progress(chan_state_src)
         && config.handshake_enabled()
     {
         // create worker for channel handshake that will advance the remote state
         let channel_object = Object::Channel(Channel {
-            dst_chain_id: counterparty_chain.clone().id(),
+            dst_chain_id: counterparty_chain.id(),
             src_chain_id: chain.id(),
             src_channel_id: channel.channel_id.clone(),
-            src_port_id: channel.port_id,
+            src_port_id: channel.port_id.clone(),
         });
 
-        workers.get_or_spawn(channel_object, chain.clone(), counterparty_chain.clone());
+        workers.get_or_spawn(channel_object, chain, counterparty_chain);
     }
 
     Ok(())

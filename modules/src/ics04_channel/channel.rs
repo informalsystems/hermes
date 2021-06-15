@@ -404,8 +404,13 @@ impl State {
             _ => fail!(error::Kind::UnknownState, s),
         }
     }
+
     pub fn is_open(self) -> bool {
         self == State::Open
+    }
+
+    pub fn less_or_equal_progress(self, other: Self) -> bool {
+        self as u32 <= other as u32
     }
 }
 
