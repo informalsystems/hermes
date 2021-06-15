@@ -128,33 +128,33 @@ fn channel_on_destination(
 }
 
 pub fn channel_state_on_destination(
-    channel: IdentifiedChannelEnd,
-    connection: IdentifiedConnectionEnd,
+    channel: &IdentifiedChannelEnd,
+    connection: &IdentifiedConnectionEnd,
     counterparty_chain: &dyn ChainHandle,
 ) -> Result<State, Error> {
-    let counterparty_state =
-        if let Some(remote_channel_id) = channel.channel_end.remote.channel_id() {
-            counterparty_chain
-                .query_channel(
-                    channel.channel_end.remote.port_id(),
-                    remote_channel_id,
-                    Height::zero(),
-                )
-                .map_err(|e| Error::QueryFailed(format!("{}", e)))?
-                .state
-        } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
-            channel_on_destination(
-                &channel.port_id,
-                &channel.channel_id,
-                counterparty_chain,
-                remote_connection_id,
-            )?
-            .map_or_else(
-                || State::Uninitialized,
-                |remote_channel| remote_channel.state,
+    if let Some(remote_channel_id) = channel.channel_end.remote.channel_id() {
+        let counterparty = counterparty_chain
+            .query_channel(
+                channel.channel_end.remote.port_id(),
+                remote_channel_id,
+                Height::zero(),
             )
-        } else {
-            State::Uninitialized
-        };
-    Ok(counterparty_state)
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        Ok(counterparty.state)
+    } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
+        let remote_channel = channel_on_destination(
+            &channel.port_id,
+            &channel.channel_id,
+            counterparty_chain,
+            remote_connection_id,
+        )?;
+
+        Ok(remote_channel.map_or_else(
+            || State::Uninitialized,
+            |remote_channel| remote_channel.state,
+        ))
+    } else {
+        Ok(State::Uninitialized)
+    }
 }

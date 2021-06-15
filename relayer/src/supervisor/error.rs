@@ -19,4 +19,10 @@ pub enum Error {
 
     #[error("query failed with error: {0}")]
     QueryFailed(String),
+
+    #[error("supervisor was not able to connect to any chains")]
+    NoChainsAvailable,
+
+    #[error("failed to spawn chain runtime: {0}")]
+    FailedToSpawnChainRuntime(String),
 }

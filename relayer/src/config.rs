@@ -48,6 +48,10 @@ impl Config {
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
     }
+
+    pub fn handshake_enabled(&self) -> bool {
+        self.global.strategy == Strategy::HandshakeAndPackets
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
