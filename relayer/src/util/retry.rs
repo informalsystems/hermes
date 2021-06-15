@@ -39,13 +39,14 @@ where
             Err(e) => {
                 if e.is_retryable() {
                     warn!(
-                        "operation {} failed with recoverable error: {}. retrying at count {}",
+                        "operation {} failed with recoverable error: {}. retrying at count {}.",
                         name,
                         e,
                         i + 1
                     );
                     RetryResult::Retry(e)
                 } else {
+                    warn!("non-recoverable error happened: {}. skipping retry.", e);
                     RetryResult::Err(e)
                 }
             }
