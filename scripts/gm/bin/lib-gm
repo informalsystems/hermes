@@ -767,7 +767,7 @@ EOF
 [[chains]]
 id='${ID}'
 rpc_addr='http://localhost:${RPC}'
-grpc_addr='https://localhost:${GRPC}'
+grpc_addr='http://localhost:${GRPC}'
 websocket_addr='ws://localhost:${RPC}/websocket'
 rpc_timeout='1s'
 account_prefix='${ACCOUNT_PREFIX}'
