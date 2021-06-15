@@ -1,8 +1,10 @@
 #![allow(clippy::borrowed_box)]
+
+use std::time::Duration;
+
 use anomaly::BoxError;
 use prost_types::Any;
 use serde::Serialize;
-use std::time::Duration;
 use thiserror::Error;
 use tracing::{debug, error, info};
 
@@ -14,23 +16,29 @@ use ibc::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use ibc::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
+use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::Error as WorkerChannelError;
-
+use crate::util::retry::RetryResult;
 use crate::util::retry::{retry_count, retry_with_index};
 
 mod retry_strategy {
-    use crate::util::retry::clamp_total;
-    use retry::delay::Fibonacci;
     use std::time::Duration;
+
+    use retry::delay::Fibonacci;
+
+    use crate::util::retry::clamp_total;
 
     // Default parameters for the retrying mechanism
     const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
@@ -41,10 +49,6 @@ mod retry_strategy {
         clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
     }
 }
-
-use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
-use crate::util::retry::RetryResult;
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
@@ -70,6 +74,15 @@ pub enum ChannelError {
         "failed during a transaction submission step to chain id {0} with underlying error: {1}"
     )]
     SubmitError(ChainId, Error),
+
+    #[error("the channel is partially open ({0}, {1})")]
+    PartialOpenHandshake(State, State),
+
+    #[error("channel {0} on chain {1} has no counterparty channel id")]
+    IncompleteChannelState(PortChannelId, ChainId),
+
+    #[error("channel {0} on chain {1} expected to have counterparty {2} (but instead has {3})")]
+    MismatchingChannelEnds(PortChannelId, ChainId, PortChannelId, PortChannelId),
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -407,7 +420,20 @@ impl Channel {
         Ok(())
     }
 
-    fn do_channel_handshake(&mut self) -> Result<(), ChannelError> {
+    /// Does a single step towards finalizing the channel open handshake.
+    /// Covers only a step of type either Ack or Confirm.
+    /// (Assumes that the channel open handshake was previously
+    /// initialized with Init & Try steps.)
+    ///
+    /// Returns `Ok` when both channel ends are in state `Open`.
+    /// Also returns `Ok` if the channel is undergoing a closing handshake.
+    ///
+    /// An `Err` can signal two cases:
+    ///     - the attempted handshake step has failed,
+    ///     - the attempted step may have finished successfully, but further
+    ///     steps are necessary to finalize the channel open handshake.
+    /// In both `Err` cases, there should be retry calling this method.
+    fn do_chan_open_ack_confirm_step(&self) -> Result<(), ChannelError> {
         let src_channel_id = self
             .src_channel_id()
             .ok_or(ChannelError::MissingLocalChannelId)?;
@@ -420,63 +446,119 @@ impl Channel {
         let a_channel = self
             .src_chain()
             .query_channel(&self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|_| ChannelError::Failed("Failed to query source chain".into()))?;
+            .map_err(|_| {
+                ChannelError::Failed(format!(
+                    "failed to query source chain {}",
+                    self.src_chain().id()
+                ))
+            })?;
 
         let b_channel = self
             .dst_chain()
             .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero())
-            .map_err(|_| ChannelError::Failed("Failed to query destination chain".into()))?;
+            .map_err(|_| {
+                ChannelError::Failed(format!(
+                    "failed to query destination chain {}",
+                    self.dst_chain().id()
+                ))
+            })?;
 
         match (a_channel.state(), b_channel.state()) {
+            // Handle sending the Ack message to the source chain
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                 let event = self.flipped().build_chan_open_ack_and_send().map_err(|e| {
-                    error!("Failed ChanAck {:?}: {}", self.a_side, e);
+                    error!("failed ChanAck {:?}: {}", self.a_side, e);
                     e
                 })?;
 
-                info!("done {} => {:#?}\n", self.src_chain().id(), event);
+                info!(
+                    "done with ChanAck step {} => {:#?}\n",
+                    self.src_chain().id(),
+                    event
+                );
+                // One more step (confirm) left.
+                // Returning error signals that the caller should retry.
+                Err(ChannelError::PartialOpenHandshake(
+                    *a_channel.state(),
+                    *b_channel.state(),
+                ))
             }
+
+            // Handle sending the Ack message to the destination chain
+            (State::TryOpen, State::Init) => {
+                let event = self.build_chan_open_ack_and_send().map_err(|e| {
+                    error!("failed ChanAck {:?}: {}", self.b_side, e);
+                    e
+                })?;
+
+                info!(
+                    "done with ChanAck step {} => {:#?}\n",
+                    self.dst_chain().id(),
+                    event
+                );
+                // One more step (confirm) left.
+                // Returning error signals that the caller should retry.
+                Err(ChannelError::PartialOpenHandshake(
+                    *a_channel.state(),
+                    *b_channel.state(),
+                ))
+            }
+
+            // Handle sending the Confirm message to the destination chain
             (State::Open, State::TryOpen) => {
                 let event = self.build_chan_open_confirm_and_send().map_err(|e| {
-                    error!("Failed ChanConfirm {:?}: {}", self.b_side, e);
+                    error!("failed ChanConfirm {:?}: {}", self.b_side, e);
                     e
                 })?;
 
                 info!("done {} => {:#?}\n", self.dst_chain().id(), event);
+                Ok(())
             }
+
+            // Send Confirm to the source chain
             (State::TryOpen, State::Open) => {
-                // Confirm to a_chain
                 let event = self
                     .flipped()
                     .build_chan_open_confirm_and_send()
                     .map_err(|e| {
-                        error!("Failed ChanConfirm {:?}: {}", self.a_side, e);
+                        error!("failed ChanConfirm {:?}: {}", self.a_side, e);
                         e
                     })?;
 
-                info!("done {} => {:#?}\n", self.src_chain().id(), event)
+                info!(
+                    "finalized channel open handshake {} => {:#?}\n",
+                    self.src_chain().id(),
+                    event
+                );
+                Ok(())
             }
             (State::Open, State::Open) => {
-                info!("Channel handshake finished for {:#?}\n", self);
+                info!("channel handshake already finished for {:#?}\n", self);
+                Ok(())
             }
-            _ => { /* TODO channel close */ }
+            // In all other conditions, return Ok, since the channel open handshake does not apply.
+            _ => Ok(()),
         }
-
-        info!("successfully opened channel");
-        Ok(())
     }
 
-    fn do_channel_handshake_with_retry(&mut self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| self.do_channel_handshake()).map_err(
-            |err| {
-                error!("failed to open channel after {} retries", err);
-                ChannelError::Failed(format!(
-                    "Failed to finish channel handshake in {} iterations for {:?}",
-                    retry_count(&err),
-                    self
-                ))
-            },
-        )?;
+    /// Takes a partially open channel and finalizes the open handshake protocol.
+    ///
+    /// Pre-condition: the channel identifiers are already established on both ends
+    ///   (i.e., the OpenInit and OpenTry steps have been fulfilled for this channel).
+    ///
+    /// Post-condition: the channel state is `Open` on both ends if successful.
+    fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
+        retry_with_index(retry_strategy::default(), |_| {
+            self.do_chan_open_ack_confirm_step()
+        })
+        .map_err(|err| {
+            error!("failed to open channel after {} retries", err);
+            ChannelError::Failed(format!(
+                "Failed to finish channel handshake in {} iterations for {:?}",
+                retry_count(&err),
+                self
+            ))
+        })?;
 
         Ok(())
     }
@@ -485,7 +567,7 @@ impl Channel {
     fn handshake(&mut self) -> Result<(), ChannelError> {
         self.do_chan_open_init_and_send_with_retry()?;
         self.do_chan_open_try_and_send_with_retry()?;
-        self.do_channel_handshake_with_retry()
+        self.do_chan_open_finalize_with_retry()
     }
 
     pub fn counterparty_state(&self) -> Result<State, ChannelError> {

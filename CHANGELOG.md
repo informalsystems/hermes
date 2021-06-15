@@ -19,11 +19,20 @@
   - Update the on-chain IBC client with supporting headers when light client verification
     does bisection when verifying a header for a client update or a misbehaviour detection ([#673])
 
+### BUG FIXES
+
+- [ibc-relayer-cli]
+  - Fix for chain impersonation bug. ([#1038])
+  - Fix for partially open handshake bug of `channel create` CLI. ([#1064])
+
 ### BREAKING CHANGES
 
 - [ibc-relayer-cli]
   - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
-
+  
+[#1038]: https://github.com/informalsystems/ibc-rs/issues/1038
+[#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
+[#1064]: https://github.com/informalsystems/ibc-rs/issues/1064
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#868]: https://github.com/informalsystems/ibc-rs/issues/1049
 [#877]: https://github.com/informalsystems/ibc-rs/issues/877
