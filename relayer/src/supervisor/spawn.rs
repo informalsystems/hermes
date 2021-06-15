@@ -23,25 +23,32 @@ use crate::{
 
 use super::Error;
 
+pub struct SpawnContext<'a> {
+    config: &'a Config,
+    registry: &'a mut Registry,
+    workers: &'a mut WorkerMap,
+}
+
 pub fn spawn_workers(config: &Config, registry: &mut Registry, workers: &mut WorkerMap) {
+    let mut ctx = SpawnContext {
+        config,
+        registry,
+        workers,
+    };
+
     let chain_ids = config.chains.iter().map(|c| &c.id).cloned();
 
     for chain_id in chain_ids {
-        spawn_workers_for_chain(config, registry, workers, chain_id);
+        spawn_workers_for_chain(&mut ctx, chain_id);
     }
 }
 
-fn spawn_workers_for_chain(
-    config: &Config,
-    registry: &mut Registry,
-    workers: &mut WorkerMap,
-    chain_id: ChainId,
-) {
+fn spawn_workers_for_chain(ctx: &mut SpawnContext<'_>, chain_id: ChainId) {
     let clients_req = QueryClientStatesRequest {
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
 
-    let chain = match registry.get_or_spawn(&chain_id) {
+    let chain = match ctx.registry.get_or_spawn(&chain_id) {
         Ok(chain_handle) => chain_handle,
         Err(e) => {
             error!(
@@ -66,19 +73,17 @@ fn spawn_workers_for_chain(
     };
 
     for client in clients {
-        spawn_workers_for_client(config, registry, workers, chain.clone(), client);
+        spawn_workers_for_client(ctx, chain.clone(), client);
     }
 }
 
 fn spawn_workers_for_client(
-    config: &Config,
-    registry: &mut Registry,
-    workers: &mut WorkerMap,
+    ctx: &mut SpawnContext<'_>,
     chain: Box<dyn ChainHandle>,
     client: IdentifiedAnyClientState,
 ) {
     let counterparty_chain_id = client.client_state.chain_id();
-    if config.find_chain(&counterparty_chain_id).is_none() {
+    if ctx.config.find_chain(&counterparty_chain_id).is_none() {
         return;
     }
 
@@ -101,21 +106,12 @@ fn spawn_workers_for_client(
     };
 
     for connection_id in client_connections {
-        spawn_workers_for_connection(
-            config,
-            registry,
-            workers,
-            chain.clone(),
-            &client,
-            connection_id,
-        );
+        spawn_workers_for_connection(ctx, chain.clone(), &client, connection_id);
     }
 }
 
 fn spawn_workers_for_connection(
-    config: &Config,
-    registry: &mut Registry,
-    workers: &mut WorkerMap,
+    ctx: &mut SpawnContext<'_>,
     chain: Box<dyn ChainHandle>,
     client: &IdentifiedAnyClientState,
     connection_id: ConnectionId,
@@ -156,15 +152,7 @@ fn spawn_workers_for_connection(
     let connection = IdentifiedConnectionEnd::new(connection_id, connection_end);
 
     for channel in connection_channels {
-        match spawn_workers_for_channel(
-            config,
-            registry,
-            workers,
-            chain.clone(),
-            &client,
-            &connection,
-            &channel,
-        ) {
+        match spawn_workers_for_channel(ctx, chain.clone(), &client, &connection, &channel) {
             Ok(()) => debug!(
                 "done spawning workers for chain {} and channel {}",
                 chain.id(),
@@ -182,15 +170,14 @@ fn spawn_workers_for_connection(
 
 /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
 fn spawn_workers_for_channel(
-    config: &Config,
-    registry: &mut Registry,
-    workers: &mut WorkerMap,
+    ctx: &mut SpawnContext<'_>,
     chain: Box<dyn ChainHandle>,
     client: &IdentifiedAnyClientState,
     connection: &IdentifiedConnectionEnd,
     channel: &IdentifiedChannelEnd,
 ) -> Result<(), Error> {
-    let counterparty_chain = registry
+    let counterparty_chain = ctx
+        .registry
         .get_or_spawn(&client.client_state.chain_id())
         .map_err(|e| Error::FailedToSpawnChainRuntime(e.to_string()))?;
 
@@ -215,7 +202,8 @@ fn spawn_workers_for_channel(
             src_chain_id: client.client_state.chain_id(),
         });
 
-        workers.get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
+        ctx.workers
+            .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
 
         // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
         //  https://github.com/informalsystems/ibc-rs/issues/901
@@ -227,10 +215,11 @@ fn spawn_workers_for_channel(
             src_port_id: channel.port_id.clone(),
         });
 
-        workers.get_or_spawn(path_object, chain, counterparty_chain);
+        ctx.workers
+            .get_or_spawn(path_object, chain, counterparty_chain);
     } else if !chan_state_dst.is_open()
         && chan_state_dst.less_or_equal_progress(chan_state_src)
-        && config.handshake_enabled()
+        && ctx.config.handshake_enabled()
     {
         // create worker for channel handshake that will advance the remote state
         let channel_object = Object::Channel(Channel {
@@ -240,7 +229,8 @@ fn spawn_workers_for_channel(
             src_port_id: channel.port_id.clone(),
         });
 
-        workers.get_or_spawn(channel_object, chain, counterparty_chain);
+        ctx.workers
+            .get_or_spawn(channel_object, chain, counterparty_chain);
     }
 
     Ok(())
