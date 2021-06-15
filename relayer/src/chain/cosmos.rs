@@ -58,6 +58,7 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::{
     QueryClientStatesRequest, QueryConsensusStatesRequest, QueryUpgradedClientStateRequest,
+    QueryUpgradedConsensusStateRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
@@ -567,7 +568,7 @@ impl Chain for CosmosSdkChain {
             .upgraded_client_state
             .ok_or(Kind::EmptyUpgradedClientState)?;
         let client_state = AnyClientState::try_from(upgraded_client_state_raw)
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(|e| Kind::ConversionFromAny.context(e))?;
 
         let client_type = client_state.client_type();
         let tm_client_state =
@@ -589,54 +590,50 @@ impl Chain for CosmosSdkChain {
         Ok((tm_client_state, proof))
     }
 
-    #[allow(unused_variables, dead_code)]
     fn query_upgraded_consensus_state(
         &self,
         height: ICSHeight,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
-        todo!()
-        // crate::time!("query_upgraded_consensus_state");
-        //
-        // let tm_height =
-        //     Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
-        //
-        // let mut client = self
-        //     .block_on(
-        //         ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
-        //             self.grpc_addr.clone(),
-        //         ),
-        //     )
-        //     .map_err(|e| Kind::Grpc.context(e))?;
-        //
-        // let req = tonic::Request::new(QueryUpgradedConsensusStateRequest {
-        //     last_height: tm_height.into(),
-        // });
-        // let response = self
-        //     .block_on(client.upgraded_consensus_state(req))
-        //     .map_err(|e| Kind::Grpc.context(e))?;
-        //
-        // let upgraded_consensus_state_raw = response
-        //     .into_inner()
-        //     .upgraded_consensus_state
-        //     .ok_or(Kind::EmptyResponseValue)?;
-        //
-        // // TODO: More explicit error kinds (should not reuse Grpc all over the place)
-        // let consensus_state = AnyConsensusState::try_from(upgraded_consensus_state_raw)
-        //     .map_err(|e| Kind::Grpc.context(e))?;
-        //
-        // let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-        //     .ok_or_else(|| {
-        //         Kind::Query("upgraded consensus state".into())
-        //             .context("unexpected consensus state type")
-        //     })?;
-        //
-        // // Fetch the proof.
-        // let (proof, _proof_height) = self.query_client_upgrade_proof(
-        //     ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
-        //     tm_height,
-        // )?;
-        //
-        // Ok((tm_consensus_state, proof))
+        crate::time!("query_upgraded_consensus_state");
+
+        let tm_height =
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let req = tonic::Request::new(QueryUpgradedConsensusStateRequest {});
+        let response = self
+            .block_on(client.upgraded_consensus_state(req))
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let upgraded_consensus_state_raw = response
+            .into_inner()
+            .upgraded_consensus_state
+            .ok_or(Kind::EmptyResponseValue)?;
+
+        let consensus_state = AnyConsensusState::try_from(upgraded_consensus_state_raw)
+            .map_err(|e| Kind::ConversionFromAny.context(e))?;
+
+        let cs_client_type = consensus_state.client_type();
+        let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
+            .ok_or_else(|| Kind::ConsensusStateTypeMismatch {
+                expected: ClientType::Tendermint,
+                got: cs_client_type,
+            })?;
+
+        // Fetch the proof.
+        let (proof, _proof_height) = self.query_client_upgrade_proof(
+            ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
+            tm_height,
+        )?;
+
+        Ok((tm_consensus_state, proof))
     }
 
     /// Performs a query to retrieve the identifiers of all connections.
