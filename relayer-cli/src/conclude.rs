@@ -69,7 +69,11 @@ pub fn exit_with(out: Output) {
     let status = out.status;
 
     // Handle the output message
-    println!("{}", String::from(out));
+    if json() {
+        println!("{}", serde_json::to_string(&out.into_json()).unwrap());
+    } else {
+        println!("{}: {}", out.status, out.result);
+    }
 
     // The return code
     if status == Status::Error {
@@ -244,16 +248,6 @@ fn serialize_result(res: impl Serialize + std::fmt::Debug) -> serde_json::Value 
             );
             // Package the result with the infallible `Debug` instead of `JSON`
             serde_json::Value::String(last_resort)
-        }
-    }
-}
-
-impl From<Output> for String {
-    fn from(out: Output) -> Self {
-        if json() {
-            serde_json::to_string(&out.into_json()).unwrap()
-        } else {
-            format!("{}: {}", out.status, out.result)
         }
     }
 }
