@@ -216,13 +216,7 @@ impl TxUpgradeClientsCmd {
             .query_clients(req)
             .map_err(|e| Kind::Query.context(e))?
             .into_iter()
-            .filter_map(|cs| {
-                if self.src_chain_id == cs.client_state.chain_id() {
-                    Some(cs.client_id)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|c| (self.src_chain_id == c.client_state.chain_id()).then(|| c.client_id))
             .map(|id| TxUpgradeClientsCmd::upgrade_client(id, src_chain.clone(), dst_chain.clone()))
             .collect();
 
