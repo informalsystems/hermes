@@ -6,6 +6,7 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+use percentage::Percentage;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -14,17 +15,16 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
-use tendermint_rpc::{Client, endpoint::broadcast::tx_sync::Response, HttpClient, Order};
 use tendermint_rpc::endpoint::tx_search::ResultTx;
 use tendermint_rpc::query::Query;
+use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
-use tonic::Code;
 use tonic::codegen::http::Uri;
+use tonic::Code;
 use tracing::{debug, trace};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::Height as ICSHeight;
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
 };
@@ -39,16 +39,20 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TmHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::{ClientUpgradePath, IBC_QUERY_PATH, Path, SDK_UPGRADE_QUERY_PATH};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
+use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
+use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxBody, TxRaw};
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
+use ibc_proto::cosmos::tx::v1beta1::{
+    AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxBody,
+    TxRaw,
+};
 use ibc_proto::cosmos::upgrade::v1beta1::{
     QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
 };
@@ -69,8 +73,8 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
-use crate::light_client::LightClient;
 use crate::light_client::tendermint::LightClient as TmLightClient;
+use crate::light_client::LightClient;
 use crate::light_client::Verified;
 
 use super::Chain;
@@ -83,6 +87,9 @@ const DEFAULT_GAS_FEE_AMOUNT: u64 = 1000;
 
 const MAX_RETRIES: usize = 30;
 
+// default gas adjustment percentage
+const DEFAULT_GAS_ADJUSTMENT: u64 = 10;
+
 pub struct CosmosSdkChain {
     config: ChainConfig,
     rpc_client: HttpClient,
@@ -90,18 +97,6 @@ pub struct CosmosSdkChain {
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
     acct_seq: u64,
-}
-
-fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, Vec<u8>), Error> {
-    let auth_info = AuthInfo {
-        signer_infos: vec![signer_info],
-        fee: Some(fee),
-    };
-
-    // A protobuf serialization of a AuthInfo
-    let mut auth_buf = Vec::new();
-    prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
-    Ok((auth_info, auth_buf))
 }
 
 impl CosmosSdkChain {
@@ -164,33 +159,62 @@ impl CosmosSdkChain {
 
         let acct_response = self.account()?;
         if self.acct_seq == 0 {
-            debug!("retrieved account nonce {} for {}", acct_response.sequence, self.id());
+            debug!(
+                "retrieved account nonce {} for {}",
+                acct_response.sequence,
+                self.id()
+            );
             self.acct_seq = acct_response.sequence;
         };
 
-        debug!("sending Tx with {} messages to {} using nonce {}", proto_msgs.len(), self.id(), self.acct_seq);
+        debug!(
+            "sending Tx with {} messages to {} using nonce {}",
+            proto_msgs.len(),
+            self.id(),
+            self.acct_seq
+        );
 
         let signer_info = self.signer(self.acct_seq)?;
         let fee = self.default_fee();
-        let (body, body_buf) = self.tx_body(proto_msgs)?;
+        let (body, body_buf) = tx_body_and_bytes(proto_msgs)?;
 
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), fee.clone())?;
-        let signed_doc =
-            self.signed_doc(body_buf.clone(), auth_buf, self.acct_seq)?;
+        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, self.acct_seq)?;
 
-        let adjusted_gas = self.send_tx_simulate(SimulateRequest {
-            tx: Some(Tx {
-                body: Some(body),
-                auth_info: Some(auth_info),
-                signatures: vec![signed_doc.clone()],
-            }),
-        })
+        // Try to simulate the Tx.
+        // It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
+        // they do not individually verify. For example for the following batch
+        // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
+        // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
+        // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
+        let mut adjusted_gas = self
+            .send_tx_simulate(SimulateRequest {
+                tx: Some(Tx {
+                    body: Some(body),
+                    auth_info: Some(auth_info),
+                    signatures: vec![signed_doc],
+                }),
+            })
             .map_or(self.max_gas(), |sr| {
                 sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
             });
 
+        // TODO - add GAS_ADJUSTMENT to chain config
+        // Readjust gas.
+        // Without readjusting up the simulation gas result obtained above, out-of-gas failures
+        // occur once in a while.
+        // On cosmos chains, gas increases with every I/O (read/writes to the kv store).
+        // The simulation above runs in isolation, without taking into account other
+        // transactions that might be executed before this Tx and that might slightly change the
+        // number of reads in the store (??)    .
+        adjusted_gas += Percentage::from(DEFAULT_GAS_ADJUSTMENT).apply_to(adjusted_gas);
         let adjusted_fee = self.fee_with_gas_limit(adjusted_gas);
-        trace!("{} adjust fee from {:?} to {:?}", self.id(), fee, adjusted_fee);
+        trace!(
+            "{} adjust fee from {:?} to {:?}",
+            self.id(),
+            fee,
+            adjusted_fee
+        );
         let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
         let signed_doc = self.signed_doc(
             body_buf.clone(),
@@ -318,7 +342,7 @@ impl CosmosSdkChain {
             .map_err(|e| Kind::KeyBase.context(e))?)
     }
 
-    fn key_serialized(&self, key: KeyEntry) -> Result<Vec<u8>, Error> {
+    fn key_bytes(&self, key: KeyEntry) -> Result<Vec<u8>, Error> {
         let mut pk_buf = Vec::new();
         prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
         Ok(pk_buf)
@@ -326,22 +350,7 @@ impl CosmosSdkChain {
 
     fn key_and_bytes(&self) -> Result<(KeyEntry, Vec<u8>), Error> {
         let key = self.key()?;
-        Ok((key.clone(), self.key_serialized(key)?))
-    }
-
-    fn tx_body(&self, proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
-        // Create TxBody
-        let body = TxBody {
-            messages: proto_msgs.to_vec(),
-            memo: "".to_string(),
-            timeout_height: 0_u64,
-            extension_options: Vec::<Any>::new(),
-            non_critical_extension_options: Vec::<Any>::new(),
-        };
-        // A protobuf serialization of a TxBody
-        let mut body_buf = Vec::new();
-        prost::Message::encode(&body, &mut body_buf).unwrap();
-        Ok((body, body_buf))
+        Ok((key.clone(), self.key_bytes(key)?))
     }
 
     fn account(&self) -> Result<BaseAccount, Error> {
@@ -380,10 +389,8 @@ impl CosmosSdkChain {
 
     fn fee_with_gas_limit(&self, gas_limit: u64) -> Fee {
         Fee {
-            amount: vec![self.fee_in_coins()],
             gas_limit,
-            payer: "".to_string(),
-            granter: "".to_string(),
+            ..self.default_fee()
         }
     }
 
@@ -413,16 +420,17 @@ impl CosmosSdkChain {
         Ok(signed)
     }
 
-    /// Given a vector of `tendermint_rpc::endpoint::broadcast::tx_sync::Response` elements,
-    /// each including a transaction hash for one or more messages, periodically queries the chain
+    /// Given a vector of `TxSyncResult` elements,
+    /// each including a transaction response hash for one or more messages, periodically queries the chain
     /// with the transaction hashes to get the list of IbcEvents included in those transactions.
     pub fn wait_for_block_commits(
         &self,
-        tx_sync_results: &mut Vec<(Response, Vec<IbcEvent>)>,
+        tx_sync_results: &mut Vec<TxSyncResult>,
     ) -> Result<(), Error> {
         // events_per_tx[i] collects the events generated by the transaction from tx_sync_results[i]
         let mut counter = 0;
 
+        // TODO - exp backoff is not good here, if anything we want to speed up the retries towards the end range
         while counter < MAX_RETRIES {
             thread::sleep(Duration::from_millis(200));
             counter += 1;
@@ -436,27 +444,27 @@ impl CosmosSdkChain {
                 return Ok(());
             }
 
-            for sr in tx_sync_results.iter_mut() {
-                if empty_event_present(&sr.1) {
+            for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
+                if empty_event_present(&events) {
                     // try to resolve transaction hash
-                    let events_per_tx = if sr.0.code.value() != 0 {
+                    let events_per_tx = if response.code.value() != 0 {
                         vec![IbcEvent::ChainError(format!(
                             "code {:?}, log {}",
-                            sr.0.code, sr.0.log
+                            response.code, response.log
                         ))]
                     } else if let Ok(events_per_tx) =
-                        self.query_txs(QueryTxRequest::Transaction(QueryTxHash(sr.0.hash)))
+                        self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
                     {
                         if events_per_tx.is_empty() {
-                            sr.1.clone()
+                            events.clone()
                         } else {
                             events_per_tx
                         }
                     } else {
-                        sr.1.clone()
+                        events.clone()
                     };
 
-                    sr.1 = events_per_tx.clone();
+                    *events = events_per_tx;
                 }
             }
             thread::sleep(Duration::from_millis(300));
@@ -491,7 +499,10 @@ impl CosmosSdkChain {
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
                 let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
                 let tx_sync_result = self.send_tx(msg_batch)?;
-                tx_sync_results.push((tx_sync_result, events_per_tx));
+                tx_sync_results.push(TxSyncResult {
+                    response: tx_sync_result,
+                    events: events_per_tx,
+                });
                 n = 0;
                 size = 0;
                 msg_batch = vec![];
@@ -500,15 +511,20 @@ impl CosmosSdkChain {
         if !msg_batch.is_empty() {
             let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
             let tx_sync_result = self.send_tx(msg_batch)?;
-            tx_sync_results.push((tx_sync_result, events_per_tx));
+            tx_sync_results.push(TxSyncResult {
+                response: tx_sync_result,
+                events: events_per_tx,
+            });
         }
 
         self.wait_for_block_commits(&mut tx_sync_results)?;
-        let events = tx_sync_results
+        let events: Vec<IbcEvent> = tx_sync_results
             .into_iter()
-            .map(|el| el.1)
+            .map(|res| res.events)
             .flatten()
             .collect();
+        // temp check
+        assert_eq!(proto_msgs.len(), events.len());
         Ok(events)
     }
 }
@@ -517,9 +533,9 @@ fn empty_event_present(events: &[IbcEvent]) -> bool {
     events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
 }
 
-fn all_tx_results_found(tx_sync_results: &[(Response, Vec<IbcEvent>)]) -> bool {
+fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
     for tx_res in tx_sync_results {
-        if empty_event_present(&tx_res.1) {
+        if empty_event_present(&tx_res.events) {
             return false;
         }
     }
@@ -622,7 +638,10 @@ impl Chain for CosmosSdkChain {
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
                 let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
                 let tx_sync_result = self.send_tx(msg_batch)?;
-                tx_sync_results.push((tx_sync_result, events_per_tx));
+                tx_sync_results.push(TxSyncResult {
+                    response: tx_sync_result,
+                    events: events_per_tx,
+                });
                 n = 0;
                 size = 0;
                 msg_batch = vec![];
@@ -631,13 +650,16 @@ impl Chain for CosmosSdkChain {
         if !msg_batch.is_empty() {
             let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
             let tx_sync_result = self.send_tx(msg_batch)?;
-            tx_sync_results.push((tx_sync_result, events_per_tx));
+            tx_sync_results.push(TxSyncResult {
+                response: tx_sync_result,
+                events: events_per_tx,
+            });
         }
 
         self.wait_for_block_commits(&mut tx_sync_results)?;
         let events = tx_sync_results
             .into_iter()
-            .map(|el| el.1)
+            .map(|el| el.events)
             .flatten()
             .collect();
         Ok(events)
@@ -1823,4 +1845,38 @@ pub fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
         .last()
         .map(|e| e.parse::<u64>().ok())
         .flatten()
+}
+
+pub struct TxSyncResult {
+    // the broadcast_tx_sync response
+    response: Response,
+    // the events generated by a Tx once executed
+    events: Vec<IbcEvent>,
+}
+
+fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, Vec<u8>), Error> {
+    let auth_info = AuthInfo {
+        signer_infos: vec![signer_info],
+        fee: Some(fee),
+    };
+
+    // A protobuf serialization of a AuthInfo
+    let mut auth_buf = Vec::new();
+    prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
+    Ok((auth_info, auth_buf))
+}
+
+fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
+    // Create TxBody
+    let body = TxBody {
+        messages: proto_msgs.to_vec(),
+        memo: "".to_string(),
+        timeout_height: 0_u64,
+        extension_options: Vec::<Any>::new(),
+        non_critical_extension_options: Vec::<Any>::new(),
+    };
+    // A protobuf serialization of a TxBody
+    let mut body_buf = Vec::new();
+    prost::Message::encode(&body, &mut body_buf).unwrap();
+    Ok((body, body_buf))
 }

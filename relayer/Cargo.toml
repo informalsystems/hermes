@@ -54,6 +54,7 @@ dirs-next = "2.0.0"
 dyn-clone = "1.0.3"
 retry = { version = "1.2.1", default-features = false }
 async-stream = "0.3.2"
+percentage = "0.1.0"
 
 [dependencies.tendermint]
 version = "=0.19.0"
