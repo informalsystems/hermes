@@ -391,3 +391,9 @@ pub struct PortChannelId {
     pub channel_id: ChannelId,
     pub port_id: PortId,
 }
+
+impl std::fmt::Display for PortChannelId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}/{}", self.port_id, self.channel_id)
+    }
+}
