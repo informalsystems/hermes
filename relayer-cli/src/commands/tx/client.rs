@@ -1,3 +1,5 @@
+use std::fmt;
+
 use abscissa_core::{config, Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
@@ -184,18 +186,17 @@ impl Runnable for TxUpgradeClientsCmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let outputs: Vec<Output> = config
+        let results = config
             .chains
             .iter()
-            .map(|chain| {
-                match self.upgrade_clients_for_chain(&config, src_chain.clone(), &chain.id) {
-                    Ok(outputs) => Output::combined(outputs),
-                    Err(e) => Output::error(e),
-                }
-            })
+            .map(|chain| self.upgrade_clients_for_chain(&config, src_chain.clone(), &chain.id))
             .collect();
 
-        Output::combined(outputs).exit()
+        let output = OutputBuffer(results);
+        match output.into_result() {
+            Ok(events) => Output::success(events).exit(),
+            Err(e) => Output::error(e).exit(),
+        }
     }
 }
 
@@ -205,7 +206,7 @@ impl TxUpgradeClientsCmd {
         config: &config::Reader<CliApp>,
         src_chain: Box<dyn ChainHandle>,
         dst_chain_id: &ChainId,
-    ) -> Result<Vec<Output>, Error> {
+    ) -> UpgradeClientsForChainResult {
         let dst_chain = spawn_chain_runtime(&config, dst_chain_id)?;
 
         let req = QueryClientStatesRequest {
@@ -222,16 +223,91 @@ impl TxUpgradeClientsCmd {
                     None
                 }
             })
-            .map(|client_id| {
-                let client =
-                    ForeignClient::restore(client_id, src_chain.clone(), dst_chain.clone());
-                match client.upgrade().map_err(|e| Kind::Query.context(e)) {
-                    Ok(receipts) => Output::success(receipts),
-                    Err(e) => Output::error(e),
-                }
-            })
+            .map(|id| TxUpgradeClientsCmd::upgrade_client(id, src_chain.clone(), dst_chain.clone()))
             .collect();
 
         Ok(outputs)
+    }
+
+    fn upgrade_client(
+        client_id: ClientId,
+        src_chain: Box<dyn ChainHandle>,
+        dst_chain: Box<dyn ChainHandle>,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        let client = ForeignClient::restore(client_id, src_chain.clone(), dst_chain.clone());
+        client.upgrade().map_err(|e| Kind::Query.context(e).into())
+    }
+}
+
+type UpgradeClientResult = Result<Vec<IbcEvent>, Error>;
+type UpgradeClientsForChainResult = Result<Vec<UpgradeClientResult>, Error>;
+
+struct OutputBuffer(Vec<UpgradeClientsForChainResult>);
+
+impl fmt::Display for OutputBuffer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn sep<'a>(pos: usize, len: usize, other: &'a str, last: &'a str) -> &'a str {
+            if pos != len - 1 {
+                other
+            } else {
+                last
+            }
+        }
+
+        let outer_results = &self.0;
+        writeln!(f, ".")?;
+        for (o, outer_result) in outer_results.iter().enumerate() {
+            write!(f, "{}", sep(o, outer_results.len(), "├─", "└─"))?;
+            match outer_result {
+                Ok(inner_results) => {
+                    writeln!(f, ".")?;
+                    for (i, inner_result) in inner_results.iter().enumerate() {
+                        write!(
+                            f,
+                            "{} {} ",
+                            sep(o, outer_results.len(), "│", " "),
+                            sep(i, inner_results.len(), "├─", "└─"),
+                        )?;
+                        match inner_result {
+                            Ok(events) => writeln!(f, "{:#?}", events)?,
+                            Err(e) => writeln!(f, "{}", e.to_string())?,
+                        }
+                    }
+                }
+                Err(e) => writeln!(f, " {}", e.to_string())?,
+            }
+        }
+        Ok(())
+    }
+}
+
+impl OutputBuffer {
+    fn into_result(self) -> Result<Vec<Vec<IbcEvent>>, Self> {
+        let mut all_events = vec![];
+        let mut has_err = false;
+        'outer: for outer_result in &self.0 {
+            match outer_result {
+                Ok(inner_results) => {
+                    for inner_result in inner_results {
+                        match inner_result {
+                            Ok(events) => all_events.push(events.clone()),
+                            Err(_) => {
+                                has_err = true;
+                                break 'outer;
+                            }
+                        }
+                    }
+                }
+                Err(_) => {
+                    has_err = true;
+                    break 'outer;
+                }
+            }
+        }
+        if has_err {
+            Err(self)
+        } else {
+            Ok(all_events)
+        }
     }
 }
