@@ -203,26 +203,6 @@ impl Output {
         Output::with_success().with_msg(msg)
     }
 
-    /// Combine multiple `Output`s into a single `Output` by concatenating their results. The
-    /// combined `Output` has status `Error` if even one of the constituent `Output`s is an error.
-    pub fn combined(outputs: impl IntoIterator<Item = Output>) -> Output {
-        let mut result = "".to_owned();
-        let mut has_err = false;
-
-        for output in outputs {
-            if output.status == Status::Error {
-                has_err = true;
-            }
-            result.push_str(&String::from(output));
-        }
-
-        if has_err {
-            Output::error(result)
-        } else {
-            Output::success(result)
-        }
-    }
-
     /// Exits from the process with the current output. Convenience wrapper over `exit_with`.
     pub fn exit(self) {
         exit_with(self);
