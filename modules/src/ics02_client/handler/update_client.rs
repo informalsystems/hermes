@@ -61,7 +61,7 @@ pub fn process(
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.
     let (new_client_state, new_consensus_state) = client_def
-        .check_header_and_update_state(client_state, header)
+        .check_header_and_update_state(ctx, client_id.clone(), client_state, header)
         .map_err(|e| Kind::HeaderVerificationFailure.context(e.to_string()))?;
 
     let result = ClientResult::Update(Result {
