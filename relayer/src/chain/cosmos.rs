@@ -1,5 +1,3 @@
-#![allow(unused_imports)]
-
 use std::{
     convert::TryFrom, convert::TryInto, future::Future, str::FromStr, sync::Arc, thread,
     time::Duration,
@@ -16,6 +14,7 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
+use tendermint_rpc::endpoint::tx_search::ResultTx;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
@@ -28,6 +27,7 @@ use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
 };
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
@@ -50,16 +50,15 @@ use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
-use ibc_proto::cosmos::upgrade::v1beta1::{
-    QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
-};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
+use ibc_proto::ibc::core::client::v1::{
+    QueryClientStatesRequest, QueryConsensusStatesRequest, QueryUpgradedClientStateRequest,
+};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -75,7 +74,6 @@ use crate::light_client::LightClient;
 use crate::light_client::Verified;
 
 use super::Chain;
-use tendermint_rpc::endpoint::tx_search::ResultTx;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -292,7 +290,6 @@ impl CosmosSdkChain {
     }
 
     // Perform an ABCI query against the client upgrade sub-store to fetch a proof.
-    #[allow(dead_code)]
     fn query_client_upgrade_proof(
         &self,
         data: ClientUpgradePath,
@@ -546,51 +543,50 @@ impl Chain for CosmosSdkChain {
         Ok(client_state)
     }
 
-    #[allow(unused_variables, dead_code)]
     fn query_upgraded_client_state(
         &self,
         height: ICSHeight,
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
-        todo!()
-        // crate::time!("query_upgraded_client_state");
-        //
-        // let mut client = self
-        //     .block_on(
-        //         ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
-        //             self.grpc_addr.clone(),
-        //         ),
-        //     )
-        //     .map_err(|e| Kind::Grpc.context(e))?;
-        //
-        // let req = tonic::Request::new(QueryCurrentPlanRequest {});
-        // let response = self
-        //     .block_on(client.current_plan(req))
-        //     .map_err(|e| Kind::Grpc.context(e))?;
-        //
-        // let upgraded_client_state_raw = response
-        //     .into_inner()
-        //     .plan
-        //     .ok_or(Kind::EmptyResponseValue)?
-        //     .upgraded_client_state
-        //     .ok_or(Kind::EmptyUpgradedClientState)?;
-        // let client_state = AnyClientState::try_from(upgraded_client_state_raw)
-        //     .map_err(|e| Kind::Grpc.context(e))?;
-        //
-        // // TODO: Better error kinds here.
-        // let tm_client_state =
-        //     downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
-        //         Kind::Query("upgraded client state".into()).context("unexpected client state type")
-        //     })?;
-        //
-        // // Query for the proof.
-        // let tm_height =
-        //     Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
-        // let (proof, _proof_height) = self.query_client_upgrade_proof(
-        //     ClientUpgradePath::UpgradedClientState(height.revision_height),
-        //     tm_height,
-        // )?;
-        //
-        // Ok((tm_client_state, proof))
+        crate::time!("query_upgraded_client_state");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let req = tonic::Request::new(QueryUpgradedClientStateRequest {});
+        let response = self
+            .block_on(client.upgraded_client_state(req))
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let upgraded_client_state_raw = response
+            .into_inner()
+            .upgraded_client_state
+            .ok_or(Kind::EmptyUpgradedClientState)?;
+        let client_state = AnyClientState::try_from(upgraded_client_state_raw)
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let client_type = client_state.client_type();
+        let tm_client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::ClientTypeMismatch {
+                    expected: ClientType::Tendermint,
+                    got: client_type,
+                }
+            })?;
+
+        // Query for the proof.
+        let tm_height =
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+        let (proof, _proof_height) = self.query_client_upgrade_proof(
+            ClientUpgradePath::UpgradedClientState(height.revision_height),
+            tm_height,
+        )?;
+
+        Ok((tm_client_state, proof))
     }
 
     #[allow(unused_variables, dead_code)]
