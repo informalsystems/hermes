@@ -162,7 +162,8 @@ impl Supervisor {
     }
 
     fn spawn_workers(&mut self) {
-        spawn::spawn_workers(&self.config, &mut self.registry, &mut self.workers)
+        let mut ctx = spawn::SpawnContext::new(&self.config, &mut self.registry, &mut self.workers);
+        ctx.spawn_workers();
     }
 
     /// Run the supervisor event loop.
