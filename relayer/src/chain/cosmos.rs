@@ -491,7 +491,7 @@ fn empty_event_present(events: &[IbcEvent]) -> bool {
 fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
     tx_sync_results
         .iter()
-        .all(|r| empty_event_present(&r.events))
+        .all(|r| !empty_event_present(&r.events))
 }
 
 impl Chain for CosmosSdkChain {
