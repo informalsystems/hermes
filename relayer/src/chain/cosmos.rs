@@ -482,56 +482,6 @@ impl CosmosSdkChain {
             Err(Kind::TxNoConfirmation.into())
         }
     }
-
-    /// Send one or more transactions that include all the specified messages
-    pub fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
-        crate::time!("send_msgs");
-
-        if proto_msgs.is_empty() {
-            return Ok(vec![]);
-        }
-        let mut tx_sync_results = vec![];
-
-        let mut n = 0;
-        let mut size = 0;
-        let mut msg_batch = vec![];
-        for msg in proto_msgs.iter() {
-            msg_batch.push(msg.clone());
-            let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf).unwrap();
-            n += 1;
-            size += buf.len();
-            if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
-                let tx_sync_result = self.send_tx(msg_batch)?;
-                tx_sync_results.push(TxSyncResult {
-                    response: tx_sync_result,
-                    events: events_per_tx,
-                });
-                n = 0;
-                size = 0;
-                msg_batch = vec![];
-            }
-        }
-        if !msg_batch.is_empty() {
-            let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
-            let tx_sync_result = self.send_tx(msg_batch)?;
-            tx_sync_results.push(TxSyncResult {
-                response: tx_sync_result,
-                events: events_per_tx,
-            });
-        }
-
-        self.wait_for_block_commits(&mut tx_sync_results)?;
-        let events: Vec<IbcEvent> = tx_sync_results
-            .into_iter()
-            .map(|res| res.events)
-            .flatten()
-            .collect();
-        // temp check
-        assert_eq!(proto_msgs.len(), events.len());
-        Ok(events)
-    }
 }
 
 fn empty_event_present(events: &[IbcEvent]) -> bool {
@@ -1840,7 +1790,7 @@ fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error
 /// Returns the suffix counter for a CosmosSDK client id.
 /// Returns `None` if the client identifier is malformed
 /// and the suffix could not be parsed.
-pub fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
+fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
     client_id
         .as_str()
         .split('-')
