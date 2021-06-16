@@ -119,10 +119,6 @@ mod tests {
     use crate::mock::host::HostType;
     use crate::timestamp::ZERO_DURATION;
 
-    #[derive(Debug, thiserror::Error)]
-    #[error("dummy error")]
-    struct DummyError;
-
     #[test]
     fn conn_open_ack_msg_processing() {
         struct Test {
@@ -130,7 +126,7 @@ mod tests {
             ctx: MockContext,
             msg: ConnectionMsg,
             want_pass: bool,
-            error_kind: Option<error::ErrorDetail>,
+            match_error: Box<dyn FnOnce(error::Error)>,
         }
 
         let msg_ack =
@@ -188,14 +184,28 @@ mod tests {
                     .with_connection(conn_id.clone(), default_conn_end),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: true,
-                error_kind: None,
+                match_error: Box::new(|_| {
+                    panic!("should not have error")
+                }),
             },
             Test {
                 name: "Processing fails because the connection does not exist in the context".to_string(),
                 ctx: default_context.clone(),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
-                error_kind: Some(error::uninitialized_connection_error(conn_id.clone()).detail),
+                match_error: {
+                    let connection_id = conn_id.clone();
+                    Box::new(move |e| {
+                        match e.detail {
+                            error::ErrorDetail::UninitializedConnection(e) => {
+                                assert_eq!(e.connection_id, connection_id)
+                            }
+                            _ => {
+                                panic!("Expected UninitializedConnection error");
+                            }
+                        }
+                    })
+                },
             },
             Test {
                 name: "Processing fails due to connections mismatch (incorrect 'open' state)".to_string(),
@@ -205,7 +215,20 @@ mod tests {
                     .with_connection(conn_id.clone(), conn_end_open),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
-                error_kind: Some(error::connection_mismatch_error(conn_id.clone()).detail)
+                match_error: {
+                    let connection_id = conn_id.clone();
+                    Box::new(move |e| {
+                        match e.detail {
+                            error::ErrorDetail::ConnectionMismatch(e) => {
+                                assert_eq!(e.connection_id, connection_id);
+                            }
+                            _ => {
+                                panic!("Expected ConnectionMismatch error");
+                            }
+                        }
+                    })
+                },
+                // error_kind: Some(error::connection_mismatch_error(conn_id.clone()).detail)
             },
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
@@ -214,10 +237,20 @@ mod tests {
                     .with_connection(conn_id, conn_end_prefix),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
                 want_pass: false,
-                error_kind: Some(error::consensus_state_verification_failure_error(
-                    proof_height,
-                    Box::new(DummyError)
-                ).detail)
+                match_error:
+                    Box::new(move |e| {
+                        match e.detail {
+                            error::ErrorDetail::ConsensusStateVerificationFailure(e) => {
+                                assert_eq!(e.height, proof_height)
+                            }
+                            _ => {
+                                panic!("Expected ConsensusStateVerificationFailure error");
+                            }
+                        }
+                    }),
+                // error_kind: Some(error::ErrorDetail::ConsensusStateVerificationFailure{
+                //     height: proof_height,
+                // })
             },
             /*
             Test {
@@ -266,16 +299,17 @@ mod tests {
                         e,
                     );
                     // Verify that the error kind matches
-                    if let Some(expected_kind) = test.error_kind {
-                        assert_eq!(
-                            expected_kind,
-                            e.detail,
-                            "conn_open_ack: failed for test: {}\nexpected error kind: {:?}\nfound: {:?}",
-                            test.name,
-                            expected_kind,
-                            e
-                        )
-                    }
+                    (test.match_error)(e);
+                    // if let Some(expected_kind) = test.error_kind {
+                    //     assert_eq!(
+                    //         expected_kind,
+                    //         e.detail,
+                    //         "conn_open_ack: failed for test: {}\nexpected error kind: {:?}\nfound: {:?}",
+                    //         test.name,
+                    //         expected_kind,
+                    //         e
+                    //     )
+                    // }
                 }
             }
         }

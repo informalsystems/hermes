@@ -1,4 +1,5 @@
 use super::packet::Sequence;
+use crate::ics02_client::error as client_error;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
@@ -152,7 +153,7 @@ define_error! {
 
         PacketVerificationFailed
             { sequence: Sequence }
-            [ DisplayOnly<Box<dyn std::error::Error>> ]
+            [ client_error::Error ]
             | e | {
                 format_args!(
                     "Verification fails for the packet with the sequence number {0}",
@@ -160,7 +161,7 @@ define_error! {
             },
 
         VerifyChannelFailed
-            [ DisplayOnly<Box<dyn std::error::Error>> ]
+            [ client_error::Error ]
             | _ | {
                 "Error verifying channel state"
             },

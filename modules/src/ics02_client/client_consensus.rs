@@ -1,5 +1,5 @@
 use core::marker::{Send, Sync};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use chrono::{DateTime, Utc};
 use prost_types::Any;
@@ -16,7 +16,6 @@ use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
-use crate::utils::UnwrapInfallible;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
@@ -137,11 +136,7 @@ impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
             .ok_or_else(error::empty_consensus_state_response_error)?;
 
         Ok(AnyConsensusStateWithHeight {
-            height: value
-                .height
-                .ok_or_else(error::missing_height_error)?
-                .try_into()
-                .unwrap_infallible(),
+            height: value.height.ok_or_else(error::missing_height_error)?.into(),
             consensus_state: state,
         })
     }

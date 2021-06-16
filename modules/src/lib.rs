@@ -28,6 +28,7 @@
 //!    - ICS 20: Fungible Token Transfer
 
 pub mod application;
+pub mod decode;
 pub mod events;
 pub mod handler;
 pub mod keys;
@@ -37,7 +38,6 @@ pub mod query;
 pub mod signer;
 pub mod timestamp;
 pub mod tx_msg;
-pub mod utils;
 
 pub mod ics02_client;
 pub mod ics03_connection;

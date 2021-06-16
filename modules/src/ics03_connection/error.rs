@@ -64,11 +64,6 @@ define_error! {
         EmptyProtoConnectionEnd
             | _ | { "ConnectionEnd domain object could not be constructed out of empty proto object" },
 
-        // TODO: use more specific error source
-        InvalidVersion
-            [ DisplayOnly<Box<dyn std::error::Error>> ]
-            | _ | { "invalid connection version" },
-
         EmptyVersions
             | _ | { "empty supported versions" },
 
@@ -91,9 +86,8 @@ define_error! {
             [ ProofError ]
             | _ | { "invalid connection proof" },
 
-        // TODO: use more specific error source
         VerifyConnectionState
-            [ DisplayOnly<Box<dyn std::error::Error>> ]
+            [ client_error::Error ]
             | _ | { "error verifying connnection state" },
 
         InvalidSigner
@@ -160,10 +154,9 @@ define_error! {
             { height: Height }
             | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
 
-        // TODO: use more specific error source
         ConsensusStateVerificationFailure
             { height: Height }
-            [ DisplayOnly<Box<dyn std::error::Error>> ]
+            [ client_error::Error ]
             | e | {
                 format_args!("the consensus proof verification failed (height: {0})",
                     e.height)
@@ -174,7 +167,7 @@ define_error! {
             {
                 client_id: ClientId,
             }
-            [ DisplayOnly<Box<dyn std::error::Error>> ]
+            [ client_error::Error ]
             | e | {
                 format_args!("the client state proof verification failed for client id {0}",
                     e.client_id)

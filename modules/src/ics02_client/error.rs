@@ -58,6 +58,9 @@ define_error! {
         EmptyClientStateResponse
             | _ | { "the client state was not found" },
 
+        EmptyPrefix
+            | _ | { "empty prefix" },
+
         UnknownConsensusStateType
             { consensus_state_type: String }
             | e | {
@@ -179,6 +182,16 @@ define_error! {
         UpgradeVerificationFailure
             { reason: String }
             | e | { format_args!("upgrade verification failed with reason: {}", e.reason) },
+
+        LowHeaderHeight
+            {
+                header_height: Height,
+                latest_height: Height
+            }
+            | e | {
+                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
+                    e.header_height, e.latest_height)
+            },
 
         LowUpgradeHeight
             {
