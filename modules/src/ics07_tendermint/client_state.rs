@@ -158,11 +158,11 @@ impl TryFrom<RawClientState> for ClientState {
         let trust_level = raw
             .trust_level
             .clone()
-            .ok_or_else(|| error::missing_trusting_period_error())?;
+            .ok_or_else(error::missing_trusting_period_error)?;
 
         Ok(Self {
             chain_id: ChainId::from_str(raw.chain_id.as_str())
-                .map_err(|_| error::invalid_chain_identifier_error())?,
+                .map_err(error::invalid_chain_identifier_error)?,
             trust_level: TrustThreshold {
                 numerator: trust_level.numerator,
                 denominator: trust_level.denominator,

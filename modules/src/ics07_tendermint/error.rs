@@ -1,5 +1,5 @@
 use crate::ics24_host::error::ValidationError;
-use flex_error::*;
+use flex_error::{define_error, DisplayError};
 
 define_error! {
     Error {
@@ -15,7 +15,7 @@ define_error! {
             | _ | { "invalid address" },
 
         InvalidHeader
-            {reason: String }
+            { reason: String }
             | _ | { "invalid header, failed basic validation" },
 
         Validation
@@ -23,7 +23,7 @@ define_error! {
             | _ | { "invalid header, failed basic validation" },
 
         InvalidRawClientState
-            {reason: String }
+            { reason: String }
             | _ | { "invalid raw client state" },
 
         MissingTrustingPeriod
@@ -33,6 +33,7 @@ define_error! {
             | _ | { "missing unbonding period" },
 
         InvalidChainIdentifier
+            [ DisplayError<ValidationError> ]
             | _ | { "Invalid chain identifier" },
 
         NegativeTrustingPeriod
@@ -54,18 +55,18 @@ define_error! {
             | _ | { "missing frozen height" },
 
         InvalidChainId
-            {raw_value: String, validation_kind: ValidationError}
+            { raw_value: String, validation_kind: ValidationError }
             | e | { format_args!("invalid chain identifier: raw value {0} with underlying validation error: {1}", e.raw_value, e.validation_kind) },
 
         InvalidRawHeight
             | _ | { "invalid raw height" },
 
         InvalidRawConsensusState
-            {reason: String }
+            { reason: String }
             | _ | { "invalid raw client consensus state" },
 
         InvalidRawHeader
-            {reason: String }
+            { reason: String }
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour

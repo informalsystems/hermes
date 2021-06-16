@@ -1,6 +1,6 @@
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::ics04_channel::error as channel_error;
-use flex_error::*;
+use flex_error::define_error;
 
 define_error! {
     Error {
