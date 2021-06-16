@@ -1453,6 +1453,7 @@ dependencies = [
  "bytes",
  "crossbeam-channel 0.5.1",
  "dirs-next",
+ "displaydoc",
  "dyn-clonable",
  "dyn-clone",
  "env_logger",

@@ -2,6 +2,7 @@ use prost::DecodeError;
 use flex_error::*;
 
 define_error! {
+    #[derive(Debug, Clone)]
     Error {
         InvalidRawMerkleProof
         [ DisplayError<DecodeError> ]
