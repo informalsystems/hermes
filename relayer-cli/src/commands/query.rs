@@ -107,6 +107,6 @@ pub enum QueryPacketCmds {
     UnreceivedAcks(packet::QueryUnreceivedAcknowledgementCmd),
 
     /// The `query packet tx` subcommand
-    #[options(help = "Query a transaction by")]
+    #[options(help = "Query a transaction by hash")]
     Tx(packet::QueryTxByHashCmd),
 }
