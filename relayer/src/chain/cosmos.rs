@@ -56,10 +56,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{
-    QueryClientStatesRequest, QueryConsensusStatesRequest, QueryUpgradedClientStateRequest,
-    QueryUpgradedConsensusStateRequest,
-};
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -290,12 +287,17 @@ impl CosmosSdkChain {
         Ok(response)
     }
 
-    // Perform an ABCI query against the client upgrade sub-store to fetch a proof.
-    fn query_client_upgrade_proof(
+    /// Perform an ABCI query against the client upgrade sub-store.
+    /// Fetches both the target data, as well as the proof.
+    ///
+    /// The data is returned in its raw format `Vec<u8>`, and is either
+    /// the client state (if the target path is [`UpgradedClientState`]),
+    /// or the client consensus state ([`UpgradedClientConsensusState`]).
+    fn query_client_upgrade_state(
         &self,
         data: ClientUpgradePath,
         height: Height,
-    ) -> Result<(MerkleProof, ICSHeight), Error> {
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
         let prev_height =
             Height::try_from(height.value() - 1).map_err(|e| Kind::InvalidHeight.context(e))?;
 
@@ -310,12 +312,7 @@ impl CosmosSdkChain {
 
         let proof = response.proof.ok_or(Kind::EmptyResponseProof)?;
 
-        let height = ICSHeight::new(
-            self.config.id.version(),
-            response.height.increment().value(),
-        );
-
-        Ok((proof, height))
+        Ok((response.value, proof))
     }
 }
 
@@ -550,26 +547,16 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
 
-        let mut client = self
-            .block_on(
-                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
-            .map_err(|e| Kind::Grpc.context(e))?;
+        // Query for the value and the proof.
+        let tm_height =
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+        let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
+            ClientUpgradePath::UpgradedClientState(height.revision_height),
+            tm_height,
+        )?;
 
-        let req = tonic::Request::new(QueryUpgradedClientStateRequest {});
-        let response = self
-            .block_on(client.upgraded_client_state(req))
-            .map_err(|e| Kind::Grpc.context(e))?;
-
-        let upgraded_client_state_raw = response
-            .into_inner()
-            .upgraded_client_state
-            .ok_or(Kind::EmptyUpgradedClientState)?;
-        let client_state = AnyClientState::try_from(upgraded_client_state_raw)
+        let client_state = AnyClientState::decode_vec(&upgraded_client_state_raw)
             .map_err(|e| Kind::ConversionFromAny.context(e))?;
-
         let client_type = client_state.client_type();
         let tm_client_state =
             downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
@@ -578,14 +565,6 @@ impl Chain for CosmosSdkChain {
                     got: client_type,
                 }
             })?;
-
-        // Query for the proof.
-        let tm_height =
-            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
-        let (proof, _proof_height) = self.query_client_upgrade_proof(
-            ClientUpgradePath::UpgradedClientState(height.revision_height),
-            tm_height,
-        )?;
 
         Ok((tm_client_state, proof))
     }
@@ -599,25 +578,13 @@ impl Chain for CosmosSdkChain {
         let tm_height =
             Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
 
-        let mut client = self
-            .block_on(
-                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
-            .map_err(|e| Kind::Grpc.context(e))?;
+        // Fetch the consensus state and its proof.
+        let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
+            ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
+            tm_height,
+        )?;
 
-        let req = tonic::Request::new(QueryUpgradedConsensusStateRequest {});
-        let response = self
-            .block_on(client.upgraded_consensus_state(req))
-            .map_err(|e| Kind::Grpc.context(e))?;
-
-        let upgraded_consensus_state_raw = response
-            .into_inner()
-            .upgraded_consensus_state
-            .ok_or(Kind::EmptyResponseValue)?;
-
-        let consensus_state = AnyConsensusState::try_from(upgraded_consensus_state_raw)
+        let consensus_state = AnyConsensusState::decode_vec(&upgraded_consensus_state_raw)
             .map_err(|e| Kind::ConversionFromAny.context(e))?;
 
         let cs_client_type = consensus_state.client_type();
@@ -626,12 +593,6 @@ impl Chain for CosmosSdkChain {
                 expected: ClientType::Tendermint,
                 got: cs_client_type,
             })?;
-
-        // Fetch the proof.
-        let (proof, _proof_height) = self.query_client_upgrade_proof(
-            ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
-            tm_height,
-        )?;
 
         Ok((tm_consensus_state, proof))
     }
