@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use flex_error::BoxError;
+use crate::BoxError;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::events as ClientEvents;
@@ -244,7 +244,7 @@ macro_rules! make_event {
             pub data: ::std::collections::HashMap<String, Vec<String>>,
         }
         impl ::std::convert::TryFrom<$crate::events::RawObject> for $a {
-            type Error = ::anomaly::BoxError;
+            type Error = ::crate::BoxError;
 
             fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
                 match $crate::events::extract_events(&result.events, $b) {

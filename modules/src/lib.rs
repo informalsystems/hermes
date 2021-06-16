@@ -54,6 +54,8 @@ mod serializers;
 /// Re-export of ICS 002 Height domain type
 pub type Height = crate::ics02_client::height::Height;
 
+pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
+
 #[cfg(test)]
 mod test;
 

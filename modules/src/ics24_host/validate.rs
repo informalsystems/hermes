@@ -1,4 +1,4 @@
-use super::error::{ValidationError, ValidationKind};
+use super::error::{self, ValidationError};
 
 /// Bails from the current function with the given error kind.
 macro_rules! bail {
@@ -20,17 +20,17 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
 
     // Check identifier is not empty
     if id.is_empty() {
-        bail!(ValidationKind::empty());
+        bail!(error::empty_error());
     }
 
     // Check identifier does not contain path separators
     if id.contains(PATH_SEPARATOR) {
-        bail!(ValidationKind::contains_separator(id.to_string()));
+        bail!(error::contain_separator_error(id.to_string()));
     }
 
     // Check identifier length is between given min/max
     if id.len() < min || id.len() > max {
-        bail!(ValidationKind::invalid_length(
+        bail!(error::invalid_length_error(
             id.to_string(),
             id.len(),
             min,
@@ -46,7 +46,7 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
         .chars()
         .all(|c| c.is_alphanumeric() || VALID_SPECIAL_CHARS.contains(c))
     {
-        bail!(ValidationKind::invalid_character(id.to_string()));
+        bail!(error::invalid_character_error(id.to_string()));
     }
 
     // All good!

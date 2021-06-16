@@ -4,7 +4,7 @@ use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::{attribute, some_attribute};
-use flex_error::BoxError;
+use crate::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 

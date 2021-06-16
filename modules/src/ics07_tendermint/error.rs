@@ -1,4 +1,4 @@
-use crate::ics24_host::error::ValidationKind;
+use crate::ics24_host::error::ValidationError;
 use flex_error::*;
 
 define_error! {
@@ -54,7 +54,7 @@ define_error! {
             | _ | { "missing frozen height" },
 
         InvalidChainId
-            {raw_value: String, validation_kind: ValidationKind}
+            {raw_value: String, validation_kind: ValidationError}
             | e | { format_args!("invalid chain identifier: raw value {0} with underlying validation error: {1}", e.raw_value, e.validation_kind) },
 
         InvalidRawHeight
