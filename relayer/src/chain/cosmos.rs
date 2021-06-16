@@ -342,7 +342,7 @@ impl CosmosSdkChain {
             .map_err(|e| Kind::KeyBase.context(e))?)
     }
 
-    fn key_bytes(&self, key: KeyEntry) -> Result<Vec<u8>, Error> {
+    fn key_bytes(&self, key: &KeyEntry) -> Result<Vec<u8>, Error> {
         let mut pk_buf = Vec::new();
         prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
         Ok(pk_buf)
@@ -350,7 +350,8 @@ impl CosmosSdkChain {
 
     fn key_and_bytes(&self) -> Result<(KeyEntry, Vec<u8>), Error> {
         let key = self.key()?;
-        Ok((key.clone(), self.key_bytes(key)?))
+        let key_bytes = self.key_bytes(&key)?;
+        Ok((key, key_bytes))
     }
 
     fn account(&self) -> Result<BaseAccount, Error> {
