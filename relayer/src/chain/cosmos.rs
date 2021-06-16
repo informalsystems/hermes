@@ -434,13 +434,16 @@ impl CosmosSdkChain {
         // TODO - exp backoff is not good here, if anything we want to speed up the retries towards the end range
         while counter < MAX_RETRIES {
             thread::sleep(Duration::from_millis(200));
+
             counter += 1;
+
             if all_tx_results_found(&tx_sync_results) {
                 trace!(
                     "retrieved {} tx results after {} tries",
                     tx_sync_results.len(),
                     counter
                 );
+
                 // All transactions confirmed
                 return Ok(());
             }
@@ -468,6 +471,7 @@ impl CosmosSdkChain {
                     *events = events_per_tx;
                 }
             }
+
             thread::sleep(Duration::from_millis(300));
         }
 
@@ -475,7 +479,7 @@ impl CosmosSdkChain {
             // All transactions confirmed
             Ok(())
         } else {
-            Err(Kind::Tx("no confirmation".to_string()).into())
+            Err(Kind::TxNoConfirmation.into())
         }
     }
 
@@ -535,12 +539,9 @@ fn empty_event_present(events: &[IbcEvent]) -> bool {
 }
 
 fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
-    for tx_res in tx_sync_results {
-        if empty_event_present(&tx_res.events) {
-            return false;
-        }
-    }
-    true
+    tx_sync_results
+        .iter()
+        .all(|r| empty_event_present(&r.events))
 }
 
 impl Chain for CosmosSdkChain {
