@@ -20,14 +20,10 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 3000000
-fee_denom = 'stake'
-gas_price = '0.001'
+gas_price = { amount = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+trust_threshold = { numerator = '1', denominator = '3' }
 
 [[chains]]
 id = 'ibc-1'
@@ -39,8 +35,7 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 3000000
-fee_denom = 'stake'
-gas_price = '0.001'
+gas_price = { amount = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
 

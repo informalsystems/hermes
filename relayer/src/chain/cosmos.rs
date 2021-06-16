@@ -68,7 +68,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::chain::QueryResponse;
-use crate::config::ChainConfig;
+use crate::config::{ChainConfig, GasPrice};
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
@@ -79,7 +79,8 @@ use crate::light_client::Verified;
 use super::Chain;
 
 const DEFAULT_MAX_GAS: u64 = 300000;
-const DEFAULT_GAS_PRICE: &str = "0.001";
+const DEFAULT_GAS_PRICE_AMOUNT: f64 = 0.001;
+const DEFAULT_GAS_PRICE_DENOM: &str = "uatoms";
 
 const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
@@ -250,26 +251,24 @@ impl CosmosSdkChain {
         self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
-    fn fee_denom(&self) -> String {
-        self.config.fee_denom.clone()
-    }
-
-    /// The gas price in `self.config.fee_denom` units
-    fn gas_price(&self) -> String {
-        self.config
-            .gas_price
-            .clone()
-            .unwrap_or_else(|| String::from(DEFAULT_GAS_PRICE))
+    /// The gas price
+    fn gas_price(&self) -> GasPrice {
+        self.config.gas_price.clone().unwrap_or_else(|| {
+            GasPrice::new(
+                DEFAULT_GAS_PRICE_AMOUNT,
+                DEFAULT_GAS_PRICE_DENOM.to_string(),
+            )
+        })
     }
 
     /// The maximum fee the relayer pays for a transaction
     fn max_fee_in_coins(&self) -> Coin {
-        calculate_fee(self.max_gas(), &self.gas_price(), self.fee_denom())
+        calculate_fee(self.max_gas(), self.gas_price())
     }
 
     /// The fee in coins based on gas amount
     fn fee_from_gas_in_coins(&self, gas: u64) -> Coin {
-        calculate_fee(gas, &self.gas_price(), self.fee_denom())
+        calculate_fee(gas, self.gas_price())
     }
 
     /// The maximum number of messages included in a transaction
@@ -1858,19 +1857,20 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
     Ok((body, body_buf))
 }
 
-use fraction::Fraction;
-fn calculate_fee(gas_amount: u64, gas_price: &str, denom: String) -> Coin {
-    // TODO - remove
-    trace!(
-        "calculate_fee gas_amount {}, gas_price {}, denom {}",
-        gas_amount,
-        gas_price,
-        denom
-    );
-    let f = Fraction::from_decimal_str(gas_price).unwrap();
-    let amount = gas_amount * f.numer().unwrap() / f.denom().unwrap() + 1;
+fn calculate_fee(gas_amount: u64, gas_price: GasPrice) -> Coin {
+    let amount = mul_ceil(gas_amount, gas_price.amount);
+
     Coin {
-        denom,
+        denom: gas_price.denom,
         amount: amount.to_string(),
     }
+}
+
+fn mul_ceil(a: u64, f: f64) -> u64 {
+    use fraction::Fraction as F;
+
+    // Safe to unwrap below as are multiplying two finite fractions
+    // together, and rounding them to the nearest integer.
+    let n = (F::from(a) * F::from(f)).ceil();
+    n.numer().unwrap() / n.denom().unwrap()
 }

@@ -765,23 +765,19 @@ EOF
     DENOM="$(get_staking_denom "$i")"
     cat <<EOF >> "$GLOBAL_HERMES_CONFIG"
 [[chains]]
-id='${ID}'
-rpc_addr='http://localhost:${RPC}'
-grpc_addr='http://localhost:${GRPC}'
-websocket_addr='ws://localhost:${RPC}/websocket'
-rpc_timeout='1s'
-account_prefix='${ACCOUNT_PREFIX}'
-key_name='wallet'
-store_prefix='ibc'
-fee_denom='${DENOM}'
-fee_amount=1000
-gas=500000
-clock_drift='5s'
-trusting_period='14days'
-
-[chains.trust_threshold]
-numerator='1'
-denominator='3'
+id = '${ID}'
+rpc_addr = 'http://localhost:${RPC}'
+grpc_addr = 'http://localhost:${GRPC}'
+websocket_addr = 'ws://localhost:${RPC}/websocket'
+rpc_timeout = '1s'
+account_prefix = '${ACCOUNT_PREFIX}'
+key_name = 'wallet'
+store_prefix = 'ibc'
+gas_price = { fraction = 0.001, denom = '${DENOM}' }
+gas = 500000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
 
 EOF
     done

@@ -10,6 +10,18 @@ use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GasPrice {
+    pub amount: f64,
+    pub denom: String,
+}
+
+impl GasPrice {
+    pub const fn new(amount: f64, denom: String) -> Self {
+        Self { amount, denom }
+    }
+}
+
 /// Defaults for various fields
 pub mod default {
     use super::*;
@@ -113,8 +125,7 @@ pub struct ChainConfig {
     pub key_name: String,
     pub store_prefix: String,
     pub gas: Option<u64>,
-    pub fee_denom: String,
-    pub gas_price: Option<String>,
+    pub gas_price: Option<GasPrice>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
