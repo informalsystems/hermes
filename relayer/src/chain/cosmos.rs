@@ -78,7 +78,7 @@ use crate::light_client::Verified;
 
 use super::Chain;
 
-const DEFAULT_MAX_GAS: u64 = 300000;
+const DEFAULT_MAX_GAS: u64 = 300_000;
 const DEFAULT_GAS_PRICE_AMOUNT: f64 = 0.001;
 const DEFAULT_GAS_PRICE_DENOM: &str = "uatoms";
 
@@ -1873,4 +1873,18 @@ fn mul_ceil(a: u64, f: f64) -> u64 {
     // together, and rounding them to the nearest integer.
     let n = (F::from(a) * F::from(f)).ceil();
     n.numer().unwrap() / n.denom().unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn mul_ceil() {
+        assert_eq!(super::mul_ceil(300_000, 0.001), 300);
+        assert_eq!(super::mul_ceil(300_004, 0.001), 301);
+        assert_eq!(super::mul_ceil(300_040, 0.001), 301);
+        assert_eq!(super::mul_ceil(300_400, 0.001), 301);
+        assert_eq!(super::mul_ceil(304_000, 0.001), 304);
+        assert_eq!(super::mul_ceil(340_000, 0.001), 340);
+        assert_eq!(super::mul_ceil(340_001, 0.001), 341);
+    }
 }
