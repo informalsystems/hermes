@@ -205,12 +205,11 @@ impl CosmosSdkChain {
         trace!("adjusted_gas {}", adjusted_gas);
 
         if adjusted_gas > self.max_gas() {
-            return Err(Kind::TxSimulate(format!(
-                "{} gas estimate {} from simulated Tx exceeds the maximum configured {}",
-                self.id(),
-                adjusted_gas,
-                self.max_gas()
-            ))
+            return Err(Kind::TxSimulateGasEstimateExceeded {
+                chain_id: self.id().clone(),
+                estimated_gas: adjusted_gas,
+                max_gas: self.max_gas(),
+            }
             .into());
         }
 
