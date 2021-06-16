@@ -125,15 +125,17 @@ pub struct ChainConfig {
     pub key_name: String,
     pub store_prefix: String,
     pub gas: Option<u64>,
-    pub gas_price: Option<GasPrice>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
+
+    // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
+    pub gas_price: Option<GasPrice>,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
@@ -194,9 +196,8 @@ mod tests {
         );
 
         let config = parse(path).expect("could not parse config");
-        let mut buffer = Vec::new();
 
-        let result = store_writer(&config, &mut buffer);
-        assert!(result.is_ok());
+        let mut buffer = Vec::new();
+        store_writer(&config, &mut buffer).unwrap();
     }
 }

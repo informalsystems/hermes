@@ -18,10 +18,7 @@ max_msg_num = 4
 max_tx_size = 1048576
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+trust_threshold = { numerator = '1', denominator = '3' }
 
 [[chains]]
 id = 'chain_B'
@@ -36,8 +33,5 @@ gas_price = { amount = 0.001, denom = 'stake' }
 fee_amount = 10
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+trust_threshold = { numerator = '1', denominator = '3' }
 
