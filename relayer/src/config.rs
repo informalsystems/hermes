@@ -114,7 +114,7 @@ pub struct ChainConfig {
     pub store_prefix: String,
     pub gas: Option<u64>,
     pub fee_denom: String,
-    pub fee_amount: Option<u64>,
+    pub gas_price: Option<String>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]

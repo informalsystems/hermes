@@ -405,7 +405,7 @@ pub mod test_utils {
             store_prefix: "".to_string(),
             gas: None,
             fee_denom: "stake".to_string(),
-            fee_amount: Some(1000),
+            gas_price: None,
             max_msg_num: None,
             max_tx_size: None,
             clock_drift: Duration::from_secs(5),

@@ -6,7 +6,6 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
-use percentage::Percentage;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -79,16 +78,13 @@ use crate::light_client::Verified;
 
 use super::Chain;
 
-// TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
+const DEFAULT_GAS_PRICE: &str = "0.001";
+
 const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
-const DEFAULT_GAS_FEE_AMOUNT: u64 = 1000;
 
 const MAX_RETRIES: usize = 30;
-
-// default gas adjustment percentage
-const DEFAULT_GAS_ADJUSTMENT: u64 = 10;
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
@@ -187,7 +183,7 @@ impl CosmosSdkChain {
         // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
         // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
         // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
-        let mut adjusted_gas = self
+        let adjusted_gas = self
             .send_tx_simulate(SimulateRequest {
                 tx: Some(Tx {
                     body: Some(body),
@@ -199,18 +195,21 @@ impl CosmosSdkChain {
                 sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
             });
 
-        // TODO - add GAS_ADJUSTMENT to chain config
-        // Readjust gas.
-        // Without readjusting up the simulation gas result obtained above, out-of-gas failures
-        // occur once in a while.
-        // On cosmos chains, gas increases with every I/O (read/writes to the kv store).
-        // The simulation above runs in isolation, without taking into account other
-        // transactions that might be executed before this Tx and that might slightly change the
-        // number of reads in the store (??)    .
-        adjusted_gas += Percentage::from(DEFAULT_GAS_ADJUSTMENT).apply_to(adjusted_gas);
-        let adjusted_fee = self.fee_with_gas_limit(adjusted_gas);
+        trace!("adjusted_gas {}", adjusted_gas);
+
+        if adjusted_gas > self.max_gas() {
+            return Err(Kind::TxSimulate(format!(
+                "{} gas estimate {} from simulated Tx exceeds the maximum configured {}",
+                self.id(),
+                adjusted_gas,
+                self.max_gas()
+            ))
+            .into());
+        }
+
+        let adjusted_fee = self.fee_with_gas(adjusted_gas);
         trace!(
-            "{} adjust fee from {:?} to {:?}",
+            "{} adjusting fee from {:?} to {:?}",
             self.id(),
             fee,
             adjusted_fee
@@ -240,27 +239,39 @@ impl CosmosSdkChain {
         Ok(response)
     }
 
+    /// The maximum amount of gas the relayer is willing to pay for a transaction
     fn max_gas(&self) -> u64 {
         self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
-    fn fee_in_coins(&self) -> Coin {
-        let amount = self
-            .config
-            .clone()
-            .fee_amount
-            .unwrap_or(DEFAULT_GAS_FEE_AMOUNT);
-
-        Coin {
-            denom: self.config.fee_denom.clone(),
-            amount: amount.to_string(),
-        }
+    fn fee_denom(&self) -> String {
+        self.config.fee_denom.clone()
     }
 
+    /// The gas price in `self.config.fee_denom` units
+    fn gas_price(&self) -> String {
+        self.config
+            .gas_price
+            .clone()
+            .unwrap_or_else(|| String::from(DEFAULT_GAS_PRICE))
+    }
+
+    /// The maximum fee the relayer pays for a transaction
+    fn max_fee_in_coins(&self) -> Coin {
+        calculate_fee(self.max_gas(), &self.gas_price(), self.fee_denom())
+    }
+
+    /// The fee in coins based on gas amount
+    fn fee_from_gas_in_coins(&self, gas: u64) -> Coin {
+        calculate_fee(gas, &self.gas_price(), self.fee_denom())
+    }
+
+    /// The maximum number of messages included in a transaction
     fn max_msg_num(&self) -> usize {
         self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
     }
 
+    /// The maximum size of any transaction sent by the relayer to this chain
     fn max_tx_size(&self) -> usize {
         self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
     }
@@ -380,15 +391,16 @@ impl CosmosSdkChain {
 
     fn default_fee(&self) -> Fee {
         Fee {
-            amount: vec![self.fee_in_coins()],
+            amount: vec![self.max_fee_in_coins()],
             gas_limit: self.max_gas(),
             payer: "".to_string(),
             granter: "".to_string(),
         }
     }
 
-    fn fee_with_gas_limit(&self, gas_limit: u64) -> Fee {
+    fn fee_with_gas(&self, gas_limit: u64) -> Fee {
         Fee {
+            amount: vec![self.fee_from_gas_in_coins(gas_limit)],
             gas_limit,
             ..self.default_fee()
         }
@@ -478,7 +490,14 @@ impl CosmosSdkChain {
         }
     }
 
-    /// Send one or more transactions that include all the specified messages
+    /// Send one or more transactions that include all the specified messages.
+    /// The `proto_msgs` are split in transactions such they don't exceed the configured maximum
+    /// number of messages per transaction and the maximum transaction size.
+    /// Then `send_tx()` is called with each Tx. `send_tx()` determines the fee based on the
+    /// on-chain simulation and if this exceeds the maximum gas specified in the configuration file
+    /// then it returns error.
+    /// TODO - more work is required here for a smarter split maybe iteratively accumulating/ evaluating
+    /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
     pub fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_msgs");
 
@@ -1879,4 +1898,21 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
     let mut body_buf = Vec::new();
     prost::Message::encode(&body, &mut body_buf).unwrap();
     Ok((body, body_buf))
+}
+
+use fraction::Fraction;
+fn calculate_fee(gas_amount: u64, gas_price: &str, denom: String) -> Coin {
+    // TODO - remove
+    trace!(
+        "calculate_fee gas_amount {}, gas_price {}, denom {}",
+        gas_amount,
+        gas_price,
+        denom
+    );
+    let f = Fraction::from_decimal_str(gas_price).unwrap();
+    let amount = gas_amount * f.numer().unwrap() / f.denom().unwrap() + 1;
+    Coin {
+        denom,
+        amount: amount.to_string(),
+    }
 }
