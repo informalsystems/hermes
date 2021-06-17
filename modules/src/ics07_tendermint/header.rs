@@ -100,9 +100,11 @@ impl TryFrom<RawHeader> for Header {
                 .map_err(|_| error::invalid_raw_height_error())?,
             trusted_validator_set: raw
                 .trusted_validators
-                .ok_or_else(|| error::invalid_raw_header_error("missing trusted validator set".into()))?
+                .ok_or_else(|| {
+                    error::invalid_raw_header_error("missing trusted validator set".into())
+                })?
                 .try_into()
-                .map_err(|_|error::invalid_raw_header_error(String::new()))?,
+                .map_err(|_| error::invalid_raw_header_error(String::new()))?,
         })
     }
 }

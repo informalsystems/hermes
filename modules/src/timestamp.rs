@@ -6,9 +6,9 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
-use serde_derive::{Deserialize, Serialize};
-use flex_error::*;
 use displaydoc::Display;
+use flex_error::*;
+use serde_derive::{Deserialize, Serialize};
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 
@@ -172,15 +172,13 @@ define_error! {
     }
 }
 
-
 impl FromStr for Timestamp {
     type Err = ParseTimestampError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let seconds = u64::from_str(s).map_err(parse_int_error)?;
 
-        Timestamp::from_nanoseconds(seconds)
-            .map_err(try_from_int_error)
+        Timestamp::from_nanoseconds(seconds).map_err(try_from_int_error)
     }
 }
 

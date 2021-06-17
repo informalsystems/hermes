@@ -63,7 +63,9 @@ impl TryFrom<RawConsensusState> for ConsensusState {
         Ok(Self {
             root: raw
                 .root
-                .ok_or_else(|| error::invalid_raw_consensus_state_error("missing commitment root".into()))?
+                .ok_or_else(|| {
+                    error::invalid_raw_consensus_state_error("missing commitment root".into())
+                })?
                 .hash
                 .into(),
             timestamp: Utc

@@ -88,8 +88,8 @@ impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
 
     fn try_from(value: CommitmentProofBytes) -> Result<Self, Self::Error> {
         let value: Vec<u8> = value.into();
-        let res: RawMerkleProof =
-            prost::Message::decode(value.as_ref()).map_err(error::invalid_raw_merkle_proof_error)?;
+        let res: RawMerkleProof = prost::Message::decode(value.as_ref())
+            .map_err(error::invalid_raw_merkle_proof_error)?;
         Ok(res)
     }
 }

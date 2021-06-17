@@ -56,22 +56,32 @@ impl ClientState {
     ) -> Result<ClientState, error::Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
-            return Err(error::invalid_trusting_period_error("ClientState trusting period must be greater than zero".into()));
+            return Err(error::invalid_trusting_period_error(
+                "ClientState trusting period must be greater than zero".into(),
+            ));
         }
         if unbonding_period <= Duration::new(0, 0) {
-            return Err(error::invalid_unbounding_period_error("ClientState unbonding period must be greater than zero".into()));
+            return Err(error::invalid_unbounding_period_error(
+                "ClientState unbonding period must be greater than zero".into(),
+            ));
         }
         if trusting_period >= unbonding_period {
-            return Err(error::invalid_unbounding_period_error("ClientState trusting period must be smaller than unbonding period".into()));
+            return Err(error::invalid_unbounding_period_error(
+                "ClientState trusting period must be smaller than unbonding period".into(),
+            ));
         }
 
         // Basic validation for the frozen_height parameter.
         if !frozen_height.is_zero() {
-            return Err(error::validation_error("ClientState cannot be frozen at creation time".into()));
+            return Err(error::validation_error(
+                "ClientState cannot be frozen at creation time".into(),
+            ));
         }
         // Basic validation for the latest_height parameter.
         if latest_height <= Height::zero() {
-            return Err(error::validation_error("ClientState latest height cannot be smaller or equal than zero".into()));
+            return Err(error::validation_error(
+                "ClientState latest height cannot be smaller or equal than zero".into(),
+            ));
         }
 
         Ok(Self {

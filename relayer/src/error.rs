@@ -64,7 +64,6 @@ pub enum Kind {
     /// Failed to create client state
     BuildClientStateFailure,
 
-
     /// Failed to create client {0}
     CreateClient(String),
 

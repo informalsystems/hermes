@@ -57,8 +57,10 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
     type Error = error::Error;
 
     fn try_from(raw_msg: RawMsgTransfer) -> Result<Self, Self::Error> {
-        let timeout_timestamp = Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
-            .map_err(|_| error::invalid_packet_timeout_timestamp_error(raw_msg.timeout_timestamp))?;
+        let timeout_timestamp =
+            Timestamp::from_nanoseconds(raw_msg.timeout_timestamp).map_err(|_| {
+                error::invalid_packet_timeout_timestamp_error(raw_msg.timeout_timestamp)
+            })?;
 
         let timeout_height = match raw_msg.timeout_height.clone() {
             None => Height::zero(),

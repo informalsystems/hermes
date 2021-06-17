@@ -3,8 +3,8 @@ use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::{attribute, some_attribute};
 use crate::BoxError;
+use crate::{attribute, some_attribute};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 

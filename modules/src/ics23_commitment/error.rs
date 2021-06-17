@@ -1,5 +1,5 @@
-use prost::DecodeError;
 use flex_error::{define_error, DetailOnly};
+use prost::DecodeError;
 
 define_error! {
     #[derive(Debug, Clone)]

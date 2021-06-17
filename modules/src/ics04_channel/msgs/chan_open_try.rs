@@ -108,7 +108,10 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             .map_err(channel_error::identifier_error)?;
 
         let msg = MsgChannelOpenTry {
-            port_id: raw_msg.port_id.parse().map_err(channel_error::identifier_error)?,
+            port_id: raw_msg
+                .port_id
+                .parse()
+                .map_err(channel_error::identifier_error)?,
             previous_channel_id,
             channel: raw_msg
                 .channel

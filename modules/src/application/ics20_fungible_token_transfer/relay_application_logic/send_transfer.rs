@@ -24,14 +24,20 @@ where
         .counterparty()
         .channel_id()
         .ok_or_else(|| {
-            error::destination_channel_not_found_error(msg.source_port.clone(), msg.source_channel.clone())
+            error::destination_channel_not_found_error(
+                msg.source_port.clone(),
+                msg.source_channel.clone(),
+            )
         })?;
 
     // get the next sequence
     let sequence = ctx
         .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()))
         .ok_or_else(|| {
-            error::sequence_send_not_found_error(msg.source_port.clone(), msg.source_channel.clone())
+            error::sequence_send_not_found_error(
+                msg.source_port.clone(),
+                msg.source_channel.clone(),
+            )
         })?;
 
     //TODO: Application LOGIC.
@@ -47,8 +53,7 @@ where
         timeout_timestamp: msg.timeout_timestamp,
     };
 
-    let handler_output =
-        send_packet(ctx, packet).map_err(error::ics04_channel_error)?;
+    let handler_output = send_packet(ctx, packet).map_err(error::ics04_channel_error)?;
 
     //TODO:  add event/atributes and writes to the store issued by the application logic for packet sending.
     Ok(handler_output)

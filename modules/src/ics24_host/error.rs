@@ -30,4 +30,3 @@ define_error! {
             |_| { "Invalid channel id in counterparty" }
     }
 }
-
