@@ -90,7 +90,8 @@ mod retry_strategy {
     use std::time::Duration;
 
     pub fn wait_for_block_commits() -> impl Iterator<Item = Duration> {
-        Fixed::from_millis(300).take(10)
+        // The total time should be higher than the full node timeout which defaults to 10sec.
+        Fixed::from_millis(300).take(40)
     }
 }
 
