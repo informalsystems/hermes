@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tracing::trace;
+use tracing::{error, trace};
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
@@ -7,16 +7,18 @@ use ibc::{
         ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
     },
     ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId},
     Height,
 };
 use ibc_proto::ibc::core::{
     channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryClientConnectionsRequest,
 };
 
+use crate::channel::ChannelError;
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
+use ibc::ics24_host::identifier::ClientId;
 
 pub fn counterparty_chain_from_connection(
     src_chain: &dyn ChainHandle,
@@ -241,4 +243,53 @@ pub fn channel_state_on_destination(
             State::Uninitialized
         };
     Ok(counterparty_state)
+}
+
+/// Queries a channel end on a [`ChainHandle`], and verifies
+/// that the counterparty field on that channel end matches an
+/// expected counterparty.
+/// Returns `Ok` if the counterparty matches, and `Err` otherwise.
+pub fn check_channel_counterparty(
+    target_chain: Box<dyn ChainHandle>,
+    target_pchan: &PortChannelId,
+    expected: &PortChannelId,
+) -> Result<(), ChannelError> {
+    let channel_end_dst = target_chain
+        .query_channel(
+            &target_pchan.port_id,
+            &target_pchan.channel_id,
+            Height::zero(),
+        )
+        .map_err(|e| ChannelError::QueryError(target_chain.id(), e))?;
+
+    let counterparty = channel_end_dst.remote;
+    match counterparty.channel_id {
+        Some(actual_channel_id) => {
+            let actual = PortChannelId {
+                channel_id: actual_channel_id,
+                port_id: counterparty.port_id,
+            };
+            if &actual != expected {
+                return Err(ChannelError::MismatchingChannelEnds(
+                    target_pchan.clone(),
+                    target_chain.id(),
+                    expected.clone(),
+                    actual,
+                ));
+            }
+        }
+        None => {
+            error!(
+                "channel {} on chain {} has no counterparty channel id ",
+                target_pchan,
+                target_chain.id()
+            );
+            return Err(ChannelError::IncompleteChannelState(
+                target_pchan.clone(),
+                target_chain.id(),
+            ));
+        }
+    }
+
+    Ok(())
 }
