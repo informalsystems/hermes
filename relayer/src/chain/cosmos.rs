@@ -296,7 +296,7 @@ impl CosmosSdkChain {
                 .into());
         }
 
-        let response = self.block_on(abci_query(&self, path, data.to_string(), height, prove))?;
+        let response = self.block_on(abci_query(self, path, data.to_string(), height, prove))?;
 
         // TODO - Verify response proof, if requested.
         if prove {}
@@ -315,7 +315,7 @@ impl CosmosSdkChain {
 
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).unwrap();
         let response = self.block_on(abci_query(
-            &self,
+            self,
             path,
             Path::Upgrade(data).to_string(),
             prev_height,

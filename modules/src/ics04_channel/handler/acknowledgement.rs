@@ -86,7 +86,7 @@ pub fn process(
     // Verify the acknowledgement proof
     verify_packet_acknowledgement_proofs(
         ctx,
-        &packet,
+        packet,
         msg.acknowledgement().clone(),
         client_id,
         msg.proofs(),
@@ -249,23 +249,23 @@ mod tests {
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
-                    assert_eq!(
+                    assert!(
                         test.want_pass,
-                        true,
                         "ack_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
                     );
-                    assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
+
+                    assert!(!proto_output.events.is_empty()); // Some events must exist.
+
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::AcknowledgePacket(_)));
                     }
                 }
                 Err(e) => {
-                    assert_eq!(
-                        test.want_pass,
-                        false,
+                    assert!(
+                        !test.want_pass,
                         "ack_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg.clone(),

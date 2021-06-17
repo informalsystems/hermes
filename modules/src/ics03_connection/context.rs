@@ -75,7 +75,7 @@ pub trait ConnectionKeeper {
             // Also associate the connection end to its client identifier.
             self.store_connection_to_client(
                 result.connection_id.clone(),
-                &result.connection_end.client_id(),
+                result.connection_end.client_id(),
             )?;
         }
 
