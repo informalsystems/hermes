@@ -12,7 +12,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState
 
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::error;
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::specs::ProofSpecs;
 use crate::ics24_host::identifier::ChainId;
@@ -53,35 +53,35 @@ impl ClientState {
         frozen_height: Height,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
-    ) -> Result<ClientState, Error> {
+    ) -> Result<ClientState, error::Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
-            return Err(Kind::InvalidTrustingPeriod
-                .context("ClientState trusting period must be greater than zero")
-                .into());
+            return Err(error::invalid_trusting_period_error(
+                "ClientState trusting period must be greater than zero".into(),
+            ));
         }
         if unbonding_period <= Duration::new(0, 0) {
-            return Err(Kind::InvalidUnboundingPeriod
-                .context("ClientState unbonding period must be greater than zero")
-                .into());
+            return Err(error::invalid_unbounding_period_error(
+                "ClientState unbonding period must be greater than zero".into(),
+            ));
         }
         if trusting_period >= unbonding_period {
-            return Err(Kind::InvalidUnboundingPeriod
-                .context("ClientState trusting period must be smaller than unbonding period")
-                .into());
+            return Err(error::invalid_unbounding_period_error(
+                "ClientState trusting period must be smaller than unbonding period".into(),
+            ));
         }
 
         // Basic validation for the frozen_height parameter.
         if !frozen_height.is_zero() {
-            return Err(Kind::ValidationError
-                .context("ClientState cannot be frozen at creation time")
-                .into());
+            return Err(error::validation_error(
+                "ClientState cannot be frozen at creation time".into(),
+            ));
         }
         // Basic validation for the latest_height parameter.
         if latest_height <= Height::zero() {
-            return Err(Kind::ValidationError
-                .context("ClientState latest height cannot be smaller or equal than zero")
-                .into());
+            return Err(error::validation_error(
+                "ClientState latest height cannot be smaller or equal than zero".into(),
+            ));
         }
 
         Ok(Self {
@@ -162,46 +162,44 @@ impl crate::ics02_client::client_state::ClientState for ClientState {
 }
 
 impl TryFrom<RawClientState> for ClientState {
-    type Error = Error;
+    type Error = error::Error;
 
     fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
         let trust_level = raw
             .trust_level
             .clone()
-            .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?;
+            .ok_or_else(error::missing_trusting_period_error)?;
 
         Ok(Self {
             chain_id: ChainId::from_str(raw.chain_id.as_str())
-                .map_err(|_| Kind::InvalidRawClientState.context("Invalid chain identifier"))?,
+                .map_err(error::invalid_chain_identifier_error)?,
             trust_level: TrustThreshold {
                 numerator: trust_level.numerator,
                 denominator: trust_level.denominator,
             },
             trusting_period: raw
                 .trusting_period
-                .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?
+                .ok_or_else(error::missing_trusting_period_error)?
                 .try_into()
-                .map_err(|_| Kind::InvalidRawClientState.context("negative trusting period"))?,
+                .map_err(|_| error::negative_trusting_period_error())?,
             unbonding_period: raw
                 .unbonding_period
-                .ok_or_else(|| Kind::InvalidRawClientState.context("missing unbonding period"))?
+                .ok_or_else(error::missing_unbonding_period_error)?
                 .try_into()
-                .map_err(|_| Kind::InvalidRawClientState.context("negative unbonding period"))?,
+                .map_err(|_| error::negative_unbonding_period_error())?,
             max_clock_drift: raw
                 .max_clock_drift
-                .ok_or_else(|| Kind::InvalidRawClientState.context("missing max clock drift"))?
+                .ok_or_else(error::missing_max_clock_drift_error)?
                 .try_into()
-                .map_err(|_| Kind::InvalidRawClientState.context("negative max clock drift"))?,
+                .map_err(|_| error::negative_max_clock_drift_error())?,
             latest_height: raw
                 .latest_height
-                .ok_or_else(|| Kind::InvalidRawClientState.context("missing latest height"))?
-                .try_into()
-                .map_err(|_| Kind::InvalidRawHeight)?,
+                .ok_or_else(error::missing_latest_height_error)?
+                .into(),
             frozen_height: raw
                 .frozen_height
-                .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?
-                .try_into()
-                .map_err(|_| Kind::InvalidRawHeight)?,
+                .ok_or_else(error::missing_frozen_height_error)?
+                .into(),
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {
                 after_expiry: raw.allow_update_after_expiry,

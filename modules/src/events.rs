@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::events as ClientEvents;
@@ -226,7 +225,7 @@ impl RawObject {
 pub fn extract_events<S: ::std::hash::BuildHasher>(
     events: &HashMap<String, Vec<String>, S>,
     action_string: &str,
-) -> Result<(), BoxError> {
+) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(message_action) = events.get("message.action") {
         if message_action.contains(&action_string.to_owned()) {
             return Ok(());
@@ -244,7 +243,7 @@ macro_rules! make_event {
             pub data: ::std::collections::HashMap<String, Vec<String>>,
         }
         impl ::std::convert::TryFrom<$crate::events::RawObject> for $a {
-            type Error = ::anomaly::BoxError;
+            type Error = ::crate::Box<dyn std::error::Error>;
 
             fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
                 match $crate::events::extract_events(&result.events, $b) {

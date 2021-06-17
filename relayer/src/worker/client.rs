@@ -1,6 +1,5 @@
 use std::{thread, time::Duration};
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, trace, warn};
 
@@ -41,7 +40,7 @@ impl ClientWorker {
     }
 
     /// Run the event loop for events associated with a [`Client`].
-    pub fn run(self) -> Result<(), BoxError> {
+    pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
         let mut client = ForeignClient::restore(
             self.client.dst_client_id.clone(),
             self.chains.b.clone(),

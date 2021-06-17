@@ -1,48 +1,86 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+use crate::ics24_host::error::ValidationError;
+use flex_error::{define_error, DisplayError, DisplayOnly};
 
-use crate::ics24_host::error::ValidationKind;
+define_error! {
+    Error {
+        InvalidTrustingPeriod
+            { reason: String }
+            | _ | { "invalid trusting period" },
 
-pub type Error = anomaly::Error<Kind>;
+        InvalidUnboundingPeriod
+            { reason: String }
+            | _ | { "invalid unbonding period" },
 
-#[derive(Clone, Debug, Error)]
-pub enum Kind {
-    #[error("invalid trusting period")]
-    InvalidTrustingPeriod,
+        InvalidAddress
+            | _ | { "invalid address" },
 
-    #[error("invalid unbonding period")]
-    InvalidUnboundingPeriod,
+        InvalidHeader
+            { reason: String }
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | _ | { "invalid header, failed basic validation" },
 
-    #[error("invalid address")]
-    InvalidAddress,
+        Validation
+            { reason: String }
+            | _ | { "invalid header, failed basic validation" },
 
-    #[error("invalid header, failed basic validation")]
-    InvalidHeader,
+        InvalidRawClientState
+            { reason: String }
+            | _ | { "invalid raw client state" },
 
-    #[error("validation error")]
-    ValidationError,
+        MissingValidatorSet
+            | _ | { "missing validator set" },
 
-    #[error("invalid raw client state")]
-    InvalidRawClientState,
+        MissingTrustedValidatorSet
+            | _ | { "missing trusted validator set" },
 
-    #[error("invalid chain identifier: raw value {0} with underlying validation error: {1}")]
-    InvalidChainId(String, ValidationKind),
+        MissingTrustedHeight
+            | _ | { "missing trusted height" },
 
-    #[error("invalid raw height")]
-    InvalidRawHeight,
+        MissingTrustingPeriod
+            | _ | { "missing trusting period" },
 
-    #[error("invalid raw client consensus state")]
-    InvalidRawConsensusState,
+        MissingUnbondingPeriod
+            | _ | { "missing unbonding period" },
 
-    #[error("invalid raw header")]
-    InvalidRawHeader,
+        InvalidChainIdentifier
+            [ DisplayError<ValidationError> ]
+            | _ | { "Invalid chain identifier" },
 
-    #[error("invalid raw misbehaviour")]
-    InvalidRawMisbehaviour,
-}
+        NegativeTrustingPeriod
+            | _ | { "negative trusting period" },
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        NegativeUnbondingPeriod
+            | _ | { "negative unbonding period" },
+
+        MissingMaxClockDrift
+            | _ | { "missing max clock drift" },
+
+        NegativeMaxClockDrift
+            | _ | {  "negative max clock drift" },
+
+        MissingLatestHeight
+            | _ | { "missing latest height" },
+
+        MissingFrozenHeight
+            | _ | { "missing frozen height" },
+
+        InvalidChainId
+            { raw_value: String, validation_kind: ValidationError }
+            | e | { format_args!("invalid chain identifier: raw value {0} with underlying validation error: {1}", e.raw_value, e.validation_kind) },
+
+        InvalidRawHeight
+            | _ | { "invalid raw height" },
+
+        InvalidRawConsensusState
+            { reason: String }
+            | _ | { "invalid raw client consensus state" },
+
+        InvalidRawHeader
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | _ | { "invalid raw header" },
+
+        InvalidRawMisbehaviour
+            { reason: String }
+            | _ | { "invalid raw misbehaviour" },
     }
 }

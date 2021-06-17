@@ -1,5 +1,5 @@
 #![allow(clippy::borrowed_box)]
-use anomaly::BoxError;
+
 use prost_types::Any;
 use serde::Serialize;
 use std::time::Duration;
@@ -159,7 +159,7 @@ impl Channel {
         chain: Box<dyn ChainHandle>,
         counterparty_chain: Box<dyn ChainHandle>,
         channel_open_event: IbcEvent,
-    ) -> Result<Channel, BoxError> {
+    ) -> Result<Channel, Box<dyn std::error::Error>> {
         let channel_event_attributes =
             channel_open_event.channel_attributes().ok_or_else(|| {
                 ChannelError::Failed(
@@ -215,7 +215,7 @@ impl Channel {
         counterparty_chain: Box<dyn ChainHandle>,
         channel: WorkerChannelObject,
         height: Height,
-    ) -> Result<(Channel, State), BoxError> {
+    ) -> Result<(Channel, State), Box<dyn std::error::Error>> {
         let a_channel =
             chain.query_channel(&channel.src_port_id, &channel.src_channel_id, height)?;
 

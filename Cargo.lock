@@ -739,6 +739,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "displaydoc"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3274a6bc8a6a4521291b53b9dcb8345e963fe931c3fc462a7d3ead71d7ccd30d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "dyn-clonable"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -826,9 +837,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.8.3"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17392a012ea30ef05a610aa97dfb49496e71c9f676b27879922ea5bdf60d9d3f"
+checksum = "a19187fea3ac7e84da7dacf48de0c45d63c6a76f9490dae389aead16c243fce3"
 dependencies = [
  "atty",
  "humantime",
@@ -1383,6 +1394,7 @@ dependencies = [
  "anomaly",
  "bytes",
  "chrono",
+ "displaydoc",
  "dyn-clonable",
  "env_logger",
  "flex-error",
@@ -1432,6 +1444,7 @@ dependencies = [
  "bytes",
  "crossbeam-channel 0.5.1",
  "dirs-next",
+ "displaydoc",
  "dyn-clonable",
  "dyn-clone",
  "env_logger",

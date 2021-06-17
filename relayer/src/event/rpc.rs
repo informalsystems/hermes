@@ -1,6 +1,5 @@
 use std::{collections::HashMap, convert::TryFrom};
 
-use anomaly::BoxError;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 
 use ibc::ics02_client::events::NewBlock;
@@ -57,7 +56,7 @@ pub fn get_all_events(
     Ok(vals)
 }
 
-pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
+pub fn build_event(mut object: RawObject) -> Result<IbcEvent, Box<dyn std::error::Error>> {
     match object.action.as_str() {
         // Client events
         "create_client" => Ok(IbcEvent::from(ClientEvents::CreateClient::try_from(

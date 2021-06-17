@@ -1,4 +1,3 @@
-use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Select};
 
 pub fn try_recv_multiple<K, T>(rs: &[(K, Receiver<T>)]) -> Option<(&K, T)> {
@@ -21,7 +20,7 @@ pub fn try_recv_multiple<K, T>(rs: &[(K, Receiver<T>)]) -> Option<(&K, T)> {
     Some((k, result))
 }
 
-pub fn recv_multiple<K, T>(rs: &[(K, Receiver<T>)]) -> Result<(&K, T), BoxError> {
+pub fn recv_multiple<K, T>(rs: &[(K, Receiver<T>)]) -> Result<(&K, T), Box<dyn std::error::Error>> {
     // Build a list of operations.
     let mut sel = Select::new();
     for (_, r) in rs {

@@ -1444,7 +1444,7 @@ async fn abci_query(
         .proof
         .map(|p| convert_tm_to_ics_merkle_proof(&p))
         .transpose()
-        .map_err(Kind::Ics023)?;
+        .map_err(|e| Kind::Ics023(e.detail))?;
 
     let response = QueryResponse {
         value: response.value,

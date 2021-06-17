@@ -3,7 +3,6 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use anomaly::BoxError;
 use crossbeam_channel::Sender;
 use tracing::trace;
 
@@ -38,7 +37,7 @@ impl WorkerHandle {
         height: Height,
         events: Vec<IbcEvent>,
         chain_id: ChainId,
-    ) -> Result<(), BoxError> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let batch = EventBatch {
             chain_id,
             height,
@@ -51,7 +50,11 @@ impl WorkerHandle {
     }
 
     /// Send a batch of [`NewBlock`] event to the worker.
-    pub fn send_new_block(&self, height: Height, new_block: NewBlock) -> Result<(), BoxError> {
+    pub fn send_new_block(
+        &self,
+        height: Height,
+        new_block: NewBlock,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.tx.send(WorkerCmd::NewBlock { height, new_block })?;
         Ok(())
     }

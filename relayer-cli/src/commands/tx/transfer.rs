@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
-use anomaly::BoxError;
+
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::events::IbcEvent;
@@ -82,7 +82,10 @@ impl Override<Config> for TxIcs20MsgTransferCmd {
 }
 
 impl TxIcs20MsgTransferCmd {
-    fn validate_options(&self, config: &Config) -> Result<TransferOptions, BoxError> {
+    fn validate_options(
+        &self,
+        config: &Config,
+    ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
         let src_chain_config = config
             .find_chain(&self.src_chain_id)
             .ok_or("missing src chain configuration")?;
