@@ -16,6 +16,9 @@ use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes
 use crate::ics24_host::identifier::ConnectionId;
 use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::Height;
+use std::ops::Sub;
+use tendermint::Time;
+use tendermint::validator::Set;
 
 use crate::downcast;
 
@@ -49,6 +52,9 @@ impl ClientDef for TendermintClient {
             );
         }
 
+        // check if a consensus state is already installed; if so it should 
+        // match the untrusted header. 
+
         match ctx.consensus_state(&client_id, header.height()){
             //could the header height be zero ? 
             Some(cs) => { 
@@ -65,7 +71,81 @@ impl ClientDef for TendermintClient {
             None =>{}
         }
 
-        let _trusted_consensus_state = 
+        let latest_consensus_state = match ctx.consensus_state(&client_id, client_state.latest_height){
+            //could the header height be zero ? 
+            Some(cs) => { 
+                downcast!(
+                    cs => AnyConsensusState::Tendermint
+                ).ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?
+                }
+            None =>{
+                return Err(
+                    format!("no consensus_state for client height {}",
+                        client_state.latest_height).into(),
+                );
+            }
+        };
+
+
+        // check that the header is not outside the trusting period 
+        if header.signed_header.header().time.sub(client_state.trusting_period) >= latest_consensus_state.timestamp  { 
+            return Err(
+                format!("header outside of the trusting period {:?}, {:?}",
+                    latest_consensus_state.timestamp,
+                    header.signed_header.header().time).into(),
+            );
+        };
+
+        // check that the client did not expired  
+        if Time::now().sub(client_state.trusting_period) >= latest_consensus_state.timestamp  { 
+            return Err(
+                format!("consensus state expired; it's outside of the trusting period {:?}, {:?}",
+                    latest_consensus_state.timestamp,
+                    Time::now()).into(),
+            );
+        };
+
+        // check monotonicity of height and timestamp 
+        if client_state.latest_height >= header.height() {
+            return Err(
+                format!("non monotonic height update {}, {:?}",
+                    client_state.latest_height,
+                    header.height()).into(),
+            );
+        };
+
+        // check monotonicity of header height vs trusted height.
+        // unclear needed  
+        if header.trusted_height >= header.height() {
+            return Err(
+                format!("non monotonic height update w.r.t trusted header {}, {:?}",
+                    header.trusted_height,
+                    header.height()).into(),
+            );
+        };
+
+        // check that the versions of the client state and the header match
+        if client_state.latest_height.revision_number != header.height().revision_number {
+            return Err(
+                format!("client revision number {} does not match the header's revision number {}",
+                    client_state.latest_height.revision_number,
+                    header.height().revision_number).into(),
+            );
+        };
+
+        if latest_consensus_state.timestamp >= header.signed_header.header().time {
+            //TODO add clock drift ?  
+            return Err(
+                format!("non monotonic timestamps update {}, {:?}",
+                    client_state.latest_height,
+                    header.height()).into(),
+            );
+        };
+
+
+       
+
+        let trusted_consensus_state = 
             match ctx.consensus_state(&client_id, header.trusted_height) {
                 Some(ts) => {
                         downcast!(
@@ -80,8 +160,26 @@ impl ClientDef for TendermintClient {
                             )
                         }
             };
+        
+        // check that the header's trusted validator set is 
+        // the next_validator_set of the trusted consensus state 
 
+        if Set::hash(&header.validator_set) != trusted_consensus_state.next_validators_hash {
+            return Err(
+                format!(
+                   // "ErrInvalidValidatorSet,
+                    "the headers trusted validators do not hash to next val set of the trusted consensus state. Expected: {:?}, got: {:?}",
+                    trusted_consensus_state.next_validators_hash, Set::hash(&header.validator_set)
+                ).into(),
+            )
+        }
 
+        if header.height() == header.trusted_height.increment() {
+         //adjacent 
+         
+        }else{
+            //Non-adjacent 
+        }
 
         // TODO: Additional verifications should be implemented here.
 

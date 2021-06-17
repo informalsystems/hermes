@@ -54,7 +54,7 @@ pub fn process(
     ctx.consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), latest_height))?;
 
-    if ctx.consensus_state(&client_id,header.height()).is_some(){
+    if ctx.consensus_state(&client_id, header.height()).is_some(){
         return Err(Kind::ConsensusStateNotFound(client_id.clone(), latest_height).into());
     }
     // Use client_state to validate the new header against the latest consensus_state.
