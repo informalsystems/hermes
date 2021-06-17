@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
@@ -148,6 +149,8 @@ impl From<MockConsensusState> for AnyConsensusState {
 }
 
 impl ConsensusState for MockConsensusState {
+    type Error = Infallible;
+
     fn client_type(&self) -> ClientType {
         ClientType::Mock
     }
@@ -156,7 +159,7 @@ impl ConsensusState for MockConsensusState {
         todo!()
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn validate_basic(&self) -> Result<(), Infallible> {
         todo!()
     }
 

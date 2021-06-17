@@ -1,8 +1,7 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
-use crate::events::{IbcEvent, RawObject};
+use crate::events::{self, extract_attribute, maybe_extract_attribute, IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::{attribute, some_attribute};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -68,6 +67,32 @@ pub struct Attributes {
     pub counterparty_client_id: ClientId,
 }
 
+fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, events::Error> {
+    Ok(Attributes {
+        height: object.height,
+
+        connection_id: maybe_extract_attribute(&object, &format!("{}.connection_id", namespace))
+            .and_then(|val| val.parse().ok()),
+
+        client_id: extract_attribute(&object, &format!("{}.client_id", namespace))?
+            .parse()
+            .map_err(events::parse_error)?,
+
+        counterparty_connection_id: maybe_extract_attribute(
+            &object,
+            &format!("{}.counterparty_connection_id", namespace),
+        )
+        .and_then(|val| val.parse().ok()),
+
+        counterparty_client_id: extract_attribute(
+            &object,
+            &format!("{}.counterparty_client_id", namespace),
+        )?
+        .parse()
+        .map_err(events::parse_error)?,
+    })
+}
+
 impl Default for Attributes {
     fn default() -> Self {
         Attributes {
@@ -104,16 +129,7 @@ impl From<Attributes> for OpenInit {
 impl TryFrom<RawObject> for OpenInit {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenInit(Attributes {
-            height: obj.height,
-            connection_id: some_attribute!(obj, "connection_open_init.connection_id"),
-            client_id: attribute!(obj, "connection_open_init.client_id"),
-            counterparty_connection_id: some_attribute!(
-                obj,
-                "connection_open_init.counterparty_connection_id"
-            ),
-            counterparty_client_id: attribute!(obj, "connection_open_init.counterparty_client_id"),
-        }))
+        Ok(OpenInit(extract_attributes(&obj, "connection_open_init")?))
     }
 }
 
@@ -147,16 +163,7 @@ impl From<Attributes> for OpenTry {
 impl TryFrom<RawObject> for OpenTry {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenTry(Attributes {
-            height: obj.height,
-            connection_id: some_attribute!(obj, "connection_open_try.connection_id"),
-            client_id: attribute!(obj, "connection_open_try.client_id"),
-            counterparty_connection_id: some_attribute!(
-                obj,
-                "connection_open_try.counterparty_connection_id"
-            ),
-            counterparty_client_id: attribute!(obj, "connection_open_try.counterparty_client_id"),
-        }))
+        Ok(OpenTry(extract_attributes(&obj, "connection_open_try")?))
     }
 }
 
@@ -190,16 +197,7 @@ impl From<Attributes> for OpenAck {
 impl TryFrom<RawObject> for OpenAck {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenAck(Attributes {
-            height: obj.height,
-            connection_id: some_attribute!(obj, "connection_open_ack.connection_id"),
-            client_id: attribute!(obj, "connection_open_ack.client_id"),
-            counterparty_connection_id: some_attribute!(
-                obj,
-                "connection_open_ack.counterparty_connection_id"
-            ),
-            counterparty_client_id: attribute!(obj, "connection_open_ack.counterparty_client_id"),
-        }))
+        Ok(OpenAck(extract_attributes(&obj, "connection_open_ack")?))
     }
 }
 
@@ -233,19 +231,10 @@ impl From<Attributes> for OpenConfirm {
 impl TryFrom<RawObject> for OpenConfirm {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenConfirm(Attributes {
-            height: obj.height,
-            connection_id: some_attribute!(obj, "connection_open_confirm.connection_id"),
-            client_id: attribute!(obj, "connection_open_confirm.client_id"),
-            counterparty_connection_id: some_attribute!(
-                obj,
-                "connection_open_confirm.counterparty_connection_id"
-            ),
-            counterparty_client_id: attribute!(
-                obj,
-                "connection_open_confirm.counterparty_client_id"
-            ),
-        }))
+        Ok(OpenConfirm(extract_attributes(
+            &obj,
+            "connection_open_confirm",
+        )?))
     }
 }
 

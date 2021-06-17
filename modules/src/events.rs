@@ -2,15 +2,52 @@ use std::collections::HashMap;
 
 use serde_derive::{Deserialize, Serialize};
 
+use crate::ics02_client::error as client_error;
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
+use crate::ics02_client::height::Error as HeightError;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics04_channel::events::Attributes as ChannelAttributes;
+use crate::ics24_host::error::ValidationError;
 use crate::Height;
-use flex_error::define_error;
+use flex_error::{define_error, DisplayError};
 use prost::alloc::fmt::Formatter;
 use std::fmt;
+
+define_error! {
+    Error {
+        Height
+            [ HeightError ]
+            | _ | { "error parsing height" },
+
+        Parse
+            [ ValidationError ]
+            | _ | { "parse error" },
+
+        Client
+            [ client_error::Error ]
+            | _ | { "ICS02 client error" },
+
+        MissingKey
+            { key: String }
+            | e | { format_args!("missing event key {}", e.key) },
+
+        Decode
+            [ DisplayError<prost::DecodeError> ]
+            | _ | { "error decoding protobuf" },
+
+        SubtleEncoding
+            [ DisplayError<subtle_encoding::Error> ]
+            | _ | { "error decoding hex" },
+
+        MissingActionString
+            | _ | { "Missing action string" },
+
+        IncorrectEventType
+            | _ | { "Incorrect Event Type" },
+    }
+}
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -223,16 +260,6 @@ impl RawObject {
     }
 }
 
-define_error! {
-    Error {
-        MissingActionString
-            | _ | { "Missing action string" },
-
-        IncorrectEventType
-            | _ | { "Incorrect Event Type" },
-    }
-}
-
 pub fn extract_events<S: ::std::hash::BuildHasher>(
     events: &HashMap<String, Vec<String>, S>,
     action_string: &str,
@@ -244,6 +271,20 @@ pub fn extract_events<S: ::std::hash::BuildHasher>(
         return Err(missing_action_string_error());
     }
     Err(incorrect_event_type_error())
+}
+
+pub fn extract_attribute(object: &RawObject, key: &str) -> Result<String, Error> {
+    let value = object
+        .events
+        .get(key)
+        .ok_or_else(|| missing_key_error(key.to_string()))?[object.idx]
+        .clone();
+
+    Ok(value)
+}
+
+pub fn maybe_extract_attribute(object: &RawObject, key: &str) -> Option<String> {
+    object.events.get(key).map(|tags| tags[object.idx].clone())
 }
 
 #[macro_export]

@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use std::convert::TryFrom;
 use std::time::SystemTime;
 
@@ -33,6 +34,8 @@ impl ConsensusState {
 }
 
 impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
+    type Error = Infallible;
+
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
@@ -41,7 +44,7 @@ impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn validate_basic(&self) -> Result<(), Infallible> {
         unimplemented!()
     }
 

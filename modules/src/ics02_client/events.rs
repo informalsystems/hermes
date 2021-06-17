@@ -1,19 +1,16 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use std::convert::{TryFrom, TryInto};
 
-use flex_error::define_error;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
-use crate::events::{IbcEvent, RawObject};
+use crate::decode::{decode_protobuf, Error as DecodeError};
+use crate::events::{self, extract_attribute, IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error as client_error;
 use crate::ics02_client::header::AnyHeader;
-use crate::ics02_client::height::{Error as HeightError, Height};
-use crate::ics24_host::error::ValidationError;
+use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
-use crate::{attribute, some_attribute};
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
@@ -137,6 +134,25 @@ impl std::fmt::Display for Attributes {
     }
 }
 
+fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, events::Error> {
+    Ok(Attributes {
+        height: object.height,
+
+        client_id: extract_attribute(object, &format!("{}.client_id", namespace))?
+            .parse()
+            .map_err(events::parse_error)?,
+
+        client_type: extract_attribute(object, &format!("{}.client_type", namespace))?
+            .parse()
+            .map_err(events::client_error)?,
+
+        consensus_height: extract_attribute(object, &format!("{}.consensus_height", namespace))?
+            .as_str()
+            .try_into()
+            .map_err(events::height_error)?,
+    })
+}
+
 /// CreateClient event signals the creation of a new on-chain client (IBC client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CreateClient(Attributes);
@@ -162,13 +178,7 @@ impl From<Attributes> for CreateClient {
 impl TryFrom<RawObject> for CreateClient {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let consensus_height_str: String = attribute!(obj, "create_client.consensus_height");
-        Ok(CreateClient(Attributes {
-            height: obj.height,
-            client_id: attribute!(obj, "create_client.client_id"),
-            client_type: attribute!(obj, "create_client.client_type"),
-            consensus_height: consensus_height_str.as_str().try_into()?,
-        }))
+        Ok(CreateClient(extract_attributes(&obj, "create_client")?))
     }
 }
 
@@ -222,24 +232,33 @@ impl From<Attributes> for UpdateClient {
 }
 
 impl TryFrom<RawObject> for UpdateClient {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let header_str: Option<String> = some_attribute!(obj, "update_client.header");
+        let header_str: Option<String> = obj
+            .events
+            .get("update_client.header")
+            .and_then(|tags| tags[obj.idx].parse().ok());
+        // some_attribute!(obj, "update_client.header");
+
         let header: Option<AnyHeader> = match header_str {
             Some(str) => {
-                let header_bytes = hex::decode(str)?;
-                Some(Protobuf::decode(header_bytes.as_ref())?)
+                let header_bytes = hex::decode(str).map_err(events::subtle_encoding_error)?;
+
+                let decoded =
+                    decode_protobuf::<prost_types::Any, AnyHeader, _, _>(header_bytes.as_ref())
+                        .map_err(|e| match e {
+                            DecodeError::Decode(e) => events::decode_error(e),
+                            DecodeError::TryFrom(e) => events::client_error(e),
+                        })?;
+
+                Some(decoded)
             }
             None => None,
         };
-        let consensus_height_str: String = attribute!(obj, "update_client.consensus_height");
+
         Ok(UpdateClient {
-            common: Attributes {
-                height: obj.height,
-                client_id: attribute!(obj, "update_client.client_id"),
-                client_type: attribute!(obj, "update_client.client_type"),
-                consensus_height: consensus_height_str.as_str().try_into()?,
-            },
+            common: extract_attributes(&obj, "update_client")?,
             header,
         })
     }
@@ -274,62 +293,14 @@ impl ClientMisbehaviour {
     }
 }
 
-define_error! {
-    Error {
-        Height
-            [ HeightError ]
-            | _ | { "error parsing height" },
-
-        Parse
-            [ ValidationError ]
-            | _ | { "parse error" },
-
-        Client
-            [ client_error::Error ]
-            | _ | { "ICS02 client error" },
-
-        MissingKey
-            { key: String }
-            | e | { format_args!("missing event key {}", e.key) },
-    }
-}
-
 impl TryFrom<RawObject> for ClientMisbehaviour {
-    type Error = Error;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let consensus_height_str: String = obj
-            .events
-            .get("client_misbehaviour.consensus_height")
-            .ok_or_else(|| {
-            missing_key_error("client_misbehaviour.consensus_height".to_string())
-        })?[obj.idx]
-            .clone();
-
         // attribute!(obj, "client_misbehaviour.consensus_height");
-        Ok(ClientMisbehaviour(Attributes {
-            height: obj.height,
-
-            client_id: obj
-                .events
-                .get("client_misbehaviour.client_id")
-                .ok_or_else(|| missing_key_error("client_misbehaviour.client_id".to_string()))?
-                [obj.idx]
-                .parse()
-                .map_err(parse_error)?,
-
-            client_type: obj
-                .events
-                .get("client_misbehaviour.client_type")
-                .ok_or_else(|| missing_key_error("client_misbehaviour.client_id".to_string()))?
-                [obj.idx]
-                .parse()
-                .map_err(client_error)?,
-
-            consensus_height: consensus_height_str
-                .as_str()
-                .try_into()
-                .map_err(height_error)?,
-        }))
+        Ok(ClientMisbehaviour(extract_attributes(
+            &obj,
+            "client_misbehaviour",
+        )?))
     }
 }
 

@@ -4,6 +4,7 @@ use std::convert::TryFrom;
 use chrono::{DateTime, Utc};
 use prost_types::Any;
 use serde::Serialize;
+use std::convert::Infallible;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
@@ -25,8 +26,9 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-#[dyn_clonable::clonable]
 pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
+    type Error;
+
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -34,7 +36,7 @@ pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
     fn root(&self) -> &CommitmentRoot;
 
     /// Performs basic validation of the consensus state
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>>;
+    fn validate_basic(&self) -> Result<(), Self::Error>;
 
     /// Wrap into an `AnyConsensusState`
     fn wrap_any(self) -> AnyConsensusState;
@@ -152,6 +154,8 @@ impl From<AnyConsensusStateWithHeight> for ConsensusStateWithHeight {
 }
 
 impl ConsensusState for AnyConsensusState {
+    type Error = Infallible;
+
     fn client_type(&self) -> ClientType {
         self.client_type()
     }
@@ -160,7 +164,7 @@ impl ConsensusState for AnyConsensusState {
         todo!()
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn validate_basic(&self) -> Result<(), Infallible> {
         todo!()
     }
 
