@@ -148,7 +148,7 @@ impl ForeignClient {
     ) -> Result<ForeignClient, ForeignClientError> {
         let height = Height::new(expected_target_chain.id().version(), 0);
 
-        match host_chain.query_client_state(&client_id, height) {
+        match host_chain.query_client_state(client_id, height) {
             Ok(cs) => {
                 if cs.chain_id() != expected_target_chain.id() {
                     Err(ForeignClientError::ClientFind(

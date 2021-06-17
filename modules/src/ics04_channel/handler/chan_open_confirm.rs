@@ -70,7 +70,7 @@ pub(crate) fn process(
         &channel_end,
         &conn,
         &expected_channel_end,
-        &msg.proofs(),
+        msg.proofs(),
     )
     .map_err(|e| Kind::ChanOpenConfirmProofVerification.context(e))?;
 
@@ -180,15 +180,15 @@ mod tests {
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
-                    assert_eq!(
+                    assert!(
                             test.want_pass,
-                            true,
                             "chan_open_confirm: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                             test.name,
                             test.msg.clone(),
                             test.ctx.clone()
                         );
-                    assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
+
+                    assert!(!proto_output.events.is_empty()); // Some events must exist.
 
                     // The object in the output is a ConnectionEnd, should have init state.
                     let res: ChannelResult = proto_output.result;
@@ -200,9 +200,8 @@ mod tests {
                     }
                 }
                 Err(e) => {
-                    assert_eq!(
-                        test.want_pass,
-                        false,
+                    assert!(
+                        !test.want_pass,
                         "chan_open_ack: did not pass test: {}, \nparams {:?} {:?}\nerror: {:?}",
                         test.name,
                         test.msg,

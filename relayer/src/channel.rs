@@ -262,7 +262,7 @@ impl Channel {
             WorkerChannelError::MissingConnectionHops(channel.src_channel_id.clone(), chain.id())
         })?;
 
-        let a_connection = chain.query_connection(&a_connection_id, Height::zero())?;
+        let a_connection = chain.query_connection(a_connection_id, Height::zero())?;
         let b_connection_id = a_connection
             .counterparty()
             .connection_id()
@@ -456,7 +456,7 @@ impl Channel {
         // Continue loop if query error
         let a_channel = self
             .src_chain()
-            .query_channel(&self.src_port_id(), src_channel_id, Height::zero())
+            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|_| {
                 ChannelError::Failed(format!(
                     "failed to query source chain {}",
@@ -466,7 +466,7 @@ impl Channel {
 
         let b_channel = self
             .dst_chain()
-            .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero())
+            .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
             .map_err(|_| {
                 ChannelError::Failed(format!(
                     "failed to query destination chain {}",
@@ -819,7 +819,7 @@ impl Channel {
         // Channel must exist on source
         let src_channel = self
             .src_chain()
-            .query_channel(self.src_port_id(), &src_channel_id, Height::zero())
+            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
         if src_channel.counterparty().port_id() != self.dst_port_id() {
