@@ -1,9 +1,11 @@
+use std::str::FromStr;
+
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::{ChainConfig, Config},
-    keyring::{CoinType, KeyEntry, KeyRing, Store},
+    keyring::{HDPath, KeyEntry, KeyRing, Store},
 };
 
 use crate::application::app_config;
@@ -18,24 +20,24 @@ pub struct KeyRestoreCmd {
     mnemonic: String,
 
     #[options(
-        short = "t",
-        help = "coin type of the key to restore, default: 118 (Atom)",
-        default_expr = "CoinType::ATOM"
-    )]
-    coin_type: CoinType,
-
-    #[options(
         short = "n",
         help = "name of the key (defaults to the `key_name` defined in the config)"
     )]
     name: Option<String>,
+
+    #[options(
+        short = "p",
+        help = "derivation path for this key",
+        default = "m/44'/118'/0'/0/0"
+    )]
+    hd_path: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct KeysRestoreOptions {
     pub mnemonic: String,
     pub config: ChainConfig,
-    pub coin_type: CoinType,
+    pub hd_path: HDPath,
     pub key_name: String,
 }
 
@@ -45,14 +47,19 @@ impl KeyRestoreCmd {
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
+        let hd_path = HDPath::from_str(&self.hd_path)
+            .map_err(|_| format!("invalid derivation path: {}", self.hd_path))?;
+
+        let key_name = self
+            .name
+            .clone()
+            .unwrap_or_else(|| chain_config.key_name.clone());
+
         Ok(KeysRestoreOptions {
             mnemonic: self.mnemonic.clone(),
             config: chain_config.clone(),
-            coin_type: self.coin_type,
-            key_name: self
-                .name
-                .clone()
-                .unwrap_or_else(|| chain_config.key_name.clone()),
+            hd_path,
+            key_name,
         })
     }
 }
@@ -66,13 +73,12 @@ impl Runnable for KeyRestoreCmd {
             Ok(result) => result,
         };
 
-        let chain_id = opts.config.id.clone();
-        let key = restore_key(&opts.mnemonic, &opts.key_name, opts.coin_type, opts.config);
+        let key = restore_key(&opts.mnemonic, &opts.key_name, &opts.hd_path, &opts.config);
 
         match key {
             Ok(key) => Output::success_msg(format!(
                 "Restored key '{}' ({}) on chain {}",
-                opts.key_name, key.account, chain_id
+                opts.key_name, key.account, opts.config.id
             ))
             .exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -83,11 +89,11 @@ impl Runnable for KeyRestoreCmd {
 pub fn restore_key(
     mnemonic: &str,
     key_name: &str,
-    coin_type: CoinType,
-    config: ChainConfig,
+    hdpath: &HDPath,
+    config: &ChainConfig,
 ) -> Result<KeyEntry, Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
-    let key_entry = keyring.key_from_mnemonic(mnemonic, coin_type)?;
+    let key_entry = keyring.key_from_mnemonic(mnemonic, hdpath)?;
 
     keyring.add_key(&key_name, key_entry.clone())?;
     Ok(key_entry)

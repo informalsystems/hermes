@@ -70,11 +70,11 @@ case "${1:-help}" in
         hermes_usage
         ;;
       config)
-        load_config
+        parse_config_file
         hermes_config
         ;;
       keys)
-        load_config
+        parse_config_file
         if [ $# -eq 1 ]; then
           NODES="$ALL_HERMES_NODES"
         else
@@ -88,7 +88,7 @@ case "${1:-help}" in
         done
         ;;
       cc)
-        load_config
+        parse_config_file
         hermes_cc
         ;;
       *)
@@ -101,7 +101,7 @@ case "${1:-help}" in
     install
     ;;
   keys)
-    load_config
+    parse_config_file
     if [ $# -eq 1 ]; then
       NODES="$ALL_NODES"
     else
@@ -115,7 +115,7 @@ case "${1:-help}" in
     done
     ;;
   log)
-    load_config
+    parse_config_file
     shift
     F_FLAG=""
     R_FLAG=""
@@ -158,7 +158,7 @@ case "${1:-help}" in
     fi
     ;;
   ports)
-    load_config
+    parse_config_file
     if [ $# -eq 1 ]; then
       NODES="$ALL_NODES"
     else
@@ -177,7 +177,7 @@ case "${1:-help}" in
     lsof -i4:27000-28000 -P
     ;;
   start)
-    load_config
+    parse_config_file
     if [ $# -eq 1 ]; then
       NODES_TO_START="$ALL_NODES"
     else
@@ -197,11 +197,11 @@ case "${1:-help}" in
     done
     ;;
   status)
-    load_config
+    parse_config_file
     status
     ;;
   stop)
-    load_config
+    parse_config_file
     if [ $# -eq 1 ]; then
       NODES_TO_STOP="$ALL_NODES"
     else
@@ -215,7 +215,7 @@ case "${1:-help}" in
     done
     ;;
   reset)
-    load_config
+    parse_config_file
     if [ $# -eq 1 ]; then
       NODES_TO_STOP="$ALL_NODES"
     else
@@ -229,7 +229,7 @@ case "${1:-help}" in
     done
     ;;
   rm)
-    load_config
+    parse_config_file
     shift
     if [ "$#" -eq 0 ]; then
       exit_with_error "no node was given"

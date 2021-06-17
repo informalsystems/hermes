@@ -67,6 +67,9 @@ pub enum Kind {
     /// Failed to create client {0}
     CreateClient(String),
 
+    /// Connection not found: {0}
+    ConnectionNotFound(ConnectionId),
+
     /// Failed to build conn open message {0}: {1}
     ConnOpen(ConnectionId, String),
 

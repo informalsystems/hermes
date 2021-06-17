@@ -22,19 +22,19 @@ use ibc::{
         },
         packet::{Packet, PacketMsgType, Sequence},
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     query::QueryTxRequest,
     signer::Signer,
     timestamp::ZERO_DURATION,
     tx_msg::Msg,
     Height,
 };
-
 use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
+use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
@@ -52,6 +52,9 @@ pub enum LinkError {
 
     #[error("failed with underlying error: {0}")]
     Generic(#[from] Error),
+
+    #[error("link initialization failed during channel counterparty verification: {0}")]
+    Initialization(ChannelError),
 
     #[error("failed to construct packet proofs for chain {0} with error: {1}")]
     PacketProofsConstructor(ChainId, Error),
@@ -1634,6 +1637,21 @@ impl Link {
             )));
         }
 
+        // Check that the counterparty details on the destination chain matches the source chain
+        check_channel_counterparty(
+            b_chain.clone(),
+            &PortChannelId {
+                channel_id: b_channel_id.clone(),
+                port_id: a_channel.counterparty().port_id.clone(),
+            },
+            &PortChannelId {
+                channel_id: a_channel_id.clone(),
+                port_id: opts.src_port_id.clone(),
+            },
+        )
+        .map_err(LinkError::Initialization)?;
+
+        // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
         let a_connection = a_chain.query_connection(&a_connection_id, Height::zero())?;
 

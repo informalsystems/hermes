@@ -18,6 +18,7 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
+use tonic::Code;
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -69,6 +70,7 @@ use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
+use crate::light_client::Verified;
 
 use super::Chain;
 use tendermint_rpc::endpoint::tx_search::ResultTx;
@@ -750,11 +752,58 @@ impl Chain for CosmosSdkChain {
         connection_id: &ConnectionId,
         height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
-        let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
-        let connection_end = ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query(format!("connection '{}'", connection_id)).context(e))?;
+        async fn do_query_connection(
+            chain: &CosmosSdkChain,
+            connection_id: &ConnectionId,
+            height: ICSHeight,
+        ) -> Result<ConnectionEnd, Error> {
+            use ibc_proto::ibc::core::connection::v1 as connection;
+            use tonic::{metadata::MetadataValue, IntoRequest};
 
-        Ok(connection_end)
+            let mut client =
+                connection::query_client::QueryClient::connect(chain.grpc_addr.clone())
+                    .await
+                    .map_err(|e| Kind::Grpc.context(e))?;
+
+            let mut request = connection::QueryConnectionRequest {
+                connection_id: connection_id.to_string(),
+            }
+            .into_request();
+
+            let height_param = MetadataValue::from_str(&height.revision_height.to_string())
+                .map_err(|e| Kind::Grpc.context(e))?;
+
+            request
+                .metadata_mut()
+                .insert("x-cosmos-block-height", height_param);
+
+            let response = client.connection(request).await.map_err(|e| {
+                if e.code() == Code::NotFound {
+                    Kind::ConnectionNotFound(connection_id.clone()).into()
+                } else {
+                    Kind::Grpc.context(e)
+                }
+            })?;
+
+            match response.into_inner().connection {
+                Some(raw_connection) => {
+                    let connection_end = raw_connection
+                        .try_into()
+                        .map_err(|e| Kind::Grpc.context(e))?;
+
+                    Ok(connection_end)
+                }
+                None => {
+                    // When no connection is found, the GRPC call itself should return
+                    // the NotFound error code. Nevertheless even if the call is successful,
+                    // the connection field may not be present, because in protobuf3
+                    // everything is optional.
+                    Err(Kind::ConnectionNotFound(connection_id.clone()).into())
+                }
+            }
+        }
+
+        self.block_on(async { do_query_connection(self, connection_id, height).await })
     }
 
     fn query_connection_channels(
@@ -1280,17 +1329,17 @@ impl Chain for CosmosSdkChain {
     fn build_header(
         &self,
         trusted_height: ICSHeight,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
+        target_height: ICSHeight,
+        client_state: &AnyClientState,
+        light_client: &mut dyn LightClient<Self>,
+    ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
-        Ok(TmHeader {
-            trusted_height,
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: target_light_block.validators,
-            trusted_validator_set: trusted_light_block.validators,
-        })
+        // Get the light block at target_height from chain.
+        let Verified { target, supporting } =
+            light_client.header_and_minimal_set(trusted_height, target_height, client_state)?;
+
+        Ok((target, supporting))
     }
 }
 

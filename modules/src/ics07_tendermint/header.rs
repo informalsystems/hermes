@@ -37,27 +37,32 @@ impl Header {
             u64::from(self.signed_header.header.height),
         )
     }
+
     pub fn time(&self) -> Time {
         self.signed_header.header.time
     }
 
     pub fn compatible_with(&self, other_header: &Header) -> bool {
-        let ibc_client_height = other_header.signed_header.header.height;
-        let self_header_height = self.signed_header.header.height;
+        headers_compatible(&self.signed_header, &other_header.signed_header)
+    }
+}
 
-        match self_header_height.cmp(&&ibc_client_height) {
-            Ordering::Equal => {
-                // 1 - fork
-                self.signed_header.commit.block_id == other_header.signed_header.commit.block_id
-            }
-            Ordering::Greater => {
-                // 2 - BFT time violation
-                self.signed_header.header.time > other_header.signed_header.header.time
-            }
-            Ordering::Less => {
-                // 3 - BFT time violation
-                self.signed_header.header.time < other_header.signed_header.header.time
-            }
+pub fn headers_compatible(header: &SignedHeader, other: &SignedHeader) -> bool {
+    let ibc_client_height = other.header.height;
+    let self_header_height = header.header.height;
+
+    match self_header_height.cmp(&ibc_client_height) {
+        Ordering::Equal => {
+            // 1 - fork
+            header.commit.block_id == other.commit.block_id
+        }
+        Ordering::Greater => {
+            // 2 - BFT time violation
+            header.header.time > other.header.time
+        }
+        Ordering::Less => {
+            // 3 - BFT time violation
+            header.header.time < other.header.time
         }
     }
 }

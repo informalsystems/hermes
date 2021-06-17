@@ -10,7 +10,7 @@ use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
 };
-use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
+use ibc::ics02_client::client_state::{AnyClientState, ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::header::Header;
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
@@ -280,12 +280,18 @@ pub trait Chain: Sized {
         light_block: Self::LightBlock,
     ) -> Result<Self::ConsensusState, Error>;
 
+    /// Fetch, and verify the header at `target_height`, assuming we trust the
+    /// header at `trusted_height` with the given `client_state`.
+    ///
+    /// Returns all the supporting headers that were need to verify the target
+    /// header, for use when building a `ClientUpdate` message.
     fn build_header(
         &self,
         trusted_height: ICSHeight,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error>;
+        target_height: ICSHeight,
+        client_state: &AnyClientState,
+        light_client: &mut dyn LightClient<Self>,
+    ) -> Result<(Self::Header, Vec<Self::Header>), Error>;
 
     /// Builds the required proofs and the client state for connection handshake messages.
     /// The proofs and client state must be obtained from queries at same height.

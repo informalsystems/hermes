@@ -2,7 +2,42 @@
 
 ## Unreleased
 
-> Nothing yet.
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Add `--hd-path` option to `keys restore` and `keys add` commands to specify
+    derivation path when importing keys ([#1049])
+
+- [ibc-relayer]
+  - Enable TLS support for gRPC client ([#877])
+
+### IMPROVEMENTS
+
+- [ibc-relayer]
+  - Update the on-chain IBC client with supporting headers when light client verification
+    does bisection when verifying a header for a client update or a misbehaviour detection ([#673])
+
+### BUG FIXES
+
+- [gaiad-manager]
+  - Removed the testnet command as not all networks support it. ([#1050])
+  - Update to compatibility with hermes's new `--hd-path` option.
+
+- [ibc-relayer-cli]
+  - Fix for chain impersonation bug. ([#1038])
+  - Fix for partially open handshake bug of `channel create` CLI. ([#1064])
+
+### BREAKING CHANGES
+
+- [ibc-relayer-cli]
+  - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
+  
+[#673]: https://github.com/informalsystems/ibc-rs/issues/673
+[#877]: https://github.com/informalsystems/ibc-rs/issues/877
+[#1038]: https://github.com/informalsystems/ibc-rs/issues/1038
+[#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
+[#1050]: https://github.com/informalsystems/ibc-rs/issues/1050
+[#1064]: https://github.com/informalsystems/ibc-rs/issues/1064
 
 ## v0.4.0
 *June 3rd, 2021*
@@ -93,8 +128,7 @@ Docker images to Docker Hub.
 
 - [ibc-relayer]
   - Add support for multiple keys to the keyring ([#963])
-  - Add telemetry and Prometheus endpoint ([#868])
-  
+
 - [release]
   - Released the official [Hermes image][hermes-docker] on Docker Hub ([#894])
   - Automatically deploy Docker Hub image during release ([#967])

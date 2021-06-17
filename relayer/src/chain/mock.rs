@@ -44,6 +44,7 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventReceiver, EventSender};
 use crate::keyring::{KeyEntry, KeyRing};
+use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 /// The representation of a mocked chain as the relayer sees it.
@@ -325,15 +326,33 @@ impl Chain for MockChain {
     fn build_header(
         &self,
         trusted_height: Height,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
-        Ok(Self::Header {
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: target_light_block.validators,
+        target_height: Height,
+        client_state: &AnyClientState,
+        light_client: &mut dyn LightClient<Self>,
+    ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
+        let succ_trusted = light_client.fetch(trusted_height.increment())?;
+
+        let Verified { target, supporting } =
+            light_client.verify(trusted_height, target_height, client_state)?;
+
+        let target_header = Self::Header {
+            signed_header: target.signed_header,
+            validator_set: target.validators,
             trusted_height,
-            trusted_validator_set: trusted_light_block.validators,
-        })
+            trusted_validator_set: succ_trusted.validators.clone(),
+        };
+
+        let supporting_headers = supporting
+            .into_iter()
+            .map(|h| Self::Header {
+                signed_header: h.signed_header,
+                validator_set: h.validators,
+                trusted_height,
+                trusted_validator_set: succ_trusted.validators.clone(),
+            })
+            .collect();
+
+        Ok((target_header, supporting_headers))
     }
 
     fn query_consensus_states(
