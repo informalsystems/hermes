@@ -66,14 +66,13 @@ impl PrettyTracing {
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
         let filter = build_tracing_filter(cfg.log_level);
-        let use_color = true;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
             .with_target(false)
             .with_env_filter(filter)
             .with_writer(std::io::stderr as StdWriter)
-            .with_ansi(use_color)
+            .with_ansi(enable_ansi())
             .with_filter_reloading();
 
         let filter_handle = builder.reload_handle();
@@ -83,6 +82,14 @@ impl PrettyTracing {
 
         Ok(Self { filter_handle })
     }
+}
+
+/// Check if both stdout and stderr are proper terminal (tty),
+/// so that we know whether or not to enable colored output,
+/// using ANSI escape codes. If either is not, eg. because
+/// stdout is redirected to a file, we don't enable colored output.
+fn enable_ansi() -> bool {
+    atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
 }
 
 fn build_tracing_filter(log_level: String) -> String {
