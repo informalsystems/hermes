@@ -147,7 +147,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         }
 
         let Verified { target, supporting } =
-            self.verify(trusted_height, target_height, &client_state)?;
+            self.verify(trusted_height, target_height, client_state)?;
 
         if !headers_compatible(&target.signed_header, &update_header.signed_header) {
             let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;

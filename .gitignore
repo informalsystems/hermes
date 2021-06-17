@@ -21,4 +21,6 @@ data
 .mypy_cache/
 __pycache__/
 
+# Ignore modelator aritfacts
 .modelator
+mc.log
