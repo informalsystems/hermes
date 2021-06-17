@@ -1,5 +1,3 @@
-use std::num::ParseIntError;
-
 use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::error::Error as Ics23Error;
 use crate::ics24_host::error::ValidationError;
@@ -8,7 +6,7 @@ use crate::Height;
 use std::num::TryFromIntError;
 use tendermint_proto::Error as TendermintError;
 
-use flex_error::{define_error, DetailOnly, DisplayOnly};
+use flex_error::{define_error, DisplayOnly};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -19,7 +17,7 @@ define_error! {
 
         ClientIdentifierConstructor
             { client_type: ClientType, counter: u64 }
-            [ DisplayOnly<ValidationError> ]
+            [ ValidationError ]
             | e | {
                 format_args!("Client identifier constructor failed for type {0} with counter {1}",
                     e.client_type, e.counter)
@@ -87,7 +85,7 @@ define_error! {
 
         InvalidRawClientId
             { client_id: String }
-            [ DisplayOnly<ValidationError> ]
+            [ ValidationError ]
             | e | {
                 format_args!("invalid raw client identifier {0}",
                     e.client_id)
@@ -108,14 +106,14 @@ define_error! {
             | _ | { "missing raw client consensus state" },
 
         InvalidMsgUpdateClientId
-            [ DisplayOnly<ValidationError> ]
+            [ ValidationError ]
             | _ | { "invalid client id in the update client message" },
 
         MissingHeight
             | _ | { "invalid raw client consensus state: the height field is missing" },
 
         InvalidClientIdentifier
-            [ DisplayOnly<ValidationError> ]
+            [ ValidationError ]
             | _ | { "invalid client identifier" },
 
         InvalidRawHeader
@@ -130,7 +128,7 @@ define_error! {
             | _ | { "invalid raw misbehaviour" },
 
         InvalidRawMisbehaviour
-            [ DisplayOnly<ValidationError> ]
+            [ ValidationError ]
             | _ | { "invalid raw misbehaviour" },
 
         MissingRawMisbehaviour
@@ -138,14 +136,6 @@ define_error! {
 
         InvalidHeightResult
             | _ | { "height cannot end up zero or negative" },
-
-        HeightConversion
-            { height: String }
-            [ DetailOnly<ParseIntError> ]
-            | e | {
-                format_args!("cannot convert into a `Height` type from string {0}",
-                    e.height)
-            },
 
         InvalidAddress
             | _ | { "invalid address" },

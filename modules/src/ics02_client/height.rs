@@ -1,7 +1,9 @@
 use std::cmp::Ordering;
 use std::convert::TryFrom;
+use std::num::ParseIntError;
 use std::str::FromStr;
 
+use flex_error::{define_error, DisplayError};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -135,18 +137,30 @@ impl std::fmt::Display for Height {
     }
 }
 
+define_error! {
+    Error {
+        HeightConversion
+            { height: String }
+            [ DisplayError<ParseIntError> ]
+            | e | {
+                format_args!("cannot convert into a `Height` type from string {0}",
+                    e.height)
+            },
+    }
+}
+
 impl TryFrom<&str> for Height {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();
         Ok(Height {
             revision_number: split[0]
                 .parse::<u64>()
-                .map_err(|e| error::height_conversion_error(value.to_owned(), e))?,
+                .map_err(|e| height_conversion_error(value.to_owned(), e))?,
             revision_height: split[1]
                 .parse::<u64>()
-                .map_err(|e| error::height_conversion_error(value.to_owned(), e))?,
+                .map_err(|e| height_conversion_error(value.to_owned(), e))?,
         })
     }
 }
@@ -158,7 +172,7 @@ impl From<Height> for String {
 }
 
 impl FromStr for Height {
-    type Err = error::Error;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Height::try_from(s)

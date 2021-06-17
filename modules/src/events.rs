@@ -8,6 +8,7 @@ use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::Height;
+use flex_error::define_error;
 use prost::alloc::fmt::Formatter;
 use std::fmt;
 
@@ -222,17 +223,27 @@ impl RawObject {
     }
 }
 
+define_error! {
+    Error {
+        MissingActionString
+            | _ | { "Missing action string" },
+
+        IncorrectEventType
+            | _ | { "Incorrect Event Type" },
+    }
+}
+
 pub fn extract_events<S: ::std::hash::BuildHasher>(
     events: &HashMap<String, Vec<String>, S>,
     action_string: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Error> {
     if let Some(message_action) = events.get("message.action") {
         if message_action.contains(&action_string.to_owned()) {
             return Ok(());
         }
-        return Err("Missing action string".into());
+        return Err(missing_action_string_error());
     }
-    Err("Incorrect Event Type".into())
+    Err(incorrect_event_type_error())
 }
 
 #[macro_export]
@@ -243,15 +254,13 @@ macro_rules! make_event {
             pub data: ::std::collections::HashMap<String, Vec<String>>,
         }
         impl ::std::convert::TryFrom<$crate::events::RawObject> for $a {
-            type Error = ::crate::Box<dyn std::error::Error>;
+            type Error = $crate::event::Error;
 
             fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
-                match $crate::events::extract_events(&result.events, $b) {
-                    Ok(()) => Ok($a {
-                        data: result.events.clone(),
-                    }),
-                    Err(e) => Err(e),
-                }
+                $crate::events::extract_events(&result.events, $b)?;
+                Ok($a {
+                    data: result.events.clone(),
+                })
             }
         }
     };

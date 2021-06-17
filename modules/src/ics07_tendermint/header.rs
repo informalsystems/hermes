@@ -90,7 +90,7 @@ impl TryFrom<RawHeader> for Header {
         Ok(Self {
             signed_header: raw
                 .signed_header
-                .ok_or_else(|| error::invalid_raw_header_error("missing signed header".into()))?
+                .ok_or_else(error::missing_signed_header_error)?
                 .try_into()
                 .map_err(|e| {
                     error::invalid_header_error("signed header conversion".to_string(), e)

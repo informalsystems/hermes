@@ -1,14 +1,17 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use std::convert::{TryFrom, TryInto};
 
+use flex_error::define_error;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
 use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error as client_error;
 use crate::ics02_client::header::AnyHeader;
-use crate::ics02_client::height::Height;
+use crate::ics02_client::height::{Error as HeightError, Height};
+use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::ClientId;
 use crate::{attribute, some_attribute};
 
@@ -271,15 +274,61 @@ impl ClientMisbehaviour {
     }
 }
 
+define_error! {
+    Error {
+        Height
+            [ HeightError ]
+            | _ | { "error parsing height" },
+
+        Parse
+            [ ValidationError ]
+            | _ | { "parse error" },
+
+        Client
+            [ client_error::Error ]
+            | _ | { "ICS02 client error" },
+
+        MissingKey
+            { key: String }
+            | e | { format_args!("missing event key {}", e.key) },
+    }
+}
+
 impl TryFrom<RawObject> for ClientMisbehaviour {
-    type Error = Box<dyn std::error::Error>;
+    type Error = Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let consensus_height_str: String = attribute!(obj, "client_misbehaviour.consensus_height");
+        let consensus_height_str: String = obj
+            .events
+            .get("client_misbehaviour.consensus_height")
+            .ok_or_else(|| {
+            missing_key_error("client_misbehaviour.consensus_height".to_string())
+        })?[obj.idx]
+            .clone();
+
+        // attribute!(obj, "client_misbehaviour.consensus_height");
         Ok(ClientMisbehaviour(Attributes {
             height: obj.height,
-            client_id: attribute!(obj, "client_misbehaviour.client_id"),
-            client_type: attribute!(obj, "client_misbehaviour.client_type"),
-            consensus_height: consensus_height_str.as_str().try_into()?,
+
+            client_id: obj
+                .events
+                .get("client_misbehaviour.client_id")
+                .ok_or_else(|| missing_key_error("client_misbehaviour.client_id".to_string()))?
+                [obj.idx]
+                .parse()
+                .map_err(parse_error)?,
+
+            client_type: obj
+                .events
+                .get("client_misbehaviour.client_type")
+                .ok_or_else(|| missing_key_error("client_misbehaviour.client_id".to_string()))?
+                [obj.idx]
+                .parse()
+                .map_err(client_error)?,
+
+            consensus_height: consensus_height_str
+                .as_str()
+                .try_into()
+                .map_err(height_error)?,
         }))
     }
 }

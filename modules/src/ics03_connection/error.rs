@@ -3,7 +3,7 @@ use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::ProofError;
 use crate::Height;
-use flex_error::{define_error, DisplayOnly};
+use flex_error::define_error;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -58,7 +58,7 @@ define_error! {
             },
 
         InvalidIdentifier
-            [ DisplayOnly<ValidationError> ]
+            [ ValidationError ]
             | _ | { "identifier error" },
 
         EmptyProtoConnectionEnd

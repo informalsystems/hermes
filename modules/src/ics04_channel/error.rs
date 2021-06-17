@@ -16,7 +16,7 @@ define_error! {
             | e | { format_args!("channel state unknown: {}", e.state) },
 
         Identifier
-            [ DisplayOnly<ValidationError> ]
+            [ ValidationError ]
             | _ | { "identifier error" },
 
         UnknownOrderType
@@ -267,7 +267,7 @@ define_error! {
             },
 
         InvalidCounterpartyChannelId
-            [ DisplayOnly<ValidationError> ]
+            [ ValidationError ]
             | _ | { "Invalid channel id in counterparty" },
 
         ClientNotFound

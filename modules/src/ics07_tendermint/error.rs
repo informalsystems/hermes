@@ -1,5 +1,6 @@
 use crate::ics24_host::error::ValidationError;
 use flex_error::{define_error, DisplayError, DisplayOnly};
+use tendermint::error::Error as TendermintError;
 
 define_error! {
     Error {
@@ -16,8 +17,11 @@ define_error! {
 
         InvalidHeader
             { reason: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ DisplayOnly<TendermintError> ]
             | _ | { "invalid header, failed basic validation" },
+
+        MissingSignedHeader
+            | _ | { "missing signed header" },
 
         Validation
             { reason: String }
@@ -65,8 +69,9 @@ define_error! {
             | _ | { "missing frozen height" },
 
         InvalidChainId
-            { raw_value: String, validation_kind: ValidationError }
-            | e | { format_args!("invalid chain identifier: raw value {0} with underlying validation error: {1}", e.raw_value, e.validation_kind) },
+            { raw_value: String }
+            [ ValidationError ]
+            | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
 
         InvalidRawHeight
             | _ | { "invalid raw height" },
@@ -76,7 +81,7 @@ define_error! {
             | _ | { "invalid raw client consensus state" },
 
         InvalidRawHeader
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ DisplayOnly<TendermintError> ]
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour
