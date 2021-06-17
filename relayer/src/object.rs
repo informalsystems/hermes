@@ -221,7 +221,7 @@ impl Object {
             .channel_id()
             .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
 
-        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())
+        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, e.port_id())
             .map_err(|_| "dest chain missing in init".to_string())?;
 
         Ok(Channel {
@@ -289,7 +289,7 @@ impl Object {
         e: &CloseInit,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id = get_counterparty_chain(src_chain, e.channel_id(), &e.port_id())?;
+        let dst_chain_id = get_counterparty_chain(src_chain, e.channel_id(), e.port_id())?;
 
         Ok(UnidirectionalChannelPath {
             dst_chain_id,

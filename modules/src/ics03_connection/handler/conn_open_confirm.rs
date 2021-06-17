@@ -160,15 +160,15 @@ mod tests {
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
-                    assert_eq!(
+                    assert!(
                         test.want_pass,
-                        true,
                         "conn_open_confirm: test passed but was supposed to fail for: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
                     );
-                    assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
+
+                    assert!(!proto_output.events.is_empty()); // Some events must exist.
 
                     // The object in the output is a ConnectionEnd, should have OPEN state.
                     let res: ConnectionResult = proto_output.result;
@@ -179,9 +179,8 @@ mod tests {
                     }
                 }
                 Err(e) => {
-                    assert_eq!(
-                        test.want_pass,
-                        false,
+                    assert!(
+                        !test.want_pass,
                         "conn_open_confirm: failed for test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,

@@ -83,7 +83,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         return Err(Kind::LowPacketTimestamp.into());
     }
 
-    verify_packet_recv_proofs(ctx, &packet, client_id, &msg.proofs)?;
+    verify_packet_recv_proofs(ctx, packet, client_id, &msg.proofs)?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
@@ -280,23 +280,23 @@ mod tests {
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
-                    assert_eq!(
+                    assert!(
                             test.want_pass,
-                            true,
                             "recv_packet: test passed but was supposed to fail for test: {}, \nparams \n msg={:?}\nctx:{:?}",
                             test.name,
                             test.msg.clone(),
                             test.ctx.clone()
                         );
-                    assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
+
+                    assert!(!proto_output.events.is_empty()); // Some events must exist.
+
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::ReceivePacket(_)));
                     }
                 }
                 Err(e) => {
-                    assert_eq!(
-                            test.want_pass,
-                            false,
+                    assert!(
+                            !test.want_pass,
                             "recv_packet: did not pass test: {}, \nparams \nmsg={:?}\nctx={:?}\nerror={:?}",
                             test.name,
                             test.msg.clone(),

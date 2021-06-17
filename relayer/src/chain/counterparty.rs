@@ -64,7 +64,7 @@ pub fn channel_connection_client(
         .ok_or_else(|| Error::MissingConnectionHops(channel_id.clone(), chain.id()))?;
 
     let connection_end = chain
-        .query_connection(&connection_id, Height::zero())
+        .query_connection(connection_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
     if !connection_end.is_open() {
@@ -77,7 +77,7 @@ pub fn channel_connection_client(
 
     let client_id = connection_end.client_id();
     let client_state = chain
-        .query_client_state(&client_id, Height::zero())
+        .query_client_state(client_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
     trace!(

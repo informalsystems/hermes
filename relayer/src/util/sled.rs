@@ -18,11 +18,11 @@ where
     V: Serialize + DeserializeOwned,
 {
     pub fn get(&self, db: &sled::Db) -> Result<Option<V>, error::Error> {
-        self.fetch(&db, &())
+        self.fetch(db, &())
     }
 
     pub fn set(&self, db: &sled::Db, value: &V) -> Result<(), error::Error> {
-        self.insert(&db, &(), &value)
+        self.insert(db, &(), value)
     }
 }
 
