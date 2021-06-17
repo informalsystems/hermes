@@ -3,7 +3,7 @@ use std::io;
 use abscissa_core::{Component, FrameworkError};
 use tracing_subscriber::{
     fmt::{
-        format::{Format, Json, JsonFields, DefaultFields, Full},
+        format::{DefaultFields, Format, Full, Json, JsonFields},
         time::SystemTime,
         Formatter as TracingFormatter,
     },
@@ -20,7 +20,6 @@ type PrettyFormatter = TracingFormatter<DefaultFields, Format<Full, SystemTime>,
 type StdWriter = fn() -> io::Stderr;
 
 pub const COLORED_OUTPUT: bool = true;
-
 
 /// A custom component for parametrizing `tracing` in the relayer.
 /// Primarily used for:
