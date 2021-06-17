@@ -44,6 +44,7 @@ impl JsonTracing {
             .with_target(false)
             .with_env_filter(filter)
             .with_writer(std::io::stderr as StdWriter)
+            // Note: JSON output is currently un-affected by ANSI 'color' option.
             .with_ansi(COLORED_OUTPUT)
             .json()
             .with_filter_reloading();
