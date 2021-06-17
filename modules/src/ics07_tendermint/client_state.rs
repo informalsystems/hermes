@@ -169,27 +169,27 @@ impl TryFrom<RawClientState> for ClientState {
             },
             trusting_period: raw
                 .trusting_period
-                .ok_or_else(|| error::missing_trusting_period_error())?
+                .ok_or_else(error::missing_trusting_period_error)?
                 .try_into()
                 .map_err(|_| error::negative_trusting_period_error())?,
             unbonding_period: raw
                 .unbonding_period
-                .ok_or_else(|| error::missing_unbonding_period_error())?
+                .ok_or_else(error::missing_unbonding_period_error)?
                 .try_into()
                 .map_err(|_| error::negative_unbonding_period_error())?,
             max_clock_drift: raw
                 .max_clock_drift
-                .ok_or_else(|| error::missing_max_clock_drift_error())?
+                .ok_or_else(error::missing_max_clock_drift_error)?
                 .try_into()
                 .map_err(|_| error::negative_max_clock_drift_error())?,
             latest_height: raw
                 .latest_height
-                .ok_or_else(|| error::missing_latest_height_error())?
+                .ok_or_else(error::missing_latest_height_error)?
                 .try_into()
                 .map_err(|_| error::invalid_raw_height_error())?,
             frozen_height: raw
                 .frozen_height
-                .ok_or_else(|| error::missing_frozen_height_error())?
+                .ok_or_else(error::missing_frozen_height_error)?
                 .try_into()
                 .map_err(|_| error::invalid_raw_height_error())?,
             upgrade_path: raw.upgrade_path,

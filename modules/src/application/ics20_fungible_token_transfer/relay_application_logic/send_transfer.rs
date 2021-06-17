@@ -48,7 +48,7 @@ where
     };
 
     let handler_output =
-        send_packet(ctx, packet).map_err(|e| error::ics04_channel_error(e))?;
+        send_packet(ctx, packet).map_err(error::ics04_channel_error)?;
 
     //TODO:  add event/atributes and writes to the store issued by the application logic for packet sending.
     Ok(handler_output)
