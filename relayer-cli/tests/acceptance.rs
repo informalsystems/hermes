@@ -37,7 +37,7 @@ fn start_no_args() {
     let mut cmd = runner.capture_stdout().run();
     cmd.stdout().expect_regex(
         format!(
-            "^[^ ]*{} {}$",
+            "^[^ ]*{} {}",
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION")
         )
