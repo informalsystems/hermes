@@ -1,4 +1,5 @@
 use crate::ics04_channel::error as channel_error;
+use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use flex_error::define_error;
 
@@ -26,10 +27,12 @@ define_error! {
 
         InvalidPortId
             { context: String }
+            [ ValidationError ]
             | _ | { "invalid port identifier" },
 
         InvalidChannelId
             { context: String }
+            [ ValidationError ]
             | _ | { "invalid channel identifier" },
 
         InvalidPacketTimeoutHeight

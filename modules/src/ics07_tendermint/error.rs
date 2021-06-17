@@ -1,5 +1,5 @@
 use crate::ics24_host::error::ValidationError;
-use flex_error::{define_error, DisplayError};
+use flex_error::{define_error, DisplayError, DisplayOnly};
 
 define_error! {
     Error {
@@ -16,6 +16,7 @@ define_error! {
 
         InvalidHeader
             { reason: String }
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
             | _ | { "invalid header, failed basic validation" },
 
         Validation
@@ -25,6 +26,15 @@ define_error! {
         InvalidRawClientState
             { reason: String }
             | _ | { "invalid raw client state" },
+
+        MissingValidatorSet
+            | _ | { "missing validator set" },
+
+        MissingTrustedValidatorSet
+            | _ | { "missing trusted validator set" },
+
+        MissingTrustedHeight
+            | _ | { "missing trusted height" },
 
         MissingTrustingPeriod
             | _ | { "missing trusting period" },
@@ -66,7 +76,7 @@ define_error! {
             | _ | { "invalid raw client consensus state" },
 
         InvalidRawHeader
-            { reason: String }
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour

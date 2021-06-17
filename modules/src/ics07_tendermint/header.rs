@@ -87,24 +87,23 @@ impl TryFrom<RawHeader> for Header {
                 .signed_header
                 .ok_or_else(|| error::invalid_raw_header_error("missing signed header".into()))?
                 .try_into()
-                .map_err(|_| error::invalid_header_error("signed header conversion".into()))?,
+                .map_err(|e| {
+                    error::invalid_header_error("signed header conversion".to_string(), e)
+                })?,
             validator_set: raw
                 .validator_set
-                .ok_or_else(|| error::invalid_raw_header_error("missing validator set".into()))?
+                .ok_or_else(error::missing_validator_set_error)?
                 .try_into()
-                .map_err(|_| error::invalid_raw_header_error(String::new()))?,
+                .map_err(error::invalid_raw_header_error)?,
             trusted_height: raw
                 .trusted_height
-                .ok_or_else(|| error::invalid_raw_header_error("missing height".into()))?
-                .try_into()
-                .map_err(|_| error::invalid_raw_height_error())?,
+                .ok_or_else(error::missing_trusted_height_error)?
+                .into(),
             trusted_validator_set: raw
                 .trusted_validators
-                .ok_or_else(|| {
-                    error::invalid_raw_header_error("missing trusted validator set".into())
-                })?
+                .ok_or_else(error::missing_trusted_validator_set_error)?
                 .try_into()
-                .map_err(|_| error::invalid_raw_header_error(String::new()))?,
+                .map_err(error::invalid_raw_header_error)?,
         })
     }
 }

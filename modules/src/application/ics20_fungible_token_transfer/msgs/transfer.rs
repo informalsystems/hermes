@@ -73,11 +73,11 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             source_port: raw_msg
                 .source_port
                 .parse()
-                .map_err(|_| error::invalid_port_id_error(raw_msg.source_port.clone()))?,
+                .map_err(|e| error::invalid_port_id_error(raw_msg.source_port.clone(), e))?,
             source_channel: raw_msg
                 .source_channel
                 .parse()
-                .map_err(|_| error::invalid_channel_id_error(raw_msg.source_channel.clone()))?,
+                .map_err(|e| error::invalid_channel_id_error(raw_msg.source_channel.clone(), e))?,
             token: raw_msg.token,
             sender: raw_msg.sender.into(),
             receiver: raw_msg.receiver.into(),
