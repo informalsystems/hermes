@@ -17,29 +17,48 @@ description = """
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
 mocks = [ "tendermint-testgen", "sha2" ]
+default = ["std"]
+std = [
+    "chrono/std",
+    "serde_json/std",
+    "serde/std",
+    "tracing/std",
+    "prost/std",
+    "prost-types/std",
+    "bytes/std",
+    "regex/std",
+    "subtle-encoding/std",
+    "sha2/std",
+    "flex-error/std",
+    "displaydoc/std",
+    "tendermint/std",
+    "ics23/std",
+]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.8.0", path = "../proto" }
-ics23 = "0.6.5"
-anomaly = "0.2.0"
-chrono = "0.4.19"
-thiserror = "1.0.25"
+ics23 = {version = "0.6.5", default-features  = false }
+#anyhow = {version = "1.0", default-features = false}
+#anomaly = "0.2.0"
+chrono = { version = "0.4.19", default-features = false, features = ["serde", "clock"] }
+#thiserror = "1.0.25"
 serde_derive = "1.0.104"
-serde = "1.0.125"
-serde_json = "1"
-tracing = "0.1.26"
-prost = "0.7"
-prost-types = "0.7"
-bytes = "1.0.0"
+serde = { version = "1.0.125", default-features = false, features = ["derive"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+tracing = { version = "0.1.26", default-features = false }
+prost = { version = "0.7", default-features = false, features = ["prost-derive"] }
+prost-types = { version = "0.7", default-features = false }
+bytes = { version = "1.0.0", default-features = false }
 dyn-clonable = "0.9.0"
-regex = "1"
-subtle-encoding = "0.5"
-sha2 = { version = "0.9.3", optional = true }
-flex-error = "0.2.0"
-displaydoc = "0.2.1"
+regex = { version = "1", default-features = false }
+subtle-encoding = { version = "0.5", default-features = false, features = ["bech32-preview"] }
+sha2 = { version = "0.9.3", optional = true, default-features = false }
+flex-error = { version = "0.2.0", default-features = false, features = ["anyhow_tracer"] }
+displaydoc = { version = "0.2.1", default-features = false }
 
 [dependencies.tendermint]
+default-features = false
 version = "=0.19.0"
 
 [dependencies.tendermint-proto]
