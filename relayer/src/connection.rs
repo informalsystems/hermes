@@ -289,11 +289,11 @@ impl Connection {
             counter += 1;
 
             // Continue loop if query error
-            let a_connection = a_chain.query_connection(&self.src_connection_id(), Height::zero());
+            let a_connection = a_chain.query_connection(self.src_connection_id(), Height::zero());
             if a_connection.is_err() {
                 continue;
             }
-            let b_connection = b_chain.query_connection(&self.dst_connection_id(), Height::zero());
+            let b_connection = b_chain.query_connection(self.dst_connection_id(), Height::zero());
             if b_connection.is_err() {
                 continue;
             }
