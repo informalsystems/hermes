@@ -1,9 +1,8 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
-use crate::events::{IbcEvent, RawObject};
+use crate::events::{self, extract_attribute, maybe_extract_attribute, IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::{attribute, some_attribute};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
@@ -161,6 +160,31 @@ pub struct Attributes {
     pub counterparty_channel_id: Option<ChannelId>,
 }
 
+fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, events::Error> {
+    Ok(Attributes {
+        height: object.height,
+        port_id: extract_attribute(&object, &format!("{}.port_id", namespace))?
+            .parse()
+            .map_err(events::parse_error)?,
+        channel_id: maybe_extract_attribute(&object, &format!("{}.channel_id", namespace))
+            .and_then(|v| v.parse().ok()),
+        connection_id: extract_attribute(&object, &format!("{}.connection_id", namespace))?
+            .parse()
+            .map_err(events::parse_error)?,
+        counterparty_port_id: extract_attribute(
+            &object,
+            &format!("{}.counterparty_port_id", namespace),
+        )?
+        .parse()
+        .map_err(events::parse_error)?,
+        counterparty_channel_id: maybe_extract_attribute(
+            &object,
+            &format!("{}.counterparty_channel_id", namespace),
+        )
+        .and_then(|v| v.parse().ok()),
+    })
+}
+
 impl Attributes {
     pub fn port_id(&self) -> &PortId {
         &self.port_id
@@ -213,17 +237,7 @@ impl From<Attributes> for OpenInit {
 impl TryFrom<RawObject> for OpenInit {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenInit(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_init.port_id"),
-            channel_id: some_attribute!(obj, "channel_open_init.channel_id"),
-            connection_id: attribute!(obj, "channel_open_init.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_init.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_open_init.counterparty_channel_id"
-            ),
-        }))
+        Ok(OpenInit(extract_attributes(&obj, "channel_open_init")?))
     }
 }
 
@@ -263,17 +277,7 @@ impl From<Attributes> for OpenTry {
 impl TryFrom<RawObject> for OpenTry {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenTry(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_try.port_id"),
-            channel_id: some_attribute!(obj, "channel_open_try.channel_id"),
-            connection_id: attribute!(obj, "channel_open_try.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_try.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_open_try.counterparty_channel_id"
-            ),
-        }))
+        Ok(OpenTry(extract_attributes(&obj, "channel_open_try")?))
     }
 }
 
@@ -317,17 +321,7 @@ impl From<Attributes> for OpenAck {
 impl TryFrom<RawObject> for OpenAck {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenAck(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_ack.port_id"),
-            channel_id: some_attribute!(obj, "channel_open_ack.channel_id"),
-            connection_id: attribute!(obj, "channel_open_ack.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_ack.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_open_ack.counterparty_channel_id"
-            ),
-        }))
+        Ok(OpenAck(extract_attributes(&obj, "channel_open_ack")?))
     }
 }
 
@@ -367,17 +361,10 @@ impl From<Attributes> for OpenConfirm {
 impl TryFrom<RawObject> for OpenConfirm {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenConfirm(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_confirm.port_id"),
-            channel_id: some_attribute!(obj, "channel_open_confirm.channel_id"),
-            connection_id: attribute!(obj, "channel_open_confirm.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_confirm.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_open_confirm.counterparty_channel_id"
-            ),
-        }))
+        Ok(OpenConfirm(extract_attributes(
+            &obj,
+            "channel_open_confirm",
+        )?))
     }
 }
 
@@ -429,17 +416,7 @@ impl From<Attributes> for CloseInit {
 impl TryFrom<RawObject> for CloseInit {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(CloseInit(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_close_init.port_id"),
-            channel_id: some_attribute!(obj, "channel_close_init.channel_id"),
-            connection_id: attribute!(obj, "channel_close_init.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_close_init.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_close_init.counterparty_channel_id"
-            ),
-        }))
+        Ok(CloseInit(extract_attributes(&obj, "channel_close_init")?))
     }
 }
 
@@ -485,17 +462,10 @@ impl From<Attributes> for CloseConfirm {
 impl TryFrom<RawObject> for CloseConfirm {
     type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(CloseConfirm(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_close_confirm.port_id"),
-            channel_id: some_attribute!(obj, "channel_close_confirm.channel_id"),
-            connection_id: attribute!(obj, "channel_close_confirm.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_close_confirm.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_close_confirm.counterparty_channel_id"
-            ),
-        }))
+        Ok(CloseConfirm(extract_attributes(
+            &obj,
+            "channel_close_confirm",
+        )?))
     }
 }
 

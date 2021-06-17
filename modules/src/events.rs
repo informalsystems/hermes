@@ -306,19 +306,3 @@ macro_rules! make_event {
         }
     };
 }
-
-#[macro_export]
-macro_rules! attribute {
-    ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse()?
-    };
-}
-
-#[macro_export]
-macro_rules! some_attribute {
-    ($a:ident, $b:literal) => {
-        $a.events
-            .get($b)
-            .map_or_else(|| None, |tags| tags[$a.idx].parse().ok())
-    };
-}
