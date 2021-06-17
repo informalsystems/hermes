@@ -47,7 +47,7 @@ pub fn monitor_misbehaviour(
     client_id: &ClientId,
     config: &config::Reader<CliApp>,
 ) -> Result<Option<IbcEvent>, BoxError> {
-    let chain = spawn_chain_runtime(&config, chain_id)
+    let chain = spawn_chain_runtime(config, chain_id)
         .map_err(|e| format!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
 
     let subscription = chain.subscribe()?;
@@ -109,7 +109,7 @@ fn misbehaviour_handling(
     }
 
     let counterparty_chain =
-        spawn_chain_runtime(&config, &client_state.chain_id()).map_err(|e| {
+        spawn_chain_runtime(config, &client_state.chain_id()).map_err(|e| {
             format!(
                 "could not spawn the chain runtime for {}: {}",
                 client_state.chain_id(),
