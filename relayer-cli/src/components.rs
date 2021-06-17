@@ -19,8 +19,6 @@ type JsonFormatter = TracingFormatter<JsonFields, Format<Json, SystemTime>, StdW
 type PrettyFormatter = TracingFormatter<DefaultFields, Format<Full, SystemTime>, StdWriter>;
 type StdWriter = fn() -> io::Stderr;
 
-pub const COLORED_OUTPUT: bool = true;
-
 /// A custom component for parametrizing `tracing` in the relayer.
 /// Primarily used for:
 ///
@@ -37,14 +35,15 @@ impl JsonTracing {
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
         let filter = build_tracing_filter(cfg.log_level);
+        // Note: JSON formatter is un-affected by ANSI 'color' option. Set to 'false'.
+        let use_color = false;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
             .with_target(false)
             .with_env_filter(filter)
             .with_writer(std::io::stderr as StdWriter)
-            // Note: JSON output is currently un-affected by ANSI 'color' option.
-            .with_ansi(COLORED_OUTPUT)
+            .with_ansi(use_color)
             .json()
             .with_filter_reloading();
 
@@ -67,13 +66,14 @@ impl PrettyTracing {
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
         let filter = build_tracing_filter(cfg.log_level);
+        let use_color = true;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
             .with_target(false)
             .with_env_filter(filter)
             .with_writer(std::io::stderr as StdWriter)
-            .with_ansi(COLORED_OUTPUT)
+            .with_ansi(use_color)
             .with_filter_reloading();
 
         let filter_handle = builder.reload_handle();
