@@ -1,6 +1,6 @@
 //! Error types
 
-use anomaly::{BoxError, Context};
+use anomaly::Context;
 use thiserror::Error;
 
 /// An error raised within the relayer CLI
@@ -36,7 +36,10 @@ pub enum Kind {
 
 impl Kind {
     /// Create an error context from this error
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Kind> {
+    pub fn context(
+        self,
+        source: impl Into<Box<dyn std::error::Error + Send + Sync>>,
+    ) -> Context<Kind> {
         Context::new(self, Some(source.into()))
     }
 }

@@ -1,6 +1,6 @@
 //! This module defines the various errors that be raised in the relayer.
 
-use anomaly::{BoxError, Context};
+use anomaly::Context;
 use displaydoc::Display;
 
 use ibc::{
@@ -161,11 +161,14 @@ impl Kind {
     /// let x = self.something.do_stuff()
     ///     .map_err(|e| error::Kind::Config.context(e))?;
     /// ```
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
+    pub fn context(
+        self,
+        source: impl Into<Box<dyn std::error::Error + Send + Sync>>,
+    ) -> Context<Self> {
         Context::new(self, Some(source.into()))
     }
 
-    pub fn channel(err: impl Into<BoxError>) -> Context<Self> {
+    pub fn channel(err: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Context<Self> {
         Self::Channel.context(err)
     }
 }

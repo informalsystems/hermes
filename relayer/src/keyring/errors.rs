@@ -1,4 +1,4 @@
-use anomaly::{BoxError, Context};
+use anomaly::Context;
 use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
@@ -40,7 +40,10 @@ pub enum Kind {
 }
 
 impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
+    pub fn context(
+        self,
+        source: impl Into<Box<dyn std::error::Error + Send + Sync>>,
+    ) -> Context<Self> {
         Context::new(self, Some(source.into()))
     }
 }

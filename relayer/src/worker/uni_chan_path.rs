@@ -1,6 +1,5 @@
 use std::{thread, time::Duration};
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{error, warn};
 
@@ -40,7 +39,7 @@ impl UniChanPathWorker {
     }
 
     /// Run the event loop for events associated with a [`UnidirectionalChannelPath`].
-    pub fn run(self) -> Result<(), BoxError> {
+    pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
             self.chains.b.clone(),

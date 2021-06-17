@@ -2,7 +2,6 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use anomaly::BoxError;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::trace;
 
@@ -41,7 +40,10 @@ impl Registry {
     ///
     /// If there is no handle yet, this will first spawn the runtime and then
     /// return its handle.
-    pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Box<dyn ChainHandle>, BoxError> {
+    pub fn get_or_spawn(
+        &mut self,
+        chain_id: &ChainId,
+    ) -> Result<Box<dyn ChainHandle>, Box<dyn std::error::Error>> {
         if !self.handles.contains_key(chain_id) {
             let handle = spawn_chain_runtime(&self.config, chain_id, self.rt.clone())?;
             self.handles.insert(chain_id.clone(), handle);
@@ -60,7 +62,7 @@ pub fn spawn_chain_runtime(
     config: &Config,
     chain_id: &ChainId,
     rt: Arc<TokioRuntime>,
-) -> Result<Box<dyn ChainHandle>, BoxError> {
+) -> Result<Box<dyn ChainHandle>, Box<dyn std::error::Error>> {
     let chain_config = config
         .find_chain(chain_id)
         .cloned()

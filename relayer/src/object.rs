@@ -1,5 +1,3 @@
-use anomaly::BoxError;
-
 use ibc::{
     ics02_client::{client_state::ClientState, events::UpdateClient},
     ics04_channel::events::{
@@ -164,7 +162,7 @@ impl Object {
     pub fn for_update_client(
         e: &UpdateClient,
         dst_chain: &dyn ChainHandle,
-    ) -> Result<Self, BoxError> {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let client_state = dst_chain.query_client_state(e.client_id(), Height::zero())?;
         if client_state.refresh_period().is_none() {
             return Err(format!(
@@ -189,7 +187,7 @@ impl Object {
     pub fn client_from_chan_open_events(
         e: &Attributes,          // The attributes of the emitted event
         chain: &dyn ChainHandle, // The chain which emitted the event
-    ) -> Result<Self, BoxError> {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let channel_id = e
             .channel_id()
             .ok_or_else(|| format!("channel_id missing in channel open event '{:?}'", e))?;
@@ -216,7 +214,7 @@ impl Object {
     pub fn channel_from_chan_open_events(
         e: &Attributes,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, BoxError> {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let channel_id = e
             .channel_id()
             .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
@@ -234,7 +232,10 @@ impl Object {
     }
 
     /// Build the object associated with the given [`SendPacket`] event.
-    pub fn for_send_packet(e: &SendPacket, src_chain: &dyn ChainHandle) -> Result<Self, BoxError> {
+    pub fn for_send_packet(
+        e: &SendPacket,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let dst_chain_id =
             get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)?;
 
@@ -251,7 +252,7 @@ impl Object {
     pub fn for_write_ack(
         e: &WriteAcknowledgement,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, BoxError> {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let dst_chain_id = get_counterparty_chain(
             src_chain,
             &e.packet.destination_channel,
@@ -271,7 +272,7 @@ impl Object {
     pub fn for_timeout_packet(
         e: &TimeoutPacket,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, BoxError> {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let dst_chain_id =
             get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)?;
 
@@ -288,7 +289,7 @@ impl Object {
     pub fn for_close_init_channel(
         e: &CloseInit,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, BoxError> {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let dst_chain_id = get_counterparty_chain(src_chain, e.channel_id(), &e.port_id())?;
 
         Ok(UnidirectionalChannelPath {

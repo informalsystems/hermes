@@ -195,13 +195,11 @@ impl TryFrom<RawClientState> for ClientState {
             latest_height: raw
                 .latest_height
                 .ok_or_else(error::missing_latest_height_error)?
-                .try_into()
-                .map_err(|_| error::invalid_raw_height_error())?,
+                .into(),
             frozen_height: raw
                 .frozen_height
                 .ok_or_else(error::missing_frozen_height_error)?
-                .try_into()
-                .map_err(|_| error::invalid_raw_height_error())?,
+                .into(),
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {
                 after_expiry: raw.allow_update_after_expiry,

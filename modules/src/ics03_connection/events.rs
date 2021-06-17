@@ -2,7 +2,6 @@
 use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::BoxError;
 use crate::{attribute, some_attribute};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -103,7 +102,7 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(Attributes {
             height: obj.height,
@@ -146,7 +145,7 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(Attributes {
             height: obj.height,
@@ -189,7 +188,7 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(Attributes {
             height: obj.height,
@@ -232,7 +231,7 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(Attributes {
             height: obj.height,

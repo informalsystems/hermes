@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use tracing::{debug, error, warn};
@@ -300,7 +299,7 @@ impl Supervisor {
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
-    ) -> Result<(), BoxError> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
@@ -357,7 +356,7 @@ impl Supervisor {
     }
 
     /// Run the supervisor event loop.
-    pub fn run(mut self) -> Result<(), BoxError> {
+    pub fn run(mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut subscriptions = Vec::with_capacity(self.config.chains.len());
 
         for chain_config in &self.config.chains {
@@ -437,7 +436,7 @@ impl Supervisor {
         &mut self,
         src_chain: Box<dyn ChainHandle>,
         batch: EventBatch,
-    ) -> Result<(), BoxError> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(src_chain.id(), batch.chain_id);
 
         let height = batch.height;

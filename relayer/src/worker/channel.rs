@@ -1,6 +1,5 @@
 use std::{thread, time::Duration};
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{debug, warn};
 
@@ -38,7 +37,7 @@ impl ChannelWorker {
     }
 
     /// Run the event loop for events associated with a [`Channel`].
-    pub(crate) fn run(self) -> Result<(), BoxError> {
+    pub(crate) fn run(self) -> Result<(), Box<dyn std::error::Error>> {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
 

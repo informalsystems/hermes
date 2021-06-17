@@ -1,6 +1,6 @@
 use std::{fmt, ops::Deref, str::FromStr, sync::Arc, thread};
 
-use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
+use abscissa_core::{application::fatal_error, Command, Options, Runnable};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -43,7 +43,7 @@ impl fmt::Display for EventFilter {
 }
 
 impl FromStr for EventFilter {
-    type Err = BoxError;
+    type Err = Box<dyn std::error::Error>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -66,7 +66,7 @@ pub struct ListenCmd {
 }
 
 impl ListenCmd {
-    fn cmd(&self) -> Result<(), BoxError> {
+    fn cmd(&self) -> Result<(), Box<dyn std::error::Error>> {
         let config = app_config();
 
         let chain_config = config
@@ -91,7 +91,10 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
-pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> Result<(), BoxError> {
+pub fn listen(
+    config: &ChainConfig,
+    filters: &[EventFilter],
+) -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "[info] Listening for events `{}` on '{}'...",
         filters.iter().format(", "),
@@ -138,7 +141,7 @@ fn event_match(event: &IbcEvent, filters: &[EventFilter]) -> bool {
 fn subscribe(
     chain_config: &ChainConfig,
     rt: Arc<TokioRuntime>,
-) -> Result<(EventMonitor, EventReceiver), BoxError> {
+) -> Result<(EventMonitor, EventReceiver), Box<dyn std::error::Error>> {
     let (mut event_monitor, rx) = EventMonitor::new(
         chain_config.id.clone(),
         chain_config.websocket_addr.clone(),

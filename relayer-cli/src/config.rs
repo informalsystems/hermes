@@ -6,14 +6,14 @@
 
 use std::path::PathBuf;
 
-use abscissa_core::{error::BoxError, EntryPoint, Options};
+use abscissa_core::{EntryPoint, Options};
 
 use crate::commands::CliCmd;
 
 pub use ibc_relayer::config::Config;
 
 /// Get the path to configuration file
-pub fn config_path() -> Result<PathBuf, BoxError> {
+pub fn config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let mut args = std::env::args();
     assert!(args.next().is_some(), "expected one argument but got zero");
     let args = args.collect::<Vec<_>>();

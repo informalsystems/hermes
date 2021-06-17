@@ -1,7 +1,6 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use std::convert::{TryFrom, TryInto};
 
-use crate::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
@@ -158,7 +157,7 @@ impl From<Attributes> for CreateClient {
 }
 
 impl TryFrom<RawObject> for CreateClient {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let consensus_height_str: String = attribute!(obj, "create_client.consensus_height");
         Ok(CreateClient(Attributes {
@@ -220,7 +219,7 @@ impl From<Attributes> for UpdateClient {
 }
 
 impl TryFrom<RawObject> for UpdateClient {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let header_str: Option<String> = some_attribute!(obj, "update_client.header");
         let header: Option<AnyHeader> = match header_str {
@@ -273,7 +272,7 @@ impl ClientMisbehaviour {
 }
 
 impl TryFrom<RawObject> for ClientMisbehaviour {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let consensus_height_str: String = attribute!(obj, "client_misbehaviour.consensus_height");
         Ok(ClientMisbehaviour(Attributes {

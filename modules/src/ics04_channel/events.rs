@@ -3,7 +3,6 @@ use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::BoxError;
 use crate::{attribute, some_attribute};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -212,7 +211,7 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(Attributes {
             height: obj.height,
@@ -262,7 +261,7 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(Attributes {
             height: obj.height,
@@ -316,7 +315,7 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(Attributes {
             height: obj.height,
@@ -366,7 +365,7 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(Attributes {
             height: obj.height,
@@ -428,7 +427,7 @@ impl From<Attributes> for CloseInit {
 }
 
 impl TryFrom<RawObject> for CloseInit {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseInit(Attributes {
             height: obj.height,
@@ -484,7 +483,7 @@ impl From<Attributes> for CloseConfirm {
 }
 
 impl TryFrom<RawObject> for CloseConfirm {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseConfirm(Attributes {
             height: obj.height,
@@ -515,7 +514,7 @@ macro_rules! p_attribute {
 }
 
 impl TryFrom<RawObject> for Packet {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height_str: String = p_attribute!(obj, "packet_timeout_height");
         let sequence: u64 = p_attribute!(obj, "packet_sequence");
@@ -560,7 +559,7 @@ impl SendPacket {
 }
 
 impl TryFrom<RawObject> for SendPacket {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
@@ -610,7 +609,7 @@ impl ReceivePacket {
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
@@ -662,7 +661,7 @@ impl WriteAcknowledgement {
 }
 
 impl TryFrom<RawObject> for WriteAcknowledgement {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
@@ -715,7 +714,7 @@ impl AcknowledgePacket {
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let packet = Packet::try_from(obj)?;
@@ -763,7 +762,7 @@ impl TimeoutPacket {
 }
 
 impl TryFrom<RawObject> for TimeoutPacket {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutPacket {
             height: obj.height,
@@ -812,7 +811,7 @@ impl TimeoutOnClosePacket {
 }
 
 impl TryFrom<RawObject> for TimeoutOnClosePacket {
-    type Error = BoxError;
+    type Error = Box<dyn std::error::Error>;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutOnClosePacket {
             height: obj.height,
