@@ -11,6 +11,7 @@ mod clients;
 mod connection;
 mod connections;
 mod packet;
+mod tx;
 
 /// `query` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -41,6 +42,10 @@ pub enum QueryCmd {
     /// The `query packet` subcommand
     #[options(help = "Query information about packets")]
     Packet(QueryPacketCmds),
+
+    /// The `query tx` subcommand
+    #[options(help = "Query information about transactions")]
+    Tx(tx::QueryTxCmd),
 }
 
 #[derive(Command, Debug, Options, Runnable)]
@@ -105,8 +110,4 @@ pub enum QueryPacketCmds {
     /// The `query packet unreceived-acks` subcommand
     #[options(help = "Query unreceived acknowledgments")]
     UnreceivedAcks(packet::QueryUnreceivedAcknowledgementCmd),
-
-    /// The `query packet tx` subcommand
-    #[options(help = "Query a transaction by hash")]
-    Tx(packet::QueryTxByHashCmd),
 }
