@@ -13,6 +13,9 @@
 
 ### IMPROVEMENTS
 
+- [ibc-relayer-cli]
+  - Minor log output improvements: color enabled, reduced redundant information ([#1100])
+
 - [ibc-relayer]
   - Update the on-chain IBC client with supporting headers when light client verification
     does bisection when verifying a header for a client update or a misbehaviour detection ([#673])
@@ -38,6 +41,7 @@
 [#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
 [#1050]: https://github.com/informalsystems/ibc-rs/issues/1050
 [#1064]: https://github.com/informalsystems/ibc-rs/issues/1064
+[#1100]: https://github.com/informalsystems/ibc-rs/issues/1100
 
 ## v0.4.0
 *June 3rd, 2021*
