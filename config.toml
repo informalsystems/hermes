@@ -38,8 +38,4 @@ max_gas = 3000000
 gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
-
+trust_threshold = { numerator = '1', denominator = '3' }
