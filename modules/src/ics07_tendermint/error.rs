@@ -2,6 +2,8 @@ use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 use crate::ics24_host::error::ValidationKind;
+use tendermint::{validator::Info,
+                account::Id};
 
 pub type Error = anomaly::Error<Kind>;
 
@@ -45,4 +47,28 @@ impl Kind {
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
     }
+}
+
+#[derive(Clone, Debug, Error)]
+pub enum VerificationError{
+    #[error("Couldn't verify signature `{signature:?}` with validator `{validator:?}` on sign_bytes `{sign_bytes:?}`")]
+    InvalidSignature {
+        /// Signature as a byte array
+        signature: Vec<u8>,
+        /// Validator which provided the signature
+        validator: Box<Info>,
+        /// Bytes which were signed
+        sign_bytes: Vec<u8>,
+    },
+
+    /// Duplicate validator in commit signatures
+    #[error("duplicate validator with address {0}")]
+    DuplicateValidator(Id),
+
+    /// Insufficient signers overlap
+    #[error("insufficient signers overlap {0} {1}")]
+    InsufficientOverlap(u64, u64),
+
+  
+    
 }

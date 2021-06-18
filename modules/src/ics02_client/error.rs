@@ -111,6 +111,25 @@ pub enum Kind {
 
     #[error("upgraded client height {0} must be at greater than current client height {1}")]
     LowUpgradeHeight(Height, Height),
+
+    /// Insufficient voting power in the commit
+    #[error("insufficient overlap {0}")]
+    InsufficientVotingPower(String),
+
+    /// Not enough trust because insufficient validators overlap
+    #[error("not enough trust because insufficient validators overlap: {0}")]
+    NotEnoughTrustedValsSigned(String),
+
+       /// Hash mismatch for the validator set
+    #[error("invalid validator set: header_validators_hash={header_validators_hash} validators_hash={validators_hash}")]
+    InvalidValidatorSet {
+        /// Hash of validator set stored in header
+        #[serde(with = "tendermint::serializers::hash")]
+        header_validators_hash: Hash,
+        /// Actual hash of validator set in header
+        #[serde(with = "tendermint::serializers::hash")]
+        validators_hash: Hash,
+    },
 }
 
 impl Kind {

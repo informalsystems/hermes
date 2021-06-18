@@ -12,6 +12,8 @@ use crate::ics04_channel::packet::Sequence;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::header::Header;
+use crate::ics07_tendermint::predicates::Predicates;
+
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
@@ -19,6 +21,7 @@ use crate::Height;
 use std::ops::Sub;
 use tendermint::Time;
 use tendermint::validator::Set;
+use tendermint::trust_threshold::TrustThresholdFraction;
 
 use crate::downcast;
 
@@ -161,24 +164,50 @@ impl ClientDef for TendermintClient {
                         }
             };
         
-        // check that the header's trusted validator set is 
-        // the next_validator_set of the trusted consensus state 
 
-        if Set::hash(&header.validator_set) != trusted_consensus_state.next_validators_hash {
-            return Err(
-                format!(
-                   // "ErrInvalidValidatorSet,
-                    "the headers trusted validators do not hash to next val set of the trusted consensus state. Expected: {:?}, got: {:?}",
-                    trusted_consensus_state.next_validators_hash, Set::hash(&header.validator_set)
-                ).into(),
-            )
-        }
 
         if header.height() == header.trusted_height.increment() {
          //adjacent 
-         
+
+            // check that the header's trusted validator set is 
+            // the next_validator_set of the trusted consensus state 
+            if Set::hash(&header.validator_set) != trusted_consensus_state.next_validators_hash {
+                return Err(
+                    format!(
+                        // "ErrInvalidValidatorSet,
+                        "the headers trusted validators do not hash to next val set of the trusted consensus state. Expected: {:?}, got: {:?}",
+                        trusted_consensus_state.next_validators_hash, Set::hash(&header.validator_set)
+                    ).into(),
+                )
+            }
+            let pred = Predicates::default();
+
+            // check that the validators that sign the commit of the untrusted header  
+            // have 2/3 of the voting power of the current validator set. 
+            match pred.voting_power_in(&header.signed_header,&header.validator_set,TrustThresholdFraction::TWO_THIRDS){
+                Err(e) => { return Err(Kind::InsufficientVotingPower(e.to_string()).into());  }
+                _ =>{}
+            };
+            
+            
+
         }else{
             //Non-adjacent 
+            let pred = Predicates::default();
+
+            //check that a subset of the trusted validator set, having 1/3 of the voting power
+            //signes the commit of the untrusted header 
+            match pred.voting_power_in(&header.signed_header,&header.trusted_validator_set,TrustThresholdFraction::default()){
+                    Err(e) => { return Err(Kind::NotEnoughTrustedValsSigned(e.to_string()).into());}
+                    _ => {}
+                };
+
+            // check that the validators that sign the commit of the untrusted header  
+            // have 2/3 of the voting power of the current validator set. 
+            match pred.voting_power_in(&header.signed_header,&header.validator_set,TrustThresholdFraction::TWO_THIRDS){
+                Err(e) => { return Err(Kind::InsufficientVotingPower(e.to_string()).into()); }
+                _ =>{}
+            };
         }
 
         // TODO: Additional verifications should be implemented here.
