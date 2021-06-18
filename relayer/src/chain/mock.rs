@@ -390,7 +390,7 @@ pub mod test_utils {
 
     use ibc::ics24_host::identifier::ChainId;
 
-    use crate::config::{ChainConfig, GasPrice};
+    use crate::config::ChainConfig;
 
     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
@@ -404,7 +404,8 @@ pub mod test_utils {
             key_name: "".to_string(),
             store_prefix: "".to_string(),
             gas: None,
-            gas_price: Some(GasPrice::new(0.001, "stake".to_string())),
+            gas_price: None,
+            gas_adjustment: None,
             max_msg_num: None,
             max_tx_size: None,
             clock_drift: Duration::from_secs(5),

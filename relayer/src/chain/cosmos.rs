@@ -1,6 +1,10 @@
 use std::{
-    convert::TryFrom, convert::TryInto, future::Future, str::FromStr, sync::Arc, thread,
-    time::Duration,
+    convert::{TryFrom, TryInto},
+    future::Future,
+    str::FromStr,
+    sync::Arc,
+    thread,
+    time::{Duration, Instant},
 };
 
 use anomaly::fail;
@@ -79,8 +83,9 @@ use crate::light_client::Verified;
 use super::Chain;
 
 const DEFAULT_MAX_GAS: u64 = 300_000;
-const DEFAULT_GAS_PRICE_AMOUNT: f64 = 0.001;
+const DEFAULT_GAS_PRICE_PRICE: f64 = 0.001;
 const DEFAULT_GAS_PRICE_DENOM: &str = "uatom";
+const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
 const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
@@ -91,7 +96,7 @@ mod retry_strategy {
 
     pub fn wait_for_block_commits() -> impl Iterator<Item = Duration> {
         // The total time should be higher than the full node timeout which defaults to 10sec.
-        Fixed::from_millis(300).take(40)
+        Fixed::from_millis(300).take(40) // 12 seconds
     }
 }
 
@@ -165,15 +170,16 @@ impl CosmosSdkChain {
         let acct_response = self.account()?;
         if self.acct_seq == 0 {
             debug!(
-                "retrieved account nonce {} for {}",
+                "send_tx: retrieved account nonce {} for {}",
                 acct_response.sequence,
                 self.id()
             );
+
             self.acct_seq = acct_response.sequence;
         };
 
         debug!(
-            "sending Tx with {} messages to {} using nonce {}",
+            "send_tx: sending {} messages to {} using nonce {}",
             proto_msgs.len(),
             self.id(),
             self.acct_seq
@@ -204,8 +210,6 @@ impl CosmosSdkChain {
                 sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
             });
 
-        trace!("adjusted_gas {}", adjusted_gas);
-
         if adjusted_gas > self.max_gas() {
             return Err(Kind::TxSimulateGasEstimateExceeded {
                 chain_id: self.id().clone(),
@@ -216,12 +220,14 @@ impl CosmosSdkChain {
         }
 
         let adjusted_fee = self.fee_with_gas(adjusted_gas);
+
         trace!(
-            "{} adjusting fee from {:?} to {:?}",
+            "send_tx: {} adjusting fee from {:?} to {:?}",
             self.id(),
             fee,
             adjusted_fee
         );
+
         let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
         let signed_doc = self.signed_doc(
             body_buf.clone(),
@@ -241,9 +247,15 @@ impl CosmosSdkChain {
         let response = self
             .block_on(broadcast_tx_sync(self, tx_bytes))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
-        debug!("{} broadcast Tx sync {:?}", self.id(), response);
+
+        debug!(
+            "send_tx: broadcast_tx_sync to {}: {:?}",
+            self.id(),
+            response
+        );
 
         self.acct_seq += 1;
+
         Ok(response)
     }
 
@@ -255,21 +267,25 @@ impl CosmosSdkChain {
     /// The gas price
     fn gas_price(&self) -> GasPrice {
         self.config.gas_price.clone().unwrap_or_else(|| {
-            GasPrice::new(
-                DEFAULT_GAS_PRICE_AMOUNT,
-                DEFAULT_GAS_PRICE_DENOM.to_string(),
-            )
+            GasPrice::new(DEFAULT_GAS_PRICE_PRICE, DEFAULT_GAS_PRICE_DENOM.to_string())
         })
+    }
+
+    /// The gas price adjustment
+    fn gas_adjustment(&self) -> f64 {
+        self.config
+            .gas_adjustment
+            .unwrap_or(DEFAULT_GAS_PRICE_ADJUSTMENT)
     }
 
     /// The maximum fee the relayer pays for a transaction
     fn max_fee_in_coins(&self) -> Coin {
-        calculate_fee(self.max_gas(), self.gas_price())
+        calculate_fee(self.max_gas(), self.gas_price(), self.gas_adjustment())
     }
 
     /// The fee in coins based on gas amount
     fn fee_from_gas_in_coins(&self, gas: u64) -> Coin {
-        calculate_fee(gas, self.gas_price())
+        calculate_fee(gas, self.gas_price(), self.gas_adjustment())
     }
 
     /// The maximum number of messages included in a transaction
@@ -451,12 +467,15 @@ impl CosmosSdkChain {
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));
 
+        let start = Instant::now();
+
         let result = retry_with_index(retry_strategy::wait_for_block_commits(), |index| {
             if all_tx_results_found(&tx_sync_results) {
                 trace!(
-                    "retrieved {} tx results after {} tries",
+                    "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
                     tx_sync_results.len(),
-                    index
+                    index,
+                    start.elapsed().as_millis()
                 );
 
                 // All transactions confirmed
@@ -1858,12 +1877,13 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
     Ok((body, body_buf))
 }
 
-fn calculate_fee(gas_amount: u64, gas_price: GasPrice) -> Coin {
-    let amount = mul_ceil(gas_amount, gas_price.amount);
+fn calculate_fee(gas_amount: u64, gas_price: GasPrice, gas_adjustment: f64) -> Coin {
+    let gas_amount = mul_ceil(gas_amount, gas_adjustment);
+    let fee_amount = mul_ceil(gas_amount, gas_price.price);
 
     Coin {
         denom: gas_price.denom,
-        amount: amount.to_string(),
+        amount: fee_amount.to_string(),
     }
 }
 
