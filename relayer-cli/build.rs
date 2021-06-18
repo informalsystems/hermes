@@ -3,16 +3,17 @@ use std::env;
 use git::GitHandle;
 
 fn main() {
-    // Overwrites the package `name` to be 'hermes' (the binary name), instead of 'ibc-relayer-cli'
-    // (which is the crate name), so that abscissa outputs consistent usage and help messages.
+    // Overwrites the package `version` to include metadata, and package `name` to be 'hermes'
+    // (the binary name), instead of 'ibc-relayer-cli' (which is the crate name), so that abscissa
+    // outputs consistent usage and help messages.
     // https://github.com/informalsystems/ibc-rs/issues/590
     // Note: This can potentially break the normal cargo (or crates.io) workflow.
     println!("cargo:rustc-env=CARGO_PKG_NAME=hermes");
-
-    // Make the version (along with meta) available to the relayer CLI crate
-    println!("cargo:rustc-env=HERMES_VERSION={}", version());
+    println!("cargo:rustc-env=CARGO_PKG_VERSION={}", version());
 }
 
+// returns a valid semver string optionally suffixed with the current git branch and last commit
+// hash. e.g. 0.4.0 or 0.4.0+cli-git-hash-eb0e94fc-dirty
 fn version() -> String {
     let mut vers = env::var("CARGO_PKG_VERSION").unwrap();
 
@@ -48,7 +49,7 @@ mod git {
     impl GitHandle {
         pub fn new() -> Option<Self> {
             if Self::is_git_repo() {
-                Some(GitHandle(PhantomData::default()))
+                Some(GitHandle(PhantomData))
             } else {
                 None
             }

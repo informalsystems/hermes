@@ -44,7 +44,7 @@ pub fn default_config_file() -> Option<PathBuf> {
 // Config(ConfigCmd),
 
 /// Cli Subcommands
-#[derive(Debug, Options, Runnable)]
+#[derive(Command, Debug, Options, Runnable)]
 pub enum CliCmd {
     /// The `help` subcommand
     #[options(help = "Get usage information")]
@@ -90,25 +90,6 @@ pub enum CliCmd {
     /// The `version` subcommand
     #[options(help = "Display version information")]
     Version(VersionCmd),
-}
-
-// Override derive impl to modify version
-impl Command for CliCmd {
-    fn name() -> &'static str {
-        env!("CARGO_PKG_NAME")
-    }
-
-    fn description() -> &'static str {
-        env!("CARGO_PKG_DESCRIPTION").trim()
-    }
-
-    fn version() -> &'static str {
-        env!("HERMES_VERSION")
-    }
-
-    fn authors() -> &'static str {
-        env!("CARGO_PKG_AUTHORS")
-    }
 }
 
 /// This trait allows you to define how application configuration is loaded.
