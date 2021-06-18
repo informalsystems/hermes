@@ -53,18 +53,15 @@ where
     }
 
     pub fn fetch(&self, db: &sled::Db, key: &K) -> Result<Option<V>, error::Error> {
-        let key_bytes = serde_cbor::to_vec(&key).map_err(|e| error::Kind::Store.context(e))?;
+        let key_bytes = serde_cbor::to_vec(&key).map_err(error::cbor_error)?;
 
         let prefixed_key_bytes = self.prefixed_key(key_bytes);
 
-        let value_bytes = db
-            .get(prefixed_key_bytes)
-            .map_err(|e| error::Kind::Store.context(e))?;
+        let value_bytes = db.get(prefixed_key_bytes).map_err(error::store_error)?;
 
         match value_bytes {
             Some(bytes) => {
-                let value =
-                    serde_cbor::from_slice(&bytes).map_err(|e| error::Kind::Store.context(e))?;
+                let value = serde_cbor::from_slice(&bytes).map_err(error::cbor_error)?;
                 Ok(value)
             }
             None => Ok(None),
@@ -83,15 +80,15 @@ where
     // }
 
     pub fn insert(&self, db: &sled::Db, key: &K, value: &V) -> Result<(), error::Error> {
-        let key_bytes = serde_cbor::to_vec(&key).map_err(|e| error::Kind::Store.context(e))?;
+        let key_bytes = serde_cbor::to_vec(&key).map_err(error::cbor_error)?;
 
         let prefixed_key_bytes = self.prefixed_key(key_bytes);
 
-        let value_bytes = serde_cbor::to_vec(&value).map_err(|e| error::Kind::Store.context(e))?;
+        let value_bytes = serde_cbor::to_vec(&value).map_err(error::cbor_error)?;
 
         db.insert(prefixed_key_bytes, value_bytes)
             .map(|_| ())
-            .map_err(|e| error::Kind::Store.context(e))?;
+            .map_err(error::store_error)?;
 
         Ok(())
     }

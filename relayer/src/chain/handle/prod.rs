@@ -35,7 +35,7 @@ use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 use crate::{
     connection::ConnectionMsgType,
-    error::{Error, Kind},
+    error::{self, Error},
     keyring::KeyEntry,
 };
 
@@ -68,9 +68,11 @@ impl ProdChainHandle {
 
         self.runtime_sender
             .send(input)
-            .map_err(|e| Kind::Channel.context(e))?;
+            .map_err(|_| error::channel_send_error())?;
 
-        receiver.recv().map_err(|e| Kind::Channel.context(e))?
+        receiver
+            .recv()
+            .map_err(|_| error::channel_receive_error())?
     }
 }
 
