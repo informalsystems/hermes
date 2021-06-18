@@ -131,6 +131,7 @@ pub struct ChainConfig {
     pub key_name: String,
     pub store_prefix: String,
     pub gas: Option<u64>,
+    pub gas_adjustment: Option<f64>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
