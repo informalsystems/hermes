@@ -2,6 +2,7 @@
 
 use anomaly::Context;
 use displaydoc::Display;
+use flex_error::define_error;
 
 use ibc::{
     ics02_client::client_type::ClientType,
@@ -12,6 +13,27 @@ use ibc::{
 pub type Error = anomaly::Error<Kind>;
 
 impl std::error::Error for Kind {}
+
+define_error! {
+    RelayerError {
+        ConfigIo
+            |_| { "config I/O error" },
+
+        Io
+            |_| { "I/O error" },
+
+        Config
+            |_| { "invalid configuration" },
+
+        Rpc
+            { url: tendermint_rpc::Url }
+            |e| { format!("RPC error to endpoint {}", e.url) },
+
+        WebSocket
+            { url: tendermint_rpc::Url }
+            |e| { format!("Websocket error to endpoint {}", e.url) },
+    }
+}
 
 /// Various kinds of errors that can be raiser by the relayer.
 #[derive(Clone, Debug, Display)]
@@ -32,7 +54,7 @@ pub enum Kind {
     Websocket(tendermint_rpc::Url),
 
     /// event monitor error: {0}
-    EventMonitor(crate::event::monitor::Error),
+    EventMonitor(crate::event::monitor::ErrorDetail),
 
     /// GRPC error
     Grpc,

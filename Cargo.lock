@@ -1444,6 +1444,7 @@ dependencies = [
  "dyn-clonable",
  "dyn-clone",
  "env_logger",
+ "flex-error",
  "futures",
  "hdpath",
  "hex",
