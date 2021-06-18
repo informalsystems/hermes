@@ -80,7 +80,7 @@ use super::Chain;
 
 const DEFAULT_MAX_GAS: u64 = 300_000;
 const DEFAULT_GAS_PRICE_AMOUNT: f64 = 0.001;
-const DEFAULT_GAS_PRICE_DENOM: &str = "uatoms";
+const DEFAULT_GAS_PRICE_DENOM: &str = "uatom";
 
 const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
