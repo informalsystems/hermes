@@ -20,7 +20,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    max_gas = 200000
+    gas = 200000
     fee_denom = 'stake'
     fee_amount = 10
     clock_drift = '5s'
@@ -39,7 +39,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    max_gas = 200000
+    gas = 200000
     fee_denom = 'stake'
     fee_amount = 10
     clock_drift = '5s'
@@ -54,7 +54,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    max_gas = 200000
+    gas = 200000
     fee_denom = 'stake'
     fee_amount = 10
     clock_drift = '5s'
