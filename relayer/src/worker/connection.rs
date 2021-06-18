@@ -42,8 +42,6 @@ impl ConnectionWorker {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
 
-        let mut handshake_connection;
-
         // Flag that indicates if the worker should actively resume handshake.
         // Set on start or when event based handshake fails.
         let mut resume_handshake = true;
@@ -57,14 +55,17 @@ impl ConnectionWorker {
                         // there can be up to two event for this connection, e.g. init and try.
                         // process the last event, the one with highest "rank".
                         let last_event = batch.events.last();
+
                         debug!("connection worker starts processing {:#?}", last_event);
+
                         match last_event {
                             Some(event) => {
-                                handshake_connection = RelayConnection::restore_from_event(
+                                let mut handshake_connection = RelayConnection::restore_from_event(
                                     a_chain.clone(),
                                     b_chain.clone(),
                                     event.clone(),
                                 )?;
+
                                 retry_with_index(
                                     retry_strategy::worker_default_strategy(),
                                     |index| handshake_connection.step_event(event.clone(), index),
@@ -80,8 +81,9 @@ impl ConnectionWorker {
                         if !resume_handshake {
                             continue;
                         }
+
                         debug!(
-                            "connection worker starts processing block event at {:#?}",
+                            "connection worker starts processing block event at {}",
                             current_height
                         );
 
