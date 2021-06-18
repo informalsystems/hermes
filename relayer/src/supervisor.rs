@@ -3,14 +3,14 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 
 use ibc::{
     events::IbcEvent,
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
     ics03_connection::connection::{IdentifiedConnectionEnd, State},
     ics04_channel::channel::IdentifiedChannelEnd,
-    ics24_host::identifier::ChainId,
+    ics24_host::identifier::{ChainId, ChannelId},
     Height,
 };
 use ibc_proto::ibc::core::{
@@ -67,6 +67,22 @@ impl Supervisor {
 
     fn handshake_enabled(&self) -> bool {
         self.config.global.strategy == Strategy::HandshakeAndPackets
+    }
+
+    fn relay_on_channel(&self, channel_id: &ChannelId) -> bool {
+        !self.config.filtering.enabled || self.config.filtering.channels.contains(channel_id)
+    }
+
+    fn relay_on_object(&self, object: &Object) -> bool {
+        if !self.config.filtering.enabled {
+            return true;
+        }
+
+        match object {
+            Object::Client(_) => true,
+            Object::Channel(c) => self.relay_on_channel(&c.src_channel_id),
+            Object::UnidirectionalChannelPath(u) => self.relay_on_channel(&u.src_channel_id),
+        }
     }
 
     /// Collect the events we are interested in from an [`EventBatch`],
@@ -230,6 +246,7 @@ impl Supervisor {
                         continue;
                     }
                 };
+
                 for connection_id in client_connections {
                     let connection_end =
                         match chain.query_connection(&connection_id, Height::zero()) {
@@ -269,12 +286,24 @@ impl Supervisor {
                         IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
 
                     for channel in connection_channels {
-                        match self.spawn_workers_for_channel(
+                        if !self.relay_on_channel(&channel.channel_id) {
+                            info!(
+                                "skipping workers for chain {} and channel {}. \
+                                reason: filtering is enabled and channel does not match any enabled channels",
+                                chain.id(), &channel.channel_id
+                            );
+
+                            continue;
+                        }
+
+                        let spawn_result = self.spawn_workers_for_channel(
                             chain.clone(),
                             client.clone(),
                             connection.clone(),
                             channel.clone(),
-                        ) {
+                        );
+
+                        match spawn_result {
                             Ok(()) => debug!(
                                 "done spawning workers for chain {} and channel {}",
                                 chain.id(),
@@ -446,6 +475,16 @@ impl Supervisor {
         let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
+            if !self.relay_on_object(&object) {
+                info!(
+                    "skipping events for '{}'. \
+                    reason: filtering is enabled and channel does not match any enabled channels",
+                    object.short_name()
+                );
+
+                continue;
+            }
+
             if events.is_empty() {
                 continue;
             }

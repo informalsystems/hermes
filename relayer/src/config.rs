@@ -1,11 +1,12 @@
 //! Relayer configuration
 
+use std::collections::HashSet;
 use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ChannelId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
@@ -25,6 +26,21 @@ impl GasPrice {
 impl fmt::Display for GasPrice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.price, self.denom)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Filtering {
+    pub enabled: bool,
+    pub channels: HashSet<ChannelId>,
+}
+
+impl Default for Filtering {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            channels: HashSet::new(),
+        }
     }
 }
 
@@ -54,6 +70,8 @@ pub struct Config {
     pub global: GlobalConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
+    #[serde(default)]
+    pub filtering: Filtering,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
 }

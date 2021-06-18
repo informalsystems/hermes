@@ -10,6 +10,10 @@ enabled = true
 host = '127.0.0.1'
 port = 3001
 
+[filtering]
+enabled = false
+channels = ['channel-1']
+
 [[chains]]
 id = 'ibc-0'
 rpc_addr = 'http://127.0.0.1:26657'
