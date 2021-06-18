@@ -241,7 +241,7 @@ impl CosmosSdkChain {
         let response = self
             .block_on(broadcast_tx_sync(self, tx_bytes))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
-        debug!(" {} broadcast Tx sync {:?}", self.id(), response);
+        debug!("{} broadcast Tx sync {:?}", self.id(), response);
 
         self.acct_seq += 1;
         Ok(response)
