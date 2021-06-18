@@ -12,19 +12,19 @@ use crate::error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
-    pub amount: f64,
+    pub price: f64,
     pub denom: String,
 }
 
 impl GasPrice {
-    pub const fn new(amount: f64, denom: String) -> Self {
-        Self { amount, denom }
+    pub const fn new(price: f64, denom: String) -> Self {
+        Self { price, denom }
     }
 }
 
 impl fmt::Display for GasPrice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}", self.amount, self.denom)
+        write!(f, "{}{}", self.price, self.denom)
     }
 }
 

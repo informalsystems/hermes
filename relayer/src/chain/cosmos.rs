@@ -83,7 +83,7 @@ use crate::light_client::Verified;
 use super::Chain;
 
 const DEFAULT_MAX_GAS: u64 = 300_000;
-const DEFAULT_GAS_PRICE_AMOUNT: f64 = 0.001;
+const DEFAULT_GAS_PRICE_PRICE: f64 = 0.001;
 const DEFAULT_GAS_PRICE_DENOM: &str = "uatom";
 
 const DEFAULT_MAX_MSG_NUM: usize = 30;
@@ -266,10 +266,7 @@ impl CosmosSdkChain {
     /// The gas price
     fn gas_price(&self) -> GasPrice {
         self.config.gas_price.clone().unwrap_or_else(|| {
-            GasPrice::new(
-                DEFAULT_GAS_PRICE_AMOUNT,
-                DEFAULT_GAS_PRICE_DENOM.to_string(),
-            )
+            GasPrice::new(DEFAULT_GAS_PRICE_PRICE, DEFAULT_GAS_PRICE_DENOM.to_string())
         })
     }
 
