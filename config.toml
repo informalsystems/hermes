@@ -3,16 +3,13 @@
 #   'packets': restricts relaying to packets only, or
 #   'all': relay from all types of events
 strategy = 'packets'
+filter = true
 log_level = 'info'
 
 [telemetry]
 enabled = true
 host = '127.0.0.1'
 port = 3001
-
-[filtering]
-enabled = false
-channels = ['channel-1']
 
 [[chains]]
 id = 'ibc-0'
@@ -28,6 +25,8 @@ gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
+[chains.filters]
+channels = [['transfer', 'channel-0']]
 
 [[chains]]
 id = 'ibc-1'
@@ -43,3 +42,5 @@ gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
+[chains.filters]
+channels = [['transfer', 'channel-0']]

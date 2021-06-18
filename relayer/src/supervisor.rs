@@ -35,6 +35,7 @@ use crate::{
 
 mod error;
 pub use error::Error;
+use ibc::ics24_host::identifier::PortId;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -69,19 +70,37 @@ impl Supervisor {
         self.config.global.strategy == Strategy::HandshakeAndPackets
     }
 
-    fn relay_on_channel(&self, channel_id: &ChannelId) -> bool {
-        !self.config.filtering.enabled || self.config.filtering.channels.contains(channel_id)
+    fn relay_on_channel(
+        &self,
+        chain_id: &ChainId,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> bool {
+        !self.config.global.filter
+            || self.config.find_chain(chain_id).map_or_else(
+                || false,
+                |chain_config| {
+                    chain_config
+                        .filters
+                        .channels
+                        .contains(&(port_id.clone(), channel_id.clone()))
+                },
+            )
     }
 
-    fn relay_on_object(&self, object: &Object) -> bool {
-        if !self.config.filtering.enabled {
+    fn relay_on_object(&self, chain_id: &ChainId, object: &Object) -> bool {
+        if !self.config.global.filter {
             return true;
         }
 
         match object {
             Object::Client(_) => true,
-            Object::Channel(c) => self.relay_on_channel(&c.src_channel_id),
-            Object::UnidirectionalChannelPath(u) => self.relay_on_channel(&u.src_channel_id),
+            Object::Channel(c) => {
+                self.relay_on_channel(chain_id, c.src_port_id(), c.src_channel_id())
+            }
+            Object::UnidirectionalChannelPath(u) => {
+                self.relay_on_channel(chain_id, u.src_port_id(), &u.src_channel_id())
+            }
         }
     }
 
@@ -286,7 +305,8 @@ impl Supervisor {
                         IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
 
                     for channel in connection_channels {
-                        if !self.relay_on_channel(&channel.channel_id) {
+                        if !self.relay_on_channel(&chain_id, &channel.port_id, &channel.channel_id)
+                        {
                             info!(
                                 "skipping workers for chain {} and channel {}. \
                                 reason: filtering is enabled and channel does not match any enabled channels",
@@ -475,7 +495,7 @@ impl Supervisor {
         let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
-            if !self.relay_on_object(&object) {
+            if !self.relay_on_object(&src_chain.id(), &object) {
                 info!(
                     "skipping events for '{}'. \
                     reason: filtering is enabled and channel does not match any enabled channels",

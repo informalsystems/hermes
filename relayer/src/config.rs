@@ -6,7 +6,7 @@ use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::{ChainId, ChannelId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
@@ -30,15 +30,13 @@ impl fmt::Display for GasPrice {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Filtering {
-    pub enabled: bool,
-    pub channels: HashSet<ChannelId>,
+pub struct ChainFilters {
+    pub channels: HashSet<(PortId, ChannelId)>,
 }
 
-impl Default for Filtering {
+impl Default for ChainFilters {
     fn default() -> Self {
         Self {
-            enabled: false,
             channels: HashSet::new(),
         }
     }
@@ -70,8 +68,6 @@ pub struct Config {
     pub global: GlobalConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
-    #[serde(default)]
-    pub filtering: Filtering,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
 }
@@ -105,7 +101,8 @@ impl Default for Strategy {
 pub struct GlobalConfig {
     #[serde(default)]
     pub strategy: Strategy,
-
+    #[serde(default)]
+    pub filter: bool,
     /// All valid log levels, as defined in tracing:
     /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
     pub log_level: String,
@@ -115,6 +112,7 @@ impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
+            filter: false,
             log_level: "info".to_string(),
         }
     }
@@ -161,6 +159,8 @@ pub struct ChainConfig {
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
     pub gas_price: Option<GasPrice>,
+    #[serde(default)]
+    pub filters: ChainFilters,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
