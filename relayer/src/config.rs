@@ -1,6 +1,6 @@
 //! Relayer configuration
 
-use std::{fs, fs::File, io::Write, path::Path, time::Duration};
+use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
@@ -19,6 +19,12 @@ pub struct GasPrice {
 impl GasPrice {
     pub const fn new(amount: f64, denom: String) -> Self {
         Self { amount, denom }
+    }
+}
+
+impl fmt::Display for GasPrice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.amount, self.denom)
     }
 }
 
