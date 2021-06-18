@@ -44,6 +44,7 @@
      - [Connection](./commands/queries/connection.md)
      - [Channel](./commands/queries/channel.md)
      - [Packet](./commands/queries/packet.md)
+     - [Tx](./commands/queries/tx.md)
    - [Raw transactions](./commands/raw/index.md)
      - [Client](./commands/raw/client.md)
      - [Connection](./commands/raw/connection.md)
