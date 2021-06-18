@@ -4,7 +4,7 @@ use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 /// Channel event types
 const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
@@ -235,7 +235,7 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(extract_attributes(&obj, "channel_open_init")?))
     }
@@ -275,7 +275,7 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(extract_attributes(&obj, "channel_open_try")?))
     }
@@ -319,7 +319,7 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(extract_attributes(&obj, "channel_open_ack")?))
     }
@@ -359,7 +359,7 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(extract_attributes(
             &obj,
@@ -414,7 +414,7 @@ impl From<Attributes> for CloseInit {
 }
 
 impl TryFrom<RawObject> for CloseInit {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseInit(extract_attributes(&obj, "channel_close_init")?))
     }
@@ -460,7 +460,7 @@ impl From<Attributes> for CloseConfirm {
 }
 
 impl TryFrom<RawObject> for CloseConfirm {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseConfirm(extract_attributes(
             &obj,
@@ -475,28 +475,41 @@ impl From<CloseConfirm> for IbcEvent {
     }
 }
 
-#[macro_export]
-macro_rules! p_attribute {
-    ($a:ident, $b:literal) => {{
-        let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(nb)?[$a.idx].parse()?
-    }};
-}
-
 impl TryFrom<RawObject> for Packet {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height_str: String = p_attribute!(obj, "packet_timeout_height");
-        let sequence: u64 = p_attribute!(obj, "packet_sequence");
         Ok(Packet {
-            sequence: sequence.into(),
-            source_port: p_attribute!(obj, "packet_src_port"),
-            source_channel: p_attribute!(obj, "packet_src_channel"),
-            destination_port: p_attribute!(obj, "packet_dst_port"),
-            destination_channel: p_attribute!(obj, "packet_dst_channel"),
+            sequence: extract_attribute(&obj, &format!("{}.packet_sequence", obj.action))?
+                .parse()
+                .map_err(events::channel_error)?,
+            source_port: extract_attribute(&obj, &format!("{}.packet_src_port", obj.action))?
+                .parse()
+                .map_err(events::parse_error)?,
+            source_channel: extract_attribute(&obj, &format!("{}.packet_src_channel", obj.action))?
+                .parse()
+                .map_err(events::parse_error)?,
+            destination_port: extract_attribute(&obj, &format!("{}.packet_dst_port", obj.action))?
+                .parse()
+                .map_err(events::parse_error)?,
+            destination_channel: extract_attribute(
+                &obj,
+                &format!("{}.packet_dst_channel", obj.action),
+            )?
+            .parse()
+            .map_err(events::parse_error)?,
             data: vec![],
-            timeout_height: height_str.as_str().try_into()?,
-            timeout_timestamp: p_attribute!(obj, "packet_timeout_timestamp"),
+            timeout_height: extract_attribute(
+                &obj,
+                &format!("{}.packet_timeout_height", obj.action),
+            )?
+            .parse()
+            .map_err(events::height_error)?,
+            timeout_timestamp: extract_attribute(
+                &obj,
+                &format!("{}.packet_timeout_timestamp", obj.action),
+            )?
+            .parse()
+            .map_err(events::timestamp_error)?,
         })
     }
 }
@@ -529,12 +542,14 @@ impl SendPacket {
 }
 
 impl TryFrom<RawObject> for SendPacket {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
+        let data_str: String = extract_attribute(&obj, &format!("{}.packet_data", obj.action))?;
+
         let mut packet = Packet::try_from(obj)?;
         packet.data = Vec::from(data_str.as_str().as_bytes());
+
         Ok(SendPacket { height, packet })
     }
 }
@@ -579,12 +594,14 @@ impl ReceivePacket {
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
+        let data_str: String = extract_attribute(&obj, &format!("{}.packet_data", obj.action))?;
+
         let mut packet = Packet::try_from(obj)?;
         packet.data = Vec::from(data_str.as_str().as_bytes());
+
         Ok(ReceivePacket { height, packet })
     }
 }
@@ -631,13 +648,17 @@ impl WriteAcknowledgement {
 }
 
 impl TryFrom<RawObject> for WriteAcknowledgement {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
-        let ack_str: String = p_attribute!(obj, "packet_ack");
+
+        let data_str: String = extract_attribute(&obj, &format!("{}.packet_data", obj.action))?;
+
+        let ack_str: String = extract_attribute(&obj, &format!("{}.packet_ack", obj.action))?;
+
         let mut packet = Packet::try_from(obj)?;
         packet.data = Vec::from(data_str.as_str().as_bytes());
+
         Ok(WriteAcknowledgement {
             height,
             packet,
@@ -684,7 +705,7 @@ impl AcknowledgePacket {
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let packet = Packet::try_from(obj)?;
@@ -732,7 +753,7 @@ impl TimeoutPacket {
 }
 
 impl TryFrom<RawObject> for TimeoutPacket {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutPacket {
             height: obj.height,
@@ -781,7 +802,7 @@ impl TimeoutOnClosePacket {
 }
 
 impl TryFrom<RawObject> for TimeoutOnClosePacket {
-    type Error = Box<dyn std::error::Error>;
+    type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutOnClosePacket {
             height: obj.height,
