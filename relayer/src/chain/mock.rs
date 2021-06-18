@@ -403,7 +403,7 @@ pub mod test_utils {
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),
-            gas: None,
+            max_gas: None,
             gas_price: None,
             gas_adjustment: None,
             max_msg_num: None,

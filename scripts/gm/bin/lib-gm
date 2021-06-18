@@ -774,7 +774,7 @@ account_prefix = '${ACCOUNT_PREFIX}'
 key_name = 'wallet'
 store_prefix = 'ibc'
 gas_price = { price = 0.001, denom = '${DENOM}' }
-gas = 500000
+max_gas = 500000
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }

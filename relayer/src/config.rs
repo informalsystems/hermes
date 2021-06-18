@@ -130,7 +130,7 @@ pub struct ChainConfig {
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
-    pub gas: Option<u64>,
+    pub max_gas: Option<u64>,
     pub gas_adjustment: Option<f64>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,

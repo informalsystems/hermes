@@ -260,7 +260,7 @@ impl CosmosSdkChain {
 
     /// The maximum amount of gas the relayer is willing to pay for a transaction
     fn max_gas(&self) -> u64 {
-        self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
+        self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
     /// The gas price
