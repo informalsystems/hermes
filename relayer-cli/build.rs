@@ -1,6 +1,6 @@
 use std::env;
-use std::ffi::OsStr;
-use std::process::{Command, Output};
+
+use git::GitHandle;
 
 fn main() {
     // Overwrites the package `name` to be 'hermes' (the binary name), instead of 'ibc-relayer-cli'
@@ -31,56 +31,64 @@ fn version() -> String {
     vers.replace("\n", "")
 }
 
-struct GitHandle;
+mod git {
+    use std::ffi::OsStr;
+    use std::marker::PhantomData;
+    use std::process::{Command, Output};
 
-impl GitHandle {
-    pub fn new() -> Option<Self> {
-        if Self::is_git_repo() {
-            Some(GitHandle)
-        } else {
-            None
+    // A wrapper over a git shell command that is only constructable if git is available & the
+    // current directory is a git repository
+    pub struct GitHandle(PhantomData<Command>);
+
+    impl GitHandle {
+        pub fn new() -> Option<Self> {
+            if Self::is_git_repo() {
+                Some(GitHandle(PhantomData::default()))
+            } else {
+                None
+            }
         }
-    }
 
-    // Returns the current branch as a string - if the branch name has a '/' returns part after the
-    // last '/'
-    pub fn branch(&self) -> String {
-        let branch = Self::command(&["rev-parse", "--abbrev-ref", "HEAD"]);
-        let branch_str = String::from_utf8_lossy(&branch.stdout);
-        branch_str
-            .contains('/')
-            .then(|| {
-                branch_str
-                    .split('/')
-                    .collect::<Vec<&str>>()
-                    .last()
-                    .unwrap()
-                    .to_string()
-            })
-            .unwrap_or_else(|| branch_str.into())
-    }
+        // Returns the current branch as a string - if the branch name has a '/' returns part after
+        // the last '/'
+        pub fn branch(&self) -> String {
+            let branch = Self::command(&["rev-parse", "--abbrev-ref", "HEAD"]);
+            let branch_str = String::from_utf8_lossy(&branch.stdout);
+            branch_str
+                .contains('/')
+                .then(|| {
+                    branch_str
+                        .split('/')
+                        .collect::<Vec<&str>>()
+                        .last()
+                        .unwrap()
+                        .to_string()
+                })
+                .unwrap_or_else(|| branch_str.into())
+        }
 
-    // Returns the short hash of the last git commit
-    pub fn last_commit_hash(&self) -> String {
-        let commit = Self::command(&["rev-parse", "--short", "HEAD"]);
-        String::from_utf8_lossy(&commit.stdout).into_owned()
-    }
+        // Returns the short hash of the last git commit
+        pub fn last_commit_hash(&self) -> String {
+            let commit = Self::command(&["rev-parse", "--short", "HEAD"]);
+            String::from_utf8_lossy(&commit.stdout).into_owned()
+        }
 
-    // Checks if the git repo is dirty
-    pub fn is_dirty(&self) -> bool {
-        Self::command(&["status", "--porcelain"]).status.success()
-    }
+        // Checks if the git repo is dirty
+        pub fn is_dirty(&self) -> bool {
+            Self::command(&["status", "--porcelain"]).status.success()
+        }
 
-    #[inline]
-    fn command(args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> Output {
-        Command::new("git").args(args).output().unwrap()
-    }
+        #[inline]
+        fn command(args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> Output {
+            Command::new("git").args(args).output().unwrap()
+        }
 
-    // returns true iff git is installed and current directory is a git repo
-    fn is_git_repo() -> bool {
-        Command::new("git")
-            .args(&["rev-parse", "--git-dir"])
-            .output()
-            .map_or(false, |o| o.status.success())
+        // returns true iff git is installed and current directory is a git repo
+        fn is_git_repo() -> bool {
+            Command::new("git")
+                .args(&["rev-parse", "--git-dir"])
+                .output()
+                .map_or(false, |o| o.status.success())
+        }
     }
 }
