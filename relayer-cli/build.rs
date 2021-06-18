@@ -16,6 +16,11 @@ fn main() {
 fn version() -> String {
     let mut vers = env::var("CARGO_PKG_VERSION").unwrap();
 
+    // use just package version for CI
+    if env::var("GITHUB_JOB") == Ok("create-release".to_owned()) {
+        return vers;
+    }
+
     if let Some(git) = GitHandle::new() {
         println!("cargo:rustc-rerun-if-changed=.git/HEAD");
 
