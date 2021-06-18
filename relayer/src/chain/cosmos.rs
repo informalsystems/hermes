@@ -23,7 +23,6 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tonic::Code;
 use tracing::{debug, trace};
 
 use ibc::downcast;
@@ -463,6 +462,8 @@ impl CosmosSdkChain {
         mut tx_sync_results: Vec<TxSyncResult>,
     ) -> Result<Vec<TxSyncResult>, Error> {
         use crate::util::retry::{retry_with_index, RetryResult};
+
+        trace!("waiting for commit of block(s)");
 
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));
@@ -932,10 +933,11 @@ impl Chain for CosmosSdkChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
-            .block_on(client.client_connections(request))
-            .map_err(|e| Kind::Grpc.context(e))?
-            .into_inner();
+        let response = match self.block_on(client.client_connections(request)) {
+            Ok(res) => res.into_inner(),
+            Err(e) if e.code() == tonic::Code::NotFound => return Ok(vec![]),
+            Err(e) => return Err(Kind::Grpc.context(e).into()),
+        };
 
         // TODO: add warnings for any identifiers that fail to parse (below).
         //      similar to the parsing in `query_connection_channels`.
@@ -1013,7 +1015,7 @@ impl Chain for CosmosSdkChain {
                 .insert("x-cosmos-block-height", height_param);
 
             let response = client.connection(request).await.map_err(|e| {
-                if e.code() == Code::NotFound {
+                if e.code() == tonic::Code::NotFound {
                     Kind::ConnectionNotFound(connection_id.clone()).into()
                 } else {
                     Kind::Grpc.context(e)
