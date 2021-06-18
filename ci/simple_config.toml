@@ -12,7 +12,7 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 400000
-gas_price = { amount = 0.001, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -26,6 +26,6 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 400000
-gas_price = { amount = 0.001, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'

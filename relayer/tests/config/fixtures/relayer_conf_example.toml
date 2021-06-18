@@ -12,7 +12,7 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
-gas_price = { amount = 0.001, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'stake' }
 max_msg_num = 4
 max_tx_size = 1048576
 clock_drift = '5s'
@@ -28,7 +28,7 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas_price = { amount = 0.001, denom = 'stake' }
+gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
