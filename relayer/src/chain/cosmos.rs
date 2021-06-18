@@ -464,15 +464,15 @@ impl CosmosSdkChain {
             }
 
             for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
-                // If this transaction was not committed yet, let's figure out
-                // whether it was because it failed or because it hasn't been committed yet.
+                // If this transaction was not committed, determine whether it was because it failed
+                // or because it hasn't been committed yet.
                 if empty_event_present(&events) {
                     // If the transaction failed, replace the events with an error,
                     // so that we don't attempt to resolve the transaction later on.
                     if response.code.value() != 0 {
                         *events = vec![IbcEvent::ChainError(format!(
-                            "code {:?}, log {}",
-                            response.code, response.log
+                            "deliver_tx for Tx hash {} reports error: code={:?}, log={:?}",
+                            response.hash, response.code, response.log
                         ))];
 
                     // Otherwise, try to resolve transaction hash to the corresponding events.
@@ -1700,8 +1700,8 @@ fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx
     let deliver_tx_result = response.tx_result;
     if deliver_tx_result.code.is_err() {
         return vec![IbcEvent::ChainError(format!(
-            "deliver_tx reports error: log={:?}",
-            deliver_tx_result.log
+            "deliver_tx for {} reports error: code={:?}, log={:?}",
+            response.hash, deliver_tx_result.code, deliver_tx_result.log
         ))];
     }
 
