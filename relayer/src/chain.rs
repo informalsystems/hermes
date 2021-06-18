@@ -302,7 +302,7 @@ pub trait Chain: Sized {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
-        let (connection_end, connection_proof) = self.proven_connection(&connection_id, height)?;
+        let (connection_end, connection_proof) = self.proven_connection(connection_id, height)?;
 
         // Check that the connection state is compatible with the message
         match message_type {
@@ -334,16 +334,12 @@ pub trait Chain: Sized {
         match message_type {
             ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
                 let (client_state_value, client_state_proof) =
-                    self.proven_client_state(&client_id, height)?;
+                    self.proven_client_state(client_id, height)?;
 
                 client_proof = Some(CommitmentProofBytes::from(client_state_proof));
 
                 let consensus_state_proof = self
-                    .proven_client_consensus(
-                        &client_id,
-                        client_state_value.latest_height(),
-                        height,
-                    )?
+                    .proven_client_consensus(client_id, client_state_value.latest_height(), height)?
                     .1;
 
                 consensus_proof = Option::from(

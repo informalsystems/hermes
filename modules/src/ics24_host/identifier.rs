@@ -176,7 +176,7 @@ impl ClientId {
 
     /// Get this identifier as a borrowed byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0.as_bytes()
+        self.0.as_bytes()
     }
 }
 
@@ -246,7 +246,7 @@ impl ConnectionId {
 
     /// Get this identifier as a borrowed byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0.as_bytes()
+        self.0.as_bytes()
     }
 }
 
@@ -296,7 +296,7 @@ impl PortId {
 
     /// Get this identifier as a borrowed byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0.as_bytes()
+        self.0.as_bytes()
     }
 }
 
@@ -352,7 +352,7 @@ impl ChannelId {
 
     /// Get this identifier as a borrowed byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0.as_bytes()
+        self.0.as_bytes()
     }
 }
 
