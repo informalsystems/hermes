@@ -80,7 +80,9 @@ mod git {
 
         // Checks if the git repo is dirty
         pub fn is_dirty(&self) -> bool {
-            Self::command(&["status", "--porcelain"]).status.success()
+            !Self::command(&["diff-index", "--quiet", "HEAD", "--"])
+                .status
+                .success()
         }
 
         #[inline]
