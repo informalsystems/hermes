@@ -110,22 +110,22 @@ impl ClientDef for TendermintClient {
 
         // check that the header is not outside the trusting period 
         if header.signed_header.header().time.sub(client_state.trusting_period) >= latest_consensus_state.timestamp  { 
-            return Err(
-                format!("header outside of the trusting period {:?}, {:?}",
-                    latest_consensus_state.timestamp,
-                    header.signed_header.header().time).into(),
+            return Err(Kind::LowUpdateTimestamp(
+                            header.signed_header.header().time.to_rfc3339(), 
+                            latest_consensus_state.timestamp.to_rfc3339())
+                .into(),
             );
         };
 
-   
-        // check monotonicity of height and timestamp 
-        if client_state.latest_height >= header.height() {
-            return Err(
-                format!("non monotonic height update {}, {:?}",
-                    client_state.latest_height,
-                    header.height()).into(),
-            );
-        };
+        //ALREADY CHECKED
+        // // check monotonicity of height and timestamp 
+        // if client_state.latest_height >= header.height() {
+        //     return Err(
+        //         format!("non monotonic height update {}, {:?}",
+        //             client_state.latest_height,
+        //             header.height()).into(),
+        //     );
+        // };
 
         // check monotonicity of header height vs trusted height.
         // unclear needed  
@@ -139,19 +139,17 @@ impl ClientDef for TendermintClient {
 
         // check that the versions of the client state and the header match
         if client_state.latest_height.revision_number != header.height().revision_number {
-            return Err(
-                format!("client revision number {} does not match the header's revision number {}",
+            return Err(Kind::MismatchedRevisions(
                     client_state.latest_height.revision_number,
                     header.height().revision_number).into(),
             );
         };
 
         if latest_consensus_state.timestamp >= header.signed_header.header().time {
-            //TODO add clock drift ?  
-            return Err(
-                format!("non monotonic timestamps update {}, {:?}",
-                    client_state.latest_height,
-                    header.height()).into(),
+            return Err(Kind:: HeaderTimestampOutsideTrustingTime(
+                header.signed_header.header().time.to_rfc3339(), 
+                latest_consensus_state.timestamp.to_rfc3339())
+            .into(),
             );
         };
 
@@ -166,8 +164,7 @@ impl ClientDef for TendermintClient {
                         ).ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?
                     }
                 None => {
-                        return Err(
-                                format!("Missing consensus state for the client {} at trusted height {:?}",
+                        return Err(Kind::ConsensusStateNotFound(
                                 client_id,
                                 header.trusted_height).into(),
                             )
@@ -177,7 +174,7 @@ impl ClientDef for TendermintClient {
 
 
         if header.height() == header.trusted_height.increment() {
-         //adjacent 
+            //adjacent 
 
             // check that the header's trusted validator set is 
             // the next_validator_set of the trusted consensus state 

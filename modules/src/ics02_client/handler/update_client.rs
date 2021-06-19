@@ -14,6 +14,8 @@ use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
 
+use tracing::info;
+
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -54,6 +56,8 @@ pub fn process(
     // Read consensus state from the host chain store.
     let latest_consensus_state =  ctx.consensus_state(&client_id, client_state.latest_height())
         .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), client_state.latest_height()))?;
+
+    info!("latest conseus state {:?}", latest_consensus_state);
 
     let duration = 
         Timestamp::now().duration_since(&latest_consensus_state.timestamp())
@@ -107,16 +111,19 @@ mod tests {
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
     use crate::Height;
+    use crate::timestamp::Timestamp;
 
     #[test]
     fn test_update_client_ok() {
         let client_id = ClientId::default();
         let signer = get_dummy_account_id();
 
+        let timestamp = Timestamp::now();
+
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader::new(Height::new(0, 46)).into(),
+            header: MockHeader::new_time(Height::new(0, 46), timestamp).into(),
             signer,
         };
 
@@ -140,8 +147,8 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(MockHeader::new(
-                                msg.header.height()
+                            AnyClientState::Mock(MockClientState(MockHeader::new_time(
+                                msg.header.height(),timestamp
                             )))
                         )
                     }
