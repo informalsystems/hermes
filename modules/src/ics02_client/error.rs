@@ -8,6 +8,8 @@ use crate::ics23_commitment::error::Error as Ics23Error;
 use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
+use crate::timestamp::Timestamp;
+use tendermint::hash::Hash;
 
 pub type Error = anomaly::Error<Kind>;
 
@@ -121,15 +123,21 @@ pub enum Kind {
     NotEnoughTrustedValsSigned(String),
 
        /// Hash mismatch for the validator set
-    #[error("invalid validator set: header_validators_hash={header_validators_hash} validators_hash={validators_hash}")]
-    InvalidValidatorSet {
-        /// Hash of validator set stored in header
-        #[serde(with = "tendermint::serializers::hash")]
-        header_validators_hash: Hash,
-        /// Actual hash of validator set in header
-        #[serde(with = "tendermint::serializers::hash")]
-        validators_hash: Hash,
-    },
+    #[error("invalid validator set: header_validators_hash={0} validators_hash={1}")]
+    InvalidValidatorSet(Hash, Hash),
+
+    #[error("not withing trusting period: expires_at={0} now={1}")]
+    ClientStateNotWithinTrustPeriod (Timestamp,Timestamp),
+
+    #[error("Consensus state timestamp {0} undefined or ahead of now time {1}")]
+    InvalidConsensusStateTimestamp(Timestamp,Timestamp),
+
+
+    #[error(" hearder height {0} must be at greater than current client height {1}")]
+    LowUpdateHeight(Height, Height),
+
+    #[error(" hearder height = {0} is invalid")]
+    InvalidHeaderHeight(Height),
 }
 
 impl Kind {

@@ -9,9 +9,10 @@ use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
-use crate::ics02_client::header::Header;
+//use crate::ics02_client::header::Header;
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
+use crate::timestamp::Timestamp;
 
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
@@ -50,13 +51,20 @@ pub fn process(
         return Err(Kind::ClientFrozen(client_id).into());
     }
 
-    let latest_height = client_state.latest_height();
-    ctx.consensus_state(&client_id, latest_height)
-        .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), latest_height))?;
+    // Read consensus state from the host chain store.
+    let latest_consensus_state =  ctx.consensus_state(&client_id, client_state.latest_height())
+        .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), client_state.latest_height()))?;
 
-    if ctx.consensus_state(&client_id, header.height()).is_some(){
-        return Err(Kind::ConsensusStateNotFound(client_id.clone(), latest_height).into());
+    let duration = 
+        Timestamp::now().duration_since(&latest_consensus_state.timestamp())
+            .ok_or_else(|| Kind::InvalidConsensusStateTimestamp(latest_consensus_state.timestamp(),Timestamp::now()))?;
+
+    if client_state.expired(duration){
+        return Err(Kind::ClientStateNotWithinTrustPeriod(latest_consensus_state.timestamp(),Timestamp::now()).into());
     }
+
+
+
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.

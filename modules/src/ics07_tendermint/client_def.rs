@@ -19,9 +19,9 @@ use crate::ics24_host::identifier::ConnectionId;
 use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::Height;
 use std::ops::Sub;
-use tendermint::Time;
 use tendermint::validator::Set;
 use tendermint::trust_threshold::TrustThresholdFraction;
+//use tendermint::Time;
 
 use crate::downcast;
 
@@ -41,23 +41,41 @@ impl ClientDef for TendermintClient {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+        
+
+
+
+        // DONE in HANDLER 
+        // if !client_state.frozen_height.is_zero(){
+        //     return Err(
+        //         format!("client is frozen at height ({:?})",
+        //         client_state.frozen_height).into(),
+        //     );
+        // }
+
+        // // check that the client did not expired  
+        // if Time::now().sub(client_state.trusting_period) >= latest_consensus_state.timestamp  { 
+        //     return Err(
+        //         format!("consensus state expired; it's outside of the trusting period {:?}, {:?}",
+        //             latest_consensus_state.timestamp,
+        //             Time::now()).into(),
+        //     );
+        // };
+
+
         if client_state.latest_height() >= header.height() {
-            return Err(
-                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
+            return Err(Kind::LowUpdateHeight(
                     header.height(), client_state.latest_height).into(),
             );
         }
 
-        if !client_state.frozen_height.is_zero(){
-            return Err(
-                format!("client is frozen at height ({:?})",
-                client_state.frozen_height).into(),
-            );
+        if header.height().is_zero() {
+            return Err(Kind::InvalidHeaderHeight(header.height()).into());
         }
+
 
         // check if a consensus state is already installed; if so it should 
         // match the untrusted header. 
-
         match ctx.consensus_state(&client_id, header.height()){
             //could the header height be zero ? 
             Some(cs) => { 
@@ -83,7 +101,7 @@ impl ClientDef for TendermintClient {
                 }
             None =>{
                 return Err(
-                    format!("no consensus_state for client height {}",
+                    Kind::ConsensusStateNotFound(client_id.clone(),
                         client_state.latest_height).into(),
                 );
             }
@@ -99,15 +117,7 @@ impl ClientDef for TendermintClient {
             );
         };
 
-        // check that the client did not expired  
-        if Time::now().sub(client_state.trusting_period) >= latest_consensus_state.timestamp  { 
-            return Err(
-                format!("consensus state expired; it's outside of the trusting period {:?}, {:?}",
-                    latest_consensus_state.timestamp,
-                    Time::now()).into(),
-            );
-        };
-
+   
         // check monotonicity of height and timestamp 
         if client_state.latest_height >= header.height() {
             return Err(
@@ -172,11 +182,9 @@ impl ClientDef for TendermintClient {
             // check that the header's trusted validator set is 
             // the next_validator_set of the trusted consensus state 
             if Set::hash(&header.validator_set) != trusted_consensus_state.next_validators_hash {
-                return Err(
-                    format!(
-                        // "ErrInvalidValidatorSet,
-                        "the headers trusted validators do not hash to next val set of the trusted consensus state. Expected: {:?}, got: {:?}",
-                        trusted_consensus_state.next_validators_hash, Set::hash(&header.validator_set)
+                return Err(Kind::InvalidValidatorSet(
+                            trusted_consensus_state.next_validators_hash, 
+                            Set::hash(&header.validator_set)
                     ).into(),
                 )
             }
