@@ -19,14 +19,15 @@ __Example__
 To start the relayer using the configuration file at `/home/my_chain.toml` and enable JSON output:
 
 ```shell
-hermes -c /home/my_chain.toml --json start ibc-0 ibc-1
+hermes -c /home/my_chain.toml --json start
 ```
 
 ## JSON output
 
 If the `--json` option is supplied, all relayer commands will output single-line JSON values instead of plain text.
 
-Intermediate log messages will be written to `stderr`, while the final result will be written to `stdout`.
+Log messages will be written to `stderr`, while the final result will be written to `stdout`, and everything
+will be formatted as JSON.
 This allows processing only the final output using [`jq`](https://stedolan.github.io/jq/).
 To process all the output using `jq`, one can redirect `stderr` to `stdout` with `hermes --json COMMAND 2>&1 | jq`.
 

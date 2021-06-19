@@ -45,7 +45,7 @@ Query chain `ibc-0` for the events emitted due to transaction with hash
 hermes query tx events ibc-0 6EDBBCBCB779F9FC9D6884ACDC4350E69720C4B362E4ACE6C576DE792F837490
 ```
 
-```rust
+```json
 Success: [
     SendPacket(
         SendPacket {

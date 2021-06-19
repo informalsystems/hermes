@@ -21,7 +21,7 @@ POSITIONAL ARGUMENTS:
 FLAGS:
     --client-a CLIENT-A       identifier of client hosted on chain `a`; default: None (creates a new client)
     --client-b CLIENT-B       identifier of client hosted on chain `b`; default: None (creates a new client)
-
+    --delay DELAY             delay period parameter for the new connection (seconds) (default: 0)
 ```
 
 ## Examples
@@ -34,7 +34,7 @@ Create a new connection between `ibc-0` and `ibc-1` over new clients:
 hermes create connection ibc-0 ibc-1
 ```
 
-```rust
+```json
 🥂  ibc-0 => OpenInitConnection(
     OpenInit(
         Attributes {
