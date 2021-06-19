@@ -1880,7 +1880,7 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
 }
 
 fn calculate_fee(gas_amount: u64, gas_price: GasPrice, gas_adjustment: f64) -> Coin {
-    let gas_amount = mul_ceil(gas_amount, gas_adjustment);
+    let gas_amount = gas_amount + mul_ceil(gas_amount, gas_adjustment);
     let fee_amount = mul_ceil(gas_amount, gas_price.price);
 
     Coin {
