@@ -1,6 +1,6 @@
 use std::env;
 
-use git::GitHandle;
+use git::Handle as GitHandle;
 
 fn main() {
     // Overwrites the package `version` to include metadata, and package `name` to be 'hermes'
@@ -16,25 +16,24 @@ fn main() {
 // hash. e.g. 0.4.0 or 0.4.0+cli-git-hash-eb0e94fc-dirty
 fn version() -> String {
     let mut vers = env::var("CARGO_PKG_VERSION").unwrap();
-
-    // use just package version for CI
-    if env::var("GITHUB_JOB") == Ok("create-release".to_owned()) {
-        return vers;
-    }
-
-    if let Some(git) = GitHandle::new() {
-        println!("cargo:rustc-rerun-if-changed=.git/HEAD");
-
-        vers.push('+');
-        vers.push_str(&git.branch());
-        vers.push('-');
-        vers.push_str(&git.last_commit_hash());
-        if git.is_dirty() {
-            vers.push_str("-dirty");
+    if !is_ci_release() {
+        if let Some(git) = GitHandle::new() {
+            println!("cargo:rustc-rerun-if-changed=.git/HEAD");
+            vers.push('+');
+            vers.push_str(&git.branch());
+            vers.push('-');
+            vers.push_str(&git.last_commit_hash());
+            if git.is_dirty() {
+                vers.push_str("-dirty");
+            }
+            vers = vers.replace("\n", "");
         }
     }
+    vers
+}
 
-    vers.replace("\n", "")
+fn is_ci_release() -> bool {
+    env::var("GITHUB_JOB") == Ok("create-release".to_owned())
 }
 
 mod git {
@@ -44,12 +43,12 @@ mod git {
 
     // A wrapper over a git shell command that is only constructable if git is available & the
     // current directory is a git repository
-    pub struct GitHandle(PhantomData<Command>);
+    pub struct Handle(PhantomData<Command>);
 
-    impl GitHandle {
+    impl Handle {
         pub fn new() -> Option<Self> {
             if Self::is_git_repo() {
-                Some(GitHandle(PhantomData))
+                Some(Handle(PhantomData))
             } else {
                 None
             }
