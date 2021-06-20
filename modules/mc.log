@@ -1,0 +1,407 @@
+@!@!@STARTMSG 2262:0 @!@!@
+TLC2 Version 2.15 of Day Month 20?? (rev: 920e6fa)
+@!@!@ENDMSG 2262 @!@!@
+@!@!@STARTMSG 2401:3 @!@!@
+Please run the Java VM, which executes TLC with a throughput optimized garbage collector, by passing the "-XX:+UseParallelGC" property.
+@!@!@ENDMSG 2401 @!@!@
+@!@!@STARTMSG 2187:0 @!@!@
+Running breadth-first search Model-Checking with fp 94 and seed 965814849019522492 with 8 workers on 8 cores with 4096MB heap and 64MB offheap memory [pid: 44931] (Mac OS X 10.16 x86_64, Oracle Corporation 10 x86_64, MSBDiskFPSet, DiskStateQueue).
+@!@!@ENDMSG 2187 @!@!@
+@!@!@STARTMSG 2220:0 @!@!@
+Starting SANY...
+@!@!@ENDMSG 2220 @!@!@
+Parsing file /Users/idragoi/Documents/GitHub/ibc-rs/modules/tests/support/model_based/IBCTests_ICS03ConnectionOpenConfirmOKTest.tla
+Parsing file /Users/idragoi/Documents/GitHub/ibc-rs/modules/tests/support/model_based/IBCTests.tla
+Parsing file /Users/idragoi/Documents/GitHub/ibc-rs/modules/tests/support/model_based/IBC.tla
+Parsing file /Users/idragoi/Documents/GitHub/ibc-rs/modules/tests/support/model_based/ICS02.tla
+Parsing file /Users/idragoi/Documents/GitHub/ibc-rs/modules/tests/support/model_based/ICS03.tla
+Parsing file /Users/idragoi/Documents/GitHub/ibc-rs/modules/tests/support/model_based/IBCDefinitions.tla
+Parsing file /private/var/folders/j1/w2g38g0s1d10s9kpwcn6fywm00lx47/T/Integers.tla (jar:file:/Users/idragoi/Documents/GitHub/ibc-rs/modules/.modelator/tla2tools-v1.8.0.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file /private/var/folders/j1/w2g38g0s1d10s9kpwcn6fywm00lx47/T/FiniteSets.tla (jar:file:/Users/idragoi/Documents/GitHub/ibc-rs/modules/.modelator/tla2tools-v1.8.0.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file /private/var/folders/j1/w2g38g0s1d10s9kpwcn6fywm00lx47/T/TLC.tla (jar:file:/Users/idragoi/Documents/GitHub/ibc-rs/modules/.modelator/tla2tools-v1.8.0.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /private/var/folders/j1/w2g38g0s1d10s9kpwcn6fywm00lx47/T/Naturals.tla (jar:file:/Users/idragoi/Documents/GitHub/ibc-rs/modules/.modelator/tla2tools-v1.8.0.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /private/var/folders/j1/w2g38g0s1d10s9kpwcn6fywm00lx47/T/Sequences.tla (jar:file:/Users/idragoi/Documents/GitHub/ibc-rs/modules/.modelator/tla2tools-v1.8.0.jar!/tla2sany/StandardModules/Sequences.tla)
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module IBCDefinitions
+Semantic processing of module ICS02
+Semantic processing of module ICS03
+Semantic processing of module IBC
+Semantic processing of module IBCTests
+Semantic processing of module IBCTests_ICS03ConnectionOpenConfirmOKTest
+@!@!@STARTMSG 2219:0 @!@!@
+SANY finished.
+@!@!@ENDMSG 2219 @!@!@
+@!@!@STARTMSG 2185:0 @!@!@
+Starting... (2021-06-20 10:17:41)
+@!@!@ENDMSG 2185 @!@!@
+@!@!@STARTMSG 2189:0 @!@!@
+Computing initial states...
+@!@!@ENDMSG 2189 @!@!@
+@!@!@STARTMSG 2190:0 @!@!@
+Finished computing initial states: 1 distinct state generated at 2021-06-20 10:17:42.
+@!@!@ENDMSG 2190 @!@!@
+@!@!@STARTMSG 2200:0 @!@!@
+Progress(6) at 2021-06-20 10:17:45: 376,807 states generated (376,807 s/min), 11,083 distinct states found (11,083 ds/min), 6,513 states left on queue.
+@!@!@ENDMSG 2200 @!@!@
+@!@!@STARTMSG 2110:1 @!@!@
+Invariant ICS03ConnectionOpenConfirmOKTestNeg is violated.
+@!@!@ENDMSG 2110 @!@!@
+@!@!@STARTMSG 2121:1 @!@!@
+The behavior up to this point is:
+@!@!@ENDMSG 2121 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+1: <Initial predicate>
+/\ actionOutcome = "None"
+/\ chains = [ chainA |->
+      [ height |-> 1,
+        clients |-> (0 :> [heights |-> {}]),
+        clientIdCounter |-> 0,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "-1",
+                    clientId |-> -1,
+                    counterpartyChainId |-> "-1",
+                    counterpartyClientId |-> -1,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> -1,
+                    state |-> "Uninitialized" ] ),
+        connectionIdCounter |-> 0,
+        connectionProofs |-> {} ],
+  chainB |->
+      [ height |-> 1,
+        clients |-> (0 :> [heights |-> {}]),
+        clientIdCounter |-> 0,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "-1",
+                    clientId |-> -1,
+                    counterpartyChainId |-> "-1",
+                    counterpartyClientId |-> -1,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> -1,
+                    state |-> "Uninitialized" ] ),
+        connectionIdCounter |-> 0,
+        connectionProofs |-> {} ] ]
+/\ action = [type |-> "None"]
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+2: <Next line 498, col 9 to line 507, col 29 of module IBC>
+/\ actionOutcome = "Ics02CreateOk"
+/\ chains = [ chainA |->
+      [ height |-> 2,
+        clients |-> (0 :> [heights |-> {2}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "-1",
+                    clientId |-> -1,
+                    counterpartyChainId |-> "-1",
+                    counterpartyClientId |-> -1,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> -1,
+                    state |-> "Uninitialized" ] ),
+        connectionIdCounter |-> 0,
+        connectionProofs |-> {} ],
+  chainB |->
+      [ height |-> 1,
+        clients |-> (0 :> [heights |-> {}]),
+        clientIdCounter |-> 0,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "-1",
+                    clientId |-> -1,
+                    counterpartyChainId |-> "-1",
+                    counterpartyClientId |-> -1,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> -1,
+                    state |-> "Uninitialized" ] ),
+        connectionIdCounter |-> 0,
+        connectionProofs |-> {} ] ]
+/\ action = [ type |-> "Ics02CreateClient",
+  chainId |-> "chainA",
+  clientState |-> 2,
+  consensusState |-> 2 ]
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+3: <Next line 498, col 9 to line 507, col 29 of module IBC>
+/\ actionOutcome = "Ics03ConnectionOpenInitOk"
+/\ chains = [ chainA |->
+      [ height |-> 3,
+        clients |-> (0 :> [heights |-> {2}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "chainA",
+                    clientId |-> 0,
+                    counterpartyChainId |-> "chainB",
+                    counterpartyClientId |-> 0,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> 0,
+                    state |-> "Init" ] ),
+        connectionIdCounter |-> 1,
+        connectionProofs |-> {} ],
+  chainB |->
+      [ height |-> 1,
+        clients |-> (0 :> [heights |-> {}]),
+        clientIdCounter |-> 0,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "-1",
+                    clientId |-> -1,
+                    counterpartyChainId |-> "-1",
+                    counterpartyClientId |-> -1,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> -1,
+                    state |-> "Uninitialized" ] ),
+        connectionIdCounter |-> 0,
+        connectionProofs |->
+            { [ type |-> "Ics03ConnectionOpenInit",
+                chainId |-> "chainA",
+                clientId |-> 0,
+                counterpartyChainId |-> "chainB",
+                counterpartyClientId |-> 0 ] } ] ]
+/\ action = [ type |-> "Ics03ConnectionOpenInit",
+  chainId |-> "chainA",
+  clientId |-> 0,
+  counterpartyChainId |-> "chainB",
+  counterpartyClientId |-> 0 ]
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+4: <Next line 498, col 9 to line 507, col 29 of module IBC>
+/\ actionOutcome = "Ics02CreateOk"
+/\ chains = [ chainA |->
+      [ height |-> 3,
+        clients |-> (0 :> [heights |-> {2}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "chainA",
+                    clientId |-> 0,
+                    counterpartyChainId |-> "chainB",
+                    counterpartyClientId |-> 0,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> 0,
+                    state |-> "Init" ] ),
+        connectionIdCounter |-> 1,
+        connectionProofs |-> {} ],
+  chainB |->
+      [ height |-> 2,
+        clients |-> (0 :> [heights |-> {1}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "-1",
+                    clientId |-> -1,
+                    counterpartyChainId |-> "-1",
+                    counterpartyClientId |-> -1,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> -1,
+                    state |-> "Uninitialized" ] ),
+        connectionIdCounter |-> 0,
+        connectionProofs |->
+            { [ type |-> "Ics03ConnectionOpenInit",
+                chainId |-> "chainA",
+                clientId |-> 0,
+                counterpartyChainId |-> "chainB",
+                counterpartyClientId |-> 0 ] } ] ]
+/\ action = [ type |-> "Ics02CreateClient",
+  chainId |-> "chainB",
+  clientState |-> 1,
+  consensusState |-> 1 ]
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+5: <Next line 498, col 9 to line 507, col 29 of module IBC>
+/\ actionOutcome = "Ics03ConnectionOpenTryOk"
+/\ chains = [ chainA |->
+      [ height |-> 3,
+        clients |-> (0 :> [heights |-> {2}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "chainA",
+                    clientId |-> 0,
+                    counterpartyChainId |-> "chainB",
+                    counterpartyClientId |-> 0,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> 0,
+                    state |-> "Init" ] ),
+        connectionIdCounter |-> 1,
+        connectionProofs |->
+            { [ type |-> "Ics03ConnectionOpenTry",
+                chainId |-> "chainB",
+                clientState |-> 1,
+                clientId |-> 0,
+                counterpartyChainId |-> "chainA",
+                counterpartyClientId |-> 0,
+                previousConnectionId |-> -1,
+                counterpartyConnectionId |-> 0 ] } ],
+  chainB |->
+      [ height |-> 3,
+        clients |-> (0 :> [heights |-> {1}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "chainB",
+                    clientId |-> 0,
+                    counterpartyChainId |-> "chainA",
+                    counterpartyClientId |-> 0,
+                    counterpartyConnectionId |-> 0,
+                    connectionId |-> 0,
+                    state |-> "TryOpen" ] ),
+        connectionIdCounter |-> 1,
+        connectionProofs |->
+            { [ type |-> "Ics03ConnectionOpenInit",
+                chainId |-> "chainA",
+                clientId |-> 0,
+                counterpartyChainId |-> "chainB",
+                counterpartyClientId |-> 0 ] } ] ]
+/\ action = [ type |-> "Ics03ConnectionOpenTry",
+  chainId |-> "chainB",
+  clientState |-> 1,
+  clientId |-> 0,
+  counterpartyChainId |-> "chainA",
+  counterpartyClientId |-> 0,
+  previousConnectionId |-> -1,
+  counterpartyConnectionId |-> 0 ]
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+6: <Next line 498, col 9 to line 507, col 29 of module IBC>
+/\ actionOutcome = "Ics03ConnectionOpenAckOk"
+/\ chains = [ chainA |->
+      [ height |-> 4,
+        clients |-> (0 :> [heights |-> {2}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "chainA",
+                    clientId |-> 0,
+                    counterpartyChainId |-> "chainB",
+                    counterpartyClientId |-> 0,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> 0,
+                    state |-> "Open" ] ),
+        connectionIdCounter |-> 1,
+        connectionProofs |->
+            { [ type |-> "Ics03ConnectionOpenTry",
+                chainId |-> "chainB",
+                clientState |-> 1,
+                clientId |-> 0,
+                counterpartyChainId |-> "chainA",
+                counterpartyClientId |-> 0,
+                previousConnectionId |-> -1,
+                counterpartyConnectionId |-> 0 ] } ],
+  chainB |->
+      [ height |-> 3,
+        clients |-> (0 :> [heights |-> {1}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "chainB",
+                    clientId |-> 0,
+                    counterpartyChainId |-> "chainA",
+                    counterpartyClientId |-> 0,
+                    counterpartyConnectionId |-> 0,
+                    connectionId |-> 0,
+                    state |-> "TryOpen" ] ),
+        connectionIdCounter |-> 1,
+        connectionProofs |->
+            { [ type |-> "Ics03ConnectionOpenInit",
+                chainId |-> "chainA",
+                clientId |-> 0,
+                counterpartyChainId |-> "chainB",
+                counterpartyClientId |-> 0 ],
+              [ type |-> "Ics03ConnectionOpenAck",
+                chainId |-> "chainA",
+                clientState |-> 2,
+                counterpartyChainId |-> "chainB",
+                counterpartyConnectionId |-> 0,
+                connectionId |-> 0 ] } ] ]
+/\ action = [ type |-> "Ics03ConnectionOpenAck",
+  chainId |-> "chainA",
+  clientState |-> 2,
+  counterpartyChainId |-> "chainB",
+  counterpartyConnectionId |-> 0,
+  connectionId |-> 0 ]
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+7: <Next line 498, col 9 to line 507, col 29 of module IBC>
+/\ actionOutcome = "Ics03ConnectionOpenConfirmOk"
+/\ chains = [ chainA |->
+      [ height |-> 4,
+        clients |-> (0 :> [heights |-> {2}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "chainA",
+                    clientId |-> 0,
+                    counterpartyChainId |-> "chainB",
+                    counterpartyClientId |-> 0,
+                    counterpartyConnectionId |-> -1,
+                    connectionId |-> 0,
+                    state |-> "Open" ] ),
+        connectionIdCounter |-> 1,
+        connectionProofs |->
+            { [ type |-> "Ics03ConnectionOpenTry",
+                chainId |-> "chainB",
+                clientState |-> 1,
+                clientId |-> 0,
+                counterpartyChainId |-> "chainA",
+                counterpartyClientId |-> 0,
+                previousConnectionId |-> -1,
+                counterpartyConnectionId |-> 0 ] } ],
+  chainB |->
+      [ height |-> 4,
+        clients |-> (0 :> [heights |-> {1}]),
+        clientIdCounter |-> 1,
+        connections |->
+            ( 0 :>
+                  [ chainId |-> "chainB",
+                    clientId |-> 0,
+                    counterpartyChainId |-> "chainA",
+                    counterpartyClientId |-> 0,
+                    counterpartyConnectionId |-> 0,
+                    connectionId |-> 0,
+                    state |-> "Open" ] ),
+        connectionIdCounter |-> 1,
+        connectionProofs |->
+            { [ type |-> "Ics03ConnectionOpenInit",
+                chainId |-> "chainA",
+                clientId |-> 0,
+                counterpartyChainId |-> "chainB",
+                counterpartyClientId |-> 0 ],
+              [ type |-> "Ics03ConnectionOpenAck",
+                chainId |-> "chainA",
+                clientState |-> 2,
+                counterpartyChainId |-> "chainB",
+                counterpartyConnectionId |-> 0,
+                connectionId |-> 0 ] } ] ]
+/\ action = [ type |-> "Ics03ConnectionOpenConfirm",
+  chainId |-> "chainB",
+  clientState |-> 1,
+  counterpartyChainId |-> "chainA",
+  counterpartyConnectionId |-> 0,
+  connectionId |-> 0 ]
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2200:0 @!@!@
+Progress(7) at 2021-06-20 10:17:46: 626,675 states generated (8,044,608 s/min), 14,852 distinct states found (190,654 ds/min), 6,934 states left on queue.
+@!@!@ENDMSG 2200 @!@!@
+@!@!@STARTMSG 2199:0 @!@!@
+626675 states generated, 14852 distinct states found, 6934 states left on queue.
+@!@!@ENDMSG 2199 @!@!@
+@!@!@STARTMSG 2194:0 @!@!@
+The depth of the complete state graph search is 7.
+@!@!@ENDMSG 2194 @!@!@
+@!@!@STARTMSG 2186:0 @!@!@
+Finished in 4677ms at (2021-06-20 10:17:46)
+@!@!@ENDMSG 2186 @!@!@

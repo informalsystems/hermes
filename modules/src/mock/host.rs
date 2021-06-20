@@ -3,6 +3,7 @@
 use std::convert::TryFrom;
 
 use tendermint::chain::Id as TMChainId;
+use tendermint::time::Time;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
 
@@ -51,7 +52,8 @@ impl HostBlock {
         match chain_type {
             HostType::Mock => HostBlock::Mock(MockHeader {
                 height: Height::new(chain_id.version(), height),
-                timestamp: Timestamp::from_nanoseconds(1).unwrap(),
+                timestamp: Timestamp::now(),
+                //Timestamp::from_nanoseconds(1).unwrap(),
             }),
             HostType::SyntheticTendermint => {
                 HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))
@@ -61,8 +63,9 @@ impl HostBlock {
 
     pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
         let mut block = TestgenLightBlock::new_default(height).generate().unwrap();
+        block.signed_header.header.time = Time::now();
+        //block.signed_header.header.height = Height(height);
         block.signed_header.header.chain_id = TMChainId::try_from(chain_id.to_string()).unwrap();
-
         block
     }
 }

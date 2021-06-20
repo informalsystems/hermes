@@ -176,7 +176,7 @@ impl ClientDef for AnyClient {
     fn check_header_and_update_state(
         &self,
         ctx: &dyn ClientReader,
-        client_id:ClientId,
+        client_id: ClientId,
         client_state: AnyClientState,
         header: AnyHeader,
     ) -> Result<(AnyClientState, AnyConsensusState), Box<dyn std::error::Error>> {

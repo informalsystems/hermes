@@ -2,8 +2,7 @@ use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 use crate::ics24_host::error::ValidationKind;
-use tendermint::{validator::Info,
-                account::Id};
+use tendermint::{account::Id, validator::Info};
 
 pub type Error = anomaly::Error<Kind>;
 
@@ -50,7 +49,7 @@ impl Kind {
 }
 
 #[derive(Clone, Debug, Error)]
-pub enum VerificationError{
+pub enum VerificationError {
     #[error("Couldn't verify signature `{signature:?}` with validator `{validator:?}` on sign_bytes `{sign_bytes:?}`")]
     InvalidSignature {
         /// Signature as a byte array
@@ -68,7 +67,4 @@ pub enum VerificationError{
     /// Insufficient signers overlap
     #[error("insufficient signers overlap {0} {1}")]
     InsufficientOverlap(u64, u64),
-
-  
-    
 }

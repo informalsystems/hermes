@@ -64,16 +64,15 @@ impl Header {
     // pub fn header_equality(&self, other_header: &Header) -> bool{
     //     let other_height = other_header.signed_header.header.height;
     //     let self_height = self.signed_header.header.height;
-    //     //TODO we need signed header eq 
+    //     //TODO we need signed header eq
     //     if self.signed_header.header != other_header.signed_header.header
-    //         return false; 
+    //         return false;
     //     }
 
     //     if self.signed_header.commit != other_header.signed_header.commit
-    //         return false; 
+    //         return false;
     //     }
-    //     if self.validator_set != other_header.validator_set 
-
+    //     if self.validator_set != other_header.validator_set
 
     // }
 }

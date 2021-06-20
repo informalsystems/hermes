@@ -369,7 +369,6 @@ mod tests {
                 .unwrap();
 
         let msg_transfer = get_dummy_msg_transfer(35);
-
         let msg_transfer_two = get_dummy_msg_transfer(36);
 
         let mut msg_to_on_close =

@@ -7,8 +7,8 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::error::Error as Ics23Error;
 use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::ClientId;
-use crate::Height;
 use crate::timestamp::Timestamp;
+use crate::Height;
 use tendermint::hash::Hash;
 
 pub type Error = anomaly::Error<Kind>;
@@ -119,7 +119,7 @@ pub enum Kind {
     InsufficientVotingPower(String),
 
     #[error("Timestamp none or {0} and now {1}")]
-    InvalidConsensusStateTimestamp(Timestamp,Timestamp),
+    InvalidConsensusStateTimestamp(Timestamp, Timestamp),
 
     /// Not enough trust because insufficient validators overlap
     #[error("not enough trust because insufficient validators overlap: {0}")]
@@ -130,24 +130,24 @@ pub enum Kind {
     InvalidValidatorSet(Hash, Hash),
 
     #[error("not withing trusting period: expires_at={0} now={1}")]
-    ClientStateNotWithinTrustPeriod (Timestamp,Timestamp),
+    ClientStateNotWithinTrustPeriod(Timestamp, Timestamp),
 
     #[error("header not withing trusting period: expires_at={0} now={1}")]
-    HeaderNotWithinTrustPeriod (Timestamp,Timestamp),
+    HeaderNotWithinTrustPeriod(Timestamp, Timestamp),
 
-    #[error("Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp{1}")]
-    HeaderTimestampOutsideTrustingTime(String,String),
+    #[error(
+        "Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp{1}"
+    )]
+    HeaderTimestampOutsideTrustingTime(String, String),
 
     #[error("Header revision {0} and client state revision {1} should coincide")]
-    MismatchedRevisions(u64,u64),
+    MismatchedRevisions(u64, u64),
 
     #[error(" hearder height {0} must be at greater than current client height {1}")]
     LowUpdateHeight(Height, Height),
 
     // #[error(" hearder timestamp {0} must be at greater than current client consensus state timestamp {1}")]
     // LowUpdateTimestamp(Timestamp, Timestamp),
-
-
     #[error(" hearder timestamp {0} must be at greater than current client consensus state timestamp {1}")]
     LowUpdateTimestamp(String, String),
 

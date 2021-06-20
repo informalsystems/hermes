@@ -109,6 +109,8 @@ pub mod test_util {
 
     use super::MsgTransfer;
     use crate::timestamp::Timestamp;
+    use std::ops::Add;
+    use std::time::Duration;
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {
@@ -120,7 +122,7 @@ pub mod test_util {
             token: None,
             sender: id.clone(),
             receiver: id,
-            timeout_timestamp: Timestamp::from_nanoseconds(1).unwrap(),
+            timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
             timeout_height: Height {
                 revision_number: 0,
                 revision_height: height,

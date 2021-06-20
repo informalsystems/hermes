@@ -1,5 +1,7 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
+use ::tracing::info;
+
 use std::cmp::min;
 use std::collections::HashMap;
 use std::error::Error;
@@ -226,6 +228,8 @@ impl MockContext {
             }
         };
         let consensus_states = vec![(cs_height, consensus_state)].into_iter().collect();
+
+        info!("Consensus state {:?}", consensus_states);
 
         let client_record = MockClientRecord {
             client_type,

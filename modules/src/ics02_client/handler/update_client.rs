@@ -54,20 +54,30 @@ pub fn process(
     }
 
     // Read consensus state from the host chain store.
-    let latest_consensus_state =  ctx.consensus_state(&client_id, client_state.latest_height())
-        .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), client_state.latest_height()))?;
+    let latest_consensus_state = ctx
+        .consensus_state(&client_id, client_state.latest_height())
+        .ok_or_else(|| {
+            Kind::ConsensusStateNotFound(client_id.clone(), client_state.latest_height())
+        })?;
 
     info!("latest conseus state {:?}", latest_consensus_state);
 
-    let duration = 
-        Timestamp::now().duration_since(&latest_consensus_state.timestamp())
-            .ok_or_else(|| Kind::InvalidConsensusStateTimestamp(latest_consensus_state.timestamp(),Timestamp::now()))?;
+    let duration = Timestamp::now()
+        .duration_since(&latest_consensus_state.timestamp())
+        .ok_or_else(|| {
+            Kind::InvalidConsensusStateTimestamp(
+                latest_consensus_state.timestamp(),
+                Timestamp::now(),
+            )
+        })?;
 
-    if client_state.expired(duration){
-        return Err(Kind::ClientStateNotWithinTrustPeriod(latest_consensus_state.timestamp(),Timestamp::now()).into());
+    if client_state.expired(duration) {
+        return Err(Kind::ClientStateNotWithinTrustPeriod(
+            latest_consensus_state.timestamp(),
+            Timestamp::now(),
+        )
+        .into());
     }
-
-
 
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
@@ -110,8 +120,8 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
-    use crate::Height;
     use crate::timestamp::Timestamp;
+    use crate::Height;
 
     #[test]
     fn test_update_client_ok() {
@@ -148,7 +158,8 @@ mod tests {
                         assert_eq!(
                             upd_res.client_state,
                             AnyClientState::Mock(MockClientState(MockHeader::new_time(
-                                msg.header.height(),timestamp
+                                msg.header.height(),
+                                timestamp
                             )))
                         )
                     }
