@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tracing::{error, trace};
+use tracing::error;
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
