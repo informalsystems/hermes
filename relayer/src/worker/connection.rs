@@ -37,7 +37,7 @@ impl ConnectionWorker {
         }
     }
 
-    /// Run the event loop for events associated with a [`Channel`].
+    /// Run the event loop for events associated with a [`Connection`].
     pub(crate) fn run(self) -> Result<(), BoxError> {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
@@ -104,7 +104,7 @@ impl ConnectionWorker {
                 };
 
                 if let Err(retries) = result {
-                    warn!("Connection worker failed after {} retries", retries);
+                    warn!("connection worker failed after {} retries", retries);
 
                     // Resume handshake on next iteration.
                     resume_handshake = true;
