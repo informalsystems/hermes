@@ -197,7 +197,7 @@ impl CosmosSdkChain {
         // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
         // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
         // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
-        let adjusted_gas = self
+        let estimated_gas = self
             .send_tx_simulate(SimulateRequest {
                 tx: Some(Tx {
                     body: Some(body),
@@ -209,19 +209,19 @@ impl CosmosSdkChain {
                 sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
             });
 
-        if adjusted_gas > self.max_gas() {
+        if estimated_gas > self.max_gas() {
             return Err(Kind::TxSimulateGasEstimateExceeded {
                 chain_id: self.id().clone(),
-                estimated_gas: adjusted_gas,
+                estimated_gas,
                 max_gas: self.max_gas(),
             }
             .into());
         }
 
-        let adjusted_fee = self.fee_with_gas(adjusted_gas);
+        let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         trace!(
-            "send_tx: {} adjusting fee from {:?} to {:?}",
+            "send_tx: {} based on the estimated gas, adjusting fee from {:?} to {:?}",
             self.id(),
             fee,
             adjusted_fee
@@ -1879,9 +1879,9 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
     Ok((body, body_buf))
 }
 
-fn calculate_fee(gas_amount: u64, gas_price: GasPrice, gas_adjustment: f64) -> Coin {
-    let gas_amount = gas_amount + mul_ceil(gas_amount, gas_adjustment);
-    let fee_amount = mul_ceil(gas_amount, gas_price.price);
+fn calculate_fee(base_gas_amount: u64, gas_price: GasPrice, gas_adjustment: f64) -> Coin {
+    let adjusted_gas_amount = base_gas_amount + mul_ceil(base_gas_amount, gas_adjustment);
+    let fee_amount = mul_ceil(adjusted_gas_amount, gas_price.price);
 
     Coin {
         denom: gas_price.denom,
