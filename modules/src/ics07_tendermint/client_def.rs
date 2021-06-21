@@ -13,9 +13,9 @@ use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
+use crate::primitives::String;
 use crate::Height;
 use std::vec::Vec;
-use crate::primitives::String;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TendermintClient;

@@ -1,6 +1,6 @@
-use std::convert::{TryFrom, TryInto};
 use crate::primitives::String;
 use crate::primitives::ToString;
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;

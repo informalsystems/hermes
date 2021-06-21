@@ -1,10 +1,10 @@
 use crate::ics23_commitment::error;
+use crate::primitives::format;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use serde::{Deserialize, Serialize};
+use std::vec::Vec;
 use std::{convert::TryFrom, fmt};
 use subtle_encoding::{Encoding, Hex};
-use std::vec::Vec;
-use crate::primitives::format;
 #[derive(Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
 pub struct CommitmentRoot {

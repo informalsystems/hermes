@@ -9,8 +9,8 @@ use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::ics24_host::identifier::ChannelId;
-use crate::primitives::ToString;
 use crate::primitives::format;
+use crate::primitives::ToString;
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: MsgChannelOpenInit,

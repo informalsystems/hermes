@@ -3,15 +3,15 @@ use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::{attribute, some_attribute};
-use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::boxed::Box;
-use std::vec::Vec;
+use crate::primitives::format;
 use crate::primitives::String;
 use crate::primitives::ToString;
-use crate::primitives::format;
+use crate::{attribute, some_attribute};
+use serde_derive::{Deserialize, Serialize};
+use std::boxed::Box;
+use std::convert::{TryFrom, TryInto};
 use std::prelude::*;
+use std::vec::Vec;
 
 /// Channel event types
 const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";

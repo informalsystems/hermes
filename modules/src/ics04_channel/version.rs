@@ -4,10 +4,10 @@ use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 use tendermint_proto::Protobuf;
 
 use crate::ics04_channel::error;
-use std::str::FromStr;
 use crate::primitives::{String, ToString};
-use std::vec::Vec;
 use std::prelude::*;
+use std::str::FromStr;
+use std::vec::Vec;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Version {

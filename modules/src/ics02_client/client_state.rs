@@ -3,11 +3,11 @@ use std::convert::{TryFrom, TryInto};
 #[cfg(feature = "std")]
 use std::time::Duration;
 
-#[cfg(not(feature = "std"))]
-use tendermint::primitives::Duration;
 use crate::primitives::ToString;
 use prost_types::Any;
 use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "std"))]
+use tendermint::primitives::Duration;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;

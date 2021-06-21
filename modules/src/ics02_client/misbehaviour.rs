@@ -1,10 +1,10 @@
-use std::convert::TryFrom;
-use std::vec::Vec;
-use prost_types::Any;
-use tendermint_proto::Protobuf;
-use crate::primitives::ToString;
 use crate::ics02_client::error;
 use crate::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
+use crate::primitives::ToString;
+use prost_types::Any;
+use std::convert::TryFrom;
+use std::vec::Vec;
+use tendermint_proto::Protobuf;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::misbehaviour::Misbehaviour as MockMisbehaviour;

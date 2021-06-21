@@ -1,5 +1,5 @@
-extern crate std as _std;
 extern crate alloc as _alloc;
+extern crate std as _std;
 
 #[cfg(feature = "std")]
 pub use _std::string::{String, ToString};
@@ -13,18 +13,16 @@ pub use _std::format;
 #[cfg(not(feature = "std"))]
 pub use _alloc::format;
 
-
-
 #[cfg(feature = "std")]
 pub use std::error::Error as StdError;
 
-use core::fmt::{Debug, Display};
-use core::convert::Infallible;
-use core::num::ParseIntError;
+use crate::events::Error as EventError;
+use crate::ics02_client::height::Error as HeightError;
 use crate::ics24_host::error::ValidationError;
 use crate::timestamp::ParseTimestampError;
-use crate::ics02_client::height::Error as HeightError;
-use crate::events::Error as EventError;
+use core::convert::Infallible;
+use core::fmt::{Debug, Display};
+use core::num::ParseIntError;
 
 #[cfg(not(feature = "std"))]
 pub trait StdError: Debug + Display {
@@ -32,8 +30,6 @@ pub trait StdError: Debug + Display {
         None
     }
 }
-
-
 
 #[derive(Debug)]
 pub struct DummyError(String);
@@ -43,7 +39,6 @@ impl Display for DummyError {
         write!(f, "DummyError: {}", self.0)
     }
 }
-
 
 impl From<String> for DummyError {
     fn from(value: String) -> DummyError {
@@ -81,13 +76,11 @@ impl From<EventError> for DummyError {
     }
 }
 
-
 impl From<HeightError> for DummyError {
     fn from(_value: HeightError) -> DummyError {
         DummyError("HeightError".into())
     }
 }
-
 
 impl From<ParseTimestampError> for DummyError {
     fn from(_value: ParseTimestampError) -> DummyError {
@@ -96,4 +89,3 @@ impl From<ParseTimestampError> for DummyError {
 }
 
 impl StdError for DummyError {}
-

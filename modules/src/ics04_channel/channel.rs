@@ -1,11 +1,11 @@
-use std::convert::{TryFrom, TryInto};
-use std::fmt;
-use std::str::FromStr;
 use crate::primitives::String;
 use crate::primitives::ToString;
-use std::prelude::*;
-use std::vec::Vec;
 use serde::{Deserialize, Serialize};
+use std::convert::{TryFrom, TryInto};
+use std::fmt;
+use std::prelude::*;
+use std::str::FromStr;
+use std::vec::Vec;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::{

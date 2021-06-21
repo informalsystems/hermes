@@ -1,13 +1,13 @@
+use crate::primitives::format;
+use crate::primitives::String;
+use flex_error::{define_error, DisplayError};
+use serde_derive::{Deserialize, Serialize};
+use std::borrow::ToOwned;
 use std::cmp::Ordering;
 use std::convert::TryFrom;
 use std::num::ParseIntError;
 use std::str::FromStr;
-use crate::primitives::String;
-use crate::primitives::format;
 use std::vec::Vec;
-use std::borrow::ToOwned;
-use flex_error::{define_error, DisplayError};
-use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;

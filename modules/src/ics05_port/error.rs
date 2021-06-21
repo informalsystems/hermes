@@ -1,4 +1,3 @@
-
 #[cfg(not(feature = "std"))]
 impl crate::primitives::StdError for Error {}
 

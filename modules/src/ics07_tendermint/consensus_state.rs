@@ -3,12 +3,12 @@ use std::convert::TryFrom;
 #[cfg(feature = "std")]
 use std::time::SystemTime;
 
-#[cfg(not(feature = "std"))]
-use tendermint::primitives::SystemTime;
 use crate::primitives::ToString;
 use chrono::{TimeZone, Utc};
 use prost_types::Timestamp;
 use serde::Serialize;
+#[cfg(not(feature = "std"))]
+use tendermint::primitives::SystemTime;
 use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::Protobuf;
 

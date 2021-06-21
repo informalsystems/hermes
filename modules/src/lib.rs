@@ -37,12 +37,12 @@ pub mod events;
 pub mod handler;
 pub mod keys;
 pub mod macros;
+pub mod primitives;
 pub mod proofs;
 pub mod query;
 pub mod signer;
 pub mod timestamp;
 pub mod tx_msg;
-pub mod primitives;
 
 pub mod ics02_client;
 pub mod ics03_connection;
@@ -67,4 +67,3 @@ pub mod test_utils;
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod mock; // Context mock, the underlying host chain, and client types: for testing all handlers.
-

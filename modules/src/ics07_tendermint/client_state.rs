@@ -3,10 +3,10 @@ use std::str::FromStr;
 #[cfg(feature = "std")]
 use std::time::Duration;
 
-#[cfg(not(feature = "std"))]
-use tendermint::primitives::Duration;
 use crate::primitives::{String, ToString};
 use std::vec::Vec;
+#[cfg(not(feature = "std"))]
+use tendermint::primitives::Duration;
 
 use serde::{Deserialize, Serialize};
 use tendermint::trust_threshold::{

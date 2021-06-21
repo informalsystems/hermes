@@ -2,10 +2,10 @@ use std::convert::{TryFrom, TryInto};
 #[cfg(feature = "std")]
 use std::time::Duration;
 
-#[cfg(not(feature = "std"))]
-use tendermint::primitives::Duration;
 use crate::primitives::String;
 use crate::primitives::ToString;
+#[cfg(not(feature = "std"))]
+use tendermint::primitives::Duration;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use tendermint_proto::Protobuf;

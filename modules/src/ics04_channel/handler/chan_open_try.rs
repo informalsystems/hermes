@@ -11,8 +11,8 @@ use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::ics24_host::identifier::ChannelId;
-use crate::primitives::ToString;
 use crate::primitives::format;
+use crate::primitives::ToString;
 use std::prelude::*;
 pub(crate) fn process(
     ctx: &dyn ChannelReader,

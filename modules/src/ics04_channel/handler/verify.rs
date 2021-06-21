@@ -6,9 +6,9 @@ use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error;
 use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::ics24_host::identifier::ClientId;
+use crate::primitives::format;
 use crate::proofs::Proofs;
 use std::vec::Vec;
-use crate::primitives::format;
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
 pub fn verify_channel_proofs(
     ctx: &dyn ChannelReader,

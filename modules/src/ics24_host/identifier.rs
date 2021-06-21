@@ -1,9 +1,9 @@
+use crate::primitives::format;
+use crate::primitives::{String, ToString};
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::vec::Vec;
-use crate::primitives::{String, ToString};
-use crate::primitives::format;
-use serde::{Deserialize, Serialize};
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::error::ValidationError;

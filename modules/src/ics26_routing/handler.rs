@@ -24,8 +24,8 @@ use crate::ics26_routing::msgs::Ics26Envelope::{
 };
 
 use std::boxed::Box;
-use std::vec::Vec;
 use std::prelude::*;
+use std::vec::Vec;
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
 /// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics

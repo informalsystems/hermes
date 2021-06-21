@@ -4,12 +4,12 @@ use std::collections::HashMap;
 #[cfg(not(feature = "std"))]
 use std::collections::btree_map::BTreeMap as HashMap;
 
-use crate::primitives::String;
-use std::vec::Vec;
-use std::borrow::ToOwned;
-use crate::primitives::ToString;
 use crate::primitives::format;
+use crate::primitives::String;
+use crate::primitives::ToString;
 use serde_derive::{Deserialize, Serialize};
+use std::borrow::ToOwned;
+use std::vec::Vec;
 
 use crate::ics02_client::error as client_error;
 use crate::ics02_client::events as ClientEvents;
@@ -284,7 +284,7 @@ pub fn extract_events<S: ::std::hash::BuildHasher>(
 }
 
 #[cfg(not(feature = "std"))]
-pub fn extract_events<>(
+pub fn extract_events(
     events: &HashMap<String, Vec<String>>,
     action_string: &str,
 ) -> Result<(), Error> {

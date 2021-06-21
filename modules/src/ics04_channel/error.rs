@@ -3,12 +3,12 @@ use crate::ics02_client::error as client_error;
 use crate::ics04_channel::channel::State;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::primitives::String;
 use crate::proofs::ProofError;
 use crate::timestamp::Timestamp;
 use crate::Height;
 use flex_error::{define_error, DisplayOnly};
 use tendermint_proto::Error as TendermintError;
-use crate::primitives::String;
 
 #[cfg(not(feature = "std"))]
 impl crate::primitives::StdError for Error {}

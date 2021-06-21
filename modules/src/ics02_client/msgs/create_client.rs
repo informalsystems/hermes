@@ -1,8 +1,8 @@
 //! Definition of domain type message `MsgCreateAnyClient`.
 
-use std::convert::TryFrom;
 use crate::primitives::String;
 use crate::primitives::ToString;
+use std::convert::TryFrom;
 
 use tendermint_proto::Protobuf;
 

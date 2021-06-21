@@ -1,7 +1,7 @@
+use crate::ics24_host::error::ValidationError;
+use crate::primitives::String;
 use prost_types::Any;
 use std::vec::Vec;
-use crate::primitives::String;
-use crate::ics24_host::error::ValidationError;
 
 pub trait Msg: Clone {
     type ValidationError: crate::primitives::StdError;

@@ -1,7 +1,7 @@
-use std::convert::{TryFrom, TryInto};
 use crate::primitives::String;
-use std::vec::Vec;
 use crate::primitives::ToString;
+use std::convert::{TryFrom, TryInto};
+use std::vec::Vec;
 
 use tendermint_proto::Protobuf;
 

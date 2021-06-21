@@ -1,6 +1,6 @@
-use std::{convert::Infallible, fmt::Display, str::FromStr};
 use crate::primitives::{String, ToString};
 use serde::{Deserialize, Serialize};
+use std::{convert::Infallible, fmt::Display, str::FromStr};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Signer(String);

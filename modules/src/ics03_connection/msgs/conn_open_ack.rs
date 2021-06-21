@@ -1,9 +1,9 @@
-use std::convert::{TryFrom, TryInto};
 use crate::primitives::String;
 use crate::primitives::ToString;
-use tendermint_proto::Protobuf;
-use std::vec::Vec;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use std::convert::{TryFrom, TryInto};
+use std::vec::Vec;
+use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::error;

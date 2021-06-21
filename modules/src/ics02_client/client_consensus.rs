@@ -1,13 +1,13 @@
 use core::marker::{Send, Sync};
 use std::convert::TryFrom;
 
+use crate::primitives::ToString;
 use chrono::{DateTime, Utc};
+use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use prost_types::Any;
 use serde::Serialize;
 use std::convert::Infallible;
 use tendermint_proto::Protobuf;
-use crate::primitives::ToString;
-use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 
 use crate::events::IbcEventType;
 use crate::ics02_client::client_type::ClientType;

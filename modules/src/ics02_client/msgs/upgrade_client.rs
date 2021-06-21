@@ -1,9 +1,9 @@
 //! Definition of domain type msg `MsgUpgradeAnyClient`.
 
-use std::convert::TryFrom;
-use std::str::FromStr;
 use crate::primitives::String;
 use crate::primitives::ToString;
+use std::convert::TryFrom;
+use std::str::FromStr;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;

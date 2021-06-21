@@ -1,7 +1,7 @@
-use std::convert::TryFrom;
 use crate::primitives::ToString;
 use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;

@@ -6,9 +6,9 @@ use std::str::FromStr;
 #[cfg(feature = "std")]
 use std::time::Duration;
 
+use crate::primitives::ToString;
 #[cfg(not(feature = "std"))]
 use tendermint::primitives::Duration;
-use crate::primitives::ToString;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
 use displaydoc::Display;

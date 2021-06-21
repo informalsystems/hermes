@@ -3,12 +3,12 @@ use std::str::FromStr;
 #[cfg(feature = "std")]
 use std::time::Duration;
 
+use crate::primitives::ToString;
+use serde::{Deserialize, Serialize};
+use std::prelude::*;
+use std::vec::Vec;
 #[cfg(not(feature = "std"))]
 use tendermint::primitives::Duration;
-use std::vec::Vec;
-use crate::primitives::ToString;
-use std::prelude::*;
-use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{

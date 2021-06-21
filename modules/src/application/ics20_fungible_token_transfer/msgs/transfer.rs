@@ -1,9 +1,9 @@
 //! This is the definition of a transfer messages that an application submits to a chain.
 
-use std::convert::{TryFrom, TryInto};
+use crate::primitives::format;
 use crate::primitives::String;
 use crate::primitives::ToString;
-use crate::primitives::format;
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;

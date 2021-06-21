@@ -1,11 +1,11 @@
 use crate::ics04_channel::channel::validate_version;
 use crate::ics04_channel::error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::primitives::String;
+use crate::primitives::ToString;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
-use crate::primitives::String;
-use crate::primitives::ToString;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use tendermint_proto::Protobuf;

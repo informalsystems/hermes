@@ -10,8 +10,8 @@ use crate::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error};
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::timestamp::Expiry;
 use crate::primitives::format;
+use crate::timestamp::Expiry;
 #[derive(Clone, Debug)]
 pub struct TimeoutPacketResult {
     pub port_id: PortId,
