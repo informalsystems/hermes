@@ -80,6 +80,7 @@ use crate::light_client::LightClient;
 use crate::light_client::Verified;
 
 use super::Chain;
+use std::cmp::min;
 
 const DEFAULT_MAX_GAS: u64 = 300_000;
 const DEFAULT_GAS_PRICE_PRICE: f64 = 0.001;
@@ -268,6 +269,16 @@ impl CosmosSdkChain {
             .unwrap_or(DEFAULT_GAS_PRICE_ADJUSTMENT)
     }
 
+    /// Adjusts the fee based on the configured `gas_adjustment` to prevent out of gas errors.
+    /// The actual gas cost, when a transaction is executed, may be slightly higher than the
+    /// one returned by the simulation.
+    fn apply_adjustment_to_gas(&self, gas_amount: u64) -> u64 {
+        min(
+            gas_amount + mul_ceil(gas_amount, self.gas_adjustment()),
+            self.max_gas(),
+        )
+    }
+
     /// The maximum fee the relayer pays for a transaction
     fn max_fee_in_coins(&self) -> Coin {
         calculate_fee(self.max_gas(), self.gas_price())
@@ -441,7 +452,7 @@ impl CosmosSdkChain {
     }
 
     fn fee_with_gas(&self, gas_limit: u64) -> Fee {
-        let adjusted_gas_limit = apply_adjustment_to_gas(gas_limit, self.gas_adjustment());
+        let adjusted_gas_limit = self.apply_adjustment_to_gas(gas_limit);
         Fee {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
@@ -1907,10 +1918,6 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: GasPrice) -> Coin {
         denom: gas_price.denom,
         amount: fee_amount.to_string(),
     }
-}
-
-fn apply_adjustment_to_gas(gas_amount: u64, gas_adjustment: f64) -> u64 {
-    gas_amount + mul_ceil(gas_amount, gas_adjustment)
 }
 
 fn mul_ceil(a: u64, f: f64) -> u64 {
