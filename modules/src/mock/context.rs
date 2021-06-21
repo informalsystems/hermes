@@ -1,6 +1,6 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
-use ::tracing::info;
+use ::tracing::{debug,info};
 
 use std::cmp::min;
 use std::collections::HashMap;
@@ -40,6 +40,9 @@ use crate::mock::host::{HostBlock, HostType};
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
+
+use crate::ics07_tendermint::predicates::Predicates;
+use tendermint::trust_threshold::TrustThresholdFraction;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
@@ -219,6 +222,15 @@ impl MockContext {
                     self.host_chain_id.clone(),
                     cs_height.revision_height,
                 );
+
+                let pred = Predicates::default(); 
+                if let Err(_e) = pred.voting_power_in(
+                    &light_block.signed_header,
+                    &light_block.validators,
+                    TrustThresholdFraction::TWO_THIRDS){
+                        debug!("\n Insufficient Voting Power");
+                    }
+
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
                     get_dummy_tendermint_client_state(light_block.signed_header.header);
