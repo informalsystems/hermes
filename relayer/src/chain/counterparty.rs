@@ -41,7 +41,7 @@ pub fn counterparty_chain_from_connection(
 }
 
 fn connection_on_destination(
-    connection_id: &ConnectionId,
+    connection_id_on_source: &ConnectionId,
     counterparty_client_id: &ClientId,
     counterparty_chain: &dyn ChainHandle,
 ) -> Result<Option<ConnectionEnd>, Error> {
@@ -66,7 +66,7 @@ fn connection_on_destination(
 
         let local_connection_end = &counterparty_connection_end.counterparty();
         if let Some(local_connection_id) = local_connection_end.connection_id() {
-            if local_connection_id == connection_id {
+            if local_connection_id == connection_id_on_source {
                 return Ok(Some(counterparty_connection_end));
             }
         }
@@ -86,6 +86,8 @@ pub fn connection_state_on_destination(
             .map_err(|e| Error::QueryFailed(format!("{}", e)))?
             .state
     } else {
+        // The remote connection id (used on `counterparty_chain`) is unknown.
+        // Try to retrieve this id by looking at client connections.
         let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
 
         connection_on_destination(

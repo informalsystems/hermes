@@ -450,6 +450,7 @@ impl Connection {
             MAX_RETRIES
         )))
     }
+
     pub fn counterparty_state(&self) -> Result<State, ConnectionError> {
         // Source connection ID must be specified
         let connection_id = self
@@ -471,10 +472,10 @@ impl Connection {
             connection_id: connection_id.clone(),
         };
 
-        connection_state_on_destination(connection, self.dst_chain().as_ref()).map_err(|_| {
+        connection_state_on_destination(connection, self.dst_chain().as_ref()).map_err(|e| {
             ConnectionError::Failed(format!(
-                "failed to query the connection state on destination for {}",
-                connection_id
+                "failed to query the connection state on destination for {}; caused by {}",
+                connection_id, e
             ))
         })
     }
@@ -495,7 +496,7 @@ impl Connection {
 
         match self.handshake_step(state) {
             Err(e) => {
-                error!("Failed {:?} with error {}", state, e);
+                error!("failed {:?} with error {}", state, e);
                 RetryResult::Retry(index)
             }
             Ok(ev) => {
