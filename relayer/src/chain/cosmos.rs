@@ -106,6 +106,9 @@ pub struct CosmosSdkChain {
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
     acct_seq: u64,
+
+    /// A cached copy of the account number.
+    acct_number: Option<u64>,
 }
 
 impl CosmosSdkChain {
@@ -157,6 +160,19 @@ impl CosmosSdkChain {
             .consensus_params)
     }
 
+    fn account_number(&mut self) -> Result<u64, Error> {
+        let nr = match self.acct_number {
+            None => {
+                let nr = self.account()?.account_number;
+                self.acct_number = Some(nr);
+                nr
+            }
+            Some(nr) => nr,
+        };
+
+        Ok(nr)
+    }
+
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> F::Output {
         crate::time!("block_on");
@@ -166,8 +182,8 @@ impl CosmosSdkChain {
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
 
-        let acct_response = self.account()?;
         if self.acct_seq == 0 {
+            let acct_response = self.account()?;
             debug!(
                 "send_tx: retrieved account nonce {} for {}",
                 acct_response.sequence,
@@ -228,11 +244,9 @@ impl CosmosSdkChain {
         );
 
         let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
-        let signed_doc = self.signed_doc(
-            body_buf.clone(),
-            auth_buf_adjusted.clone(),
-            acct_response.account_number,
-        )?;
+        let account_number = self.account_number()?;
+        let signed_doc =
+            self.signed_doc(body_buf.clone(), auth_buf_adjusted.clone(), account_number)?;
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
@@ -554,6 +568,7 @@ impl Chain for CosmosSdkChain {
             rt,
             keybase,
             acct_seq: 0,
+            acct_number: None,
         })
     }
 
