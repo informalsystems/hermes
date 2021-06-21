@@ -1140,8 +1140,7 @@ impl Chain for CosmosSdkChain {
 
         Ok((
             client_state,
-            res.proof
-                .ok_or_else(|| error::empty_response_proof_error())?,
+            res.proof.ok_or_else(error::empty_response_proof_error)?,
         ))
     }
 
@@ -1172,8 +1171,7 @@ impl Chain for CosmosSdkChain {
 
         Ok((
             consensus_state,
-            res.proof
-                .ok_or_else(|| error::empty_response_proof_error())?,
+            res.proof.ok_or_else(error::empty_response_proof_error)?,
         ))
     }
 
@@ -1187,8 +1185,7 @@ impl Chain for CosmosSdkChain {
 
         Ok((
             connection_end,
-            res.proof
-                .ok_or_else(|| error::empty_response_proof_error())?,
+            res.proof.ok_or_else(error::empty_response_proof_error)?,
         ))
     }
 
@@ -1208,8 +1205,7 @@ impl Chain for CosmosSdkChain {
 
         Ok((
             channel_end,
-            res.proof
-                .ok_or_else(|| error::empty_response_proof_error())?,
+            res.proof.ok_or_else(error::empty_response_proof_error)?,
         ))
     }
 

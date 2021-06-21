@@ -233,7 +233,7 @@ define_error! {
             |e| { format!("Query error occurred (failed to query for {0})", e.query) },
 
         KeyBase
-            [ DisplayOnly<KeyringError> ]
+            [ KeyringError ]
             |_| { "Keybase error" },
 
         Ics02
