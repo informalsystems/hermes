@@ -24,8 +24,10 @@
 pub mod application;
 pub mod commands;
 pub mod config;
-pub mod error;
 pub mod prelude;
+
+#[allow(missing_docs)]
+pub mod error;
 
 pub(crate) mod cli_utils;
 pub(crate) mod components;

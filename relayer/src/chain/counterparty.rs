@@ -10,7 +10,7 @@ use ibc::{
 };
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
-use crate::channel::ChannelError;
+use crate::channel::{self, ChannelError};
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
@@ -174,7 +174,7 @@ pub fn check_channel_counterparty(
             &target_pchan.channel_id,
             Height::zero(),
         )
-        .map_err(|e| ChannelError::QueryError(target_chain.id(), e))?;
+        .map_err(|e| channel::query_error(target_chain.id(), e))?;
 
     let counterparty = channel_end_dst.remote;
     match counterparty.channel_id {
@@ -184,9 +184,9 @@ pub fn check_channel_counterparty(
                 port_id: counterparty.port_id,
             };
             if &actual != expected {
-                return Err(ChannelError::MismatchingChannelEnds(
-                    target_pchan.clone(),
+                return Err(channel::mismatch_channel_ends_error(
                     target_chain.id(),
+                    target_pchan.clone(),
                     expected.clone(),
                     actual,
                 ));
@@ -198,9 +198,9 @@ pub fn check_channel_counterparty(
                 target_pchan,
                 target_chain.id()
             );
-            return Err(ChannelError::IncompleteChannelState(
-                target_pchan.clone(),
+            return Err(channel::incomplete_channel_state_error(
                 target_chain.id(),
+                target_pchan.clone(),
             ));
         }
     }

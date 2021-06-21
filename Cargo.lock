@@ -879,9 +879,9 @@ dependencies = [
 
 [[package]]
 name = "flex-error"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "431f579d1c92791fcaf7753d9beac4b8b2338965eca57b11aea6932f5d9785ea"
+checksum = "b36365b81d2141a3aa85840d5a09b25c61028166e0ff13593e2184028f57afa6"
 dependencies = [
  "anyhow",
  "eyre",
@@ -1490,6 +1490,7 @@ dependencies = [
  "atty",
  "crossbeam-channel 0.5.1",
  "dirs-next",
+ "flex-error",
  "futures",
  "gumdrop 0.7.0",
  "hex",

@@ -36,7 +36,7 @@ use ibc_proto::ibc::core::channel::v1::{
 
 use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
-use crate::channel::{Channel, ChannelError, ChannelSide};
+use crate::channel::{self, Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::event::monitor::EventBatch;
@@ -273,14 +273,14 @@ impl RelayPath {
         Ok(self
             .src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id()?, height)
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
+            .map_err(|e| channel::query_error(self.src_chain().id(), e))?)
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         Ok(self
             .dst_chain()
             .query_channel(self.dst_port_id(), self.dst_channel_id()?, height)
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
+            .map_err(|e| channel::query_error(self.src_chain().id(), e))?)
     }
 
     fn src_signer(&self) -> Result<Signer, LinkError> {
@@ -336,7 +336,7 @@ impl RelayPath {
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
-            .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
+            .map_err(channel::channel_proof_error)?;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
@@ -1176,7 +1176,7 @@ impl RelayPath {
                     port_id: self.dst_port_id().to_string(),
                     channel_id: dst_channel_id.to_string(),
                 })
-                .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+                .map_err(|e| channel::query_error(self.dst_chain().id(), e))?;
             (PacketMsgType::TimeoutOrdered, next_seq)
         } else {
             (PacketMsgType::TimeoutUnordered, packet.sequence)

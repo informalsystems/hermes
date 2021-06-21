@@ -8,7 +8,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -39,7 +39,7 @@ impl Runnable for TxCreateClientCmd {
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
             .build_create_client_and_send()
-            .map_err(|e| Kind::Tx.context(e).into());
+            .map_err(error::foreign_client_error);
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
@@ -108,7 +108,7 @@ impl Runnable for TxUpdateClientCmd {
 
         let res = client
             .build_update_client_and_send(height, trusted_height)
-            .map_err(|e| Kind::Tx.context(e));
+            .map_err(error::foreign_client_error);
 
         match res {
             Ok(events) => Output::success(events).exit(),
