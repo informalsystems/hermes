@@ -28,7 +28,7 @@ The `global` section has parameters that apply globally to the relayer operation
 
 * __strategy__: *(string)* Specify the strategy to be used by the relayer. Default: `packets`
   Two options are currently supported:
-    - `all`: Relay packets and perform channel handshakes.
+    - `all`: Relay packets and perform channel and connection handshakes.
     - `packets`: Relay packets only.
 
 * __log_level__: *(string)* Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default: `info`.

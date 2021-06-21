@@ -34,7 +34,7 @@
      - [Channels](./commands/path-setup/channels.md)
    - [Relaying](commands/relaying/index.md)
      - [Packet Messages](./commands/relaying/packets.md)
-     - [Channel Open Handshake Messages](commands/relaying/channel.md)
+     - [Handshake Messages](commands/relaying/handshakes.md)
    - [Listen mode](./commands/listen/index.md)
    - [Client upgrade](./commands/upgrade/index.md)
      - [Testing client upgrade](./commands/upgrade/test.md)
