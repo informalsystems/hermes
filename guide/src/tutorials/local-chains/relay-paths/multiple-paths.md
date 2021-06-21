@@ -80,7 +80,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
     ```
 
-    ```rust
+    ```json
     (...)
 
     Success: Channel {
@@ -142,7 +142,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
     ```
 
-    ```rust
+    ```json
     (...)
 
     Success: Channel {
@@ -215,7 +215,7 @@ Follow the steps below to connect three chains together and relay packets betwee
       hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
       ```
 
-      ```rust
+      ```json
       Success: [
           SendPacket(
               SendPacket {
@@ -238,7 +238,7 @@ Follow the steps below to connect three chains together and relay packets betwee
       hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 -o 1000 -n 2
       ```
 
-      ```rust
+      ```json
       Success: [
           SendPacket(
               SendPacket {
@@ -257,7 +257,7 @@ Follow the steps below to connect three chains together and relay packets betwee
 
 5. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packets` are sent out.
 
-    ```
+    ```text
     (...)
 
     INFO ibc_relayer::link: [ibc-0 -> ibc-1] result events:

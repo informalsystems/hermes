@@ -2,7 +2,7 @@
 
 > __WARNING__: Currently the relayer does NOT support a `keyring` store to securely
 > store the private key file. The key file will be stored on the local file system
-> in the user __$HOME__ folder under `$HOME/.rrly`
+> in the user __$HOME__ folder under `$HOME/.hermes/keys/`
 
 > __BREAKING__: As of Hermes v0.2.0, the format of the keys stored on disk has changed, and
 > keys which had been previously configured must now be re-imported using either the `keys add`
