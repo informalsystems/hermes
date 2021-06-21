@@ -105,10 +105,9 @@ pub struct CosmosSdkChain {
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
-    acct_seq: u64,
 
-    /// A cached copy of the account number.
-    acct_number: Option<u64>,
+    /// A cached copy of the account information
+    account: Option<BaseAccount>,
 }
 
 impl CosmosSdkChain {
@@ -160,19 +159,6 @@ impl CosmosSdkChain {
             .consensus_params)
     }
 
-    fn account_number(&mut self) -> Result<u64, Error> {
-        let nr = match self.acct_number {
-            None => {
-                let nr = self.account()?.account_number;
-                self.acct_number = Some(nr);
-                nr
-            }
-            Some(nr) => nr,
-        };
-
-        Ok(nr)
-    }
-
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> F::Output {
         crate::time!("block_on");
@@ -182,30 +168,21 @@ impl CosmosSdkChain {
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
 
-        if self.acct_seq == 0 {
-            let acct_response = self.account()?;
-            debug!(
-                "send_tx: retrieved account nonce {} for {}",
-                acct_response.sequence,
-                self.id()
-            );
-
-            self.acct_seq = acct_response.sequence;
-        };
+        let account_seq = self.account_sequence()?;
 
         debug!(
             "send_tx: sending {} messages to {} using nonce {}",
             proto_msgs.len(),
             self.id(),
-            self.acct_seq
+            account_seq,
         );
 
-        let signer_info = self.signer(self.acct_seq)?;
+        let signer_info = self.signer(account_seq)?;
         let fee = self.default_fee();
         let (body, body_buf) = tx_body_and_bytes(proto_msgs)?;
 
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), fee.clone())?;
-        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, self.acct_seq)?;
+        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
 
         // Try to simulate the Tx.
         // It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
@@ -267,7 +244,7 @@ impl CosmosSdkChain {
             response
         );
 
-        self.acct_seq += 1;
+        self.incr_account_sequence()?;
 
         Ok(response)
     }
@@ -400,10 +377,39 @@ impl CosmosSdkChain {
         Ok((key, key_bytes))
     }
 
-    fn account(&self) -> Result<BaseAccount, Error> {
+    fn account(&mut self) -> Result<&mut BaseAccount, Error> {
+        if self.account == None {
+            let account = self
+                .block_on(query_account(self, self.key()?.account))
+                .map_err(|e| Kind::Grpc.context(e))?;
+
+            debug!(
+                sequence = %account.sequence,
+                number = %account.account_number,
+                "send_tx: retrieved account for {}",
+                self.id()
+            );
+
+            self.account = Some(account);
+        }
+
         Ok(self
-            .block_on(query_account(self, self.key()?.account))
-            .map_err(|e| Kind::Grpc.context(e))?)
+            .account
+            .as_mut()
+            .expect("account was supposedly just cached"))
+    }
+
+    fn account_number(&mut self) -> Result<u64, Error> {
+        Ok(self.account()?.account_number)
+    }
+
+    fn account_sequence(&mut self) -> Result<u64, Error> {
+        Ok(self.account()?.sequence)
+    }
+
+    fn incr_account_sequence(&mut self) -> Result<(), Error> {
+        self.account()?.sequence += 1;
+        Ok(())
     }
 
     fn signer(&self, sequence: u64) -> Result<SignerInfo, Error> {
@@ -567,8 +573,7 @@ impl Chain for CosmosSdkChain {
             grpc_addr,
             rt,
             keybase,
-            acct_seq: 0,
-            acct_number: None,
+            account: None,
         })
     }
 
