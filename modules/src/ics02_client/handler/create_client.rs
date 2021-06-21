@@ -11,7 +11,7 @@ use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
-
+use crate::primitives::format;
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]

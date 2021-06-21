@@ -1,7 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
+#[cfg(feature = "std")]
 use std::time::Duration;
 
+#[cfg(not(feature = "std"))]
+use tendermint::primitives::Duration;
+use std::vec::Vec;
+use crate::primitives::ToString;
+use std::prelude::*;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 

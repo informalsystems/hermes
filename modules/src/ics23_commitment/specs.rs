@@ -1,4 +1,6 @@
+use std::vec::Vec;
 use ics23::ProofSpec;
+use std::prelude::*;
 
 use ibc_proto::ics23::ProofSpec as ProtoProofSpec;
 

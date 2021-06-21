@@ -1,5 +1,5 @@
 use std::{convert::Infallible, fmt::Display, str::FromStr};
-
+use crate::primitives::{String, ToString};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

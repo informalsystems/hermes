@@ -10,6 +10,8 @@ use crate::ics04_channel::handler::verify::{
 use crate::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use crate::ics04_channel::packet::PacketResult;
 use crate::ics04_channel::{context::ChannelReader, error, handler::timeout::TimeoutPacketResult};
+use crate::primitives::format;
+use std::prelude::*;
 
 pub fn process(
     ctx: &dyn ChannelReader,

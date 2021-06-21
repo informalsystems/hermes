@@ -8,7 +8,7 @@ use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::Height;
-
+use std::vec::Vec;
 /// Trait capturing all dependencies (i.e., the context) which algorithms in ICS18 require to
 /// relay packets between chains. This trait comprises the dependencies towards a single chain.
 /// Most of the functions in this represent wrappers over the ABCI interface.

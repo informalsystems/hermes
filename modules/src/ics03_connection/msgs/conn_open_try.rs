@@ -1,8 +1,15 @@
 use std::{
     convert::{TryFrom, TryInto},
     str::FromStr,
-    time::Duration,
 };
+#[cfg(feature = "std")]
+use std::time::Duration;
+
+#[cfg(not(feature = "std"))]
+use tendermint::primitives::Duration;
+use std::vec::Vec;
+use crate::primitives::String;
+use crate::primitives::ToString;
 
 use tendermint_proto::Protobuf;
 

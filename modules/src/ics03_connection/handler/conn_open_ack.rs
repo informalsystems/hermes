@@ -9,6 +9,7 @@ use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+use std::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,

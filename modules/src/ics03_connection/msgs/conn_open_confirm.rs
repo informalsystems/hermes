@@ -1,4 +1,6 @@
 use std::convert::TryFrom;
+use crate::primitives::String;
+use crate::primitives::ToString;
 
 use tendermint_proto::Protobuf;
 

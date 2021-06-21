@@ -20,10 +20,18 @@ exclude = [
 # tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 
 
+#[patch.crates-io]
+#tendermint              = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
+#tendermint-rpc          = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
+#tendermint-proto        = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
+#tendermint-light-client = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
+#tendermint-testgen      = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
+#ics23                   = { git = "https://github.com/DaviRain-Su/ics23.git", branch = "suooprt-no-std" }
+
 [patch.crates-io]
-tendermint              = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
-tendermint-rpc          = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
-tendermint-proto        = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
-tendermint-light-client = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
-tendermint-testgen      = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
+tendermint              = { git = "https://github.com/octopus-network/tendermint-rs.git", rev = "467dd569" }
+tendermint-rpc          = { git = "https://github.com/octopus-network/tendermint-rs.git", rev = "467dd569" }
+tendermint-proto        = { git = "https://github.com/octopus-network/tendermint-rs.git", rev = "467dd569" }
+tendermint-light-client = { git = "https://github.com/octopus-network/tendermint-rs.git", rev = "467dd569" }
+tendermint-testgen      = { git = "https://github.com/octopus-network/tendermint-rs.git", rev = "467dd569" }
 ics23                   = { git = "https://github.com/DaviRain-Su/ics23.git", branch = "suooprt-no-std" }

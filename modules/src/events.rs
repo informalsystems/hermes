@@ -1,5 +1,14 @@
+#[cfg(feature = "std")]
 use std::collections::HashMap;
 
+#[cfg(not(feature = "std"))]
+use std::collections::btree_map::BTreeMap as HashMap;
+
+use crate::primitives::String;
+use std::vec::Vec;
+use std::borrow::ToOwned;
+use crate::primitives::ToString;
+use crate::primitives::format;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::error as client_error;
@@ -260,8 +269,23 @@ impl RawObject {
     }
 }
 
+#[cfg(feature = "std")]
 pub fn extract_events<S: ::std::hash::BuildHasher>(
     events: &HashMap<String, Vec<String>, S>,
+    action_string: &str,
+) -> Result<(), Error> {
+    if let Some(message_action) = events.get("message.action") {
+        if message_action.contains(&action_string.to_owned()) {
+            return Ok(());
+        }
+        return Err(missing_action_string_error());
+    }
+    Err(incorrect_event_type_error())
+}
+
+#[cfg(not(feature = "std"))]
+pub fn extract_events<>(
+    events: &HashMap<String, Vec<String>>,
     action_string: &str,
 ) -> Result<(), Error> {
     if let Some(message_action) = events.get("message.action") {

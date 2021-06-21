@@ -5,6 +5,9 @@ use tendermint_proto::Protobuf;
 
 use crate::ics04_channel::error;
 use std::str::FromStr;
+use crate::primitives::{String, ToString};
+use std::vec::Vec;
+use std::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Version {

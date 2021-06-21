@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
-
+use crate::primitives::String;
 use tendermint_proto::Protobuf;
+use crate::primitives::ToString;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 

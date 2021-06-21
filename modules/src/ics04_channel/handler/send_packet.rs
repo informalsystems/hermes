@@ -9,6 +9,7 @@ use crate::ics04_channel::{context::ChannelReader, error, packet::Packet};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::timestamp::{Expiry, Timestamp};
 use crate::Height;
+use std::vec::Vec;
 
 #[derive(Clone, Debug)]
 pub struct SendPacketResult {

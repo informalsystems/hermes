@@ -1,9 +1,10 @@
 use prost_types::Any;
-
+use std::vec::Vec;
+use crate::primitives::String;
 use crate::ics24_host::error::ValidationError;
 
 pub trait Msg: Clone {
-    type ValidationError: std::error::Error;
+    type ValidationError: crate::primitives::StdError;
     type Raw: From<Self> + prost::Message;
 
     // TODO: Clarify what is this function supposed to do & its connection to ICS26 routing mod.

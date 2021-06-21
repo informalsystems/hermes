@@ -1,7 +1,11 @@
 use core::marker::{Send, Sync};
 use std::convert::{TryFrom, TryInto};
+#[cfg(feature = "std")]
 use std::time::Duration;
 
+#[cfg(not(feature = "std"))]
+use tendermint::primitives::Duration;
+use crate::primitives::ToString;
 use prost_types::Any;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;

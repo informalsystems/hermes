@@ -3,7 +3,12 @@ use std::fmt::Display;
 use std::num::{ParseIntError, TryFromIntError};
 use std::ops::{Add, Sub};
 use std::str::FromStr;
+#[cfg(feature = "std")]
 use std::time::Duration;
+
+#[cfg(not(feature = "std"))]
+use tendermint::primitives::Duration;
+use crate::primitives::ToString;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
 use displaydoc::Display;

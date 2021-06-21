@@ -3,6 +3,10 @@ use crate::ics02_client;
 use crate::ics03_connection;
 use crate::ics04_channel;
 use flex_error::{define_error, DisplayError};
+use crate::primitives::String;
+
+#[cfg(not(feature = "std"))]
+impl crate::primitives::StdError for Error {}
 
 define_error! {
     Error {

@@ -8,6 +8,7 @@ use crate::ics04_channel::error;
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
+use crate::primitives::ToString;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,

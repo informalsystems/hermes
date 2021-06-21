@@ -1,10 +1,12 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use std::convert::{TryFrom, TryInto};
-
+use crate::primitives::String;
+use crate::primitives::ToString;
+use std::boxed::Box;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
-
+use crate::primitives::format;
 use crate::decode::{decode_protobuf, Error as DecodeError};
 use crate::events::{self, extract_attribute, IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
@@ -176,7 +178,7 @@ impl From<Attributes> for CreateClient {
 }
 
 impl TryFrom<RawObject> for CreateClient {
-    type Error = Box<dyn std::error::Error>;
+    type Error = crate::primitives::DummyError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CreateClient(extract_attributes(&obj, "create_client")?))
     }

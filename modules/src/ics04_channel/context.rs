@@ -12,6 +12,8 @@ use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::timestamp::Timestamp;
 use crate::Height;
+use std::vec::Vec;
+use crate::primitives::String;
 
 use super::packet::{PacketResult, Sequence};
 

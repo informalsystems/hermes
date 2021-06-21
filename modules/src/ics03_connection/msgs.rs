@@ -16,6 +16,7 @@ use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use std::boxed::Box;
 
 pub mod conn_open_ack;
 pub mod conn_open_confirm;

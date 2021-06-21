@@ -11,6 +11,7 @@ use crate::ics03_connection::version::{get_compatible_versions, pick_version, Ve
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
+use std::vec::Vec;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ConnectionMsg`.
 pub trait ConnectionReader {

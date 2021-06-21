@@ -9,7 +9,7 @@ use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use crate::ics24_host::identifier::ConnectionId;
-
+use crate::primitives::format;
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenInit,

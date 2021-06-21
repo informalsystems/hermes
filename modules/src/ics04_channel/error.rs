@@ -8,6 +8,10 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 use flex_error::{define_error, DisplayOnly};
 use tendermint_proto::Error as TendermintError;
+use crate::primitives::String;
+
+#[cfg(not(feature = "std"))]
+impl crate::primitives::StdError for Error {}
 
 define_error! {
     Error {

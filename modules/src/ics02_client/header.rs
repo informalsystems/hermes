@@ -1,5 +1,5 @@
 use std::convert::TryFrom;
-
+use crate::primitives::ToString;
 use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;

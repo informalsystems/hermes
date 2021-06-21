@@ -1448,6 +1448,7 @@ dependencies = [
 name = "ibc"
 version = "0.4.0"
 dependencies = [
+ "anyhow",
  "bytes",
  "chrono",
  "displaydoc",
@@ -1464,6 +1465,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2",
+ "sp-std",
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
@@ -3055,6 +3057,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-std"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35391ea974fa5ee869cb094d5b437688fbf3d8127d64d1b9fed5822a1ed39b12"
+
+[[package]]
 name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3154,7 +3162,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.19.0"
-source = "git+https://github.com/octopus-network/tendermint-rs.git?branch=octpus-no-std-flex-error#1dd613a9b0769b0bc3b9aa6e3391aa42416451f4"
+source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=467dd569#467dd5690a9f8534e612ce7fe2a4e50d2294b9d5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3190,7 +3198,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.19.0"
-source = "git+https://github.com/octopus-network/tendermint-rs.git?branch=octpus-no-std-flex-error#1dd613a9b0769b0bc3b9aa6e3391aa42416451f4"
+source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=467dd569#467dd5690a9f8534e612ce7fe2a4e50d2294b9d5"
 dependencies = [
  "anomaly",
  "contracts",
@@ -3211,7 +3219,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.19.0"
-source = "git+https://github.com/octopus-network/tendermint-rs.git?branch=octpus-no-std-flex-error#1dd613a9b0769b0bc3b9aa6e3391aa42416451f4"
+source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=467dd569#467dd5690a9f8534e612ce7fe2a4e50d2294b9d5"
 dependencies = [
  "anomaly",
  "bytes",
@@ -3229,7 +3237,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.19.0"
-source = "git+https://github.com/octopus-network/tendermint-rs.git?branch=octpus-no-std-flex-error#1dd613a9b0769b0bc3b9aa6e3391aa42416451f4"
+source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=467dd569#467dd5690a9f8534e612ce7fe2a4e50d2294b9d5"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3259,7 +3267,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.19.0"
-source = "git+https://github.com/octopus-network/tendermint-rs.git?branch=octpus-no-std-flex-error#1dd613a9b0769b0bc3b9aa6e3391aa42416451f4"
+source = "git+https://github.com/octopus-network/tendermint-rs.git?rev=467dd569#467dd5690a9f8534e612ce7fe2a4e50d2294b9d5"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",

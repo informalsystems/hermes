@@ -10,7 +10,7 @@ use crate::ics03_connection::handler::verify::{check_client_consensus_height, ve
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use crate::ics24_host::identifier::ConnectionId;
-
+use crate::primitives::format;
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenTry,

@@ -1,7 +1,8 @@
 use std::convert::{TryFrom, TryInto};
-
+use crate::primitives::String;
+use std::vec::Vec;
 use tendermint_proto::Protobuf;
-
+use crate::primitives::ToString;
 use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
 
 use crate::ics04_channel::error;

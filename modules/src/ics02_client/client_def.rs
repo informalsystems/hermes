@@ -13,6 +13,8 @@ use crate::ics07_tendermint::client_def::TendermintClient;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
+use crate::primitives::String;
+use std::vec::Vec;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_def::MockClient;

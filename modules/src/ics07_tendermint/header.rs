@@ -1,5 +1,5 @@
 use std::convert::{TryFrom, TryInto};
-
+use crate::primitives::ToString;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;

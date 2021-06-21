@@ -5,8 +5,12 @@ use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 use std::num::TryFromIntError;
 use tendermint_proto::Error as TendermintError;
-
+use crate::primitives::String;
 use flex_error::{define_error, DisplayOnly};
+use crate::primitives::format;
+
+#[cfg(not(feature = "std"))]
+impl crate::primitives::StdError for Error {}
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]

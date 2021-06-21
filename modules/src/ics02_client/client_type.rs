@@ -1,5 +1,5 @@
 use std::fmt;
-
+use crate::primitives::ToString;
 use serde_derive::{Deserialize, Serialize};
 
 use super::error;

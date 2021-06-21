@@ -1,5 +1,5 @@
 use super::error::{self, ValidationError};
-
+use crate::primitives::ToString;
 /// Bails from the current function with the given error kind.
 macro_rules! bail {
     ($kind:expr) => {

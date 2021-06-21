@@ -1,6 +1,7 @@
 #![allow(clippy::large_enum_variant)]
+#![allow(unused_imports)]
 #![deny(
-    warnings,
+    // warnings,
     // missing_docs,
     trivial_casts,
     trivial_numeric_casts,
@@ -27,6 +28,8 @@
 //! - ICS 26: Routing
 //! - Applications:
 //!    - ICS 20: Fungible Token Transfer
+#[cfg(not(feature = "std"))]
+extern crate sp_std as std;
 
 pub mod application;
 pub mod decode;
@@ -39,6 +42,7 @@ pub mod query;
 pub mod signer;
 pub mod timestamp;
 pub mod tx_msg;
+pub mod primitives;
 
 pub mod ics02_client;
 pub mod ics03_connection;
@@ -63,3 +67,4 @@ pub mod test_utils;
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod mock; // Context mock, the underlying host chain, and client types: for testing all handlers.
+

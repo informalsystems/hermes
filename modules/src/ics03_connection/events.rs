@@ -4,7 +4,8 @@ use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
-
+use std::boxed::Box;
+use crate::primitives::format;
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
 const INIT_EVENT_TYPE: &str = "connection_open_init";
 const TRY_EVENT_TYPE: &str = "connection_open_try";
@@ -127,7 +128,7 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-    type Error = Box<dyn std::error::Error>;
+    type Error = crate::primitives::DummyError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(extract_attributes(&obj, "connection_open_init")?))
     }
@@ -161,7 +162,7 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = Box<dyn std::error::Error>;
+    type Error = crate::primitives::DummyError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(extract_attributes(&obj, "connection_open_try")?))
     }
@@ -195,7 +196,7 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = Box<dyn std::error::Error>;
+    type Error = crate::primitives::DummyError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(extract_attributes(&obj, "connection_open_ack")?))
     }
@@ -229,7 +230,7 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = Box<dyn std::error::Error>;
+    type Error = crate::primitives::DummyError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(extract_attributes(
             &obj,

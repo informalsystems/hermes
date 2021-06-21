@@ -3,6 +3,8 @@ use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+use crate::primitives::String;
+use crate::primitives::ToString;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint_proto::Protobuf;
