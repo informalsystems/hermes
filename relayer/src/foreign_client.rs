@@ -1,6 +1,7 @@
 use std::time::Instant;
 use std::{fmt, thread, time::Duration};
 
+use itertools::Itertools;
 use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
@@ -761,10 +762,11 @@ impl ForeignClient {
             ch,
             consensus_state_heights.len()
         );
+
         trace!(
             "[{}] checking misbehaviour for consensus state heights {:?}",
             self,
-            consensus_state_heights
+            consensus_state_heights.iter().join(", ")
         );
 
         let check_once = update.is_some();
