@@ -279,12 +279,12 @@ impl CosmosSdkChain {
 
     /// The maximum fee the relayer pays for a transaction
     fn max_fee_in_coins(&self) -> Coin {
-        calculate_fee(self.max_gas(), self.gas_price(), self.gas_adjustment())
+        calculate_fee(self.max_gas(), self.gas_price())
     }
 
     /// The fee in coins based on gas amount
     fn fee_from_gas_in_coins(&self, gas: u64) -> Coin {
-        calculate_fee(gas, self.gas_price(), self.gas_adjustment())
+        calculate_fee(gas, self.gas_price())
     }
 
     /// The maximum number of messages included in a transaction
@@ -421,9 +421,10 @@ impl CosmosSdkChain {
     }
 
     fn fee_with_gas(&self, gas_limit: u64) -> Fee {
+        let adjusted_gas_limit = apply_adjustment_to_gas(gas_limit, self.gas_adjustment());
         Fee {
-            amount: vec![self.fee_from_gas_in_coins(gas_limit)],
-            gas_limit,
+            amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
+            gas_limit: adjusted_gas_limit,
             ..self.default_fee()
         }
     }
@@ -1879,14 +1880,17 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
     Ok((body, body_buf))
 }
 
-fn calculate_fee(gas_amount: u64, gas_price: GasPrice, gas_adjustment: f64) -> Coin {
-    let gas_amount = gas_amount + mul_ceil(gas_amount, gas_adjustment);
-    let fee_amount = mul_ceil(gas_amount, gas_price.price);
+fn calculate_fee(adjusted_gas_amount: u64, gas_price: GasPrice) -> Coin {
+    let fee_amount = mul_ceil(adjusted_gas_amount, gas_price.price);
 
     Coin {
         denom: gas_price.denom,
         amount: fee_amount.to_string(),
     }
+}
+
+fn apply_adjustment_to_gas(gas_amount: u64, gas_adjustment: f64) -> u64 {
+    gas_amount + mul_ceil(gas_amount, gas_adjustment)
 }
 
 fn mul_ceil(a: u64, f: f64) -> u64 {
