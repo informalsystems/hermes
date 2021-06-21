@@ -54,7 +54,7 @@ fn connection_on_destination(
             .query_client_connections(req)
             .map_err(|e| {
                 Error::QueryFailed(format!(
-                    "counterparty_chain query_client {} _connections failed {}",
+                    "counterparty::query_client_connections({}) failed with error: {}",
                     counterparty_client_id, e
                 ))
             })?;
