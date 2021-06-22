@@ -41,9 +41,6 @@ use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
-use crate::ics07_tendermint::predicates::Predicates;
-use tendermint::trust_threshold::TrustThresholdFraction;
-
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
 pub struct MockContext {
