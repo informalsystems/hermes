@@ -83,8 +83,6 @@ use crate::light_client::Verified;
 use super::Chain;
 
 const DEFAULT_MAX_GAS: u64 = 300_000;
-const DEFAULT_GAS_PRICE_PRICE: f64 = 0.001;
-const DEFAULT_GAS_PRICE_DENOM: &str = "uatom";
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
 const DEFAULT_MAX_MSG_NUM: usize = 30;
@@ -256,10 +254,8 @@ impl CosmosSdkChain {
     }
 
     /// The gas price
-    fn gas_price(&self) -> GasPrice {
-        self.config.gas_price.clone().unwrap_or_else(|| {
-            GasPrice::new(DEFAULT_GAS_PRICE_PRICE, DEFAULT_GAS_PRICE_DENOM.to_string())
-        })
+    fn gas_price(&self) -> &GasPrice {
+        &self.config.gas_price
     }
 
     /// The gas price adjustment
@@ -1911,11 +1907,11 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
     Ok((body, body_buf))
 }
 
-fn calculate_fee(adjusted_gas_amount: u64, gas_price: GasPrice) -> Coin {
+fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     let fee_amount = mul_ceil(adjusted_gas_amount, gas_price.price);
 
     Coin {
-        denom: gas_price.denom,
+        denom: gas_price.denom.to_string(),
         amount: fee_amount.to_string(),
     }
 }
