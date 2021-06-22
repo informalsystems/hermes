@@ -1,11 +1,11 @@
 //! Host chain types and methods, used by context mock.
 
-use std::convert::TryFrom;
+// use std::convert::TryFrom;
 
-use tendermint::chain::Id as TMChainId;
-//use tendermint::time::Time;
+// use tendermint::chain::Id as TMChainId;
+use tendermint::time::Time;
 use tendermint_testgen::light_block::TmLightBlock;
-use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
+use tendermint_testgen::{Generator,LightBlock as TestgenLightBlock};
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::header::AnyHeader;
@@ -15,6 +15,7 @@ use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::timestamp::Timestamp;
 use crate::Height;
+use std::{thread, time};
 
 /// Defines the different types of host chains that a mock context can emulate.
 /// The variants are as follows:
@@ -62,10 +63,17 @@ impl HostBlock {
     }
 
     pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
-        let mut block = TestgenLightBlock::new_default(height).generate().unwrap();
-        //block.signed_header.header.time = Time::now();
-        //block.signed_header.header.height = Height(height);
-        block.signed_header.header.chain_id = TMChainId::try_from(chain_id.to_string()).unwrap();
+
+       //Sleep is required otherwise the generator produces blocks with the same timestamp
+       //as two block can be generated per second. 
+       let ten_millis = time::Duration::from_millis(1000);
+       thread::sleep(ten_millis);
+       let time = Time::now().duration_since(Time::unix_epoch()).unwrap().as_secs();
+      
+        let block = TestgenLightBlock::new_parametrized_default(
+            chain_id.to_string(), 
+            time, 
+            height).generate().unwrap();
         block
     }
 }
