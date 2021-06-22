@@ -414,7 +414,7 @@ impl RelayPath {
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
             info!(
-                "[{}] clearing pending packets from events before height {:?}",
+                "[{}] clearing pending packets from events before height {}",
                 self, above_height
             );
 
