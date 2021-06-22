@@ -15,7 +15,10 @@ impl Runnable for StartCmd {
     fn run(&self) {
         let config = app_config();
 
-        match spawn_supervisor(config.clone()).and_then(|s| s.run()) {
+        match spawn_supervisor(config.clone()).and_then(|s| {
+            info!("Hermes has started");
+            s.run()
+        }) {
             Ok(()) => Output::success_msg("done").exit(),
             Err(e) => Output::error(format!("Hermes failed to start, last error: {}", e)).exit(),
         }

@@ -7,7 +7,7 @@ use ibc::{
         ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
     },
     ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
-    ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     Height,
 };
 use ibc_proto::ibc::core::{
@@ -18,7 +18,6 @@ use crate::channel::ChannelError;
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
-use ibc::ics24_host::identifier::ClientId;
 
 pub fn counterparty_chain_from_connection(
     src_chain: &dyn ChainHandle,
@@ -131,12 +130,12 @@ pub fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
-    trace!(
-        chain_id = %chain.id(),
-        port_id = %port_id,
-        channel_id = %channel_id,
-        "getting counterparty chain"
-    );
+    // trace!(
+    //     chain_id = %chain.id(),
+    //     port_id = %port_id,
+    //     channel_id = %channel_id,
+    //     "getting counterparty chain"
+    // );
 
     let channel_end = chain
         .query_channel(port_id, channel_id, Height::zero())
@@ -168,10 +167,10 @@ pub fn channel_connection_client(
         .query_client_state(client_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    trace!(
-        chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
-        "counterparty chain: {}", client_state.chain_id()
-    );
+    // trace!(
+    //     chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
+    //     "counterparty chain: {}", client_state.chain_id()
+    // );
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
