@@ -40,11 +40,12 @@ use crate::channel::{self, Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::event::monitor::EventBatch;
-use crate::foreign_client::{ForeignClient, ForeignClientError};
+use crate::foreign_client::{self, ForeignClient, ForeignClientError};
 use crate::transfer::PacketError;
 
 const MAX_RETRIES: usize = 5;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum LinkError {
     #[error("failed with underlying error: {0}")]
@@ -837,13 +838,9 @@ impl RelayPath {
             }
         }
 
-        Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
-            format!(
-                "Failed to update client on destination {} with err: {}",
-                self.dst_chain().id(),
-                dst_err_ev.unwrap()
-            ),
-        )))
+        Err(LinkError::ClientError(
+            foreign_client::chain_error_event_error(self.dst_chain().id(), dst_err_ev.unwrap()),
+        ))
     }
 
     /// Handles updating the client on the source chain
@@ -878,13 +875,9 @@ impl RelayPath {
             }
         }
 
-        Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
-            format!(
-                "Failed to update client on source {} with err: {}",
-                self.src_chain().id(),
-                src_err_ev.unwrap()
-            ),
-        )))
+        Err(LinkError::ClientError(
+            foreign_client::chain_error_event_error(self.src_chain().id(), src_err_ev.unwrap()),
+        ))
     }
 
     /// Returns relevant packet events for building RecvPacket and timeout messages.

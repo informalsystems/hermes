@@ -7,7 +7,7 @@ use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 
 use crate::{
     chain::handle::ChainHandlePair,
-    foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
+    foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
     telemetry::Telemetry,
@@ -74,12 +74,14 @@ impl ClientWorker {
                         )
                     };
                 }
-                Err(e @ ForeignClientError::ExpiredOrFrozen(..)) => {
-                    warn!("failed to refresh client '{}': {}", client, e);
+                Err(e) => {
+                    if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail {
+                        warn!("failed to refresh client '{}': {}", client, e);
 
-                    // This worker has completed its job as the client cannot be refreshed any
-                    // further, and can therefore exit without an error.
-                    return Ok(());
+                        // This worker has completed its job as the client cannot be refreshed any
+                        // further, and can therefore exit without an error.
+                        return Ok(());
+                    }
                 }
                 _ => (),
             };

@@ -27,6 +27,7 @@ pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
 
 const MAX_RETRIES: usize = 5;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum ConnectionError {
     #[error("failed with underlying cause: {0}")]
