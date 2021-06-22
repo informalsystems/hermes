@@ -5,7 +5,7 @@
 // use tendermint::chain::Id as TMChainId;
 use tendermint::time::Time;
 use tendermint_testgen::light_block::TmLightBlock;
-use tendermint_testgen::{Generator,LightBlock as TestgenLightBlock};
+use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::header::AnyHeader;
@@ -63,18 +63,18 @@ impl HostBlock {
     }
 
     pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
+        //Sleep is required otherwise the generator produces blocks with the same timestamp
+        //as two block can be generated per second.
+        let ten_millis = time::Duration::from_millis(1000);
+        thread::sleep(ten_millis);
+        let time = Time::now()
+            .duration_since(Time::unix_epoch())
+            .unwrap()
+            .as_secs();
 
-       //Sleep is required otherwise the generator produces blocks with the same timestamp
-       //as two block can be generated per second. 
-       let ten_millis = time::Duration::from_millis(1000);
-       thread::sleep(ten_millis);
-       let time = Time::now().duration_since(Time::unix_epoch()).unwrap().as_secs();
-      
-        let block = TestgenLightBlock::new_parametrized_default(
-            chain_id.to_string(), 
-            time, 
-            height).generate().unwrap();
-        block
+        TestgenLightBlock::new_parametrized_default(chain_id.to_string(), time, height)
+            .generate()
+            .unwrap()
     }
 }
 

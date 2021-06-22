@@ -223,14 +223,15 @@ impl MockContext {
                     cs_height.revision_height,
                 );
 
-                let pred = Predicates::default(); 
+                let pred = Predicates::default();
                 if let Err(e) = pred.voting_power_in(
                     &light_block.signed_header,
                     &light_block.validators,
-                    TrustThresholdFraction::TWO_THIRDS){
-                        panic!("{}",e.to_string());
-                       // info!("\n COntext: Insufficient Voting Power");
-                    }
+                    TrustThresholdFraction::TWO_THIRDS,
+                ) {
+                    panic!("{}", e.to_string());
+                    // info!("\n COntext: Insufficient Voting Power");
+                }
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =

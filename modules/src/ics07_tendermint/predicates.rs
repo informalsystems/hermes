@@ -117,9 +117,8 @@ impl Predicates {
                 vote.signature,
             );
 
-            
             let sign_bytes = signed_vote.sign_bytes();
-        //     Check vote is valid
+            //     Check vote is valid
             if validator
                 .verify_signature(&sign_bytes, signed_vote.signature())
                 .is_err()
