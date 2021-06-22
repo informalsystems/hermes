@@ -142,7 +142,7 @@ pub struct ChainConfig {
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
-    pub gas_price: Option<GasPrice>,
+    pub gas_price: GasPrice,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

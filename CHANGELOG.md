@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+> Nothing yet.
+
+## v0.5.0
+*June 22nd, 2021*
+
+This release brings a few features, and several improvements and bug fixes to the Hermes
+relayer, notably the capability for Hermes to complete IBC connection handshakes when
+it detects that one has been initialized, as well as the ability to detect chain
+impersonation attacks and to dynamically estimate the gas needed to submit
+a transaction.
+
+Moreover, the overall reliability and availability of the relayer has also been improved
+substantially by switching over to `tx_broadcast_sync` for submitting transactions.
+
 ### FEATURES
 
 - [ibc-relayer-cli]
