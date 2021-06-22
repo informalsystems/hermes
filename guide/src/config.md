@@ -87,11 +87,15 @@ A `chains` section includes parameters related to a chain and the full node to w
 
 * __max_gas__: *(u64)* Specify the maximum amount of gas to be used as the gas limit for a transaction. Default: `300000`
 
-* __gas_price__: *(table)* Default: `{ price = 0.001, denom = 'uatom' }`
-  * __price__: *(f64)* Specify the price per gas used of the fee to submit a transaction. Default: `0.001`
-  * __denom__: *(string)* Specify the denomination of the fee. Default: `uatom`
+* __gas_price__: *(table)*
+  * __price__: *(f64)* Specify the price per gas used of the fee to submit a transaction.
+  * __denom__: *(string)* Specify the denomination of the fee.
 
 * __gas_adjustment__: *(f64)* Specify by what percentage to increase the gas estimate used to compute the fee, to account for potential estimation error. Default: `0.1`, ie. 10%.
+
+* __max_msg_num__: *(u64)* Specify how many IBC messages at most to include in a single transaction. Default: `30`
+
+* __max_tx_size__: *(u64)* Specify the maximum size, in bytes, of each transaction that Hermes will submit. Default: `2097152` (2 MiB)
 
 * __clock_drift__: *(string)*  Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default: `5s`
 
