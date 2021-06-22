@@ -9,6 +9,7 @@
     derivation path when importing keys ([#1049])
 
 - [ibc-relayer]
+  - Event-based handshake completion for IBC connections ([#821])
   - Enable TLS support for gRPC client ([#877])
 
 ### IMPROVEMENTS
@@ -40,6 +41,7 @@
   - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead ([#1049])
 
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
+[#821]: https://github.com/informalsystems/ibc-rs/issues/821
 [#877]: https://github.com/informalsystems/ibc-rs/issues/877
 [#919]: https://github.com/informalsystems/ibc-rs/issues/919
 [#930]: https://github.com/informalsystems/ibc-rs/issues/930
