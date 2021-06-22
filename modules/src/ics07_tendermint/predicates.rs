@@ -12,6 +12,7 @@ use tendermint::trust_threshold::TrustThreshold;
 use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint::vote::{SignedVote, ValidatorIndex, Vote};
+//SignedVote,
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Predicates;
@@ -116,8 +117,9 @@ impl Predicates {
                 vote.signature,
             );
 
-            // Check vote is valid
+            
             let sign_bytes = signed_vote.sign_bytes();
+        //     Check vote is valid
             if validator
                 .verify_signature(&sign_bytes, signed_vote.signature())
                 .is_err()

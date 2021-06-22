@@ -1,6 +1,6 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
-use ::tracing::{debug,info};
+use ::tracing::info;
 
 use std::cmp::min;
 use std::collections::HashMap;
@@ -224,11 +224,12 @@ impl MockContext {
                 );
 
                 let pred = Predicates::default(); 
-                if let Err(_e) = pred.voting_power_in(
+                if let Err(e) = pred.voting_power_in(
                     &light_block.signed_header,
                     &light_block.validators,
                     TrustThresholdFraction::TWO_THIRDS){
-                        debug!("\n Insufficient Voting Power");
+                        panic!("{}",e.to_string());
+                       // info!("\n COntext: Insufficient Voting Power");
                     }
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());

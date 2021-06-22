@@ -63,7 +63,7 @@ impl HostBlock {
 
     pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
         let mut block = TestgenLightBlock::new_default(height).generate().unwrap();
-        block.signed_header.header.time = Time::now();
+        //block.signed_header.header.time = Time::now();
         //block.signed_header.header.height = Height(height);
         block.signed_header.header.chain_id = TMChainId::try_from(chain_id.to_string()).unwrap();
         block
