@@ -616,11 +616,21 @@ impl RelayPath {
                     return Ok(summary);
                 }
                 Err(LinkError::SendError(ev)) => {
-                    // This error means we can retry
+                    // This error means we could retry
                     error!("[{}] error {}", self, ev);
-                    match self.regenerate_operational_data(odata.clone()) {
-                        None => return Ok(RelaySummary::empty()), // Nothing to retry
-                        Some(new_od) => odata = new_od,
+                    if i + 1 == MAX_RETRIES {
+                        error!(
+                            "[{}] {}/{} retries exhausted. giving up",
+                            self,
+                            i + 1,
+                            MAX_RETRIES
+                        )
+                    } else {
+                        // If we haven't exhausted all retries, regenerate the op. data & retry
+                        match self.regenerate_operational_data(odata.clone()) {
+                            None => return Ok(RelaySummary::empty()), // Nothing to retry
+                            Some(new_od) => odata = new_od,
+                        }
                     }
                 }
                 Err(e) => {
