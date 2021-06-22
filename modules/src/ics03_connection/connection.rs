@@ -222,7 +222,7 @@ impl ConnectionEnd {
         self.versions.clone()
     }
 
-    /// Getter for the counterparty. Returns a `clone()`.
+    /// Getter for the counterparty.
     pub fn counterparty(&self) -> &Counterparty {
         &self.counterparty
     }

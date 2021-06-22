@@ -264,8 +264,9 @@ def verify_state(c: Config,
     ibc1_conn_id: ConnectionId):
 
     strategy = toml.load(c.config_file)['global']['strategy']
-    # verify connection state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
+    l.debug(f'Using strategy: {strategy}')
 
+    # verify connection state on both chains, should be 'Open' for 'all' strategy, 'Init' otherwise
     if strategy == 'all':
         sleep(10.0)
         for i in range(20):

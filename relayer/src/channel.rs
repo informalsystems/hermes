@@ -64,8 +64,8 @@ pub enum ChannelError {
     #[error("failed due to missing counterparty connection")]
     MissingCounterpartyConnection,
 
-    #[error("failed due to missing local connection")]
-    MissingLocalConnection,
+    #[error("channel constructor failed due to missing connection id on chain id {0}")]
+    MissingLocalConnection(ChainId),
 
     #[error("failed during an operation on client ({0}) hosted by chain ({1}) with error: {2}")]
     ClientOperation(ClientId, ChainId, ForeignClientError),
@@ -163,10 +163,10 @@ impl Channel {
 
         let src_connection_id = connection
             .src_connection_id()
-            .ok_or(ChannelError::MissingLocalConnection)?;
+            .ok_or_else(|| ChannelError::MissingLocalConnection(connection.src_chain().id()))?;
         let dst_connection_id = connection
             .dst_connection_id()
-            .ok_or(ChannelError::MissingLocalConnection)?;
+            .ok_or_else(|| ChannelError::MissingLocalConnection(connection.dst_chain().id()))?;
 
         let mut channel = Self {
             ordering,
@@ -825,7 +825,7 @@ impl Channel {
         if src_channel.counterparty().port_id() != self.dst_port_id() {
             return Err(ChannelError::Failed(format!(
                 "channel open try to chain `{}` and destination port `{}` does not match \
-                the source chain `{}` counterparty port `{}`for channel_id {}",
+                the source chain `{}` counterparty port `{}` for channel_id {}",
                 self.dst_chain().id(),
                 self.dst_port_id(),
                 self.src_chain().id(),

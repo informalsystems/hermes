@@ -1,8 +1,6 @@
 use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
@@ -15,7 +13,10 @@ use ibc::{
         header::{AnyHeader, Header},
         misbehaviour::MisbehaviourEvidence,
     },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics03_connection::{
+        connection::{ConnectionEnd, IdentifiedConnectionEnd},
+        version::Version,
+    },
     ics04_channel::{
         channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
@@ -36,7 +37,7 @@ use ibc_proto::ibc::core::{
     },
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
-    connection::v1::QueryClientConnectionsRequest,
+    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 
 use crate::{

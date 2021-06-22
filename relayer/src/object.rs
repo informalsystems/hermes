@@ -255,13 +255,17 @@ impl Object {
         e: &ConnectionAttributes,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let connection_id = e
-            .connection_id
-            .as_ref()
-            .ok_or_else(|| format!("connection_id missing in OpenInit event '{:?}'", e))?;
+        let connection_id = e.connection_id.as_ref().ok_or_else(|| {
+            format!(
+                "connection_id missing from connection handshake event '{:?}'",
+                e
+            )
+        })?;
 
-        let dst_chain_id = counterparty_chain_from_connection(src_chain, &connection_id)
-            .map_err(|_| "dest chain missing in init".to_string())?;
+        let dst_chain_id =
+            counterparty_chain_from_connection(src_chain, &connection_id).map_err(|_| {
+                "destination chain id not found during conn open handshake step".to_string()
+            })?;
 
         Ok(Connection {
             dst_chain_id,
