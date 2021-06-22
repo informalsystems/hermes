@@ -27,7 +27,7 @@ prost-types = "0.7"
 anomaly = "0.2"
 bytes = "1.0"
 thiserror = "1.0"
-tonic = "0.4"
+tonic = "0.4.2"
 
 [dependencies.tendermint-proto]
 version = "=0.19.0"
