@@ -1,6 +1,11 @@
 use std::{
-    convert::TryFrom, convert::TryInto, future::Future, str::FromStr, sync::Arc, thread,
-    time::Duration,
+    cmp::min,
+    convert::{TryFrom, TryInto},
+    future::Future,
+    str::FromStr,
+    sync::Arc,
+    thread,
+    time::{Duration, Instant},
 };
 
 use anomaly::fail;
@@ -14,11 +19,12 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
+use tendermint_rpc::endpoint::tx_search::ResultTx;
 use tendermint_rpc::query::Query;
-use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
+use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tonic::Code;
+use tracing::{debug, trace};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -27,7 +33,7 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events as ClientEvents;
-use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -40,14 +46,16 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
-use ibc::query::QueryTxRequest;
+use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
-// Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::cosmos::tx::v1beta1::{
+    AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxBody,
+    TxRaw,
+};
 use ibc_proto::cosmos::upgrade::v1beta1::{
     QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
 };
@@ -64,7 +72,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::chain::QueryResponse;
-use crate::config::ChainConfig;
+use crate::config::{ChainConfig, GasPrice};
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
@@ -73,13 +81,24 @@ use crate::light_client::LightClient;
 use crate::light_client::Verified;
 
 use super::Chain;
-use tendermint_rpc::endpoint::tx_search::ResultTx;
 
-// TODO size this properly
-const DEFAULT_MAX_GAS: u64 = 300000;
+const DEFAULT_MAX_GAS: u64 = 300_000;
+const DEFAULT_GAS_PRICE_PRICE: f64 = 0.001;
+const DEFAULT_GAS_PRICE_DENOM: &str = "uatom";
+const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
+
 const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
-const DEFAULT_GAS_FEE_AMOUNT: u64 = 1000;
+
+mod retry_strategy {
+    use crate::util::retry::Fixed;
+    use std::time::Duration;
+
+    pub fn wait_for_block_commits() -> impl Iterator<Item = Duration> {
+        // The total time should be higher than the full node timeout which defaults to 10sec.
+        Fixed::from_millis(300).take(40) // 12 seconds
+    }
+}
 
 pub struct CosmosSdkChain {
     config: ChainConfig,
@@ -87,6 +106,9 @@ pub struct CosmosSdkChain {
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
+
+    /// A cached copy of the account information
+    account: Option<BaseAccount>,
 }
 
 impl CosmosSdkChain {
@@ -144,125 +166,135 @@ impl CosmosSdkChain {
         self.rt.block_on(f)
     }
 
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
+    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
 
-        let key = self
-            .keybase()
-            .get_key(&self.config.key_name)
-            .map_err(|e| Kind::KeyBase.context(e))?;
+        let account_seq = self.account_sequence()?;
 
-        // Create TxBody
-        let body = TxBody {
-            messages: proto_msgs.to_vec(),
-            memo: "".to_string(),
-            timeout_height: 0_u64,
-            extension_options: Vec::<Any>::new(),
-            non_critical_extension_options: Vec::<Any>::new(),
-        };
+        debug!(
+            "send_tx: sending {} messages to {} using nonce {}",
+            proto_msgs.len(),
+            self.id(),
+            account_seq,
+        );
 
-        // A protobuf serialization of a TxBody
-        let mut body_buf = Vec::new();
-        prost::Message::encode(&body, &mut body_buf).unwrap();
+        let signer_info = self.signer(account_seq)?;
+        let fee = self.default_fee();
+        let (body, body_buf) = tx_body_and_bytes(proto_msgs)?;
 
-        let mut pk_buf = Vec::new();
-        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
+        let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), fee.clone())?;
+        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
 
-        crate::time!("PK {:?}", hex::encode(key.public_key.public_key.to_bytes()));
+        // Try to simulate the Tx.
+        // It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
+        // they do not individually verify. For example for the following batch
+        // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
+        // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
+        // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
+        let estimated_gas = self
+            .send_tx_simulate(SimulateRequest {
+                tx: Some(Tx {
+                    body: Some(body),
+                    auth_info: Some(auth_info),
+                    signatures: vec![signed_doc],
+                }),
+            })
+            .map_or(self.max_gas(), |sr| {
+                sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
+            });
 
-        // Create a MsgSend proto Any message
-        let pk_any = Any {
-            type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-            value: pk_buf,
-        };
+        if estimated_gas > self.max_gas() {
+            return Err(Kind::TxSimulateGasEstimateExceeded {
+                chain_id: self.id().clone(),
+                estimated_gas,
+                max_gas: self.max_gas(),
+            }
+            .into());
+        }
 
-        let acct_response = self
-            .block_on(query_account(self, key.account))
-            .map_err(|e| Kind::Grpc.context(e))?;
+        let adjusted_fee = self.fee_with_gas(estimated_gas);
 
-        let single = Single { mode: 1 };
-        let sum_single = Some(Sum::Single(single));
-        let mode = Some(ModeInfo { sum: sum_single });
-        let signer_info = SignerInfo {
-            public_key: Some(pk_any),
-            mode_info: mode,
-            sequence: acct_response.sequence,
-        };
-
-        let fee = Some(Fee {
-            amount: vec![self.fee()],
-            gas_limit: self.gas(),
-            payer: "".to_string(),
-            granter: "".to_string(),
-        });
-
-        let auth_info = AuthInfo {
-            signer_infos: vec![signer_info],
+        trace!(
+            "send_tx: {} based on the estimated gas, adjusting fee from {:?} to {:?}",
+            self.id(),
             fee,
-        };
+            adjusted_fee
+        );
 
-        // A protobuf serialization of a AuthInfo
-        let mut auth_buf = Vec::new();
-        prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
-
-        let sign_doc = SignDoc {
-            body_bytes: body_buf.clone(),
-            auth_info_bytes: auth_buf.clone(),
-            chain_id: self.config.clone().id.to_string(),
-            account_number: acct_response.account_number,
-        };
-
-        // A protobuf serialization of a SignDoc
-        let mut signdoc_buf = Vec::new();
-        prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
-
-        // Sign doc and broadcast
-        let signed = self
-            .keybase
-            .sign_msg(&self.config.key_name, signdoc_buf)
-            .map_err(|e| Kind::KeyBase.context(e))?;
+        let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
+        let account_number = self.account_number()?;
+        let signed_doc =
+            self.signed_doc(body_buf.clone(), auth_buf_adjusted.clone(), account_number)?;
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
-            auth_info_bytes: auth_buf,
-            signatures: vec![signed],
+            auth_info_bytes: auth_buf_adjusted,
+            signatures: vec![signed_doc],
         };
 
-        let mut txraw_buf = Vec::new();
-        prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
-
-        crate::time!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
+        let mut tx_bytes = Vec::new();
+        prost::Message::encode(&tx_raw, &mut tx_bytes).unwrap();
 
         let response = self
-            .block_on(broadcast_tx_commit(self, txraw_buf))
+            .block_on(broadcast_tx_sync(self, tx_bytes))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
-        let res = tx_result_to_event(&self.config.id, response)?;
+        debug!(
+            "send_tx: broadcast_tx_sync to {}: {:?}",
+            self.id(),
+            response
+        );
 
-        Ok(res)
+        self.incr_account_sequence()?;
+
+        Ok(response)
     }
 
-    fn gas(&self) -> u64 {
-        self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
+    /// The maximum amount of gas the relayer is willing to pay for a transaction
+    fn max_gas(&self) -> u64 {
+        self.config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
-    fn fee(&self) -> Coin {
-        let amount = self
-            .config
-            .clone()
-            .fee_amount
-            .unwrap_or(DEFAULT_GAS_FEE_AMOUNT);
-
-        Coin {
-            denom: self.config.fee_denom.clone(),
-            amount: amount.to_string(),
-        }
+    /// The gas price
+    fn gas_price(&self) -> GasPrice {
+        self.config.gas_price.clone().unwrap_or_else(|| {
+            GasPrice::new(DEFAULT_GAS_PRICE_PRICE, DEFAULT_GAS_PRICE_DENOM.to_string())
+        })
     }
 
+    /// The gas price adjustment
+    fn gas_adjustment(&self) -> f64 {
+        self.config
+            .gas_adjustment
+            .unwrap_or(DEFAULT_GAS_PRICE_ADJUSTMENT)
+    }
+
+    /// Adjusts the fee based on the configured `gas_adjustment` to prevent out of gas errors.
+    /// The actual gas cost, when a transaction is executed, may be slightly higher than the
+    /// one returned by the simulation.
+    fn apply_adjustment_to_gas(&self, gas_amount: u64) -> u64 {
+        min(
+            gas_amount + mul_ceil(gas_amount, self.gas_adjustment()),
+            self.max_gas(),
+        )
+    }
+
+    /// The maximum fee the relayer pays for a transaction
+    fn max_fee_in_coins(&self) -> Coin {
+        calculate_fee(self.max_gas(), self.gas_price())
+    }
+
+    /// The fee in coins based on gas amount
+    fn fee_from_gas_in_coins(&self, gas: u64) -> Coin {
+        calculate_fee(gas, self.gas_price())
+    }
+
+    /// The maximum number of messages included in a transaction
     fn max_msg_num(&self) -> usize {
         self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
     }
 
+    /// The maximum size of any transaction sent by the relayer to this chain
     fn max_tx_size(&self) -> usize {
         self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
     }
@@ -281,7 +313,7 @@ impl CosmosSdkChain {
                 .into());
         }
 
-        let response = self.block_on(abci_query(&self, path, data.to_string(), height, prove))?;
+        let response = self.block_on(abci_query(self, path, data.to_string(), height, prove))?;
 
         // TODO - Verify response proof, if requested.
         if prove {}
@@ -300,7 +332,7 @@ impl CosmosSdkChain {
 
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).unwrap();
         let response = self.block_on(abci_query(
-            &self,
+            self,
             path,
             Path::Upgrade(data).to_string(),
             prev_height,
@@ -316,6 +348,218 @@ impl CosmosSdkChain {
 
         Ok((proof, height))
     }
+
+    fn send_tx_simulate(&self, request: SimulateRequest) -> Result<SimulateResponse, Error> {
+        crate::time!("tx simulate");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+        let response = self
+            .block_on(client.simulate(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        Ok(response)
+    }
+
+    fn key(&self) -> Result<KeyEntry, Error> {
+        Ok(self
+            .keybase()
+            .get_key(&self.config.key_name)
+            .map_err(|e| Kind::KeyBase.context(e))?)
+    }
+
+    fn key_bytes(&self, key: &KeyEntry) -> Result<Vec<u8>, Error> {
+        let mut pk_buf = Vec::new();
+        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
+        Ok(pk_buf)
+    }
+
+    fn key_and_bytes(&self) -> Result<(KeyEntry, Vec<u8>), Error> {
+        let key = self.key()?;
+        let key_bytes = self.key_bytes(&key)?;
+        Ok((key, key_bytes))
+    }
+
+    fn account(&mut self) -> Result<&mut BaseAccount, Error> {
+        if self.account == None {
+            let account = self
+                .block_on(query_account(self, self.key()?.account))
+                .map_err(|e| Kind::Grpc.context(e))?;
+
+            debug!(
+                sequence = %account.sequence,
+                number = %account.account_number,
+                "send_tx: retrieved account for {}",
+                self.id()
+            );
+
+            self.account = Some(account);
+        }
+
+        Ok(self
+            .account
+            .as_mut()
+            .expect("account was supposedly just cached"))
+    }
+
+    fn account_number(&mut self) -> Result<u64, Error> {
+        Ok(self.account()?.account_number)
+    }
+
+    fn account_sequence(&mut self) -> Result<u64, Error> {
+        Ok(self.account()?.sequence)
+    }
+
+    fn incr_account_sequence(&mut self) -> Result<(), Error> {
+        self.account()?.sequence += 1;
+        Ok(())
+    }
+
+    fn signer(&self, sequence: u64) -> Result<SignerInfo, Error> {
+        let (_key, pk_buf) = self.key_and_bytes()?;
+        // Create a MsgSend proto Any message
+        let pk_any = Any {
+            type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
+            value: pk_buf,
+        };
+
+        let single = Single { mode: 1 };
+        let sum_single = Some(Sum::Single(single));
+        let mode = Some(ModeInfo { sum: sum_single });
+        let signer_info = SignerInfo {
+            public_key: Some(pk_any),
+            mode_info: mode,
+            sequence,
+        };
+        Ok(signer_info)
+    }
+
+    fn default_fee(&self) -> Fee {
+        Fee {
+            amount: vec![self.max_fee_in_coins()],
+            gas_limit: self.max_gas(),
+            payer: "".to_string(),
+            granter: "".to_string(),
+        }
+    }
+
+    fn fee_with_gas(&self, gas_limit: u64) -> Fee {
+        let adjusted_gas_limit = self.apply_adjustment_to_gas(gas_limit);
+        Fee {
+            amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
+            gas_limit: adjusted_gas_limit,
+            ..self.default_fee()
+        }
+    }
+
+    fn signed_doc(
+        &self,
+        body_bytes: Vec<u8>,
+        auth_info_bytes: Vec<u8>,
+        account_number: u64,
+    ) -> Result<Vec<u8>, Error> {
+        let sign_doc = SignDoc {
+            body_bytes,
+            auth_info_bytes,
+            chain_id: self.config.clone().id.to_string(),
+            account_number,
+        };
+
+        // A protobuf serialization of a SignDoc
+        let mut signdoc_buf = Vec::new();
+        prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
+
+        // Sign doc
+        let signed = self
+            .keybase
+            .sign_msg(&self.config.key_name, signdoc_buf)
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(signed)
+    }
+
+    /// Given a vector of `TxSyncResult` elements,
+    /// each including a transaction response hash for one or more messages, periodically queries the chain
+    /// with the transaction hashes to get the list of IbcEvents included in those transactions.
+    pub fn wait_for_block_commits(
+        &self,
+        mut tx_sync_results: Vec<TxSyncResult>,
+    ) -> Result<Vec<TxSyncResult>, Error> {
+        use crate::util::retry::{retry_with_index, RetryResult};
+
+        trace!("waiting for commit of block(s)");
+
+        // Wait a little bit initially
+        thread::sleep(Duration::from_millis(200));
+
+        let start = Instant::now();
+
+        let result = retry_with_index(retry_strategy::wait_for_block_commits(), |index| {
+            if all_tx_results_found(&tx_sync_results) {
+                trace!(
+                    "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
+                    tx_sync_results.len(),
+                    index,
+                    start.elapsed().as_millis()
+                );
+
+                // All transactions confirmed
+                return RetryResult::Ok(());
+            }
+
+            for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
+                // If this transaction was not committed, determine whether it was because it failed
+                // or because it hasn't been committed yet.
+                if empty_event_present(&events) {
+                    // If the transaction failed, replace the events with an error,
+                    // so that we don't attempt to resolve the transaction later on.
+                    if response.code.value() != 0 {
+                        *events = vec![IbcEvent::ChainError(format!(
+                            "deliver_tx for Tx hash {} reports error: code={:?}, log={:?}",
+                            response.hash, response.code, response.log
+                        ))];
+
+                    // Otherwise, try to resolve transaction hash to the corresponding events.
+                    } else if let Ok(events_per_tx) =
+                        self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
+                    {
+                        // If we get events back, progress was made, so we replace the events
+                        // with the new ones. in both cases we will check in the next iteration
+                        // whether or not the transaction was fully committed.
+                        if !events_per_tx.is_empty() {
+                            *events = events_per_tx;
+                        }
+                    }
+                }
+            }
+            RetryResult::Retry(index)
+        });
+
+        match result {
+            // All transactions confirmed
+            Ok(()) => Ok(tx_sync_results),
+            // Did not find confirmation
+            Err(_) => Err(Kind::TxNoConfirmation.into()),
+        }
+    }
+}
+
+fn empty_event_present(events: &[IbcEvent]) -> bool {
+    events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
+}
+
+fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
+    tx_sync_results
+        .iter()
+        .all(|r| !empty_event_present(&r.events))
 }
 
 impl Chain for CosmosSdkChain {
@@ -341,6 +585,7 @@ impl Chain for CosmosSdkChain {
             grpc_addr,
             rt,
             keybase,
+            account: None,
         })
     }
 
@@ -392,38 +637,61 @@ impl Chain for CosmosSdkChain {
         &mut self.keybase
     }
 
-    /// Send one or more transactions that include all the specified messages
+    /// Send one or more transactions that include all the specified messages.
+    /// The `proto_msgs` are split in transactions such they don't exceed the configured maximum
+    /// number of messages per transaction and the maximum transaction size.
+    /// Then `send_tx()` is called with each Tx. `send_tx()` determines the fee based on the
+    /// on-chain simulation and if this exceeds the maximum gas specified in the configuration file
+    /// then it returns error.
+    /// TODO - more work is required here for a smarter split maybe iteratively accumulating/ evaluating
+    /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_msgs");
 
         if proto_msgs.is_empty() {
-            return Ok(vec![IbcEvent::Empty("No messages to send".to_string())]);
+            return Ok(vec![]);
         }
-        let mut res = vec![];
+        let mut tx_sync_results = vec![];
 
         let mut n = 0;
         let mut size = 0;
         let mut msg_batch = vec![];
         for msg in proto_msgs.iter() {
-            msg_batch.append(&mut vec![msg.clone()]);
+            msg_batch.push(msg.clone());
             let mut buf = Vec::new();
             prost::Message::encode(msg, &mut buf).unwrap();
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let mut result = self.send_tx(msg_batch)?;
-                res.append(&mut result);
+                let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
+                let tx_sync_result = self.send_tx(msg_batch)?;
+                tx_sync_results.push(TxSyncResult {
+                    response: tx_sync_result,
+                    events: events_per_tx,
+                });
                 n = 0;
                 size = 0;
                 msg_batch = vec![];
             }
         }
         if !msg_batch.is_empty() {
-            let mut result = self.send_tx(msg_batch)?;
-            res.append(&mut result);
+            let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
+            let tx_sync_result = self.send_tx(msg_batch)?;
+            tx_sync_results.push(TxSyncResult {
+                response: tx_sync_result,
+                events: events_per_tx,
+            });
         }
 
-        Ok(res)
+        let tx_sync_results = self.wait_for_block_commits(tx_sync_results)?;
+
+        let events = tx_sync_results
+            .into_iter()
+            .map(|el| el.events)
+            .flatten()
+            .collect();
+
+        Ok(events)
     }
 
     /// Get the account for the signer
@@ -697,10 +965,11 @@ impl Chain for CosmosSdkChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
-            .block_on(client.client_connections(request))
-            .map_err(|e| Kind::Grpc.context(e))?
-            .into_inner();
+        let response = match self.block_on(client.client_connections(request)) {
+            Ok(res) => res.into_inner(),
+            Err(e) if e.code() == tonic::Code::NotFound => return Ok(vec![]),
+            Err(e) => return Err(Kind::Grpc.context(e).into()),
+        };
 
         // TODO: add warnings for any identifiers that fail to parse (below).
         //      similar to the parsing in `query_connection_channels`.
@@ -717,7 +986,7 @@ impl Chain for CosmosSdkChain {
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -738,13 +1007,13 @@ impl Chain for CosmosSdkChain {
         // TODO: add warnings for any identifiers that fail to parse (below).
         //      similar to the parsing in `query_connection_channels`.
 
-        let ids = response
+        let connections = response
             .connections
-            .iter()
-            .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
+            .into_iter()
+            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
             .collect();
 
-        Ok(ids)
+        Ok(connections)
     }
 
     fn query_connection(
@@ -778,7 +1047,7 @@ impl Chain for CosmosSdkChain {
                 .insert("x-cosmos-block-height", height_param);
 
             let response = client.connection(request).await.map_err(|e| {
-                if e.code() == Code::NotFound {
+                if e.code() == tonic::Code::NotFound {
                     Kind::ConnectionNotFound(connection_id.clone()).into()
                 } else {
                     Kind::Grpc.context(e)
@@ -1142,6 +1411,25 @@ impl Chain for CosmosSdkChain {
 
                 Ok(event.into_iter().collect())
             }
+
+            QueryTxRequest::Transaction(tx) => {
+                let mut response = self
+                    .block_on(self.rpc_client.tx_search(
+                        tx_hash_query(&tx),
+                        false,
+                        1,
+                        1, // get only the first Tx matching the query
+                        Order::Ascending,
+                    ))
+                    .map_err(|e| Kind::Grpc.context(e))?;
+
+                if response.txs.is_empty() {
+                    Ok(vec![])
+                } else {
+                    let tx = response.txs.remove(0);
+                    Ok(all_ibc_events_from_tx_search_response(self.id(), tx))
+                }
+            }
         }
     }
 
@@ -1380,6 +1668,10 @@ fn header_query(request: &QueryClientEventRequest) -> Query {
     )
 }
 
+fn tx_hash_query(request: &QueryTxHash) -> Query {
+    tendermint_rpc::query::Query::eq("tx.hash", request.0.to_string())
+}
+
 // Extract the packet events from the query_txs RPC response. For any given
 // packet query, there is at most one Tx matching such query. Moreover, a Tx may
 // contain several events, but a single one must match the packet query.
@@ -1456,6 +1748,25 @@ fn update_client_from_tx_search_response(
         .map(IbcEvent::UpdateClient)
 }
 
+fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx) -> Vec<IbcEvent> {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    let deliver_tx_result = response.tx_result;
+    if deliver_tx_result.code.is_err() {
+        return vec![IbcEvent::ChainError(format!(
+            "deliver_tx for {} reports error: code={:?}, log={:?}",
+            response.hash, deliver_tx_result.code, deliver_tx_result.log
+        ))];
+    }
+
+    let mut result = vec![];
+    for event in deliver_tx_result.events {
+        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
+            result.push(ibc_ev);
+        }
+    }
+    result
+}
+
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
 async fn abci_query(
     chain: &CosmosSdkChain,
@@ -1504,14 +1815,14 @@ async fn abci_query(
     Ok(response)
 }
 
-/// Perform a `broadcast_tx_commit`, and return the corresponding deserialized response data.
-async fn broadcast_tx_commit(
+/// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
+async fn broadcast_tx_sync(
     chain: &CosmosSdkChain,
     data: Vec<u8>,
 ) -> Result<Response, anomaly::Error<Kind>> {
     let response = chain
         .rpc_client()
-        .broadcast_tx_commit(data.into())
+        .broadcast_tx_sync(data.into())
         .await
         .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
 
@@ -1544,35 +1855,6 @@ async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-pub fn tx_result_to_event(
-    chain_id: &ChainId,
-    response: Response,
-) -> Result<Vec<IbcEvent>, anomaly::Error<Kind>> {
-    let mut result = vec![];
-
-    // Verify the return codes from check_tx and deliver_tx
-    if response.check_tx.code.is_err() {
-        return Ok(vec![IbcEvent::ChainError(format!(
-            "check_tx reports error: log={:?}",
-            response.check_tx.log
-        ))]);
-    }
-    if response.deliver_tx.code.is_err() {
-        return Ok(vec![IbcEvent::ChainError(format!(
-            "deliver_tx reports error: log={:?}",
-            response.deliver_tx.log
-        ))]);
-    }
-
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    for event in response.deliver_tx.events {
-        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
-            result.push(ibc_ev);
-        }
-    }
-    Ok(result)
-}
-
 fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
     let account =
         AccountId::from_str(address).map_err(|_| Kind::InvalidKeyAddress(address.to_string()))?;
@@ -1586,11 +1868,77 @@ fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error
 /// Returns the suffix counter for a CosmosSDK client id.
 /// Returns `None` if the client identifier is malformed
 /// and the suffix could not be parsed.
-pub fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
+fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
     client_id
         .as_str()
         .split('-')
         .last()
         .map(|e| e.parse::<u64>().ok())
         .flatten()
+}
+
+pub struct TxSyncResult {
+    // the broadcast_tx_sync response
+    response: Response,
+    // the events generated by a Tx once executed
+    events: Vec<IbcEvent>,
+}
+
+fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, Vec<u8>), Error> {
+    let auth_info = AuthInfo {
+        signer_infos: vec![signer_info],
+        fee: Some(fee),
+    };
+
+    // A protobuf serialization of a AuthInfo
+    let mut auth_buf = Vec::new();
+    prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
+    Ok((auth_info, auth_buf))
+}
+
+fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
+    // Create TxBody
+    let body = TxBody {
+        messages: proto_msgs.to_vec(),
+        memo: "".to_string(),
+        timeout_height: 0_u64,
+        extension_options: Vec::<Any>::new(),
+        non_critical_extension_options: Vec::<Any>::new(),
+    };
+    // A protobuf serialization of a TxBody
+    let mut body_buf = Vec::new();
+    prost::Message::encode(&body, &mut body_buf).unwrap();
+    Ok((body, body_buf))
+}
+
+fn calculate_fee(adjusted_gas_amount: u64, gas_price: GasPrice) -> Coin {
+    let fee_amount = mul_ceil(adjusted_gas_amount, gas_price.price);
+
+    Coin {
+        denom: gas_price.denom,
+        amount: fee_amount.to_string(),
+    }
+}
+
+fn mul_ceil(a: u64, f: f64) -> u64 {
+    use fraction::Fraction as F;
+
+    // Safe to unwrap below as are multiplying two finite fractions
+    // together, and rounding them to the nearest integer.
+    let n = (F::from(a) * F::from(f)).ceil();
+    n.numer().unwrap() / n.denom().unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn mul_ceil() {
+        assert_eq!(super::mul_ceil(300_000, 0.001), 300);
+        assert_eq!(super::mul_ceil(300_004, 0.001), 301);
+        assert_eq!(super::mul_ceil(300_040, 0.001), 301);
+        assert_eq!(super::mul_ceil(300_400, 0.001), 301);
+        assert_eq!(super::mul_ceil(304_000, 0.001), 304);
+        assert_eq!(super::mul_ceil(340_000, 0.001), 340);
+        assert_eq!(super::mul_ceil(340_001, 0.001), 341);
+    }
 }

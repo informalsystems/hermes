@@ -64,6 +64,9 @@ pub enum ChannelError {
     #[error("failed due to missing counterparty connection")]
     MissingCounterpartyConnection,
 
+    #[error("channel constructor failed due to missing connection id on chain id {0}")]
+    MissingLocalConnection(ChainId),
+
     #[error("failed during an operation on client ({0}) hosted by chain ({1}) with error: {2}")]
     ClientOperation(ClientId, ChainId, ForeignClientError),
 
@@ -158,19 +161,26 @@ impl Channel {
                 .map_err(|e| ChannelError::QueryError(b_side_chain.id(), e))?,
         );
 
+        let src_connection_id = connection
+            .src_connection_id()
+            .ok_or_else(|| ChannelError::MissingLocalConnection(connection.src_chain().id()))?;
+        let dst_connection_id = connection
+            .dst_connection_id()
+            .ok_or_else(|| ChannelError::MissingLocalConnection(connection.dst_chain().id()))?;
+
         let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
                 connection.src_chain().clone(),
                 connection.src_client_id().clone(),
-                connection.src_connection_id().clone(),
+                src_connection_id.clone(),
                 a_port,
                 Default::default(),
             ),
             b_side: ChannelSide::new(
                 connection.dst_chain().clone(),
                 connection.dst_client_id().clone(),
-                connection.dst_connection_id().clone(),
+                dst_connection_id.clone(),
                 b_port,
                 Default::default(),
             ),
@@ -190,9 +200,10 @@ impl Channel {
     ) -> Result<Channel, BoxError> {
         let channel_event_attributes =
             channel_open_event.channel_attributes().ok_or_else(|| {
-                ChannelError::Failed(
-                    "A channel object must be build only from a channel event ".to_string(),
-                )
+                ChannelError::Failed(format!(
+                    "a channel object cannot be built from {}",
+                    channel_open_event
+                ))
             })?;
 
         let port_id = channel_event_attributes.port_id.clone();
@@ -251,7 +262,7 @@ impl Channel {
             WorkerChannelError::MissingConnectionHops(channel.src_channel_id.clone(), chain.id())
         })?;
 
-        let a_connection = chain.query_connection(&a_connection_id, Height::zero())?;
+        let a_connection = chain.query_connection(a_connection_id, Height::zero())?;
         let b_connection_id = a_connection
             .counterparty()
             .connection_id()
@@ -260,7 +271,7 @@ impl Channel {
                 WorkerChannelError::ChannelConnectionUninitialized(
                     channel.src_channel_id.clone(),
                     chain.id(),
-                    a_connection.counterparty(),
+                    a_connection.counterparty().clone(),
                 )
             })?;
 
@@ -445,7 +456,7 @@ impl Channel {
         // Continue loop if query error
         let a_channel = self
             .src_chain()
-            .query_channel(&self.src_port_id(), src_channel_id, Height::zero())
+            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|_| {
                 ChannelError::Failed(format!(
                     "failed to query source chain {}",
@@ -455,7 +466,7 @@ impl Channel {
 
         let b_channel = self
             .dst_chain()
-            .query_channel(&self.dst_port_id(), dst_channel_id, Height::zero())
+            .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
             .map_err(|_| {
                 ChannelError::Failed(format!(
                     "failed to query destination chain {}",
@@ -808,17 +819,18 @@ impl Channel {
         // Channel must exist on source
         let src_channel = self
             .src_chain()
-            .query_channel(self.src_port_id(), &src_channel_id, Height::zero())
+            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
         if src_channel.counterparty().port_id() != self.dst_port_id() {
             return Err(ChannelError::Failed(format!(
                 "channel open try to chain `{}` and destination port `{}` does not match \
-                the source chain `{}` counterparty port `{}`",
+                the source chain `{}` counterparty port `{}` for channel_id {}",
                 self.dst_chain().id(),
                 self.dst_port_id(),
                 self.src_chain().id(),
                 src_channel.counterparty().port_id,
+                src_channel_id
             )));
         }
 

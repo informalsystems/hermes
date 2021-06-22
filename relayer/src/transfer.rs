@@ -23,7 +23,7 @@ pub enum PacketError {
     Key(Error),
 
     #[error(
-        "failed during a transaction submission step to chain id {0} with underlying error: {1}"
+        "failed while submitting the Transfer message to chain {0} with underlying error: {1}"
     )]
     Submit(ChainId, Error),
 
