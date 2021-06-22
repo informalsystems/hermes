@@ -1,19 +1,106 @@
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, trace};
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::IdentifiedConnectionEnd,
+    ics03_connection::connection::{
+        ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
+    },
     ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
-    ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
+use ibc_proto::ibc::core::{
+    channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryClientConnectionsRequest,
+};
 
 use crate::channel::ChannelError;
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
+
+pub fn counterparty_chain_from_connection(
+    src_chain: &dyn ChainHandle,
+    src_connection_id: &ConnectionId,
+) -> Result<ChainId, Error> {
+    let connection_end = src_chain
+        .query_connection(&src_connection_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    let client_id = connection_end.client_id();
+    let client_state = src_chain
+        .query_client_state(&client_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    trace!(
+        chain_id=%src_chain.id(), connection_id=%src_connection_id,
+        "counterparty chain: {}", client_state.chain_id()
+    );
+    Ok(client_state.chain_id())
+}
+
+fn connection_on_destination(
+    connection_id_on_source: &ConnectionId,
+    counterparty_client_id: &ClientId,
+    counterparty_chain: &dyn ChainHandle,
+) -> Result<Option<ConnectionEnd>, Error> {
+    let req = QueryClientConnectionsRequest {
+        client_id: counterparty_client_id.to_string(),
+    };
+
+    let counterparty_connections =
+        counterparty_chain
+            .query_client_connections(req)
+            .map_err(|e| {
+                Error::QueryFailed(format!(
+                    "counterparty::query_client_connections({}) failed with error: {}",
+                    counterparty_client_id, e
+                ))
+            })?;
+
+    for counterparty_connection in counterparty_connections.into_iter() {
+        let counterparty_connection_end = counterparty_chain
+            .query_connection(&counterparty_connection, Height::zero())
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        let local_connection_end = &counterparty_connection_end.counterparty();
+        if let Some(local_connection_id) = local_connection_end.connection_id() {
+            if local_connection_id == connection_id_on_source {
+                return Ok(Some(counterparty_connection_end));
+            }
+        }
+    }
+    Ok(None)
+}
+
+pub fn connection_state_on_destination(
+    connection: IdentifiedConnectionEnd,
+    counterparty_chain: &dyn ChainHandle,
+) -> Result<ConnectionState, Error> {
+    let counterparty_state = if let Some(remote_connection_id) =
+        connection.connection_end.counterparty().connection_id()
+    {
+        counterparty_chain
+            .query_connection(remote_connection_id, Height::zero())
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?
+            .state
+    } else {
+        // The remote connection id (used on `counterparty_chain`) is unknown.
+        // Try to retrieve this id by looking at client connections.
+        let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
+
+        connection_on_destination(
+            &connection.connection_id,
+            &counterparty_client_id,
+            counterparty_chain,
+        )?
+        .map_or_else(
+            || ConnectionState::Uninitialized,
+            |remote_connection| remote_connection.state,
+        )
+    };
+    Ok(counterparty_state)
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelConnectionClient {
@@ -92,7 +179,7 @@ pub fn channel_connection_client(
     Ok(ChannelConnectionClient::new(channel, connection, client))
 }
 
-pub fn get_counterparty_chain(
+pub fn counterparty_chain_from_channel(
     src_chain: &dyn ChainHandle,
     src_channel_id: &ChannelId,
     src_port_id: &PortId,

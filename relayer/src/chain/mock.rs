@@ -12,7 +12,7 @@ use ibc::downcast;
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
@@ -178,7 +178,7 @@ impl Chain for MockChain {
     fn query_connections(
         &self,
         _request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         unimplemented!()
     }
 

@@ -1,4 +1,5 @@
 use std::{
+    cmp::min,
     convert::{TryFrom, TryInto},
     future::Future,
     str::FromStr,
@@ -32,7 +33,7 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events as ClientEvents;
-use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -80,7 +81,6 @@ use crate::light_client::LightClient;
 use crate::light_client::Verified;
 
 use super::Chain;
-use std::cmp::min;
 
 const DEFAULT_MAX_GAS: u64 = 300_000;
 const DEFAULT_GAS_PRICE_PRICE: f64 = 0.001;
@@ -986,7 +986,7 @@ impl Chain for CosmosSdkChain {
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -1007,13 +1007,13 @@ impl Chain for CosmosSdkChain {
         // TODO: add warnings for any identifiers that fail to parse (below).
         //      similar to the parsing in `query_connection_channels`.
 
-        let ids = response
+        let connections = response
             .connections
-            .iter()
-            .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
+            .into_iter()
+            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
             .collect();
 
-        Ok(ids)
+        Ok(connections)
     }
 
     fn query_connection(
