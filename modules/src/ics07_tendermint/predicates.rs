@@ -12,7 +12,7 @@ use tendermint::trust_threshold::TrustThreshold;
 use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint::vote::{SignedVote, ValidatorIndex, Vote};
-//SignedVote,
+
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Predicates;
