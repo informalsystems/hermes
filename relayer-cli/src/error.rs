@@ -40,7 +40,7 @@ define_error! {
             |_| { "relayer error" },
 
         Connection
-            [ DisplayOnly<ConnectionError> ]
+            [ ConnectionError ]
             |_| { "connection error" },
 
         Packet
@@ -52,11 +52,11 @@ define_error! {
             |_| { "channel error" },
 
         ForeignClient
-            [ DisplayOnly<ForeignClientError> ]
+            [ ForeignClientError ]
             |_| { "foreign client error" },
 
         Link
-            [ DisplayOnly<LinkError> ]
+            [ LinkError ]
             |_| { "link error" },
 
         UpgradeChain
