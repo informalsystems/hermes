@@ -1,4 +1,4 @@
-use flex_error::{define_error, DisplayOnly};
+use flex_error::define_error;
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::channel::ChannelError;
 use ibc_relayer::connection::ConnectionError;
@@ -60,7 +60,7 @@ define_error! {
             |_| { "link error" },
 
         UpgradeChain
-            [ DisplayOnly<UpgradeChainError> ]
+            [ UpgradeChainError ]
             |_| { "upgrade chain error" },
     }
 }

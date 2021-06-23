@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::chain::counterparty::connection_state_on_destination;
 use crate::util::retry::RetryResult;
-use flex_error::{define_error, DisplayOnly};
+use flex_error::define_error;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use prost_types::Any;
 use serde::Serialize;
@@ -138,7 +138,7 @@ define_error! {
             },
 
         Supervisor
-            [ DisplayOnly<SupervisorError> ]
+            [ SupervisorError ]
             |_| { "supervisor error" },
 
         MissingConnectionId

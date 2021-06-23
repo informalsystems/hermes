@@ -1,6 +1,6 @@
 #![allow(clippy::borrowed_box)]
 
-use flex_error::{define_error, DisplayOnly, ErrorMessageTracer, ErrorReport};
+use flex_error::{define_error, ErrorMessageTracer, ErrorReport};
 use prost_types::Any;
 use serde::Serialize;
 use std::time::Duration;
@@ -87,7 +87,7 @@ define_error! {
                 client_id: ClientId,
                 chain_id: ChainId,
             }
-            [ DisplayOnly<ForeignClientError> ]
+            [ ForeignClientError ]
             | e | {
                 format_args!("failed during an operation on client ({0}) hosted by chain ({1})",
                     e.client_id, e.chain_id)
@@ -105,7 +105,7 @@ define_error! {
 
         QueryChannel
             { channel_id: ChannelId }
-            [ DisplayOnly<WorkerChannelError> ]
+            [ WorkerChannelError ]
             |e| { format_args!("failed during a query to channel id {0}", e.channel_id) },
 
         Submit

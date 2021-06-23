@@ -8,7 +8,7 @@ use std::time::Instant;
 use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
 
-use flex_error::{define_error, DisplayOnly};
+use flex_error::define_error;
 use ibc::{
     events::{IbcEvent, IbcEventType, PrettyEvents},
     ics02_client::error::Error as Ics02Error,
@@ -93,7 +93,7 @@ define_error! {
             |_| { "failed during a client operation" },
 
         Packet
-            [ DisplayOnly<PacketError> ]
+            [ PacketError ]
             |_| { "packet error" },
 
         OldPacketClearingFailed
