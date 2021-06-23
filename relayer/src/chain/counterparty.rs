@@ -130,13 +130,6 @@ pub fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
-    // trace!(
-    //     chain_id = %chain.id(),
-    //     port_id = %port_id,
-    //     channel_id = %channel_id,
-    //     "getting counterparty chain"
-    // );
-
     let channel_end = chain
         .query_channel(port_id, channel_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;

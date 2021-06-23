@@ -19,6 +19,7 @@ use ibc_relayer::chain::{runtime::ChainRuntime, CosmosSdkChain};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
+use crate::cli_utils::spawn_chain_runtime;
 
 #[derive(Serialize, Debug)]
 struct PacketSeqs {
@@ -155,61 +156,24 @@ pub struct QueryUnreceivedPacketsCmd {
     channel_id: ChannelId,
 }
 
-impl Runnable for QueryUnreceivedPacketsCmd {
-    fn run(&self) {
+impl QueryUnreceivedPacketsCmd {
+    fn execute(&self) -> Result<Vec<u64>, Error> {
         let config = app_config();
 
-        debug!("Options: {:?}", self);
+        debug!("options: {:?}", self);
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
-            Some(chain_config) => chain_config,
-        };
+        let chain = spawn_chain_runtime(&*config, &self.chain_id)?;
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) =
-            ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()).unwrap();
-
-        let channel_connection_client =
-            match channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id) {
-                Ok(channel_connection_client) => channel_connection_client,
-                Err(e) => {
-                    return Output::error(format!(
-                        "error when getting channel/ connection for {} on {}: {}",
-                        self.channel_id,
-                        chain.id(),
-                        e,
-                    ))
-                    .exit();
-                }
-            };
+        let channel_connection_client = channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id).map_err(|e| Kind::Query.context(e))?;
 
         let channel = channel_connection_client.channel;
         debug!(
-            "Fetched from source chain {} the following channel {:?}",
+            "fetched from source chain {} the following channel {:?}",
             self.chain_id, channel
         );
 
         let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
-        let counterparty_chain_config = match config.find_chain(&counterparty_chain_id) {
-            None => {
-                return Output::error(format!(
-                    "counterparty chain '{}' for channel '{}' not found in configuration file",
-                    counterparty_chain_id, self.channel_id
-                ))
-                .exit()
-            }
-            Some(chain_config) => chain_config,
-        };
-
-        let (counterparty_chain, _) =
-            ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt).unwrap();
+        let counterparty_chain = spawn_chain_runtime(&*config, &counterparty_chain_id)?;
 
         // get the packet commitments on the counterparty/ source chain
         let commitments_request = QueryPacketCommitmentsRequest {
@@ -224,22 +188,12 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let seq_res = counterparty_chain
+        let commitments = counterparty_chain
             .query_packet_commitments(commitments_request)
-            .map_err(|e| Kind::Query.context(e));
+            .map_err(|e| Kind::Query.context(e))?;
 
         // extract the sequences
-        let sequences: Vec<u64> = match seq_res {
-            Ok(seqs) => seqs.0.into_iter().map(|v| v.sequence).collect(),
-            Err(e) => {
-                return Output::error(format!(
-                    "failed to fetch the packet commitments from chain ({}) with error: {}",
-                    chain.id(),
-                    e
-                ))
-                .exit()
-            }
-        };
+        let sequences: Vec<u64> = commitments.0.into_iter().map(|v| v.sequence).collect();
 
         let request = QueryUnreceivedPacketsRequest {
             port_id: channel.port_id.to_string(),
@@ -247,9 +201,13 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             packet_commitment_sequences: sequences,
         };
 
-        let res = chain.query_unreceived_packets(request);
+        chain.query_unreceived_packets(request).map_err(|e| Kind::Query.context(e).into())
+    }
+}
 
-        match res {
+impl Runnable for QueryUnreceivedPacketsCmd {
+    fn run(&self) {
+        match self.execute() {
             Ok(seqs) => Output::success(seqs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
