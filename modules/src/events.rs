@@ -210,30 +210,6 @@ impl IbcEvent {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct RawObject {
-    pub height: Height,
-    pub action: String,
-    pub idx: usize,
-    pub events: HashMap<String, Vec<String>>,
-}
-
-impl RawObject {
-    pub fn new(
-        height: Height,
-        action: String,
-        idx: usize,
-        events: HashMap<String, Vec<String>>,
-    ) -> RawObject {
-        RawObject {
-            height,
-            action,
-            idx,
-            events,
-        }
-    }
-}
-
 pub fn extract_events<S: ::std::hash::BuildHasher>(
     events: &HashMap<String, Vec<String>, S>,
     action_string: &str,
@@ -245,42 +221,4 @@ pub fn extract_events<S: ::std::hash::BuildHasher>(
         return Err("Missing action string".into());
     }
     Err("Incorrect Event Type".into())
-}
-
-#[macro_export]
-macro_rules! make_event {
-    ($a:ident, $b:literal) => {
-        #[derive(Debug, Deserialize, Serialize, Clone)]
-        pub struct $a {
-            pub data: ::std::collections::HashMap<String, Vec<String>>,
-        }
-        impl ::std::convert::TryFrom<$crate::events::RawObject> for $a {
-            type Error = ::anomaly::BoxError;
-
-            fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
-                match $crate::events::extract_events(&result.events, $b) {
-                    Ok(()) => Ok($a {
-                        data: result.events.clone(),
-                    }),
-                    Err(e) => Err(e),
-                }
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! attribute {
-    ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse()?
-    };
-}
-
-#[macro_export]
-macro_rules! some_attribute {
-    ($a:ident, $b:literal) => {
-        $a.events
-            .get($b)
-            .map_or_else(|| None, |tags| tags[$a.idx].parse().ok())
-    };
 }

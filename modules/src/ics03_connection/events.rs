@@ -1,11 +1,8 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
-use crate::events::{IbcEvent, RawObject};
+use crate::events::IbcEvent;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::{attribute, some_attribute};
-use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
 
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
 const INIT_EVENT_TYPE: &str = "connection_open_init";
@@ -105,22 +102,6 @@ impl From<Attributes> for OpenInit {
     }
 }
 
-impl TryFrom<RawObject> for OpenInit {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenInit(Attributes {
-            height: obj.height,
-            connection_id: some_attribute!(obj, "connection_open_init.connection_id"),
-            client_id: attribute!(obj, "connection_open_init.client_id"),
-            counterparty_connection_id: some_attribute!(
-                obj,
-                "connection_open_init.counterparty_connection_id"
-            ),
-            counterparty_client_id: attribute!(obj, "connection_open_init.counterparty_client_id"),
-        }))
-    }
-}
-
 impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
         IbcEvent::OpenInitConnection(v)
@@ -148,22 +129,6 @@ impl OpenTry {
 impl From<Attributes> for OpenTry {
     fn from(attrs: Attributes) -> Self {
         OpenTry(attrs)
-    }
-}
-
-impl TryFrom<RawObject> for OpenTry {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenTry(Attributes {
-            height: obj.height,
-            connection_id: some_attribute!(obj, "connection_open_try.connection_id"),
-            client_id: attribute!(obj, "connection_open_try.client_id"),
-            counterparty_connection_id: some_attribute!(
-                obj,
-                "connection_open_try.counterparty_connection_id"
-            ),
-            counterparty_client_id: attribute!(obj, "connection_open_try.counterparty_client_id"),
-        }))
     }
 }
 
@@ -197,22 +162,6 @@ impl From<Attributes> for OpenAck {
     }
 }
 
-impl TryFrom<RawObject> for OpenAck {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenAck(Attributes {
-            height: obj.height,
-            connection_id: some_attribute!(obj, "connection_open_ack.connection_id"),
-            client_id: attribute!(obj, "connection_open_ack.client_id"),
-            counterparty_connection_id: some_attribute!(
-                obj,
-                "connection_open_ack.counterparty_connection_id"
-            ),
-            counterparty_client_id: attribute!(obj, "connection_open_ack.counterparty_client_id"),
-        }))
-    }
-}
-
 impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
         IbcEvent::OpenAckConnection(v)
@@ -240,25 +189,6 @@ impl OpenConfirm {
 impl From<Attributes> for OpenConfirm {
     fn from(attrs: Attributes) -> Self {
         OpenConfirm(attrs)
-    }
-}
-
-impl TryFrom<RawObject> for OpenConfirm {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenConfirm(Attributes {
-            height: obj.height,
-            connection_id: some_attribute!(obj, "connection_open_confirm.connection_id"),
-            client_id: attribute!(obj, "connection_open_confirm.client_id"),
-            counterparty_connection_id: some_attribute!(
-                obj,
-                "connection_open_confirm.counterparty_connection_id"
-            ),
-            counterparty_client_id: attribute!(
-                obj,
-                "connection_open_confirm.counterparty_client_id"
-            ),
-        }))
     }
 }
 

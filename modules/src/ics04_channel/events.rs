@@ -1,12 +1,9 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
-use crate::events::{IbcEvent, RawObject};
+use crate::events::IbcEvent;
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::{attribute, some_attribute};
-use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
 
 /// Channel event types
 const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
@@ -64,7 +61,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
         SEND_PACKET => {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
-            assert!(write_ack.is_none());
+            assert_eq!(write_ack.len(), 0);
             Some(IbcEvent::SendPacket(SendPacket {
                 height: Default::default(),
                 packet,
@@ -72,8 +69,6 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
         }
         WRITE_ACK => {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
-            // This event should have a write ack.
-            let write_ack = write_ack.unwrap();
             Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
                 height: Default::default(),
                 packet,
@@ -83,7 +78,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
         ACK_PACKET => {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
-            assert!(write_ack.is_none());
+            assert_eq!(write_ack.len(), 0);
             Some(IbcEvent::AcknowledgePacket(AcknowledgePacket {
                 height: Default::default(),
                 packet,
@@ -92,7 +87,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
         TIMEOUT => {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
-            assert!(write_ack.is_none());
+            assert_eq!(write_ack.len(), 0);
             Some(IbcEvent::TimeoutPacket(TimeoutPacket {
                 height: Default::default(),
                 packet,
@@ -125,11 +120,9 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
     attr
 }
 
-fn extract_packet_and_write_ack_from_tx(
-    event: &tendermint::abci::Event,
-) -> (Packet, Option<Vec<u8>>) {
+fn extract_packet_and_write_ack_from_tx(event: &tendermint::abci::Event) -> (Packet, Vec<u8>) {
     let mut packet = Packet::default();
-    let mut write_ack = None;
+    let mut write_ack: Vec<u8> = vec![];
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
@@ -144,7 +137,7 @@ fn extract_packet_and_write_ack_from_tx(
                 packet.timeout_timestamp = value.parse().unwrap()
             }
             PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
-            PKT_ACK_ATTRIBUTE_KEY => write_ack = Some(Vec::from(value.as_bytes())),
+            PKT_ACK_ATTRIBUTE_KEY => write_ack = Vec::from(value.as_bytes()),
             _ => {}
         };
     }
@@ -211,23 +204,6 @@ impl From<Attributes> for OpenInit {
     }
 }
 
-impl TryFrom<RawObject> for OpenInit {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenInit(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_init.port_id"),
-            channel_id: some_attribute!(obj, "channel_open_init.channel_id"),
-            connection_id: attribute!(obj, "channel_open_init.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_init.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_open_init.counterparty_channel_id"
-            ),
-        }))
-    }
-}
-
 impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
         IbcEvent::OpenInitChannel(v)
@@ -258,23 +234,6 @@ impl OpenTry {
 impl From<Attributes> for OpenTry {
     fn from(attrs: Attributes) -> Self {
         OpenTry(attrs)
-    }
-}
-
-impl TryFrom<RawObject> for OpenTry {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenTry(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_try.port_id"),
-            channel_id: some_attribute!(obj, "channel_open_try.channel_id"),
-            connection_id: attribute!(obj, "channel_open_try.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_try.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_open_try.counterparty_channel_id"
-            ),
-        }))
     }
 }
 
@@ -315,23 +274,6 @@ impl From<Attributes> for OpenAck {
     }
 }
 
-impl TryFrom<RawObject> for OpenAck {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenAck(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_ack.port_id"),
-            channel_id: some_attribute!(obj, "channel_open_ack.channel_id"),
-            connection_id: attribute!(obj, "channel_open_ack.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_ack.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_open_ack.counterparty_channel_id"
-            ),
-        }))
-    }
-}
-
 impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
         IbcEvent::OpenAckChannel(v)
@@ -362,23 +304,6 @@ impl OpenConfirm {
 impl From<Attributes> for OpenConfirm {
     fn from(attrs: Attributes) -> Self {
         OpenConfirm(attrs)
-    }
-}
-
-impl TryFrom<RawObject> for OpenConfirm {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenConfirm(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_confirm.port_id"),
-            channel_id: some_attribute!(obj, "channel_open_confirm.channel_id"),
-            connection_id: attribute!(obj, "channel_open_confirm.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_open_confirm.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_open_confirm.counterparty_channel_id"
-            ),
-        }))
     }
 }
 
@@ -427,23 +352,6 @@ impl From<Attributes> for CloseInit {
     }
 }
 
-impl TryFrom<RawObject> for CloseInit {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(CloseInit(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_close_init.port_id"),
-            channel_id: some_attribute!(obj, "channel_close_init.channel_id"),
-            connection_id: attribute!(obj, "channel_close_init.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_close_init.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_close_init.counterparty_channel_id"
-            ),
-        }))
-    }
-}
-
 impl From<CloseInit> for IbcEvent {
     fn from(v: CloseInit) -> Self {
         IbcEvent::CloseInitChannel(v)
@@ -483,23 +391,6 @@ impl From<Attributes> for CloseConfirm {
     }
 }
 
-impl TryFrom<RawObject> for CloseConfirm {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(CloseConfirm(Attributes {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_close_confirm.port_id"),
-            channel_id: some_attribute!(obj, "channel_close_confirm.channel_id"),
-            connection_id: attribute!(obj, "channel_close_confirm.connection_id"),
-            counterparty_port_id: attribute!(obj, "channel_close_confirm.counterparty_port_id"),
-            counterparty_channel_id: some_attribute!(
-                obj,
-                "channel_close_confirm.counterparty_channel_id"
-            ),
-        }))
-    }
-}
-
 impl From<CloseConfirm> for IbcEvent {
     fn from(v: CloseConfirm) -> Self {
         IbcEvent::CloseConfirmChannel(v)
@@ -512,24 +403,6 @@ macro_rules! p_attribute {
         let nb = format!("{}.{}", $a.action, $b);
         $a.events.get(&nb).ok_or(nb)?[$a.idx].parse()?
     }};
-}
-
-impl TryFrom<RawObject> for Packet {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height_str: String = p_attribute!(obj, "packet_timeout_height");
-        let sequence: u64 = p_attribute!(obj, "packet_sequence");
-        Ok(Packet {
-            sequence: sequence.into(),
-            source_port: p_attribute!(obj, "packet_src_port"),
-            source_channel: p_attribute!(obj, "packet_src_channel"),
-            destination_port: p_attribute!(obj, "packet_dst_port"),
-            destination_channel: p_attribute!(obj, "packet_dst_channel"),
-            data: vec![],
-            timeout_height: height_str.as_str().try_into()?,
-            timeout_timestamp: p_attribute!(obj, "packet_timeout_timestamp"),
-        })
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -556,17 +429,6 @@ impl SendPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
-    }
-}
-
-impl TryFrom<RawObject> for SendPacket {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
-        let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
-        Ok(SendPacket { height, packet })
     }
 }
 
@@ -606,17 +468,6 @@ impl ReceivePacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
-    }
-}
-
-impl TryFrom<RawObject> for ReceivePacket {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
-        let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
-        Ok(ReceivePacket { height, packet })
     }
 }
 
@@ -661,22 +512,6 @@ impl WriteAcknowledgement {
     }
 }
 
-impl TryFrom<RawObject> for WriteAcknowledgement {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height = obj.height;
-        let data_str: String = p_attribute!(obj, "packet_data");
-        let ack_str: String = p_attribute!(obj, "packet_ack");
-        let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
-        Ok(WriteAcknowledgement {
-            height,
-            packet,
-            ack: Vec::from(ack_str.as_str().as_bytes()),
-        })
-    }
-}
-
 impl From<WriteAcknowledgement> for IbcEvent {
     fn from(v: WriteAcknowledgement) -> Self {
         IbcEvent::WriteAcknowledgement(v)
@@ -711,15 +546,6 @@ impl AcknowledgePacket {
     }
     pub fn src_channel_id(&self) -> &ChannelId {
         &self.packet.source_channel
-    }
-}
-
-impl TryFrom<RawObject> for AcknowledgePacket {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        let height = obj.height;
-        let packet = Packet::try_from(obj)?;
-        Ok(AcknowledgePacket { height, packet })
     }
 }
 
@@ -762,16 +588,6 @@ impl TimeoutPacket {
     }
 }
 
-impl TryFrom<RawObject> for TimeoutPacket {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(TimeoutPacket {
-            height: obj.height,
-            packet: Packet::try_from(obj)?,
-        })
-    }
-}
-
 impl From<TimeoutPacket> for IbcEvent {
     fn from(v: TimeoutPacket) -> Self {
         IbcEvent::TimeoutPacket(v)
@@ -808,16 +624,6 @@ impl TimeoutOnClosePacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
-    }
-}
-
-impl TryFrom<RawObject> for TimeoutOnClosePacket {
-    type Error = BoxError;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(TimeoutOnClosePacket {
-            height: obj.height,
-            packet: Packet::try_from(obj)?,
-        })
     }
 }
 
