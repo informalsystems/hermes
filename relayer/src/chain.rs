@@ -35,7 +35,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::connection::ConnectionMsgType;
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
@@ -302,7 +302,7 @@ pub trait Chain: Sized {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
-        let (connection_end, connection_proof) = self.proven_connection(&connection_id, height)?;
+        let (connection_end, connection_proof) = self.proven_connection(connection_id, height)?;
 
         // Check that the connection state is compatible with the message
         match message_type {
@@ -310,19 +310,19 @@ pub trait Chain: Sized {
                 if !connection_end.state_matches(&State::Init)
                     && !connection_end.state_matches(&State::TryOpen)
                 {
-                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                    return Err(error::bad_connection_state_error());
                 }
             }
             ConnectionMsgType::OpenAck => {
                 if !connection_end.state_matches(&State::TryOpen)
                     && !connection_end.state_matches(&State::Open)
                 {
-                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                    return Err(error::bad_connection_state_error());
                 }
             }
             ConnectionMsgType::OpenConfirm => {
                 if !connection_end.state_matches(&State::Open) {
-                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                    return Err(error::bad_connection_state_error());
                 }
             }
         }
@@ -334,16 +334,12 @@ pub trait Chain: Sized {
         match message_type {
             ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
                 let (client_state_value, client_state_proof) =
-                    self.proven_client_state(&client_id, height)?;
+                    self.proven_client_state(client_id, height)?;
 
                 client_proof = Some(CommitmentProofBytes::from(client_state_proof));
 
                 let consensus_state_proof = self
-                    .proven_client_consensus(
-                        &client_id,
-                        client_state_value.latest_height(),
-                        height,
-                    )?
+                    .proven_client_consensus(client_id, client_state_value.latest_height(), height)?
                     .1;
 
                 consensus_proof = Option::from(
@@ -351,9 +347,7 @@ pub trait Chain: Sized {
                         CommitmentProofBytes::from(consensus_state_proof),
                         client_state_value.latest_height(),
                     )
-                    .map_err(|e| {
-                        Kind::ConnOpenTry("failed to build consensus proof".to_string()).context(e)
-                    })?,
+                    .map_err(error::consensus_proof_error)?,
                 );
 
                 client_state = Some(client_state_value);
@@ -370,7 +364,7 @@ pub trait Chain: Sized {
                 None,
                 height.increment(),
             )
-            .map_err(|_| Kind::MalformedProof)?,
+            .map_err(error::malformed_proof_error)?,
         ))
     }
 
@@ -385,10 +379,8 @@ pub trait Chain: Sized {
         let channel_proof =
             CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, height)?.1);
 
-        Ok(
-            Proofs::new(channel_proof, None, None, None, height.increment())
-                .map_err(|_| Kind::MalformedProof)?,
-        )
+        Proofs::new(channel_proof, None, None, None, height.increment())
+            .map_err(error::malformed_proof_error)
     }
 
     /// Builds the proof for packet messages.
@@ -418,7 +410,7 @@ pub trait Chain: Sized {
             channel_proof,
             height.increment(),
         )
-        .map_err(|_| Kind::MalformedProof)?;
+        .map_err(error::malformed_proof_error)?;
 
         Ok((bytes, proofs))
     }

@@ -12,7 +12,7 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use ibc_relayer::chain::{Chain, CosmosSdkChain};
 
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -106,7 +106,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
         let res: Result<_, Error> = chain
             .query_connection_channels(req)
-            .map_err(|e| Kind::Query.context(e).into());
+            .map_err(error::relayer_error);
 
         match res {
             Ok(channels) => {

@@ -16,9 +16,11 @@ use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
 use crate::ics02_client::height::Error as HeightError;
 use crate::ics03_connection::events as ConnectionEvents;
+use crate::ics04_channel::error as channel_error;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::ics24_host::error::ValidationError;
+use crate::timestamp::ParseTimestampError;
 use crate::Height;
 use flex_error::{define_error, DisplayError};
 use prost::alloc::fmt::Formatter;
@@ -37,6 +39,14 @@ define_error! {
         Client
             [ client_error::Error ]
             | _ | { "ICS02 client error" },
+
+        Channel
+            [ channel_error::Error ]
+            | _ | { "channel error" },
+
+        Timestamp
+            [ ParseTimestampError ]
+            | _ | { "error parsing timestamp" },
 
         MissingKey
             { key: String }
@@ -328,21 +338,5 @@ macro_rules! make_event {
                 })
             }
         }
-    };
-}
-
-#[macro_export]
-macro_rules! attribute {
-    ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse()?
-    };
-}
-
-#[macro_export]
-macro_rules! some_attribute {
-    ($a:ident, $b:literal) => {
-        $a.events
-            .get($b)
-            .map_or_else(|| None, |tags| tags[$a.idx].parse().ok())
     };
 }

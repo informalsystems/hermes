@@ -95,6 +95,6 @@ pub fn restore_key(
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     let key_entry = keyring.key_from_mnemonic(mnemonic, hdpath)?;
 
-    keyring.add_key(&key_name, key_entry.clone())?;
+    keyring.add_key(key_name, key_entry.clone())?;
     Ok(key_entry)
 }

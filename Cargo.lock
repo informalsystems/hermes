@@ -104,9 +104,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.40"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28b2cd92db5cbd74e8e5028f7e27dd7aa3090e89e4f2a197cc7c8dfb69c7063b"
+checksum = "15af2628f6890fe2609a3b91bef4c83450512802e59489f9c1cb1fa5df064a61"
 
 [[package]]
 name = "arrayref"
@@ -896,6 +896,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "eyre"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "221239d1d5ea86bf5d6f91c9d6bc3646ffe471b08ff9b0f91c44f115ac969d2b"
+dependencies = [
+ "indenter",
+ "once_cell",
+]
+
+[[package]]
 name = "ff"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -930,11 +940,12 @@ dependencies = [
 
 [[package]]
 name = "flex-error"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "431f579d1c92791fcaf7753d9beac4b8b2338965eca57b11aea6932f5d9785ea"
+checksum = "b36365b81d2141a3aa85840d5a09b25c61028166e0ff13593e2184028f57afa6"
 dependencies = [
  "anyhow",
+ "eyre",
  "paste",
 ]
 
@@ -1448,7 +1459,6 @@ dependencies = [
 name = "ibc"
 version = "0.4.0"
 dependencies = [
- "anyhow",
  "bytes",
  "chrono",
  "displaydoc",
@@ -1480,7 +1490,6 @@ dependencies = [
 name = "ibc-proto"
 version = "0.8.0"
 dependencies = [
- "anomaly",
  "bytes",
  "prost",
  "prost-types",
@@ -1493,7 +1502,7 @@ dependencies = [
 name = "ibc-relayer"
 version = "0.4.0"
 dependencies = [
- "anomaly",
+ "anyhow",
  "async-stream",
  "async-trait",
  "bech32 0.8.0",
@@ -1505,9 +1514,11 @@ dependencies = [
  "dyn-clonable",
  "dyn-clone",
  "env_logger",
+ "flex-error",
  "futures",
  "hdpath",
  "hex",
+ "http",
  "humantime-serde",
  "ibc",
  "ibc-proto",
@@ -1524,6 +1535,7 @@ dependencies = [
  "serde_json",
  "serial_test",
  "sha2",
+ "signature",
  "sled",
  "subtle-encoding",
  "tendermint",
@@ -1547,8 +1559,10 @@ version = "0.4.0"
 dependencies = [
  "abscissa_core",
  "anomaly",
+ "atty",
  "crossbeam-channel 0.5.1",
  "dirs-next",
+ "flex-error",
  "futures",
  "gumdrop 0.7.0",
  "hex",
@@ -1620,6 +1634,12 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
+
+[[package]]
+name = "indenter"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
 name = "indexmap"

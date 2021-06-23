@@ -6,7 +6,7 @@ use ibc_relayer::link::{Link, LinkParameters};
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -44,7 +44,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         let res: Result<Vec<IbcEvent>, Error> = link
             .build_and_send_recv_packet_messages()
-            .map_err(|e| Kind::Tx.context(e).into());
+            .map_err(error::link_error);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
@@ -88,7 +88,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         let res: Result<Vec<IbcEvent>, Error> = link
             .build_and_send_ack_packet_messages()
-            .map_err(|e| Kind::Tx.context(e).into());
+            .map_err(error::link_error);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),

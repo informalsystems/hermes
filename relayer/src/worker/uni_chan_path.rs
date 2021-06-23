@@ -123,9 +123,9 @@ impl UniChanPathWorker {
 
     #[cfg(feature = "telemetry")]
     fn packet_metrics(&self, summary: &RelaySummary) {
-        self.receive_packet_metrics(&summary);
-        self.acknowledgment_metrics(&summary);
-        self.timeout_metrics(&summary);
+        self.receive_packet_metrics(summary);
+        self.acknowledgment_metrics(summary);
+        self.timeout_metrics(summary);
     }
 
     #[cfg(feature = "telemetry")]

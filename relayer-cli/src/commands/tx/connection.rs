@@ -7,7 +7,7 @@ use ibc_relayer::connection::{Connection, ConnectionSide};
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use crate::prelude::*;
 
 macro_rules! conn_open_cmd {
@@ -24,8 +24,7 @@ macro_rules! conn_open_cmd {
 
         debug!("Message {}: {:?}", $dbg_string, connection);
 
-        let res: Result<IbcEvent, Error> =
-            connection.$func().map_err(|e| Kind::Tx.context(e).into());
+        let res: Result<IbcEvent, Error> = connection.$func().map_err(error::connection_error);
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),

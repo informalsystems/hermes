@@ -34,14 +34,14 @@ std = [
     "tendermint/std",
     "ics23/std",
     "sp-std/std",
-    "anyhow/std",
+    # "anyhow/std",
 ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.8.0", path = "../proto" }
 ics23 = {version = "0.6.5", default-features  = false }
-anyhow = {version = "1.0", default-features = false}
+# anyhow = {version = "1.0", default-features = false}
 #anomaly = "0.2.0"
 chrono = { version = "0.4.19", default-features = false, features = ["serde", "clock"] }
 #thiserror = "1.0.25"
@@ -59,6 +59,7 @@ sha2 = { version = "0.9.3", optional = true, default-features = false }
 flex-error = { version = "0.2.0", default-features = false, features = ["anyhow_tracer"] }
 displaydoc = { version = "0.2.1", default-features = false }
 sp-std = { version = "3.0", default-features = false }
+
 
 [dependencies.tendermint]
 default-features = false

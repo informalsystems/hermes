@@ -127,11 +127,9 @@ pub struct ChainConfig {
 
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
-    let config_toml =
-        std::fs::read_to_string(&path).map_err(|e| error::Kind::ConfigIo.context(e))?;
+    let config_toml = std::fs::read_to_string(&path).map_err(error::config_io_error)?;
 
-    let config =
-        toml::from_str::<Config>(&config_toml[..]).map_err(|e| error::Kind::Config.context(e))?;
+    let config = toml::from_str::<Config>(&config_toml[..]).map_err(error::config_decode_error)?;
 
     Ok(config)
 }
@@ -143,17 +141,16 @@ pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error
     } else {
         File::create(path)
     }
-    .map_err(|e| error::Kind::Config.context(e))?;
+    .map_err(error::config_io_error)?;
 
     store_writer(config, &mut file)
 }
 
 /// Serialize the given `Config` as TOML to the given writer.
 pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), error::Error> {
-    let toml_config =
-        toml::to_string_pretty(&config).map_err(|e| error::Kind::Config.context(e))?;
+    let toml_config = toml::to_string_pretty(&config).map_err(error::config_encode_error)?;
 
-    writeln!(writer, "{}", toml_config).map_err(|e| error::Kind::Config.context(e))?;
+    writeln!(writer, "{}", toml_config).map_err(error::config_io_error)?;
 
     Ok(())
 }

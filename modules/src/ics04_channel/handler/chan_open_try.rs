@@ -31,8 +31,8 @@ pub(crate) fn process(
 
             // Validate that existing channel end matches with the one we're trying to establish.
             if old_channel_end.state_matches(&State::Init)
-                && old_channel_end.order_matches(&msg.channel.ordering())
-                && old_channel_end.connection_hops_matches(&msg.channel.connection_hops())
+                && old_channel_end.order_matches(msg.channel.ordering())
+                && old_channel_end.connection_hops_matches(msg.channel.connection_hops())
                 && old_channel_end.counterparty_matches(msg.channel.counterparty())
                 && old_channel_end.version_matches(&msg.channel.version())
             {
@@ -130,7 +130,7 @@ pub(crate) fn process(
         &new_channel_end,
         &conn,
         &expected_channel_end,
-        &msg.proofs(),
+        msg.proofs(),
     )?;
 
     output.log("success: channel open try ");
@@ -412,15 +412,15 @@ mod tests {
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(handler_output) => {
-                    assert_eq!(
+                    assert!(
                         test.want_pass,
-                        true,
                         "chan_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
                     );
-                    assert_ne!(handler_output.events.is_empty(), true); // Some events must exist.
+
+                    assert!(!handler_output.events.is_empty()); // Some events must exist.
 
                     // The object in the output is a channel end, should have TryOpen state.
                     let res: ChannelResult = handler_output.result;
@@ -431,9 +431,8 @@ mod tests {
                     }
                 }
                 Err(e) => {
-                    assert_eq!(
-                        test.want_pass,
-                        false,
+                    assert!(
+                        !test.want_pass,
                         "chan_open_try: did not pass test: {}, \nparams:\n\tmsg={:?}\n\tcontext={:?}\nerror: {:?}",
                         test.name,
                         test.msg,

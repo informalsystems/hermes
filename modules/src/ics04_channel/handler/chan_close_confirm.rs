@@ -76,7 +76,7 @@ pub(crate) fn process(
         &channel_end,
         &conn,
         &expected_channel_end,
-        &msg.proofs(),
+        msg.proofs(),
     )?;
 
     output.log("success: channel close confirm ");

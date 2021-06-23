@@ -29,6 +29,7 @@ pub mod link;
 pub mod macros;
 pub mod object;
 pub mod registry;
+pub mod sdk_error;
 pub mod supervisor;
 pub mod telemetry;
 pub mod transfer;

@@ -38,7 +38,7 @@ pub fn get_all_events(
                 height_raw,
             );
 
-            let actions_and_indices = extract_helper(&events)?;
+            let actions_and_indices = extract_helper(events)?;
             for action in actions_and_indices {
                 if let Ok(event) = build_event(RawObject::new(
                     height,

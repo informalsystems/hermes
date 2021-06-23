@@ -17,7 +17,7 @@ use ibc_proto::ibc::core::channel::v1::{
 use ibc_relayer::chain::{runtime::ChainRuntime, CosmosSdkChain};
 
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use crate::prelude::*;
 use ibc::ics02_client::client_state::ClientState;
 use ibc_relayer::chain::counterparty::channel_connection_client;
@@ -66,7 +66,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
 
         let res: Result<(Vec<PacketState>, Height), Error> = chain
             .query_packet_commitments(grpc_request)
-            .map_err(|e| Kind::Query.context(e).into());
+            .map_err(error::relayer_error);
 
         match res {
             Ok((packet_states, height)) => {
@@ -228,7 +228,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
 
         let seq_res = counterparty_chain
             .query_packet_commitments(commitments_request)
-            .map_err(|e| Kind::Query.context(e));
+            .map_err(error::relayer_error);
 
         // extract the sequences
         let sequences: Vec<u64> = match seq_res {
@@ -298,7 +298,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
 
         let res: Result<(Vec<PacketState>, Height), Error> = chain
             .query_packet_acknowledgements(grpc_request)
-            .map_err(|e| Kind::Query.context(e).into());
+            .map_err(error::relayer_error);
 
         match res {
             Ok((packet_state, height)) => {
@@ -458,7 +458,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
 
         let seq_res = counterparty_chain
             .query_packet_acknowledgements(acks_request)
-            .map_err(|e| Kind::Query.context(e));
+            .map_err(error::relayer_error);
 
         // extract the sequences
         let sequences: Vec<u64> = match seq_res {

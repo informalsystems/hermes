@@ -13,7 +13,7 @@ use ibc_relayer::{
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::{Error, Kind};
+use crate::error::{self, Error};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -200,7 +200,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =
             build_and_send_transfer_messages(chains.src, chains.dst, opts)
-                .map_err(|e| Kind::Tx.context(e).into());
+                .map_err(error::packet_error);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),

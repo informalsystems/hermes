@@ -5,7 +5,7 @@ use subtle_encoding::base64;
 use tracing::{error, trace};
 
 use super::decode_bech32;
-use super::errors::{Error, Kind};
+use super::errors::{self as error, Error};
 
 #[derive(Debug)]
 pub enum EncodedPubKey {
@@ -64,14 +64,10 @@ impl FromStr for EncodedPubKey {
                 );
 
                 if proto.tpe != "/cosmos.crypto.secp256k1.PubKey" {
-                    return Err(Kind::EncodedPublicKey(
-                        s.to_string(),
-                        "only secp256k1 pub keys are currently supported".to_string(),
-                    )
-                    .into());
+                    Err(error::unsupported_public_key_error(proto.tpe))
+                } else {
+                    Ok(EncodedPubKey::Proto(proto))
                 }
-
-                Ok(EncodedPubKey::Proto(proto))
             }
             Err(e) if e.classify() == serde_json::error::Category::Syntax => {
                 // Input is not syntactically-correct JSON.
@@ -85,7 +81,7 @@ impl FromStr for EncodedPubKey {
                     s, e
                 );
 
-                Err(Kind::EncodedPublicKey(s.to_string(), e.to_string()).into())
+                Err(error::encoded_public_key_error(s.to_string(), e))
             }
         }
     }
