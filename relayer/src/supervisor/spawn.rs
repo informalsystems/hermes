@@ -1,4 +1,5 @@
 use anomaly::BoxError;
+use itertools::Itertools;
 use tracing::{debug, error};
 
 use ibc::{
@@ -25,16 +26,20 @@ use crate::{
     worker::WorkerMap,
 };
 
-use super::Error;
+use super::{Error, RwArc};
 
 pub struct SpawnContext<'a> {
-    config: &'a Config,
+    config: &'a RwArc<Config>,
     registry: &'a mut Registry,
     workers: &'a mut WorkerMap,
 }
 
 impl<'a> SpawnContext<'a> {
-    pub fn new(config: &'a Config, registry: &'a mut Registry, workers: &'a mut WorkerMap) -> Self {
+    pub fn new(
+        config: &'a RwArc<Config>,
+        registry: &'a mut Registry,
+        workers: &'a mut WorkerMap,
+    ) -> Self {
         Self {
             config,
             registry,
@@ -43,9 +48,18 @@ impl<'a> SpawnContext<'a> {
     }
 
     pub fn spawn_workers(&mut self) {
-        let chain_ids = self.config.chains.iter().map(|c| &c.id);
+        let chain_ids = self
+            .config
+            .read()
+            .expect("poisoned lock")
+            .chains
+            .iter()
+            .map(|c| &c.id)
+            .cloned()
+            .collect_vec();
+
         for chain_id in chain_ids {
-            self.spawn_workers_for_chain(chain_id);
+            self.spawn_workers_for_chain(&chain_id);
         }
     }
 
@@ -89,7 +103,14 @@ impl<'a> SpawnContext<'a> {
         client: IdentifiedAnyClientState,
     ) {
         let counterparty_chain_id = client.client_state.chain_id();
-        if self.config.find_chain(&counterparty_chain_id).is_none() {
+        let has_counterparty = self
+            .config
+            .read()
+            .expect("poisoned lock")
+            .find_chain(&counterparty_chain_id)
+            .is_some();
+
+        if has_counterparty {
             return;
         }
 
@@ -289,6 +310,12 @@ impl<'a> SpawnContext<'a> {
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<(), BoxError> {
+        let handshake_enabled = self
+            .config
+            .read()
+            .expect("poisoned lock")
+            .handshake_enabled();
+
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())?;
@@ -315,7 +342,7 @@ impl<'a> SpawnContext<'a> {
             );
         } else if !conn_state_dst.is_open()
             && conn_state_dst.less_or_equal_progress(conn_state_src)
-            && self.config.handshake_enabled()
+            && handshake_enabled
         {
             // create worker for connection handshake that will advance the remote state
             let connection_object = Object::Connection(Connection {
@@ -339,6 +366,12 @@ impl<'a> SpawnContext<'a> {
         connection: &IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
     ) -> Result<(), Error> {
+        let handshake_enabled = self
+            .config
+            .read()
+            .expect("poisoned lock")
+            .handshake_enabled();
+
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())
@@ -382,7 +415,7 @@ impl<'a> SpawnContext<'a> {
                 .get_or_spawn(path_object, chain, counterparty_chain);
         } else if !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
-            && self.config.handshake_enabled()
+            && handshake_enabled
         {
             // create worker for channel handshake that will advance the remote state
             let channel_object = Object::Channel(Channel {

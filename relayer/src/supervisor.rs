@@ -1,18 +1,23 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 
 use anomaly::BoxError;
-use crossbeam_channel::Receiver;
-use tracing::{error, warn};
+use crossbeam_channel::{Receiver, Sender};
+use tracing::{debug, error, info, warn};
 
 use ibc::{events::IbcEvent, ics24_host::identifier::ChainId, Height};
 
 use crate::{
     chain::handle::ChainHandle,
-    config::Config,
+    config::{ChainConfig, Config},
     event,
     event::monitor::{EventBatch, UnwrapOrClone},
     object::Object,
     registry::Registry,
+    supervisor::spawn::SpawnContext,
     telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
@@ -27,13 +32,22 @@ type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
 type BoxHandle = Box<dyn ChainHandle>;
 
+pub type RwArc<T> = Arc<RwLock<T>>;
+
+#[derive(Clone, Debug)]
+pub enum SupervisorCmd {
+    AddChain(ChainConfig),
+}
+
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
 /// worker, based on the [`Object`] associated with each event.
 pub struct Supervisor {
-    config: Config,
+    config: RwArc<Config>,
     registry: Registry,
     workers: WorkerMap,
+
+    cmd_rx: Receiver<SupervisorCmd>,
     worker_msg_rx: Receiver<WorkerMsg>,
 
     #[allow(dead_code)]
@@ -42,18 +56,23 @@ pub struct Supervisor {
 
 impl Supervisor {
     /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(config: Config, telemetry: Telemetry) -> Self {
+    pub fn spawn(config: RwArc<Config>, telemetry: Telemetry) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
 
-        Self {
+        let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
+
+        let supervisor = Self {
             config,
             registry,
             workers,
+            cmd_rx,
             worker_msg_rx,
             telemetry,
-        }
+        };
+
+        (supervisor, cmd_tx)
     }
 
     /// Collect the events we are interested in from an [`EventBatch`],
@@ -64,6 +83,12 @@ impl Supervisor {
         batch: EventBatch,
     ) -> CollectedEvents {
         let mut collected = CollectedEvents::new(batch.height, batch.chain_id);
+
+        let handshake_enabled = self
+            .config
+            .read()
+            .expect("poisoned lock")
+            .handshake_enabled();
 
         for event in batch.events {
             match event {
@@ -81,7 +106,7 @@ impl Supervisor {
                 IbcEvent::OpenInitConnection(..)
                 | IbcEvent::OpenTryConnection(..)
                 | IbcEvent::OpenAckConnection(..) => {
-                    if !self.config.handshake_enabled() {
+                    if !handshake_enabled {
                         continue;
                     }
 
@@ -94,7 +119,7 @@ impl Supervisor {
                     }
                 }
                 IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
-                    if !self.config.handshake_enabled() {
+                    if !handshake_enabled {
                         continue;
                     }
 
@@ -118,7 +143,7 @@ impl Supervisor {
                             .push(event.clone());
                     }
 
-                    if !self.config.handshake_enabled() {
+                    if !handshake_enabled {
                         continue;
                     }
 
@@ -169,9 +194,12 @@ impl Supervisor {
         collected
     }
 
+    fn spawn_context(&mut self) -> SpawnContext<'_> {
+        SpawnContext::new(&self.config, &mut self.registry, &mut self.workers)
+    }
+
     fn spawn_workers(&mut self) {
-        let mut ctx = spawn::SpawnContext::new(&self.config, &mut self.registry, &mut self.workers);
-        ctx.spawn_workers();
+        self.spawn_context().spawn_workers();
     }
 
     /// Run the supervisor event loop.
@@ -185,6 +213,10 @@ impl Supervisor {
                 self.handle_batch(chain.clone(), batch);
             }
 
+            if let Ok(cmd) = self.cmd_rx.try_recv() {
+                self.handle_cmd(cmd);
+            }
+
             if let Ok(msg) = self.worker_msg_rx.try_recv() {
                 self.handle_worker_msg(msg);
             }
@@ -194,9 +226,11 @@ impl Supervisor {
     }
 
     fn init_subscriptions(&mut self) -> Result<Vec<(BoxHandle, Subscription)>, Error> {
-        let mut subscriptions = Vec::with_capacity(self.config.chains.len());
+        let chains = &self.config.read().expect("poisoned lock").chains;
 
-        for chain_config in &self.config.chains {
+        let mut subscriptions = Vec::with_capacity(chains.len());
+
+        for chain_config in chains {
             let chain = match self.registry.get_or_spawn(&chain_config.id) {
                 Ok(chain) => chain,
                 Err(e) => {
@@ -224,6 +258,29 @@ impl Supervisor {
         }
 
         Ok(subscriptions)
+    }
+
+    fn handle_cmd(&mut self, cmd: SupervisorCmd) {
+        match cmd {
+            SupervisorCmd::AddChain(config) => self.add_chain(config),
+        }
+    }
+
+    fn add_chain(&mut self, config: ChainConfig) {
+        let id = config.id.clone();
+
+        info!(chain.id=%id, "Adding new chain");
+        self.config
+            .write()
+            .expect("poisoned lock")
+            .chains
+            .push(config);
+
+        debug!(chain.id=%id, "Spawning chain runtime");
+        self.registry.get_or_spawn(&id).unwrap();
+
+        debug!(chain.id=%id, "Spawning workers",);
+        self.spawn_context().spawn_workers_for_chain(&id);
     }
 
     /// Process the given [`WorkerMsg`] sent by a worker.

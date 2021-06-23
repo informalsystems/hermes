@@ -11,24 +11,25 @@ use ibc::ics24_host::identifier::ChainId;
 use crate::{
     chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSdkChain},
     config::Config,
+    supervisor::RwArc,
 };
 
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
 pub struct Registry {
-    rt: Arc<TokioRuntime>,
-    config: Config,
+    config: RwArc<Config>,
     handles: HashMap<ChainId, Box<dyn ChainHandle>>,
+    rt: Arc<TokioRuntime>,
 }
 
 impl Registry {
     /// Construct a new [`Registry`] using the provided [`Config`]
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: RwArc<Config>) -> Self {
         Self {
-            rt: Arc::new(TokioRuntime::new().unwrap()),
             config,
             handles: HashMap::new(),
+            rt: Arc::new(TokioRuntime::new().unwrap()),
         }
     }
 
@@ -57,11 +58,13 @@ impl Registry {
 /// Spawns a chain runtime from the configuration and given a chain identifier.
 /// Returns the corresponding handle if successful.
 pub fn spawn_chain_runtime(
-    config: &Config,
+    config: &RwArc<Config>,
     chain_id: &ChainId,
     rt: Arc<TokioRuntime>,
 ) -> Result<Box<dyn ChainHandle>, BoxError> {
     let chain_config = config
+        .read()
+        .expect("poisoned lock")
         .find_chain(chain_id)
         .cloned()
         .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))?;

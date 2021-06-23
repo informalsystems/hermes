@@ -27,6 +27,8 @@ impl Runnable for StartCmd {
 
 #[cfg(feature = "telemetry")]
 fn spawn_supervisor(config: Config) -> Result<Supervisor, Box<dyn Error + Send + Sync>> {
+    use std::sync::{Arc, RwLock};
+
     let state = ibc_telemetry::new_state();
 
     if config.telemetry.enabled {
@@ -46,7 +48,42 @@ fn spawn_supervisor(config: Config) -> Result<Supervisor, Box<dyn Error + Send +
         }
     }
 
-    Ok(Supervisor::spawn(config, state))
+    let config = Arc::new(RwLock::new(config));
+    let (supervisor, tx) = Supervisor::spawn(config, state);
+
+    std::thread::spawn(move || {
+        use ibc_relayer::config::ChainConfig;
+        use ibc_relayer::supervisor::SupervisorCmd;
+        use std::time::Duration;
+
+        /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
+        fn get_basic_chain_config() -> ChainConfig {
+            let config = r#"
+                    id = 'ibc-2'
+                    rpc_addr = 'http://127.0.0.1:26457'
+                    grpc_addr = 'http://127.0.0.1:9092'
+                    websocket_addr = 'ws://127.0.0.1:26457/websocket'
+                    rpc_timeout = '10s'
+                    account_prefix = 'cosmos'
+                    key_name = 'testkey'
+                    store_prefix = 'ibc'
+                    max_gas = 20000000
+                    gas_price = { price = 0.001, denom = 'stake' }
+                    clock_drift = '5s'
+                    trusting_period = '14days'
+                    trust_threshold = { numerator = '1', denominator = '3' }
+                    "#;
+
+            toml::from_str(config).unwrap()
+        }
+
+        std::thread::sleep(Duration::from_secs(5));
+
+        tx.send(SupervisorCmd::AddChain(get_basic_chain_config()))
+            .unwrap();
+    });
+
+    Ok(supervisor)
 }
 
 #[cfg(not(feature = "telemetry"))]
