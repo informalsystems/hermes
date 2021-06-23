@@ -4,7 +4,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use anomaly::BoxError;
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::trace;
+use tracing::{trace, warn};
 
 use ibc::ics24_host::identifier::ChainId;
 
@@ -52,6 +52,17 @@ impl Registry {
         let handle = self.handles.get(chain_id).unwrap();
 
         Ok(handle.clone())
+    }
+
+    /// Shutdown the runtime associated with the given chain identifier.
+    pub fn shutdown(&mut self, chain_id: &ChainId) -> Result<(), BoxError> {
+        if let Some(handle) = self.handles.remove(chain_id) {
+            if let Err(e) = handle.shutdown() {
+                warn!(chain.id = %chain_id, "chain runtime might have failed to shutdown properly: {}", e);
+            }
+        }
+
+        Ok(())
     }
 }
 

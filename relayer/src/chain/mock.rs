@@ -96,6 +96,10 @@ impl Chain for MockChain {
         &self.config.id
     }
 
+    fn shutdown(self) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn keybase(&self) -> &KeyRing {
         unimplemented!()
     }

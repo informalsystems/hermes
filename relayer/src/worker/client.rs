@@ -89,7 +89,19 @@ impl ClientWorker {
                 continue;
             }
 
-            if let Ok(WorkerCmd::IbcEvents { batch }) = self.cmd_rx.try_recv() {
+            if let Ok(cmd) = self.cmd_rx.try_recv() {
+                if self.process_cmd(cmd, &client) {
+                    break;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient) -> bool {
+        match cmd {
+            WorkerCmd::IbcEvents { batch } => {
                 trace!("client '{}' worker receives batch {:?}", client, batch);
 
                 for event in batch.events {
@@ -109,7 +121,11 @@ impl ClientWorker {
                         }
                     }
                 }
+
+                false
             }
+            WorkerCmd::Shutdown => true,
+            WorkerCmd::NewBlock { .. } => false,
         }
     }
 

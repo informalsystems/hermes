@@ -92,6 +92,8 @@ pub trait Chain: Sized {
         rt: Arc<TokioRuntime>,
     ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error>;
 
+    fn shutdown(self) -> Result<(), Error>;
+
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;
 

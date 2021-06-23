@@ -93,7 +93,7 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
 #[derive(Clone, Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum ChainRequest {
-    Terminate {
+    Shutdown {
         reply_to: ReplyTo<()>,
     },
 
@@ -306,6 +306,8 @@ dyn_clone::clone_trait_object!(ChainHandle);
 
 pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn id(&self) -> ChainId;
+
+    fn shutdown(&self) -> Result<(), Error>;
 
     fn subscribe(&self) -> Result<Subscription, Error>;
 

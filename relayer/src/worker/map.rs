@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crossbeam_channel::Sender;
 
 use ibc::ics24_host::identifier::ChainId;
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
@@ -112,6 +112,7 @@ impl WorkerMap {
         if let Some(handle) = self.workers.remove(object) {
             match handle.shutdown() {
                 Ok(()) => {
+                    debug!(object = %object.short_name(), "waiting for worker to exit");
                     let _ = handle.join();
                 }
                 Err(e) => {

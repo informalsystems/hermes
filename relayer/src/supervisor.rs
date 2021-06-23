@@ -311,8 +311,8 @@ impl Supervisor {
         debug!(chain.id=%id, "Shutting down workers");
         self.spawn_context().shutdown_workers_for_chain(&id);
 
-        // debug!(chain.id=%id, "Shutting down chain runtime");
-        // self.registry.shutdown(&id).unwrap(); // FIXME: unwrap
+        debug!(chain.id=%id, "Shutting down chain runtime");
+        self.registry.shutdown(&id).unwrap(); // FIXME: unwrap
 
         true
     }

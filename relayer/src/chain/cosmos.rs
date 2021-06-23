@@ -621,6 +621,10 @@ impl Chain for CosmosSdkChain {
         Ok((event_receiver, Some(monitor_thread)))
     }
 
+    fn shutdown(self) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn id(&self) -> &ChainId {
         &self.config().id
     }

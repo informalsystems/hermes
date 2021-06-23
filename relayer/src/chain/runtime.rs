@@ -180,8 +180,9 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                 },
                 recv(self.request_receiver) -> event => {
                     match event {
-                        Ok(ChainRequest::Terminate { reply_to }) => {
-                            reply_to.send(Ok(())).map_err(Kind::channel)?;
+                        Ok(ChainRequest::Shutdown { reply_to }) => {
+                            let res = self.chain.shutdown();
+                            reply_to.send(res).map_err(Kind::channel)?;
                             break;
                         }
 
