@@ -17,6 +17,7 @@ use tonic::{
     Status as GrpcStatus,
 };
 
+
 use ibc::{
     ics02_client::{client_type::ClientType, error as client_error},
     ics03_connection::error as connection_error,
@@ -138,8 +139,8 @@ define_error! {
             |_| { "Malformed proof" },
 
         InvalidHeight
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
-            |_| { "Invalid height" },
+            [ DisplayOnly<tendermint::error::Error> ]
+            |_| { "Invalid height" },   
 
         InvalidMetadata
             [ DisplayOnly<InvalidMetadataValue> ]
@@ -285,7 +286,7 @@ define_error! {
 
         InvalidKeyAddress
             { address: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ DisplayOnly<tendermint::error::Error> ]
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding
