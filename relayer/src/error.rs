@@ -17,7 +17,6 @@ use tonic::{
     Status as GrpcStatus,
 };
 
-
 use ibc::{
     ics02_client::{client_type::ClientType, error as client_error},
     ics03_connection::error as connection_error,
@@ -140,7 +139,7 @@ define_error! {
 
         InvalidHeight
             [ DisplayOnly<tendermint::error::Error> ]
-            |_| { "Invalid height" },   
+            |_| { "Invalid height" },
 
         InvalidMetadata
             [ DisplayOnly<InvalidMetadataValue> ]
