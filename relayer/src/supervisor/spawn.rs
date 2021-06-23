@@ -107,10 +107,14 @@ impl<'a> SpawnContext<'a> {
             .config
             .read()
             .expect("poisoned lock")
-            .find_chain(&counterparty_chain_id)
-            .is_some();
+            .has_chain(&counterparty_chain_id);
 
-        if has_counterparty {
+        if !has_counterparty {
+            debug!(
+                "skipping client worker for client {} on chain {} has its counterparty ({}) is not present in config",
+                client.client_id, chain.id(), counterparty_chain_id
+            );
+
             return;
         }
 

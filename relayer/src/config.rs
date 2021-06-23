@@ -59,6 +59,10 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn has_chain(&self, id: &ChainId) -> bool {
+        self.chains.iter().any(|c| c.id == *id)
+    }
+
     pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
         self.chains.iter().find(|c| c.id == *id)
     }

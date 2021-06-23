@@ -272,6 +272,11 @@ impl Supervisor {
     fn add_chain(&mut self, config: ChainConfig) -> bool {
         let id = config.id.clone();
 
+        if self.config.read().expect("poisoned lock").has_chain(&id) {
+            info!(chain.id=%id, "Skipping addition of already existing chain");
+            return false;
+        }
+
         info!(chain.id=%id, "Adding new chain");
         self.config
             .write()
