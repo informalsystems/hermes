@@ -299,7 +299,7 @@ impl<'a> SpawnContext<'a> {
             connection_state_on_destination(connection.clone(), counterparty_chain.as_ref())?;
 
         debug!(
-            "connection {} on chain {} is: {:?}; state on dest. chain ({}) is: {:?}",
+            "connection {} on chain {} is: {:?}, state on dest. chain ({}) is: {:?}",
             connection.connection_id,
             chain.id(),
             conn_state_src,
@@ -308,6 +308,11 @@ impl<'a> SpawnContext<'a> {
         );
 
         if conn_state_src.is_open() && conn_state_dst.is_open() {
+            debug!(
+                "connection {} on chain {} is already open, not spawning Client worker",
+                connection.connection_id,
+                chain.id()
+            );
         } else if !conn_state_dst.is_open()
             && conn_state_dst.less_or_equal_progress(conn_state_src)
             && self.config.handshake_enabled()
