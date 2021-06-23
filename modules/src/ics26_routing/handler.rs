@@ -386,8 +386,7 @@ mod tests {
             Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(create_client_msg.clone())),
         );
 
-        assert_eq!(
-            true,
+        assert!(
             res.is_ok(),
             "ICS26 routing dispatch test 'client creation' failed for message {:?} with result: {:?}",
             create_client_msg,

@@ -105,6 +105,7 @@ fn metric_type(o: &Object) -> ibc_telemetry::state::WorkerType {
     use ibc_telemetry::state::WorkerType::*;
     match o {
         Object::Client(_) => Client,
+        Object::Connection(_) => Connection,
         Object::Channel(_) => Channel,
         Object::UnidirectionalChannelPath(_) => Packet,
     }

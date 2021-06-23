@@ -18,7 +18,7 @@ where
     // Check if client for ibc0 on ibc1 has been updated to latest height:
     // - query client state on destination chain
     let dest_client_state = dest
-        .query_client_full_state(&client_id)
+        .query_client_full_state(client_id)
         .ok_or_else(|| Kind::ClientStateNotFound(client_id.clone()))?;
 
     let dest_client_latest_height = dest_client_state.latest_height();
@@ -116,13 +116,14 @@ mod tests {
 
             let client_msg_b_res =
                 build_client_update_datagram(&ctx_b, &client_on_b_for_a, a_latest_header);
-            assert_eq!(
+
+            assert!(
                 client_msg_b_res.is_ok(),
-                true,
                 "create_client_update failed for context destination {:?}, error: {:?}",
                 ctx_b,
                 client_msg_b_res
             );
+
             let client_msg_b = client_msg_b_res.unwrap();
 
             // - send the message to B. We bypass ICS18 interface and call directly into
@@ -161,13 +162,14 @@ mod tests {
 
             let client_msg_a_res =
                 build_client_update_datagram(&ctx_a, &client_on_a_for_b, b_latest_header);
-            assert_eq!(
+
+            assert!(
                 client_msg_a_res.is_ok(),
-                true,
                 "create_client_update failed for context destination {:?}, error: {:?}",
                 ctx_a,
                 client_msg_a_res
             );
+
             let client_msg_a = client_msg_a_res.unwrap();
 
             // - send the message to A

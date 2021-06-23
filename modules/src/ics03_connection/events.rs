@@ -85,6 +85,9 @@ impl Default for Attributes {
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
@@ -128,6 +131,9 @@ impl From<OpenInit> for IbcEvent {
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
@@ -171,6 +177,9 @@ impl From<OpenTry> for IbcEvent {
 pub struct OpenAck(Attributes);
 
 impl OpenAck {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
@@ -214,6 +223,9 @@ impl From<OpenAck> for IbcEvent {
 pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }

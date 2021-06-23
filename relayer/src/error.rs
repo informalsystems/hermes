@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use ibc::{
     ics02_client::client_type::ClientType,
-    ics24_host::identifier::{ChannelId, ConnectionId},
+    ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
 };
 
 /// An error that can be raised by the relayer.
@@ -78,9 +78,24 @@ pub enum Kind {
     #[error("Failed to create client state")]
     BuildClientStateFailure,
 
+    /// Gas estimate from simulated Tx exceeds the maximum configured
+    #[error("{chain_id} gas estimate {estimated_gas} from simulated Tx exceeds the maximum configured {max_gas}")]
+    TxSimulateGasEstimateExceeded {
+        chain_id: ChainId,
+        estimated_gas: u64,
+        max_gas: u64,
+    },
+
+    /// Tx failure for lack of confirmation
+    #[error("Failed Tx: no confirmation")]
+    TxNoConfirmation,
+
     /// Create client failure
     #[error("Failed to create client {0}")]
     CreateClient(String),
+
+    #[error("Connection not found: {0}")]
+    ConnectionNotFound(ConnectionId),
 
     /// Common failures to all connection messages
     #[error("Failed to build conn open message {0}: {1}")]

@@ -2,32 +2,71 @@
 
 ## Unreleased
 
+> Nothing yet.
+
+## v0.5.0
+*June 22nd, 2021*
+
+This release brings a few features, and several improvements and bug fixes to the Hermes
+relayer, notably the capability for Hermes to complete IBC connection handshakes when
+it detects that one has been initialized, as well as the ability to detect chain
+impersonation attacks and to dynamically estimate the gas needed to submit
+a transaction.
+
+Moreover, the overall reliability and availability of the relayer has also been improved
+substantially by switching over to `tx_broadcast_sync` for submitting transactions.
+
 ### FEATURES
 
 - [ibc-relayer-cli]
   - Add `--hd-path` option to `keys restore` and `keys add` commands to specify
     derivation path when importing keys ([#1049])
-    
-### IMPROVEMENTS
 
 - [ibc-relayer]
+  - Event-based handshake completion for IBC connections ([#821])
   - Enable TLS support for gRPC client ([#877])
 
 ### IMPROVEMENTS
 
+- [ibc-relayer-cli]
+  - Minor log output improvements: color enabled, reduced redundant information ([#1100])
+
 - [ibc-relayer]
   - Update the on-chain IBC client with supporting headers when light client verification
-    does bisection when verifying a header for a client update or a misbehaviour detection ([#673])
+    performs bisection when verifying a header for a client update or a misbehaviour detection ([#673])
+  - Add mitigation for chain impersonation attacks ([#1038])
+  - Determine gas fee dynamically per transaction ([#930])
+  - Submit transactions with `broadcast_tx_sync` and keep track of account sequences ([#986])
+
+### BUG FIXES
+
+- [gaiad-manager]
+  - Removed the testnet command as not all networks support it ([#1050])
+  - Update for compatibility with Hermes's new `--hd-path` option
+
+- [ibc-relayer]
+  - Fix bug where channels were left partially open after `channel create` ([#1064])
+  - Prevent account sequence mismatch errors in many cases ([#919], [#978])
+  - Prevent timeouts when submitting transactins ([#977])
 
 ### BREAKING CHANGES
 
 - [ibc-relayer-cli]
-  - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead. ([#1049])
+  - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead ([#1049])
 
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
-[#868]: https://github.com/informalsystems/ibc-rs/issues/1049
+[#821]: https://github.com/informalsystems/ibc-rs/issues/821
 [#877]: https://github.com/informalsystems/ibc-rs/issues/877
+[#919]: https://github.com/informalsystems/ibc-rs/issues/919
+[#930]: https://github.com/informalsystems/ibc-rs/issues/930
+[#977]: https://github.com/informalsystems/ibc-rs/issues/977
+[#978]: https://github.com/informalsystems/ibc-rs/issues/978
+[#986]: https://github.com/informalsystems/ibc-rs/issues/986
+[#1038]: https://github.com/informalsystems/ibc-rs/issues/1038
 [#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
+[#1050]: https://github.com/informalsystems/ibc-rs/issues/1050
+[#1064]: https://github.com/informalsystems/ibc-rs/issues/1064
+[#1100]: https://github.com/informalsystems/ibc-rs/issues/1100
 
 ## v0.4.0
 *June 3rd, 2021*

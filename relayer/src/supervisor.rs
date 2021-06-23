@@ -9,10 +9,8 @@ use ibc::{events::IbcEvent, ics24_host::identifier::ChainId, Height};
 use crate::{
     chain::handle::ChainHandle,
     config::Config,
-    event::{
-        self,
-        monitor::{EventBatch, UnwrapOrClone},
-    },
+    event,
+    event::monitor::{EventBatch, UnwrapOrClone},
     object::Object,
     registry::Registry,
     telemetry::Telemetry,
@@ -80,7 +78,21 @@ impl Supervisor {
                         }
                     }
                 }
+                IbcEvent::OpenInitConnection(..)
+                | IbcEvent::OpenTryConnection(..)
+                | IbcEvent::OpenAckConnection(..) => {
+                    if !self.config.handshake_enabled() {
+                        continue;
+                    }
 
+                    let object = event
+                        .connection_attributes()
+                        .map(|attr| Object::connection_from_conn_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
+                        collected.per_object.entry(object).or_default().push(event);
+                    }
+                }
                 IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                     if !self.config.handshake_enabled() {
                         continue;
@@ -94,7 +106,6 @@ impl Supervisor {
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
-
                 IbcEvent::OpenAckChannel(ref open_ack) => {
                     // Create client worker here as channel end must be opened
                     if let Ok(object) =
@@ -111,15 +122,12 @@ impl Supervisor {
                         continue;
                     }
 
-                    if let Ok(channel_object) = Object::channel_from_chan_open_events(
-                        event.clone().channel_attributes().unwrap(),
-                        src_chain,
-                    ) {
-                        collected
-                            .per_object
-                            .entry(channel_object)
-                            .or_default()
-                            .push(event);
+                    let object = event
+                        .channel_attributes()
+                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
+                        collected.per_object.entry(object).or_default().push(event);
                     }
                 }
                 IbcEvent::OpenConfirmChannel(ref open_confirm) => {

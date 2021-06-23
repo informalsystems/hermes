@@ -177,7 +177,7 @@ impl ClientId {
 
     /// Get this identifier as a borrowed byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0.as_bytes()
+        self.0.as_bytes()
     }
 }
 
@@ -247,7 +247,7 @@ impl ConnectionId {
 
     /// Get this identifier as a borrowed byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0.as_bytes()
+        self.0.as_bytes()
     }
 }
 
@@ -297,7 +297,7 @@ impl PortId {
 
     /// Get this identifier as a borrowed byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0.as_bytes()
+        self.0.as_bytes()
     }
 }
 
@@ -353,7 +353,7 @@ impl ChannelId {
 
     /// Get this identifier as a borrowed byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0.as_bytes()
+        self.0.as_bytes()
     }
 }
 
@@ -390,4 +390,10 @@ impl PartialEq<str> for ChannelId {
 pub struct PortChannelId {
     pub channel_id: ChannelId,
     pub port_id: PortId,
+}
+
+impl std::fmt::Display for PortChannelId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}/{}", self.port_id, self.channel_id)
+    }
 }

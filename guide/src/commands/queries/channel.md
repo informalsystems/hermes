@@ -25,7 +25,7 @@ Query all channels on `ibc-1`:
 hermes query channels ibc-1
 ```
 
-```rust
+```json
 Success: [
     PortChannelId {
         channel_id: ChannelId(
@@ -89,7 +89,7 @@ Query the channel end of channel `channel-1` on port `transfer` on `ibc-1`:
 hermes query channel end ibc-1 transfer channel-1
 ```
 
-```rust
+```json
 Success: ChannelEnd {
     state: Open,
     ordering: Unordered,

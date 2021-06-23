@@ -224,15 +224,15 @@ mod tests {
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
-                    assert_eq!(
+                    assert!(
                         test.want_pass,
-                        true,
                         "send_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.packet.clone(),
                         test.ctx.clone()
                     );
-                    assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
+
+                    assert!(!proto_output.events.is_empty()); // Some events must exist.
 
                     // TODO: The object in the output is a PacketResult what can we check on it?
                     for e in proto_output.events.iter() {
@@ -240,9 +240,8 @@ mod tests {
                     }
                 }
                 Err(e) => {
-                    assert_eq!(
-                        test.want_pass,
-                        false,
+                    assert!(
+                        !test.want_pass,
                         "send_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.packet.clone(),

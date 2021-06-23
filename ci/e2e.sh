@@ -8,15 +8,18 @@ echo "==========================================================================
 echo "                                              INITIALIZE                                                         "
 echo "================================================================================================================="
 echo "-----------------------------------------------------------------------------------------------------------------"
-echo "Show relayer version"
-echo "-----------------------------------------------------------------------------------------------------------------"
-$RELAYER_CMD version
-echo "-----------------------------------------------------------------------------------------------------------------"
-echo "Setting up chains"
+echo "Show config path"
 echo "-----------------------------------------------------------------------------------------------------------------"
 # Configuration file
 CONFIG_PATH="$RELAYER_DIR"/"$CONFIG"
+echo "-----------------------------------------------------------------------------------------------------------------"
+echo "Show relayer version"
+echo "-----------------------------------------------------------------------------------------------------------------"
 echo Config: "$CONFIG_PATH"
+$RELAYER_CMD -c "$CONFIG_PATH" version
+echo "-----------------------------------------------------------------------------------------------------------------"
+echo "Setting up chains"
+echo "-----------------------------------------------------------------------------------------------------------------"
 echo "  Chain:" "$CHAIN_A"
 echo "    creating chain store folder: "["$CHAIN_A_HOME"]
 mkdir -p "$CHAIN_A_HOME"
@@ -31,10 +34,10 @@ echo "==========================================================================
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Add keys for chains"
 echo "-----------------------------------------------------------------------------------------------------------------"
-hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" -f key_seed_"$CHAIN_A".json
-hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" -f key_seed_"$CHAIN_B".json
-# hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" -f user2_seed_"$CHAIN_A".json
-# hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" -f user2_seed_"$CHAIN_B".json
+hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" -f user_seed_"$CHAIN_A".json
+hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" -f user_seed_"$CHAIN_B".json
+hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" -f user2_seed_"$CHAIN_A".json  -n user2
+hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" -f user2_seed_"$CHAIN_B".json  -n user2
 
 echo "================================================================================================================="
 echo "                                             END-TO-END TESTS                                                    "

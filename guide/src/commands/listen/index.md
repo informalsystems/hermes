@@ -24,7 +24,7 @@ Start the relayer in listen mode for all `ibc-0` events and observe the output:
 hermes listen ibc-0
 ```
 
-```rust
+```json
 EventBatch {
     chain_id: ChainId {
         id: "ibc-0",

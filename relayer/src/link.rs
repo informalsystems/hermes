@@ -22,19 +22,19 @@ use ibc::{
         },
         packet::{Packet, PacketMsgType, Sequence},
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     query::QueryTxRequest,
     signer::Signer,
     timestamp::ZERO_DURATION,
     tx_msg::Msg,
     Height,
 };
-
 use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
+use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
@@ -52,6 +52,9 @@ pub enum LinkError {
 
     #[error("failed with underlying error: {0}")]
     Generic(#[from] Error),
+
+    #[error("link initialization failed during channel counterparty verification: {0}")]
+    Initialization(ChannelError),
 
     #[error("failed to construct packet proofs for chain {0} with error: {1}")]
     PacketProofsConstructor(ChainId, Error),
@@ -213,35 +216,35 @@ impl RelayPath {
     }
 
     pub fn src_chain(&self) -> &Box<dyn ChainHandle> {
-        &self.channel.src_chain()
+        self.channel.src_chain()
     }
 
     pub fn dst_chain(&self) -> &Box<dyn ChainHandle> {
-        &self.channel.dst_chain()
+        self.channel.dst_chain()
     }
 
     pub fn src_client_id(&self) -> &ClientId {
-        &self.channel.src_client_id()
+        self.channel.src_client_id()
     }
 
     pub fn dst_client_id(&self) -> &ClientId {
-        &self.channel.dst_client_id()
+        self.channel.dst_client_id()
     }
 
     pub fn src_connection_id(&self) -> &ConnectionId {
-        &self.channel.src_connection_id()
+        self.channel.src_connection_id()
     }
 
     pub fn dst_connection_id(&self) -> &ConnectionId {
-        &self.channel.dst_connection_id()
+        self.channel.dst_connection_id()
     }
 
     pub fn src_port_id(&self) -> &PortId {
-        &self.channel.src_port_id()
+        self.channel.src_port_id()
     }
 
     pub fn dst_port_id(&self) -> &PortId {
-        &self.channel.dst_port_id()
+        self.channel.dst_port_id()
     }
 
     pub fn src_channel_id(&self) -> Result<&ChannelId, LinkError> {
@@ -411,7 +414,7 @@ impl RelayPath {
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
             info!(
-                "[{}] clearing pending packets from events before height {:?}",
+                "[{}] clearing pending packets from events before height {}",
                 self, above_height
             );
 
@@ -512,12 +515,12 @@ impl RelayPath {
                     }
                 }
                 IbcEvent::SendPacket(ref send_packet_ev) => {
-                    if self.send_packet_event_handled(&send_packet_ev)? {
+                    if self.send_packet_event_handled(send_packet_ev)? {
                         debug!("[{}] {} already handled", self, send_packet_ev);
                         (None, None)
                     } else {
                         self.build_recv_or_timeout_from_send_packet_event(
-                            &send_packet_ev,
+                            send_packet_ev,
                             dst_height,
                         )?
                     }
@@ -532,7 +535,7 @@ impl RelayPath {
                         debug!("[{}] {} already handled", self, write_ack_ev);
                         (None, None)
                     } else {
-                        (self.build_ack_from_recv_event(&write_ack_ev)?, None)
+                        (self.build_ack_from_recv_event(write_ack_ev)?, None)
                     }
                 }
                 _ => (None, None),
@@ -613,11 +616,21 @@ impl RelayPath {
                     return Ok(summary);
                 }
                 Err(LinkError::SendError(ev)) => {
-                    // This error means we can retry
+                    // This error means we could retry
                     error!("[{}] error {}", self, ev);
-                    match self.regenerate_operational_data(odata.clone()) {
-                        None => return Ok(RelaySummary::empty()), // Nothing to retry
-                        Some(new_od) => odata = new_od,
+                    if i + 1 == MAX_RETRIES {
+                        error!(
+                            "[{}] {}/{} retries exhausted. giving up",
+                            self,
+                            i + 1,
+                            MAX_RETRIES
+                        )
+                    } else {
+                        // If we haven't exhausted all retries, regenerate the op. data & retry
+                        match self.regenerate_operational_data(odata.clone()) {
+                            None => return Ok(RelaySummary::empty()), // Nothing to retry
+                            Some(new_od) => odata = new_od,
+                        }
                     }
                 }
                 Err(e) => {
@@ -1312,7 +1325,7 @@ impl RelayPath {
                 match event {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
-                        if self.send_packet_event_handled(&e)? {
+                        if self.send_packet_event_handled(e)? {
                             debug!("[{}] {} already handled", self, e);
                         } else if let Some(new_msg) =
                             self.build_timeout_from_send_packet_event(e, dst_current_height)?
@@ -1330,7 +1343,7 @@ impl RelayPath {
                         }
                     }
                     IbcEvent::WriteAcknowledgement(e) => {
-                        if self.write_ack_event_handled(&e)? {
+                        if self.write_ack_event_handled(e)? {
                             debug!("[{}] {} already handled", self, e);
                         } else {
                             retain_batch.push(gm.clone());
@@ -1634,6 +1647,21 @@ impl Link {
             )));
         }
 
+        // Check that the counterparty details on the destination chain matches the source chain
+        check_channel_counterparty(
+            b_chain.clone(),
+            &PortChannelId {
+                channel_id: b_channel_id.clone(),
+                port_id: a_channel.counterparty().port_id.clone(),
+            },
+            &PortChannelId {
+                channel_id: a_channel_id.clone(),
+                port_id: opts.src_port_id.clone(),
+            },
+        )
+        .map_err(LinkError::Initialization)?;
+
+        // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
         let a_connection = a_chain.query_connection(&a_connection_id, Height::zero())?;
 

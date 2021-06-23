@@ -28,7 +28,7 @@ Create a new client of `ibc-1` on `ibc-0`:
 hermes tx raw create-client ibc-0 ibc-1
 ```
 
-```rust
+```json
 {
     Success: CreateClient(
         CreateClient(
