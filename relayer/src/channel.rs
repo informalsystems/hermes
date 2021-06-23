@@ -32,6 +32,7 @@ use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::Error as WorkerChannelError;
 use crate::util::retry::RetryResult;
 use crate::util::retry::{retry_count, retry_with_index};
+use std::fmt;
 
 mod retry_strategy {
     use std::time::Duration;
@@ -625,7 +626,7 @@ impl Channel {
 
         match self.handshake_step(state) {
             Err(e) => {
-                error!("Failed {:?} with error {}", state, e);
+                error!("[{}] failed {:?} with error {}", self, state, e);
                 RetryResult::Retry(index)
             }
             Ok(ev) => {
@@ -838,6 +839,30 @@ impl Channel {
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::zero())
             .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+
+        // If a counterparty channel is specified check that the channel exists on destination
+        if let Some(counterparty_channel_id) = self.dst_channel_id() {
+            let channel = self
+                .dst_chain()
+                .query_channel(self.dst_port_id(), counterparty_channel_id, Height::zero())
+                .map_err(|e| {
+                    ChannelError::Failed(format!(
+                        "error querying counterparty channel {}/{} on destination chain {}: {}",
+                        self.dst_port_id(),
+                        counterparty_channel_id,
+                        self.dst_chain().id(),
+                        e
+                    ))
+                })?;
+            if channel.state_matches(&State::Uninitialized) {
+                return Err(ChannelError::Failed(format!(
+                    "counterparty channel {}/{} specified in open-init but does not exist on destination chain {}",
+                    self.dst_port_id(),
+                    counterparty_channel_id,
+                    self.dst_chain().id()
+                )));
+            }
+        }
 
         let query_height = self
             .src_chain()
@@ -1235,6 +1260,24 @@ impl Channel {
             }
             _ => panic!("internal error"),
         }
+    }
+}
+
+impl fmt::Display for Channel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let channel_id = self
+            .src_channel_id()
+            .map(ToString::to_string)
+            .unwrap_or_else(|| "None".to_string());
+
+        write!(
+            f,
+            "{}:{}/{} -> {}",
+            self.src_chain().id(),
+            self.src_port_id(),
+            channel_id,
+            self.dst_chain().id()
+        )
     }
 }
 

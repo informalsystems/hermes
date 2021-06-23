@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, trace, warn};
 
 use ibc::{
     events::IbcEvent,
@@ -111,9 +111,11 @@ impl Supervisor {
                         continue;
                     }
 
+                    trace!("got event {:?}", event);
                     let object = event
                         .channel_attributes()
                         .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
+                    trace!("built object {:?}", object);
 
                     if let Some(Ok(object)) = object {
                         collected.per_object.entry(object).or_default().push(event);
@@ -545,6 +547,13 @@ impl Supervisor {
 
         let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
+        // If there is a NewBlock event, forward the event to any workers affected by it.
+        if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
+            for worker in self.workers.to_notify(&src_chain.id()) {
+                worker.send_new_block(height, new_block)?;
+            }
+        }
+
         for (object, events) in collected.per_object.drain() {
             if events.is_empty() {
                 continue;
@@ -555,13 +564,6 @@ impl Supervisor {
 
             let worker = self.workers.get_or_spawn(object, src, dst);
             worker.send_events(height, events, chain_id.clone())?
-        }
-
-        // If there is a NewBlock event, forward the event to any workers affected by it.
-        if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
-            for worker in self.workers.to_notify(&src_chain.id()) {
-                worker.send_new_block(height, new_block)?;
-            }
         }
 
         Ok(())
