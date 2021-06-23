@@ -16,10 +16,10 @@ use ibc_proto::ibc::core::channel::v1::{
 use ibc_relayer::chain::counterparty::channel_connection_client;
 use ibc_relayer::chain::{runtime::ChainRuntime, CosmosSdkChain};
 
+use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use crate::cli_utils::spawn_chain_runtime;
 
 #[derive(Serialize, Debug)]
 struct PacketSeqs {
@@ -160,11 +160,13 @@ impl QueryUnreceivedPacketsCmd {
     fn execute(&self) -> Result<Vec<u64>, Error> {
         let config = app_config();
 
-        debug!("options: {:?}", self);
+        debug!("Options: {:?}", self);
 
         let chain = spawn_chain_runtime(&*config, &self.chain_id)?;
 
-        let channel_connection_client = channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id).map_err(|e| Kind::Query.context(e))?;
+        let channel_connection_client =
+            channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id)
+                .map_err(|e| Kind::Query.context(e))?;
 
         let channel = channel_connection_client.channel;
         debug!(
@@ -195,13 +197,21 @@ impl QueryUnreceivedPacketsCmd {
         // extract the sequences
         let sequences: Vec<u64> = commitments.0.into_iter().map(|v| v.sequence).collect();
 
+        trace!(
+            "commitment sequence(s) obtained from counterparty chain {}: {:?}",
+            counterparty_chain.id(),
+            sequences
+        );
+
         let request = QueryUnreceivedPacketsRequest {
             port_id: channel.port_id.to_string(),
             channel_id: channel.channel_id.to_string(),
             packet_commitment_sequences: sequences,
         };
 
-        chain.query_unreceived_packets(request).map_err(|e| Kind::Query.context(e).into())
+        chain
+            .query_unreceived_packets(request)
+            .map_err(|e| Kind::Query.context(e).into())
     }
 }
 
