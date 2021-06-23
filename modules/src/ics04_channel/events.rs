@@ -12,7 +12,6 @@ use std::convert::{TryFrom, TryInto};
 use std::prelude::*;
 use std::vec::Vec;
 
-
 /// Channel event types
 const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
 const OPEN_TRY_EVENT_TYPE: &str = "channel_open_try";
@@ -242,7 +241,6 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -284,8 +282,7 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-
-    type Error = crate::primitives::DummyError;
+    type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(extract_attributes(&obj, "channel_open_try")?))
@@ -371,8 +368,7 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-
-    type Error = crate::primitives::DummyError;
+    type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(extract_attributes(
@@ -428,7 +424,6 @@ impl From<Attributes> for CloseInit {
 }
 
 impl TryFrom<RawObject> for CloseInit {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -476,7 +471,6 @@ impl From<Attributes> for CloseConfirm {
 }
 
 impl TryFrom<RawObject> for CloseConfirm {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -494,7 +488,6 @@ impl From<CloseConfirm> for IbcEvent {
 }
 
 impl TryFrom<RawObject> for Packet {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -562,7 +555,6 @@ impl SendPacket {
 }
 
 impl TryFrom<RawObject> for SendPacket {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -616,7 +608,6 @@ impl ReceivePacket {
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -672,7 +663,6 @@ impl WriteAcknowledgement {
 }
 
 impl TryFrom<RawObject> for WriteAcknowledgement {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -731,7 +721,6 @@ impl AcknowledgePacket {
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -831,7 +820,6 @@ impl TimeoutOnClosePacket {
 }
 
 impl TryFrom<RawObject> for TimeoutOnClosePacket {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {

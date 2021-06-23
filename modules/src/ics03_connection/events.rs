@@ -128,7 +128,6 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -164,7 +163,6 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -200,7 +198,6 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-
     type Error = events::Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -237,6 +234,7 @@ impl From<Attributes> for OpenConfirm {
 
 impl TryFrom<RawObject> for OpenConfirm {
     type Error = events::Error;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(extract_attributes(
             &obj,

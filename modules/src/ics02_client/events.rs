@@ -179,7 +179,7 @@ impl From<Attributes> for CreateClient {
 
 impl TryFrom<RawObject> for CreateClient {
     type Error = events::Error;
-    
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CreateClient(extract_attributes(&obj, "create_client")?))
     }
