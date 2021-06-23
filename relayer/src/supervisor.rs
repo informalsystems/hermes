@@ -29,7 +29,7 @@ use crate::{
     worker::{WorkerMap, WorkerMsg},
 };
 
-mod error;
+pub mod error;
 pub use error::Error;
 
 /// The supervisor listens for events on multiple pairs of chains,

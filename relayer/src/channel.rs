@@ -27,6 +27,7 @@ use crate::connection::Connection;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::object::Channel as WorkerChannelObject;
+use crate::supervisor::error as supervisor_error;
 use crate::supervisor::Error as WorkerChannelError;
 use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
@@ -404,7 +405,10 @@ impl Channel {
             chain.query_channel(&channel.src_port_id, &channel.src_channel_id, height)?;
 
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
-            WorkerChannelError::MissingConnectionHops(channel.src_channel_id.clone(), chain.id())
+            supervisor_error::missing_connection_hops_error(
+                channel.src_channel_id.clone(),
+                chain.id(),
+            )
         })?;
 
         let a_connection = chain.query_connection(a_connection_id, Height::zero())?;
@@ -413,7 +417,7 @@ impl Channel {
             .connection_id()
             .cloned()
             .ok_or_else(|| {
-                WorkerChannelError::ChannelConnectionUninitialized(
+                supervisor_error::channel_connection_uninitialized_error(
                     channel.src_channel_id.clone(),
                     chain.id(),
                     a_connection.counterparty().clone(),

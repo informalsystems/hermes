@@ -44,7 +44,7 @@ define_error! {
             |_| { "connection error" },
 
         Packet
-            [ DisplayOnly<PacketError> ]
+            [ PacketError ]
             |_| { "packet error" },
 
         Channel

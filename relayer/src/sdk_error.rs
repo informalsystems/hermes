@@ -1,142 +1,238 @@
+use flex_error::define_error;
 use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
-use thiserror::Error;
 
 // Provides mapping for errors returned from ibc-go and cosmos-sdk
-#[derive(Clone, Debug, Error)]
-pub enum SdkError {
-    #[error("ICS02 Client Error: {0}")]
-    Client(ClientError),
+define_error! {
+    SdkError {
+        Client
+            [ ClientError ]
+            |_| { "ICS02 Client Error" },
 
-    #[error("Unknown SDK Error")]
-    Unknown,
+        UnexpectedOk
+            |_| { "Expected error code, instead got Ok" },
+
+        UnknownSdk
+            { code: u32 }
+            |e| { format!("unknown SDK error: {}", e.code) },
+    }
 }
 
-#[derive(Clone, Debug, Error)]
-pub enum ClientError {
-    #[error("light client already exists")]
-    LightClientAlreadyExists,
+define_error! {
+    ClientError {
+        LightClientAlreadyExists
+            |_| { "light client already exists" },
 
-    #[error("light client is invalid")]
-    InvalidLightClient,
+        InvalidLightClient
+            |_| { "light client already exists" },
 
-    #[error("light client not found")]
-    LightClientNotFound,
+        LightClientNotFound
+            |_| { "light client already exists" },
 
-    #[error("light client is frozen due to misbehaviour")]
-    FrozenLightClient,
+        FrozenLightClient
+            |_| { "light client already exists" },
 
-    #[error("invalid client metadata")]
-    InvalidClientMetadata,
+        InvalidClientMetadata
+            |_| { "light client already exists" },
 
-    #[error("consensus state not found")]
-    ConsensusStateNotFound,
+        ConsensusStateNotFound
+            |_| { "light client already exists" },
 
-    #[error("invalid consensus state")]
-    InvalidConsensusState,
+        InvalidConsensusState
+            |_| { "light client already exists" },
 
-    #[error("client type not found")]
-    ClientTypeNotFound,
+        ClientTypeNotFound
+            |_| { "light client already exists" },
 
-    #[error("invalid client type")]
-    InvalidClientType,
+        InvalidClientType
+            |_| { "light client already exists" },
 
-    #[error("commitment root not found")]
-    CommitmentRootNotFound,
+        CommitmentRootNotFound
+            |_| { "light client already exists" },
 
-    #[error("invalid client header")]
-    InvalidClientHeader,
+        InvalidClientHeader
+            |_| { "light client already exists" },
 
-    #[error("invalid light client misbehaviour")]
-    InvalidLightClientMisbehavior,
+        InvalidLightClientMisbehavior
+            |_| { "light client already exists" },
 
-    #[error("client state verification failed")]
-    ClientStateVerificationFailed,
+        ClientStateVerificationFailed
+            |_| { "light client already exists" },
 
-    #[error("client consensus state verification failed")]
-    ClientConsensusStateVerificationFailed,
+        ClientConsensusStateVerificationFailed
+            |_| { "light client already exists" },
 
-    #[error("connection state verification failed")]
-    ConnectionStateVerificationFailed,
+        ConnectionStateVerificationFailed
+            |_| { "light client already exists" },
 
-    #[error("channel state verification failed")]
-    ChannelStateVerificationFailed,
+        ChannelStateVerificationFailed
+            |_| { "light client already exists" },
 
-    #[error("packet commitment verification failed")]
-    PacketCommitmentVerificationFailed,
+        PacketCommitmentVerificationFailed
+            |_| { "light client already exists" },
 
-    #[error("packet acknowledgement verification failed")]
-    PacketAcknowledgementVerificationFailed,
+        PacketAcknowledgementVerificationFailed
+            |_| { "light client already exists" },
 
-    #[error("packet receipt verification failed")]
-    PacketReceiptVerificationFailed,
+        PacketReceiptVerificationFailed
+            |_| { "light client already exists" },
 
-    #[error("next sequence receive verification failed")]
-    NextSequenceReceiveVerificationFailed,
+        NextSequenceReceiveVerificationFailed
+            |_| { "light client already exists" },
 
-    #[error("self consensus state not found")]
-    SelfConsensusStateNotFound,
+        SelfConsensusStateNotFound
+            |_| { "light client already exists" },
 
-    #[error("unable to update light client")]
-    UpdateLightClientFailed,
+        UpdateLightClientFailed
+            |_| { "light client already exists" },
 
-    #[error("invalid update client proposal")]
-    InvalidUpdateClientProposal,
+        InvalidUpdateClientProposal
+            |_| { "light client already exists" },
 
-    #[error("invalid client upgrade")]
-    InvalidClientUpgrade,
+        InvalidClientUpgrade
+            |_| { "light client already exists" },
 
-    #[error("invalid height")]
-    InvalidHeight,
+        InvalidHeight
+            |_| { "light client already exists" },
 
-    #[error("invalid client state substitute")]
-    InvalidClientStateSubstitute,
+        InvalidClientStateSubstitute
+            |_| { "light client already exists" },
 
-    #[error("invalid upgrade proposal")]
-    InvalidUpgradeProposal,
+        InvalidUpgradeProposal
+            |_| { "light client already exists" },
 
-    #[error("client is not active")]
-    InactiveClient,
+        InactiveClient
+            |_| { "light client already exists" },
 
-    #[error("Unknown client error")]
-    Unknown,
+        UnknownClient
+            { code: u32 }
+            |e| { format!("unknown client error: {}", e.code) },
+    }
 }
 
-impl ClientError {
-    // The error code mapping follows the Go code at
-    // ibc-go/modules/core/02-client/types/errors.go
-    fn from_code(code: u32) -> ClientError {
-        match code {
-            2 => ClientError::LightClientAlreadyExists,
-            3 => ClientError::InvalidLightClient,
-            4 => ClientError::LightClientNotFound,
-            5 => ClientError::FrozenLightClient,
-            6 => ClientError::InvalidClientMetadata,
-            7 => ClientError::ConsensusStateNotFound,
-            8 => ClientError::InvalidConsensusState,
-            9 => ClientError::ClientTypeNotFound,
-            10 => ClientError::InvalidClientType,
-            11 => ClientError::CommitmentRootNotFound,
-            12 => ClientError::InvalidClientHeader,
-            13 => ClientError::InvalidLightClientMisbehavior,
-            14 => ClientError::ClientStateVerificationFailed,
-            15 => ClientError::ClientConsensusStateVerificationFailed,
-            16 => ClientError::ConnectionStateVerificationFailed,
-            17 => ClientError::ChannelStateVerificationFailed,
-            18 => ClientError::PacketCommitmentVerificationFailed,
-            19 => ClientError::PacketAcknowledgementVerificationFailed,
-            20 => ClientError::PacketReceiptVerificationFailed,
-            21 => ClientError::NextSequenceReceiveVerificationFailed,
-            22 => ClientError::SelfConsensusStateNotFound,
-            23 => ClientError::UpdateLightClientFailed,
-            24 => ClientError::InvalidUpdateClientProposal,
-            25 => ClientError::InvalidClientUpgrade,
-            26 => ClientError::InvalidHeight,
-            27 => ClientError::InvalidClientStateSubstitute,
-            28 => ClientError::InvalidUpgradeProposal,
-            29 => ClientError::InactiveClient,
-            _ => ClientError::Unknown,
-        }
+// #[derive(Clone, Debug, Error)]
+// pub enum ClientError {
+//     #[error("light client already exists")]
+//     LightClientAlreadyExists,
+
+//     #[error("light client is invalid")]
+//     InvalidLightClient,
+
+//     #[error("light client not found")]
+//     LightClientNotFound,
+
+//     #[error("light client is frozen due to misbehaviour")]
+//     FrozenLightClient,
+
+//     #[error("invalid client metadata")]
+//     InvalidClientMetadata,
+
+//     #[error("consensus state not found")]
+//     ConsensusStateNotFound,
+
+//     #[error("invalid consensus state")]
+//     InvalidConsensusState,
+
+//     #[error("client type not found")]
+//     ClientTypeNotFound,
+
+//     #[error("invalid client type")]
+//     InvalidClientType,
+
+//     #[error("commitment root not found")]
+//     CommitmentRootNotFound,
+
+//     #[error("invalid client header")]
+//     InvalidClientHeader,
+
+//     #[error("invalid light client misbehaviour")]
+//     InvalidLightClientMisbehavior,
+
+//     #[error("client state verification failed")]
+//     ClientStateVerificationFailed,
+
+//     #[error("client consensus state verification failed")]
+//     ClientConsensusStateVerificationFailed,
+
+//     #[error("connection state verification failed")]
+//     ConnectionStateVerificationFailed,
+
+//     #[error("channel state verification failed")]
+//     ChannelStateVerificationFailed,
+
+//     #[error("packet commitment verification failed")]
+//     PacketCommitmentVerificationFailed,
+
+//     #[error("packet acknowledgement verification failed")]
+//     PacketAcknowledgementVerificationFailed,
+
+//     #[error("packet receipt verification failed")]
+//     PacketReceiptVerificationFailed,
+
+//     #[error("next sequence receive verification failed")]
+//     NextSequenceReceiveVerificationFailed,
+
+//     #[error("self consensus state not found")]
+//     SelfConsensusStateNotFound,
+
+//     #[error("unable to update light client")]
+//     UpdateLightClientFailed,
+
+//     #[error("invalid update client proposal")]
+//     InvalidUpdateClientProposal,
+
+//     #[error("invalid client upgrade")]
+//     InvalidClientUpgrade,
+
+//     #[error("invalid height")]
+//     InvalidHeight,
+
+//     #[error("invalid client state substitute")]
+//     InvalidClientStateSubstitute,
+
+//     #[error("invalid upgrade proposal")]
+//     InvalidUpgradeProposal,
+
+//     #[error("client is not active")]
+//     InactiveClient,
+
+//     #[error("Unknown client error")]
+//     Unknown,
+// }
+
+// The error code mapping follows the Go code at
+// ibc-go/modules/core/02-client/types/errors.go
+fn client_error_from_code(code: u32) -> ClientError {
+    match code {
+        2 => light_client_already_exists_error(),
+        3 => invalid_light_client_error(),
+        4 => light_client_not_found_error(),
+        5 => frozen_light_client_error(),
+        6 => invalid_client_metadata_error(),
+        7 => consensus_state_not_found_error(),
+        8 => invalid_consensus_state_error(),
+        9 => client_type_not_found_error(),
+        10 => invalid_client_type_error(),
+        11 => commitment_root_not_found_error(),
+        12 => invalid_client_header_error(),
+        13 => invalid_light_client_misbehavior_error(),
+        14 => client_state_verification_failed_error(),
+        15 => client_consensus_state_verification_failed_error(),
+        16 => connection_state_verification_failed_error(),
+        17 => client_state_verification_failed_error(),
+        18 => packet_commitment_verification_failed_error(),
+        19 => packet_acknowledgement_verification_failed_error(),
+        20 => packet_receipt_verification_failed_error(),
+        21 => next_sequence_receive_verification_failed_error(),
+        22 => self_consensus_state_not_found_error(),
+        23 => update_light_client_failed_error(),
+        24 => invalid_update_client_proposal_error(),
+        25 => invalid_client_upgrade_error(),
+        26 => invalid_height_error(),
+        27 => invalid_client_state_substitute_error(),
+        28 => invalid_upgrade_proposal_error(),
+        29 => inactive_client_error(),
+        _ => unknown_client_error(code),
     }
 }
 
@@ -148,14 +244,14 @@ impl ClientError {
 // the errors.go source code directly
 pub fn sdk_error_from_tx_result(result: &TxResult) -> SdkError {
     match result.code {
-        Code::Ok => SdkError::Unknown,
+        Code::Ok => unexpected_ok_error(),
         Code::Err(code) => {
             let codespace = result.codespace.to_string();
             if codespace == "client" {
-                SdkError::Client(ClientError::from_code(code))
+                client_error(client_error_from_code(code))
             } else {
                 // TODO: Implement mapping for other codespaces in ibc-go
-                SdkError::Unknown
+                unknown_sdk_error(code)
             }
         }
     }

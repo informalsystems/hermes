@@ -738,17 +738,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "displaydoc"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3274a6bc8a6a4521291b53b9dcb8345e963fe931c3fc462a7d3ead71d7ccd30d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "dyn-clonable"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1400,7 +1389,6 @@ version = "0.5.0"
 dependencies = [
  "bytes",
  "chrono",
- "displaydoc",
  "dyn-clonable",
  "env_logger",
  "flex-error",
@@ -1420,7 +1408,6 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-env-log",
- "thiserror",
  "tracing",
  "tracing-subscriber 0.2.18",
 ]
@@ -1433,7 +1420,6 @@ dependencies = [
  "prost",
  "prost-types",
  "tendermint-proto",
- "thiserror",
  "tonic",
 ]
 
@@ -1449,7 +1435,6 @@ dependencies = [
  "bytes",
  "crossbeam-channel 0.5.1",
  "dirs-next",
- "displaydoc",
  "dyn-clonable",
  "dyn-clone",
  "env_logger",
@@ -1484,7 +1469,6 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-env-log",
- "thiserror",
  "tiny-bip39",
  "tokio",
  "toml",
@@ -1498,7 +1482,6 @@ name = "ibc-relayer-cli"
 version = "0.5.0"
 dependencies = [
  "abscissa_core",
- "anomaly",
  "atty",
  "crossbeam-channel 0.5.1",
  "dirs-next",
@@ -1523,7 +1506,6 @@ dependencies = [
  "tendermint-light-client",
  "tendermint-proto",
  "tendermint-rpc",
- "thiserror",
  "tokio",
  "toml",
  "tracing",
