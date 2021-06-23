@@ -1,12 +1,14 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
+use std::u64;
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
+    IdentifiedConnection as RawIdentifiedConnection,
 };
 
 use crate::ics03_connection::error;
@@ -17,8 +19,70 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::timestamp::ZERO_DURATION;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct IdentifiedConnectionEnd {
+    pub connection_id: ConnectionId,
+    pub connection_end: ConnectionEnd,
+}
+
+impl IdentifiedConnectionEnd {
+    pub fn new(connection_id: ConnectionId, connection_end: ConnectionEnd) -> Self {
+        IdentifiedConnectionEnd {
+            connection_id,
+            connection_end,
+        }
+    }
+
+    pub fn id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    pub fn end(&self) -> &ConnectionEnd {
+        &self.connection_end
+    }
+}
+
+impl Protobuf<RawIdentifiedConnection> for IdentifiedConnectionEnd {}
+
+impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
+    type Error = error::Error;
+
+    fn try_from(value: RawIdentifiedConnection) -> Result<Self, Self::Error> {
+        let raw_connection_end = RawConnectionEnd {
+            client_id: value.client_id.to_string(),
+            versions: value.versions,
+            state: value.state,
+            counterparty: value.counterparty,
+            delay_period: value.delay_period,
+        };
+
+        Ok(IdentifiedConnectionEnd {
+            connection_id: value.id.parse().map_err(error::invalid_identifier_error)?,
+            connection_end: raw_connection_end.try_into()?,
+        })
+    }
+}
+
+impl From<IdentifiedConnectionEnd> for RawIdentifiedConnection {
+    fn from(value: IdentifiedConnectionEnd) -> Self {
+        RawIdentifiedConnection {
+            id: value.connection_id.to_string(),
+            client_id: value.connection_end.client_id.to_string(),
+            versions: value
+                .connection_end
+                .versions
+                .iter()
+                .map(|v| From::from(v.clone()))
+                .collect(),
+            state: value.connection_end.state as i32,
+            delay_period: value.connection_end.delay_period.as_nanos() as u64,
+            counterparty: Some(value.connection_end.counterparty().clone().into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
-    state: State,
+    pub state: State,
     client_id: ClientId,
     counterparty: Counterparty,
     versions: Vec<Version>,
@@ -137,6 +201,10 @@ impl ConnectionEnd {
         self.state_matches(&State::Open)
     }
 
+    pub fn is_uninitialized(&self) -> bool {
+        self.state_matches(&State::Uninitialized)
+    }
+
     /// Helper function to compare the state of this end with another state.
     pub fn state_matches(&self, other: &State) -> bool {
         self.state.eq(other)
@@ -152,9 +220,9 @@ impl ConnectionEnd {
         self.versions.clone()
     }
 
-    /// Getter for the counterparty. Returns a `clone()`.
-    pub fn counterparty(&self) -> Counterparty {
-        self.counterparty.clone()
+    /// Getter for the counterparty.
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.counterparty
     }
 
     /// Getter for the delay_period field. This represents the duration, at minimum,
@@ -170,32 +238,9 @@ impl ConnectionEnd {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct IdentifiedConnectionEnd {
-    connection_id: ConnectionId,
-    connection_end: ConnectionEnd,
-}
-
-impl IdentifiedConnectionEnd {
-    pub fn new(connection_id: ConnectionId, connection_end: ConnectionEnd) -> Self {
-        IdentifiedConnectionEnd {
-            connection_id,
-            connection_end,
-        }
-    }
-
-    pub fn id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
-    pub fn end(&self) -> &ConnectionEnd {
-        &self.connection_end
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
-    connection_id: Option<ConnectionId>,
+    pub connection_id: Option<ConnectionId>,
     prefix: CommitmentPrefix,
 }
 
@@ -281,7 +326,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,
@@ -298,6 +343,19 @@ impl State {
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
         }
+    }
+    // Parses the State out from a i32.
+    pub fn from_i32(s: i32) -> Result<Self, error::Error> {
+        match s {
+            0 => Ok(Self::Uninitialized),
+            1 => Ok(Self::Init),
+            2 => Ok(Self::TryOpen),
+            3 => Ok(Self::Open),
+            _ => Err(error::invalid_state_error(s)),
+        }
+    }
+    pub fn is_open(self) -> bool {
+        self == State::Open
     }
 }
 

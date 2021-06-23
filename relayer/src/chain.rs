@@ -12,7 +12,7 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::{AnyClientState, ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::header::Header;
-use ibc::ics03_connection::connection::{ConnectionEnd, State};
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -160,7 +160,7 @@ pub trait Chain: Sized {
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error>;
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_client_connections(

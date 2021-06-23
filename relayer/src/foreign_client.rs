@@ -1,6 +1,7 @@
 use std::time::Instant;
 use std::{fmt, thread, time::Duration};
 
+use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
 
@@ -866,15 +867,16 @@ impl ForeignClient {
         };
 
         debug!(
-            "[{}] checking misbehaviour at {}, number of consensus states {}",
+            "[{}] checking misbehaviour at {}, number of consensus states: {}",
             self,
             ch,
             consensus_state_heights.len()
         );
+
         trace!(
-            "[{}] checking misbehaviour for consensus state heights {:?}",
+            "[{}] checking misbehaviour for consensus state heights (first 50 shown here): {}",
             self,
-            consensus_state_heights
+            consensus_state_heights.iter().take(50).join(", ")
         );
 
         let check_once = update.is_some();

@@ -529,7 +529,7 @@ impl RelayPath {
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
             info!(
-                "[{}] clearing pending packets from events before height {:?}",
+                "[{}] clearing pending packets from events before height {}",
                 self, above_height
             );
 
@@ -734,11 +734,21 @@ impl RelayPath {
                 Err(e) => {
                     match e.detail {
                         LinkErrorDetail::Send(ev) => {
-                            // This error means we can retry
+                            // This error means we could retry
                             error!("[{}] error {}", self, ev);
-                            match self.regenerate_operational_data(odata.clone()) {
-                                None => return Ok(RelaySummary::empty()), // Nothing to retry
-                                Some(new_od) => odata = new_od,
+                            if i + 1 == MAX_RETRIES {
+                                error!(
+                                    "[{}] {}/{} retries exhausted. giving up",
+                                    self,
+                                    i + 1,
+                                    MAX_RETRIES
+                                )
+                            } else {
+                                // If we haven't exhausted all retries, regenerate the op. data & retry
+                                match self.regenerate_operational_data(odata.clone()) {
+                                    None => return Ok(RelaySummary::empty()), // Nothing to retry
+                                    Some(new_od) => odata = new_od,
+                                }
                             }
                         }
                         _ => return Err(e),

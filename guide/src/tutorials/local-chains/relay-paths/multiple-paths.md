@@ -20,15 +20,12 @@ Follow the steps below to connect three chains together and relay packets betwee
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    gas = 200000
-    fee_denom = 'stake'
-    fee_amount = 10
+    max_gas = 2000000
+    gas_price = { price = 0.001, denom = 'stake' }
+    gas_adjustment = 0.1
     clock_drift = '5s'
     trusting_period = '14days'
-
-    [chains.trust_threshold]
-    numerator = '1'
-    denominator = '3'
+    trust_threshold = { numerator = '1', denominator = '3' }
 
     [[chains]]
     id = 'ibc-1'
@@ -39,11 +36,12 @@ Follow the steps below to connect three chains together and relay packets betwee
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    gas = 200000
-    fee_denom = 'stake'
-    fee_amount = 10
+    max_gas = 2000000
+    gas_price = { price = 0.001, denom = 'stake' }
+    gas_adjustment = 0.1
     clock_drift = '5s'
     trusting_period = '14days'
+    trust_threshold = { numerator = '1', denominator = '3' }
 
     [[chains]]
     id = 'ibc-2'
@@ -54,15 +52,12 @@ Follow the steps below to connect three chains together and relay packets betwee
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    gas = 200000
-    fee_denom = 'stake'
-    fee_amount = 10
+    max_gas = 2000000
+    gas_price = { price = 0.001, denom = 'stake' }
+    gas_adjustment = 0.1
     clock_drift = '5s'
     trusting_period = '14days'
-
-    [chains.trust_threshold]
-    numerator = '1'
-    denominator = '3'
+    trust_threshold = { numerator = '1', denominator = '3' }
     ```
 
     This configuration has three chains `ibc-0`, `ibc-1` and `ibc-2`.
@@ -85,7 +80,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
     ```
 
-    ```rust
+    ```json
     (...)
 
     Success: Channel {
@@ -147,7 +142,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
     ```
 
-    ```rust
+    ```json
     (...)
 
     Success: Channel {
@@ -220,7 +215,7 @@ Follow the steps below to connect three chains together and relay packets betwee
       hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
       ```
 
-      ```rust
+      ```json
       Success: [
           SendPacket(
               SendPacket {
@@ -243,7 +238,7 @@ Follow the steps below to connect three chains together and relay packets betwee
       hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 -o 1000 -n 2
       ```
 
-      ```rust
+      ```json
       Success: [
           SendPacket(
               SendPacket {
@@ -262,7 +257,7 @@ Follow the steps below to connect three chains together and relay packets betwee
 
 5. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packets` are sent out.
 
-    ```
+    ```text
     (...)
 
     INFO ibc_relayer::link: [ibc-0 -> ibc-1] result events:

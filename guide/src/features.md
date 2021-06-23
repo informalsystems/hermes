@@ -24,6 +24,7 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 - Restart support
     - clear packets
     - resume channel handshake if configured to relay `all`
+    - resume connection handshake if configured to relay `all`
 - Client upgrade
     - upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
 - Packet delay:
@@ -42,6 +43,7 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
     - relaying sent packets, acknowledgments and timeouts
     - client upgrade
 - Channel handshake for existing channel that is not in `Open` state
+- Connection handshake for existing connection that is not in `Open` state
 - Telemetry support
 
 ## Upcoming / Unsupported Features

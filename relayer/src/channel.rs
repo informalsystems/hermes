@@ -67,6 +67,14 @@ define_error! {
         MissingLocalChannelId
             |_| { "failed due to missing local channel id" },
 
+
+        MissingLocalConnection
+            { chain_id: ChainId }
+            | e | {
+                format_args!("channel constructor failed due to missing connection id on chain id {0}",
+                    e.chain_id)
+            },
+
         MissingCounterpartyChannelId
             |_| { "failed due to missing counterparty channel id" },
 
@@ -155,13 +163,15 @@ define_error! {
                 destination_port_id: PortId,
                 source_chain_id: ChainId,
                 counterparty_port_id: PortId,
+                counterparty_channel_id: ChannelId,
             }
             | e | {
                 format_args!("channel open try to chain `{}` and destination port `{}` does not match \
-                    the source chain `{}` counterparty port `{}`",
+                the source chain `{}` counterparty port `{}` for channel_id {}",
                     e.destination_chain_id, e.destination_port_id,
                     e.source_chain_id,
-                    e.counterparty_port_id)
+                    e.counterparty_port_id,
+                    e.counterparty_channel_id)
             },
 
         MissingEvent
@@ -198,6 +208,12 @@ define_error! {
                     e.reason)
             },
 
+        InvalidEvent
+            { event: IbcEvent }
+            | e | {
+                format_args!("channel object cannot be built from event: {}",
+                    e.event)
+            },
     }
 }
 
@@ -220,41 +236,6 @@ pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> C
         retry::Error::Internal(reason) => retry_internal_error(reason),
     }
 }
-
-// #[derive(Debug, Error)]
-// pub enum ChannelError {
-//     #[error("failed with underlying cause: {0}")]
-//     Failed(String),
-
-//     #[error("failed due to missing local channel id")]
-//     MissingLocalChannelId,
-
-//     #[error("failed due to missing counterparty channel id")]
-//     MissingCounterpartyChannelId,
-
-//     #[error("failed due to missing counterparty connection")]
-//     MissingCounterpartyConnection,
-
-//     #[error("failed during an operation on client ({0}) hosted by chain ({1}) with error: {2}")]
-//     ClientOperation(ClientId, ChainId, ForeignClientError),
-
-//     #[error("failed during a query to chain id {0} with underlying error: {1}")]
-//     QueryError(ChainId, Error),
-
-//     #[error(
-//         "failed during a transaction submission step to chain id {0} with underlying error: {1}"
-//     )]
-//     SubmitError(ChainId, Error),
-
-//     #[error("the channel is partially open ({0}, {1})")]
-//     PartialOpenHandshake(State, State),
-
-//     #[error("channel {0} on chain {1} has no counterparty channel id")]
-//     IncompleteChannelState(PortChannelId, ChainId),
-
-//     #[error("channel {0} on chain {1} expected to have counterparty {2} (but instead has {3})")]
-//     MismatchingChannelEnds(PortChannelId, ChainId, PortChannelId, PortChannelId),
-// }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ChannelSide {
@@ -329,19 +310,26 @@ impl Channel {
                 .map_err(|e| query_error(b_side_chain.id(), e))?,
         );
 
+        let src_connection_id = connection
+            .src_connection_id()
+            .ok_or_else(|| missing_local_connection_error(connection.src_chain().id()))?;
+        let dst_connection_id = connection
+            .dst_connection_id()
+            .ok_or_else(|| missing_local_connection_error(connection.dst_chain().id()))?;
+
         let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
                 connection.src_chain().clone(),
                 connection.src_client_id().clone(),
-                connection.src_connection_id().clone(),
+                src_connection_id.clone(),
                 a_port,
                 Default::default(),
             ),
             b_side: ChannelSide::new(
                 connection.dst_chain().clone(),
                 connection.dst_client_id().clone(),
-                connection.dst_connection_id().clone(),
+                dst_connection_id.clone(),
                 b_port,
                 Default::default(),
             ),
@@ -359,12 +347,9 @@ impl Channel {
         counterparty_chain: Box<dyn ChainHandle>,
         channel_open_event: IbcEvent,
     ) -> Result<Channel, Box<dyn std::error::Error>> {
-        let channel_event_attributes =
-            channel_open_event.channel_attributes().ok_or_else(|| {
-                invalid_channel_error(
-                    "A channel object must be build only from a channel event ".to_string(),
-                )
-            })?;
+        let channel_event_attributes = channel_open_event
+            .channel_attributes()
+            .ok_or_else(|| invalid_event_error(channel_open_event.clone()))?;
 
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id.clone();
@@ -431,7 +416,7 @@ impl Channel {
                 WorkerChannelError::ChannelConnectionUninitialized(
                     channel.src_channel_id.clone(),
                     chain.id(),
-                    a_connection.counterparty(),
+                    a_connection.counterparty().clone(),
                 )
             })?;
 
@@ -938,6 +923,7 @@ impl Channel {
                 self.dst_port_id().clone(),
                 self.src_chain().id(),
                 src_channel.counterparty().port_id.clone(),
+                src_channel_id.clone(),
             ));
         }
 
