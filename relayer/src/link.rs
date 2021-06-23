@@ -6,12 +6,12 @@ use std::thread;
 use std::time::Instant;
 
 use prost_types::Any;
-use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 
+use flex_error::{define_error, DisplayOnly};
 use ibc::{
-    downcast,
     events::{IbcEvent, IbcEventType, PrettyEvents},
+    ics02_client::error::Error as Ics02Error,
     ics03_connection::connection::State as ConnectionState,
     ics04_channel::{
         channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
@@ -45,42 +45,176 @@ use crate::transfer::PacketError;
 
 const MAX_RETRIES: usize = 5;
 
-#[allow(clippy::large_enum_variant)]
-#[derive(Debug, Error)]
-pub enum LinkError {
-    #[error("failed with underlying error: {0}")]
-    Failed(String),
+define_error! {
+    LinkError {
+        Failed
+            { reason: String }
+            | e | {
+                format!("failed with underlying error: {0}", e.reason )
+            },
 
-    #[error("failed with underlying error: {0}")]
-    Generic(#[from] Error),
+        Relayer
+            [ Error ]
+            |_| { "failed with underlying error" },
 
-    #[error("link initialization failed during channel counterparty verification: {0}")]
-    Initialization(ChannelError),
+        Initialization
+            [ ChannelError ]
+            |_| { "link initialization failed during channel counterparty verification" },
 
-    #[error("failed to construct packet proofs for chain {0} with error: {1}")]
-    PacketProofsConstructor(ChainId, Error),
+        PacketProofsConstructor
+            { chain_id: ChainId }
+            [ Error ]
+            |e| {
+                format!("failed to construct packet proofs for chain {0}", e.chain_id)
+            },
 
-    #[error("failed during query to chain id {0} with underlying error: {1}")]
-    QueryError(ChainId, Error),
+        Query
+            { chain_id: ChainId }
+            [ Error ]
+            |e| {
+                format!("failed during query to chain id {0}", e.chain_id)
+            },
 
-    #[error("connection error: {0}:")]
-    ConnectionError(#[from] ConnectionError),
+        Channel
+            [ ChannelError ]
+            |_| { "channel error" },
 
-    #[error("channel error:  {0}:")]
-    ChannelError(#[from] ChannelError),
+        ChannelNotFound
+            {
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            [ Error ]
+            |e| {
+                format!("channel {} does not exist on chain {}",
+                    e.channel_id, e.chain_id)
+            },
 
-    #[error("failed during a client operation: {0}:")]
-    ClientError(ForeignClientError),
+        Connection
+            [ DisplayOnly<ConnectionError> ]
+            |_| { "connection error" },
 
-    #[error("packet error: {0}:")]
-    PacketError(#[from] PacketError),
+        Client
+            [ ForeignClientError ]
+            |_| { "failed during a client operation" },
 
-    #[error("clearing of old packets failed")]
-    OldPacketClearingFailed,
+        Packet
+            [ DisplayOnly<PacketError> ]
+            |_| { "packet error" },
 
-    #[error("chain error when sending messages: {0}")]
-    SendError(Box<IbcEvent>),
+        OldPacketClearingFailed
+            |_| { "clearing of old packets failed" },
+
+        Send
+            { event: IbcEvent }
+            |e| {
+                format!("chain error when sending messages: {0}", e.event)
+            },
+
+        MissingChannelId
+            { chain_id: ChainId }
+            |e| {
+                format!("missing channel_id on chain {}", e.chain_id)
+            },
+
+        Signer
+            { chain_id: ChainId }
+            [ Error ]
+            |e| {
+                format!("could not retrieve signer from src chain {}", e.chain_id)
+            },
+
+        DecrementHeight
+            { height: Height }
+            [ Ics02Error ]
+            |e| {
+                format!("Cannot clear packets @height {}, because this height cannot be decremented", e.height)
+            },
+
+        UnexpectedEvent
+            { event: IbcEvent }
+            |e| {
+                format!("unexpected query tx response: {}", e.event)
+            },
+
+        InvalidChannelState
+            {
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format!("channel {} on chain {} not in open or close state when packets and timeouts can be relayed",
+                    e.channel_id, e.chain_id)
+            },
+
+        ChannelNotOpened
+            {
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format!("connection for channel {} on chain {} is not in open state",
+                    e.channel_id, e.chain_id)
+            },
+
+        CounterpartyChannelNotFound
+            {
+                channel_id: ChannelId,
+            }
+            |e| {
+                format!("counterparty channel id not found for {}",
+                    e.channel_id)
+            },
+
+        NoConnectionHop
+            {
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format!("channel {} on chain {} has no connection hops",
+                    e.channel_id, e.chain_id)
+            },
+
+    }
 }
+
+// #[allow(clippy::large_enum_variant)]
+// #[derive(Debug, Error)]
+// pub enum LinkError {
+//     #[error("failed with underlying error: {0}")]
+//     Failed(String),
+
+//     #[error("failed with underlying error: {0}")]
+//     Generic(#[from] Error),
+
+//     #[error("link initialization failed during channel counterparty verification: {0}")]
+//     Initialization(ChannelError),
+
+//     #[error("failed to construct packet proofs for chain {0} with error: {1}")]
+//     PacketProofsConstructor(ChainId, Error),
+
+//     #[error("failed during query to chain id {0} with underlying error: {1}")]
+//     QueryError(ChainId, Error),
+
+//     #[error("connection error: {0}:")]
+//     ConnectionError(#[from] ConnectionError),
+
+//     #[error("channel error:  {0}:")]
+//     ChannelError(#[from] ChannelError),
+
+//     #[error("failed during a client operation: {0}:")]
+//     ClientError(ForeignClientError),
+
+//     #[error("packet error: {0}:")]
+//     PacketError(#[from] PacketError),
+
+//     #[error("clearing of old packets failed")]
+//     OldPacketClearingFailed,
+
+//     #[error("chain error when sending messages: {0}")]
+//     SendError(Box<IbcEvent>),
+// }
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum OperationalDataTarget {
@@ -249,21 +383,15 @@ impl RelayPath {
     }
 
     pub fn src_channel_id(&self) -> Result<&ChannelId, LinkError> {
-        self.channel.src_channel_id().ok_or_else(|| {
-            LinkError::Failed(format!(
-                "channel_id on source chain '{}' is 'None'",
-                self.src_chain().id()
-            ))
-        })
+        self.channel
+            .src_channel_id()
+            .ok_or_else(|| missing_channel_id_error(self.src_chain().id()))
     }
 
     pub fn dst_channel_id(&self) -> Result<&ChannelId, LinkError> {
-        self.channel.dst_channel_id().ok_or_else(|| {
-            LinkError::Failed(format!(
-                "channel_id on destination chain '{}' is 'None'",
-                self.dst_chain().id()
-            ))
-        })
+        self.channel
+            .dst_channel_id()
+            .ok_or_else(|| missing_channel_id_error(self.dst_chain().id()))
     }
 
     pub fn channel(&self) -> &Channel {
@@ -271,43 +399,33 @@ impl RelayPath {
     }
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        Ok(self
-            .src_chain()
+        self.src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id()?, height)
-            .map_err(|e| channel::query_error(self.src_chain().id(), e))?)
+            .map_err(|e| channel_error(channel::query_error(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        Ok(self
-            .dst_chain()
+        self.dst_chain()
             .query_channel(self.dst_port_id(), self.dst_channel_id()?, height)
-            .map_err(|e| channel::query_error(self.src_chain().id(), e))?)
+            .map_err(|e| channel_error(channel::query_error(self.src_chain().id(), e)))
     }
 
     fn src_signer(&self) -> Result<Signer, LinkError> {
-        self.src_chain().get_signer().map_err(|e| {
-            LinkError::Failed(format!(
-                "could not retrieve signer from src chain {} with error: {}",
-                self.src_chain().id(),
-                e
-            ))
-        })
+        self.src_chain()
+            .get_signer()
+            .map_err(|e| signer_error(self.src_chain().id(), e))
     }
 
     fn dst_signer(&self) -> Result<Signer, LinkError> {
-        self.dst_chain().get_signer().map_err(|e| {
-            LinkError::Failed(format!(
-                "could not retrieve signer from dst chain {} with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })
+        self.dst_chain()
+            .get_signer()
+            .map_err(|e| signer_error(self.dst_chain().id(), e))
     }
 
     pub fn dst_latest_height(&self) -> Result<Height, LinkError> {
         self.dst_chain()
             .query_latest_height()
-            .map_err(|e| LinkError::QueryError(self.dst_chain().id(), e))
+            .map_err(|e| query_error(self.dst_chain().id(), e))
     }
 
     fn unordered_channel(&self) -> bool {
@@ -320,16 +438,12 @@ impl RelayPath {
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = self.restore_dst_client();
-        client
-            .build_update_client(height)
-            .map_err(LinkError::ClientError)
+        client.build_update_client(height).map_err(client_error)
     }
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = self.restore_src_client();
-        client
-            .build_update_client(height)
-            .map_err(LinkError::ClientError)
+        client.build_update_client(height).map_err(client_error)
     }
 
     fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
@@ -337,7 +451,7 @@ impl RelayPath {
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
-            .map_err(channel::channel_proof_error)?;
+            .map_err(|e| channel_error(channel::channel_proof_error(e)))?;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
@@ -408,7 +522,7 @@ impl RelayPath {
                 return Ok(());
             }
         }
-        Err(LinkError::OldPacketClearingFailed)
+        Err(old_packet_clearing_failed_error())
     }
 
     /// Should not run more than once per execution.
@@ -419,8 +533,9 @@ impl RelayPath {
                 self, above_height
             );
 
-            let clear_height = above_height.decrement().map_err(|e| LinkError::Failed(
-                format!("Cannot clear packets @height {}, because this height cannot be decremented: {}", above_height, e.to_string())))?;
+            let clear_height = above_height
+                .decrement()
+                .map_err(|e| decrement_height_error(above_height, e))?;
 
             self.relay_pending_packets(clear_height)?;
 
@@ -616,17 +731,18 @@ impl RelayPath {
 
                     return Ok(summary);
                 }
-                Err(LinkError::SendError(ev)) => {
-                    // This error means we can retry
-                    error!("[{}] error {}", self, ev);
-                    match self.regenerate_operational_data(odata.clone()) {
-                        None => return Ok(RelaySummary::empty()), // Nothing to retry
-                        Some(new_od) => odata = new_od,
-                    }
-                }
                 Err(e) => {
-                    // Unrecoverable error, propagate up the stack
-                    return Err(e);
+                    match e.detail {
+                        LinkErrorDetail::Send(ev) => {
+                            // This error means we can retry
+                            error!("[{}] error {}", self, ev);
+                            match self.regenerate_operational_data(odata.clone()) {
+                                None => return Ok(RelaySummary::empty()), // Nothing to retry
+                                Some(new_od) => odata = new_od,
+                            }
+                        }
+                        _ => return Err(e),
+                    }
                 }
             }
         }
@@ -730,7 +846,8 @@ impl RelayPath {
 
         let msgs = odata.assemble_msgs(self)?;
 
-        let tx_events = target.send_msgs(msgs)?;
+        let tx_events = target.send_msgs(msgs).map_err(relayer_error)?;
+
         info!("[{}] result {}\n", self, PrettyEvents(&tx_events));
 
         let ev = tx_events
@@ -739,20 +856,21 @@ impl RelayPath {
             .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
         match ev {
-            Some(ev) => Err(LinkError::SendError(Box::new(ev))),
+            Some(ev) => Err(send_error(ev)),
             None => Ok(RelaySummary::from_events(tx_events)),
         }
     }
 
     /// Checks if a sent packet has been received on destination.
     fn send_packet_received_on_dst(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let unreceived_packet =
-            self.dst_chain()
-                .query_unreceived_packets(QueryUnreceivedPacketsRequest {
-                    port_id: self.dst_port_id().to_string(),
-                    channel_id: self.dst_channel_id()?.to_string(),
-                    packet_commitment_sequences: vec![packet.sequence.into()],
-                })?;
+        let unreceived_packet = self
+            .dst_chain()
+            .query_unreceived_packets(QueryUnreceivedPacketsRequest {
+                port_id: self.dst_port_id().to_string(),
+                channel_id: self.dst_channel_id()?.to_string(),
+                packet_commitment_sequences: vec![packet.sequence.into()],
+            })
+            .map_err(relayer_error)?;
 
         Ok(unreceived_packet.is_empty())
     }
@@ -760,13 +878,16 @@ impl RelayPath {
     /// Checks if a packet commitment has been cleared on source.
     /// The packet commitment is cleared when either an acknowledgment or a timeout is received on source.
     fn send_packet_commitment_cleared_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let (bytes, _) = self.src_chain().build_packet_proofs(
-            PacketMsgType::Recv,
-            self.src_port_id(),
-            self.src_channel_id()?,
-            packet.sequence,
-            Height::zero(),
-        )?;
+        let (bytes, _) = self
+            .src_chain()
+            .build_packet_proofs(
+                PacketMsgType::Recv,
+                self.src_port_id(),
+                self.src_channel_id()?,
+                packet.sequence,
+                Height::zero(),
+            )
+            .map_err(relayer_error)?;
 
         Ok(bytes.is_empty())
     }
@@ -781,13 +902,14 @@ impl RelayPath {
     /// source chain of the packet, ie. the destination chain of the relay path
     /// that sends the acknowledgment.
     fn recv_packet_acknowledged_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let unreceived_ack =
-            self.dst_chain()
-                .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
-                    port_id: self.dst_port_id().to_string(),
-                    channel_id: self.dst_channel_id()?.to_string(),
-                    packet_ack_sequences: vec![packet.sequence.into()],
-                })?;
+        let unreceived_ack = self
+            .dst_chain()
+            .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
+                port_id: self.dst_port_id().to_string(),
+                channel_id: self.dst_channel_id()?.to_string(),
+                packet_ack_sequences: vec![packet.sequence.into()],
+            })
+            .map_err(relayer_error)?;
 
         Ok(unreceived_ack.is_empty())
     }
@@ -826,7 +948,11 @@ impl RelayPath {
                 i + 1, MAX_RETRIES,
             );
 
-            let dst_tx_events = self.dst_chain().send_msgs(dst_update)?;
+            let dst_tx_events = self
+                .dst_chain()
+                .send_msgs(dst_update)
+                .map_err(relayer_error)?;
+
             info!("[{}] result {}\n", self, PrettyEvents(&dst_tx_events));
 
             dst_err_ev = dst_tx_events
@@ -838,9 +964,10 @@ impl RelayPath {
             }
         }
 
-        Err(LinkError::ClientError(
-            foreign_client::chain_error_event_error(self.dst_chain().id(), dst_err_ev.unwrap()),
-        ))
+        Err(client_error(foreign_client::chain_error_event_error(
+            self.dst_chain().id(),
+            dst_err_ev.unwrap(),
+        )))
     }
 
     /// Handles updating the client on the source chain
@@ -863,7 +990,11 @@ impl RelayPath {
                 dst_chain_height,
             );
 
-            let src_tx_events = self.src_chain().send_msgs(src_update)?;
+            let src_tx_events = self
+                .src_chain()
+                .send_msgs(src_update)
+                .map_err(relayer_error)?;
+
             info!("[{}] result {}\n", self, PrettyEvents(&src_tx_events));
 
             src_err_ev = src_tx_events
@@ -875,9 +1006,10 @@ impl RelayPath {
             }
         }
 
-        Err(LinkError::ClientError(
-            foreign_client::chain_error_event_error(self.src_chain().id(), src_err_ev.unwrap()),
-        ))
+        Err(client_error(foreign_client::chain_error_event_error(
+            self.src_chain().id(),
+            src_err_ev.unwrap(),
+        )))
     }
 
     /// Returns relevant packet events for building RecvPacket and timeout messages.
@@ -896,8 +1028,10 @@ impl RelayPath {
             channel_id: src_channel_id.to_string(),
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
-        let (packet_commitments, src_response_height) =
-            self.src_chain().query_packet_commitments(pc_request)?;
+        let (packet_commitments, src_response_height) = self
+            .src_chain()
+            .query_packet_commitments(pc_request)
+            .map_err(relayer_error)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -905,6 +1039,7 @@ impl RelayPath {
             return Ok((events_result, query_height));
         }
         let commit_sequences = packet_commitments.iter().map(|p| p.sequence).collect();
+
         debug!(
             "[{}] packets that still have commitments on {}: {:?}",
             self,
@@ -921,7 +1056,8 @@ impl RelayPath {
 
         let sequences: Vec<Sequence> = self
             .dst_chain()
-            .query_unreceived_packets(request)?
+            .query_unreceived_packets(request)
+            .map_err(relayer_error)?
             .into_iter()
             .map(From::from)
             .collect();
@@ -948,13 +1084,16 @@ impl RelayPath {
             height: query_height,
         });
 
-        events_result = self.src_chain().query_txs(query)?;
+        events_result = self.src_chain().query_txs(query).map_err(relayer_error)?;
 
         let mut packet_sequences = vec![];
         for event in events_result.iter() {
-            let send_event = downcast!(event => IbcEvent::SendPacket)
-                .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
-            packet_sequences.push(send_event.packet.sequence);
+            match event {
+                IbcEvent::SendPacket(send_event) => {
+                    packet_sequences.push(send_event.packet.sequence);
+                }
+                _ => return Err(unexpected_event_error(event.clone())),
+            }
         }
         debug!("[{}] received from query_txs {:?}", self, packet_sequences);
 
@@ -981,7 +1120,7 @@ impl RelayPath {
         let (acks_on_source, src_response_height) = self
             .src_chain()
             .query_packet_acknowledgements(pc_request)
-            .map_err(|e| LinkError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| query_error(self.src_chain().id(), e))?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -1006,7 +1145,7 @@ impl RelayPath {
         let sequences: Vec<Sequence> = self
             .dst_chain()
             .query_unreceived_acknowledgement(request)
-            .map_err(|e| LinkError::QueryError(self.dst_chain().id(), e))?
+            .map_err(|e| query_error(self.dst_chain().id(), e))?
             .into_iter()
             .map(From::from)
             .collect();
@@ -1033,13 +1172,18 @@ impl RelayPath {
                 sequences,
                 height: query_height,
             }))
-            .map_err(|e| LinkError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| query_error(self.src_chain().id(), e))?;
 
         let mut packet_sequences = vec![];
         for event in events_result.iter() {
-            let write_ack_event = downcast!(event => IbcEvent::WriteAcknowledgement)
-                .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
-            packet_sequences.push(write_ack_event.packet.sequence);
+            match event {
+                IbcEvent::WriteAcknowledgement(write_ack_event) => {
+                    packet_sequences.push(write_ack_event.packet.sequence);
+                }
+                _ => {
+                    return Err(unexpected_event_error(event.clone()));
+                }
+            }
         }
         info!("[{}] received from query_txs {:?}", self, packet_sequences);
 
@@ -1107,7 +1251,7 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain().id(), e))?;
+            .map_err(|e| packet_proofs_constructor_error(self.src_chain().id(), e))?;
 
         let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?);
 
@@ -1136,7 +1280,7 @@ impl RelayPath {
                 packet.sequence,
                 event.height,
             )
-            .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain().id(), e))?;
+            .map_err(|e| packet_proofs_constructor_error(self.src_chain().id(), e))?;
 
         let msg = MsgAcknowledgement::new(
             packet,
@@ -1169,7 +1313,7 @@ impl RelayPath {
                     port_id: self.dst_port_id().to_string(),
                     channel_id: dst_channel_id.to_string(),
                 })
-                .map_err(|e| channel::query_error(self.dst_chain().id(), e))?;
+                .map_err(|e| channel_error(channel::query_error(self.dst_chain().id(), e)))?;
             (PacketMsgType::TimeoutOrdered, next_seq)
         } else {
             (PacketMsgType::TimeoutUnordered, packet.sequence)
@@ -1184,7 +1328,7 @@ impl RelayPath {
                 next_sequence_received,
                 height,
             )
-            .map_err(|e| LinkError::PacketProofsConstructor(self.dst_chain().id(), e))?;
+            .map_err(|e| packet_proofs_constructor_error(self.dst_chain().id(), e))?;
 
         let msg = MsgTimeout::new(
             packet.clone(),
@@ -1217,7 +1361,7 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| LinkError::PacketProofsConstructor(self.dst_chain().id(), e))?;
+            .map_err(|e| packet_proofs_constructor_error(self.dst_chain().id(), e))?;
 
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),
@@ -1555,12 +1699,7 @@ impl Link {
             .src_chain()
             .query_channel(self.a_to_b.src_port_id(), a_channel_id, Height::default())
             .map_err(|e| {
-                LinkError::Failed(format!(
-                    "channel {} does not exist on chain {}; context={}",
-                    a_channel_id,
-                    self.a_to_b.src_chain().id(),
-                    e
-                ))
+                channel_not_found_error(a_channel_id.clone(), self.a_to_b.src_chain().id(), e)
             })?;
 
         let b_channel_id = self.a_to_b.dst_channel_id()?;
@@ -1570,12 +1709,7 @@ impl Link {
             .dst_chain()
             .query_channel(self.a_to_b.dst_port_id(), b_channel_id, Height::default())
             .map_err(|e| {
-                LinkError::Failed(format!(
-                    "channel {} does not exist on chain {}; context={}",
-                    b_channel_id,
-                    self.a_to_b.dst_chain().id(),
-                    e
-                ))
+                channel_not_found_error(b_channel_id.clone(), self.a_to_b.dst_chain().id(), e)
             })?;
 
         if a_channel.state_matches(&ChannelState::Closed)
@@ -1596,38 +1730,25 @@ impl Link {
         let a_channel_id = &opts.src_channel_id;
         let a_channel = a_chain
             .query_channel(&opts.src_port_id, a_channel_id, Height::default())
-            .map_err(|e| {
-                LinkError::Failed(format!(
-                    "channel {} does not exist on chain {}; context={}",
-                    a_channel_id.clone(),
-                    a_chain.id(),
-                    e
-                ))
-            })?;
+            .map_err(|e| channel_not_found_error(a_channel_id.clone(), a_chain.id(), e))?;
 
         if !a_channel.state_matches(&ChannelState::Open)
             && !a_channel.state_matches(&ChannelState::Closed)
         {
-            return Err(LinkError::Failed(format!(
-                "channel {} on chain {} not in open or close state when packets and timeouts can be relayed",
+            return Err(invalid_channel_state_error(
                 a_channel_id.clone(),
-                a_chain.id()
-            )));
+                a_chain.id(),
+            ));
         }
 
-        let b_channel_id = a_channel.counterparty().channel_id.clone().ok_or_else(|| {
-            LinkError::Failed(format!(
-                "counterparty channel id not found for {}",
-                a_channel_id
-            ))
-        })?;
+        let b_channel_id = a_channel
+            .counterparty()
+            .channel_id
+            .clone()
+            .ok_or_else(|| counterparty_channel_not_found_error(a_channel_id.clone()))?;
 
         if a_channel.connection_hops().is_empty() {
-            return Err(LinkError::Failed(format!(
-                "channel {} on chain {} has no connection hops",
-                a_channel_id.clone(),
-                a_chain.id()
-            )));
+            return Err(no_connection_hop_error(a_channel_id.clone(), a_chain.id()));
         }
 
         // Check that the counterparty details on the destination chain matches the source chain
@@ -1642,18 +1763,16 @@ impl Link {
                 port_id: opts.src_port_id.clone(),
             },
         )
-        .map_err(LinkError::Initialization)?;
+        .map_err(initialization_error)?;
 
         // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
-        let a_connection = a_chain.query_connection(&a_connection_id, Height::zero())?;
+        let a_connection = a_chain
+            .query_connection(&a_connection_id, Height::zero())
+            .map_err(relayer_error)?;
 
         if !a_connection.state_matches(&ConnectionState::Open) {
-            return Err(LinkError::Failed(format!(
-                "connection for channel {} on chain {} not in open state",
-                a_channel_id.clone(),
-                a_chain.id()
-            )));
+            return Err(channel_not_opened_error(a_channel_id.clone(), a_chain.id()));
         }
 
         let channel = Channel {
