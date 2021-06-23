@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::{
     chain::handle::ChainHandlePair,
@@ -15,6 +15,11 @@ use crate::{
 };
 
 use super::WorkerCmd;
+
+enum Step {
+    Success(RelaySummary),
+    Shutdown,
+}
 
 #[derive(Debug)]
 pub struct UniChanPathWorker {
@@ -60,12 +65,17 @@ impl UniChanPathWorker {
             thread::sleep(Duration::from_millis(200));
 
             let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                Self::step(self.cmd_rx.try_recv().ok(), &mut link, index)
+                self.step(self.cmd_rx.try_recv().ok(), &mut link, index)
             });
 
             match result {
-                Ok(_summary) => {
+                Ok(Step::Success(_summary)) => {
                     telemetry!(self.packet_metrics(&_summary));
+                }
+
+                Ok(Step::Shutdown) => {
+                    info!(path = %self.path.short_name(), "shutting down UnidirectionalChannelPath worker");
+                    return Ok(());
                 }
 
                 Err(retries) => {
@@ -79,21 +89,26 @@ impl UniChanPathWorker {
         }
     }
 
-    fn step(cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<RelaySummary, u64> {
+    fn step(&self, cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<Step, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
                 WorkerCmd::IbcEvents { batch } => {
                     // Update scheduled batches.
                     link.a_to_b.update_schedule(batch)
                 }
+
                 WorkerCmd::NewBlock {
                     height,
                     new_block: _,
                 } => link.a_to_b.clear_packets(height),
+
+                WorkerCmd::Shutdown => {
+                    return RetryResult::Ok(Step::Shutdown);
+                }
             };
 
             if let Err(e) = result {
-                error!("{}", e);
+                error!(path = %self.path.short_name(), "{}", e);
                 return RetryResult::Retry(index);
             }
         }
@@ -104,9 +119,9 @@ impl UniChanPathWorker {
             .and_then(|_| link.a_to_b.execute_schedule());
 
         match result {
-            Ok(summary) => RetryResult::Ok(summary),
+            Ok(summary) => RetryResult::Ok(Step::Success(summary)),
             Err(e) => {
-                error!("{}", e);
+                error!(path = %self.path.short_name(), "{}", e);
                 RetryResult::Retry(index)
             }
         }

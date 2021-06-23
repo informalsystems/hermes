@@ -37,6 +37,7 @@ pub type RwArc<T> = Arc<RwLock<T>>;
 #[derive(Clone, Debug)]
 pub enum SupervisorCmd {
     AddChain(ChainConfig),
+    RemoveChain(ChainId),
 }
 
 /// The supervisor listens for events on multiple pairs of chains,
@@ -266,6 +267,7 @@ impl Supervisor {
     fn handle_cmd(&mut self, cmd: SupervisorCmd) -> bool {
         match cmd {
             SupervisorCmd::AddChain(config) => self.add_chain(config),
+            SupervisorCmd::RemoveChain(id) => self.remove_chain(id),
         }
     }
 
@@ -285,10 +287,32 @@ impl Supervisor {
             .push(config);
 
         debug!(chain.id=%id, "Spawning chain runtime");
-        self.registry.get_or_spawn(&id).unwrap();
+        self.registry.get_or_spawn(&id).unwrap(); // FIXME: unwrap
 
-        debug!(chain.id=%id, "Spawning workers",);
+        debug!(chain.id=%id, "Spawning workers");
         self.spawn_context().spawn_workers_for_chain(&id);
+
+        true
+    }
+
+    fn remove_chain(&mut self, id: ChainId) -> bool {
+        if !self.config.read().expect("poisoned lock").has_chain(&id) {
+            info!(chain.id=%id, "Skipping removal of non-existing chain");
+            return false;
+        }
+
+        info!(chain.id=%id, "Removing exsting chain");
+        self.config
+            .write()
+            .expect("poisoned lock")
+            .chains
+            .retain(|c| c.id != id);
+
+        debug!(chain.id=%id, "Shutting down workers");
+        self.spawn_context().shutdown_workers_for_chain(&id);
+
+        // debug!(chain.id=%id, "Shutting down chain runtime");
+        // self.registry.shutdown(&id).unwrap(); // FIXME: unwrap
 
         true
     }

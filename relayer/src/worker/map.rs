@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crossbeam_channel::Sender;
 
 use ibc::ics24_host::identifier::ChainId;
+use tracing::warn;
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
@@ -97,6 +98,27 @@ impl WorkerMap {
             self.msg_tx.clone(),
             self.telemetry.clone(),
         )
+    }
+
+    pub fn objects_for_chain(&self, chain_id: &ChainId) -> Vec<Object> {
+        self.workers
+            .keys()
+            .filter(|o| o.for_chain(chain_id))
+            .cloned()
+            .collect()
+    }
+
+    pub fn shutdown_worker(&mut self, object: &Object) {
+        if let Some(handle) = self.workers.remove(object) {
+            match handle.shutdown() {
+                Ok(()) => {
+                    let _ = handle.join();
+                }
+                Err(e) => {
+                    warn!(object = %object.short_name(), "a worker may have failed to shutdown properly: {}", e);
+                }
+            }
+        }
     }
 }
 

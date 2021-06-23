@@ -435,4 +435,11 @@ impl<'a> SpawnContext<'a> {
 
         Ok(())
     }
+
+    pub fn shutdown_workers_for_chain(&mut self, chain_id: &ChainId) {
+        let affected_workers = self.workers.objects_for_chain(chain_id);
+        for object in affected_workers {
+            self.workers.shutdown_worker(&object);
+        }
+    }
 }

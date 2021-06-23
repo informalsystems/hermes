@@ -139,9 +139,21 @@ impl Object {
     pub fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
         match self {
             Object::Client(_) => false,
-            Object::Connection(c) => c.src_chain_id == *src_chain_id,
-            Object::Channel(c) => c.src_chain_id == *src_chain_id,
-            Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
+            Object::Connection(c) => &c.src_chain_id == src_chain_id,
+            Object::Channel(c) => &c.src_chain_id == src_chain_id,
+            Object::UnidirectionalChannelPath(p) => &p.src_chain_id == src_chain_id,
+        }
+    }
+
+    /// Returns whether or not this object pertains to the given chain.
+    pub fn for_chain(&self, chain_id: &ChainId) -> bool {
+        match self {
+            Object::Client(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
+            Object::Connection(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
+            Object::Channel(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
+            Object::UnidirectionalChannelPath(p) => {
+                &p.src_chain_id == chain_id || &p.dst_chain_id == chain_id
+            }
         }
     }
 }

@@ -81,6 +81,11 @@ fn spawn_supervisor(config: Config) -> Result<Supervisor, Box<dyn Error + Send +
 
         tx.send(SupervisorCmd::AddChain(get_basic_chain_config()))
             .unwrap();
+
+        std::thread::sleep(Duration::from_secs(5));
+
+        tx.send(SupervisorCmd::RemoveChain("ibc-0".parse().unwrap()))
+            .unwrap();
     });
 
     Ok(supervisor)
