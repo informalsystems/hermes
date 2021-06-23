@@ -206,19 +206,22 @@ impl Supervisor {
     pub fn run(mut self) -> Result<(), BoxError> {
         self.spawn_workers();
 
-        let subscriptions = self.init_subscriptions()?;
+        let mut subscriptions = self.init_subscriptions()?;
 
         loop {
             if let Some((chain, batch)) = try_recv_multiple(&subscriptions) {
                 self.handle_batch(chain.clone(), batch);
             }
 
-            if let Ok(cmd) = self.cmd_rx.try_recv() {
-                self.handle_cmd(cmd);
-            }
-
             if let Ok(msg) = self.worker_msg_rx.try_recv() {
                 self.handle_worker_msg(msg);
+            }
+
+            if let Ok(cmd) = self.cmd_rx.try_recv() {
+                let reinit = self.handle_cmd(cmd);
+                if reinit {
+                    subscriptions = self.init_subscriptions()?;
+                }
             }
 
             std::thread::sleep(Duration::from_millis(50));
@@ -260,13 +263,13 @@ impl Supervisor {
         Ok(subscriptions)
     }
 
-    fn handle_cmd(&mut self, cmd: SupervisorCmd) {
+    fn handle_cmd(&mut self, cmd: SupervisorCmd) -> bool {
         match cmd {
             SupervisorCmd::AddChain(config) => self.add_chain(config),
         }
     }
 
-    fn add_chain(&mut self, config: ChainConfig) {
+    fn add_chain(&mut self, config: ChainConfig) -> bool {
         let id = config.id.clone();
 
         info!(chain.id=%id, "Adding new chain");
@@ -281,6 +284,8 @@ impl Supervisor {
 
         debug!(chain.id=%id, "Spawning workers",);
         self.spawn_context().spawn_workers_for_chain(&id);
+
+        true
     }
 
     /// Process the given [`WorkerMsg`] sent by a worker.
