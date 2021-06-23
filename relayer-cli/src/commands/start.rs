@@ -29,6 +29,8 @@ impl Runnable for StartCmd {
 fn spawn_supervisor(config: Config) -> Result<Supervisor, Box<dyn Error + Send + Sync>> {
     use std::sync::{Arc, RwLock};
 
+    use ibc_relayer::supervisor::ConfigUpdate;
+
     let state = ibc_telemetry::new_state();
 
     if config.telemetry.enabled {
@@ -79,13 +81,17 @@ fn spawn_supervisor(config: Config) -> Result<Supervisor, Box<dyn Error + Send +
 
         std::thread::sleep(Duration::from_secs(5));
 
-        tx.send(SupervisorCmd::AddChain(get_basic_chain_config()))
-            .unwrap();
+        tx.send(SupervisorCmd::UpdateConfig(ConfigUpdate::Add(
+            get_basic_chain_config(),
+        )))
+        .unwrap();
 
         std::thread::sleep(Duration::from_secs(5));
 
-        tx.send(SupervisorCmd::RemoveChain("ibc-0".parse().unwrap()))
-            .unwrap();
+        tx.send(SupervisorCmd::UpdateConfig(ConfigUpdate::Remove(
+            "ibc-0".parse().unwrap(),
+        )))
+        .unwrap();
     });
 
     Ok(supervisor)

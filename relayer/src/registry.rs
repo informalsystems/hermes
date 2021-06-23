@@ -55,14 +55,12 @@ impl Registry {
     }
 
     /// Shutdown the runtime associated with the given chain identifier.
-    pub fn shutdown(&mut self, chain_id: &ChainId) -> Result<(), BoxError> {
+    pub fn shutdown(&mut self, chain_id: &ChainId) {
         if let Some(handle) = self.handles.remove(chain_id) {
             if let Err(e) = handle.shutdown() {
                 warn!(chain.id = %chain_id, "chain runtime might have failed to shutdown properly: {}", e);
             }
         }
-
-        Ok(())
     }
 }
 

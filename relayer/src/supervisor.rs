@@ -35,9 +35,15 @@ type BoxHandle = Box<dyn ChainHandle>;
 pub type RwArc<T> = Arc<RwLock<T>>;
 
 #[derive(Clone, Debug)]
+pub enum ConfigUpdate {
+    Add(ChainConfig),
+    Remove(ChainId),
+    Update(ChainConfig),
+}
+
+#[derive(Clone, Debug)]
 pub enum SupervisorCmd {
-    AddChain(ChainConfig),
-    RemoveChain(ChainId),
+    UpdateConfig(ConfigUpdate),
 }
 
 /// The supervisor listens for events on multiple pairs of chains,
@@ -266,8 +272,15 @@ impl Supervisor {
 
     fn handle_cmd(&mut self, cmd: SupervisorCmd) -> bool {
         match cmd {
-            SupervisorCmd::AddChain(config) => self.add_chain(config),
-            SupervisorCmd::RemoveChain(id) => self.remove_chain(id),
+            SupervisorCmd::UpdateConfig(update) => self.update_config(update),
+        }
+    }
+
+    fn update_config(&mut self, update: ConfigUpdate) -> bool {
+        match update {
+            ConfigUpdate::Add(config) => self.add_chain(config),
+            ConfigUpdate::Remove(id) => self.remove_chain(&id),
+            ConfigUpdate::Update(config) => self.update_chain(config),
         }
     }
 
@@ -295,7 +308,7 @@ impl Supervisor {
         true
     }
 
-    fn remove_chain(&mut self, id: ChainId) -> bool {
+    fn remove_chain(&mut self, id: &ChainId) -> bool {
         if !self.config.read().expect("poisoned lock").has_chain(&id) {
             info!(chain.id=%id, "Skipping removal of non-existing chain");
             return false;
@@ -306,15 +319,21 @@ impl Supervisor {
             .write()
             .expect("poisoned lock")
             .chains
-            .retain(|c| c.id != id);
+            .retain(|c| &c.id != id);
 
         debug!(chain.id=%id, "Shutting down workers");
         self.spawn_context().shutdown_workers_for_chain(&id);
 
         debug!(chain.id=%id, "Shutting down chain runtime");
-        self.registry.shutdown(&id).unwrap(); // FIXME: unwrap
+        self.registry.shutdown(&id);
 
         true
+    }
+
+    fn update_chain(&mut self, config: ChainConfig) -> bool {
+        let removed = self.remove_chain(&config.id);
+        let added = self.add_chain(config);
+        removed || added
     }
 
     /// Process the given [`WorkerMsg`] sent by a worker.
