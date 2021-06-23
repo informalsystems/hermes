@@ -15,12 +15,6 @@ use crate::error::Error;
 
 define_error! {
     UpgradeChainError {
-        Failed
-            { reason: String }
-            |e| {
-                format!("failed with underlying cause: {0}", e.reason)
-            },
-
         Key
             [ Error ]
             |_| { "key error" },

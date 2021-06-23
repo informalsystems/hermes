@@ -49,12 +49,6 @@ define_error! {
                     e.channel_id, e.chain_id)
             },
 
-        Failed
-            { reason: String }
-            |e| {
-                format!("query failed with error: {0}", e.reason)
-            },
-
         Relayer
             [ RelayerError ]
             |_| { "relayer error" },

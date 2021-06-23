@@ -51,13 +51,6 @@ mod retry_strategy {
 
 define_error! {
     ChannelError {
-        Failed
-            { reason: String }
-            | e | {
-                format_args!("failed with underlying cause: {0}",
-                    e.reason)
-            },
-
         InvalidChannel
             { reason: String }
             | e | {

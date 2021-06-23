@@ -47,12 +47,6 @@ const MAX_RETRIES: usize = 5;
 
 define_error! {
     LinkError {
-        Failed
-            { reason: String }
-            | e | {
-                format!("failed with underlying error: {0}", e.reason )
-            },
-
         Relayer
             [ Error ]
             |_| { "failed with underlying error" },

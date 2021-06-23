@@ -35,18 +35,6 @@ const MAX_RETRIES: usize = 5;
 
 define_error! {
     ConnectionError {
-        Failed
-            { reason: String }
-            |e| {
-                format!("failed with underlying cause: {0}", e.reason)
-            },
-
-        ConstructorFailed
-            { reason: String }
-            |e| {
-                format!("connection constructor error: {0}", e.reason)
-            },
-
         MissingLocalConnectionId
             |_| { "failed due to missing local channel id" },
 

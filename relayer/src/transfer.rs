@@ -14,12 +14,6 @@ use crate::error::Error;
 
 define_error! {
     PacketError {
-        Failed
-            { reason: String }
-            |e| {
-                format!("failed with underlying cause: {0}", e.reason)
-            },
-
         Relayer
             [ Error ]
             |_| { "relayer error" },
