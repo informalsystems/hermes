@@ -20,7 +20,8 @@ pub fn get_all_events(
     let mut vals: Vec<(Height, IbcEvent)> = vec![];
 
     match &result.data {
-        RpcEventData::NewBlock { block, .. } => {
+        RpcEventData::NewBlock { block, result_begin_block, result_end_block } => {
+            tracing::trace!("Got begin block {:#?}, end block {:#?}", result_begin_block, result_end_block);
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
@@ -29,7 +30,9 @@ pub fn get_all_events(
             vals.push((height, NewBlock::new(height).into()));
         }
 
-        RpcEventData::Tx { .. } => {
+        RpcEventData::Tx { tx_result } => {
+            tracing::trace!("Got Tx events {:#?}", tx_result);
+
             let events = &result.events.ok_or("missing events")?;
             let height_raw = events.get("tx.height").ok_or("tx.height")?[0]
                 .parse::<u64>()
@@ -81,7 +84,7 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
         )?)),
 
         // Channel events
-        "channel_open_init" => Ok(IbcEvent::from(ChannelEvents::OpenInit::try_from(object)?)),
+        "channel_open_init" | "register" => Ok(IbcEvent::from(ChannelEvents::OpenInit::try_from(object)?)),
         "channel_open_try" => Ok(IbcEvent::from(ChannelEvents::OpenTry::try_from(object)?)),
         "channel_open_ack" => Ok(IbcEvent::from(ChannelEvents::OpenAck::try_from(object)?)),
         "channel_open_confirm" => Ok(IbcEvent::from(ChannelEvents::OpenConfirm::try_from(
@@ -99,7 +102,7 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
         // - "register" and "send" for ICS27
         // However the attributes are all prefixed with "send_packet" therefore the overwrite here
         // TODO: This need to be sorted out
-        "transfer" | "register" | "send" => {
+        "transfer" | "send" => {
             object.action = "send_packet".to_string();
             Ok(IbcEvent::from(ChannelEvents::SendPacket::try_from(object)?))
         }
