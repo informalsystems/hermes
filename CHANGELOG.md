@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-> Nothing yet.
+### IMPROVEMENTS
+
+- Update to `tendermint-rs` v0.19.0 ([#1125])
+
+[#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
+
 
 ## v0.5.0
 *June 22nd, 2021*
