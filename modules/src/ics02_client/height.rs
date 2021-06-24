@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-use flex_error::{define_error, DisplayError};
+use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -141,7 +141,7 @@ define_error! {
     Error {
         HeightConversion
             { height: String }
-            [ DisplayError<ParseIntError> ]
+            [ TraceError<ParseIntError> ]
             | e | {
                 format_args!("cannot convert into a `Height` type from string {0}",
                     e.height)

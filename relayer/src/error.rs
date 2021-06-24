@@ -2,7 +2,7 @@
 
 use crate::keyring::errors::Error as KeyringError;
 use crate::sdk_error::SdkError;
-use flex_error::{define_error, DisplayOnly};
+use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use prost::DecodeError;
 use tendermint_light_client::{
@@ -32,24 +32,24 @@ use crate::event::monitor;
 define_error! {
     Error {
         ConfigIo
-            [ DisplayOnly<std::io::Error> ]
+            [ TraceError<std::io::Error> ]
             |_| { "config I/O error" },
 
         Io
-            [ DisplayOnly<std::io::Error> ]
+            [ TraceError<std::io::Error> ]
             |_| { "I/O error" },
 
         ConfigDecode
-            [ DisplayOnly<toml::de::Error> ]
+            [ TraceError<toml::de::Error> ]
             |_| { "invalid configuration" },
 
         ConfigEncode
-            [ DisplayOnly<toml::ser::Error> ]
+            [ TraceError<toml::ser::Error> ]
             |_| { "invalid configuration" },
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ DisplayOnly<TendermintError> ]
+            [ TraceClone<TendermintError> ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -86,7 +86,7 @@ define_error! {
             |e| { format!("GRPC call return error status {0}", e.status) },
 
         GrpcTransport
-            [ DisplayOnly<TransportError> ]
+            [ TraceError<TransportError> ]
             |_| { "error in underlying transport when making GRPC call" },
 
         GrpcResponseParam
@@ -94,17 +94,17 @@ define_error! {
             |e| { format!("missing parameter in GRPC response: {}", e.param) },
 
         Decode
-            [ DisplayOnly<TendermintProtoError> ]
+            [ TraceError<TendermintProtoError> ]
             |_| { "error decoding protobuf" },
 
         LightClient
             { address: String }
-            [ DisplayOnly<LightClientError> ]
+            [ TraceError<LightClientError> ]
             |e| { format!("Light client error for RPC address {0}", e.address) },
 
         LightClientIo
             { address: String }
-            [ DisplayOnly<LightClientIoError> ]
+            [ TraceError<LightClientIoError> ]
             |e| { format!("Light client error for RPC address {0}", e.address) },
 
         ChainNotCaughtUp
@@ -118,7 +118,7 @@ define_error! {
             |_| { "requested proof for a path in the private store" },
 
         Store
-            [ DisplayOnly<sled::Error> ]
+            [ TraceError<sled::Error> ]
             |_| { "Store error" },
 
         Event
@@ -142,7 +142,7 @@ define_error! {
             |_| { "Invalid height" },
 
         InvalidMetadata
-            [ DisplayOnly<InvalidMetadataValue> ]
+            [ TraceError<InvalidMetadataValue> ]
             |_| { "invalid metadata" },
 
         BuildClientStateFailure
@@ -258,7 +258,7 @@ define_error! {
 
         InvalidUri
             { uri: String }
-            [ DisplayOnly<InvalidUri> ]
+            [ TraceError<InvalidUri> ]
             |e| {
                 format!("error parsing URI {}", e.uri)
             },
@@ -292,7 +292,7 @@ define_error! {
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding
-            [ DisplayOnly<bech32::Error> ]
+            [ TraceError<bech32::Error> ]
             |_| { "bech32 encoding failed" },
 
         ClientTypeMismatch
@@ -307,11 +307,11 @@ define_error! {
 
         ProtobufDecode
             { payload_type: String }
-            [ DisplayOnly<DecodeError> ]
+            [ TraceError<DecodeError> ]
             |e| { format!("Error decoding protocol buffer for {}", e.payload_type) },
 
         Cbor
-            [ DisplayOnly<serde_cbor::Error> ]
+            [ TraceError<serde_cbor::Error> ]
             | _ | { "error decoding CBOR payload" },
 
         TxSimulateGasEstimateExceeded

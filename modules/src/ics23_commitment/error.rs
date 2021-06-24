@@ -1,15 +1,15 @@
-use flex_error::{define_error, DetailOnly};
+use flex_error::{define_error, TraceError};
 use prost::DecodeError;
 
 define_error! {
     #[derive(Debug, Clone)]
     Error {
         InvalidRawMerkleProof
-        [ DetailOnly<DecodeError> ]
-        |_| { "invalid raw merkle proof" },
+            [ TraceError<DecodeError> ]
+            |_| { "invalid raw merkle proof" },
 
         CommitmentProofDecodingFailed
-        [ DetailOnly<DecodeError> ]
-        |_| { "failed to decode commitment proof" },
+            [ TraceError<DecodeError> ]
+            |_| { "failed to decode commitment proof" },
     }
 }

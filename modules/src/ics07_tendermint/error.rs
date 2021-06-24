@@ -1,6 +1,5 @@
 use crate::ics24_host::error::ValidationError;
-use flex_error::{define_error, DisplayError, DisplayOnly};
-use tendermint::error::Error as TendermintError;
+use flex_error::{define_error, DisplayOnly};
 
 define_error! {
     Error {
@@ -17,7 +16,7 @@ define_error! {
 
         InvalidHeader
             { reason: String }
-            [ DisplayOnly<TendermintError> ]
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
             | _ | { "invalid header, failed basic validation" },
 
         MissingSignedHeader
@@ -47,7 +46,7 @@ define_error! {
             | _ | { "missing unbonding period" },
 
         InvalidChainIdentifier
-            [ DisplayError<ValidationError> ]
+            [ ValidationError ]
             | _ | { "Invalid chain identifier" },
 
         NegativeTrustingPeriod
@@ -81,7 +80,7 @@ define_error! {
             | _ | { "invalid raw client consensus state" },
 
         InvalidRawHeader
-            [ DisplayOnly<TendermintError> ]
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour

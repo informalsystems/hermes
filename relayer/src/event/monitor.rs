@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, sync::Arc};
 
 use crossbeam_channel as channel;
-use flex_error::{define_error, DisplayOnly};
+use flex_error::{define_error, TraceError};
 use futures::{
     pin_mut,
     stream::{self, select_all, StreamExt},
@@ -44,27 +44,27 @@ define_error! {
     #[derive(Debug, Clone)]
     Error {
         WebSocketDriver
-            [ DisplayOnly<RpcError> ]
+            [ TraceError<RpcError> ]
             |_| { "WebSocket driver failed" },
 
         ClientCreationFailed
-            [ DisplayOnly<RpcError> ]
+            [ TraceError<RpcError> ]
             |_| { "failed to create WebSocket driver" },
 
         ClientTerminationFailed
-            [ DisplayOnly<tokio::task::JoinError> ]
+            [ TraceError<tokio::task::JoinError> ]
             |_| { "failed to terminate previous WebSocket driver" },
 
         ClientCompletionFailed
-            [ DisplayOnly<RpcError> ]
+            [ TraceError<RpcError> ]
             |_| { "failed to run previous WebSocket driver to completion" },
 
         ClientSubscriptionFailed
-            [ DisplayOnly<RpcError> ]
+            [ TraceError<RpcError> ]
             |_| { "failed to run previous WebSocket driver to completion" },
 
         NextEventBatchFailed
-            [ DisplayOnly<RpcError> ]
+            [ TraceError<RpcError> ]
             |_| { "failed to collect events over WebSocket subscription" },
 
         CollectEventsFailed

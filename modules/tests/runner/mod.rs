@@ -88,7 +88,7 @@ impl IbcTestRunner {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
         match ics18_error.detail {
             relayer_error::ErrorDetail::TransactionFailed(e) => match e.source {
-                routing_error::ErrorDetail::Ics02Client(e) => e.source.detail,
+                routing_error::ErrorDetail::Ics02Client(e) => e.source,
                 e => {
                     panic!("Expected Ics02Client error, instead got {:?}", e);
                 }
@@ -106,7 +106,7 @@ impl IbcTestRunner {
 
         match ics18_error.detail {
             relayer_error::ErrorDetail::TransactionFailed(e) => match e.source {
-                routing_error::ErrorDetail::Ics03Connection(e) => e.source.detail,
+                routing_error::ErrorDetail::Ics03Connection(e) => e.source,
                 e => {
                     panic!("Expected Ics02Client error, instead got {:?}", e);
                 }

@@ -6,10 +6,9 @@ use crate::Height;
 use std::num::TryFromIntError;
 use tendermint_proto::Error as TendermintError;
 
-use flex_error::{define_error, DisplayOnly};
+use flex_error::{define_error, TraceError};
 
 define_error! {
-    #[derive(Debug, PartialEq, Eq)]
     Error {
         UnknownClientType
             { client_type: String }
@@ -92,14 +91,14 @@ define_error! {
             },
 
         DecodeRawClientState
-            [ DisplayOnly<TendermintError> ]
+            [ TraceError<TendermintError> ]
             | _ | { "error decoding raw client state" },
 
         MissingRawClientState
             | _ | { "missing raw client state" },
 
         InvalidRawConsensusState
-            [ DisplayOnly<TendermintError> ]
+            [ TraceError<TendermintError> ]
             | _ | { "invalid raw client consensus state" },
 
         MissingRawConsensusState
@@ -117,14 +116,14 @@ define_error! {
             | _ | { "invalid client identifier" },
 
         InvalidRawHeader
-            [ DisplayOnly<TendermintError> ]
+            [ TraceError<TendermintError> ]
             | _ | { "invalid raw header" },
 
         MissingRawHeader
             | _ | { "missing raw header" },
 
         DecodeRawMisbehaviour
-            [ DisplayOnly<TendermintError> ]
+            [ TraceError<TendermintError> ]
             | _ | { "invalid raw misbehaviour" },
 
         InvalidRawMisbehaviour
@@ -141,15 +140,15 @@ define_error! {
             | _ | { "invalid address" },
 
         InvalidUpgradeClientProof
-            [ DisplayOnly<Ics23Error> ]
+            [ Ics23Error ]
             | _ | { "invalid proof for the upgraded client state" },
 
         InvalidUpgradeConsensusStateProof
-            [ DisplayOnly<Ics23Error> ]
+            [ Ics23Error ]
             | _ | { "invalid proof for the upgraded consensus state" },
 
         InvalidPacketTimestamp
-            [ DisplayOnly<TryFromIntError> ]
+            [ TraceError<TryFromIntError> ]
             | _ | { "invalid packet timeout timestamp value" },
 
         ClientArgsTypeMismatch

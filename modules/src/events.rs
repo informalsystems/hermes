@@ -14,7 +14,7 @@ use crate::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::ics24_host::error::ValidationError;
 use crate::timestamp::ParseTimestampError;
 use crate::Height;
-use flex_error::{define_error, DisplayError};
+use flex_error::{define_error, TraceError};
 use prost::alloc::fmt::Formatter;
 use std::fmt;
 
@@ -45,11 +45,11 @@ define_error! {
             | e | { format_args!("missing event key {}", e.key) },
 
         Decode
-            [ DisplayError<prost::DecodeError> ]
+            [ TraceError<prost::DecodeError> ]
             | _ | { "error decoding protobuf" },
 
         SubtleEncoding
-            [ DisplayError<subtle_encoding::Error> ]
+            [ TraceError<subtle_encoding::Error> ]
             | _ | { "error decoding hex" },
 
         MissingActionString

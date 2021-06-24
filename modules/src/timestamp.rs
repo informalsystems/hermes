@@ -6,7 +6,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
-use flex_error::{define_error, DisplayError};
+use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
@@ -165,11 +165,11 @@ impl Sub<Duration> for Timestamp {
 define_error! {
     ParseTimestampError {
         ParseInt
-            [ DisplayError<ParseIntError> ]
+            [ TraceError<ParseIntError> ]
             | _ | { "error parsing integer from string"},
 
         TryFromInt
-            [ DisplayError<TryFromIntError> ]
+            [ TraceError<TryFromIntError> ]
             | _ | { "error converting from u64 to i64" },
     }
 }

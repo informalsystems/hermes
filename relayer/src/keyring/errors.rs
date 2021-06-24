@@ -1,10 +1,10 @@
-use flex_error::{define_error, DisplayOnly};
+use flex_error::{define_error, DisplayOnly, TraceError};
 use std::io::Error as IoError;
 
 define_error! {
     Error {
         InvalidKey
-            [ DisplayOnly<signature::Error> ]
+            [ TraceError<signature::Error> ]
             |_| { "invalid key: could not build signing key from private key bytes" },
 
         KeyNotFound
@@ -18,7 +18,7 @@ define_error! {
             |_| { "invalid mnemonic" },
 
         PrivateKey
-            [ DisplayOnly<bitcoin::util::bip32::Error> ]
+            [ TraceError<bitcoin::util::bip32::Error> ]
             |_| { "cannot generate private key" },
 
         UnsupportedPublicKey
@@ -32,18 +32,18 @@ define_error! {
             {
                 key: String,
             }
-            [ DisplayOnly<serde_json::Error> ]
+            [ TraceError<serde_json::Error> ]
             |e| {
                 format!("cannot deserialize the encoded public key {0}",
                     e.key)
             },
 
         Bech32Account
-            [ DisplayOnly<bech32::Error> ]
+            [ TraceError<bech32::Error> ]
             |_| { "cannot generate bech32 account" },
 
         Bech32
-            [ DisplayOnly<bech32::Error> ]
+            [ TraceError<bech32::Error> ]
             |_| { "bech32 error" },
 
         PublicKeyMismatch
@@ -52,19 +52,19 @@ define_error! {
 
         KeyFileEncode
             { file_path: String }
-            [ DisplayOnly<serde_json::Error> ]
+            [ TraceError<serde_json::Error> ]
             |e| {
                 format!("error encoding key file at '{}'",
                     e.file_path)
             },
 
         Encode
-            [ DisplayOnly<serde_json::Error> ]
+            [ TraceError<serde_json::Error> ]
             |_| { "error encoding key" },
 
         KeyFileDecode
             { file_path: String }
-            [ DisplayOnly<serde_json::Error> ]
+            [ TraceError<serde_json::Error> ]
             |e| {
                 format!("error decoding key file at '{}'",
                     e.file_path)
@@ -75,7 +75,7 @@ define_error! {
                 file_path: String,
                 description: String,
             }
-            [ DisplayOnly<IoError> ]
+            [ TraceError<IoError> ]
             |e| {
                 format!("I/O error on key file at '{}': {}",
                     e.file_path, e.description)
