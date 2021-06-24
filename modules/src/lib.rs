@@ -28,7 +28,6 @@
 //!    - ICS 20: Fungible Token Transfer
 
 pub mod application;
-pub mod decode;
 pub mod events;
 pub mod handler;
 pub mod keys;

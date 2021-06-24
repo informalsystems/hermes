@@ -1,11 +1,11 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use std::convert::{TryFrom, TryInto};
 
+use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
-use crate::decode::{decode_protobuf, Error as DecodeError};
 use crate::events::{self, extract_attribute, IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
@@ -245,12 +245,10 @@ impl TryFrom<RawObject> for UpdateClient {
             Some(str) => {
                 let header_bytes = hex::decode(str).map_err(events::subtle_encoding_error)?;
 
-                let decoded =
-                    decode_protobuf::<prost_types::Any, AnyHeader, _, _>(header_bytes.as_ref())
-                        .map_err(|e| match e {
-                            DecodeError::Decode(e) => events::decode_error(e),
-                            DecodeError::TryFrom(e) => events::client_error(e),
-                        })?;
+                let decoded = prost_types::Any::decode(header_bytes.as_ref())
+                    .map_err(events::decode_error)?
+                    .try_into()
+                    .map_err(events::client_error)?;
 
                 Some(decoded)
             }

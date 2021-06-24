@@ -1,5 +1,5 @@
 use crate::ics24_host::error::ValidationError;
-use flex_error::{define_error, DisplayOnly};
+use flex_error::{define_error, DisplayOnly, TraceError};
 
 define_error! {
     Error {
@@ -86,5 +86,10 @@ define_error! {
         InvalidRawMisbehaviour
             { reason: String }
             | _ | { "invalid raw misbehaviour" },
+
+        Decode
+            [ TraceError<prost::DecodeError> ]
+            | _ | { "decode error" },
+
     }
 }

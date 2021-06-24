@@ -1,4 +1,5 @@
 use crate::ics02_client::client_type::ClientType;
+use crate::ics07_tendermint::error::Error as Ics07Error;
 use crate::ics23_commitment::error::Error as Ics23Error;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::ClientId;
@@ -108,6 +109,10 @@ define_error! {
             [ ValidationError ]
             | _ | { "invalid client id in the update client message" },
 
+        Decode
+            [ TraceError<prost::DecodeError> ]
+            | _ | { "decode error" },
+
         MissingHeight
             | _ | { "invalid raw client consensus state: the height field is missing" },
 
@@ -146,6 +151,10 @@ define_error! {
         InvalidUpgradeConsensusStateProof
             [ Ics23Error ]
             | _ | { "invalid proof for the upgraded consensus state" },
+
+        Tendermint
+            [ Ics07Error ]
+            | _ | { "tendermint error" },
 
         InvalidPacketTimestamp
             [ TraceError<TryFromIntError> ]
