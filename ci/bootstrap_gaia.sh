@@ -54,14 +54,14 @@ cat "$CHAIN_HOME"/validator_seed.json
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding user key"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad keys add user --keyring-backend="test" --home $CHAIN_HOME --output json > "$CHAIN_HOME"/key_seed.json
-cat "$CHAIN_HOME"/key_seed.json
+gaiad keys add user --keyring-backend="test" --home $CHAIN_HOME --output json > "$CHAIN_HOME"/user_seed.json
+cat "$CHAIN_HOME"/user_seed.json
 
-# echo "-------------------------------------------------------------------------------------------------------------------"
-# echo "Adding user2 key"
-# echo "-------------------------------------------------------------------------------------------------------------------"
-# gaiad keys add user2 --keyring-backend="test" --home $CHAIN_HOME --output json > "$CHAIN_HOME"/user2_seed.json
-# cat "$CHAIN_HOME"/user2_seed.json
+echo "-------------------------------------------------------------------------------------------------------------------"
+echo "Adding user2 key"
+echo "-------------------------------------------------------------------------------------------------------------------"
+gaiad keys add user2 --keyring-backend="test" --home $CHAIN_HOME --output json > "$CHAIN_HOME"/user2_seed.json
+cat "$CHAIN_HOME"/user2_seed.json
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding user account to genesis"
@@ -69,11 +69,11 @@ echo "--------------------------------------------------------------------------
 gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show user -a) 1000000000stake
 echo "Done!"
 
-# echo "-------------------------------------------------------------------------------------------------------------------"
-# echo "Adding user2 account to genesis"
-# echo "-------------------------------------------------------------------------------------------------------------------"
-# gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show user2 -a) 1000000000stake
-# echo "Done!"
+echo "-------------------------------------------------------------------------------------------------------------------"
+echo "Adding user2 account to genesis"
+echo "-------------------------------------------------------------------------------------------------------------------"
+gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show user2 -a) 1000000000stake
+echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding validator account to genesis"

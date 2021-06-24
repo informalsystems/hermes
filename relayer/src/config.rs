@@ -1,6 +1,6 @@
 //! Relayer configuration
 
-use std::{fs, fs::File, io::Write, path::Path, time::Duration};
+use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
@@ -9,6 +9,24 @@ use ibc::ics24_host::identifier::ChainId;
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GasPrice {
+    pub price: f64,
+    pub denom: String,
+}
+
+impl GasPrice {
+    pub const fn new(price: f64, denom: String) -> Self {
+        Self { price, denom }
+    }
+}
+
+impl fmt::Display for GasPrice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.price, self.denom)
+    }
+}
 
 /// Defaults for various fields
 pub mod default {
@@ -112,17 +130,19 @@ pub struct ChainConfig {
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
-    pub gas: Option<u64>,
-    pub fee_denom: String,
-    pub fee_amount: Option<u64>,
+    pub max_gas: Option<u64>,
+    pub gas_adjustment: Option<f64>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
+
+    // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
+    pub gas_price: GasPrice,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
@@ -183,9 +203,8 @@ mod tests {
         );
 
         let config = parse(path).expect("could not parse config");
-        let mut buffer = Vec::new();
 
-        let result = store_writer(&config, &mut buffer);
-        assert!(result.is_ok());
+        let mut buffer = Vec::new();
+        store_writer(&config, &mut buffer).unwrap();
     }
 }

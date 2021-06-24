@@ -14,8 +14,8 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- MacOS: `hermes-v0.4.0-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-v0.4.0-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- MacOS: `hermes-v0.5.0-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-v0.5.0-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
  
@@ -47,7 +47,7 @@ hermes version
 ```
 
 ```
-hermes 0.4.0
+hermes 0.5.0
 ```
 
 ## Install via Cargo
@@ -81,17 +81,17 @@ hermes version
 ```
 
 ```
-hermes 0.4.0
+hermes 0.5.0
 ```
 
 ## Build from source
 
 ### Clone the repository
 
-Open a terminal and clone the following `ibc-rs` repository:
+Open a terminal and clone the `ibc-rs` repository:
 
 ```shell
-git clone https://github.com/informalsystems/ibc-rs.git`
+git clone https://github.com/informalsystems/ibc-rs.git
 ```
 
 Change to the repository directory
@@ -103,10 +103,10 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `v0.4.0` then execute the command:
+Then checkout the release, for example if the most recent release is `v0.5.0` then execute the command:
 
 ```shell
-git checkout v0.4.0
+git checkout v0.5.0
 ```
 
 ### Building with `cargo build`
@@ -151,7 +151,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes 0.4.0
+hermes 0.5.0
 Informal Systems <hello@informal.systems>
 
 USAGE:

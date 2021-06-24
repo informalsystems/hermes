@@ -19,15 +19,11 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas = 3000000
-fee_denom = 'stake'
-fee_amount = 10
+max_gas = 3000000
+gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+trust_threshold = { numerator = '1', denominator = '3' }
 
 [[chains]]
 id = 'ibc-1'
@@ -38,13 +34,8 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas = 3000000
-fee_denom = 'stake'
-fee_amount = 1000
+max_gas = 3000000
+gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
-
+trust_threshold = { numerator = '1', denominator = '3' }

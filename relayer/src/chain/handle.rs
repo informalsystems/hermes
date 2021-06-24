@@ -5,6 +5,8 @@ use std::{
 
 use crossbeam_channel as channel;
 use dyn_clone::DynClone;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
 use ibc::{
@@ -14,7 +16,7 @@ use ibc::{
         client_state::{AnyClientState, IdentifiedAnyClientState},
         events::UpdateClient,
         header::AnyHeader,
-        misbehaviour::AnyMisbehaviour,
+        misbehaviour::MisbehaviourEvidence,
     },
     ics03_connection::{connection::ConnectionEnd, version::Version},
     ics04_channel::{
@@ -130,7 +132,7 @@ pub enum ChainRequest {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        reply_to: ReplyTo<AnyHeader>,
+        reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
     },
 
     BuildClientState {
@@ -148,7 +150,7 @@ pub enum ChainRequest {
     BuildMisbehaviour {
         client_state: AnyClientState,
         update_event: UpdateClient,
-        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+        reply_to: ReplyTo<Option<MisbehaviourEvidence>>,
     },
 
     BuildConnectionProofsAndClientState {
@@ -204,6 +206,11 @@ pub enum ChainRequest {
         connection_id: ConnectionId,
         height: Height,
         reply_to: ReplyTo<ConnectionEnd>,
+    },
+
+    QueryConnections {
+        request: QueryConnectionsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
     },
 
     QueryConnectionChannels {
@@ -361,6 +368,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
 
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
+
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
@@ -412,7 +424,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-    ) -> Result<AnyHeader, Error>;
+    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
 
     /// Constructs a client state at the given height
     fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error>;
@@ -429,7 +441,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         update: UpdateClient,
         client_state: AnyClientState,
-    ) -> Result<Option<AnyMisbehaviour>, Error>;
+    ) -> Result<Option<MisbehaviourEvidence>, Error>;
 
     fn build_connection_proofs_and_client_state(
         &self,

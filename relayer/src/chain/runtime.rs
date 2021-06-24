@@ -11,9 +11,12 @@ use ibc::{
         client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
         events::UpdateClient,
         header::{AnyHeader, Header},
-        misbehaviour::AnyMisbehaviour,
+        misbehaviour::MisbehaviourEvidence,
     },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics03_connection::{
+        connection::{ConnectionEnd, IdentifiedConnectionEnd},
+        version::Version,
+    },
     ics04_channel::{
         channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
@@ -34,7 +37,7 @@ use ibc_proto::ibc::core::{
     },
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
-    connection::v1::QueryClientConnectionsRequest,
+    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 
 use crate::{
@@ -271,6 +274,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_connection(connection_id, height, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryConnections { request, reply_to }) => {
+                            self.query_connections(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryConnectionChannels { request, reply_to }) => {
                             self.query_connection_channels(request, reply_to)?
                         },
@@ -393,32 +400,23 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        reply_to: ReplyTo<AnyHeader>,
+        reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
     ) -> Result<(), Error> {
-        // Get the light block at trusted_height + 1 from chain.
-        //
-        // TODO: This is tendermint specific and needs to be refactored during
-        //       the relayer light client refactoring.
-        // NOTE: This is needed to get the next validator set. While there is a next validator set
-        //       in the light block at trusted height, the proposer is not known/set in this set.
-        let trusted_light_block = self.light_client.fetch(trusted_height.increment());
+        let result = self
+            .chain
+            .build_header(
+                trusted_height,
+                target_height,
+                &client_state,
+                self.light_client.as_mut(),
+            )
+            .map(|(header, support)| {
+                let header = header.wrap_any();
+                let support = support.into_iter().map(|h| h.wrap_any()).collect();
+                (header, support)
+            });
 
-        // Get the light block at target_height from chain.
-        let target_light_block =
-            self.light_client
-                .verify(trusted_height, target_height, &client_state);
-
-        // Try to build the header, return first error encountered.
-        let header = match (trusted_light_block, target_light_block) {
-            (Err(eta), _) => Err(eta),
-            (_, Err(etr)) => Err(etr),
-            (Ok(trusted_light_block), Ok(target_light_block)) => self
-                .chain
-                .build_header(trusted_height, trusted_light_block, target_light_block)
-                .map_or_else(Err, |header| Ok(header.wrap_any())),
-        };
-
-        reply_to.send(header).map_err(Kind::channel)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -447,11 +445,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let light_block = self.light_client.verify(trusted, target, &client_state)?;
+        let verified = self.light_client.verify(trusted, target, &client_state)?;
 
         let consensus_state = self
             .chain
-            .build_consensus_state(light_block)
+            .build_consensus_state(verified.target)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(consensus_state).map_err(Kind::channel)?;
@@ -464,7 +462,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         &mut self,
         update_event: UpdateClient,
         client_state: AnyClientState,
-        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+        reply_to: ReplyTo<Option<MisbehaviourEvidence>>,
     ) -> Result<(), Error> {
         let misbehaviour = self
             .light_client
@@ -621,6 +619,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let connection_end = self.chain.query_connection(&connection_id, height);
 
         reply_to.send(connection_end).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_connections(request);
+
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }

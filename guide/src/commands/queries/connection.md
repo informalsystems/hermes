@@ -25,7 +25,7 @@ Query all connections on `ibc-1`:
 hermes query connections ibc-1
 ```
 
-```rust
+```json
 Success: [
     ConnectionId(
         "connection-0",
@@ -79,7 +79,7 @@ Query the connection end of connection `connection-1` on `ibc-1`:
 hermes query connection end ibc-1 connection-1
 ```
 
-```rust
+```json
 Success: ConnectionEnd {
     state: Open,
     client_id: ClientId(
@@ -133,7 +133,7 @@ Query the channels associated with connection `connection-1` on `ibc-1`:
 hermes query connection channels ibc-1 connection-1
 ```
 
-```rust
+```json
 Success: [
     PortChannelId {
         channel_id: ChannelId(

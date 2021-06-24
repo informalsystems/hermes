@@ -28,10 +28,10 @@ The `global` section has parameters that apply globally to the relayer operation
 
 * __strategy__: *(string)* Specify the strategy to be used by the relayer. Default: `packets`
   Two options are currently supported:
-    - `all`: Relay packets and perform channel handshakes.
+    - `all`: Relay packets and perform channel and connection handshakes.
     - `packets`: Relay packets only.
 
-* __log_level__: *(string)* Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
+* __log_level__: *(string)* Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default: `info`.
   For more information on parametrizing the log output, see the section [help/log-level][log-level].
 
 Here is an example for the `global` section:
@@ -77,7 +77,7 @@ A `chains` section includes parameters related to a chain and the full node to w
 
 * __websocket_addr__: *(string)* Specify the WebSocket address and port where the chain WebSocket server listens on. For example `ws://localhost:26657/websocket`
 
-* __rpc_timeout__: *(string)* Specify the maximum amount of time (duration) that the RPC requests should take before timing out. Default value is `10s` (10 seconds).
+* __rpc_timeout__: *(string)* Specify the maximum amount of time (duration) that the RPC requests should take before timing out. Default: `10s` (10 seconds).
 
 * __account_prefix__: *(string)* Specify the prefix used by the chain. For example `cosmos`
 
@@ -85,15 +85,25 @@ A `chains` section includes parameters related to a chain and the full node to w
 
 * __store_prefix__: *(string)* Specify the store prefix used by the on-chain IBC modules. For example `ibc`.
 
-* __gas__: *(u64)* Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is `300000`
+* __max_gas__: *(u64)* Specify the maximum amount of gas to be used as the gas limit for a transaction. Default: `300000`
 
-* __fee_denom__: *(string)* Specify the denom to be used in the fee for a transaction.
+* __gas_price__: *(table)*
+  * __price__: *(f64)* Specify the price per gas used of the fee to submit a transaction.
+  * __denom__: *(string)* Specify the denomination of the fee.
 
-* __fee_amount__: *(u64)* Specify the amount value to be used in the fee for a transaction. Default value is `1000`
+* __gas_adjustment__: *(f64)* Specify by what percentage to increase the gas estimate used to compute the fee, to account for potential estimation error. Default: `0.1`, ie. 10%.
 
-* __clock_drift__: *(string)*  Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is `5s`
+* __max_msg_num__: *(u64)* Specify how many IBC messages at most to include in a single transaction. Default: `30`
 
-* __trusting_period__: *(string)* Specify the amount of time to be used as the trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default value is `14days` (336 hours)
+* __max_tx_size__: *(u64)* Specify the maximum size, in bytes, of each transaction that Hermes will submit. Default: `2097152` (2 MiB)
+
+* __clock_drift__: *(string)*  Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default: `5s`
+
+* __trusting_period__: *(string)* Specify the amount of time to be used as the light client trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default: `14days` (336 hours)
+
+* __trust_threshold__: *(table)* Specify the trust threshold for the light client, ie. the maximum fraction of validators which have changed between two blocks. Default: `{ numerator = '1', denominator = '3' }`, ie. 1/3.
+  * __numerator__: *(string)* The numerator of the fraction (must parse to a `u64`).
+  * __denominator__: *(string)* The denominator of the fraction (must parse to a `u64`).
 
 For example if you want to add a configuration for a chain named `ibc-0`:
 
@@ -107,9 +117,9 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas = 200000
-fee_denom = 'stake'
-fee_amount = 10
+max_gas = 2000000
+gas_price = { price = 0.001, denom = 'stake' }
+gas_adjustment = 0.1
 clock_drift = '5s'
 trusting_period = '14days'
 ```
@@ -125,7 +135,7 @@ Here is a full example of a configuration file with two chains configured:
 ```toml
 [global]
 strategy = 'packets'
-log_level = 'error'
+log_level = 'info'
 
 [[chains]]
 id = 'ibc-0'
@@ -136,15 +146,12 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas = 200000
-fee_denom = 'stake'
-fee_amount = 10
+max_gas = 2000000
+gas_price = { price = 0.001, denom = 'stake' }
+gas_adjustment = 0.1
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+trust_threshold = { numerator = '1', denominator = '3' }
 
 [[chains]]
 id = 'ibc-1'
@@ -155,15 +162,12 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas = 200000
-fee_denom = 'stake'
-fee_amount = 10
+max_gas = 2000000
+gas_price = { price = 0.001, denom = 'stake' }
+gas_adjustment = 0.1
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+trust_threshold = { numerator = '1', denominator = '3' }
 ```
 
 ### Next Steps
@@ -171,3 +175,4 @@ denominator = '3'
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
 [log-level]: ./help.html#parametrizing-the-log-output-level
+

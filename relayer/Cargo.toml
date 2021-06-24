@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer"
-version    = "0.4.0"
+version    = "0.5.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -17,9 +17,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.4.0", path = "../modules" }
-ibc-proto     = { version = "0.8.0", path = "../proto" }
-ibc-telemetry = { version = "0.4.0", path = "../telemetry", optional = true }
+ibc           = { version = "0.5.0", path = "../modules" }
+ibc-proto     = { version = "0.8.1", path = "../proto" }
+ibc-telemetry = { version = "0.5.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
 anomaly = "0.2.0"
@@ -39,21 +39,22 @@ prost = "0.7"
 prost-types = "0.7"
 futures = "0.3.14"
 crossbeam-channel = "0.5.1"
-k256 = { version = "0.8.0", features = ["ecdsa-core", "ecdsa", "sha256"]}
+k256 = { version = "0.9.2", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version = "=0.26", features = ["use-serde"] }
 tiny-bip39 = "0.8.0"
 hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
 sha2 = "0.9.3"
 ripemd160 = "0.9.1"
-bech32 = "0.8.0"
-itertools = "0.10.0"
+bech32 = "0.8.1"
+itertools = "0.10.1"
 dyn-clonable = "0.9.0"
-tonic = "0.4"
+tonic = { version = "0.4", features = ["tls", "tls-roots"] }
 dirs-next = "2.0.0"
 dyn-clone = "1.0.3"
 retry = { version = "1.2.1", default-features = false }
 async-stream = "0.3.2"
+fraction = {version = "0.8.0", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.19.0"
@@ -70,9 +71,9 @@ features = ["unstable"]
 version = "=0.19.0"
 
 [dev-dependencies]
-ibc = { version = "0.4.0", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.5.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.5.0"
-env_logger = "0.8.3"
+env_logger = "0.8.4"
 tracing-subscriber = "0.2.18"
 test-env-log = { version = "0.2.7", features = ["trace"] }
 

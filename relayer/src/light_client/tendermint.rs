@@ -1,5 +1,7 @@
 use std::convert::TryFrom;
 
+use itertools::Itertools;
+
 use tendermint_light_client::{
     components::{self, io::AtHeight},
     light_client::{LightClient as TmLightClient, Options as TmOptions},
@@ -17,12 +19,16 @@ use ibc::{
         client_state::AnyClientState,
         client_type::ClientType,
         events::UpdateClient,
-        header::AnyHeader,
-        misbehaviour::{AnyMisbehaviour, Misbehaviour},
+        header::{AnyHeader, Header},
+        misbehaviour::{Misbehaviour, MisbehaviourEvidence},
     },
-    ics07_tendermint::{header::Header as TmHeader, misbehaviour::Misbehaviour as TmMisbehaviour},
+    ics07_tendermint::{
+        header::{headers_compatible, Header as TmHeader},
+        misbehaviour::Misbehaviour as TmMisbehaviour,
+    },
     ics24_host::identifier::ChainId,
 };
+use tracing::trace;
 
 use crate::error::Kind;
 use crate::{
@@ -31,6 +37,8 @@ use crate::{
     error::{self, Error},
 };
 
+use super::Verified;
+
 pub struct LightClient {
     chain_id: ChainId,
     peer_id: PeerId,
@@ -38,40 +46,69 @@ pub struct LightClient {
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
+    fn header_and_minimal_set(
+        &mut self,
+        trusted: ibc::Height,
+        target: ibc::Height,
+        client_state: &AnyClientState,
+    ) -> Result<Verified<TmHeader>, Error> {
+        let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
+        let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+        Ok(Verified { target, supporting })
+    }
+
     fn verify(
         &mut self,
         trusted: ibc::Height,
         target: ibc::Height,
         client_state: &AnyClientState,
-    ) -> Result<LightBlock, Error> {
+    ) -> Result<Verified<LightBlock>, Error> {
+        trace!(%trusted, %target, "light client verification");
+
         let target_height = TMHeight::try_from(target.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
         let client = self.prepare_client(client_state)?;
         let mut state = self.prepare_state(trusted)?;
 
-        let light_block = client
+        // Verify the target header
+        let target = client
             .verify_to_target(target_height, &mut state)
             .map_err(|e| error::Kind::LightClient(self.chain_id.to_string()).context(e))?;
 
-        Ok(light_block)
+        // Collect the verification trace for the target block
+        let target_trace = state.get_trace(target.height());
+
+        // Compute the minimal supporting set, sorted by ascending height
+        let supporting = target_trace
+            .into_iter()
+            .filter(|lb| lb.height() != target.height())
+            .unique_by(LightBlock::height)
+            .sorted_by_key(LightBlock::height)
+            .collect_vec();
+
+        Ok(Verified { target, supporting })
     }
 
     fn fetch(&mut self, height: ibc::Height) -> Result<LightBlock, Error> {
+        trace!(%height, "fetching header");
+
         let height = TMHeight::try_from(height.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
         self.fetch_light_block(AtHeight::At(height))
     }
 
-    /// Given a client update event that includes the header used in a client update.
-    /// it looks for misbehaviour by fetching a header at same or latest height.
-    /// TODO - return also intermediate headers.
+    /// Given a client update event that includes the header used in a client update,
+    /// look for misbehaviour by fetching a header at same or latest height.
+    ///
+    /// ## TODO
+    /// - [ ] Return intermediate headers as well
     fn check_misbehaviour(
         &mut self,
         update: UpdateClient,
         client_state: &AnyClientState,
-    ) -> Result<Option<AnyMisbehaviour>, Error> {
+    ) -> Result<Option<MisbehaviourEvidence>, Error> {
         crate::time!("light client check_misbehaviour");
 
         let update_header = update.header.clone().ok_or_else(|| {
@@ -81,13 +118,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             ))
         })?;
 
-        let tm_ibc_client_header =
-            downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
-                Kind::Misbehaviour(format!(
-                    "header type incompatible for chain {}",
-                    self.chain_id
-                ))
-            })?;
+        let update_header = downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
+            Kind::Misbehaviour(format!(
+                "header type incompatible for chain {}",
+                self.chain_id
+            ))
+        })?;
 
         let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
         let latest_chain_height =
@@ -95,7 +131,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         // set the target height to the minimum between the update height and latest chain height
         let target_height = std::cmp::min(update.consensus_height(), latest_chain_height);
-        let trusted_height = tm_ibc_client_header.trusted_height;
+        let trusted_height = update_header.trusted_height;
 
         // TODO - check that a consensus state at trusted_height still exists on-chain,
         // currently we don't have access to Cosmos chain query from here
@@ -110,31 +146,26 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             return Ok(None);
         }
 
-        let tm_witness_node_header = {
-            let trusted_light_block = self.fetch(trusted_height.increment())?;
-            let target_light_block = self.verify(trusted_height, target_height, &client_state)?;
-            TmHeader {
-                trusted_height,
-                signed_header: target_light_block.signed_header,
-                validator_set: target_light_block.validators,
-                trusted_validator_set: trusted_light_block.validators,
+        let Verified { target, supporting } =
+            self.verify(trusted_height, target_height, client_state)?;
+
+        if !headers_compatible(&target.signed_header, &update_header.signed_header) {
+            let (witness, supporting) = self.adjust_headers(trusted_height, target, supporting)?;
+
+            let misbehaviour = TmMisbehaviour {
+                client_id: update.client_id().clone(),
+                header1: update_header,
+                header2: witness,
             }
-        };
+            .wrap_any();
 
-        let misbehaviour = if !tm_witness_node_header.compatible_with(&tm_ibc_client_header) {
-            Some(
-                AnyMisbehaviour::Tendermint(TmMisbehaviour {
-                    client_id: update.client_id().clone(),
-                    header1: tm_ibc_client_header,
-                    header2: tm_witness_node_header,
-                })
-                .wrap_any(),
-            )
+            Ok(Some(MisbehaviourEvidence {
+                misbehaviour,
+                supporting_headers: supporting.into_iter().map(TmHeader::wrap_any).collect(),
+            }))
         } else {
-            None
-        };
-
-        Ok(misbehaviour)
+            Ok(None)
+        }
     }
 }
 
@@ -203,5 +234,70 @@ impl LightClient {
                 .context(e)
                 .into()
         })
+    }
+
+    fn adjust_headers(
+        &mut self,
+        trusted_height: ibc::Height,
+        target: LightBlock,
+        supporting: Vec<LightBlock>,
+    ) -> Result<(TmHeader, Vec<TmHeader>), Error> {
+        use super::LightClient;
+
+        trace!(
+            trusted = %trusted_height, target = %target.height(),
+            "adjusting headers with {} supporting headers", supporting.len()
+        );
+
+        // Get the light block at trusted_height + 1 from chain.
+        //
+        // NOTE: This is needed to get the next validator set. While there is a next validator set
+        //       in the light block at trusted height, the proposer is not known/set in this set.
+        let trusted_validator_set = self.fetch(trusted_height.increment())?.validators;
+
+        let mut supporting_headers = Vec::with_capacity(supporting.len());
+
+        let mut current_trusted_height = trusted_height;
+        let mut current_trusted_validators = trusted_validator_set.clone();
+
+        for support in supporting {
+            let header = TmHeader {
+                signed_header: support.signed_header.clone(),
+                validator_set: support.validators,
+                trusted_height: current_trusted_height,
+                trusted_validator_set: current_trusted_validators,
+            };
+
+            // This header is now considered to be the currently trusted header
+            current_trusted_height = header.height();
+
+            // Therefore we can now trust the next validator set, see NOTE above.
+            current_trusted_validators = self.fetch(header.height().increment())?.validators;
+
+            supporting_headers.push(header);
+        }
+
+        // a) Set the trusted height of the target header to the height of the previous
+        // supporting header if any, or to the initial trusting height otherwise.
+        //
+        // b) Set the trusted validators of the target header to the validators of the successor to
+        // the last supporting header if any, or to the initial trusted validators otherwise.
+        let (latest_trusted_height, latest_trusted_validator_set) = match supporting_headers.last()
+        {
+            Some(prev_header) => {
+                let prev_succ = self.fetch(prev_header.height().increment())?;
+                (prev_header.height(), prev_succ.validators)
+            }
+            None => (trusted_height, trusted_validator_set),
+        };
+
+        let target_header = TmHeader {
+            signed_header: target.signed_header,
+            validator_set: target.validators,
+            trusted_height: latest_trusted_height,
+            trusted_validator_set: latest_trusted_validator_set,
+        };
+
+        Ok((target_header, supporting_headers))
     }
 }
