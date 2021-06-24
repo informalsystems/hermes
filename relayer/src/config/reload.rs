@@ -48,13 +48,17 @@ impl ConfigReload {
         }
     }
 
-    pub fn reload(&self) -> Result<(), Error> {
+    pub fn reload(&self) -> Result<bool, Error> {
         let new_config = super::load(&self.path).map_err(Error::LoadFailed)?;
         self.update_config(new_config)
     }
 
-    pub fn update_config(&self, new: Config) -> Result<(), Error> {
+    pub fn update_config(&self, new: Config) -> Result<bool, Error> {
         let updates = self.compute_updates(&new)?;
+
+        if updates.is_empty() {
+            return Ok(false);
+        }
 
         for update in updates {
             if self
@@ -66,7 +70,7 @@ impl ConfigReload {
             }
         }
 
-        Ok(())
+        Ok(true)
     }
 
     fn compute_updates(&self, new: &Config) -> Result<Vec<ConfigUpdate>, Error> {

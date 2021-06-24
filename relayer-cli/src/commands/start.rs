@@ -57,9 +57,11 @@ fn register_signal(reload: ConfigReload) -> Result<(), io::Error> {
     std::thread::spawn(move || {
         for signal in &mut signals {
             if signal == SIGHUP {
-                info!("Reloading configuration (triggered by SIGHUP)");
-                if let Err(e) = reload.reload() {
-                    error!("failed to reload configuration: {}", e);
+                info!("reloading configuration (triggered by SIGHUP)");
+                match reload.reload() {
+                    Ok(true) => info!("configuration successfully reloaded"),
+                    Ok(false) => info!("configuration did not change"),
+                    Err(e) => error!("failed to reload configuration: {}", e),
                 }
             }
         }
