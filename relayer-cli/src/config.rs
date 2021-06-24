@@ -4,20 +4,46 @@
 //! application's configuration file and/or command-line options
 //! for specifying it.
 
-use std::path::PathBuf;
+use std::collections::BTreeSet;
 
-use abscissa_core::{error::BoxError, EntryPoint, Options};
+use thiserror::Error;
 
-use crate::commands::CliCmd;
-
+use ibc::ics24_host::identifier::ChainId;
 pub use ibc_relayer::config::Config;
 
-/// Get the path to configuration file
-pub fn config_path() -> Result<PathBuf, BoxError> {
-    let mut args = std::env::args();
-    assert!(args.next().is_some(), "expected one argument but got zero");
-    let args = args.collect::<Vec<_>>();
-    let app = EntryPoint::<CliCmd>::parse_args_default(args.as_slice())?;
-    let config_path = app.config.ok_or("no config file specified")?;
-    Ok(config_path)
+/// Specifies all the possible syntactic errors
+/// that a Hermes configuration file could contain.
+#[derive(Error, Debug)]
+pub enum Error {
+    /// No chain was configured
+    #[error("config file does not specify any chain")]
+    ZeroChains,
+
+    /// The log level is invalid
+    #[error("config file specifies an invalid log level ('{0}'), caused by: {1}")]
+    InvalidLogLevel(String, String),
+
+    /// Duplicate chains configured
+    #[error("config file has duplicate entry for the chain with id {0}")]
+    DuplicateChains(ChainId),
+}
+
+/// Validation method for syntactic validation of the input
+/// configuration file.
+pub fn validate_config(config: &Config) -> Result<(), Error> {
+    // Check for empty or solitary chains config.
+    if config.chains.is_empty() {
+        // No chain is preconfigured
+        return Err(Error::ZeroChains);
+    }
+
+    // Check for duplicate chain configuration.
+    let mut unique_chain_ids = BTreeSet::new();
+    for chain_id in config.chains.iter().map(|c| c.id.clone()) {
+        if !unique_chain_ids.insert(chain_id.clone()) {
+            return Err(Error::DuplicateChains(chain_id));
+        }
+    }
+
+    Ok(())
 }
