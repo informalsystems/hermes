@@ -69,7 +69,7 @@ impl HostBlock {
             .unwrap()
             .as_secs();
 
-        TestgenLightBlock::new_parametrized_default(chain_id.to_string(), time, height)
+        TestgenLightBlock::new_default_with_time_and_chain_id(chain_id.to_string(), time, height)
             .generate()
             .unwrap()
     }
