@@ -92,50 +92,7 @@ fn spawn_supervisor(
         }
     }
 
-    let supervisor = Supervisor::spawn(config, state);
-
-    // std::thread::spawn(move || {
-    //     use ibc_relayer::config::ChainConfig;
-    //     use ibc_relayer::supervisor::SupervisorCmd;
-    //     use std::time::Duration;
-
-    //     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
-    //     fn get_basic_chain_config() -> ChainConfig {
-    //         let config = r#"
-    //                 id = 'ibc-2'
-    //                 rpc_addr = 'http://127.0.0.1:26457'
-    //                 grpc_addr = 'http://127.0.0.1:9092'
-    //                 websocket_addr = 'ws://127.0.0.1:26457/websocket'
-    //                 rpc_timeout = '10s'
-    //                 account_prefix = 'cosmos'
-    //                 key_name = 'testkey'
-    //                 store_prefix = 'ibc'
-    //                 max_gas = 20000000
-    //                 gas_price = { price = 0.001, denom = 'stake' }
-    //                 clock_drift = '5s'
-    //                 trusting_period = '14days'
-    //                 trust_threshold = { numerator = '1', denominator = '3' }
-    //                 "#;
-
-    //         toml::from_str(config).unwrap()
-    //     }
-
-    //     std::thread::sleep(Duration::from_secs(5));
-
-    //     tx.send(SupervisorCmd::UpdateConfig(ConfigUpdate::Add(
-    //         get_basic_chain_config(),
-    //     )))
-    //     .unwrap();
-
-    //     std::thread::sleep(Duration::from_secs(5));
-
-    //     tx.send(SupervisorCmd::UpdateConfig(ConfigUpdate::Remove(
-    //         "ibc-0".parse().unwrap(),
-    //     )))
-    //     .unwrap();
-    // });
-
-    Ok(supervisor)
+    Ok(Supervisor::spawn(config, state))
 }
 
 #[cfg(not(feature = "telemetry"))]
