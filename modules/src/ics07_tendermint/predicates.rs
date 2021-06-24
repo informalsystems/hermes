@@ -35,8 +35,8 @@ impl Predicates {
         //check header timestamp is increasing
         if latest_consensus_state.timestamp >= header.signed_header.header().time {
             return Err(Kind::HeaderTimestampOutsideTrustingTime(
-                header.signed_header.header().time.to_rfc3339(),
-                latest_consensus_state.timestamp.to_rfc3339(),
+                header.signed_header.header().time.as_rfc3339(),
+                latest_consensus_state.timestamp.as_rfc3339(),
             )
             .into());
         };
@@ -50,8 +50,8 @@ impl Predicates {
             >= latest_consensus_state.timestamp
         {
             return Err(Kind::LowUpdateTimestamp(
-                header.signed_header.header().time.to_rfc3339(),
-                latest_consensus_state.timestamp.to_rfc3339(),
+                header.signed_header.header().time.as_rfc3339(),
+                latest_consensus_state.timestamp.as_rfc3339(),
             )
             .into());
         };
