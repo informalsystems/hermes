@@ -1,4 +1,5 @@
 use std::{
+    cmp::min,
     convert::{TryFrom, TryInto},
     future::Future,
     str::FromStr,
@@ -18,7 +19,7 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
-use tendermint_rpc::endpoint::tx_search::ResultTx;
+use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
@@ -32,7 +33,7 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events as ClientEvents;
-use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -82,8 +83,6 @@ use crate::light_client::Verified;
 use super::Chain;
 
 const DEFAULT_MAX_GAS: u64 = 300_000;
-const DEFAULT_GAS_PRICE_PRICE: f64 = 0.001;
-const DEFAULT_GAS_PRICE_DENOM: &str = "uatom";
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
 const DEFAULT_MAX_MSG_NUM: usize = 30;
@@ -105,7 +104,8 @@ pub struct CosmosSdkChain {
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
-    acct_seq: u64,
+    /// A cached copy of the account information
+    account: Option<BaseAccount>,
 }
 
 impl CosmosSdkChain {
@@ -165,31 +165,21 @@ impl CosmosSdkChain {
 
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
-
-        let acct_response = self.account()?;
-        if self.acct_seq == 0 {
-            debug!(
-                "send_tx: retrieved account nonce {} for {}",
-                acct_response.sequence,
-                self.id()
-            );
-
-            self.acct_seq = acct_response.sequence;
-        };
+        let account_seq = self.account_sequence()?;
 
         debug!(
             "send_tx: sending {} messages to {} using nonce {}",
             proto_msgs.len(),
             self.id(),
-            self.acct_seq
+            account_seq,
         );
 
-        let signer_info = self.signer(self.acct_seq)?;
+        let signer_info = self.signer(account_seq)?;
         let fee = self.default_fee();
         let (body, body_buf) = tx_body_and_bytes(proto_msgs)?;
 
         let (auth_info, auth_buf) = auth_info_and_bytes(signer_info.clone(), fee.clone())?;
-        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, self.acct_seq)?;
+        let signed_doc = self.signed_doc(body_buf.clone(), auth_buf, account_seq)?;
 
         // Try to simulate the Tx.
         // It is possible that a batch of messages are fragmented by the caller (`send_msgs`) such that
@@ -197,7 +187,7 @@ impl CosmosSdkChain {
         // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
         // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
         // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
-        let adjusted_gas = self
+        let estimated_gas = self
             .send_tx_simulate(SimulateRequest {
                 tx: Some(Tx {
                     body: Some(body),
@@ -209,30 +199,28 @@ impl CosmosSdkChain {
                 sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
             });
 
-        if adjusted_gas > self.max_gas() {
+        if estimated_gas > self.max_gas() {
             return Err(Kind::TxSimulateGasEstimateExceeded {
                 chain_id: self.id().clone(),
-                estimated_gas: adjusted_gas,
+                estimated_gas,
                 max_gas: self.max_gas(),
             }
             .into());
         }
 
-        let adjusted_fee = self.fee_with_gas(adjusted_gas);
+        let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         trace!(
-            "send_tx: {} adjusting fee from {:?} to {:?}",
+            "send_tx: {} based on the estimated gas, adjusting fee from {:?} to {:?}",
             self.id(),
             fee,
             adjusted_fee
         );
 
         let (_auth_adjusted, auth_buf_adjusted) = auth_info_and_bytes(signer_info, adjusted_fee)?;
-        let signed_doc = self.signed_doc(
-            body_buf.clone(),
-            auth_buf_adjusted.clone(),
-            acct_response.account_number,
-        )?;
+        let account_number = self.account_number()?;
+        let signed_doc =
+            self.signed_doc(body_buf.clone(), auth_buf_adjusted.clone(), account_number)?;
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
@@ -253,7 +241,7 @@ impl CosmosSdkChain {
             response
         );
 
-        self.acct_seq += 1;
+        self.incr_account_sequence()?;
 
         Ok(response)
     }
@@ -264,10 +252,8 @@ impl CosmosSdkChain {
     }
 
     /// The gas price
-    fn gas_price(&self) -> GasPrice {
-        self.config.gas_price.clone().unwrap_or_else(|| {
-            GasPrice::new(DEFAULT_GAS_PRICE_PRICE, DEFAULT_GAS_PRICE_DENOM.to_string())
-        })
+    fn gas_price(&self) -> &GasPrice {
+        &self.config.gas_price
     }
 
     /// The gas price adjustment
@@ -275,6 +261,16 @@ impl CosmosSdkChain {
         self.config
             .gas_adjustment
             .unwrap_or(DEFAULT_GAS_PRICE_ADJUSTMENT)
+    }
+
+    /// Adjusts the fee based on the configured `gas_adjustment` to prevent out of gas errors.
+    /// The actual gas cost, when a transaction is executed, may be slightly higher than the
+    /// one returned by the simulation.
+    fn apply_adjustment_to_gas(&self, gas_amount: u64) -> u64 {
+        min(
+            gas_amount + mul_ceil(gas_amount, self.gas_adjustment()),
+            self.max_gas(),
+        )
     }
 
     /// The maximum fee the relayer pays for a transaction
@@ -386,10 +382,39 @@ impl CosmosSdkChain {
         Ok((key, key_bytes))
     }
 
-    fn account(&self) -> Result<BaseAccount, Error> {
+    fn account(&mut self) -> Result<&mut BaseAccount, Error> {
+        if self.account == None {
+            let account = self
+                .block_on(query_account(self, self.key()?.account))
+                .map_err(|e| Kind::Grpc.context(e))?;
+
+            debug!(
+                sequence = %account.sequence,
+                number = %account.account_number,
+                "send_tx: retrieved account for {}",
+                self.id()
+            );
+
+            self.account = Some(account);
+        }
+
         Ok(self
-            .block_on(query_account(self, self.key()?.account))
-            .map_err(|e| Kind::Grpc.context(e))?)
+            .account
+            .as_mut()
+            .expect("account was supposedly just cached"))
+    }
+
+    fn account_number(&mut self) -> Result<u64, Error> {
+        Ok(self.account()?.account_number)
+    }
+
+    fn account_sequence(&mut self) -> Result<u64, Error> {
+        Ok(self.account()?.sequence)
+    }
+
+    fn incr_account_sequence(&mut self) -> Result<(), Error> {
+        self.account()?.sequence += 1;
+        Ok(())
     }
 
     fn signer(&self, sequence: u64) -> Result<SignerInfo, Error> {
@@ -421,7 +446,7 @@ impl CosmosSdkChain {
     }
 
     fn fee_with_gas(&self, gas_limit: u64) -> Fee {
-        let adjusted_gas_limit = apply_adjustment_to_gas(gas_limit, self.gas_adjustment());
+        let adjusted_gas_limit = self.apply_adjustment_to_gas(gas_limit);
         Fee {
             amount: vec![self.fee_from_gas_in_coins(adjusted_gas_limit)],
             gas_limit: adjusted_gas_limit,
@@ -554,7 +579,7 @@ impl Chain for CosmosSdkChain {
             grpc_addr,
             rt,
             keybase,
-            acct_seq: 0,
+            account: None,
         })
     }
 
@@ -955,7 +980,7 @@ impl Chain for CosmosSdkChain {
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         crate::time!("query_connections");
 
         let mut client = self
@@ -976,13 +1001,13 @@ impl Chain for CosmosSdkChain {
         // TODO: add warnings for any identifiers that fail to parse (below).
         //      similar to the parsing in `query_connection_channels`.
 
-        let ids = response
+        let connections = response
             .connections
-            .iter()
-            .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
+            .into_iter()
+            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
             .collect();
 
-        Ok(ids)
+        Ok(connections)
     }
 
     fn query_connection(
@@ -1880,17 +1905,13 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
     Ok((body, body_buf))
 }
 
-fn calculate_fee(adjusted_gas_amount: u64, gas_price: GasPrice) -> Coin {
+fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     let fee_amount = mul_ceil(adjusted_gas_amount, gas_price.price);
 
     Coin {
-        denom: gas_price.denom,
+        denom: gas_price.denom.to_string(),
         amount: fee_amount.to_string(),
     }
-}
-
-fn apply_adjustment_to_gas(gas_amount: u64, gas_adjustment: f64) -> u64 {
-    gas_amount + mul_ceil(gas_amount, gas_adjustment)
 }
 
 fn mul_ceil(a: u64, f: f64) -> u64 {

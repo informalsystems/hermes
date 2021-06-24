@@ -158,7 +158,7 @@ pub struct ChainConfig {
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
-    pub gas_price: Option<GasPrice>,
+    pub gas_price: GasPrice,
     #[serde(default)]
     pub filters: ChainFilters,
 }

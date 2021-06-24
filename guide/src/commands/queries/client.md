@@ -111,7 +111,7 @@ Query the state of client `07-tendermint-2` on `ibc-1`:
 hermes query client state ibc-1 07-tendermint-1
 ```
 
-```rust
+```json
 Success: ClientState {
     chain_id: ChainId {
         id: "ibc-2",
@@ -246,7 +246,7 @@ Query the connections of client `07-tendermint-0` on `ibc-0`:
 hermes query client connections ibc-0 07-tendermint-0
 ```
 
-```rust
+```json
 Success: [
     ConnectionId("connection-0"),
     ConnectionId("connection-1"),
@@ -279,7 +279,7 @@ Query for the header used in the `07-tendermint-0` client update at height 2724 
 hermes query client header ibc-0 07-tendermint-0 2724
 ```
 
-```rust
+```json
 Success: [
     UpdateClient(
         UpdateClient {

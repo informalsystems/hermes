@@ -6,6 +6,7 @@ use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWi
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
@@ -32,6 +33,7 @@ use ibc_proto::ibc::core::channel::v1::{
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{
     connection::ConnectionMsgType,
@@ -188,6 +190,13 @@ impl ChainHandle for ProdChainHandle {
             height,
             reply_to,
         })
+    }
+
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
+        self.send(|reply_to| ChainRequest::QueryConnections { request, reply_to })
     }
 
     fn query_connection_channels(

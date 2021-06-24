@@ -10,9 +10,10 @@ use tokio::runtime::Runtime;
 
 use ibc::downcast;
 use ibc::events::IbcEvent;
+use ibc::Height;
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
@@ -26,7 +27,6 @@ use ibc::mock::host::HostType;
 use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
-use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
@@ -44,8 +44,8 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventReceiver, EventSender};
 use crate::keyring::{KeyEntry, KeyRing};
+use crate::light_client::{LightClient, mock::LightClient as MockLightClient};
 use crate::light_client::Verified;
-use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -178,7 +178,7 @@ impl Chain for MockChain {
     fn query_connections(
         &self,
         _request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         unimplemented!()
     }
 
@@ -385,13 +385,13 @@ impl Chain for MockChain {
 // For integration tests with the modules
 #[cfg(test)]
 pub mod test_utils {
+    use std::collections::HashSet;
     use std::str::FromStr;
     use std::time::Duration;
 
     use ibc::ics24_host::identifier::ChainId;
 
-    use crate::config::{ChainConfig, ChainFilters};
-    use std::collections::HashSet;
+    use crate::config::{ChainConfig, ChainFilters, GasPrice};
 
     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
@@ -405,7 +405,7 @@ pub mod test_utils {
             key_name: "".to_string(),
             store_prefix: "".to_string(),
             max_gas: None,
-            gas_price: None,
+            gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
             max_msg_num: None,
             max_tx_size: None,

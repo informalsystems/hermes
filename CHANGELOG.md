@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### IMPROVEMENTS
+
+- Update to `tendermint-rs` v0.20.0 ([#1125])
+
+[#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
+
+
+## v0.5.0
+*June 22nd, 2021*
+
+This release brings a few features, and several improvements and bug fixes to the Hermes
+relayer, notably the capability for Hermes to complete IBC connection handshakes when
+it detects that one has been initialized, as well as the ability to detect chain
+impersonation attacks and to dynamically estimate the gas needed to submit
+a transaction.
+
+Moreover, the overall reliability and availability of the relayer has also been improved
+substantially by switching over to `tx_broadcast_sync` for submitting transactions.
+
 ### FEATURES
 
 - [ibc-relayer-cli]
@@ -9,6 +28,7 @@
     derivation path when importing keys ([#1049])
 
 - [ibc-relayer]
+  - Event-based handshake completion for IBC connections ([#821])
   - Enable TLS support for gRPC client ([#877])
 
 ### IMPROVEMENTS
@@ -40,6 +60,7 @@
   - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead ([#1049])
 
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
+[#821]: https://github.com/informalsystems/ibc-rs/issues/821
 [#877]: https://github.com/informalsystems/ibc-rs/issues/877
 [#919]: https://github.com/informalsystems/ibc-rs/issues/919
 [#930]: https://github.com/informalsystems/ibc-rs/issues/930
