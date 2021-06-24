@@ -6,18 +6,12 @@
 
 use std::path::PathBuf;
 
-use abscissa_core::{error::BoxError, EntryPoint, Options};
-
-use crate::commands::CliCmd;
+use crate::application::app_reader;
 
 pub use ibc_relayer::config::Config;
 
 /// Get the path to configuration file
-pub fn config_path() -> Result<PathBuf, BoxError> {
-    let mut args = std::env::args();
-    assert!(args.next().is_some(), "expected one argument but got zero");
-    let args = args.collect::<Vec<_>>();
-    let app = EntryPoint::<CliCmd>::parse_args_default(args.as_slice())?;
-    let config_path = app.config.ok_or("no config file specified")?;
-    Ok(config_path)
+pub fn config_path() -> Option<PathBuf> {
+    let app = app_reader();
+    app.config_path().cloned()
 }

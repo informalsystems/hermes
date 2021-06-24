@@ -47,6 +47,7 @@ subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.1"
 atty = "0.2.14"
+signal-hook = "0.3.9"
 
 [dependencies.tendermint-proto]
 version = "=0.19.0"
