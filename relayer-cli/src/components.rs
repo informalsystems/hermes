@@ -1,6 +1,6 @@
 use std::io;
 
-use abscissa_core::{Component, FrameworkError};
+use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
 use tracing_subscriber::{
     fmt::{
         format::{DefaultFields, Format, Full, Json, JsonFields},
@@ -34,7 +34,7 @@ impl JsonTracing {
     /// Creates a new [`Tracing`] component
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level);
+        let filter = build_tracing_filter(cfg.log_level)?;
         // Note: JSON formatter is un-affected by ANSI 'color' option. Set to 'false'.
         let use_color = false;
 
@@ -65,7 +65,7 @@ impl PrettyTracing {
     /// Creates a new [`Tracing`] component
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level);
+        let filter = build_tracing_filter(cfg.log_level)?;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
@@ -92,12 +92,32 @@ fn enable_ansi() -> bool {
     atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
 }
 
-fn build_tracing_filter(log_level: String) -> String {
+/// Builds a tracing filter based on the input `log_level`.
+/// Enables tracing exclusively for the relayer crates.
+/// Returns error if the given `log_level` is invalid.
+fn build_tracing_filter(log_level: String) -> Result<EnvFilter, FrameworkError> {
     let target_crates = ["ibc_relayer", "ibc_relayer_cli"];
 
-    target_crates
+    // SAFETY: unwrap() below works as long as `target_crates` is not empty.
+    let directive_raw = target_crates
         .iter()
         .map(|&c| format!("{}={}", c, log_level))
         .reduce(|a, b| format!("{},{}", a, b))
-        .unwrap()
+        .unwrap();
+
+    // Build the filter directive
+    match EnvFilter::try_new(directive_raw.clone()) {
+        Ok(out) => Ok(out),
+        Err(e) => {
+            eprintln!(
+                "Unable to initialize Hermes from filter directive {:?}: {}",
+                directive_raw, e
+            );
+            eprintln!(
+                "Help: The filter level ({:?}) in your configuration file is probably incorrect",
+                log_level
+            );
+            Err(FrameworkErrorKind::ParseError.context(e).into())
+        }
+    }
 }
