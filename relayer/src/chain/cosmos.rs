@@ -486,7 +486,7 @@ impl CosmosSdkChain {
     pub fn wait_for_block_commits(
         &self,
         mut tx_sync_results: Vec<TxSyncResult>,
-    ) -> Result<Vec<TxSyncResult>, Error> {
+    ) -> Vec<TxSyncResult> {
         use crate::util::retry::{retry_with_index, RetryResult};
 
         trace!("waiting for commit of block(s)");
@@ -496,7 +496,7 @@ impl CosmosSdkChain {
 
         let start = Instant::now();
 
-        let result = retry_with_index(retry_strategy::wait_for_block_commits(), |index| {
+        let _result = retry_with_index(retry_strategy::wait_for_block_commits(), |index| {
             if all_tx_results_found(&tx_sync_results) {
                 trace!(
                     "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
@@ -537,12 +537,7 @@ impl CosmosSdkChain {
             RetryResult::Retry(index)
         });
 
-        match result {
-            // All transactions confirmed
-            Ok(()) => Ok(tx_sync_results),
-            // Did not find confirmation
-            Err(_) => Err(Kind::TxNoConfirmation.into()),
-        }
+        tx_sync_results
     }
 }
 
@@ -677,7 +672,7 @@ impl Chain for CosmosSdkChain {
             });
         }
 
-        let tx_sync_results = self.wait_for_block_commits(tx_sync_results)?;
+        let tx_sync_results = self.wait_for_block_commits(tx_sync_results);
 
         let events = tx_sync_results
             .into_iter()

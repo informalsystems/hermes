@@ -86,10 +86,6 @@ pub enum Kind {
         max_gas: u64,
     },
 
-    /// Tx failure for lack of confirmation
-    #[error("Failed Tx: no confirmation")]
-    TxNoConfirmation,
-
     /// Create client failure
     #[error("Failed to create client {0}")]
     CreateClient(String),
