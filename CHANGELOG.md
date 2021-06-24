@@ -4,7 +4,7 @@
 
 ### IMPROVEMENTS
 
-- Update to `tendermint-rs` v0.19.0 ([#1125])
+- Update to `tendermint-rs` v0.20.0 ([#1125])
 
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 
