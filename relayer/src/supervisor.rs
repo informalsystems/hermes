@@ -288,21 +288,21 @@ impl Supervisor {
         let id = config.id.clone();
 
         if self.config.read().expect("poisoned lock").has_chain(&id) {
-            info!(chain.id=%id, "Skipping addition of already existing chain");
+            info!(chain.id=%id, "skipping addition of already existing chain");
             return false;
         }
 
-        info!(chain.id=%id, "Adding new chain");
+        info!(chain.id=%id, "adding new chain");
         self.config
             .write()
             .expect("poisoned lock")
             .chains
             .push(config);
 
-        debug!(chain.id=%id, "Spawning chain runtime");
+        debug!(chain.id=%id, "spawning chain runtime");
         self.registry.get_or_spawn(&id).unwrap(); // FIXME: unwrap
 
-        debug!(chain.id=%id, "Spawning workers");
+        debug!(chain.id=%id, "spawning workers");
         self.spawn_context().spawn_workers_for_chain(&id);
 
         true
@@ -310,21 +310,21 @@ impl Supervisor {
 
     fn remove_chain(&mut self, id: &ChainId) -> bool {
         if !self.config.read().expect("poisoned lock").has_chain(&id) {
-            info!(chain.id=%id, "Skipping removal of non-existing chain");
+            info!(chain.id=%id, "skipping removal of non-existing chain");
             return false;
         }
 
-        info!(chain.id=%id, "Removing exsting chain");
+        info!(chain.id=%id, "removing existing chain");
         self.config
             .write()
             .expect("poisoned lock")
             .chains
             .retain(|c| &c.id != id);
 
-        debug!(chain.id=%id, "Shutting down workers");
+        debug!(chain.id=%id, "shutting down workers");
         self.spawn_context().shutdown_workers_for_chain(&id);
 
-        debug!(chain.id=%id, "Shutting down chain runtime");
+        debug!(chain.id=%id, "shutting down chain runtime");
         self.registry.shutdown(&id);
 
         true
