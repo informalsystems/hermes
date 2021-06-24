@@ -63,7 +63,7 @@ pub enum Error {
     #[error("failed to extract IBC events: {0}")]
     CollectEventsFailed(String),
 
-    #[error("failed to send event batch through channel")]
+    #[error("event monitor failed to dispatch event batch to subscribers")]
     ChannelSendFailed,
 }
 
@@ -343,7 +343,7 @@ impl EventMonitor {
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
-                    warn!(chain.id = %self.chain_id, "failed to send event batch: {}", e);
+                    warn!(chain.id = %self.chain_id, "{}", e);
                 }),
                 Err(e) => {
                     error!(chain.id = %self.chain_id, "failed to collect events: {}", e);
