@@ -42,7 +42,7 @@ impl Runnable for QueryTxEventsCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        let chain = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
 
         let res = chain.query_txs(QueryTxRequest::Transaction(QueryTxHash(
             Hash::from_str(self.hash.as_str()).unwrap(),

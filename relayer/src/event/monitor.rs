@@ -9,7 +9,7 @@ use futures::{
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info, trace, warn};
 
 use tendermint_rpc::{
     event::Event as RpcEvent,
@@ -92,6 +92,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 pub type EventSender = channel::Sender<Result<EventBatch>>;
 pub type EventReceiver = channel::Receiver<Result<EventBatch>>;
+pub type TxMonitorCmd = channel::Sender<MonitorCmd>;
+
+#[derive(Debug)]
+pub enum MonitorCmd {
+    Shutdown,
+}
 
 /// Connect to a Tendermint node, subscribe to a set of queries,
 /// receive push events over a websocket, and filter them for the
@@ -115,6 +121,8 @@ pub struct EventMonitor {
     rx_err: mpsc::UnboundedReceiver<tendermint_rpc::Error>,
     /// Channel where to send client driver errors
     tx_err: mpsc::UnboundedSender<tendermint_rpc::Error>,
+    /// Channel where to receive commands
+    rx_cmd: channel::Receiver<MonitorCmd>,
     /// Node Address
     node_addr: tendermint_rpc::Url,
     /// Queries
@@ -125,25 +133,15 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
-async fn run_driver(
-    driver: WebSocketClientDriver,
-    tx: mpsc::UnboundedSender<tendermint_rpc::Error>,
-) {
-    if let Err(e) = driver.run().await {
-        if tx.send(e).is_err() {
-            error!("failed to relay driver error to event monitor");
-        }
-    }
-}
-
 impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
         chain_id: ChainId,
         node_addr: tendermint_rpc::Url,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(Self, EventReceiver)> {
+    ) -> Result<(Self, EventReceiver, TxMonitorCmd)> {
         let (tx_batch, rx_batch) = channel::unbounded();
+        let (tx_cmd, rx_cmd) = channel::unbounded();
 
         let ws_addr = node_addr.clone();
         let (client, driver) = rt
@@ -165,11 +163,12 @@ impl EventMonitor {
             tx_batch,
             rx_err,
             tx_err,
+            rx_cmd,
             node_addr,
             subscriptions: Box::new(futures::stream::empty()),
         };
 
-        Ok((monitor, rx_batch))
+        Ok((monitor, rx_batch, tx_cmd))
     }
 
     /// Set the queries to subscribe to.
@@ -290,17 +289,31 @@ impl EventMonitor {
     }
 
     /// Event monitor loop
+    #[allow(clippy::while_let_loop)]
     pub fn run(mut self) {
         debug!(chain.id = %self.chain_id, "starting event monitor");
 
         // Continuously run the event loop, so that when it aborts
         // because of WebSocket client restart, we pick up the work again.
         loop {
-            self.run_loop();
+            match self.run_loop() {
+                Next::Continue => continue,
+                Next::Abort => break,
+            }
         }
+
+        debug!(chain.id = %self.chain_id, "event monitor is shutting down");
+
+        // Close the WebSocket connection
+        let _ = self.client.close();
+
+        // Wait for the WebSocket driver to finish
+        let _ = self.rt.block_on(self.driver_handle);
+
+        trace!(chain.id = %self.chain_id, "event monitor has successfully shut down");
     }
 
-    fn run_loop(&mut self) {
+    fn run_loop(&mut self) -> Next {
         // Take ownership of the subscriptions
         let subscriptions =
             std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
@@ -315,16 +328,22 @@ impl EventMonitor {
         let rt = self.rt.clone();
 
         loop {
+            if let Ok(cmd) = self.rx_cmd.try_recv() {
+                match cmd {
+                    MonitorCmd::Shutdown => return Next::Abort,
+                }
+            }
+
             let result = rt.block_on(async {
                 tokio::select! {
                     Some(batch) = batches.next() => Ok(batch),
-                    Some(e) = self.rx_err.recv() => Err(Error::WebSocketDriver(e)),
+                    Some(err) = self.rx_err.recv() => Err(Error::WebSocketDriver(err)),
                 }
             });
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
-                    error!(chain.id = %self.chain_id, "failed to process event batch: {}", e);
+                    warn!(chain.id = %self.chain_id, "failed to send event batch: {}", e);
                 }),
                 Err(e) => {
                     error!(chain.id = %self.chain_id, "failed to collect events: {}", e);
@@ -337,10 +356,12 @@ impl EventMonitor {
                     // We can't just write `return self.run()` here because Rust
                     // does not perform tail call optimization, and we would
                     // thus potentially blow up the stack after many restarts.
-                    return;
+                    break;
                 }
             }
         }
+
+        Next::Continue
     }
 
     /// Collect the IBC events from the subscriptions
@@ -400,4 +421,20 @@ fn sort_events(events: &mut Vec<IbcEvent>) {
         (IbcEvent::NewBlock(_), _) => Ordering::Less,
         _ => Ordering::Equal,
     })
+}
+
+async fn run_driver(
+    driver: WebSocketClientDriver,
+    tx: mpsc::UnboundedSender<tendermint_rpc::Error>,
+) {
+    if let Err(e) = driver.run().await {
+        if tx.send(e).is_err() {
+            error!("failed to relay driver error to event monitor");
+        }
+    }
+}
+
+pub enum Next {
+    Abort,
+    Continue,
 }

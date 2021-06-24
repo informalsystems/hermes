@@ -992,8 +992,8 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let a_client =
             ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
@@ -1030,8 +1030,8 @@ mod test {
         let num_iterations = 3;
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
@@ -1136,8 +1136,8 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
@@ -1184,8 +1184,8 @@ mod test {
         let mut _b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());

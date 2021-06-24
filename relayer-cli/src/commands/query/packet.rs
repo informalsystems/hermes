@@ -54,7 +54,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        let chain = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
 
         let grpc_request = QueryPacketCommitmentsRequest {
             port_id: self.port_id.to_string(),
@@ -114,7 +114,7 @@ impl Runnable for QueryPacketCommitmentCmd {
 
         // cargo run --bin hermes -- query packet commitment ibc-0 transfer ibconexfer 3 --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        let chain = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
 
         let res = chain.build_packet_proofs(
             PacketMsgType::Recv,
@@ -173,7 +173,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) =
+        let chain =
             ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()).unwrap();
 
         let channel_connection_client =
@@ -208,7 +208,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             Some(chain_config) => chain_config,
         };
 
-        let (counterparty_chain, _) =
+        let counterparty_chain =
             ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt).unwrap();
 
         // get the packet commitments on the counterparty/ source chain
@@ -287,7 +287,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        let chain = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
         let grpc_request = QueryPacketAcknowledgementsRequest {
             port_id: self.port_id.to_string(),
             channel_id: self.channel_id.to_string(),
@@ -346,7 +346,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
 
         // cargo run --bin hermes -- query packet acknowledgment ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        let chain = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
 
         let res = chain.build_packet_proofs(
             PacketMsgType::Ack,
@@ -403,7 +403,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             Some(chain_config) => chain_config,
         };
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) =
+        let chain =
             ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()).unwrap();
 
         let channel_connection_client =
@@ -438,7 +438,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             Some(chain_config) => chain_config,
         };
 
-        let (counterparty_chain, _) =
+        let counterparty_chain =
             ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt).unwrap();
 
         // get the packet acknowledgments on counterparty chain

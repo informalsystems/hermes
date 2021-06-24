@@ -78,7 +78,7 @@ pub fn spawn_chain_runtime(
         .cloned()
         .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))?;
 
-    let (handle, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt)?;
+    let handle = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt)?;
 
     Ok(handle)
 }

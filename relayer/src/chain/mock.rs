@@ -1,6 +1,5 @@
 use std::ops::Add;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
 
 use crossbeam_channel as channel;
@@ -42,7 +41,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use crate::chain::Chain;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::{EventReceiver, EventSender};
+use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
@@ -88,8 +87,9 @@ impl Chain for MockChain {
     fn init_event_monitor(
         &self,
         _rt: Arc<Runtime>,
-    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
-        Ok((self.event_receiver.clone(), None))
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
+        let (tx, _) = crossbeam_channel::unbounded();
+        Ok((self.event_receiver.clone(), tx))
     }
 
     fn id(&self) -> &ChainId {
