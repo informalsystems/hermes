@@ -324,7 +324,6 @@ impl<'a> SpawnContext<'a> {
             .get_or_spawn(&client.client_state.chain_id())?;
 
         let conn_state_src = connection.connection_end.state;
-
         let conn_state_dst =
             connection_state_on_destination(connection.clone(), counterparty_chain.as_ref())?;
 
@@ -355,7 +354,17 @@ impl<'a> SpawnContext<'a> {
             });
 
             self.workers
-                .get_or_spawn(connection_object, chain.clone(), counterparty_chain.clone());
+                .spawn(
+                    connection_object.clone(),
+                    chain.clone(),
+                    counterparty_chain.clone(),
+                )
+                .then(|| {
+                    debug!(
+                        "spawning Connection worker: {}",
+                        connection_object.short_name()
+                    );
+                });
         }
 
         Ok(())
@@ -394,7 +403,7 @@ impl<'a> SpawnContext<'a> {
         );
 
         if chan_state_src.is_open() && chan_state_dst.is_open() {
-            // create the client object and spawn worker
+            // spawn the client worker
             let client_object = Object::Client(Client {
                 dst_client_id: client.client_id.clone(),
                 dst_chain_id: chain.id(),
@@ -402,7 +411,13 @@ impl<'a> SpawnContext<'a> {
             });
 
             self.workers
-                .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
+                .spawn(
+                    client_object.clone(),
+                    counterparty_chain.clone(),
+                    chain.clone(),
+                )
+                .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
+
 
             // TODO: Only start the Packet worker if there are outstanding packets or ACKs.
             //       https://github.com/informalsystems/ibc-rs/issues/901
@@ -416,7 +431,8 @@ impl<'a> SpawnContext<'a> {
             });
 
             self.workers
-                .get_or_spawn(path_object, chain, counterparty_chain);
+                .spawn(path_object.clone(), chain, counterparty_chain)
+                .then(|| debug!("spawned Path worker: {}", path_object.short_name()));
         } else if !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
             && handshake_enabled
@@ -430,7 +446,8 @@ impl<'a> SpawnContext<'a> {
             });
 
             self.workers
-                .get_or_spawn(channel_object, chain, counterparty_chain);
+                .spawn(channel_object.clone(), chain, counterparty_chain)
+                .then(|| debug!("spawned Channel worker: {}", channel_object.short_name()));
         }
 
         Ok(())

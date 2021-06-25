@@ -57,13 +57,7 @@ impl Worker {
     ) -> WorkerHandle {
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 
-        debug!(
-            "[{}] spawned worker with chains a:{} and b:{} for object {:#?} ",
-            object.short_name(),
-            chains.a.id(),
-            chains.b.id(),
-            object,
-        );
+        debug!("spawning worker for object {}", object.short_name(),);
 
         let worker = match object {
             Object::Client(client) => {

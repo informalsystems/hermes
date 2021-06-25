@@ -49,17 +49,12 @@ impl ClientWorker {
         );
 
         info!(
-            "running client worker & initial misbehaviour detection for {}",
+            "[{}] running client worker & initial misbehaviour detection",
             client
         );
 
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.detect_misbehaviour(&client, None);
-
-        info!(
-            "running client worker (misbehaviour and refresh) for {}",
-            client
-        );
 
         loop {
             thread::sleep(Duration::from_millis(600));
@@ -76,7 +71,7 @@ impl ClientWorker {
                     };
                 }
                 Err(e @ ForeignClientError::ExpiredOrFrozen(..)) => {
-                    warn!("failed to refresh client '{}': {}", client, e);
+                    warn!("[{}] failed to refresh client: {}", client, e);
 
                     // This worker has completed its job as the client cannot be refreshed any
                     // further, and can therefore exit without an error.
@@ -102,11 +97,11 @@ impl ClientWorker {
     fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient) -> bool {
         match cmd {
             WorkerCmd::IbcEvents { batch } => {
-                trace!("client '{}' worker receives batch {:?}", client, batch);
+                trace!("[{}] worker received batch: {:?}", client, batch);
 
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
-                        debug!("client '{}' updated", client);
+                        debug!("[{}] client was updated", client);
 
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client

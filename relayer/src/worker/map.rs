@@ -84,6 +84,24 @@ impl WorkerMap {
         }
     }
 
+    /// Spawn a new [`Worker`], only if one does not exists already.
+    ///
+    /// Returns whether or not the worker was actually spawned.
+    pub fn spawn(
+        &mut self,
+        object: Object,
+        src: Box<dyn ChainHandle>,
+        dst: Box<dyn ChainHandle>,
+    ) -> bool {
+        if !self.workers.contains_key(&object) {
+            let worker = self.spawn_worker(src, dst, &object);
+            self.workers.entry(object).or_insert(worker);
+            true
+        } else {
+            false
+        }
+    }
+
     fn spawn_worker(
         &mut self,
         src: Box<dyn ChainHandle>,
