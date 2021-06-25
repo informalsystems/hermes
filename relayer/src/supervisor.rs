@@ -326,7 +326,22 @@ impl Supervisor {
             .push(config);
 
         debug!(chain.id=%id, "spawning chain runtime");
-        self.registry.get_or_spawn(&id).unwrap(); // FIXME: unwrap
+
+        if let Err(e) = self.registry.spawn(&id) {
+            error!(
+                "failed to add chain {} because of failure to spawn the chain runtime: {}",
+                id, e
+            );
+
+            // Remove the newly added config
+            self.config
+                .write()
+                .expect("poisoned lock")
+                .chains
+                .retain(|c| c.id != id);
+
+            return AfterCmd::Nothing;
+        }
 
         debug!(chain.id=%id, "spawning workers");
         self.spawn_context().spawn_workers_for_chain(&id);

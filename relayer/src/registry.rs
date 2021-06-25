@@ -48,15 +48,29 @@ impl Registry {
     /// If there is no handle yet, this will first spawn the runtime and then
     /// return its handle.
     pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Box<dyn ChainHandle>, BoxError> {
+        self.spawn(chain_id)?;
+
+        let handle = self
+            .handles
+            .get(chain_id)
+            .expect("runtime was just spawned");
+
+        Ok(handle.clone())
+    }
+
+    /// Spawn a chain runtime for the chain with the given [`ChainId`],
+    /// only if the registry does not contain a handle for that runtime already.
+    ///
+    /// Returns whether or not the runtime was actually spawned.
+    pub fn spawn(&mut self, chain_id: &ChainId) -> Result<bool, BoxError> {
         if !self.handles.contains_key(chain_id) {
             let handle = spawn_chain_runtime(&self.config, chain_id, self.rt.clone())?;
             self.handles.insert(chain_id.clone(), handle);
-            trace!("spawned chain runtime for chain identifier {}", chain_id);
+            trace!("spawned chain runtime for chain {}", chain_id);
+            Ok(true)
+        } else {
+            Ok(false)
         }
-
-        let handle = self.handles.get(chain_id).unwrap();
-
-        Ok(handle.clone())
     }
 
     /// Shutdown the runtime associated with the given chain identifier.
