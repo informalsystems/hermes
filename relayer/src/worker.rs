@@ -75,7 +75,7 @@ impl Worker {
             Object::Channel(channel) => {
                 Self::Channel(ChannelWorker::new(channel, chains, cmd_rx, telemetry))
             }
-            Object::UnidirectionalChannelPath(path) => {
+            Object::Packet(path) => {
                 Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx, telemetry))
             }
         };

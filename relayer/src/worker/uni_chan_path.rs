@@ -7,7 +7,7 @@ use tracing::{error, info, warn};
 use crate::{
     chain::handle::ChainHandlePair,
     link::{Link, LinkParameters, RelaySummary},
-    object::UnidirectionalChannelPath,
+    object::Packet,
     telemetry,
     telemetry::Telemetry,
     util::retry::{retry_with_index, RetryResult},
@@ -23,7 +23,7 @@ enum Step {
 
 #[derive(Debug)]
 pub struct UniChanPathWorker {
-    path: UnidirectionalChannelPath,
+    path: Packet,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
     telemetry: Telemetry,
@@ -31,7 +31,7 @@ pub struct UniChanPathWorker {
 
 impl UniChanPathWorker {
     pub fn new(
-        path: UnidirectionalChannelPath,
+        path: Packet,
         chains: ChainHandlePair,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
@@ -133,7 +133,7 @@ impl UniChanPathWorker {
     }
 
     /// Get a reference to the client worker's object.
-    pub fn object(&self) -> &UnidirectionalChannelPath {
+    pub fn object(&self) -> &Packet {
         &self.path
     }
 

@@ -21,7 +21,7 @@ use crate::{
         handle::ChainHandle,
     },
     config::Config,
-    object::{Channel, Client, Connection, Object, UnidirectionalChannelPath},
+    object::{Channel, Client, Connection, Object, Packet},
     registry::Registry,
     worker::WorkerMap,
 };
@@ -408,7 +408,7 @@ impl<'a> SpawnContext<'a> {
             // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
             //  https://github.com/informalsystems/ibc-rs/issues/901
             // create the path object and spawn worker
-            let path_object = Object::UnidirectionalChannelPath(UnidirectionalChannelPath {
+            let path_object = Object::Packet(Packet {
                 dst_chain_id: counterparty_chain.id(),
                 src_chain_id: chain.id(),
                 src_channel_id: channel.channel_id,

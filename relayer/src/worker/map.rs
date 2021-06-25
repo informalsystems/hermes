@@ -130,6 +130,6 @@ fn metric_type(o: &Object) -> ibc_telemetry::state::WorkerType {
         Object::Client(_) => Client,
         Object::Connection(_) => Connection,
         Object::Channel(_) => Channel,
-        Object::UnidirectionalChannelPath(_) => Packet,
+        Object::Packet(_) => Packet,
     }
 }

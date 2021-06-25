@@ -89,9 +89,9 @@ impl Channel {
     }
 }
 
-/// A unidirectional path from a source chain, channel and port.
+/// A packet worker between a source and destination chain, and a specific channel and port.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct UnidirectionalChannelPath {
+pub struct Packet {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
 
@@ -105,7 +105,7 @@ pub struct UnidirectionalChannelPath {
     pub src_port_id: PortId,
 }
 
-impl UnidirectionalChannelPath {
+impl Packet {
     pub fn short_name(&self) -> String {
         format!(
             "{}/{}:{}->{}",
@@ -129,7 +129,7 @@ pub enum Object {
     /// See [`Channel`].
     Channel(Channel),
     /// See [`UnidirectionalChannelPath`].
-    UnidirectionalChannelPath(UnidirectionalChannelPath),
+    Packet(Packet),
 }
 
 impl Object {
@@ -141,7 +141,7 @@ impl Object {
             Object::Client(_) => false,
             Object::Connection(c) => &c.src_chain_id == src_chain_id,
             Object::Channel(c) => &c.src_chain_id == src_chain_id,
-            Object::UnidirectionalChannelPath(p) => &p.src_chain_id == src_chain_id,
+            Object::Packet(p) => &p.src_chain_id == src_chain_id,
         }
     }
 
@@ -151,9 +151,7 @@ impl Object {
             Object::Client(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
             Object::Connection(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
             Object::Channel(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
-            Object::UnidirectionalChannelPath(p) => {
-                &p.src_chain_id == chain_id || &p.dst_chain_id == chain_id
-            }
+            Object::Packet(p) => &p.src_chain_id == chain_id || &p.dst_chain_id == chain_id,
         }
     }
 
@@ -163,7 +161,7 @@ impl Object {
             Object::Client(_) => ObjectType::Client,
             Object::Channel(_) => ObjectType::Channel,
             Object::Connection(_) => ObjectType::Connection,
-            Object::UnidirectionalChannelPath(_) => ObjectType::UnidirectionalChannelPath,
+            Object::Packet(_) => ObjectType::UnidirectionalChannelPath,
         }
     }
 }
@@ -194,9 +192,9 @@ impl From<Channel> for Object {
     }
 }
 
-impl From<UnidirectionalChannelPath> for Object {
-    fn from(p: UnidirectionalChannelPath) -> Self {
-        Self::UnidirectionalChannelPath(p)
+impl From<Packet> for Object {
+    fn from(p: Packet) -> Self {
+        Self::Packet(p)
     }
 }
 
@@ -206,7 +204,7 @@ impl Object {
             Self::Client(ref client) => &client.src_chain_id,
             Self::Connection(ref connection) => &connection.src_chain_id,
             Self::Channel(ref channel) => &channel.src_chain_id,
-            Self::UnidirectionalChannelPath(ref path) => &path.src_chain_id,
+            Self::Packet(ref path) => &path.src_chain_id,
         }
     }
 
@@ -215,7 +213,7 @@ impl Object {
             Self::Client(ref client) => &client.dst_chain_id,
             Self::Connection(ref connection) => &connection.dst_chain_id,
             Self::Channel(ref channel) => &channel.dst_chain_id,
-            Self::UnidirectionalChannelPath(ref path) => &path.dst_chain_id,
+            Self::Packet(ref path) => &path.dst_chain_id,
         }
     }
 
@@ -224,7 +222,7 @@ impl Object {
             Self::Client(ref client) => client.short_name(),
             Self::Connection(ref connection) => connection.short_name(),
             Self::Channel(ref channel) => channel.short_name(),
-            Self::UnidirectionalChannelPath(ref path) => path.short_name(),
+            Self::Packet(ref path) => path.short_name(),
         }
     }
 
@@ -334,7 +332,7 @@ impl Object {
             &e.packet.source_port,
         )?;
 
-        Ok(UnidirectionalChannelPath {
+        Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.packet.source_channel.clone(),
@@ -354,7 +352,7 @@ impl Object {
             &e.packet.destination_port,
         )?;
 
-        Ok(UnidirectionalChannelPath {
+        Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.packet.destination_channel.clone(),
@@ -374,7 +372,7 @@ impl Object {
             &e.packet.source_port,
         )?;
 
-        Ok(UnidirectionalChannelPath {
+        Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.src_channel_id().clone(),
@@ -391,7 +389,7 @@ impl Object {
         let dst_chain_id =
             counterparty_chain_from_channel(src_chain, e.channel_id(), &e.port_id())?;
 
-        Ok(UnidirectionalChannelPath {
+        Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: e.channel_id().clone(),
