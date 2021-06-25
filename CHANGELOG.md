@@ -2,10 +2,16 @@
 
 ## Unreleased
 
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Added `config validate` CLI to Hermes ([#600])
+
 ### IMPROVEMENTS
 
 - Update to `tendermint-rs` v0.20.0 ([#1125])
 
+[#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 
 
