@@ -68,7 +68,12 @@ fn register_signal(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resul
                 }
                 SIGUSR1 => {
                     info!("Dumping state (triggered by SIGUSR1)");
-                    tx_cmd.send(SupervisorCmd::DumpState).unwrap();
+
+                    let (tx, rx) = crossbeam_channel::bounded(1);
+                    tx_cmd.send(SupervisorCmd::DumpState(tx)).unwrap();
+                    if let Ok(state) = rx.recv() {
+                        state.print_info();
+                    }
                 }
 
                 _ => (),

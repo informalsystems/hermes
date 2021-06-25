@@ -1,5 +1,6 @@
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
+    fmt,
     sync::{Arc, RwLock},
     time::Duration,
 };
@@ -16,7 +17,7 @@ use crate::{
     config::{ChainConfig, Config},
     event,
     event::monitor::{EventBatch, UnwrapOrClone},
-    object::Object,
+    object::{Object, ObjectType},
     registry::Registry,
     supervisor::spawn::SpawnContext,
     telemetry::Telemetry,
@@ -45,7 +46,7 @@ pub enum ConfigUpdate {
 #[derive(Clone, Debug)]
 pub enum SupervisorCmd {
     UpdateConfig(ConfigUpdate),
-    DumpState,
+    DumpState(Sender<SupervisorState>),
 }
 
 /// The supervisor listens for events on multiple pairs of chains,
@@ -276,27 +277,28 @@ impl Supervisor {
     fn handle_cmd(&mut self, cmd: SupervisorCmd) -> AfterCmd {
         match cmd {
             SupervisorCmd::UpdateConfig(update) => self.update_config(update),
-            SupervisorCmd::DumpState => self.dump_state(),
+            SupervisorCmd::DumpState(reply_to) => self.dump_state(reply_to),
         }
     }
 
-    fn dump_state(&self) -> AfterCmd {
-        for chain in self.registry.chains() {
-            let objects_map = self
-                .workers
-                .objects_for_chain(&chain.id())
-                .into_iter()
-                .into_group_map_by(|o| o.object_type());
+    fn dump_state(&self, reply_to: Sender<SupervisorState>) -> AfterCmd {
+        let mut state = SupervisorState::default();
 
-            info!("");
-            info!("# {}:", chain.id());
-            for (tpe, objects) in objects_map {
-                info!("* {:?} workers:", tpe);
-                for object in objects {
-                    info!("  - {}", object.short_name());
-                }
-            }
+        for chain in self.registry.chains() {
+            let mut objects = self.workers.objects_for_chain(&chain.id());
+
+            objects.sort();
+
+            let objects_map = objects
+                .into_iter()
+                .into_group_map_by(|o| o.object_type())
+                .into_iter()
+                .collect::<BTreeMap<_, _>>();
+
+            state.chains.insert(chain.id(), objects_map);
         }
+
+        let _ = reply_to.try_send(state);
 
         AfterCmd::Nothing
     }
@@ -485,5 +487,35 @@ impl AfterCmd {
             (_, AfterCmd::ReinitSubscriptions) => AfterCmd::ReinitSubscriptions,
             _ => self,
         }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct SupervisorState {
+    pub chains: BTreeMap<ChainId, BTreeMap<ObjectType, Vec<Object>>>,
+}
+
+impl SupervisorState {
+    pub fn print_info(&self) {
+        self.to_string()
+            .split('\n')
+            .for_each(|line| info!("{}", line));
+    }
+}
+
+impl fmt::Display for SupervisorState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f)?;
+        for (chain, objects_map) in &self.chains {
+            writeln!(f, "# {}:", chain)?;
+            for (tpe, objects) in objects_map {
+                writeln!(f, "* {:?} workers:", tpe)?;
+                for object in objects {
+                    writeln!(f, "  - {}", object.short_name())?;
+                }
+            }
+        }
+
+        Ok(())
     }
 }
