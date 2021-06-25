@@ -36,7 +36,7 @@ pub struct Client {
 impl Client {
     pub fn short_name(&self) -> String {
         format!(
-            "{}->{}:{}",
+            "client::{}->{}:{}",
             self.src_chain_id, self.dst_chain_id, self.dst_client_id
         )
     }
@@ -58,7 +58,7 @@ pub struct Connection {
 impl Connection {
     pub fn short_name(&self) -> String {
         format!(
-            "{}:{} -> {}",
+            "connection::{}:{} -> {}",
             self.src_connection_id, self.src_chain_id, self.dst_chain_id,
         )
     }
@@ -83,7 +83,7 @@ pub struct Channel {
 impl Channel {
     pub fn short_name(&self) -> String {
         format!(
-            "{}/{}:{} -> {}",
+            "channel::{}/{}:{} -> {}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
@@ -108,7 +108,7 @@ pub struct Packet {
 impl Packet {
     pub fn short_name(&self) -> String {
         format!(
-            "{}/{}:{}->{}",
+            "packet::{}/{}:{}->{}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
