@@ -128,9 +128,9 @@ impl<'a> SpawnContext<'a> {
             Ok(connections) => connections,
             Err(e) => {
                 error!(
-                "skipping workers for chain {}, reason: failed to query client connections for client {}: {}",
-                chain_id, client.client_id, e
-            );
+                    "skipping workers for chain {}, reason: failed to query client connections for client {}: {}",
+                    chain_id, client.client_id, e
+                );
 
                 return;
             }
@@ -153,9 +153,9 @@ impl<'a> SpawnContext<'a> {
             Ok(connection_end) => connection_end,
             Err(e) => {
                 error!(
-                "skipping workers for chain {} and connection {}, reason: failed to query connection end: {}",
-                chain_id, connection_id, e
-            );
+                    "skipping workers for chain {} and connection {}, reason: failed to query connection end: {}",
+                    chain_id, connection_id, e
+                );
 
                 return;
             }
@@ -178,8 +178,7 @@ impl<'a> SpawnContext<'a> {
             Ok(connections) => connections,
             Err(e) => {
                 error!(
-                    "skipping workers for chain {}. \
-                             reason: failed to query client connections for client {}: {}",
+                    "skipping workers for chain {}, reason: failed to query client connections for client {}: {}",
                     chain_id, client.client_id, e
                 );
 
@@ -192,8 +191,7 @@ impl<'a> SpawnContext<'a> {
                 Ok(connection_end) => connection_end,
                 Err(e) => {
                     error!(
-                        "skipping workers for chain {} and connection {}. \
-                                    reason: failed to query connection end: {}",
+                        "skipping workers for chain {} and connection {}, reason: failed to query connection end: {}",
                         chain_id, connection_id, e
                     );
 
@@ -241,14 +239,15 @@ impl<'a> SpawnContext<'a> {
                 Ok(state) => {
                     if !state.eq(&ConnectionState::Open) {
                         debug!(
-                            "connection {} not open, skip workers for channels over this connetion",
+                            "connection {} not open, skip workers for channels over this connection",
                             connection.connection_id
                         );
 
                         debug!(
-                            "drop connection {} because its counterparty is not open ",
+                            "drop connection {} because its counterparty is not open",
                             connection_id
                         );
+
                         continue;
                     }
                 }
@@ -263,9 +262,9 @@ impl<'a> SpawnContext<'a> {
                 Ok(channels) => channels,
                 Err(e) => {
                     error!(
-                "skipping workers for chain {} and connection {}, reason: failed to query its channels: {}",
-                chain.id(), connection_id, e
-            );
+                        "skipping workers for chain {} and connection {}, reason: failed to query its channels: {}",
+                        chain.id(), connection_id, e
+                    );
 
                     return;
                 }
