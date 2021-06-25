@@ -227,8 +227,9 @@ impl Supervisor {
             }
 
             if let Ok(cmd) = self.cmd_rx.try_recv() {
-                let reinit = self.handle_cmd(cmd);
-                if reinit {
+                let after = self.handle_cmd(cmd);
+
+                if let AfterCmd::ReinitSubscriptions = after {
                     subscriptions = self.init_subscriptions()?;
                 }
             }
@@ -272,14 +273,14 @@ impl Supervisor {
         Ok(subscriptions)
     }
 
-    fn handle_cmd(&mut self, cmd: SupervisorCmd) -> bool {
+    fn handle_cmd(&mut self, cmd: SupervisorCmd) -> AfterCmd {
         match cmd {
             SupervisorCmd::UpdateConfig(update) => self.update_config(update),
             SupervisorCmd::DumpState => self.dump_state(),
         }
     }
 
-    fn dump_state(&self) -> bool {
+    fn dump_state(&self) -> AfterCmd {
         for chain in self.registry.chains() {
             let objects_map = self
                 .workers
@@ -297,10 +298,10 @@ impl Supervisor {
             }
         }
 
-        false
+        AfterCmd::Nothing
     }
 
-    fn update_config(&mut self, update: ConfigUpdate) -> bool {
+    fn update_config(&mut self, update: ConfigUpdate) -> AfterCmd {
         match update {
             ConfigUpdate::Add(config) => self.add_chain(config),
             ConfigUpdate::Remove(id) => self.remove_chain(&id),
@@ -308,15 +309,16 @@ impl Supervisor {
         }
     }
 
-    fn add_chain(&mut self, config: ChainConfig) -> bool {
+    fn add_chain(&mut self, config: ChainConfig) -> AfterCmd {
         let id = config.id.clone();
 
         if self.config.read().expect("poisoned lock").has_chain(&id) {
             info!(chain.id=%id, "skipping addition of already existing chain");
-            return false;
+            return AfterCmd::Nothing;
         }
 
         info!(chain.id=%id, "adding new chain");
+
         self.config
             .write()
             .expect("poisoned lock")
@@ -329,16 +331,17 @@ impl Supervisor {
         debug!(chain.id=%id, "spawning workers");
         self.spawn_context().spawn_workers_for_chain(&id);
 
-        true
+        AfterCmd::ReinitSubscriptions
     }
 
-    fn remove_chain(&mut self, id: &ChainId) -> bool {
+    fn remove_chain(&mut self, id: &ChainId) -> AfterCmd {
         if !self.config.read().expect("poisoned lock").has_chain(&id) {
             info!(chain.id=%id, "skipping removal of non-existing chain");
-            return false;
+            return AfterCmd::Nothing;
         }
 
         info!(chain.id=%id, "removing existing chain");
+
         self.config
             .write()
             .expect("poisoned lock")
@@ -351,13 +354,13 @@ impl Supervisor {
         debug!(chain.id=%id, "shutting down chain runtime");
         self.registry.shutdown(&id);
 
-        true
+        AfterCmd::ReinitSubscriptions
     }
 
-    fn update_chain(&mut self, config: ChainConfig) -> bool {
+    fn update_chain(&mut self, config: ChainConfig) -> AfterCmd {
         let removed = self.remove_chain(&config.id);
         let added = self.add_chain(config);
-        removed || added
+        removed.or(added)
     }
 
     /// Process the given [`WorkerMsg`] sent by a worker.
@@ -451,5 +454,21 @@ impl CollectedEvents {
     /// Whether the collected events include a [`NewBlock`] event.
     pub fn has_new_block(&self) -> bool {
         self.new_block.is_some()
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum AfterCmd {
+    ReinitSubscriptions,
+    Nothing,
+}
+
+impl AfterCmd {
+    fn or(self, other: Self) -> Self {
+        match (self, other) {
+            (AfterCmd::ReinitSubscriptions, _) => AfterCmd::ReinitSubscriptions,
+            (_, AfterCmd::ReinitSubscriptions) => AfterCmd::ReinitSubscriptions,
+            _ => self,
+        }
     }
 }
