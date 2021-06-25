@@ -418,6 +418,26 @@ impl<'a> SpawnContext<'a> {
                 )
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
+            // spawn the client worker for the counterparty
+            let counterparty_client_id = connection.connection_end.counterparty().client_id();
+            let counterparty_client_object = Object::Client(Client {
+                dst_client_id: counterparty_client_id.clone(),
+                dst_chain_id: client.client_state.chain_id(),
+                src_chain_id: chain.id(),
+            });
+
+            self.workers
+                .spawn(
+                    counterparty_client_object.clone(),
+                    chain.clone(),
+                    counterparty_chain.clone(),
+                )
+                .then(|| {
+                    debug!(
+                        "spawned Client worker: {}",
+                        counterparty_client_object.short_name()
+                    )
+                });
 
             // TODO: Only start the Packet worker if there are outstanding packets or ACKs.
             //       https://github.com/informalsystems/ibc-rs/issues/901
