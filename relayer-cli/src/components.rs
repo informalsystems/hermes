@@ -96,7 +96,7 @@ fn enable_ansi() -> bool {
 
 /// Builds a tracing filter based on the input `log_level`.
 /// Enables tracing exclusively for the relayer crates.
-/// Returns error if the given `log_level` is invalid.
+/// Returns error if the filter failed to build.
 fn build_tracing_filter(log_level: String) -> Result<EnvFilter, FrameworkError> {
     let target_crates = ["ibc_relayer", "ibc_relayer_cli"];
 
