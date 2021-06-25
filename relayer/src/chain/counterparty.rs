@@ -77,29 +77,28 @@ pub fn connection_state_on_destination(
     connection: IdentifiedConnectionEnd,
     counterparty_chain: &dyn ChainHandle,
 ) -> Result<ConnectionState, Error> {
-    let counterparty_state = if let Some(remote_connection_id) =
-        connection.connection_end.counterparty().connection_id()
-    {
-        counterparty_chain
+    if let Some(remote_connection_id) = connection.connection_end.counterparty().connection_id() {
+        let connection_end = counterparty_chain
             .query_connection(remote_connection_id, Height::zero())
-            .map_err(|e| Error::QueryFailed(format!("{}", e)))?
-            .state
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        Ok(connection_end.state)
     } else {
         // The remote connection id (used on `counterparty_chain`) is unknown.
         // Try to retrieve this id by looking at client connections.
-        let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
+        let counterparty_client_id = connection.connection_end.counterparty().client_id();
 
-        connection_on_destination(
+        let dst_connection = connection_on_destination(
             &connection.connection_id,
-            &counterparty_client_id,
+            counterparty_client_id,
             counterparty_chain,
-        )?
-        .map_or_else(
-            || ConnectionState::Uninitialized,
-            |remote_connection| remote_connection.state,
+        )?;
+
+        dst_connection.map_or_else(
+            || Ok(ConnectionState::Uninitialized),
+            |remote_connection| Ok(remote_connection.state),
         )
-    };
-    Ok(counterparty_state)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
