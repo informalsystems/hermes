@@ -216,35 +216,35 @@ impl RelayPath {
     }
 
     pub fn src_chain(&self) -> &Box<dyn ChainHandle> {
-        &self.channel.src_chain()
+        self.channel.src_chain()
     }
 
     pub fn dst_chain(&self) -> &Box<dyn ChainHandle> {
-        &self.channel.dst_chain()
+        self.channel.dst_chain()
     }
 
     pub fn src_client_id(&self) -> &ClientId {
-        &self.channel.src_client_id()
+        self.channel.src_client_id()
     }
 
     pub fn dst_client_id(&self) -> &ClientId {
-        &self.channel.dst_client_id()
+        self.channel.dst_client_id()
     }
 
     pub fn src_connection_id(&self) -> &ConnectionId {
-        &self.channel.src_connection_id()
+        self.channel.src_connection_id()
     }
 
     pub fn dst_connection_id(&self) -> &ConnectionId {
-        &self.channel.dst_connection_id()
+        self.channel.dst_connection_id()
     }
 
     pub fn src_port_id(&self) -> &PortId {
-        &self.channel.src_port_id()
+        self.channel.src_port_id()
     }
 
     pub fn dst_port_id(&self) -> &PortId {
-        &self.channel.dst_port_id()
+        self.channel.dst_port_id()
     }
 
     pub fn src_channel_id(&self) -> Result<&ChannelId, LinkError> {
@@ -414,7 +414,7 @@ impl RelayPath {
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
             info!(
-                "[{}] clearing pending packets from events before height {:?}",
+                "[{}] clearing pending packets from events before height {}",
                 self, above_height
             );
 
@@ -515,12 +515,12 @@ impl RelayPath {
                     }
                 }
                 IbcEvent::SendPacket(ref send_packet_ev) => {
-                    if self.send_packet_event_handled(&send_packet_ev)? {
+                    if self.send_packet_event_handled(send_packet_ev)? {
                         debug!("[{}] {} already handled", self, send_packet_ev);
                         (None, None)
                     } else {
                         self.build_recv_or_timeout_from_send_packet_event(
-                            &send_packet_ev,
+                            send_packet_ev,
                             dst_height,
                         )?
                     }
@@ -535,7 +535,7 @@ impl RelayPath {
                         debug!("[{}] {} already handled", self, write_ack_ev);
                         (None, None)
                     } else {
-                        (self.build_ack_from_recv_event(&write_ack_ev)?, None)
+                        (self.build_ack_from_recv_event(write_ack_ev)?, None)
                     }
                 }
                 _ => (None, None),
@@ -616,11 +616,21 @@ impl RelayPath {
                     return Ok(summary);
                 }
                 Err(LinkError::SendError(ev)) => {
-                    // This error means we can retry
+                    // This error means we could retry
                     error!("[{}] error {}", self, ev);
-                    match self.regenerate_operational_data(odata.clone()) {
-                        None => return Ok(RelaySummary::empty()), // Nothing to retry
-                        Some(new_od) => odata = new_od,
+                    if i + 1 == MAX_RETRIES {
+                        error!(
+                            "[{}] {}/{} retries exhausted. giving up",
+                            self,
+                            i + 1,
+                            MAX_RETRIES
+                        )
+                    } else {
+                        // If we haven't exhausted all retries, regenerate the op. data & retry
+                        match self.regenerate_operational_data(odata.clone()) {
+                            None => return Ok(RelaySummary::empty()), // Nothing to retry
+                            Some(new_od) => odata = new_od,
+                        }
                     }
                 }
                 Err(e) => {
@@ -1315,7 +1325,7 @@ impl RelayPath {
                 match event {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
-                        if self.send_packet_event_handled(&e)? {
+                        if self.send_packet_event_handled(e)? {
                             debug!("[{}] {} already handled", self, e);
                         } else if let Some(new_msg) =
                             self.build_timeout_from_send_packet_event(e, dst_current_height)?
@@ -1333,7 +1343,7 @@ impl RelayPath {
                         }
                     }
                     IbcEvent::WriteAcknowledgement(e) => {
-                        if self.write_ack_event_handled(&e)? {
+                        if self.write_ack_event_handled(e)? {
                             debug!("[{}] {} already handled", self, e);
                         } else {
                             retain_batch.push(gm.clone());

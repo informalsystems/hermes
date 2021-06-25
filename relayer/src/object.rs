@@ -2,15 +2,19 @@ use anomaly::BoxError;
 
 use ibc::{
     ics02_client::{client_state::ClientState, events::UpdateClient},
+    ics03_connection::events::Attributes as ConnectionAttributes,
     ics04_channel::events::{
         Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
     },
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     Height,
 };
 
 use crate::chain::{
-    counterparty::{channel_connection_client, get_counterparty_chain},
+    counterparty::{
+        channel_connection_client, counterparty_chain_from_channel,
+        counterparty_chain_from_connection,
+    },
     handle::ChainHandle,
 };
 
@@ -34,6 +38,28 @@ impl Client {
         format!(
             "{}->{}:{}",
             self.src_chain_id, self.dst_chain_id, self.dst_client_id
+        )
+    }
+}
+
+/// Connection
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Connection {
+    /// Destination chain identifier.
+    pub dst_chain_id: ChainId,
+
+    /// Source chain identifier.
+    pub src_chain_id: ChainId,
+
+    /// Source connection identifier.
+    pub src_connection_id: ConnectionId,
+}
+
+impl Connection {
+    pub fn short_name(&self) -> String {
+        format!(
+            "{}:{} -> {}",
+            self.src_connection_id, self.src_chain_id, self.dst_chain_id,
         )
     }
 }
@@ -98,6 +124,8 @@ impl UnidirectionalChannelPath {
 pub enum Object {
     /// See [`Client`].
     Client(Client),
+    /// See [`Connection`].
+    Connection(Connection),
     /// See [`Channel`].
     Channel(Channel),
     /// See [`UnidirectionalChannelPath`].
@@ -111,6 +139,7 @@ impl Object {
     pub fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
         match self {
             Object::Client(_) => false,
+            Object::Connection(c) => c.src_chain_id == *src_chain_id,
             Object::Channel(c) => c.src_chain_id == *src_chain_id,
             Object::UnidirectionalChannelPath(p) => p.src_chain_id == *src_chain_id,
         }
@@ -120,6 +149,12 @@ impl Object {
 impl From<Client> for Object {
     fn from(c: Client) -> Self {
         Self::Client(c)
+    }
+}
+
+impl From<Connection> for Object {
+    fn from(c: Connection) -> Self {
+        Self::Connection(c)
     }
 }
 
@@ -139,24 +174,27 @@ impl Object {
     pub fn src_chain_id(&self) -> &ChainId {
         match self {
             Self::Client(ref client) => &client.src_chain_id,
-            Self::UnidirectionalChannelPath(ref path) => &path.src_chain_id,
+            Self::Connection(ref connection) => &connection.src_chain_id,
             Self::Channel(ref channel) => &channel.src_chain_id,
+            Self::UnidirectionalChannelPath(ref path) => &path.src_chain_id,
         }
     }
 
     pub fn dst_chain_id(&self) -> &ChainId {
         match self {
             Self::Client(ref client) => &client.dst_chain_id,
-            Self::UnidirectionalChannelPath(ref path) => &path.dst_chain_id,
+            Self::Connection(ref connection) => &connection.dst_chain_id,
             Self::Channel(ref channel) => &channel.dst_chain_id,
+            Self::UnidirectionalChannelPath(ref path) => &path.dst_chain_id,
         }
     }
 
     pub fn short_name(&self) -> String {
         match self {
             Self::Client(ref client) => client.short_name(),
-            Self::UnidirectionalChannelPath(ref path) => path.short_name(),
+            Self::Connection(ref connection) => connection.short_name(),
             Self::Channel(ref channel) => channel.short_name(),
+            Self::UnidirectionalChannelPath(ref path) => path.short_name(),
         }
     }
 
@@ -212,6 +250,31 @@ impl Object {
         .into())
     }
 
+    /// Build the Connection object associated with the given [`Open`] connection event.
+    pub fn connection_from_conn_open_events(
+        e: &ConnectionAttributes,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let connection_id = e.connection_id.as_ref().ok_or_else(|| {
+            format!(
+                "connection_id missing from connection handshake event '{:?}'",
+                e
+            )
+        })?;
+
+        let dst_chain_id =
+            counterparty_chain_from_connection(src_chain, &connection_id).map_err(|_| {
+                "destination chain id not found during conn open handshake step".to_string()
+            })?;
+
+        Ok(Connection {
+            dst_chain_id,
+            src_chain_id: src_chain.id(),
+            src_connection_id: connection_id.clone(),
+        }
+        .into())
+    }
+
     /// Build the Channel object associated with the given [`Open`] channel event.
     pub fn channel_from_chan_open_events(
         e: &Attributes,
@@ -221,7 +284,7 @@ impl Object {
             .channel_id()
             .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
 
-        let dst_chain_id = get_counterparty_chain(src_chain, channel_id, &e.port_id())
+        let dst_chain_id = counterparty_chain_from_channel(src_chain, channel_id, &e.port_id())
             .map_err(|_| "dest chain missing in init".to_string())?;
 
         Ok(Channel {
@@ -235,8 +298,11 @@ impl Object {
 
     /// Build the object associated with the given [`SendPacket`] event.
     pub fn for_send_packet(e: &SendPacket, src_chain: &dyn ChainHandle) -> Result<Self, BoxError> {
-        let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)?;
+        let dst_chain_id = counterparty_chain_from_channel(
+            src_chain,
+            &e.packet.source_channel,
+            &e.packet.source_port,
+        )?;
 
         Ok(UnidirectionalChannelPath {
             dst_chain_id,
@@ -252,7 +318,7 @@ impl Object {
         e: &WriteAcknowledgement,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id = get_counterparty_chain(
+        let dst_chain_id = counterparty_chain_from_channel(
             src_chain,
             &e.packet.destination_channel,
             &e.packet.destination_port,
@@ -272,8 +338,11 @@ impl Object {
         e: &TimeoutPacket,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id =
-            get_counterparty_chain(src_chain, &e.packet.source_channel, &e.packet.source_port)?;
+        let dst_chain_id = counterparty_chain_from_channel(
+            src_chain,
+            &e.packet.source_channel,
+            &e.packet.source_port,
+        )?;
 
         Ok(UnidirectionalChannelPath {
             dst_chain_id,
@@ -289,7 +358,8 @@ impl Object {
         e: &CloseInit,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let dst_chain_id = get_counterparty_chain(src_chain, e.channel_id(), &e.port_id())?;
+        let dst_chain_id =
+            counterparty_chain_from_channel(src_chain, e.channel_id(), &e.port_id())?;
 
         Ok(UnidirectionalChannelPath {
             dst_chain_id,
