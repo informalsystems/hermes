@@ -231,7 +231,13 @@ impl Supervisor {
                 let after = self.handle_cmd(cmd);
 
                 if let AfterCmd::ReinitSubscriptions = after {
-                    subscriptions = self.init_subscriptions()?;
+                    match self.init_subscriptions() {
+                        Ok(subs) => {
+                            subscriptions = subs;
+                        }
+                        Err(Error::NoChainsAvailable) => (),
+                        Err(e) => return Err(e.into()),
+                    }
                 }
             }
 

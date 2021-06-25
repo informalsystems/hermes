@@ -70,10 +70,13 @@ fn register_signal(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resul
                     info!("Dumping state (triggered by SIGUSR1)");
 
                     let (tx, rx) = crossbeam_channel::bounded(1);
-                    tx_cmd.send(SupervisorCmd::DumpState(tx)).unwrap();
-                    if let Ok(state) = rx.recv() {
-                        state.print_info();
-                    }
+                    tx_cmd.try_send(SupervisorCmd::DumpState(tx)).unwrap();
+
+                    std::thread::spawn(move || {
+                        if let Ok(state) = rx.recv() {
+                            state.print_info();
+                        }
+                    });
                 }
 
                 _ => (),
