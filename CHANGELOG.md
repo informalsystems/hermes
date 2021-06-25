@@ -2,10 +2,15 @@
 
 ## Unreleased
 
+## FEATURES
+
+- The chains configuration can be reloaded by sending the Hermes process a `SIGHUP` signal ([#1117])
+
 ### IMPROVEMENTS
 
 - Update to `tendermint-rs` v0.20.0 ([#1125])
 
+[#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 
 
