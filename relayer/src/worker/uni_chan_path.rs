@@ -74,16 +74,12 @@ impl UniChanPathWorker {
                 }
 
                 Ok(Step::Shutdown) => {
-                    info!(path = %self.path.short_name(), "shutting down UnidirectionalChannelPath worker");
+                    info!(path = %self.path.short_name(), "shutting down Packet worker");
                     return Ok(());
                 }
 
                 Err(retries) => {
-                    return Err(format!(
-                        "UnidirectionalChannelPath worker failed after {} retries",
-                        retries
-                    )
-                    .into());
+                    return Err(format!("Packet worker failed after {} retries", retries).into());
                 }
             }
         }
