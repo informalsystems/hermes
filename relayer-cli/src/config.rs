@@ -31,12 +31,6 @@ pub enum Error {
 /// Validation method for syntactic validation of the input
 /// configuration file.
 pub fn validate_config(config: &Config) -> Result<(), Error> {
-    // Check for empty or solitary chains config.
-    if config.chains.is_empty() {
-        // No chain is preconfigured
-        return Err(Error::ZeroChains);
-    }
-
     // Check for duplicate chain configuration.
     let mut unique_chain_ids = BTreeSet::new();
     for chain_id in config.chains.iter().map(|c| c.id.clone()) {
