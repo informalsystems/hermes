@@ -156,6 +156,24 @@ impl Object {
             }
         }
     }
+
+    /// Return the type of object
+    pub fn object_type(&self) -> ObjectType {
+        match self {
+            Object::Client(_) => ObjectType::Client,
+            Object::Channel(_) => ObjectType::Channel,
+            Object::Connection(_) => ObjectType::Connection,
+            Object::UnidirectionalChannelPath(_) => ObjectType::UnidirectionalChannelPath,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ObjectType {
+    Client,
+    Channel,
+    Connection,
+    UnidirectionalChannelPath,
 }
 
 impl From<Client> for Object {

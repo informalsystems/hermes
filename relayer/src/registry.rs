@@ -38,6 +38,11 @@ impl Registry {
         self.handles.len()
     }
 
+    /// Return an iterator overall the chain handles managed by the registry.
+    pub fn chains(&self) -> impl Iterator<Item = &Box<dyn ChainHandle>> {
+        self.handles.values()
+    }
+
     /// Get the [`ChainHandle`] associated with the given [`ChainId`].
     ///
     /// If there is no handle yet, this will first spawn the runtime and then

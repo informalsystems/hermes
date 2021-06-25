@@ -6,6 +6,7 @@ use std::{
 
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
+use itertools::Itertools;
 use tracing::{debug, error, info, warn};
 
 use ibc::{events::IbcEvent, ics24_host::identifier::ChainId, Height};
@@ -44,6 +45,7 @@ pub enum ConfigUpdate {
 #[derive(Clone, Debug)]
 pub enum SupervisorCmd {
     UpdateConfig(ConfigUpdate),
+    DumpState,
 }
 
 /// The supervisor listens for events on multiple pairs of chains,
@@ -273,7 +275,29 @@ impl Supervisor {
     fn handle_cmd(&mut self, cmd: SupervisorCmd) -> bool {
         match cmd {
             SupervisorCmd::UpdateConfig(update) => self.update_config(update),
+            SupervisorCmd::DumpState => self.dump_state(),
         }
+    }
+
+    fn dump_state(&self) -> bool {
+        for chain in self.registry.chains() {
+            let objects_map = self
+                .workers
+                .objects_for_chain(&chain.id())
+                .into_iter()
+                .into_group_map_by(|o| o.object_type());
+
+            info!("");
+            info!("# {}:", chain.id());
+            for (tpe, objects) in objects_map {
+                info!("* {:?} workers:", tpe);
+                for object in objects {
+                    info!("  - {}", object.short_name());
+                }
+            }
+        }
+
+        false
     }
 
     fn update_config(&mut self, update: ConfigUpdate) -> bool {

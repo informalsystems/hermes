@@ -26,8 +26,8 @@ impl Runnable for StartCmd {
 
         match crate::config::config_path() {
             Some(config_path) => {
-                let reload = ConfigReload::new(config_path, config, tx_cmd);
-                register_signal(reload).unwrap_or_else(|e| {
+                let reload = ConfigReload::new(config_path, config, tx_cmd.clone());
+                register_signal(reload, tx_cmd).unwrap_or_else(|e| {
                     warn!("failed to install signal handler: {}", e);
                 });
             }
@@ -45,24 +45,33 @@ impl Runnable for StartCmd {
 }
 
 use std::io;
-fn register_signal(reload: ConfigReload) -> Result<(), io::Error> {
+fn register_signal(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     use signal_hook::{consts::signal::*, iterator::Signals};
 
     let sigs = vec![
-        SIGHUP, // Reload of configuration
+        SIGHUP,  // Reload of configuration
+        SIGUSR1, // Dump state
     ];
 
     let mut signals = Signals::new(&sigs)?;
 
     std::thread::spawn(move || {
         for signal in &mut signals {
-            if signal == SIGHUP {
-                info!("reloading configuration (triggered by SIGHUP)");
-                match reload.reload() {
-                    Ok(true) => info!("configuration successfully reloaded"),
-                    Ok(false) => info!("configuration did not change"),
-                    Err(e) => error!("failed to reload configuration: {}", e),
+            match signal {
+                SIGHUP => {
+                    info!("reloading configuration (triggered by SIGHUP)");
+                    match reload.reload() {
+                        Ok(true) => info!("configuration successfully reloaded"),
+                        Ok(false) => info!("configuration did not change"),
+                        Err(e) => error!("failed to reload configuration: {}", e),
+                    }
                 }
+                SIGUSR1 => {
+                    info!("Dumping state (triggered by SIGUSR1)");
+                    tx_cmd.send(SupervisorCmd::DumpState).unwrap();
+                }
+
+                _ => (),
             }
         }
     });
