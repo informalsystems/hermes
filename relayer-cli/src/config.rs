@@ -15,7 +15,7 @@ pub use ibc_relayer::config::Config;
 /// that a Hermes configuration file could contain.
 #[derive(Error, Debug)]
 pub enum Error {
-    /// No chain was configured
+    /// No chain is configured
     #[error("config file does not specify any chain")]
     ZeroChains,
 
@@ -28,7 +28,7 @@ pub enum Error {
     DuplicateChains(ChainId),
 }
 
-/// Validation method for syntactic validation of the input
+/// Method for syntactic validation of the input
 /// configuration file.
 pub fn validate_config(config: &Config) -> Result<(), Error> {
     // Check for duplicate chain configuration.
