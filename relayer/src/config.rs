@@ -50,6 +50,7 @@ pub mod default {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
@@ -116,7 +117,7 @@ impl fmt::Display for LogLevel {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
     pub strategy: Strategy,
     pub log_level: LogLevel,
@@ -132,6 +133,7 @@ impl Default for GlobalConfig {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
@@ -149,6 +151,7 @@ impl Default for TelemetryConfig {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
     pub rpc_addr: tendermint_rpc::Url,
