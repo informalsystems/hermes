@@ -128,7 +128,7 @@ pub enum Object {
     Connection(Connection),
     /// See [`Channel`].
     Channel(Channel),
-    /// See [`UnidirectionalChannelPath`].
+    /// See [`Packet`].
     Packet(Packet),
 }
 
@@ -161,7 +161,7 @@ impl Object {
             Object::Client(_) => ObjectType::Client,
             Object::Channel(_) => ObjectType::Channel,
             Object::Connection(_) => ObjectType::Connection,
-            Object::Packet(_) => ObjectType::UnidirectionalChannelPath,
+            Object::Packet(_) => ObjectType::Packet,
         }
     }
 }
@@ -171,7 +171,7 @@ pub enum ObjectType {
     Client,
     Channel,
     Connection,
-    UnidirectionalChannelPath,
+    Packet,
 }
 
 impl From<Client> for Object {
