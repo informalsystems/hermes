@@ -405,8 +405,9 @@ impl<'a> SpawnContext<'a> {
             self.workers
                 .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
 
-            // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
-            //  https://github.com/informalsystems/ibc-rs/issues/901
+            // TODO: Only start the Packet worker if there are outstanding packets or ACKs.
+            //       https://github.com/informalsystems/ibc-rs/issues/901
+
             // create the path object and spawn worker
             let path_object = Object::Packet(Packet {
                 dst_chain_id: counterparty_chain.id(),
