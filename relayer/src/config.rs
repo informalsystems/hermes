@@ -51,6 +51,7 @@ pub mod default {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
+    #[serde(default)]
     pub global: GlobalConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
@@ -83,21 +84,49 @@ impl Default for Strategy {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GlobalConfig {
-    #[serde(default)]
-    pub strategy: Strategy,
+/// Log levels are wrappers over [`tracing_core::Level`].
+///
+/// [`tracing_core::Level`]: https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
 
-    /// All valid log levels, as defined in tracing:
-    /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
-    pub log_level: String,
+impl Default for LogLevel {
+    fn default() -> Self {
+        Self::Info
+    }
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LogLevel::Trace => write!(f, "trace"),
+            LogLevel::Debug => write!(f, "debug"),
+            LogLevel::Info => write!(f, "info"),
+            LogLevel::Warn => write!(f, "warn"),
+            LogLevel::Error => write!(f, "error"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(default)]
+pub struct GlobalConfig {
+    pub strategy: Strategy,
+    pub log_level: LogLevel,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
-            log_level: "info".to_string(),
+            log_level: LogLevel::default(),
         }
     }
 }

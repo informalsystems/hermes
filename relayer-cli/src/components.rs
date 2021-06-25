@@ -36,7 +36,7 @@ impl JsonTracing {
     /// Creates a new [`Tracing`] component
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level)?;
+        let filter = build_tracing_filter(cfg.log_level.to_string())?;
         // Note: JSON formatter is un-affected by ANSI 'color' option. Set to 'false'.
         let use_color = false;
 
@@ -67,7 +67,7 @@ impl PrettyTracing {
     /// Creates a new [`Tracing`] component
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level)?;
+        let filter = build_tracing_filter(cfg.log_level.to_string())?;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
@@ -111,14 +111,10 @@ fn build_tracing_filter(log_level: String) -> Result<EnvFilter, FrameworkError> 
     match EnvFilter::try_new(directive_raw.clone()) {
         Ok(out) => Ok(out),
         Err(e) => {
-            let our_err = config::Error::InvalidLogLevel(log_level.clone(), e.to_string());
+            let our_err = config::Error::InvalidLogLevel(log_level, e.to_string());
             eprintln!(
                 "Unable to initialize Hermes from filter directive {:?}: {}",
                 directive_raw, e
-            );
-            eprintln!(
-                "Help: The filter level ({:?}) in your configuration file is probably incorrect",
-                log_level
             );
             Err(FrameworkErrorKind::ConfigError.context(our_err).into())
         }
