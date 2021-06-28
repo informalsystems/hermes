@@ -42,7 +42,9 @@ pub enum QueryCmd {
     Channels(QueryChannelsCmd),
 
     /// The `query trace` subcommand
-    #[options(help = "Query the trace of channels on a given chain")]
+    #[options(
+        help = "Query the trace of clients, channels, connections associated with a given port channel on a given chain"
+    )]
     Trace(QueryTraceCmd),
 
     /// The `query packet` subcommand
