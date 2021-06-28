@@ -92,9 +92,10 @@ mod retry_strategy {
     use crate::util::retry::Fixed;
     use std::time::Duration;
 
-    pub fn wait_for_block_commits() -> impl Iterator<Item = Duration> {
-        // The total time should be higher than the full node timeout which defaults to 10sec.
-        Fixed::from_millis(300).take(40) // 12 seconds
+    pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
+        let backoff_millis = 300;  // The periodic backoff
+        let count: usize = (max_total_wait.as_millis() / backoff_millis as u128) as usize;
+        Fixed::from_millis(backoff_millis).take(count)
     }
 }
 
@@ -500,7 +501,7 @@ impl CosmosSdkChain {
 
         let start = Instant::now();
 
-        let _result = retry_with_index(retry_strategy::wait_for_block_commits(), |index| {
+        let _result = retry_with_index(retry_strategy::wait_for_block_commits(self.config.rpc_timeout), |index| {
             if all_tx_results_found(&tx_sync_results) {
                 trace!(
                     "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
