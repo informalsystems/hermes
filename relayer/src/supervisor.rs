@@ -33,7 +33,7 @@ pub mod spawn;
 use spawn::SpawnContext;
 
 pub mod cmd;
-use cmd::{ConfigUpdate, SupervisorCmd};
+use cmd::{CmdEffect, ConfigUpdate, SupervisorCmd};
 
 type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
@@ -225,7 +225,7 @@ impl Supervisor {
             if let Ok(cmd) = self.cmd_rx.try_recv() {
                 let after = self.handle_cmd(cmd);
 
-                if let AfterCmd::ResetSubscriptions = after {
+                if let CmdEffect::ConfigChanged = after {
                     match self.init_subscriptions() {
                         Ok(subs) => {
                             subscriptions = subs;
@@ -278,9 +278,9 @@ impl Supervisor {
 
     /// Handle the given [`SupervisorCmd`].
     ///
-    /// Returns an [`AfterCmd`] which instructs the caller as to
+    /// Returns an [`CmdEffect`] which instructs the caller as to
     /// whether or not the event subscriptions needs to be reset or not.
-    fn handle_cmd(&mut self, cmd: SupervisorCmd) -> AfterCmd {
+    fn handle_cmd(&mut self, cmd: SupervisorCmd) -> CmdEffect {
         match cmd {
             SupervisorCmd::UpdateConfig(update) => self.update_config(update),
             SupervisorCmd::DumpState(reply_to) => self.dump_state(reply_to),
@@ -289,7 +289,7 @@ impl Supervisor {
 
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
-    fn dump_state(&self, reply_to: Sender<SupervisorState>) -> AfterCmd {
+    fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
         let mut state = SupervisorState::default();
 
         for chain in self.registry.chains() {
@@ -308,14 +308,14 @@ impl Supervisor {
 
         let _ = reply_to.try_send(state);
 
-        AfterCmd::Nothing
+        CmdEffect::Nothing
     }
 
     /// Apply the given configuration update.
     ///
-    /// Returns an [`AfterCmd`] which instructs the caller as to
+    /// Returns an [`CmdEffect`] which instructs the caller as to
     /// whether or not the event subscriptions needs to be reset or not.
-    fn update_config(&mut self, update: ConfigUpdate) -> AfterCmd {
+    fn update_config(&mut self, update: ConfigUpdate) -> CmdEffect {
         match update {
             ConfigUpdate::Add(config) => self.add_chain(config),
             ConfigUpdate::Remove(id) => self.remove_chain(&id),
@@ -326,14 +326,14 @@ impl Supervisor {
     /// Add the given chain to the configuration and spawn the associated workers.
     /// Will not have any effect if the chain is already present in the config.
     ///
-    /// If the addition had any effect, returns [`AfterCmd::ResetSubscriptions`] as
+    /// If the addition had any effect, returns [`CmdEffect::ConfigChanged`] as
     /// subscriptions need to be reset to take into account the newly added chain.
-    fn add_chain(&mut self, config: ChainConfig) -> AfterCmd {
+    fn add_chain(&mut self, config: ChainConfig) -> CmdEffect {
         let id = config.id.clone();
 
         if self.config.read().expect("poisoned lock").has_chain(&id) {
             info!(chain.id=%id, "skipping addition of already existing chain");
-            return AfterCmd::Nothing;
+            return CmdEffect::Nothing;
         }
 
         info!(chain.id=%id, "adding new chain");
@@ -359,24 +359,24 @@ impl Supervisor {
                 .chains
                 .retain(|c| c.id != id);
 
-            return AfterCmd::Nothing;
+            return CmdEffect::Nothing;
         }
 
         debug!(chain.id=%id, "spawning workers");
         self.spawn_context().spawn_workers_for_chain(&id);
 
-        AfterCmd::ResetSubscriptions
+        CmdEffect::ConfigChanged
     }
 
     /// Remove the given chain to the configuration and spawn the associated workers.
     /// Will not have any effect if the chain was not already present in the config.
     ///
-    /// If the removal had any effect, returns [`AfterCmd::ResetSubscriptions`] as
+    /// If the removal had any effect, returns [`CmdEffect::ConfigChanged`] as
     /// subscriptions need to be reset to take into account the newly added chain.
-    fn remove_chain(&mut self, id: &ChainId) -> AfterCmd {
+    fn remove_chain(&mut self, id: &ChainId) -> CmdEffect {
         if !self.config.read().expect("poisoned lock").has_chain(&id) {
             info!(chain.id=%id, "skipping removal of non-existing chain");
-            return AfterCmd::Nothing;
+            return CmdEffect::Nothing;
         }
 
         info!(chain.id=%id, "removing existing chain");
@@ -393,16 +393,16 @@ impl Supervisor {
         debug!(chain.id=%id, "shutting down chain runtime");
         self.registry.shutdown(&id);
 
-        AfterCmd::ResetSubscriptions
+        CmdEffect::ConfigChanged
     }
 
     /// Update the given chain configuration, by removing it with
     /// [`Supervisor::remove_chain`] and adding the updated
     /// chain config with [`Supervisor::remove_chain`].
     ///
-    /// If the update had any effect, returns [`AfterCmd::ResetSubscriptions`] as
+    /// If the update had any effect, returns [`CmdEffect::ConfigChanged`] as
     /// subscriptions need to be reset to take into account the newly added chain.
-    fn update_chain(&mut self, config: ChainConfig) -> AfterCmd {
+    fn update_chain(&mut self, config: ChainConfig) -> CmdEffect {
         let removed = self.remove_chain(&config.id);
         let added = self.add_chain(config);
         removed.or(added)
@@ -499,21 +499,5 @@ impl CollectedEvents {
     /// Whether the collected events include a [`NewBlock`] event.
     pub fn has_new_block(&self) -> bool {
         self.new_block.is_some()
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum AfterCmd {
-    ResetSubscriptions,
-    Nothing,
-}
-
-impl AfterCmd {
-    fn or(self, other: Self) -> Self {
-        match (self, other) {
-            (AfterCmd::ResetSubscriptions, _) => AfterCmd::ResetSubscriptions,
-            (_, AfterCmd::ResetSubscriptions) => AfterCmd::ResetSubscriptions,
-            _ => self,
-        }
     }
 }
