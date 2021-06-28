@@ -292,23 +292,19 @@ impl Supervisor {
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
     fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
-        let mut state = SupervisorState::default();
+        let mut chains = self.registry.chains().map(|c| c.id()).collect_vec();
+        chains.sort();
 
-        for chain in self.registry.chains() {
-            let mut objects = self.workers.objects_for_chain(&chain.id());
+        let workers = self
+            .workers
+            .objects()
+            .cloned()
+            .into_group_map_by(|o| o.object_type())
+            .into_iter()
+            .update(|(_, os)| os.sort_by_key(Object::short_name))
+            .collect::<BTreeMap<_, _>>();
 
-            objects.sort();
-
-            let objects_map = objects
-                .into_iter()
-                .into_group_map_by(|o| o.object_type())
-                .into_iter()
-                .collect::<BTreeMap<_, _>>();
-
-            state.chains.insert(chain.id(), objects_map);
-        }
-
-        let _ = reply_to.try_send(state);
+        let _ = reply_to.try_send(SupervisorState::new(chains, workers));
 
         CmdEffect::Nothing
     }

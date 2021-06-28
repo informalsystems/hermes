@@ -145,6 +145,11 @@ impl WorkerMap {
             }
         }
     }
+
+    /// Get an iterator over the worker map's objects.
+    pub fn objects(&self) -> impl Iterator<Item = &Object> {
+        self.workers.keys()
+    }
 }
 
 #[cfg(feature = "telemetry")]
