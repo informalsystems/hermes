@@ -8,6 +8,7 @@ use std::time::Instant;
 use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
+use itertools::Itertools;
 
 use ibc::{
     downcast,
@@ -921,12 +922,12 @@ impl RelayPath {
         if packet_commitments.is_empty() {
             return Ok((events_result, query_height));
         }
-        let commit_sequences = packet_commitments.iter().map(|p| p.sequence).collect();
+        let commit_sequences: Vec<u64> = packet_commitments.iter().map(|p| p.sequence).collect();
         debug!(
-            "[{}] packets that still have commitments on {}: {:?}",
+            "[{}] packets that still have commitments on {}: {} (first 10 shown here; total={})",
             self,
             self.src_chain().id(),
-            commit_sequences
+            commit_sequences.iter().take(10).join(", "), commit_sequences.len()
         );
 
         // Get the packets that have not been received on destination chain
@@ -944,11 +945,11 @@ impl RelayPath {
             .collect();
 
         debug!(
-            "[{}] recv packets to send out to {} of the ones with commitments on source {}: {:?}",
+            "[{}] recv packets to send out to {} of the ones with commitments on source {}: {} (first 10 shown here; total={})",
             self,
             self.dst_chain().id(),
             self.src_chain().id(),
-            sequences
+            sequences.iter().take(10).join(", "), sequences.len()
         );
 
         if sequences.is_empty() {
@@ -1006,12 +1007,12 @@ impl RelayPath {
             return Ok((events_result, query_height));
         }
 
-        let acked_sequences = acks_on_source.iter().map(|p| p.sequence).collect();
+        let acked_sequences: Vec<u64> = acks_on_source.iter().map(|p| p.sequence).collect();
         debug!(
-            "[{}] packets that have acknowledgments on {} {:?}",
+            "[{}] packets that have acknowledgments on {} {} (first 10 shown here; total={})",
             self,
             self.src_chain().id(),
-            acked_sequences
+            acked_sequences.iter().take(10).join(", "), acked_sequences.len()
         );
 
         let request = QueryUnreceivedAcksRequest {
@@ -1028,11 +1029,11 @@ impl RelayPath {
             .map(From::from)
             .collect();
         debug!(
-            "[{}] ack packets to send out to {} of the ones with acknowledgments on {}: {:?}",
+            "[{}] ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
             self,
             self.dst_chain().id(),
             self.src_chain().id(),
-            sequences
+            sequences.iter().take(10).join(", "), sequences.len()
         );
 
         if sequences.is_empty() {
