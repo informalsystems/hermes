@@ -132,6 +132,8 @@ impl WorkerMap {
     /// Shutdown the worker associated with the given [`Object`].
     pub fn shutdown_worker(&mut self, object: &Object) {
         if let Some(handle) = self.workers.remove(object) {
+            telemetry!(self.telemetry.worker(metric_type(object), -1));
+
             match handle.shutdown() {
                 Ok(()) => {
                     debug!(object = %object.short_name(), "waiting for worker to exit");
