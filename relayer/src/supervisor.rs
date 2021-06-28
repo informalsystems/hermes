@@ -7,7 +7,7 @@ use std::{
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use ibc::{events::IbcEvent, ics24_host::identifier::ChainId, Height};
 
@@ -414,12 +414,7 @@ impl Supervisor {
     fn handle_worker_msg(&mut self, msg: WorkerMsg) {
         match msg {
             WorkerMsg::Stopped(object) => {
-                if !self.workers.remove_stopped(&object) {
-                    warn!(
-                        "did not find worker handle for object '{}' after worker stopped",
-                        object.short_name()
-                    );
-                }
+                self.workers.remove_stopped(&object);
             }
         }
     }
