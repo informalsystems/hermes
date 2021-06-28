@@ -7,7 +7,7 @@ use crossbeam_channel::Sender;
 
 use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
-use ibc_relayer::supervisor::{Supervisor, SupervisorCmd};
+use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
 
 use crate::conclude::Output;
 use crate::prelude::*;
