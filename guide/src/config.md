@@ -16,7 +16,11 @@ name of the command to run, eg. `hermes -c my_config.toml query connection chann
 hermes [-c CONFIG_FILE] COMMAND
 ```
 
-## Sections
+## Table of contents
+
+<!-- toc -->
+
+## Configuration format
 
 The configuration file must have one `global` section, and one `chains` section for each chain.
 
@@ -124,11 +128,11 @@ clock_drift = '5s'
 trusting_period = '14days'
 ```
 
-### Adding Private Keys
+## Adding private keys
 
 For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/raw/index.md), please refer to the [Keys](./commands/keys/index.md) sections in order to learn how to add the private keys that are used by the relayer.
 
-### Example configuration file
+## Example configuration file
 
 Here is a full example of a configuration file with two chains configured:
 
@@ -170,7 +174,7 @@ trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 ```
 
-### Update the configuration without restarting Hermes
+## Update the configuration without restarting Hermes
 
 Before Hermes 0.6.0, the only way to get Hermes to pick up a change in the
 configuration was to stop and restart Hermes.
@@ -238,7 +242,7 @@ in `~/.hermes/config.toml, ie. with two chains `ibc-0` and `ibc-1`.
    INFO adding new chain chain.id=ibc-2
    ```
 
-### Next Steps
+## Next steps
 
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
