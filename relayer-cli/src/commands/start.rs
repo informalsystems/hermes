@@ -9,6 +9,7 @@ use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
 
+use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
 
@@ -77,7 +78,16 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
 
                     std::thread::spawn(move || {
                         if let Ok(state) = rx.recv() {
-                            state.print_info();
+                            if json() {
+                                match serde_json::to_string(&state) {
+                                    Ok(out) => println!("{}", out),
+                                    Err(e) => {
+                                        error!("failed to serialize relayer state to JSON: {}", e)
+                                    }
+                                }
+                            } else {
+                                state.print_info();
+                            }
                         }
                     });
                 }
