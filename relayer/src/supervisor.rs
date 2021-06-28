@@ -403,6 +403,8 @@ impl Supervisor {
     /// If the update had any effect, returns [`CmdEffect::ConfigChanged`] as
     /// subscriptions need to be reset to take into account the newly added chain.
     fn update_chain(&mut self, config: ChainConfig) -> CmdEffect {
+        info!(chain.id=%id, "updating existing chain");
+
         let removed = self.remove_chain(&config.id);
         let added = self.add_chain(config);
         removed.or(added)
