@@ -242,6 +242,9 @@ in `~/.hermes/config.toml, ie. with two chains `ibc-0` and `ibc-1`.
    INFO adding new chain chain.id=ibc-2
    ```
 
+To make sure Hermes ends up in the expected state, check out the documentation
+on [inspecting the relayer state](help.md#inspecting-the-relayer-state).
+
 ## Next steps
 
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
