@@ -35,6 +35,8 @@ use spawn::SpawnContext;
 pub mod cmd;
 use cmd::{CmdEffect, ConfigUpdate, SupervisorCmd};
 
+use self::spawn::SpawnMode;
+
 type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
 type BoxHandle = Box<dyn ChainHandle>;
@@ -197,19 +199,19 @@ impl Supervisor {
     }
 
     /// Create a new `SpawnContext` for spawning workers.
-    fn spawn_context(&mut self) -> SpawnContext<'_> {
-        SpawnContext::new(&self.config, &mut self.registry, &mut self.workers)
+    fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_> {
+        SpawnContext::new(&self.config, &mut self.registry, &mut self.workers, mode)
     }
 
     /// Spawn all the workers necessary for the relayer to connect
     /// and relay between all the chains in the configurations.
-    fn spawn_workers(&mut self) {
-        self.spawn_context().spawn_workers();
+    fn spawn_workers(&mut self, mode: SpawnMode) {
+        self.spawn_context(mode).spawn_workers();
     }
 
     /// Run the supervisor event loop.
     pub fn run(mut self) -> Result<(), BoxError> {
-        self.spawn_workers();
+        self.spawn_workers(SpawnMode::Startup);
 
         let mut subscriptions = self.init_subscriptions()?;
 
@@ -363,7 +365,8 @@ impl Supervisor {
         }
 
         debug!(chain.id=%id, "spawning workers");
-        self.spawn_context().spawn_workers_for_chain(&id);
+        let mut ctx = self.spawn_context(SpawnMode::Reload);
+        ctx.spawn_workers_for_chain(&id);
 
         CmdEffect::ConfigChanged
     }
@@ -388,7 +391,8 @@ impl Supervisor {
             .retain(|c| &c.id != id);
 
         debug!(chain.id=%id, "shutting down workers");
-        self.spawn_context().shutdown_workers_for_chain(&id);
+        let mut ctx = self.spawn_context(SpawnMode::Reload);
+        ctx.shutdown_workers_for_chain(&id);
 
         debug!(chain.id=%id, "shutting down chain runtime");
         self.registry.shutdown(&id);

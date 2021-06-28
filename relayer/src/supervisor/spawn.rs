@@ -1,11 +1,11 @@
 use anomaly::BoxError;
 use itertools::Itertools;
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
     ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
-    ics04_channel::channel::IdentifiedChannelEnd,
+    ics04_channel::channel::{IdentifiedChannelEnd, State as ChannelState},
     ics24_host::identifier::{ChainId, ConnectionId},
     Height,
 };
@@ -17,7 +17,7 @@ use ibc_proto::ibc::core::{
 
 use crate::{
     chain::{
-        counterparty::{channel_state_on_destination, connection_state_on_destination},
+        counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
     },
     config::Config,
@@ -28,11 +28,18 @@ use crate::{
 
 use super::{Error, RwArc};
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum SpawnMode {
+    Startup,
+    Reload,
+}
+
 /// A context for spawning workers within the [`crate::supervisor::Supervisor`].
 pub struct SpawnContext<'a> {
     config: &'a RwArc<Config>,
     registry: &'a mut Registry,
     workers: &'a mut WorkerMap,
+    mode: SpawnMode,
 }
 
 impl<'a> SpawnContext<'a> {
@@ -40,11 +47,13 @@ impl<'a> SpawnContext<'a> {
         config: &'a RwArc<Config>,
         registry: &'a mut Registry,
         workers: &'a mut WorkerMap,
+        mode: SpawnMode,
     ) -> Self {
         Self {
             config,
             registry,
             workers,
+            mode,
         }
     }
 
@@ -390,9 +399,13 @@ impl<'a> SpawnContext<'a> {
             .get_or_spawn(&client.client_state.chain_id())
             .map_err(|e| Error::FailedToSpawnChainRuntime(e.to_string()))?;
 
+        let counterparty_channel =
+            channel_on_destination(&channel, &connection, counterparty_chain.as_ref())?;
+
         let chan_state_src = channel.channel_end.state;
-        let chan_state_dst =
-            channel_state_on_destination(&channel, &connection, counterparty_chain.as_ref())?;
+        let chan_state_dst = counterparty_channel
+            .as_ref()
+            .map_or(ChannelState::Uninitialized, |c| c.state);
 
         debug!(
             "channel {} on chain {} is: {}; state on dest. chain ({}) is: {}",
@@ -419,26 +432,30 @@ impl<'a> SpawnContext<'a> {
                 )
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
-            // spawn the client worker for the counterparty
-            let counterparty_client_id = connection.connection_end.counterparty().client_id();
-            let counterparty_client_object = Object::Client(Client {
-                dst_client_id: counterparty_client_id.clone(),
-                dst_chain_id: client.client_state.chain_id(),
-                src_chain_id: chain.id(),
-            });
-
-            self.workers
-                .spawn(
-                    counterparty_client_object.clone(),
-                    chain.clone(),
-                    counterparty_chain.clone(),
-                )
-                .then(|| {
-                    debug!(
-                        "spawned Client worker: {}",
-                        counterparty_client_object.short_name()
-                    )
+            // On config reload, we need to spawn the Client worker for the counterparty as well,
+            // otherwise we may never do it, eg. if the counterparty chain was not updated in the
+            // config.
+            if self.mode == SpawnMode::Reload {
+                let counterparty_client_id = connection.connection_end.counterparty().client_id();
+                let counterparty_client_object = Object::Client(Client {
+                    dst_client_id: counterparty_client_id.clone(),
+                    dst_chain_id: client.client_state.chain_id(),
+                    src_chain_id: chain.id(),
                 });
+
+                self.workers
+                    .spawn(
+                        counterparty_client_object.clone(),
+                        chain.clone(),
+                        counterparty_chain.clone(),
+                    )
+                    .then(|| {
+                        debug!(
+                            "spawned Client worker: {}",
+                            counterparty_client_object.short_name()
+                        )
+                    });
+            }
 
             // TODO: Only start the Packet worker if there are outstanding packets or ACKs.
             //       https://github.com/informalsystems/ibc-rs/issues/901
@@ -452,8 +469,52 @@ impl<'a> SpawnContext<'a> {
             });
 
             self.workers
-                .spawn(path_object.clone(), chain, counterparty_chain)
+                .spawn(
+                    path_object.clone(),
+                    chain.clone(),
+                    counterparty_chain.clone(),
+                )
                 .then(|| debug!("spawned Path worker: {}", path_object.short_name()));
+
+            if self.mode != SpawnMode::Reload {
+                return Ok(());
+            }
+
+            // On config reload, we need to spawn the Packet worker for the counterparty as well,
+            // otherwise we may never do it, eg. if the counterparty chain was not updated in the
+            // config.
+
+            let remote_channel = counterparty_channel.and_then(|c| {
+                c.remote
+                    .channel_id
+                    .as_ref()
+                    .map(|cid| (c.remote.port_id.clone(), cid.clone()))
+            });
+
+            if let Some((remote_port_id, remote_channel_id)) = remote_channel {
+                // spawn worker for the counterparty chain
+                let counterparty_path_object = Object::Packet(Packet {
+                    src_chain_id: counterparty_chain.id(),
+                    dst_chain_id: chain.id(),
+                    src_channel_id: remote_channel_id,
+                    src_port_id: remote_port_id,
+                });
+
+                self.workers
+                    .spawn(counterparty_path_object.clone(), counterparty_chain, chain)
+                    .then(|| {
+                        debug!(
+                            "spawned Path worker: {}",
+                            counterparty_path_object.short_name()
+                        )
+                    });
+            } else {
+                warn!(
+                    "cannot spawn counterparty to Packet worker '{}', \
+                     reason: cannot find remote channel on counterparty",
+                    path_object.short_name()
+                );
+            }
         } else if !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
             && handshake_enabled
