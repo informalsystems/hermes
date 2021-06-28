@@ -22,14 +22,14 @@ enum Step {
 }
 
 #[derive(Debug)]
-pub struct UniChanPathWorker {
+pub struct PacketWorker {
     path: Packet,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
     telemetry: Telemetry,
 }
 
-impl UniChanPathWorker {
+impl PacketWorker {
     pub fn new(
         path: Packet,
         chains: ChainHandlePair,

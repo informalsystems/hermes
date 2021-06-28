@@ -26,7 +26,7 @@ mod channel;
 pub use channel::ChannelWorker;
 
 mod uni_chan_path;
-pub use uni_chan_path::UniChanPathWorker;
+pub use uni_chan_path::PacketWorker;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WorkerMsg {
@@ -38,7 +38,7 @@ pub enum Worker {
     Client(ClientWorker),
     Connection(ConnectionWorker),
     Channel(ChannelWorker),
-    UniChanPath(UniChanPathWorker),
+    UniChanPath(PacketWorker),
 }
 
 impl fmt::Display for Worker {
@@ -70,7 +70,7 @@ impl Worker {
                 Self::Channel(ChannelWorker::new(channel, chains, cmd_rx, telemetry))
             }
             Object::Packet(path) => {
-                Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx, telemetry))
+                Self::UniChanPath(PacketWorker::new(path, chains, cmd_rx, telemetry))
             }
         };
 

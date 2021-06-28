@@ -28,6 +28,7 @@ use crate::{
 
 use super::{Error, RwArc};
 
+/// A context for spawning workers within the [`crate::supervisor::Supervisor`].
 pub struct SpawnContext<'a> {
     config: &'a RwArc<Config>,
     registry: &'a mut Registry,

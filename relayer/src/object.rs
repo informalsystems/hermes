@@ -1,4 +1,5 @@
 use anomaly::BoxError;
+use serde::{Deserialize, Serialize};
 
 use ibc::{
     ics02_client::{client_state::ClientState, events::UpdateClient},
@@ -19,7 +20,7 @@ use crate::chain::{
 };
 
 /// Client
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Client {
     /// Destination chain identifier.
     /// This is the chain hosting the client.
@@ -43,7 +44,7 @@ impl Client {
 }
 
 /// Connection
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Connection {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
@@ -65,7 +66,7 @@ impl Connection {
 }
 
 /// Channel
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Channel {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
@@ -90,7 +91,7 @@ impl Channel {
 }
 
 /// A packet worker between a source and destination chain, and a specific channel and port.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Packet {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
@@ -120,7 +121,8 @@ impl Packet {
 /// [`Worker`] is spawned and all [`IbcEvent`]s mapped
 /// to an [`Object`] are sent to the associated [`Worker`]
 /// for processing.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum Object {
     /// See [`Client`].
     Client(Client),
@@ -166,7 +168,8 @@ impl Object {
     }
 }
 
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+/// The type of [`Object`].
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ObjectType {
     Client,
     Channel,

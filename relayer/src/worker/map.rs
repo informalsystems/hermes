@@ -102,6 +102,7 @@ impl WorkerMap {
         }
     }
 
+    /// Force spawn a worker for the given [`Object`].
     fn spawn_worker(
         &mut self,
         src: Box<dyn ChainHandle>,
@@ -118,6 +119,8 @@ impl WorkerMap {
         )
     }
 
+    /// List the [`Object`]s for which there is an associated worker
+    /// for the given chain.
     pub fn objects_for_chain(&self, chain_id: &ChainId) -> Vec<Object> {
         self.workers
             .keys()
@@ -126,6 +129,7 @@ impl WorkerMap {
             .collect()
     }
 
+    /// Shutdown the worker associated with the given [`Object`].
     pub fn shutdown_worker(&mut self, object: &Object) {
         if let Some(handle) = self.workers.remove(object) {
             match handle.shutdown() {

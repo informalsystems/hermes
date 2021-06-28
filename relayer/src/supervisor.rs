@@ -1,6 +1,5 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    fmt,
     sync::{Arc, RwLock},
     time::Duration,
 };
@@ -17,9 +16,8 @@ use crate::{
     config::{ChainConfig, Config},
     event,
     event::monitor::{EventBatch, UnwrapOrClone},
-    object::{Object, ObjectType},
+    object::Object,
     registry::Registry,
-    supervisor::spawn::SpawnContext,
     telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
@@ -28,26 +26,20 @@ use crate::{
 mod error;
 pub use error::Error;
 
-mod spawn;
+pub mod dump_state;
+use dump_state::SupervisorState;
+
+pub mod spawn;
+use spawn::SpawnContext;
+
+pub mod cmd;
+use cmd::{ConfigUpdate, SupervisorCmd};
 
 type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
 type BoxHandle = Box<dyn ChainHandle>;
 
 pub type RwArc<T> = Arc<RwLock<T>>;
-
-#[derive(Clone, Debug)]
-pub enum ConfigUpdate {
-    Add(ChainConfig),
-    Remove(ChainId),
-    Update(ChainConfig),
-}
-
-#[derive(Clone, Debug)]
-pub enum SupervisorCmd {
-    UpdateConfig(ConfigUpdate),
-    DumpState(Sender<SupervisorState>),
-}
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -65,8 +57,8 @@ pub struct Supervisor {
 }
 
 impl Supervisor {
-    /// Spawns a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn spawn(config: RwArc<Config>, telemetry: Telemetry) -> (Self, Sender<SupervisorCmd>) {
+    /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
+    pub fn new(config: RwArc<Config>, telemetry: Telemetry) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
@@ -204,10 +196,13 @@ impl Supervisor {
         collected
     }
 
+    /// Create a new `SpawnContext` for spawning workers.
     fn spawn_context(&mut self) -> SpawnContext<'_> {
         SpawnContext::new(&self.config, &mut self.registry, &mut self.workers)
     }
 
+    /// Spawn all the workers necessary for the relayer to connect
+    /// and relay between all the chains in the configurations.
     fn spawn_workers(&mut self) {
         self.spawn_context().spawn_workers();
     }
@@ -230,7 +225,7 @@ impl Supervisor {
             if let Ok(cmd) = self.cmd_rx.try_recv() {
                 let after = self.handle_cmd(cmd);
 
-                if let AfterCmd::ReinitSubscriptions = after {
+                if let AfterCmd::ResetSubscriptions = after {
                     match self.init_subscriptions() {
                         Ok(subs) => {
                             subscriptions = subs;
@@ -245,6 +240,7 @@ impl Supervisor {
         }
     }
 
+    /// Subscribe to the events emitted by the chains the supervisor is connected to.
     fn init_subscriptions(&mut self) -> Result<Vec<(BoxHandle, Subscription)>, Error> {
         let chains = &self.config.read().expect("poisoned lock").chains;
 
@@ -280,6 +276,10 @@ impl Supervisor {
         Ok(subscriptions)
     }
 
+    /// Handle the given [`SupervisorCmd`].
+    ///
+    /// Returns an [`AfterCmd`] which instructs the caller as to
+    /// whether or not the event subscriptions needs to be reset or not.
     fn handle_cmd(&mut self, cmd: SupervisorCmd) -> AfterCmd {
         match cmd {
             SupervisorCmd::UpdateConfig(update) => self.update_config(update),
@@ -287,6 +287,8 @@ impl Supervisor {
         }
     }
 
+    /// Dump the state of the supervisor into a [`SupervisorState`] value,
+    /// and send it back through the given channel.
     fn dump_state(&self, reply_to: Sender<SupervisorState>) -> AfterCmd {
         let mut state = SupervisorState::default();
 
@@ -309,6 +311,10 @@ impl Supervisor {
         AfterCmd::Nothing
     }
 
+    /// Apply the given configuration update.
+    ///
+    /// Returns an [`AfterCmd`] which instructs the caller as to
+    /// whether or not the event subscriptions needs to be reset or not.
     fn update_config(&mut self, update: ConfigUpdate) -> AfterCmd {
         match update {
             ConfigUpdate::Add(config) => self.add_chain(config),
@@ -317,6 +323,11 @@ impl Supervisor {
         }
     }
 
+    /// Add the given chain to the configuration and spawn the associated workers.
+    /// Will not have any effect if the chain is already present in the config.
+    ///
+    /// If the addition had any effect, returns [`AfterCmd::ResetSubscriptions`] as
+    /// subscriptions need to be reset to take into account the newly added chain.
     fn add_chain(&mut self, config: ChainConfig) -> AfterCmd {
         let id = config.id.clone();
 
@@ -354,9 +365,14 @@ impl Supervisor {
         debug!(chain.id=%id, "spawning workers");
         self.spawn_context().spawn_workers_for_chain(&id);
 
-        AfterCmd::ReinitSubscriptions
+        AfterCmd::ResetSubscriptions
     }
 
+    /// Remove the given chain to the configuration and spawn the associated workers.
+    /// Will not have any effect if the chain was not already present in the config.
+    ///
+    /// If the removal had any effect, returns [`AfterCmd::ResetSubscriptions`] as
+    /// subscriptions need to be reset to take into account the newly added chain.
     fn remove_chain(&mut self, id: &ChainId) -> AfterCmd {
         if !self.config.read().expect("poisoned lock").has_chain(&id) {
             info!(chain.id=%id, "skipping removal of non-existing chain");
@@ -377,9 +393,15 @@ impl Supervisor {
         debug!(chain.id=%id, "shutting down chain runtime");
         self.registry.shutdown(&id);
 
-        AfterCmd::ReinitSubscriptions
+        AfterCmd::ResetSubscriptions
     }
 
+    /// Update the given chain configuration, by removing it with
+    /// [`Supervisor::remove_chain`] and adding the updated
+    /// chain config with [`Supervisor::remove_chain`].
+    ///
+    /// If the update had any effect, returns [`AfterCmd::ResetSubscriptions`] as
+    /// subscriptions need to be reset to take into account the newly added chain.
     fn update_chain(&mut self, config: ChainConfig) -> AfterCmd {
         let removed = self.remove_chain(&config.id);
         let added = self.add_chain(config);
@@ -482,46 +504,16 @@ impl CollectedEvents {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum AfterCmd {
-    ReinitSubscriptions,
+    ResetSubscriptions,
     Nothing,
 }
 
 impl AfterCmd {
     fn or(self, other: Self) -> Self {
         match (self, other) {
-            (AfterCmd::ReinitSubscriptions, _) => AfterCmd::ReinitSubscriptions,
-            (_, AfterCmd::ReinitSubscriptions) => AfterCmd::ReinitSubscriptions,
+            (AfterCmd::ResetSubscriptions, _) => AfterCmd::ResetSubscriptions,
+            (_, AfterCmd::ResetSubscriptions) => AfterCmd::ResetSubscriptions,
             _ => self,
         }
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct SupervisorState {
-    pub chains: BTreeMap<ChainId, BTreeMap<ObjectType, Vec<Object>>>,
-}
-
-impl SupervisorState {
-    pub fn print_info(&self) {
-        self.to_string()
-            .split('\n')
-            .for_each(|line| info!("{}", line));
-    }
-}
-
-impl fmt::Display for SupervisorState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f)?;
-        for (chain, objects_map) in &self.chains {
-            writeln!(f, "# {}:", chain)?;
-            for (tpe, objects) in objects_map {
-                writeln!(f, "* {:?} workers:", tpe)?;
-                for object in objects {
-                    writeln!(f, "  - {}", object.short_name())?;
-                }
-            }
-        }
-
-        Ok(())
     }
 }

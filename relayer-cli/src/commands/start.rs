@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io;
 use std::sync::{Arc, RwLock};
 
 use abscissa_core::{Command, Options, Runnable};
@@ -19,7 +20,7 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let (supervisor, tx_cmd) = spawn_supervisor(config.clone()).unwrap_or_else(|e| {
+        let (supervisor, tx_cmd) = make_supervisor(config.clone()).unwrap_or_else(|e| {
             Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
             unreachable!()
         });
@@ -27,7 +28,7 @@ impl Runnable for StartCmd {
         match crate::config::config_path() {
             Some(config_path) => {
                 let reload = ConfigReload::new(config_path, config, tx_cmd.clone());
-                register_signal(reload, tx_cmd).unwrap_or_else(|e| {
+                register_signals(reload, tx_cmd).unwrap_or_else(|e| {
                     warn!("failed to install signal handler: {}", e);
                 });
             }
@@ -44,8 +45,10 @@ impl Runnable for StartCmd {
     }
 }
 
-use std::io;
-fn register_signal(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
+/// Register the SIGHUP and SIGUSR1 signals, and notify the supervisor.
+/// - SIGHUP: Trigger a reload of the configuration.
+/// - SIGUSR1: Ask the supervisor to dump its state and print it to the console.
+fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
     use signal_hook::{consts::signal::*, iterator::Signals};
 
     let sigs = vec![
@@ -88,7 +91,7 @@ fn register_signal(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resul
 }
 
 #[cfg(feature = "telemetry")]
-fn spawn_supervisor(
+fn make_supervisor(
     config: Arc<RwLock<Config>>,
 ) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
     let state = ibc_telemetry::new_state();
@@ -109,11 +112,11 @@ fn spawn_supervisor(
         }
     }
 
-    Ok(Supervisor::spawn(config, state))
+    Ok(Supervisor::new(config, state))
 }
 
 #[cfg(not(feature = "telemetry"))]
-fn spawn_supervisor(
+fn make_supervisor(
     config: Arc<RwLock<Config>>,
 ) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
     if config.read().expect("poisoned lock").telemetry.enabled {
@@ -124,5 +127,5 @@ fn spawn_supervisor(
     }
 
     let telemetry = ibc_relayer::telemetry::TelemetryDisabled;
-    Ok(Supervisor::spawn(config, telemetry))
+    Ok(Supervisor::new(config, telemetry))
 }

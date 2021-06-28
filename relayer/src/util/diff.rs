@@ -1,14 +1,19 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
+/// A change between two dictionaries.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Change<K> {
+    /// The entry with this key was added.
     Added(K),
+    /// The entry with this key was updated.
     Updated(K),
+    /// The entry with this key was removed.
     Removed(K),
 }
 
 impl<K> Change<K> {
+    /// Return the key affected by this change.
     pub fn key(&self) -> &K {
         match self {
             Self::Added(ref k) => k,
@@ -17,6 +22,7 @@ impl<K> Change<K> {
         }
     }
 
+    /// Return the key affected by this change.
     pub fn into_key(self) -> K {
         match self {
             Self::Added(k) => k,
@@ -26,6 +32,11 @@ impl<K> Change<K> {
     }
 }
 
+/// Computes the set of changes between the `prev` and `next` dictionaries.
+/// An entry is deemed to have been updated when it is not equal to the original
+/// value according to its `Eq` instance.
+///
+/// Returns a list of changes holding on to the key affected by the change.
 pub fn diff<'a, K, V>(prev: &'a HashMap<K, V>, next: &'a HashMap<K, V>) -> Vec<Change<&'a K>>
 where
     K: Hash + Eq,
@@ -34,6 +45,10 @@ where
     gdiff(prev, next, |a, b| a == b)
 }
 
+/// Computes the set of changes between the `prev` and `next` dictionaries.
+/// An entry is deemed to have been updated when `!eq(prev_value, next_value)`.
+///
+/// Returns a list of changes holding on to the key affected by the change.
 pub fn gdiff<'a, K, V, F>(
     prev: &'a HashMap<K, V>,
     next: &'a HashMap<K, V>,

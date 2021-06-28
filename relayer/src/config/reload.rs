@@ -1,3 +1,5 @@
+//! Facility for reloading the relayer configuration.
+
 use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
@@ -11,7 +13,7 @@ use ibc::ics24_host::identifier::ChainId;
 use tracing::debug;
 
 use crate::{
-    supervisor::{ConfigUpdate, SupervisorCmd},
+    supervisor::cmd::{ConfigUpdate, SupervisorCmd},
     util::diff::{gdiff, Change},
 };
 
@@ -29,6 +31,9 @@ pub enum Error {
     PoisonedLock,
 }
 
+/// Facility for reloading the relayer configuration.
+/// See [`ConfigReload::reload`].
+#[derive(Clone, Debug)]
 pub struct ConfigReload {
     path: PathBuf,
     current: Arc<RwLock<Config>>,
@@ -36,6 +41,11 @@ pub struct ConfigReload {
 }
 
 impl ConfigReload {
+    /// Constructs a new [`ConfigReload`] value, by specifying
+    /// the path to the configuration file to reload,
+    /// the current configuration and a channel through which
+    /// to send the computed [`ConfigUpdate`]s to the
+    /// [`crate::supervisor::Supervisor`].
     pub fn new(
         path: impl Into<PathBuf>,
         current: Arc<RwLock<Config>>,
@@ -48,11 +58,20 @@ impl ConfigReload {
         }
     }
 
+    /// Reload the configuration.
+    /// This method will read and parse the configuration from the
+    /// file, then perform a diff between the current configuration
+    /// and the newly parsed one, and finally send the computed
+    /// [`ConfigUpdate`]s to the [`crate::supervisor::Supervisor`].
+    ///
+    /// See also: [`ConfigReload::update_config`]
     pub fn reload(&self) -> Result<bool, Error> {
         let new_config = super::load(&self.path).map_err(Error::LoadFailed)?;
         self.update_config(new_config)
     }
 
+    /// Compute a diff between the current configuration and the given one,
+    /// and send the computed [`ConfigUpdate`]s to the [`crate::supervisor::Supervisor`].
     pub fn update_config(&self, new: Config) -> Result<bool, Error> {
         let updates = self.compute_updates(&new)?;
 
@@ -73,6 +92,9 @@ impl ConfigReload {
         Ok(true)
     }
 
+    /// Compute a set of configuration updates that, when applied to the
+    /// current configuration by the supervisor, will result in the given
+    /// configuration.
     fn compute_updates(&self, new: &Config) -> Result<Vec<ConfigUpdate>, Error> {
         let cur = self.current.read().map_err(|_| Error::PoisonedLock)?;
 
@@ -105,7 +127,7 @@ impl ConfigReload {
     }
 }
 
-// Hack to compare configs for equality until
+// Compare configs for equality using their JSON representation until
 // https://github.com/informalsystems/tendermint-rs/issues/919 is fixed.
 fn config_eq(a: &ChainConfig, b: &ChainConfig) -> bool {
     match (serde_json::to_value(a), serde_json::to_value(b)) {
