@@ -6,6 +6,10 @@
 
 - Update to `tendermint-rs` v0.20.0 ([#1125])
 
+- [ibc-relayer-cli]
+  - Fix unwraps in packet query CLIs ([#1114])
+
+[#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 
 
