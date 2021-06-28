@@ -130,10 +130,10 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
     let counterparty_connection_end = counterparty_chain
         .query_connection(&counterparty_connection_id, counterparty_chain_height)?;
 
-    let counterparty_client_state =
-        chain.query_client_state(&counterparty_client_id, counterparty_chain_height)?;
+    let counterparty_client_state = counterparty_chain
+        .query_client_state(&counterparty_client_id, counterparty_chain_height)?;
 
-    let counterparty_channel_end = chain.query_channel(
+    let counterparty_channel_end = counterparty_chain.query_channel(
         &counterparty_port_id,
         &counterparty_channel_id,
         counterparty_chain_height,
