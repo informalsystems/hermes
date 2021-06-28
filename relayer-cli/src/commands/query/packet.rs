@@ -197,7 +197,7 @@ impl QueryUnreceivedPacketsCmd {
         // extract the sequences
         let sequences: Vec<u64> = commitments.0.into_iter().map(|v| v.sequence).collect();
 
-        trace!(
+        debug!(
             "commitment sequence(s) obtained from counterparty chain {}: {:?}",
             counterparty_chain.id(),
             sequences
