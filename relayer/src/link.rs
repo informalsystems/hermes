@@ -744,9 +744,10 @@ impl RelayPath {
         let tx_events = target.send_msgs(msgs)?;
         info!("[{}] result {}\n", self, PrettyEvents(&tx_events));
 
-        let ev = tx_events.clone().into_iter().find(|event| {
-            matches!(event, IbcEvent::ChainError(_))
-        });
+        let ev = tx_events
+            .clone()
+            .into_iter()
+            .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
         match ev {
             Some(ev) => Err(LinkError::SendError(Box::new(ev))),
@@ -923,19 +924,12 @@ impl RelayPath {
             return Ok((events_result, query_height));
         }
         let commit_sequences: Vec<u64> = packet_commitments.iter().map(|p| p.sequence).collect();
-        debug!(
-            "[{}] packets that still have commitments on {}: {} (first 10 shown here; total={})",
-            self,
-            self.src_chain().id(),
-            commit_sequences.iter().take(10).join(", "),
-            commit_sequences.len()
-        );
 
         // Get the packets that have not been received on destination chain
         let request = QueryUnreceivedPacketsRequest {
             port_id: self.dst_port_id().to_string(),
             channel_id: self.dst_channel_id()?.to_string(),
-            packet_commitment_sequences: commit_sequences,
+            packet_commitment_sequences: commit_sequences.clone(),
         };
 
         let sequences: Vec<Sequence> = self
@@ -945,6 +939,18 @@ impl RelayPath {
             .map(From::from)
             .collect();
 
+        if sequences.is_empty() {
+            return Ok((events_result, query_height));
+        }
+
+        debug!(
+            "[{}] packets that still have commitments on {}: {} (first 10 shown here; total={})",
+            self,
+            self.src_chain().id(),
+            commit_sequences.iter().take(10).join(", "),
+            commit_sequences.len()
+        );
+
         debug!(
             "[{}] recv packets to send out to {} of the ones with commitments on source {}: {} (first 10 shown here; total={})",
             self,
@@ -952,10 +958,6 @@ impl RelayPath {
             self.src_chain().id(),
             sequences.iter().take(10).join(", "), sequences.len()
         );
-
-        if sequences.is_empty() {
-            return Ok((events_result, query_height));
-        }
 
         let query = QueryTxRequest::Packet(QueryPacketEventDataRequest {
             event_id: IbcEventType::SendPacket,
@@ -1008,19 +1010,13 @@ impl RelayPath {
             return Ok((events_result, query_height));
         }
 
-        let acked_sequences: Vec<u64> = acks_on_source.iter().map(|p| p.sequence).collect();
-        debug!(
-            "[{}] packets that have acknowledgments on {} {} (first 10 shown here; total={})",
-            self,
-            self.src_chain().id(),
-            acked_sequences.iter().take(10).join(", "),
-            acked_sequences.len()
-        );
+        let mut acked_sequences: Vec<u64> = acks_on_source.iter().map(|p| p.sequence).collect();
+        acked_sequences.sort_unstable();
 
         let request = QueryUnreceivedAcksRequest {
             port_id: self.dst_port_id().to_string(),
             channel_id: dst_channel_id.to_string(),
-            packet_ack_sequences: acked_sequences,
+            packet_ack_sequences: acked_sequences.clone(),
         };
 
         let sequences: Vec<Sequence> = self
@@ -1030,6 +1026,20 @@ impl RelayPath {
             .into_iter()
             .map(From::from)
             .collect();
+
+        if sequences.is_empty() {
+            return Ok((events_result, query_height));
+        }
+
+        debug!(
+            "[{}] packets that have acknowledgments on {}: [{:?}..{:?}] (total={})",
+            self,
+            self.src_chain().id(),
+            acked_sequences.first(),
+            acked_sequences.last(),
+            acked_sequences.len()
+        );
+
         debug!(
             "[{}] ack packets to send out to {} of the ones with acknowledgments on {}: {} (first 10 shown here; total={})",
             self,
@@ -1037,10 +1047,6 @@ impl RelayPath {
             self.src_chain().id(),
             sequences.iter().take(10).join(", "), sequences.len()
         );
-
-        if sequences.is_empty() {
-            return Ok((events_result, query_height));
-        }
 
         events_result = self
             .src_chain()
