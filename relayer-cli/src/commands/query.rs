@@ -2,17 +2,17 @@
 
 use abscissa_core::{Command, Options, Runnable};
 
+use crate::commands::query::channel_ends::QueryChannelEndsCmd;
 use crate::commands::query::channels::QueryChannelsCmd;
-use crate::commands::query::trace::QueryTraceCmd;
 
 mod channel;
+mod channel_ends;
 mod channels;
 mod client;
 mod clients;
 mod connection;
 mod connections;
 mod packet;
-mod trace;
 mod tx;
 
 /// `query` subcommand
@@ -40,12 +40,6 @@ pub enum QueryCmd {
     /// The `query channels` subcommand
     #[options(help = "Query the identifiers of all channels on a given chain")]
     Channels(QueryChannelsCmd),
-
-    /// The `query trace` subcommand
-    #[options(
-        help = "Query the trace of clients, channels, connections associated with a given port channel on a given chain"
-    )]
-    Trace(QueryTraceCmd),
 
     /// The `query packet` subcommand
     #[options(help = "Query information about packets")]
@@ -91,6 +85,10 @@ pub enum QueryChannelCmds {
     /// The `query channel end` subcommand
     #[options(help = "Query channel end")]
     End(channel::QueryChannelEndCmd),
+
+    /// The `query channel ends` subcommand
+    #[options(help = "Query the channel ends and associated IDs on a given chain")]
+    Ends(QueryChannelEndsCmd),
 }
 
 #[derive(Command, Debug, Options, Runnable)]

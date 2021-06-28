@@ -16,7 +16,7 @@ use crate::conclude::Output;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct QueryTraceCmd {
+pub struct QueryChannelEndsCmd {
     #[options(free, required, help = "identifier of the chain to query")]
     chain_id: ChainId,
 
@@ -58,7 +58,7 @@ pub struct TraceSummary {
     counterparty_port_id: PortId,
 }
 
-fn do_run(cmd: &QueryTraceCmd) -> Result<(), Box<dyn std::error::Error>> {
+fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Options: {:?}", cmd);
 
     let config = app_config();
@@ -172,7 +172,7 @@ fn do_run(cmd: &QueryTraceCmd) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-impl Runnable for QueryTraceCmd {
+impl Runnable for QueryChannelEndsCmd {
     fn run(&self) {
         match do_run(self) {
             Ok(()) => {}
