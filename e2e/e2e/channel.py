@@ -492,6 +492,29 @@ def handshake(
     a_chan_ends = query_channel_ends(c, side_a, port_id, a_chan_id)
     l.debug(f'query channel ends result: {a_chan_ends}')
 
+    assert a_chan_ends.chain_id == side_a
+    assert a_chan_ends.connection_id == conn_a
+    assert a_chan_ends.port_id == port_id
+    assert a_chan_ends.channel_id == a_chan_id
+
+    assert a_chan_ends.counterparty_chain_id == side_b
+    assert a_chan_ends.counterparty_connection_id == conn_b
+    assert a_chan_ends.counterparty_port_id == port_id
+    assert a_chan_ends.counterparty_channel_id == b_chan_id
+
+    b_chan_ends = query_channel_ends(c, side_b, port_id, b_chan_id)
+    l.debug(f'query channel ends result: {a_chan_ends}')
+
+    assert b_chan_ends.chain_id == side_b
+    assert b_chan_ends.connection_id == conn_b
+    assert b_chan_ends.port_id == port_id
+    assert b_chan_ends.channel_id == b_chan_id
+
+    assert b_chan_ends.counterparty_chain_id == side_a
+    assert b_chan_ends.counterparty_connection_id == conn_a
+    assert b_chan_ends.counterparty_port_id == port_id
+    assert b_chan_ends.counterparty_channel_id == a_chan_id
+
     return a_chan_id, b_chan_id
 
 
