@@ -24,7 +24,7 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, trace};
+use tracing::{debug, trace, error};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -187,14 +187,18 @@ impl CosmosSdkChain {
         // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
         // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
         // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
-        let estimated_gas = self
+        let simulate_result = self
             .send_tx_simulate(SimulateRequest {
                 tx: Some(Tx {
                     body: Some(body),
                     auth_info: Some(auth_info),
                     signatures: vec![signed_doc],
                 }),
-            })
+            });
+        if let Err(e) = &simulate_result {
+            error!("send_tx: simulation result: {:?}", e);
+        };
+        let estimated_gas = simulate_result
             .map_or(self.max_gas(), |sr| {
                 sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
             });
