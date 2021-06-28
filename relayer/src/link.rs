@@ -413,7 +413,7 @@ impl RelayPath {
 
     /// Should not run more than once per execution.
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
-        if self.clear_packets {
+        if self.clear_packets || above_height.revision_height % 100 == 0 {
             info!(
                 "[{}] clearing pending packets from events before height {}",
                 self, above_height
@@ -745,7 +745,7 @@ impl RelayPath {
         info!("[{}] result {}\n", self, PrettyEvents(&tx_events));
 
         let ev = tx_events.clone().into_iter().find(|event| {
-            matches!(event, IbcEvent::ChainError(_)) || matches!(event, IbcEvent::Empty(_))
+            matches!(event, IbcEvent::ChainError(_))
         });
 
         match ev {

@@ -197,7 +197,7 @@ impl CosmosSdkChain {
                 }),
             });
         if let Err(e) = &simulate_result {
-            error!("send_tx: simulation result: {:?}", e);
+            error!("send_tx: simulation result: {}", e);
         };
         let estimated_gas = simulate_result
             .map_or(self.max_gas(), |sr| {
@@ -491,7 +491,7 @@ impl CosmosSdkChain {
     pub fn wait_for_block_commits(
         &self,
         mut tx_sync_results: Vec<TxSyncResult>,
-    ) -> Vec<TxSyncResult> {
+    ) -> Result<Vec<TxSyncResult>, Error> {
         use crate::util::retry::{retry_with_index, RetryResult};
 
         trace!("waiting for commit of block(s)");
@@ -500,8 +500,7 @@ impl CosmosSdkChain {
         thread::sleep(Duration::from_millis(200));
 
         let start = Instant::now();
-
-        let _result = retry_with_index(retry_strategy::wait_for_block_commits(self.config.rpc_timeout), |index| {
+        let result = retry_with_index(retry_strategy::wait_for_block_commits(self.config.rpc_timeout), |index| {
             if all_tx_results_found(&tx_sync_results) {
                 trace!(
                     "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
@@ -522,8 +521,8 @@ impl CosmosSdkChain {
                     // so that we don't attempt to resolve the transaction later on.
                     if response.code.value() != 0 {
                         *events = vec![IbcEvent::ChainError(format!(
-                            "deliver_tx for Tx hash {} reports error: code={:?}, log={:?}",
-                            response.hash, response.code, response.log
+                            "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                            self.id(), response.hash, response.code, response.log
                         ))];
 
                     // Otherwise, try to resolve transaction hash to the corresponding events.
@@ -542,7 +541,12 @@ impl CosmosSdkChain {
             RetryResult::Retry(index)
         });
 
-        tx_sync_results
+        match result {
+            // All transactions confirmed
+            Ok(()) => Ok(tx_sync_results),
+            // Did not find confirmation
+            Err(_) => Err(Kind::TxNoConfirmation(format!("from chain {}", self.id())).into()),
+        }
     }
 }
 
@@ -677,7 +681,7 @@ impl Chain for CosmosSdkChain {
             });
         }
 
-        let tx_sync_results = self.wait_for_block_commits(tx_sync_results);
+        let tx_sync_results = self.wait_for_block_commits(tx_sync_results)?;
 
         let events = tx_sync_results
             .into_iter()
