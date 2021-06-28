@@ -236,40 +236,33 @@ pub struct QueryPacketAcknowledgementsCmd {
     channel_id: ChannelId,
 }
 
-// cargo run --bin hermes -- query packet acknowledgements ibc-0 transfer ibconexfer --height 3
-impl Runnable for QueryPacketAcknowledgementsCmd {
-    fn run(&self) {
+impl QueryPacketAcknowledgementsCmd {
+    fn execute(&self) -> Result<(Vec<u64>, Height), Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
-            Some(chain_config) => chain_config,
-        };
+        let chain = spawn_chain_runtime(&*config, &self.chain_id)?;
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
         let grpc_request = QueryPacketAcknowledgementsRequest {
             port_id: self.port_id.to_string(),
             channel_id: self.channel_id.to_string(),
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let res: Result<(Vec<PacketState>, Height), Error> = chain
+        // Transform the list fo raw packet state into the list of sequence numbers
+        chain
             .query_packet_acknowledgements(grpc_request)
-            .map_err(|e| Kind::Query.context(e).into());
+            .map_err(|e| Kind::Query.context(e).into())
+            .map(|(packet, height)| (packet.iter().map(|p| p.sequence).collect(), height))
+    }
+}
 
-        match res {
-            Ok((packet_state, height)) => {
-                // Transform the raw packet state into the list of sequence numbers
-                let seqs: Vec<u64> = packet_state.iter().map(|ps| ps.sequence).collect();
+// cargo run --bin hermes -- query packet acknowledgements ibc-0 transfer ibconexfer --height 3
+impl Runnable for QueryPacketAcknowledgementsCmd {
+    fn run(&self) {
+        match self.execute() {
+            Ok((seqs, height)) => {
                 Output::success(PacketSeqs { height, seqs }).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
