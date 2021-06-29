@@ -42,6 +42,10 @@ pub enum Kind {
     #[error("GRPC error")]
     Grpc,
 
+    /// GRPC endpoint tx_simulate error
+    #[error("Simulate error: code {0}, message {1}")]
+    TxSimulateError(tonic::Code, String),
+
     /// Light client instance error, typically raised by a `Client`
     #[error("Light client error for RPC address {0}")]
     LightClient(String),

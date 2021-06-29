@@ -24,7 +24,7 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, trace, error};
+use tracing::{debug, error, trace};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -53,8 +53,7 @@ use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{
-    AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxBody,
-    TxRaw,
+    AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, Tx, TxBody, TxRaw,
 };
 use ibc_proto::cosmos::upgrade::v1beta1::{
     QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
@@ -189,21 +188,13 @@ impl CosmosSdkChain {
         // [`MsgUpdateClient`, `MsgRecvPacket`, ..., `MsgRecvPacket`]
         // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
         // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
-        let simulate_result = self
-            .send_tx_simulate(SimulateRequest {
-                tx: Some(Tx {
-                    body: Some(body),
-                    auth_info: Some(auth_info),
-                    signatures: vec![signed_doc],
-                }),
-            });
-        if let Err(e) = &simulate_result {
-            error!("send_tx: simulation result: {:?}", e);
-        };
-        let estimated_gas = simulate_result
-            .map_or(self.max_gas(), |sr| {
-                sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
-            });
+        let estimated_gas = self.send_tx_simulate(SimulateRequest {
+            tx: Some(Tx {
+                body: Some(body),
+                auth_info: Some(auth_info),
+                signatures: vec![signed_doc],
+            }),
+        })?;
 
         if estimated_gas > self.max_gas() {
             return Err(Kind::TxSimulateGasEstimateExceeded {
@@ -349,7 +340,9 @@ impl CosmosSdkChain {
         Ok((proof, height))
     }
 
-    fn send_tx_simulate(&self, request: SimulateRequest) -> Result<SimulateResponse, Error> {
+    /// Returns the estimated gas for the given `SimulateRequest`.
+    /// Propagates unrecoverable errors.
+    fn send_tx_simulate(&self, request: SimulateRequest) -> Result<u64, Error> {
         crate::time!("tx simulate");
 
         let mut client = self
@@ -361,12 +354,28 @@ impl CosmosSdkChain {
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
-        let response = self
-            .block_on(client.simulate(request))
-            .map_err(|e| Kind::Grpc.context(e))?
-            .into_inner();
 
-        Ok(response)
+        match self.block_on(client.simulate(request)) {
+            Ok(r) => {
+                let gas_info = r.into_inner().gas_info;
+                debug!("send_tx_simulate response gas_info={:?}", gas_info);
+                Ok(gas_info.map_or(self.max_gas(), |g| g.gas_used))
+            }
+            Err(s)
+                if (s.code() == tonic::Code::InvalidArgument)
+                    || (s.code() == tonic::Code::AlreadyExists) =>
+            {
+                error!("send_tx_simulate error: {:?}", s);
+                Err(Kind::TxSimulateError(s.code(), s.message().to_owned()).into())
+            }
+            Err(e) => {
+                error!(
+                    "recovering from send_tx_simulate error: {:?}; using preconfigured max gas",
+                    e
+                );
+                Ok(self.max_gas())
+            }
+        }
     }
 
     fn key(&self) -> Result<KeyEntry, Error> {
