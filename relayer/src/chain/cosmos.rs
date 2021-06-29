@@ -18,7 +18,7 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
-use tendermint_rpc::endpoint::tx_search::ResultTx;
+use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;

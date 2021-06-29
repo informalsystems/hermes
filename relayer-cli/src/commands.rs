@@ -12,14 +12,14 @@ use abscissa_core::{
 };
 use tracing::{error, info};
 
-use crate::config::Config;
 use crate::DEFAULT_CONFIG_PATH;
+use ibc_relayer::config::Config;
 
 use self::{
-    create::CreateCmds, keys::KeysCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
+    config::ConfigCmd, create::CreateCmds, keys::KeysCmd, listen::ListenCmd,
+    misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
+    upgrade::UpgradeCmds, version::VersionCmd,
 };
-use crate::commands::misbehaviour::MisbehaviourCmd;
 
 mod config;
 mod create;
@@ -38,17 +38,16 @@ pub fn default_config_file() -> Option<PathBuf> {
     dirs_next::home_dir().map(|home| home.join(DEFAULT_CONFIG_PATH))
 }
 
-// TODO: Re-add the `config` subcommand
-// /// The `config` subcommand
-// #[options(help = "manipulate the relayer configuration")]
-// Config(ConfigCmd),
-
 /// Cli Subcommands
 #[derive(Command, Debug, Options, Runnable)]
 pub enum CliCmd {
     /// The `help` subcommand
     #[options(help = "Get usage information")]
     Help(Help<Self>),
+
+    /// The `config` subcommand
+    #[options(help = "Validate Hermes configuration file")]
+    Config(ConfigCmd),
 
     /// The `keys` subcommand
     #[options(help = "Manage keys in the relayer for each chain")]
@@ -68,7 +67,7 @@ pub enum CliCmd {
 
     /// The `start` subcommand
     #[options(help = "Start the relayer in multi-chain mode. \
-                      Relays packets and channel handshake messages between all chains in the config.")]
+                      Relays packets and open handshake messages between all chains in the config.")]
     Start(StartCmd),
 
     /// The `query` subcommand
