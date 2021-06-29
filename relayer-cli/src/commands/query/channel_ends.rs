@@ -71,8 +71,10 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
         .find_chain(&chain_id)
         .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
-    let rt = Arc::new(TokioRuntime::new().unwrap());
+    let rt = Arc::new(TokioRuntime::new()?);
     let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt.clone())?;
+
+    // let chain = spawn_chain_runtime(&config, &chain_id)?;
 
     let chain_height = match cmd.height {
         Some(height) => Height::new(chain.id().version(), height),
@@ -84,7 +86,7 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
     let connection_id = channel_end
         .connection_hops
         .first()
-        .ok_or_else(|| format!("missing connection_hops"))?
+        .ok_or_else(|| format!("missing connection_hops for channel {}", channel_id))?
         .clone();
 
     let connection_end = chain.query_connection(&connection_id, chain_height)?;
@@ -123,7 +125,7 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
         )
     })?;
 
-    let counterparty_chain = CosmosSdkChain::bootstrap(chain_config_b.clone(), rt).unwrap();
+    let counterparty_chain = CosmosSdkChain::bootstrap(chain_config_b.clone(), rt)?;
 
     let counterparty_chain_height = counterparty_chain.query_latest_height()?;
 
