@@ -5,10 +5,10 @@ use std::fmt;
 use std::thread;
 use std::time::Instant;
 
+use itertools::Itertools;
 use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
-use itertools::Itertools;
 
 use ibc::{
     downcast,
@@ -927,7 +927,8 @@ impl RelayPath {
             "[{}] packets that still have commitments on {}: {} (first 10 shown here; total={})",
             self,
             self.src_chain().id(),
-            commit_sequences.iter().take(10).join(", "), commit_sequences.len()
+            commit_sequences.iter().take(10).join(", "),
+            commit_sequences.len()
         );
 
         // Get the packets that have not been received on destination chain
@@ -1012,7 +1013,8 @@ impl RelayPath {
             "[{}] packets that have acknowledgments on {} {} (first 10 shown here; total={})",
             self,
             self.src_chain().id(),
-            acked_sequences.iter().take(10).join(", "), acked_sequences.len()
+            acked_sequences.iter().take(10).join(", "),
+            acked_sequences.len()
         );
 
         let request = QueryUnreceivedAcksRequest {

@@ -57,6 +57,8 @@ use super::{
     Chain,
 };
 
+mod partition;
+
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
     pub event_monitor: Option<thread::JoinHandle<()>>,
@@ -356,9 +358,29 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         proto_msgs: Vec<prost_types::Any>,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_msgs(proto_msgs);
+        let mut events = vec![];
 
-        reply_to.send(result).map_err(Kind::channel)?;
+        // Partition the messages into multiple.
+        for partition in partition::partition_msgs(
+            proto_msgs,
+            self.chain.max_msg_num(),
+            self.chain.max_tx_size(),
+        ) {
+            if let Err(e) = self
+                .chain
+                .send_msgs(partition.messages())
+                // Accumulate the resulting IBC events if successful.
+                .map(|mut e| events.append(&mut e))
+            {
+                // Short-circuit the sending of further messages if error.
+                // Return with the error that was encountered.
+                reply_to.send(Err(e)).map_err(Kind::channel)?;
+                return Ok(());
+            }
+        }
+        // All messages were sent successfully.
+        // Return the vector of accumulated events.
+        reply_to.send(Ok(events)).map_err(Kind::channel)?;
 
         Ok(())
     }

@@ -280,16 +280,6 @@ impl CosmosSdkChain {
         calculate_fee(gas, self.gas_price())
     }
 
-    /// The maximum number of messages included in a transaction
-    fn max_msg_num(&self) -> usize {
-        self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
-    }
-
-    /// The maximum size of any transaction sent by the relayer to this chain
-    fn max_tx_size(&self) -> usize {
-        self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
-    }
-
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
@@ -1637,6 +1627,14 @@ impl Chain for CosmosSdkChain {
             light_client.header_and_minimal_set(trusted_height, target_height, client_state)?;
 
         Ok((target, supporting))
+    }
+
+    fn max_msg_num(&self) -> usize {
+        self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
+    }
+
+    fn max_tx_size(&self) -> usize {
+        self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
     }
 }
 

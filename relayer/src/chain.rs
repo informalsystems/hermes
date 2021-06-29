@@ -418,4 +418,10 @@ pub trait Chain: Sized {
 
         Ok((bytes, proofs))
     }
+
+    /// The maximum number of messages included in a transaction
+    fn max_msg_num(&self) -> usize;
+
+    /// The maximum size of any transaction sent by the relayer to this chain
+    fn max_tx_size(&self) -> usize;
 }
