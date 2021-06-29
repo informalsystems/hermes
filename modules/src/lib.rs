@@ -32,7 +32,6 @@
 extern crate sp_std as std;
 
 pub mod application;
-pub mod decode;
 pub mod events;
 pub mod handler;
 pub mod keys;

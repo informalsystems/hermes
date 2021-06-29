@@ -40,7 +40,7 @@ Send two transfer packets from the `transfer` module and `channel-0` of `ibc-0` 
 hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 ```
 
-```rust
+```json
 Success: [
     SendPacket(
         SendPacket {
@@ -71,7 +71,7 @@ The transfer packets are stored on `ibc-0` and can be relayed.
 hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 1 -r board:1938586739
 ```
 
-```rust
+```json
 Success: [
     SendPacket(
         SendPacket {
@@ -113,7 +113,7 @@ __NOTE__: The relayer prepends a client update message before the receive messag
 hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 ```
 
-```rust
+```json
 Success: [
     UpdateClient(
         UpdateClient {
@@ -225,7 +225,7 @@ __NOTE__: The relayer prepends a client update message before the acknowledgment
 hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1
 ```
 
-```rust
+```json
 Success: [
     UpdateClient(
         UpdateClient {

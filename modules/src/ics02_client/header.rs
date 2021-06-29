@@ -1,15 +1,15 @@
 use crate::primitives::ToString;
-use prost_types::Any;
-use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
 use tendermint_proto::Protobuf;
-
+use std::convert::TryFrom;
+use std::ops::Deref;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error;
-use crate::ics07_tendermint::header::Header as TendermintHeader;
+use crate::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
 use crate::Height;
+use prost_types::Any;
+use serde_derive::{Deserialize, Serialize};
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
@@ -67,10 +67,11 @@ impl TryFrom<Any> for AnyHeader {
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            TENDERMINT_HEADER_TYPE_URL => Ok(AnyHeader::Tendermint(
-                TendermintHeader::decode_vec(&raw.value)
-                    .map_err(error::invalid_raw_header_error)?,
-            )),
+            TENDERMINT_HEADER_TYPE_URL => {
+                let val = decode_header(raw.value.deref()).map_err(error::tendermint_error)?;
+
+                Ok(AnyHeader::Tendermint(val))
+            }
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(

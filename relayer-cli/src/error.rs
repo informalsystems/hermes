@@ -1,4 +1,4 @@
-use flex_error::{define_error, DisplayOnly};
+use flex_error::define_error;
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::channel::ChannelError;
 use ibc_relayer::connection::ConnectionError;
@@ -40,11 +40,11 @@ define_error! {
             |_| { "relayer error" },
 
         Connection
-            [ DisplayOnly<ConnectionError> ]
+            [ ConnectionError ]
             |_| { "connection error" },
 
         Packet
-            [ DisplayOnly<PacketError> ]
+            [ PacketError ]
             |_| { "packet error" },
 
         Channel
@@ -52,59 +52,15 @@ define_error! {
             |_| { "channel error" },
 
         ForeignClient
-            [ DisplayOnly<ForeignClientError> ]
+            [ ForeignClientError ]
             |_| { "foreign client error" },
 
         Link
-            [ DisplayOnly<LinkError> ]
+            [ LinkError ]
             |_| { "link error" },
 
         UpgradeChain
-            [ DisplayOnly<UpgradeChainError> ]
+            [ UpgradeChainError ]
             |_| { "upgrade chain error" },
     }
 }
-
-// use anomaly::Context;
-// use thiserror::Error;
-
-// /// An error raised within the relayer CLI
-// pub type Error = anomaly::Error<Kind>;
-
-// /// Kinds of errors
-// #[derive(Copy, Clone, Debug, Eq, Error, PartialEq)]
-// pub enum Kind {
-//     /// Error in configuration file
-//     #[error("config error")]
-//     Config,
-
-//     /// Input/output error
-//     #[error("I/O error")]
-//     Io,
-
-//     /// Error during network query
-//     #[error("query error")]
-//     Query,
-
-//     /// Error while spawning the runtime
-//     #[error("chain runtime error")]
-//     Runtime,
-
-//     /// Error during transaction submission
-//     #[error("tx error")]
-//     Tx,
-
-//     /// Error during transaction submission
-//     #[error("keys error")]
-//     Keys,
-// }
-
-// impl Kind {
-//     /// Create an error context from this error
-//     pub fn context(
-//         self,
-//         source: impl Into<Box<dyn std::error::Error + Send + Sync>>,
-//     ) -> Context<Kind> {
-//         Context::new(self, Some(source.into()))
-//     }
-// }

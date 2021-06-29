@@ -4,12 +4,13 @@ use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
     component::Component,
-    config, Application, Configurable, FrameworkError, StandardPaths,
+    config, Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
+use ibc_relayer::config::Config;
 
 use crate::components::{JsonTracing, PrettyTracing};
 use crate::entry::EntryPoint;
-use crate::{commands::CliCmd, config::Config};
+use crate::{commands::CliCmd, config::validate_config};
 
 /// Application state
 pub static APPLICATION: AppCell<CliApp> = AppCell::new();
@@ -110,7 +111,11 @@ impl Application for CliApp {
     fn after_config(&mut self, config: Self::Cfg) -> Result<(), FrameworkError> {
         // Configure components
         self.state.components.after_config(&config)?;
+
+        validate_config(&config)
+            .map_err(|validation_err| FrameworkErrorKind::ConfigError.context(validation_err))?;
         self.config = Some(config);
+
         Ok(())
     }
 

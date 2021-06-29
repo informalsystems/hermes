@@ -1,4 +1,6 @@
 use crate::primitives::ToString;
+use bytes::Buf;
+use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint::block::signed_header::SignedHeader;
@@ -111,6 +113,12 @@ impl TryFrom<RawHeader> for Header {
                 .map_err(error::invalid_raw_header_error)?,
         })
     }
+}
+
+pub fn decode_header<B: Buf>(buf: B) -> Result<Header, error::Error> {
+    RawHeader::decode(buf)
+        .map_err(error::decode_error)?
+        .try_into()
 }
 
 impl From<Header> for RawHeader {

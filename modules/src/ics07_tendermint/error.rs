@@ -1,6 +1,6 @@
 use crate::ics24_host::error::ValidationError;
 use crate::primitives::String;
-use flex_error::{define_error, DisplayError, DisplayOnly};
+use flex_error::{define_error, DisplayError, DisplayOnly, TraceError};
 use tendermint::error::Error as TendermintError;
 
 #[cfg(not(feature = "std"))]
@@ -51,7 +51,7 @@ define_error! {
             | _ | { "missing unbonding period" },
 
         InvalidChainIdentifier
-            [ DisplayError<ValidationError> ]
+            [ ValidationError ]
             | _ | { "Invalid chain identifier" },
 
         NegativeTrustingPeriod
@@ -91,5 +91,10 @@ define_error! {
         InvalidRawMisbehaviour
             { reason: String }
             | _ | { "invalid raw misbehaviour" },
+
+        Decode
+            [ TraceError<prost::DecodeError> ]
+            | _ | { "decode error" },
+
     }
 }

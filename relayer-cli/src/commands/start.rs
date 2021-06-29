@@ -6,6 +6,7 @@ use ibc_relayer::config::Config;
 use ibc_relayer::supervisor::Supervisor;
 
 use crate::conclude::Output;
+use crate::config;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -15,7 +16,15 @@ impl Runnable for StartCmd {
     fn run(&self) {
         let config = app_config();
 
-        match spawn_supervisor(config.clone()).and_then(|s| s.run()) {
+        // No chain is preconfigured
+        if config.chains.is_empty() {
+            Output::error(config::zero_chain_error()).exit();
+        };
+
+        match spawn_supervisor(config.clone()).and_then(|s| {
+            info!("Hermes has started");
+            s.run()
+        }) {
             Ok(()) => Output::success_msg("done").exit(),
             Err(e) => Output::error(format!("Hermes failed to start, last error: {}", e)).exit(),
         }

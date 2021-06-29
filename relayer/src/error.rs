@@ -2,7 +2,7 @@
 
 use crate::keyring::errors::Error as KeyringError;
 use crate::sdk_error::SdkError;
-use flex_error::{define_error, DisplayOnly};
+use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use prost::DecodeError;
 use tendermint_light_client::{
@@ -32,24 +32,24 @@ use crate::event::monitor;
 define_error! {
     Error {
         ConfigIo
-            [ DisplayOnly<std::io::Error> ]
+            [ TraceError<std::io::Error> ]
             |_| { "config I/O error" },
 
         Io
-            [ DisplayOnly<std::io::Error> ]
+            [ TraceError<std::io::Error> ]
             |_| { "I/O error" },
 
         ConfigDecode
-            [ DisplayOnly<toml::de::Error> ]
+            [ TraceError<toml::de::Error> ]
             |_| { "invalid configuration" },
 
         ConfigEncode
-            [ DisplayOnly<toml::ser::Error> ]
+            [ TraceError<toml::ser::Error> ]
             |_| { "invalid configuration" },
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ DisplayOnly<TendermintError> ]
+            [ TraceClone<TendermintError> ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -86,7 +86,7 @@ define_error! {
             |e| { format!("GRPC call return error status {0}", e.status) },
 
         GrpcTransport
-            [ DisplayOnly<TransportError> ]
+            [ TraceError<TransportError> ]
             |_| { "error in underlying transport when making GRPC call" },
 
         GrpcResponseParam
@@ -94,17 +94,17 @@ define_error! {
             |e| { format!("missing parameter in GRPC response: {}", e.param) },
 
         Decode
-            [ DisplayOnly<TendermintProtoError> ]
+            [ TraceError<TendermintProtoError> ]
             |_| { "error decoding protobuf" },
 
         LightClient
             { address: String }
-            [ DisplayOnly<LightClientError> ]
+            [ TraceError<LightClientError> ]
             |e| { format!("Light client error for RPC address {0}", e.address) },
 
         LightClientIo
             { address: String }
-            [ DisplayOnly<LightClientIoError> ]
+            [ TraceError<LightClientIoError> ]
             |e| { format!("Light client error for RPC address {0}", e.address) },
 
         ChainNotCaughtUp
@@ -118,7 +118,7 @@ define_error! {
             |_| { "requested proof for a path in the private store" },
 
         Store
-            [ DisplayOnly<sled::Error> ]
+            [ TraceError<sled::Error> ]
             |_| { "Store error" },
 
         Event
@@ -142,7 +142,7 @@ define_error! {
             |_| { "Invalid height" },
 
         InvalidMetadata
-            [ DisplayOnly<InvalidMetadataValue> ]
+            [ TraceError<InvalidMetadataValue> ]
             |_| { "invalid metadata" },
 
         BuildClientStateFailure
@@ -258,7 +258,7 @@ define_error! {
 
         InvalidUri
             { uri: String }
-            [ DisplayOnly<InvalidUri> ]
+            [ TraceError<InvalidUri> ]
             |e| {
                 format!("error parsing URI {}", e.uri)
             },
@@ -279,6 +279,9 @@ define_error! {
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },
 
+        TxNoConfirmation
+            |_| { "Failed Tx: no confirmation" },
+
         Misbehaviour
             { reason: String }
             |e| { format!("error raised while submitting the misbehaviour evidence: {0}", e.reason) },
@@ -289,7 +292,7 @@ define_error! {
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding
-            [ DisplayOnly<bech32::Error> ]
+            [ TraceError<bech32::Error> ]
             |_| { "bech32 encoding failed" },
 
         ClientTypeMismatch
@@ -304,174 +307,22 @@ define_error! {
 
         ProtobufDecode
             { payload_type: String }
-            [ DisplayOnly<DecodeError> ]
+            [ TraceError<DecodeError> ]
             |e| { format!("Error decoding protocol buffer for {}", e.payload_type) },
 
         Cbor
-            [ DisplayOnly<serde_cbor::Error> ]
-            | _ | { "error decoding CBOR payload" }
+            [ TraceError<serde_cbor::Error> ]
+            | _ | { "error decoding CBOR payload" },
+
+        TxSimulateGasEstimateExceeded
+            {
+                chain_id: ChainId,
+                estimated_gas: u64,
+                max_gas: u64,
+            }
+            |e| {
+                format!("{} gas estimate {} from simulated Tx exceeds the maximum configured {}",
+                    e.chain_id, e.estimated_gas, e.max_gas)
+            },
     }
 }
-
-// /// Various kinds of errors that can be raiser by the relayer.
-// #[derive(Clone, Debug, Display)]
-// pub enum Kind {
-//     /// config I/O error
-//     ConfigIo,
-
-//     /// I/O error
-//     Io,
-
-//     /// invalid configuration
-//     Config,
-
-//     /// RPC error to endpoint {0}
-//     Rpc(tendermint_rpc::Url),
-
-//     /// Websocket error to endpoint {0}
-//     Websocket(tendermint_rpc::Url),
-
-//     /// event monitor error: {0}
-//     EventMonitor(crate::event::monitor::ErrorDetail),
-
-//     /// GRPC error
-//     Grpc,
-
-//     /// Light client error for RPC address {0}
-//     LightClient(String),
-
-//     /// Store error
-//     Store,
-
-//     /// Bad Notification
-//     Event,
-
-//     /// The upgrade plan specifies no upgraded client state
-//     EmptyUpgradedClientState,
-
-//     /// Empty response value
-//     EmptyResponseValue,
-
-//     /// Empty response proof
-//     EmptyResponseProof,
-
-//     /// Malformed proof
-//     MalformedProof,
-
-//     /// Invalid height
-//     InvalidHeight,
-
-//     /// Failed to create client state
-//     BuildClientStateFailure,
-
-//     /// Failed to create client {0}
-//     CreateClient(String),
-
-//     /// Connection not found: {0}
-//     ConnectionNotFound(ConnectionId),
-
-//     /// Failed to build conn open message {0}: {1}
-//     ConnOpen(ConnectionId, String),
-
-//     /// Failed to build conn open init {0}
-//     ConnOpenInit(String),
-
-//     /// Failed to build conn open try {0}
-//     ConnOpenTry(String),
-
-//     /// Failed to build conn open ack {0}: {1}
-//     ConnOpenAck(ConnectionId, String),
-
-//     /// Failed to build conn open confirm {0}: {1}
-//     ConnOpenConfirm(ConnectionId, String),
-
-//     /// Failed to build chan open msg {0}: {1}
-//     ChanOpen(ChannelId, String),
-
-//     /// Failed to build channel open init {0}
-//     ChanOpenInit(String),
-
-//     /// Failed to build channel open try {0}
-//     ChanOpenTry(String),
-
-//     /// Failed to build channel open ack {0}: {1}
-//     ChanOpenAck(ChannelId, String),
-
-//     /// Failed to build channel open confirm {0}: {1}
-//     ChanOpenConfirm(ChannelId, String),
-
-//     /// Failed to build packet {0}: {1}
-//     Packet(ChannelId, String),
-
-//     /// Failed to build recv packet {0}: {1}
-//     RecvPacket(ChannelId, String),
-
-//     /// Failed to build acknowledge packet {0}: {1}
-//     AckPacket(ChannelId, String),
-
-//     /// Failed to build timeout packet {0}: {1}
-//     TimeoutPacket(ChannelId, String),
-
-//     /// Message transaction failure: {0}
-//     MessageTransaction(String),
-
-//     /// Query error occurred (failed to query for {0})
-//     Query(String),
-
-//     /// Keybase error
-//     KeyBase,
-
-//     /// ICS 007 error
-//     Ics007,
-
-//     /// ICS 023 error
-//     Ics023(ibc::ics23_commitment::error::ErrorDetail),
-
-//     /// invalid chain identifier format: {0}
-//     ChainIdentifier(String),
-
-//     /// requested proof for data in the privateStore
-//     NonProvableData,
-
-//     /// failed to send or receive through channel
-//     Channel,
-
-//     /// the input header is not recognized as a header for this chain
-//     InvalidInputHeader,
-
-//     /// error raised while submitting the misbehaviour evidence: {0}
-//     Misbehaviour(String),
-
-//     /// invalid key address: {0}")]
-//     InvalidKeyAddress(String),
-
-//     /// bech32 encoding failed
-//     Bech32Encoding(bech32::Error),
-
-//     /// client type mismatch: expected '{expected}', got '{got}'
-//     ClientTypeMismatch {
-//         expected: ClientType,
-//         got: ClientType,
-//     },
-// }
-
-// impl Kind {
-//     /// Add a given source error as context for this error kind
-//     ///
-//     /// This is typically use with `map_err` as follows:
-//     ///
-//     /// ```ignore
-//     /// let x = self.something.do_stuff()
-//     ///     .map_err(|e| error::Kind::Config.context(e))?;
-//     /// ```
-//     pub fn context(
-//         self,
-//         source: impl Into<Box<dyn std::error::Error + Send + Sync>>,
-//     ) -> Context<Self> {
-//         Context::new(self, Some(source.into()))
-//     }
-
-//     pub fn channel(err: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Context<Self> {
-//         Self::Channel.context(err)
-//     }
-// }

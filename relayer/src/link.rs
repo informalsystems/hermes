@@ -8,7 +8,7 @@ use std::time::Instant;
 use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
 
-use flex_error::{define_error, DisplayOnly};
+use flex_error::define_error;
 use ibc::{
     events::{IbcEvent, IbcEventType, PrettyEvents},
     ics02_client::error::Error as Ics02Error,
@@ -47,12 +47,6 @@ const MAX_RETRIES: usize = 5;
 
 define_error! {
     LinkError {
-        Failed
-            { reason: String }
-            | e | {
-                format!("failed with underlying error: {0}", e.reason )
-            },
-
         Relayer
             [ Error ]
             |_| { "failed with underlying error" },
@@ -91,7 +85,7 @@ define_error! {
             },
 
         Connection
-            [ DisplayOnly<ConnectionError> ]
+            [ ConnectionError ]
             |_| { "connection error" },
 
         Client
@@ -99,7 +93,7 @@ define_error! {
             |_| { "failed during a client operation" },
 
         Packet
-            [ DisplayOnly<PacketError> ]
+            [ PacketError ]
             |_| { "packet error" },
 
         OldPacketClearingFailed
@@ -178,43 +172,6 @@ define_error! {
 
     }
 }
-
-// #[allow(clippy::large_enum_variant)]
-// #[derive(Debug, Error)]
-// pub enum LinkError {
-//     #[error("failed with underlying error: {0}")]
-//     Failed(String),
-
-//     #[error("failed with underlying error: {0}")]
-//     Generic(#[from] Error),
-
-//     #[error("link initialization failed during channel counterparty verification: {0}")]
-//     Initialization(ChannelError),
-
-//     #[error("failed to construct packet proofs for chain {0} with error: {1}")]
-//     PacketProofsConstructor(ChainId, Error),
-
-//     #[error("failed during query to chain id {0} with underlying error: {1}")]
-//     QueryError(ChainId, Error),
-
-//     #[error("connection error: {0}:")]
-//     ConnectionError(#[from] ConnectionError),
-
-//     #[error("channel error:  {0}:")]
-//     ChannelError(#[from] ChannelError),
-
-//     #[error("failed during a client operation: {0}:")]
-//     ClientError(ForeignClientError),
-
-//     #[error("packet error: {0}:")]
-//     PacketError(#[from] PacketError),
-
-//     #[error("clearing of old packets failed")]
-//     OldPacketClearingFailed,
-
-//     #[error("chain error when sending messages: {0}")]
-//     SendError(Box<IbcEvent>),
-// }
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum OperationalDataTarget {
@@ -529,7 +486,7 @@ impl RelayPath {
     pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         if self.clear_packets {
             info!(
-                "[{}] clearing pending packets from events before height {:?}",
+                "[{}] clearing pending packets from events before height {}",
                 self, above_height
             );
 
@@ -734,11 +691,21 @@ impl RelayPath {
                 Err(e) => {
                     match e.detail {
                         LinkErrorDetail::Send(ev) => {
-                            // This error means we can retry
+                            // This error means we could retry
                             error!("[{}] error {}", self, ev);
-                            match self.regenerate_operational_data(odata.clone()) {
-                                None => return Ok(RelaySummary::empty()), // Nothing to retry
-                                Some(new_od) => odata = new_od,
+                            if i + 1 == MAX_RETRIES {
+                                error!(
+                                    "[{}] {}/{} retries exhausted. giving up",
+                                    self,
+                                    i + 1,
+                                    MAX_RETRIES
+                                )
+                            } else {
+                                // If we haven't exhausted all retries, regenerate the op. data & retry
+                                match self.regenerate_operational_data(odata.clone()) {
+                                    None => return Ok(RelaySummary::empty()), // Nothing to retry
+                                    Some(new_od) => odata = new_od,
+                                }
                             }
                         }
                         _ => return Err(e),

@@ -194,7 +194,7 @@ def query_unreceived_acks(
 def packet_send(c: Config, src: ChainId, dst: ChainId,
                 src_port: PortId, src_channel: ChannelId,
                 amount: int, height_offset: int, number_msgs: Optional[int] = None,
-                key: Optional[str] = None) -> Packet:
+                key: Optional[str] = 'user2') -> Packet:
 
     cmd = TxPacketSend(dst_chain_id=dst, src_chain_id=src,
                        src_port=src_port, src_channel=src_channel,

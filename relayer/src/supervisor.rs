@@ -7,7 +7,7 @@ use tracing::{debug, error, warn};
 use ibc::{
     events::IbcEvent,
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::{IdentifiedConnectionEnd, State},
+    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
     ics04_channel::channel::IdentifiedChannelEnd,
     ics24_host::identifier::ChainId,
     Height,
@@ -19,17 +19,17 @@ use ibc_proto::ibc::core::{
 
 use crate::{
     chain::counterparty::channel_state_on_destination,
-    chain::handle::ChainHandle,
+    chain::{counterparty::connection_state_on_destination, handle::ChainHandle},
     config::{Config, Strategy},
     event::{self, monitor::EventBatch},
-    object::{Channel, Client, Object, UnidirectionalChannelPath},
+    object::{Channel, Client, Connection, Object, UnidirectionalChannelPath},
     registry::Registry,
     telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
 
-mod error;
+pub mod error;
 pub use error::Error;
 
 /// The supervisor listens for events on multiple pairs of chains,
@@ -91,7 +91,25 @@ impl Supervisor {
                         }
                     }
                 }
+                IbcEvent::OpenInitConnection(..)
+                | IbcEvent::OpenTryConnection(..)
+                | IbcEvent::OpenAckConnection(..) => {
+                    if !self.handshake_enabled() {
+                        continue;
+                    }
 
+                    let object = event
+                        .connection_attributes()
+                        .map(|attr| Object::connection_from_conn_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
+                        collected
+                            .per_object
+                            .entry(object)
+                            .or_default()
+                            .push(event.clone());
+                    }
+                }
                 IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                     if !self.handshake_enabled() {
                         continue;
@@ -109,7 +127,6 @@ impl Supervisor {
                             .push(event.clone());
                     }
                 }
-
                 IbcEvent::OpenAckChannel(ref open_ack) => {
                     // Create client worker here as channel end must be opened
                     if let Ok(object) =
@@ -126,13 +143,14 @@ impl Supervisor {
                         continue;
                     }
 
-                    if let Ok(channel_object) = Object::channel_from_chan_open_events(
-                        event.clone().channel_attributes().unwrap(),
-                        src_chain,
-                    ) {
+                    let object = event
+                        .channel_attributes()
+                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
                         collected
                             .per_object
-                            .entry(channel_object)
+                            .entry(object)
                             .or_default()
                             .push(event.clone());
                     }
@@ -264,9 +282,54 @@ impl Supervisor {
                             }
                         };
 
-                    if !connection_end.state_matches(&State::Open) {
+                    let connection = IdentifiedConnectionEnd {
+                        connection_id: connection_id.clone(),
+                        connection_end: connection_end.clone(),
+                    };
+
+                    match self.spawn_workers_for_connection(
+                        chain.clone(),
+                        client.clone(),
+                        connection.clone(),
+                    ) {
+                        Ok(()) => debug!(
+                            "done spawning workers for connection {} on chain {}",
+                            connection.connection_id,
+                            chain.id(),
+                        ),
+                        Err(e) => error!(
+                            "skipped workers for connection {} on chain {} due to error {}",
+                            chain.id(),
+                            connection.connection_id,
+                            e
+                        ),
+                    }
+
+                    if !connection_end.is_open() {
+                        debug!(
+                            "connection {} not open, skip workers for channels over this connetion",
+                            connection.connection_id
+                        );
                         continue;
                     }
+
+                    match self.counterparty_connection_state(client.clone(), connection.clone()) {
+                        Err(e) => {
+                            debug!("error with counterparty: reason {}", e);
+                            continue;
+                        }
+                        Ok(state) => {
+                            if !state.eq(&ConnectionState::Open) {
+                                debug!("connection {} not open, skip workers for channels over this connetion", connection.connection_id);
+
+                                debug!(
+                                    "drop connection {} because its counterparty is not open ",
+                                    connection_id
+                                );
+                                continue;
+                            }
+                        }
+                    };
 
                     let chans_req = QueryConnectionChannelsRequest {
                         connection: connection_id.to_string(),
@@ -311,6 +374,51 @@ impl Supervisor {
                 }
             }
         }
+    }
+
+    /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+    fn spawn_workers_for_connection(
+        &mut self,
+        chain: Box<dyn ChainHandle>,
+        client: IdentifiedAnyClientState,
+        connection: IdentifiedConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let counterparty_chain = self
+            .registry
+            .get_or_spawn(&client.client_state.chain_id())?;
+
+        let conn_state_src = connection.connection_end.state;
+
+        //let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
+        let conn_state_dst =
+            connection_state_on_destination(connection.clone(), counterparty_chain.as_ref())?;
+
+        debug!(
+            "connection {} on chain {} is: {:?}; state on dest. chain ({}) is: {:?}",
+            connection.connection_id,
+            chain.id(),
+            conn_state_src,
+            counterparty_chain.id(),
+            conn_state_dst
+        );
+
+        if conn_state_src.is_open() && conn_state_dst.is_open() {
+        } else if !conn_state_dst.is_open()
+            && conn_state_dst as u32 <= conn_state_src as u32
+            && self.handshake_enabled()
+        {
+            // create worker for connection handshake that will advance the remote state
+            let connection_object = Object::Connection(Connection {
+                dst_chain_id: client.client_state.chain_id(),
+                src_chain_id: chain.id(),
+                src_connection_id: connection.connection_id,
+            });
+
+            self.workers
+                .get_or_spawn(connection_object, chain.clone(), counterparty_chain.clone());
+        }
+
+        Ok(())
     }
 
     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
@@ -487,6 +595,21 @@ impl Supervisor {
         }
 
         Ok(())
+    }
+
+    fn counterparty_connection_state(
+        &mut self,
+        client: IdentifiedAnyClientState,
+        connection: IdentifiedConnectionEnd,
+    ) -> Result<ConnectionState, Box<dyn std::error::Error>> {
+        let counterparty_chain = self
+            .registry
+            .get_or_spawn(&client.client_state.chain_id())?;
+
+        Ok(connection_state_on_destination(
+            connection,
+            counterparty_chain.as_ref(),
+        )?)
     }
 }
 

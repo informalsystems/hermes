@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.4.0"
+version    = "0.5.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -41,10 +41,7 @@ std = [
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.8.0", path = "../proto" }
 ics23 = {version = "0.6.5", default-features  = false }
-# anyhow = {version = "1.0", default-features = false}
-#anomaly = "0.2.0"
 chrono = { version = "0.4.19", default-features = false, features = ["serde", "clock"] }
-#thiserror = "1.0.25"
 serde_derive = "1.0.104"
 serde = { version = "1.0.125", default-features = false, features = ["derive"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
@@ -56,7 +53,7 @@ dyn-clonable = "0.9.0"
 regex = { version = "1", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false, features = ["bech32-preview"] }
 sha2 = { version = "0.9.3", optional = true, default-features = false }
-flex-error = { version = "0.2.0", default-features = false, features = ["anyhow_tracer"] }
+flex-error = { version = "0.2.1", default-features = false, features = ["anyhow_tracer"] }
 displaydoc = { version = "0.2.1", default-features = false }
 sp-std = { version = "3.0", default-features = false }
 
@@ -74,7 +71,7 @@ optional = true
 
 [dev-dependencies]
 env_logger = "0.8.4"
-tracing-subscriber = "0.2.18"
+tracing-subscriber = "0.2.19"
 test-env-log = { version = "0.2.7", features = ["trace"] }
 modelator = { git = "https://github.com/informalsystems/modelator", rev = "99f656fa8b3cf46a2aa0b6513e4e140d1778c4bd" }
 tendermint-rpc = { version = "=0.19.0", features = ["http-client", "websocket-client"] }

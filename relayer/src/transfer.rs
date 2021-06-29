@@ -1,12 +1,10 @@
 use std::time::Duration;
 
-use thiserror::Error;
-use tracing::error;
-
+use flex_error::{define_error, DetailOnly};
 use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::timestamp::Timestamp;
+use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 
@@ -14,21 +12,42 @@ use crate::chain::handle::ChainHandle;
 use crate::config::ChainConfig;
 use crate::error::Error;
 
-#[derive(Debug, Error)]
-pub enum PacketError {
-    #[error("failed with underlying cause: {0}")]
-    Failed(String),
+define_error! {
+    PacketError {
+        Relayer
+            [ Error ]
+            |_| { "relayer error" },
 
-    #[error("key error with underlying cause: {0}")]
-    Key(Error),
+        Key
+            [ Error ]
+            |_| { "key error" },
 
-    #[error(
-        "failed during a transaction submission step to chain id {0} with underlying error: {1}"
-    )]
-    Submit(ChainId, Error),
+        Submit
+            { chain_id: ChainId }
+            [ Error ]
+            |e| {
+                format!("failed while submitting the Transfer message to chain {0}",
+                    e.chain_id)
+            },
 
-    #[error("timestamp overflow")]
-    TimestampOverflow,
+        TimestampOverflow
+            [ DetailOnly<TimestampOverflowError> ]
+            |_| { "timestamp overflow" },
+
+        TxResponse
+            { event: String }
+            |e| {
+                format!("tx response event consists of an error: {}",
+                    e.event)
+            },
+
+        UnexpectedEvent
+            { event: IbcEvent }
+            |e| {
+                format!("internal error, expected IBCEvent::ChainError, got {:?}",
+                    e.event)
+            },
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -54,14 +73,14 @@ pub fn build_and_send_transfer_messages(
         None => packet_dst_chain.get_signer(),
         Some(r) => Ok(r.clone().into()),
     }
-    .map_err(PacketError::Key)?;
+    .map_err(key_error)?;
 
-    let sender = packet_src_chain.get_signer().map_err(PacketError::Key)?;
+    let sender = packet_src_chain.get_signer().map_err(key_error)?;
 
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        (Timestamp::now() + opts.timeout_seconds).map_err(|_| PacketError::TimestampOverflow)?
+        (Timestamp::now() + opts.timeout_seconds).map_err(timestamp_overflow_error)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
@@ -69,7 +88,7 @@ pub fn build_and_send_transfer_messages(
     } else {
         packet_dst_chain
             .query_latest_height()
-            .map_err(|_| PacketError::Failed("Height error".to_string()))?
+            .map_err(relayer_error)?
             .add(opts.timeout_height_offset)
     };
 
@@ -91,7 +110,7 @@ pub fn build_and_send_transfer_messages(
 
     let events = packet_src_chain
         .send_msgs(msgs)
-        .map_err(|e| PacketError::Submit(packet_src_chain.id(), e))?;
+        .map_err(|e| submit_error(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events
@@ -102,7 +121,7 @@ pub fn build_and_send_transfer_messages(
         None => Ok(events),
         Some(err) => {
             if let IbcEvent::ChainError(err) = err {
-                Err(PacketError::Failed(err.to_string()))
+                Err(tx_response_error(err.clone()))
             } else {
                 panic!(
                     "internal error, expected IBCEvent::ChainError, got {:?}",

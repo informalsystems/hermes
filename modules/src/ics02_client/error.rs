@@ -1,11 +1,12 @@
 use crate::ics02_client::client_type::ClientType;
+use crate::ics07_tendermint::error::Error as Ics07Error;
 use crate::ics23_commitment::error::Error as Ics23Error;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::ClientId;
 use crate::primitives::format;
 use crate::primitives::String;
 use crate::Height;
-use flex_error::{define_error, DisplayOnly};
+use flex_error::{define_error, TraceError};
 use std::num::TryFromIntError;
 use tendermint_proto::Error as TendermintError;
 
@@ -13,7 +14,6 @@ use tendermint_proto::Error as TendermintError;
 impl crate::primitives::StdError for Error {}
 
 define_error! {
-    #[derive(Debug, PartialEq, Eq)]
     Error {
         UnknownClientType
             { client_type: String }
@@ -96,14 +96,14 @@ define_error! {
             },
 
         DecodeRawClientState
-            [ DisplayOnly<TendermintError> ]
+            [ TraceError<TendermintError> ]
             | _ | { "error decoding raw client state" },
 
         MissingRawClientState
             | _ | { "missing raw client state" },
 
         InvalidRawConsensusState
-            [ DisplayOnly<TendermintError> ]
+            [ TraceError<TendermintError> ]
             | _ | { "invalid raw client consensus state" },
 
         MissingRawConsensusState
@@ -113,6 +113,10 @@ define_error! {
             [ ValidationError ]
             | _ | { "invalid client id in the update client message" },
 
+        Decode
+            [ TraceError<prost::DecodeError> ]
+            | _ | { "decode error" },
+
         MissingHeight
             | _ | { "invalid raw client consensus state: the height field is missing" },
 
@@ -121,14 +125,14 @@ define_error! {
             | _ | { "invalid client identifier" },
 
         InvalidRawHeader
-            [ DisplayOnly<TendermintError> ]
+            [ TraceError<TendermintError> ]
             | _ | { "invalid raw header" },
 
         MissingRawHeader
             | _ | { "missing raw header" },
 
         DecodeRawMisbehaviour
-            [ DisplayOnly<TendermintError> ]
+            [ TraceError<TendermintError> ]
             | _ | { "invalid raw misbehaviour" },
 
         InvalidRawMisbehaviour
@@ -145,15 +149,19 @@ define_error! {
             | _ | { "invalid address" },
 
         InvalidUpgradeClientProof
-            [ DisplayOnly<Ics23Error> ]
+            [ Ics23Error ]
             | _ | { "invalid proof for the upgraded client state" },
 
         InvalidUpgradeConsensusStateProof
-            [ DisplayOnly<Ics23Error> ]
+            [ Ics23Error ]
             | _ | { "invalid proof for the upgraded consensus state" },
 
+        Tendermint
+            [ Ics07Error ]
+            | _ | { "tendermint error" },
+
         InvalidPacketTimestamp
-            [ DisplayOnly<TryFromIntError> ]
+            [ TraceError<TryFromIntError> ]
             | _ | { "invalid packet timeout timestamp value" },
 
         ClientArgsTypeMismatch

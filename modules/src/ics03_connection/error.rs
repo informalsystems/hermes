@@ -9,7 +9,6 @@ use flex_error::define_error;
 impl crate::primitives::StdError for Error {}
 
 define_error! {
-    #[derive(Debug, PartialEq, Eq)]
     Error {
         Ics02Client
             [ client_error::Error ]

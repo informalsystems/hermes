@@ -1,32 +1,40 @@
 use std::time::Duration;
 
-use prost_types::Any;
-use thiserror::Error;
-use tracing::error;
-
+use flex_error::define_error;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::{events::IbcEvent, ics07_tendermint::client_state::ClientState};
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
+use prost_types::Any;
 
 use crate::chain::{Chain, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
 
-#[derive(Debug, Error)]
-pub enum UpgradeChainError {
-    #[error("failed with underlying cause: {0}")]
-    Failed(String),
+define_error! {
+    UpgradeChainError {
+        Key
+            [ Error ]
+            |_| { "key error" },
 
-    #[error("key error with underlying cause: {0}")]
-    KeyError(Error),
+        Submit
+            { chain_id: ChainId }
+            [ Error ]
+            |e| {
+                format!("failed while submitting the Transfer message to chain {0}",
+                    e.chain_id)
+            },
 
-    #[error(
-        "failed during a transaction submission step to chain id {0} with underlying error: {1}"
-    )]
-    SubmitError(ChainId, Error),
+        TxResponse
+            { event: String }
+            |e| {
+                format!("tx response event consists of an error: {}",
+                    e.event)
+            },
+
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -82,9 +90,7 @@ pub fn build_and_send_upgrade_chain_message(
     };
 
     // build the msg submit proposal
-    let proposer = dst_chain
-        .get_signer()
-        .map_err(UpgradeChainError::KeyError)?;
+    let proposer = dst_chain.get_signer().map_err(key_error)?;
 
     let coins = ibc_proto::cosmos::base::v1beta1::Coin {
         denom: "stake".to_string(),
@@ -106,7 +112,7 @@ pub fn build_and_send_upgrade_chain_message(
 
     let events = dst_chain
         .send_msgs(vec![any_msg])
-        .map_err(|e| UpgradeChainError::SubmitError(dst_chain.id().clone(), e))?;
+        .map_err(|e| submit_error(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events.iter().find_map(|event| match event {
@@ -116,6 +122,6 @@ pub fn build_and_send_upgrade_chain_message(
 
     match result {
         None => Ok(events),
-        Some(reason) => Err(UpgradeChainError::Failed(reason)),
+        Some(reason) => Err(tx_response_error(reason)),
     }
 }

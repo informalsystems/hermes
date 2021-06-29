@@ -25,7 +25,6 @@ all-features = true
 prost = "0.7"
 prost-types = "0.7"
 bytes = "1.0"
-thiserror = "1.0"
 tonic = "0.4"
 
 [dependencies.tendermint-proto]

@@ -1,6 +1,6 @@
 use crate::primitives::format;
 use crate::primitives::String;
-use flex_error::{define_error, DisplayError};
+use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
 use std::borrow::ToOwned;
 use std::cmp::Ordering;
@@ -144,7 +144,7 @@ define_error! {
     Error {
         HeightConversion
             { height: String }
-            [ DisplayError<ParseIntError> ]
+            [ TraceError<ParseIntError> ]
             | e | {
                 format_args!("cannot convert into a `Height` type from string {0}",
                     e.height)

@@ -13,7 +13,10 @@ use ibc::{
         header::{AnyHeader, Header},
         misbehaviour::MisbehaviourEvidence,
     },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics03_connection::{
+        connection::{ConnectionEnd, IdentifiedConnectionEnd},
+        version::Version,
+    },
     ics04_channel::{
         channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
@@ -34,7 +37,7 @@ use ibc_proto::ibc::core::{
     },
     client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
-    connection::v1::QueryClientConnectionsRequest,
+    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 
 use crate::{
@@ -269,6 +272,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
                             self.query_connection(connection_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConnections { request, reply_to }) => {
+                            self.query_connections(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryConnectionChannels { request, reply_to }) => {
@@ -653,6 +660,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         reply_to
             .send(connection_end)
+            .map_err(|_| error::channel_send_error())?;
+
+        Ok(())
+    }
+
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_connections(request);
+
+        reply_to
+            .send(result)
             .map_err(|_| error::channel_send_error())?;
 
         Ok(())

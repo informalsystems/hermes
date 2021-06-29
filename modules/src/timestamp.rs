@@ -11,8 +11,7 @@ use crate::primitives::ToString;
 use tendermint::primitives::Duration;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
-use displaydoc::Display;
-use flex_error::*;
+use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
@@ -131,9 +130,12 @@ impl Display for Timestamp {
     }
 }
 
-#[derive(Clone, Debug, Display, PartialEq, Eq)]
-/// Timestamp overflow when modifying with duration
-pub struct TimestampOverflowError;
+define_error! {
+    TimestampOverflowError {
+        TimestampOverflow
+            |_| { "Timestamp overflow when modifying with duration" }
+    }
+}
 
 impl Add<Duration> for Timestamp {
     type Output = Result<Timestamp, TimestampOverflowError>;
@@ -142,7 +144,7 @@ impl Add<Duration> for Timestamp {
         match self.as_datetime() {
             Some(datetime) => {
                 let duration2 =
-                    chrono::Duration::from_std(duration).map_err(|_| TimestampOverflowError)?;
+                    chrono::Duration::from_std(duration).map_err(|_| timestamp_overflow_error())?;
                 Ok(Self::from_datetime(datetime + duration2))
             }
             None => Ok(self),
@@ -157,7 +159,7 @@ impl Sub<Duration> for Timestamp {
         match self.as_datetime() {
             Some(datetime) => {
                 let duration2 =
-                    chrono::Duration::from_std(duration).map_err(|_| TimestampOverflowError)?;
+                    chrono::Duration::from_std(duration).map_err(|_| timestamp_overflow_error())?;
                 Ok(Self::from_datetime(datetime - duration2))
             }
             None => Ok(self),
@@ -168,11 +170,11 @@ impl Sub<Duration> for Timestamp {
 define_error! {
     ParseTimestampError {
         ParseInt
-            [ DisplayError<ParseIntError> ]
+            [ TraceError<ParseIntError> ]
             | _ | { "error parsing integer from string"},
 
         TryFromInt
-            [ DisplayError<TryFromIntError> ]
+            [ TraceError<TryFromIntError> ]
             | _ | { "error converting from u64 to i64" },
     }
 }
