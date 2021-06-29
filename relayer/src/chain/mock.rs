@@ -382,11 +382,11 @@ impl Chain for MockChain {
     }
 
     fn max_msg_num(&self) -> usize {
-        todo!()
+        30
     }
 
     fn max_tx_size(&self) -> usize {
-        todo!()
+        2 * 1024 * 1024
     }
 }
 
