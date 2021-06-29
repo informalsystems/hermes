@@ -1,15 +1,15 @@
-use crate::primitives::ToString;
-use tendermint_proto::Protobuf;
-use std::convert::TryFrom;
-use std::ops::Deref;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error;
 use crate::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
+use crate::primitives::ToString;
 use crate::Height;
 use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
+use std::ops::Deref;
+use tendermint_proto::Protobuf;
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";

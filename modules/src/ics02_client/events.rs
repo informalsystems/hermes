@@ -1,9 +1,4 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
-use std::convert::{TryFrom, TryInto};
-use prost::Message;
-use serde_derive::{Deserialize, Serialize};
-use subtle_encoding::hex;
-use tendermint_proto::Protobuf;
 use crate::events::{self, extract_attribute, IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
@@ -12,9 +7,12 @@ use crate::ics24_host::identifier::ClientId;
 use crate::primitives::format;
 use crate::primitives::String;
 use crate::primitives::ToString;
+use prost::Message;
+use serde_derive::{Deserialize, Serialize};
 use std::boxed::Box;
-
-
+use std::convert::{TryFrom, TryInto};
+use subtle_encoding::hex;
+use tendermint_proto::Protobuf;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
