@@ -636,14 +636,15 @@ impl Chain for CosmosSdkChain {
         &mut self.keybase
     }
 
-    /// Send one or more transactions that include all the specified messages.
-    /// The `proto_msgs` are split in transactions such they don't exceed the configured maximum
-    /// number of messages per transaction and the maximum transaction size.
-    /// Then `send_tx()` is called with each Tx. `send_tx()` determines the fee based on the
-    /// on-chain simulation and if this exceeds the maximum gas specified in the configuration file
-    /// then it returns error.
-    /// TODO - more work is required here for a smarter split maybe iteratively accumulating/ evaluating
-    /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
+    /// Send a transaction that include all the specified messages.
+    /// Uses `send_tx()` to submit the messages. The method `send_tx`
+    /// determines the fee based on the on-chain simulation and
+    /// if this exceeds the maximum gas specified in the
+    /// configuration file then it returns error.
+    /// TODO - more work is required here for a smarter split
+    ///     maybe iteratively accumulating/ evaluating
+    ///     msgs in a Tx until any of the max size,
+    ///     max num msgs, max fee are exceeded.
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_msgs");
 
@@ -652,35 +653,12 @@ impl Chain for CosmosSdkChain {
         }
         let mut tx_sync_results = vec![];
 
-        let mut n = 0;
-        let mut size = 0;
-        let mut msg_batch = vec![];
-        for msg in proto_msgs.iter() {
-            msg_batch.push(msg.clone());
-            let mut buf = Vec::new();
-            prost::Message::encode(msg, &mut buf).unwrap();
-            n += 1;
-            size += buf.len();
-            if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
-                let tx_sync_result = self.send_tx(msg_batch)?;
-                tx_sync_results.push(TxSyncResult {
-                    response: tx_sync_result,
-                    events: events_per_tx,
-                });
-                n = 0;
-                size = 0;
-                msg_batch = vec![];
-            }
-        }
-        if !msg_batch.is_empty() {
-            let events_per_tx = vec![IbcEvent::Empty("".to_string()); msg_batch.len()];
-            let tx_sync_result = self.send_tx(msg_batch)?;
-            tx_sync_results.push(TxSyncResult {
-                response: tx_sync_result,
-                events: events_per_tx,
-            });
-        }
+        let events_per_tx = vec![IbcEvent::Empty("".to_string()); proto_msgs.len()];
+        let tx_sync_result = self.send_tx(proto_msgs)?;
+        tx_sync_results.push(TxSyncResult {
+            response: tx_sync_result,
+            events: events_per_tx,
+        });
 
         let tx_sync_results = self.wait_for_block_commits(tx_sync_results)?;
 
