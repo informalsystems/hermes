@@ -18,7 +18,7 @@ telemetry = ["ibc-telemetry"]
 
 [dependencies]
 ibc           = { version = "0.5.0", path = "../modules" }
-ibc-proto     = { version = "0.8.0", path = "../proto" }
+ibc-proto     = { version = "0.8.1", path = "../proto" }
 ibc-telemetry = { version = "0.5.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
@@ -59,18 +59,18 @@ anyhow = "1.0.41"
 fraction = {version = "0.8.0", default-features = false }
 
 [dependencies.tendermint]
-version = "=0.19.0"
+version = "=0.20.0"
 
 [dependencies.tendermint-rpc]
-version = "=0.19.0"
+version = "=0.20.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.19.0"
+version = "=0.20.0"
 features = ["unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.19.0"
+version = "=0.20.0"
 
 [dev-dependencies]
 ibc = { version = "0.5.0", path = "../modules", features = ["mocks"] }
@@ -80,4 +80,4 @@ tracing-subscriber = "0.2.19"
 test-env-log = { version = "0.2.7", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.19.0" }
+tendermint-testgen = { version = "=0.20.0" }
