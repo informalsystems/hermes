@@ -29,7 +29,7 @@ pub struct QueryPacketAcknowledgmentCmd {
 }
 
 impl QueryPacketAcknowledgmentCmd {
-    fn execute(&self) -> Result<Vec<u8>, Error> {
+    fn execute(&self) -> Result<String, Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
@@ -44,20 +44,20 @@ impl QueryPacketAcknowledgmentCmd {
                 self.sequence,
                 Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
             )
-            .map(|(b, _)| b)
             .map_err(|e| Kind::Query.context(e).into())
+            .map(|(b, _)| b)
+            .map(|bytes| {
+                Hex::upper_case()
+                    .encode_to_string(bytes.clone())
+                    .unwrap_or_else(|_| format!("{:?}", bytes))
+            })
     }
 }
 
 impl Runnable for QueryPacketAcknowledgmentCmd {
     fn run(&self) {
         match self.execute() {
-            Ok(bytes) => {
-                let hex = Hex::upper_case()
-                    .encode_to_string(bytes)
-                    .unwrap_or_else(|_| "[failed to encode bytes to hex]".to_owned());
-                Output::success(hex).exit()
-            }
+            Ok(hex) => Output::success(hex).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }

@@ -36,14 +36,14 @@ pub struct QueryPacketCommitmentCmd {
 }
 
 impl QueryPacketCommitmentCmd {
-    fn execute(&self) -> Result<Vec<u8>, Error> {
+    fn execute(&self) -> Result<String, Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
-        chain
+        let bytes = chain
             .build_packet_proofs(
                 PacketMsgType::Recv,
                 &self.port_id,
@@ -52,20 +52,22 @@ impl QueryPacketCommitmentCmd {
                 Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
             )
             .map(|(bytes, _)| bytes)
-            .map_err(|e| Kind::Query.context(e).into())
+            .map_err(|e| Kind::Query.context(e))?;
+
+        if bytes.is_empty() {
+            Ok("None".to_owned())
+        } else {
+            Ok(Hex::upper_case()
+                .encode_to_string(bytes.clone())
+                .unwrap_or_else(|_| format!("{:?}", bytes)))
+        }
     }
 }
 
 impl Runnable for QueryPacketCommitmentCmd {
     fn run(&self) {
         match self.execute() {
-            Ok(bytes) if bytes.is_empty() => Output::success_msg("None").exit(),
-            Ok(bytes) => {
-                let hex = Hex::upper_case()
-                    .encode_to_string(bytes)
-                    .unwrap_or_else(|_| "[failed to encode bytes to hex]".to_owned());
-                Output::success(hex).exit()
-            }
+            Ok(hex) => Output::success(hex).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
