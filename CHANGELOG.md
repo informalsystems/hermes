@@ -2,15 +2,23 @@
 
 ## Unreleased
 
+### FEATURES
+
+- [ibc-relayer-cli]
+  - Added `config validate` CLI to Hermes ([#600])
+
 ### IMPROVEMENTS
 
 - Update to `tendermint-rs` v0.20.0 ([#1125])
+- Add inline documentation to config.toml ([#1127])
 
 - [ibc-relayer-cli]
-  - Fix unwraps in packet query CLIs ([#1114])
+  - Fix unwraps in `packet query` CLIs ([#1114])
 
+[#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
+[#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
 
 
 ## v0.5.0

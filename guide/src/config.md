@@ -175,4 +175,3 @@ trust_threshold = { numerator = '1', denominator = '3' }
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
 [log-level]: ./help.html#parametrizing-the-log-output-level
-
