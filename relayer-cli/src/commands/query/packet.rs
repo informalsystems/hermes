@@ -1,9 +1,6 @@
-use std::sync::Arc;
-
 use abscissa_core::{Command, Options, Runnable};
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
-use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -14,7 +11,6 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::chain::counterparty::channel_connection_client;
-use ibc_relayer::chain::{runtime::ChainRuntime, CosmosSdkChain};
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
@@ -39,23 +35,13 @@ pub struct QueryPacketCommitmentsCmd {
     channel_id: ChannelId,
 }
 
-// cargo run --bin hermes -- query packet commitments ibc-0 transfer ibconexfer --height 3
-impl Runnable for QueryPacketCommitmentsCmd {
-    fn run(&self) {
+impl QueryPacketCommitmentsCmd {
+    fn execute(&self) -> Result<(Vec<PacketState>, Height), Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
 
-        let chain_config = match config
-            .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))
-        {
-            Err(err) => return Output::error(err).exit(),
-            Ok(result) => result,
-        };
-
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
         let grpc_request = QueryPacketCommitmentsRequest {
             port_id: self.port_id.to_string(),
@@ -63,11 +49,16 @@ impl Runnable for QueryPacketCommitmentsCmd {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let res: Result<(Vec<PacketState>, Height), Error> = chain
+        chain
             .query_packet_commitments(grpc_request)
-            .map_err(|e| Kind::Query.context(e).into());
+            .map_err(|e| Kind::Query.context(e).into())
+    }
+}
 
-        match res {
+// cargo run --bin hermes -- query packet commitments ibc-0 transfer ibconexfer --height 3
+impl Runnable for QueryPacketCommitmentsCmd {
+    fn run(&self) {
+        match self.execute() {
             Ok((packet_states, height)) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
                 let seqs: Vec<u64> = packet_states.iter().map(|ps| ps.sequence).collect();
@@ -96,39 +87,35 @@ pub struct QueryPacketCommitmentCmd {
     height: Option<u64>,
 }
 
-impl Runnable for QueryPacketCommitmentCmd {
-    fn run(&self) {
+impl QueryPacketCommitmentCmd {
+    fn execute(&self) -> Result<Vec<u8>, Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
-            Some(chain_config) => chain_config,
-        };
+        let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
-        // cargo run --bin hermes -- query packet commitment ibc-0 transfer ibconexfer 3 --height 3
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        chain
+            .build_packet_proofs(
+                PacketMsgType::Recv,
+                &self.port_id,
+                &self.channel_id,
+                self.sequence,
+                Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
+            )
+            .map(|(bytes, _)| bytes)
+            .map_err(|e| Kind::Query.context(e).into())
+    }
+}
 
-        let res = chain.build_packet_proofs(
-            PacketMsgType::Recv,
-            &self.port_id,
-            &self.channel_id,
-            self.sequence,
-            Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
-        );
-
-        match res {
-            Ok((bytes, _proofs)) if bytes.is_empty() => Output::success_msg("None").exit(),
-            Ok((bytes, _proofs)) => {
-                let hex = Hex::upper_case().encode_to_string(bytes).unwrap();
+impl Runnable for QueryPacketCommitmentCmd {
+    fn run(&self) {
+        match self.execute() {
+            Ok(bytes) if bytes.is_empty() => Output::success_msg("None").exit(),
+            Ok(bytes) => {
+                let hex = Hex::upper_case()
+                    .encode_to_string(bytes)
+                    .unwrap_or_else(|_| "[failed to encode bytes to hex]".to_owned());
                 Output::success(hex).exit()
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -173,6 +160,18 @@ impl QueryUnreceivedPacketsCmd {
             "fetched from source chain {} the following channel {:?}",
             self.chain_id, channel
         );
+        let counterparty_channel_id = channel
+            .channel_end
+            .counterparty()
+            .channel_id
+            .as_ref()
+            .ok_or_else(|| {
+                Kind::Query.context(format!(
+                    "the channel {:?} counterparty has no channel id",
+                    channel
+                ))
+            })?
+            .to_string();
 
         let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
         let counterparty_chain = spawn_chain_runtime(&*config, &counterparty_chain_id)?;
@@ -180,13 +179,7 @@ impl QueryUnreceivedPacketsCmd {
         // get the packet commitments on the counterparty/ source chain
         let commitments_request = QueryPacketCommitmentsRequest {
             port_id: channel.channel_end.counterparty().port_id.to_string(),
-            channel_id: channel
-                .channel_end
-                .counterparty()
-                .channel_id
-                .as_ref()
-                .unwrap()
-                .to_string(),
+            channel_id: counterparty_channel_id,
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
@@ -288,38 +281,34 @@ pub struct QueryPacketAcknowledgmentCmd {
     height: Option<u64>,
 }
 
-impl Runnable for QueryPacketAcknowledgmentCmd {
-    fn run(&self) {
+impl QueryPacketAcknowledgmentCmd {
+    fn execute(&self) -> Result<Vec<u8>, Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
-            Some(chain_config) => chain_config,
-        };
+        let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
-        // cargo run --bin hermes -- query packet acknowledgment ibc-0 transfer ibconexfer --height 3
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        chain
+            .build_packet_proofs(
+                PacketMsgType::Ack,
+                &self.port_id,
+                &self.channel_id,
+                self.sequence,
+                Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
+            )
+            .map(|(b, _)| b)
+            .map_err(|e| Kind::Query.context(e).into())
+    }
+}
 
-        let res = chain.build_packet_proofs(
-            PacketMsgType::Ack,
-            &self.port_id,
-            &self.channel_id,
-            self.sequence,
-            Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
-        );
-
-        match res {
-            Ok((bytes, _proofs)) => {
-                let hex = Hex::upper_case().encode_to_string(bytes).unwrap();
+impl Runnable for QueryPacketAcknowledgmentCmd {
+    fn run(&self) {
+        match self.execute() {
+            Ok(bytes) => {
+                let hex = Hex::upper_case()
+                    .encode_to_string(bytes)
+                    .unwrap_or_else(|_| "[failed to encode bytes to hex]".to_owned());
                 Output::success(hex).exit()
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -347,90 +336,51 @@ pub struct QueryUnreceivedAcknowledgementCmd {
     channel_id: ChannelId,
 }
 
-impl Runnable for QueryUnreceivedAcknowledgementCmd {
-    fn run(&self) {
+impl QueryUnreceivedAcknowledgementCmd {
+    fn execute(&self) -> Result<Vec<u64>, Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
 
-        let chain_config = match config.find_chain(&self.chain_id) {
-            None => {
-                return Output::error(format!(
-                    "chain '{}' not found in configuration file",
-                    self.chain_id
-                ))
-                .exit()
-            }
-            Some(chain_config) => chain_config,
-        };
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) =
-            ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()).unwrap();
+        let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
         let channel_connection_client =
-            match channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id) {
-                Ok(channel_connection_client) => channel_connection_client,
-                Err(e) => {
-                    return Output::error(format!(
-                        "error when getting channel/ connection for {} on {}: {}",
-                        self.channel_id,
-                        chain.id(),
-                        e,
-                    ))
-                    .exit();
-                }
-            };
+            channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id)
+                .map_err(|e| Kind::Query.context(e))?;
 
         let channel = channel_connection_client.channel;
         debug!(
             "Fetched from chain {} the following channel {:?}",
             self.chain_id, channel
         );
+        let counterparty_channel_id = channel
+            .channel_end
+            .counterparty()
+            .channel_id
+            .as_ref()
+            .ok_or_else(|| {
+                Kind::Query.context(format!(
+                    "the channel {:?} has no counterparty channel id",
+                    channel
+                ))
+            })?
+            .to_string();
 
         let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
-        let counterparty_chain_config = match config.find_chain(&counterparty_chain_id) {
-            None => {
-                return Output::error(format!(
-                    "counterparty chain '{}' for channel '{}' not found in configuration file",
-                    counterparty_chain_id, self.channel_id
-                ))
-                .exit()
-            }
-            Some(chain_config) => chain_config,
-        };
-
-        let (counterparty_chain, _) =
-            ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt).unwrap();
+        let counterparty_chain = spawn_chain_runtime(&config, &counterparty_chain_id)?;
 
         // get the packet acknowledgments on counterparty chain
         let acks_request = QueryPacketAcknowledgementsRequest {
             port_id: channel.channel_end.counterparty().port_id.to_string(),
-            channel_id: channel
-                .channel_end
-                .counterparty()
-                .channel_id
-                .as_ref()
-                .unwrap()
-                .to_string(),
+            channel_id: counterparty_channel_id,
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let seq_res = counterparty_chain
+        let sequences: Vec<u64> = counterparty_chain
             .query_packet_acknowledgements(acks_request)
-            .map_err(|e| Kind::Query.context(e));
-
-        // extract the sequences
-        let sequences: Vec<u64> = match seq_res {
-            Ok(seqs) => seqs.0.into_iter().map(|v| v.sequence).collect(),
-            Err(e) => {
-                return Output::error(format!(
-                    "failed to fetch packet acknowledgements from chain ({}) with error: {}",
-                    chain.id(),
-                    e
-                ))
-                .exit()
-            }
-        };
+            .map_err(|e| Kind::Query.context(e))
+            // extract the sequences
+            .map(|(packet_state, _)| packet_state.into_iter().map(|v| v.sequence).collect())?;
 
         let request = QueryUnreceivedAcksRequest {
             port_id: self.port_id.to_string(),
@@ -438,9 +388,15 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             packet_ack_sequences: sequences,
         };
 
-        let res = chain.query_unreceived_acknowledgement(request);
+        chain
+            .query_unreceived_acknowledgement(request)
+            .map_err(|e| Kind::Query.context(e).into())
+    }
+}
 
-        match res {
+impl Runnable for QueryUnreceivedAcknowledgementCmd {
+    fn run(&self) {
+        match self.execute() {
             Ok(seqs) => Output::success(seqs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
