@@ -3,7 +3,7 @@ use serde::Serialize;
 
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::{PacketState, QueryPacketCommitmentsRequest};
+use ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
@@ -29,7 +29,7 @@ pub struct QueryPacketCommitmentsCmd {
 }
 
 impl QueryPacketCommitmentsCmd {
-    fn execute(&self) -> Result<(Vec<PacketState>, Height), Error> {
+    fn execute(&self) -> Result<PacketSeqs, Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
@@ -45,6 +45,13 @@ impl QueryPacketCommitmentsCmd {
         chain
             .query_packet_commitments(grpc_request)
             .map_err(|e| Kind::Query.context(e).into())
+            // Transform the raw packet commitm. state into the list of sequence numbers
+            .map(|(ps_vec, height)| (ps_vec.iter().map(|ps| ps.sequence).collect(), height))
+            // Assemble into a coherent result
+            .map(|(seqs_vec, height)| PacketSeqs {
+                height,
+                seqs: seqs_vec,
+            })
     }
 }
 
@@ -52,10 +59,8 @@ impl QueryPacketCommitmentsCmd {
 impl Runnable for QueryPacketCommitmentsCmd {
     fn run(&self) {
         match self.execute() {
-            Ok((packet_states, height)) => {
-                // Transform the raw packet commitm. state into the list of sequence numbers
-                let seqs: Vec<u64> = packet_states.iter().map(|ps| ps.sequence).collect();
-                Output::success(PacketSeqs { height, seqs }).exit();
+            Ok(p) => {
+                Output::success(p).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
