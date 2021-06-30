@@ -29,7 +29,7 @@ pub struct QueryPacketAcknowledgementsCmd {
 }
 
 impl QueryPacketAcknowledgementsCmd {
-    fn execute(&self) -> Result<(Vec<u64>, Height), Error> {
+    fn execute(&self) -> Result<PacketSeqs, Error> {
         let config = app_config();
 
         debug!("Options: {:?}", self);
@@ -46,7 +46,10 @@ impl QueryPacketAcknowledgementsCmd {
         chain
             .query_packet_acknowledgements(grpc_request)
             .map_err(|e| Kind::Query.context(e).into())
-            .map(|(packet, height)| (packet.iter().map(|p| p.sequence).collect(), height))
+            .map(|(packet, height)| PacketSeqs {
+                seqs: packet.iter().map(|p| p.sequence).collect(),
+                height,
+            })
     }
 }
 
@@ -54,9 +57,7 @@ impl QueryPacketAcknowledgementsCmd {
 impl Runnable for QueryPacketAcknowledgementsCmd {
     fn run(&self) {
         match self.execute() {
-            Ok((seqs, height)) => {
-                Output::success(PacketSeqs { height, seqs }).exit();
-            }
+            Ok(ps) => Output::success(ps).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
