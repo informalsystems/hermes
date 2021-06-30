@@ -452,8 +452,9 @@ impl ChannelReader for MockContext {
     }
 
     fn connection_end(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
-        self.connections.get(cid).cloned()
+        ConnectionReader::connection_end(self, cid)
     }
+
 
     fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
         self.connection_channels.get(cid).cloned()
