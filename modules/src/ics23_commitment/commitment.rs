@@ -43,11 +43,17 @@ impl From<Vec<u8>> for CommitmentRoot {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CommitmentPath;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
 pub struct CommitmentProofBytes {
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     bytes: Vec<u8>,
+}
+
+impl fmt::Debug for CommitmentProofBytes {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[...]")
+    }
 }
 
 impl CommitmentProofBytes {
