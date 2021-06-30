@@ -50,6 +50,9 @@ pub enum LinkError {
     #[error("failed with underlying error: {0}")]
     Failed(String),
 
+    #[error("failed to establish link: channel/port '{0}'/'{1}' on chain {2} not in open or close state when packets and timeouts can be relayed")]
+    ConstructorFailed(ChannelId, PortId, ChainId),
+
     #[error("failed with underlying error: {0}")]
     Generic(#[from] Error),
 
@@ -1625,11 +1628,11 @@ impl Link {
         if !a_channel.state_matches(&ChannelState::Open)
             && !a_channel.state_matches(&ChannelState::Closed)
         {
-            return Err(LinkError::Failed(format!(
-                "channel {} on chain {} not in open or close state when packets and timeouts can be relayed",
+            return Err(LinkError::ConstructorFailed(
                 a_channel_id.clone(),
-                a_chain.id()
-            )));
+                opts.src_port_id,
+                a_chain.id(),
+            ));
         }
 
         let b_channel_id = a_channel.counterparty().channel_id.clone().ok_or_else(|| {
