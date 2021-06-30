@@ -626,7 +626,7 @@ impl Channel {
 
         match self.handshake_step(state) {
             Err(e) => {
-                error!("[{}] failed {:?} with error {}", self, state, e);
+                error!("[{}] failed to build message from state {:?} with error {}", self, state, e);
                 RetryResult::Retry(index)
             }
             Ok(ev) => {
