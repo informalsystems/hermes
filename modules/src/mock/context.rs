@@ -663,7 +663,7 @@ impl ConnectionReader for MockContext {
         height: Height,
     ) -> Option<AnyConsensusState> {
         // Forward method call to the Ics2Client-specific method.
-        self.consensus_state(client_id, height)
+        ClientReader::consensus_state(self, client_id, height)
     }
 
     fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
