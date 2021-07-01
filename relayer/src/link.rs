@@ -1327,11 +1327,11 @@ impl RelayPath {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
                         if self.send_packet_event_handled(e)? {
-                            debug!("[{}] {} already handled", self, e);
+                            debug!("[{}] refreshing schedule: already handled send packet {}", self, e);
                         } else if let Some(new_msg) =
                             self.build_timeout_from_send_packet_event(e, dst_current_height)?
                         {
-                            debug!("[{}] found a timed-out msg in the op data {}", self, odata);
+                            debug!("[{}] refreshing schedule: found a timed-out msg in the op data {}", self, odata);
                             timed_out.entry(odata_pos).or_insert_with(Vec::new).push(
                                 TransitMessage {
                                     event: event.clone(),
@@ -1345,7 +1345,7 @@ impl RelayPath {
                     }
                     IbcEvent::WriteAcknowledgement(e) => {
                         if self.write_ack_event_handled(e)? {
-                            debug!("[{}] {} already handled", self, e);
+                            debug!("[{}] refreshing schedule: already handled {} write ack ", self, e);
                         } else {
                             retain_batch.push(gm.clone());
                         }
@@ -1358,6 +1358,14 @@ impl RelayPath {
             odata.batch = retain_batch;
         }
 
+
+        // Replace the original operational data with the updated one
+        self.dst_operational_data = all_dst_odata;
+        // Possibly some op. data became empty (if no events were kept).
+        // Retain only the non-empty ones.
+        self.dst_operational_data.retain(|o| !o.batch.is_empty());
+
+        // Handle timed-out events
         if timed_out.is_empty() {
             // Nothing timed out in the meantime
             return Ok(());
@@ -1371,19 +1379,13 @@ impl RelayPath {
             new_od.batch = batch;
 
             info!(
-                "[{}] re-scheduling from new timed-out batch of size {}",
+                "[{}] refreshing schedule: re-scheduling from new timed-out batch of size {}",
                 self,
                 new_od.batch.len()
             );
 
             self.schedule_operational_data(new_od)?;
         }
-
-        self.dst_operational_data = all_dst_odata;
-
-        // Possibly some op. data became empty (if no events were kept).
-        // Retain only the non-empty ones.
-        self.dst_operational_data.retain(|o| !o.batch.is_empty());
 
         Ok(())
     }
@@ -1401,7 +1403,7 @@ impl RelayPath {
         }
 
         info!(
-            "[{}] scheduling op. data with {} msg(s) for {} chain (height {})",
+            "[{}] scheduling op. data with {} msg(s) for {} (height {})",
             self,
             od.batch.len(),
             od.target,
