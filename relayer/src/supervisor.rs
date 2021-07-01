@@ -76,16 +76,12 @@ impl Supervisor {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> bool {
-        !self.config.global.filter
-            || self.config.find_chain(chain_id).map_or_else(
-                || false,
-                |chain_config| {
-                    chain_config
-                        .filters
-                        .channels
-                        .contains(&(port_id.clone(), channel_id.clone()))
-                },
-            )
+        // If filtering is disabled, then relay all channels
+        if !self.config.global.filter {
+            return true;
+        }
+
+        self.config.channel_allowed(chain_id, port_id, channel_id)
     }
 
     fn relay_on_object(&self, chain_id: &ChainId, object: &Object) -> bool {
@@ -364,9 +360,12 @@ impl Supervisor {
                         if !self.relay_on_channel(&chain_id, &channel.port_id, &channel.channel_id)
                         {
                             info!(
-                                "skipping workers for chain {} and channel {}. \
-                                reason: filtering is enabled and channel does not match any enabled channels",
-                                chain.id(), &channel.channel_id
+                                "skipping workers for {}/{}:{}->{}. \
+                                reason: filtering is enabled and channel is not allowed",
+                                &channel.port_id,
+                                &channel.channel_id,
+                                chain.id(),
+                                counterparty_chain_id
                             );
 
                             continue;

@@ -13,7 +13,7 @@ filter = true
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'info'
+log_level = 'trace'
 
 
 # The telemetry section defines parameters for Hermes' built-in telemetry capabilities.
@@ -99,8 +99,19 @@ trusting_period = '14days'
 # which have changed between two blocks.
 # Default: { numerator = '1', denominator = '3' }, ie. 1/3.
 trust_threshold = { numerator = '1', denominator = '3' }
-[chains.filters]
-channels = [['transfer', 'channel-0']]
+
+# Channel filter specification. Default: no filter
+# This whole section can be deleted and then all filtering is disabled for this chain.
+[chains.channel_filter]
+# Channel filter type:
+# 	- 'allow': permit relaying only on the port/channel id in the list below,
+#	- 'deny': permit relaying on any channel except for the list below.
+type = 'deny'
+# List of ports and channels.
+list = [
+	['transfer', 'channel-0'],
+       ]
+
 
 [[chains]]
 id = 'ibc-1'
@@ -119,5 +130,12 @@ max_tx_size = 2097152
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
-[chains.filters]
-channels = [['transfer', 'channel-0']]
+
+[chains.channel_filter]
+type = 'allow'
+list = [
+	['transfer', 'channel-0'],
+	['transfer', 'channel-1'],
+	['transfer', 'channel-2'],
+       ]
+

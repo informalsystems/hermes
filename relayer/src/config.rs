@@ -30,15 +30,37 @@ impl fmt::Display for GasPrice {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ChainFilters {
-    pub channels: HashSet<(PortId, ChannelId)>,
+#[serde(
+    rename_all = "lowercase",
+    tag = "type",
+    content = "list",
+    deny_unknown_fields
+)]
+pub enum ChannelFilter {
+    Allow(ChannelsSpec),
+    Deny(ChannelsSpec),
+    None,
 }
 
-impl Default for ChainFilters {
+impl Default for ChannelFilter {
     fn default() -> Self {
-        Self {
-            channels: HashSet::new(),
-        }
+        Self::None
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
+
+impl Default for ChannelsSpec {
+    fn default() -> Self {
+        Self { 0: HashSet::new() }
+    }
+}
+
+impl ChannelsSpec {
+    pub fn contains(&self, channel_port: &(PortId, ChannelId)) -> bool {
+        self.0.contains(channel_port)
     }
 }
 
@@ -81,6 +103,25 @@ impl Config {
 
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
+    }
+
+    /// Returns true if the given pair [`PortId`] [`ChannelId`] on
+    /// [`ChainId`] is allowed.
+    /// Returns false otherwise.
+    pub fn channel_allowed(
+        &self,
+        chain_id: &ChainId,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> bool {
+        match self.find_chain(chain_id) {
+            None => false,
+            Some(chain_config) => match &chain_config.channel_filter {
+                ChannelFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
+                ChannelFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
+                ChannelFilter::None => true,
+            },
+        }
     }
 }
 
@@ -193,7 +234,7 @@ pub struct ChainConfig {
     pub trust_threshold: TrustThreshold,
     pub gas_price: GasPrice,
     #[serde(default)]
-    pub filters: ChainFilters,
+    pub channel_filter: ChannelFilter,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
