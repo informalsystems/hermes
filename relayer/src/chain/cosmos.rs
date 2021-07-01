@@ -104,7 +104,6 @@ pub struct CosmosSdkChain {
     grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
-
     /// A cached copy of the account information
     account: Option<BaseAccount>,
 }
@@ -166,7 +165,6 @@ impl CosmosSdkChain {
 
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<Response, Error> {
         crate::time!("send_tx");
-
         let account_seq = self.account_sequence()?;
 
         debug!(

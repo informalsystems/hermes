@@ -7,6 +7,10 @@
 #   - 'packets': Relay packets only.
 strategy = 'packets'
 
+# Enable or disable the filtering mechanism. Default: 'false'
+# Valid options are 'true', 'false'.
+filter = true
+
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
 log_level = 'info'
@@ -95,6 +99,8 @@ trusting_period = '14days'
 # which have changed between two blocks.
 # Default: { numerator = '1', denominator = '3' }, ie. 1/3.
 trust_threshold = { numerator = '1', denominator = '3' }
+[chains.filters]
+channels = [['transfer', 'channel-0']]
 
 [[chains]]
 id = 'ibc-1'
@@ -113,3 +119,5 @@ max_tx_size = 2097152
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
+[chains.filters]
+channels = [['transfer', 'channel-0']]

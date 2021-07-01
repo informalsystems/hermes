@@ -6,6 +6,7 @@
 
 - [ibc-relayer-cli]
   - Added `config validate` CLI to Hermes ([#600])
+  - Added basic channel filter ([#1140])
 
 ### IMPROVEMENTS
 
@@ -15,6 +16,7 @@
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
+[#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
 
 
 ## v0.5.0

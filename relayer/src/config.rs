@@ -1,11 +1,12 @@
 //! Relayer configuration
 
+use std::collections::HashSet;
 use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
@@ -25,6 +26,19 @@ impl GasPrice {
 impl fmt::Display for GasPrice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.price, self.denom)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChainFilters {
+    pub channels: HashSet<(PortId, ChannelId)>,
+}
+
+impl Default for ChainFilters {
+    fn default() -> Self {
+        Self {
+            channels: HashSet::new(),
+        }
     }
 }
 
@@ -120,6 +134,8 @@ impl fmt::Display for LogLevel {
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
     pub strategy: Strategy,
+    #[serde(default)]
+    pub filter: bool,
     pub log_level: LogLevel,
 }
 
@@ -127,6 +143,7 @@ impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
+            filter: false,
             log_level: LogLevel::default(),
         }
     }
@@ -175,6 +192,8 @@ pub struct ChainConfig {
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
     pub gas_price: GasPrice,
+    #[serde(default)]
+    pub filters: ChainFilters,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
