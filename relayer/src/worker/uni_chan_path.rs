@@ -57,10 +57,10 @@ impl UniChanPathWorker {
         }
 
         loop {
-            thread::sleep(Duration::from_millis(200));
+            let maybe_cmd = self.cmd_rx.try_recv().ok();
 
             let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                Self::step(self.cmd_rx.try_recv().ok(), &mut link, index)
+                Self::step(maybe_cmd, &mut link, index)
             });
 
             match result {
@@ -75,6 +75,11 @@ impl UniChanPathWorker {
                     )
                     .into());
                 }
+            }
+
+            // If all commands were exhausted, it's safe to backoff.
+            if maybe_cmd.is_none() {
+                thread::sleep(Duration::from_millis(200));
             }
         }
     }
