@@ -598,10 +598,11 @@ impl RelayPath {
 
         for i in 0..MAX_RETRIES {
             info!(
-                "[{}] relay op. data to {}, proofs height {}, (delayed by: {:?}) [try {}/{}]",
+                "[{}] relay op. data of {} msgs(s) to {} (height {}), delayed by: {:?} [try {}/{}]",
                 self,
+                odata.batch.len(),
                 odata.target,
-                odata.proofs_height,
+                odata.proofs_height.increment(),
                 odata.scheduled_time.elapsed(),
                 i + 1,
                 MAX_RETRIES
