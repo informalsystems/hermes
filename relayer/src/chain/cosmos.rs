@@ -109,6 +109,46 @@ pub struct CosmosSdkChain {
 }
 
 impl CosmosSdkChain {
+    /// Contacts the node by RPC and ensures reachability.
+    fn health_checkup(&self) -> Result<(), Error> {
+        let _ = self
+            .block_on(self.rpc_client.tx_search(
+                Query::default(),
+                false,
+                1,
+                1,
+                Order::Ascending,
+            )).map_err(|e| report_error(Kind::HealthCheckJsonRpc { endpoint: "/tx_search".to_string(), cause: e }));
+
+        let _ = self
+            .block_on(self.rpc_client.health()).map_err(|e| report_error(Kind::HealthCheckJsonRpc { endpoint: "/health".to_string(), cause: e }));
+
+        match self
+            .block_on(
+                ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(self.grpc_addr.clone())
+            ) {
+            Ok(mut client) => {
+                let request =
+                    tonic::Request::new(ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest {});
+
+                let _ = self
+                    .block_on(client.get_node_info(request))
+                    .map_err(|e| report_error(Kind::HealthCheckGrpc { endpoint: "tendermint::GetNodeInfoRequest".to_string(), cause: e.to_string() }));
+            }
+            Err(e) => {
+                report_error(Kind::HealthCheckGrpc { endpoint: "tendermint::ServiceClient".to_string(), cause: e.to_string() });
+            }
+        }
+
+
+        fn report_error(k: Kind) {
+            error!("{:?}", k);
+            error!("Some Hermes features may not work in this mode");
+        }
+
+        Ok(())
+    }
+
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
@@ -573,14 +613,18 @@ impl Chain for CosmosSdkChain {
         let grpc_addr =
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
 
-        Ok(Self {
+        let chain = Self {
             config,
             rpc_client,
             grpc_addr,
             rt,
             keybase,
             account: None,
-        })
+        };
+
+        chain.health_checkup()?;
+
+        Ok(chain)
     }
 
     fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {

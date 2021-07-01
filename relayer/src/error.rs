@@ -200,6 +200,20 @@ pub enum Kind {
         expected: ClientType,
         got: ClientType,
     },
+
+    #[error("Hermes health check failed for endpoint {endpoint} on the Json RPC interface; reported error: {cause}")]
+    HealthCheckJsonRpc {
+        endpoint: String,
+        cause: tendermint_rpc::error::Error,
+    },
+
+    #[error("Hermes health check failed for service {endpoint} on the gRPC interface; reported error: {cause}")]
+    HealthCheckGrpc {
+        endpoint: String,
+        cause: String,
+    }
+
+
 }
 
 impl Kind {
