@@ -24,7 +24,7 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, trace};
+use tracing::{debug, error, trace, warn};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -119,32 +119,35 @@ impl CosmosSdkChain {
     ///     - the node has transaction indexing enabled;
     ///     - the SDK version is supported.
     ///
-    /// Emits log errors in case anything is amiss.
+    /// Emits a log warning in case anything is amiss.
+    /// Exits early if any health check fails, without doing any
+    /// further checks.
     fn health_checkup(&self) {
-        // Checkup on transaction indexing
-        let _ = self
-            .block_on(
-                self.rpc_client
-                    .tx_search(Query::default(), false, 1, 1, Order::Ascending),
-            )
-            .map_err(|e| {
-                report_potential_problem(Kind::HealthCheckJsonRpc {
-                    chain_id: self.id().clone(),
-                    address: self.config.rpc_addr.to_string(),
-                    endpoint: "/tx_search".to_string(),
-                    cause: e,
-                })
-            });
-
         // Checkup on the self-reported health endpoint
-        let _ = self.block_on(self.rpc_client.health()).map_err(|e| {
-            report_potential_problem(Kind::HealthCheckJsonRpc {
+        if let Err(e) = self.block_on(self.rpc_client.health()) {
+            return report_potential_problem(Kind::HealthCheckJsonRpc {
                 chain_id: self.id().clone(),
                 address: self.config.rpc_addr.to_string(),
                 endpoint: "/health".to_string(),
                 cause: e,
-            })
-        });
+            });
+        }
+
+        // Checkup on transaction indexing
+        if let Err(e) = self.block_on(self.rpc_client.tx_search(
+            Query::default(),
+            false,
+            1,
+            1,
+            Order::Ascending,
+        )) {
+            return report_potential_problem(Kind::HealthCheckJsonRpc {
+                chain_id: self.id().clone(),
+                address: self.config.rpc_addr.to_string(),
+                endpoint: "/tx_search".to_string(),
+                cause: e,
+            });
+        }
 
         // Checkup on the underlying SDK version
         match self.block_on(
@@ -177,17 +180,18 @@ impl CosmosSdkChain {
                         }),
                         Some(version) => {
                             let _ = compatibility::run_diagnostic(version).map(|d| {
-                                report_potential_problem(Kind::SdkModuleVersion {
+                                return report_potential_problem(Kind::SdkModuleVersion {
                                     chain_id: self.id().clone(),
                                     address: self.grpc_addr.to_string(),
                                     cause: d.to_string(),
-                                })
+                                });
                             });
                         }
                     });
             }
+            // Failed to create the gRPC client to call into `/node_info`.
             Err(e) => {
-                report_potential_problem(Kind::HealthCheckGrpc {
+                return report_potential_problem(Kind::HealthCheckGrpc {
                     chain_id: self.id().clone(),
                     address: self.grpc_addr.to_string(),
                     endpoint: "tendermint::ServiceClient".to_string(),
@@ -197,8 +201,8 @@ impl CosmosSdkChain {
         }
 
         fn report_potential_problem(k: Kind) {
-            error!("{}", k);
-            error!("some Hermes features may not work in this mode!");
+            warn!("{}", k);
+            warn!("some Hermes features may not work in this mode!");
         }
     }
 
