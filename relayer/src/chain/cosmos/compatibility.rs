@@ -94,8 +94,11 @@ pub(crate) fn run_diagnostic(v: VersionInfo) -> Option<Diagnostic> {
             app: app_info,
         }),
         Some(sdk_module) => {
+            // The raw version number has a leading 'v', trim it out;
+            let plain_version = sdk_module.version.trim_start_matches('v');
+
             // Parse the module version
-            match semver::Version::parse(&*sdk_module.version).map_err(|e| {
+            match semver::Version::parse(plain_version).map_err(|e| {
                 Diagnostic::VersionParsingFailed {
                     module_path: sdk_module.path.clone(),
                     raw_version: sdk_module.version.clone(),

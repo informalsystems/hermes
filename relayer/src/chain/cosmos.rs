@@ -197,8 +197,8 @@ impl CosmosSdkChain {
         }
 
         fn report_potential_problem(k: Kind) {
-            error!("{:?}", k);
-            error!("Some Hermes features may not work in this mode");
+            error!("{}", k);
+            error!("some Hermes features may not work in this mode!");
         }
     }
 
