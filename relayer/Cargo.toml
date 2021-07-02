@@ -55,6 +55,7 @@ dyn-clone = "1.0.3"
 retry = { version = "1.2.1", default-features = false }
 async-stream = "0.3.2"
 fraction = {version = "0.8.0", default-features = false }
+semver = "1.0"
 
 [dependencies.tendermint]
 version = "=0.20.0"

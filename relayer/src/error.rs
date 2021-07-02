@@ -203,17 +203,26 @@ pub enum Kind {
 
     #[error("Hermes health check failed for endpoint {endpoint} on the Json RPC interface; reported error: {cause}")]
     HealthCheckJsonRpc {
+        chain_id: ChainId,
+        address: String,
         endpoint: String,
         cause: tendermint_rpc::error::Error,
     },
 
     #[error("Hermes health check failed for service {endpoint} on the gRPC interface; reported error: {cause}")]
     HealthCheckGrpc {
+        chain_id: ChainId,
+        address: String,
         endpoint: String,
         cause: String,
-    }
+    },
 
-
+    #[error("Hermes health check failed while verifying the application")]
+    SdkModuleVersion {
+        chain_id: ChainId,
+        address: String,
+        cause: String,
+    },
 }
 
 impl Kind {
