@@ -186,12 +186,10 @@ impl CosmosSdkChain {
         // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
         // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
         let estimated_gas = self
-            .send_tx_simulate(SimulateRequest {
-                tx: Some(Tx {
-                    body: Some(body),
-                    auth_info: Some(auth_info),
-                    signatures: vec![signed_doc],
-                }),
+            .send_tx_simulate(Tx {
+                body: Some(body),
+                auth_info: Some(auth_info),
+                signatures: vec![signed_doc],
             })
             .map_or(self.max_gas(), |sr| {
                 sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
@@ -341,8 +339,15 @@ impl CosmosSdkChain {
         Ok((response.value, proof))
     }
 
-    fn send_tx_simulate(&self, request: SimulateRequest) -> Result<SimulateResponse, Error> {
+    fn send_tx_simulate(&self, tx: Tx) -> Result<SimulateResponse, Error> {
         crate::time!("tx simulate");
+
+        // The `tx` field of `SimulateRequest` was deprecated
+        // in favor of `tx_bytes`
+        let mut tx_bytes = vec![];
+        prost::Message::encode(&tx, &mut tx_bytes).unwrap();
+        #[allow(deprecated)]
+        let req = SimulateRequest { tx: None, tx_bytes };
 
         let mut client = self
             .block_on(
@@ -352,7 +357,7 @@ impl CosmosSdkChain {
             )
             .map_err(|e| Kind::Grpc.context(e))?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(req);
         let response = self
             .block_on(client.simulate(request))
             .map_err(|e| Kind::Grpc.context(e))?
