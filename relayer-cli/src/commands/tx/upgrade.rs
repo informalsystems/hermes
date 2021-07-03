@@ -54,6 +54,13 @@ pub struct TxIbcUpgradeChainCmd {
         help = "new unbonding period to assign to the upgrading chain, in seconds (default: 400 hrs)"
     )]
     new_unbonding: Option<u64>,
+
+    #[options(
+        short = "n",
+        meta = "NAME",
+        help = "a string to name the upgrade proposal plan (default: 'plan')"
+    )]
+    upgrade_name: Option<String>,
 }
 
 impl TxIbcUpgradeChainCmd {
@@ -80,6 +87,10 @@ impl TxIbcUpgradeChainCmd {
                 .new_unbonding
                 .map(Duration::from_secs)
                 .unwrap_or_else(|| Duration::from_secs(400 * 3600)),
+            upgrade_plan_name: self
+                .upgrade_name
+                .clone()
+                .unwrap_or_else(|| "plan".to_string()),
         };
 
         Ok(opts)

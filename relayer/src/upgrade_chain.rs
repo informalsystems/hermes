@@ -41,6 +41,7 @@ pub struct UpgradePlanOptions {
     pub height_offset: u64,
     pub upgraded_chain_id: ChainId,
     pub upgraded_unbonding_period: Duration,
+    pub upgrade_plan_name: String,
 }
 
 pub fn build_and_send_ibc_upgrade_proposal(
@@ -68,9 +69,9 @@ pub fn build_and_send_ibc_upgrade_proposal(
         description: "upgrade the chain software and unbonding period".to_string(),
         upgraded_client_state: Some(Any::from(raw_client_state)),
         plan: Some(Plan {
-            name: "test".to_string(),
+            name: opts.upgrade_plan_name.clone(),
             height: upgrade_height.revision_height as i64,
-            info: "test".to_string(),
+            info: "".to_string(),
         }),
     };
 
