@@ -1,33 +1,106 @@
+# The global section has parameters that apply globally to the relayer operation.
 [global]
-# Valid strategies:
-#   'packets': restricts relaying to packets only, or
-#   'all': relay from all types of events
+
+# Specify the strategy to be used by the relayer. Default: 'packets'
+# Two options are currently supported:
+#   - 'all': Relay packets and perform channel and connection handshakes.
+#   - 'packets': Relay packets only.
 strategy = 'packets'
+
+# Enable or disable the filtering mechanism. Default: 'false'
+# Valid options are 'true', 'false'.
+filter = true
+
+# Specify the verbosity for the relayer logging output. Default: 'info'
+# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
 log_level = 'info'
 
+
+# The telemetry section defines parameters for Hermes' built-in telemetry capabilities.
+# https://hermes.informal.systems/telemetry.html
 [telemetry]
+
+# Whether or not to enable the telemetry service. Default: false
 enabled = true
+
+# Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics
+# gathered by the telemetry service. Default: 127.0.0.1
 host = '127.0.0.1'
+
+# Specify the port over which the built-in HTTP server will serve the metrics gathered
+# by the telemetry service. Default: 3001
 port = 3001
 
+# A chains section includes parameters related to a chain and the full node to which
+# the relayer can send transactions and queries.
 [[chains]]
+
+# Specify the chain ID. Required
 id = 'ibc-0'
+
+# Specify the RPC address and port where the chain RPC server listens on. Required
 rpc_addr = 'http://127.0.0.1:26657'
+
+# Specify the GRPC address and port where the chain GRPC server listens on. Required
 grpc_addr = 'http://127.0.0.1:9090'
+
+# Specify the WebSocket address and port where the chain WebSocket server
+# listens on. Required
 websocket_addr = 'ws://127.0.0.1:26657/websocket'
+
+# Specify the maximum amount of time (duration) that the RPC requests should
+# take before timing out. Default: 10s (10 seconds)
 rpc_timeout = '10s'
+
+# Specify the prefix used by the chain. Required
 account_prefix = 'cosmos'
+
+# Specify the name of the private key to use for signing transactions. Required
+# See the Adding Keys chapter for more information about managing signing keys:
+#   https://hermes.informal.systems/commands/keys/index.html#adding-keys
 key_name = 'testkey'
+
+# Specify the store prefix used by the on-chain IBC modules. Required
+# Recommended value for Cosmos SDK: 'ibc'
 store_prefix = 'ibc'
-gas = 3000000
-fee_denom = 'stake'
-fee_amount = 10
+
+# Specify the maximum amount of gas to be used as the gas limit for a transaction.
+# Default: 300000
+max_gas = 3000000
+
+# Specify the price per gas used of the fee to submit a transaction and
+# the denomination of the fee. Required
+gas_price = { price = 0.001, denom = 'stake' }
+
+# Specify by ratio to increase the gas estimate used to compute the fee,
+# to account for potential estimation error. Default: 0.1, ie. 10%.
+gas_adjustment = 0.1
+
+# Specify how many IBC messages at most to include in a single transaction.
+# Default: 30
+max_msg_num = 30
+
+# Specify the maximum size, in bytes, of each transaction that Hermes will submit.
+# Default: 2097152 (2 MiB)
+max_tx_size = 2097152
+
+# Specify the maximum amount of time to tolerate a clock drift.
+# The clock drift parameter defines how much new (untrusted) header's time
+# can drift into the future. Default: 5s
 clock_drift = '5s'
+
+# Specify the amount of time to be used as the light client trusting period.
+# It should be significantly less than the unbonding period
+# (e.g. unbonding period = 3 weeks, trusting period = 2 weeks).
+# Default: 14days (336 hours)
 trusting_period = '14days'
 
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
+# Specify the trust threshold for the light client, ie. the maximum fraction of validators
+# which have changed between two blocks.
+# Default: { numerator = '1', denominator = '3' }, ie. 1/3.
+trust_threshold = { numerator = '1', denominator = '3' }
+[chains.filters]
+channels = [['transfer', 'channel-0']]
 
 [[chains]]
 id = 'ibc-1'
@@ -38,13 +111,13 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-gas = 3000000
-fee_denom = 'stake'
-fee_amount = 1000
+max_gas = 3000000
+gas_price = { price = 0.001, denom = 'stake' }
+gas_adjustment = 0.1
+max_msg_num = 30
+max_tx_size = 2097152
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
-
+trust_threshold = { numerator = '1', denominator = '3' }
+[chains.filters]
+channels = [['transfer', 'channel-0']]

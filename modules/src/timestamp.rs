@@ -213,11 +213,8 @@ mod tests {
         assert_eq!(timestamp2.time.unwrap().timestamp_millis(), 1_000);
         assert_eq!(timestamp2.as_nanoseconds(), 1_000_000_000);
 
-        assert_eq!(Timestamp::from_nanoseconds(u64::MAX).is_err(), true);
-        assert_eq!(
-            Timestamp::from_nanoseconds(i64::MAX.try_into().unwrap()).is_ok(),
-            true
-        );
+        assert!(Timestamp::from_nanoseconds(u64::MAX).is_err());
+        assert!(Timestamp::from_nanoseconds(i64::MAX.try_into().unwrap()).is_ok());
 
         assert_eq!(timestamp1.check_expiry(&timestamp2), Expiry::NotExpired);
         assert_eq!(timestamp1.check_expiry(&timestamp1), Expiry::NotExpired);

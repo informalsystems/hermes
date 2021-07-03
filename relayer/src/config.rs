@@ -1,14 +1,46 @@
 //! Relayer configuration
 
-use std::{fs, fs::File, io::Write, path::Path, time::Duration};
+use std::collections::HashSet;
+use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GasPrice {
+    pub price: f64,
+    pub denom: String,
+}
+
+impl GasPrice {
+    pub const fn new(price: f64, denom: String) -> Self {
+        Self { price, denom }
+    }
+}
+
+impl fmt::Display for GasPrice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.price, self.denom)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChainFilters {
+    pub channels: HashSet<(PortId, ChannelId)>,
+}
+
+impl Default for ChainFilters {
+    fn default() -> Self {
+        Self {
+            channels: HashSet::new(),
+        }
+    }
+}
 
 /// Defaults for various fields
 pub mod default {
@@ -32,7 +64,9 @@ pub mod default {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
+    #[serde(default)]
     pub global: GlobalConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
@@ -65,26 +99,58 @@ impl Default for Strategy {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GlobalConfig {
-    #[serde(default)]
-    pub strategy: Strategy,
+/// Log levels are wrappers over [`tracing_core::Level`].
+///
+/// [`tracing_core::Level`]: https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
 
-    /// All valid log levels, as defined in tracing:
-    /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
-    pub log_level: String,
+impl Default for LogLevel {
+    fn default() -> Self {
+        Self::Info
+    }
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LogLevel::Trace => write!(f, "trace"),
+            LogLevel::Debug => write!(f, "debug"),
+            LogLevel::Info => write!(f, "info"),
+            LogLevel::Warn => write!(f, "warn"),
+            LogLevel::Error => write!(f, "error"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct GlobalConfig {
+    pub strategy: Strategy,
+    #[serde(default)]
+    pub filter: bool,
+    pub log_level: LogLevel,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
-            log_level: "info".to_string(),
+            filter: false,
+            log_level: LogLevel::default(),
         }
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
@@ -102,6 +168,7 @@ impl Default for TelemetryConfig {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
     pub rpc_addr: tendermint_rpc::Url,
@@ -112,17 +179,21 @@ pub struct ChainConfig {
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
-    pub gas: Option<u64>,
-    pub fee_denom: String,
-    pub fee_amount: Option<u64>,
+    pub max_gas: Option<u64>,
+    pub gas_adjustment: Option<f64>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
+
+    // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
+    pub gas_price: GasPrice,
+    #[serde(default)]
+    pub filters: ChainFilters,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
@@ -183,9 +254,8 @@ mod tests {
         );
 
         let config = parse(path).expect("could not parse config");
-        let mut buffer = Vec::new();
 
-        let result = store_writer(&config, &mut buffer);
-        assert!(result.is_ok());
+        let mut buffer = Vec::new();
+        store_writer(&config, &mut buffer).unwrap();
     }
 }

@@ -99,7 +99,7 @@ pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> Result<(), BoxEr
     );
 
     let rt = Arc::new(TokioRuntime::new()?);
-    let (event_monitor, rx) = subscribe(&config, rt)?;
+    let (event_monitor, rx) = subscribe(config, rt)?;
 
     thread::spawn(|| event_monitor.run());
 
@@ -109,7 +109,7 @@ pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> Result<(), BoxEr
                 let matching_events = batch
                     .events
                     .into_iter()
-                    .filter(|e| event_match(&e, filters))
+                    .filter(|e| event_match(e, filters))
                     .collect_vec();
 
                 if matching_events.is_empty() {

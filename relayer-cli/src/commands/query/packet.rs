@@ -5,22 +5,20 @@ use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
-
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-
+use ibc_relayer::chain::counterparty::channel_connection_client;
 use ibc_relayer::chain::{runtime::ChainRuntime, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use ibc::ics02_client::client_state::ClientState;
-use ibc_relayer::chain::counterparty::channel_connection_client;
 
 #[derive(Serialize, Debug)]
 struct PacketSeqs {
@@ -175,8 +173,16 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (chain, _) =
-            ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()).unwrap();
+        let chain = match ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()) {
+            Ok((chain, _)) => chain,
+            Err(e) => {
+                return Output::error(format!(
+                    "error when spawning the chain runtime for {}: {}",
+                    chain_config.id, e,
+                ))
+                .exit();
+            }
+        };
 
         let channel_connection_client =
             match channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id) {
@@ -210,8 +216,17 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             Some(chain_config) => chain_config,
         };
 
-        let (counterparty_chain, _) =
-            ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt).unwrap();
+        let counterparty_chain =
+            match ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt) {
+                Ok((chain, _)) => chain,
+                Err(e) => {
+                    return Output::error(format!(
+                        "error when spawning the chain runtime for {}: {}",
+                        chain_config.id, e,
+                    ))
+                    .exit();
+                }
+            };
 
         // get the packet commitments on the counterparty/ source chain
         let commitments_request = QueryPacketCommitmentsRequest {

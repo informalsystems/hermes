@@ -1,6 +1,7 @@
 use std::time::Instant;
 use std::{fmt, thread, time::Duration};
 
+use itertools::Itertools;
 use prost_types::Any;
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
@@ -148,7 +149,7 @@ impl ForeignClient {
     ) -> Result<ForeignClient, ForeignClientError> {
         let height = Height::new(expected_target_chain.id().version(), 0);
 
-        match host_chain.query_client_state(&client_id, height) {
+        match host_chain.query_client_state(client_id, height) {
             Ok(cs) => {
                 if cs.chain_id() != expected_target_chain.id() {
                     Err(ForeignClientError::ClientFind(
@@ -756,15 +757,16 @@ impl ForeignClient {
         };
 
         debug!(
-            "[{}] checking misbehaviour at {}, number of consensus states {}",
+            "[{}] checking misbehaviour at {}, number of consensus states: {}",
             self,
             ch,
             consensus_state_heights.len()
         );
+
         trace!(
-            "[{}] checking misbehaviour for consensus state heights {:?}",
+            "[{}] checking misbehaviour for consensus state heights (first 50 shown here): {}",
             self,
-            consensus_state_heights
+            consensus_state_heights.iter().take(50).join(", ")
         );
 
         let check_once = update.is_some();

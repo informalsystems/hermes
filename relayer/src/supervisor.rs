@@ -3,14 +3,14 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 
 use ibc::{
     events::IbcEvent,
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::{IdentifiedConnectionEnd, State},
+    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
     ics04_channel::channel::IdentifiedChannelEnd,
-    ics24_host::identifier::ChainId,
+    ics24_host::identifier::{ChainId, ChannelId},
     Height,
 };
 use ibc_proto::ibc::core::{
@@ -20,13 +20,13 @@ use ibc_proto::ibc::core::{
 
 use crate::{
     chain::counterparty::channel_state_on_destination,
-    chain::handle::ChainHandle,
+    chain::{counterparty::connection_state_on_destination, handle::ChainHandle},
     config::{Config, Strategy},
     event::{
         self,
         monitor::{EventBatch, UnwrapOrClone},
     },
-    object::{Channel, Client, Object, UnidirectionalChannelPath},
+    object::{Channel, Client, Connection, Object, UnidirectionalChannelPath},
     registry::Registry,
     telemetry::Telemetry,
     util::try_recv_multiple,
@@ -35,6 +35,7 @@ use crate::{
 
 mod error;
 pub use error::Error;
+use ibc::ics24_host::identifier::PortId;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -69,6 +70,41 @@ impl Supervisor {
         self.config.global.strategy == Strategy::HandshakeAndPackets
     }
 
+    fn relay_on_channel(
+        &self,
+        chain_id: &ChainId,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> bool {
+        !self.config.global.filter
+            || self.config.find_chain(chain_id).map_or_else(
+                || false,
+                |chain_config| {
+                    chain_config
+                        .filters
+                        .channels
+                        .contains(&(port_id.clone(), channel_id.clone()))
+                },
+            )
+    }
+
+    fn relay_on_object(&self, chain_id: &ChainId, object: &Object) -> bool {
+        if !self.config.global.filter {
+            return true;
+        }
+
+        match object {
+            Object::Client(_) => true,
+            Object::Channel(c) => {
+                self.relay_on_channel(chain_id, c.src_port_id(), c.src_channel_id())
+            }
+            Object::UnidirectionalChannelPath(u) => {
+                self.relay_on_channel(chain_id, u.src_port_id(), &u.src_channel_id())
+            }
+            Object::Connection(_) => true,
+        }
+    }
+
     /// Collect the events we are interested in from an [`EventBatch`],
     /// and maps each [`IbcEvent`] to their corresponding [`Object`].
     pub fn collect_events(
@@ -91,7 +127,21 @@ impl Supervisor {
                         }
                     }
                 }
+                IbcEvent::OpenInitConnection(..)
+                | IbcEvent::OpenTryConnection(..)
+                | IbcEvent::OpenAckConnection(..) => {
+                    if !self.handshake_enabled() {
+                        continue;
+                    }
 
+                    let object = event
+                        .connection_attributes()
+                        .map(|attr| Object::connection_from_conn_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
+                        collected.per_object.entry(object).or_default().push(event);
+                    }
+                }
                 IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                     if !self.handshake_enabled() {
                         continue;
@@ -105,7 +155,6 @@ impl Supervisor {
                         collected.per_object.entry(object).or_default().push(event);
                     }
                 }
-
                 IbcEvent::OpenAckChannel(ref open_ack) => {
                     // Create client worker here as channel end must be opened
                     if let Ok(object) =
@@ -122,15 +171,12 @@ impl Supervisor {
                         continue;
                     }
 
-                    if let Ok(channel_object) = Object::channel_from_chan_open_events(
-                        event.clone().channel_attributes().unwrap(),
-                        src_chain,
-                    ) {
-                        collected
-                            .per_object
-                            .entry(channel_object)
-                            .or_default()
-                            .push(event);
+                    let object = event
+                        .channel_attributes()
+                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
+
+                    if let Some(Ok(object)) = object {
+                        collected.per_object.entry(object).or_default().push(event);
                     }
                 }
                 IbcEvent::OpenConfirmChannel(ref open_confirm) => {
@@ -230,6 +276,7 @@ impl Supervisor {
                         continue;
                     }
                 };
+
                 for connection_id in client_connections {
                     let connection_end =
                         match chain.query_connection(&connection_id, Height::zero()) {
@@ -244,9 +291,54 @@ impl Supervisor {
                             }
                         };
 
-                    if !connection_end.state_matches(&State::Open) {
+                    let connection = IdentifiedConnectionEnd {
+                        connection_id: connection_id.clone(),
+                        connection_end: connection_end.clone(),
+                    };
+
+                    match self.spawn_workers_for_connection(
+                        chain.clone(),
+                        client.clone(),
+                        connection.clone(),
+                    ) {
+                        Ok(()) => debug!(
+                            "done spawning workers for connection {} on chain {}",
+                            connection.connection_id,
+                            chain.id(),
+                        ),
+                        Err(e) => error!(
+                            "skipped workers for connection {} on chain {} due to error {}",
+                            chain.id(),
+                            connection.connection_id,
+                            e
+                        ),
+                    }
+
+                    if !connection_end.is_open() {
+                        debug!(
+                            "connection {} not open, skip workers for channels over this connetion",
+                            connection.connection_id
+                        );
                         continue;
                     }
+
+                    match self.counterparty_connection_state(client.clone(), connection.clone()) {
+                        Err(e) => {
+                            debug!("error with counterparty: reason {}", e);
+                            continue;
+                        }
+                        Ok(state) => {
+                            if !state.eq(&ConnectionState::Open) {
+                                debug!("connection {} not open, skip workers for channels over this connetion", connection.connection_id);
+
+                                debug!(
+                                    "drop connection {} because its counterparty is not open ",
+                                    connection_id
+                                );
+                                continue;
+                            }
+                        }
+                    };
 
                     let chans_req = QueryConnectionChannelsRequest {
                         connection: connection_id.to_string(),
@@ -269,12 +361,25 @@ impl Supervisor {
                         IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
 
                     for channel in connection_channels {
-                        match self.spawn_workers_for_channel(
+                        if !self.relay_on_channel(&chain_id, &channel.port_id, &channel.channel_id)
+                        {
+                            info!(
+                                "skipping workers for chain {} and channel {}. \
+                                reason: filtering is enabled and channel does not match any enabled channels",
+                                chain.id(), &channel.channel_id
+                            );
+
+                            continue;
+                        }
+
+                        let spawn_result = self.spawn_workers_for_channel(
                             chain.clone(),
                             client.clone(),
                             connection.clone(),
                             channel.clone(),
-                        ) {
+                        );
+
+                        match spawn_result {
                             Ok(()) => debug!(
                                 "done spawning workers for chain {} and channel {}",
                                 chain.id(),
@@ -291,6 +396,51 @@ impl Supervisor {
                 }
             }
         }
+    }
+
+    /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+    fn spawn_workers_for_connection(
+        &mut self,
+        chain: Box<dyn ChainHandle>,
+        client: IdentifiedAnyClientState,
+        connection: IdentifiedConnectionEnd,
+    ) -> Result<(), BoxError> {
+        let counterparty_chain = self
+            .registry
+            .get_or_spawn(&client.client_state.chain_id())?;
+
+        let conn_state_src = connection.connection_end.state;
+
+        //let counterparty_client_id = connection.connection_end.counterparty().client_id().clone();
+        let conn_state_dst =
+            connection_state_on_destination(connection.clone(), counterparty_chain.as_ref())?;
+
+        debug!(
+            "connection {} on chain {} is: {:?}; state on dest. chain ({}) is: {:?}",
+            connection.connection_id,
+            chain.id(),
+            conn_state_src,
+            counterparty_chain.id(),
+            conn_state_dst
+        );
+
+        if conn_state_src.is_open() && conn_state_dst.is_open() {
+        } else if !conn_state_dst.is_open()
+            && conn_state_dst as u32 <= conn_state_src as u32
+            && self.handshake_enabled()
+        {
+            // create worker for connection handshake that will advance the remote state
+            let connection_object = Object::Connection(Connection {
+                dst_chain_id: client.client_state.chain_id(),
+                src_chain_id: chain.id(),
+                src_connection_id: connection.connection_id,
+            });
+
+            self.workers
+                .get_or_spawn(connection_object, chain.clone(), counterparty_chain.clone());
+        }
+
+        Ok(())
     }
 
     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
@@ -446,6 +596,16 @@ impl Supervisor {
         let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
+            if !self.relay_on_object(&src_chain.id(), &object) {
+                info!(
+                    "skipping events for '{}'. \
+                    reason: filtering is enabled and channel does not match any enabled channels",
+                    object.short_name()
+                );
+
+                continue;
+            }
+
             if events.is_empty() {
                 continue;
             }
@@ -465,6 +625,21 @@ impl Supervisor {
         }
 
         Ok(())
+    }
+
+    fn counterparty_connection_state(
+        &mut self,
+        client: IdentifiedAnyClientState,
+        connection: IdentifiedConnectionEnd,
+    ) -> Result<ConnectionState, BoxError> {
+        let counterparty_chain = self
+            .registry
+            .get_or_spawn(&client.client_state.chain_id())?;
+
+        Ok(connection_state_on_destination(
+            connection,
+            counterparty_chain.as_ref(),
+        )?)
     }
 }
 
