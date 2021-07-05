@@ -398,7 +398,6 @@ impl RelayPath {
     }
 
     fn relay_pending_packets(&mut self, height: Height) -> Result<(), LinkError> {
-        info!("[{}] clearing old packets", self);
         for _ in 0..MAX_RETRIES {
             if self
                 .build_recv_packet_and_timeout_msgs(Some(height))
@@ -424,7 +423,10 @@ impl RelayPath {
 
             self.relay_pending_packets(clear_height)?;
 
-            info!("[{}] finished clearing pending packets", self);
+            info!(
+                "[{}] finished scheduling the clearing of pending packets",
+                self
+            );
 
             self.clear_packets = false;
         }
@@ -976,8 +978,17 @@ impl RelayPath {
             let send_event = downcast!(event => IbcEvent::SendPacket)
                 .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
             packet_sequences.push(send_event.packet.sequence);
+            if packet_sequences.len() > 10 {
+                // Enough to print the first 10
+                break;
+            }
         }
-        debug!("[{}] received from query_txs {:?}", self, packet_sequences);
+        info!(
+            "[{}] found unprocessed SendPacket events for {:?} (first 10 shown here; total={})",
+            self,
+            packet_sequences,
+            events_result.len()
+        );
 
         Ok((events_result, query_height))
     }
@@ -1066,8 +1077,12 @@ impl RelayPath {
             let write_ack_event = downcast!(event => IbcEvent::WriteAcknowledgement)
                 .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
             packet_sequences.push(write_ack_event.packet.sequence);
+            if packet_sequences.len() > 10 {
+                // Enough to print the first 10
+                break;
+            }
         }
-        info!("[{}] received from query_txs {:?}", self, packet_sequences);
+        info!("[{}] found unprocessed WriteAcknowledgement events for {:?} (first 10 shown here; total={})", self, packet_sequences, events_result.len());
 
         Ok((events_result, query_height))
     }
