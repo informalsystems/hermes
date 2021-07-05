@@ -89,7 +89,7 @@ impl UniChanPathWorker {
                 WorkerCmd::NewBlock {
                     height,
                     new_block: _,
-                } => link.a_to_b.clear_packets(height),
+                } => link.a_to_b.handle_new_block(height),
             };
 
             if let Err(e) = result {
