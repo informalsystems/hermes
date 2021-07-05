@@ -54,7 +54,7 @@ pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
 
 impl Default for ChannelsSpec {
     fn default() -> Self {
-        Self( HashSet::new() )
+        Self(HashSet::new())
     }
 }
 

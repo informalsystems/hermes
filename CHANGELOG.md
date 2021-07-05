@@ -7,6 +7,8 @@
 - [ibc-relayer-cli]
   - Added `config validate` CLI to Hermes ([#600])
   - Added filtering capability to deny or allow for specific channels ([#1140], [#1141], [#69])
+  - Added basic channel filter ([#1140])
+  - Added `query channel ends` CLI command ([#1062])
 
 ### IMPROVEMENTS
 
@@ -15,6 +17,7 @@
 
 [#69]: https://github.com/informalsystems/ibc-rs/issues/69
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
+[#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
 [#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
