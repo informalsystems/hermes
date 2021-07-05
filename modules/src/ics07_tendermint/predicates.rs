@@ -152,7 +152,7 @@ impl Predicates {
             .validators()
             .iter()
             .fold(0u64, |total, val_info| {
-                total + val_info.voting_power.value()
+                total + val_info.power.value()
             })
     }
 }
