@@ -1,5 +1,4 @@
-use abscissa_core::config::Override;
-use abscissa_core::{Command, FrameworkErrorKind, Options, Runnable};
+use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
@@ -7,7 +6,6 @@ use ibc_relayer::link::{Link, LinkParameters};
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
-use crate::config::Config;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
@@ -24,26 +22,6 @@ pub struct TxRawPacketRecvCmd {
 
     #[options(free, required, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
-
-    #[options(
-        help = "use the given signing key (default: `key_name` config)",
-        short = "k"
-    )]
-    key: Option<String>,
-}
-
-impl Override<Config> for TxRawPacketRecvCmd {
-    fn override_config(&self, mut config: Config) -> Result<Config, abscissa_core::FrameworkError> {
-        let src_chain_config = config.find_chain_mut(&self.src_chain_id).ok_or_else(|| {
-            FrameworkErrorKind::ComponentError.context("missing src chain configuration")
-        })?;
-
-        if let Some(ref key_name) = self.key {
-            src_chain_config.key_name = key_name.to_string();
-        }
-
-        Ok(config)
-    }
 }
 
 impl Runnable for TxRawPacketRecvCmd {
