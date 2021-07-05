@@ -39,7 +39,7 @@ fn start_no_args() {
         format!(
             "^[^ ]*{} {}",
             env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION")
+            regex::escape(env!("CARGO_PKG_VERSION"))
         )
         .as_str(),
     ); // Todo: find out how to disable colored output and then remove the `[^ ]*` part from the regexp.
