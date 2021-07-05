@@ -11,6 +11,7 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -492,6 +493,11 @@ impl CosmosSdkChain {
 
         trace!("waiting for commit of block(s)");
 
+        let hashes = tx_sync_results
+            .iter()
+            .map(|res| res.response.hash.to_string())
+            .join(", ");
+
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));
 
@@ -544,7 +550,12 @@ impl CosmosSdkChain {
             // All transactions confirmed
             Ok(()) => Ok(tx_sync_results),
             // Did not find confirmation
-            Err(_) => Err(Kind::TxNoConfirmation(format!("from chain {}", self.id())).into()),
+            Err(_) => Err(Kind::TxNoConfirmation(format!(
+                "from chain {} for hash(es) {}",
+                self.id(),
+                hashes
+            ))
+            .into()),
         }
     }
 }
