@@ -107,17 +107,21 @@ mod tests {
 
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::ics02_client::client_state::AnyClientState;
+    use crate::ics02_client::client_consensus::AnyConsensusState;
+    use crate::ics02_client::client_state::{AnyClientState, ClientState};
+    use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::error::Kind;
     use crate::ics02_client::handler::dispatch;
     use crate::ics02_client::handler::ClientResult::Update;
-    use crate::ics02_client::header::Header;
+    use crate::ics02_client::header::{AnyHeader, Header};
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
-    use crate::ics24_host::identifier::ClientId;
+
+    use crate::ics24_host::identifier::{ChainId, ClientId};
     use crate::mock::client_state::MockClientState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
+    use crate::mock::host::{HostBlock, HostType};
     use crate::test_utils::get_dummy_account_id;
     use crate::timestamp::Timestamp;
     use crate::Height;
@@ -238,6 +242,364 @@ mod tests {
                 Err(err) => {
                     panic!("unexpected error: {}", err);
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_syntetic_tendermint_client_adjacent_ok() {
+        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_height = Height::new(1, 20);
+        let update_height = Height::new(1, 21);
+
+        let ctx = MockContext::new(
+            ChainId::new("mockgaiaA".to_string(), 1),
+            HostType::Mock,
+            5,
+            Height::new(1, 1),
+        )
+        .with_client_parametrized(
+            &client_id,
+            client_height,
+            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(client_height),
+        );
+
+        let ctx_b = MockContext::new(
+            ChainId::new("mockgaiaB".to_string(), 1),
+            HostType::SyntheticTendermint,
+            5,
+            update_height,
+        );
+
+        let signer = get_dummy_account_id();
+
+        let block_ref = ctx_b.host_block(update_height);
+        let mut latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
+
+        latest_header = match latest_header {
+            AnyHeader::Tendermint(mut theader) => {
+                theader.trusted_height = client_height;
+                AnyHeader::Tendermint(theader)
+            }
+            AnyHeader::Mock(m) => AnyHeader::Mock(m),
+        };
+
+        let msg = MsgUpdateAnyClient {
+            client_id: client_id.clone(),
+            header: latest_header,
+            signer,
+        };
+
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+
+        match output {
+            Ok(HandlerOutput {
+                result,
+                mut events,
+                log,
+            }) => {
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                assert!(
+                    matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
+                );
+                assert!(log.is_empty());
+                // Check the result
+                match result {
+                    Update(upd_res) => {
+                        assert_eq!(upd_res.client_id, client_id);
+                        assert_eq!(upd_res.client_state.is_frozen(), false);
+                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                    }
+                    _ => panic!("update handler result has incorrect type"),
+                }
+            }
+            Err(err) => {
+                panic!("unexpected error: {}", err);
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_syntetic_tendermint_client_non_adjacent_ok() {
+        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_height = Height::new(1, 20);
+        let update_height = Height::new(1, 21);
+
+        let ctx = MockContext::new(
+            ChainId::new("mockgaiaA".to_string(), 1),
+            HostType::Mock,
+            5,
+            Height::new(1, 1),
+        )
+        .with_client_parametrized_history(
+            &client_id,
+            client_height,
+            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(client_height),
+        );
+
+        let ctx_b = MockContext::new(
+            ChainId::new("mockgaiaB".to_string(), 1),
+            HostType::SyntheticTendermint,
+            5,
+            update_height,
+        );
+
+        let signer = get_dummy_account_id();
+
+        let block_ref = ctx_b.host_block(update_height);
+        let mut latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
+
+        let trusted_height = client_height.clone().sub(1).unwrap_or_default();
+
+        latest_header = match latest_header {
+            AnyHeader::Tendermint(mut theader) => {
+                theader.trusted_height = trusted_height;
+                AnyHeader::Tendermint(theader)
+            }
+            AnyHeader::Mock(m) => AnyHeader::Mock(m),
+        };
+
+        let msg = MsgUpdateAnyClient {
+            client_id: client_id.clone(),
+            header: latest_header,
+            signer,
+        };
+
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+
+        match output {
+            Ok(HandlerOutput {
+                result,
+                mut events,
+                log,
+            }) => {
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                assert!(
+                    matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
+                );
+                assert!(log.is_empty());
+                // Check the result
+                match result {
+                    Update(upd_res) => {
+                        assert_eq!(upd_res.client_id, client_id);
+                        assert_eq!(upd_res.client_state.is_frozen(), false);
+                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                    }
+                    _ => panic!("update handler result has incorrect type"),
+                }
+            }
+            Err(err) => {
+                panic!("unexpected error: {}", err);
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_syntetic_tendermint_client_duplicate_ok() {
+        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_height = Height::new(1, 20);
+
+        let chain_start_height = Height::new(1, 11);
+
+        let ctx = MockContext::new(
+            ChainId::new("mockgaiaA".to_string(), 1),
+            HostType::Mock,
+            5,
+            chain_start_height,
+        )
+        .with_client_parametrized(
+            &client_id,
+            client_height,
+            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(client_height),
+        );
+
+        let ctx_b = MockContext::new(
+            ChainId::new("mockgaiaB".to_string(), 1),
+            HostType::SyntheticTendermint,
+            5,
+            client_height,
+        );
+
+        let signer = get_dummy_account_id();
+
+        let block_ref = ctx_b.host_block(client_height);
+        let latest_header: AnyHeader = match block_ref.cloned().map(Into::into).unwrap() {
+            AnyHeader::Tendermint(mut theader) => {
+                let cons_state = ctx
+                    .latest_consensus_states(&client_id, &client_height)
+                    .clone();
+                if let AnyConsensusState::Tendermint(tcs) = cons_state {
+                    theader.signed_header.header.time = tcs.timestamp;
+                }
+                AnyHeader::Tendermint(theader)
+            }
+            AnyHeader::Mock(header) => AnyHeader::Mock(header),
+        };
+
+        let msg = MsgUpdateAnyClient {
+            client_id: client_id.clone(),
+            header: latest_header,
+            signer,
+        };
+
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+
+        match output {
+            Ok(HandlerOutput {
+                result,
+                mut events,
+                log,
+            }) => {
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                assert!(
+                    matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
+                );
+                assert!(log.is_empty());
+                // Check the result
+                match result {
+                    Update(upd_res) => {
+                        assert_eq!(upd_res.client_id, client_id);
+                        assert_eq!(upd_res.client_state.is_frozen(), false);
+                        assert_eq!(
+                            upd_res.client_state,
+                            ctx.latest_client_states(&client_id).clone()
+                        );
+                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                    }
+                    _ => panic!("update handler result has incorrect type"),
+                }
+            }
+            Err(_err) => {
+                panic!("unexpected error");
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_syntetic_tendermint_client_duplicate_height_frozen() {
+        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_height = Height::new(1, 20);
+
+        let chain_start_height = Height::new(1, 11);
+
+        let ctx = MockContext::new(
+            ChainId::new("mockgaiaA".to_string(), 1),
+            HostType::Mock,
+            5,
+            chain_start_height,
+        )
+        .with_client_parametrized(
+            &client_id,
+            client_height,
+            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(client_height),
+        );
+
+        let signer = get_dummy_account_id();
+
+        let block_ref = HostBlock::generate_block(
+            ChainId::new("mockgaiaB".to_string(), 1),
+            HostType::SyntheticTendermint,
+            client_height.revision_height,
+        );
+
+        let latest_header: AnyHeader = Some(block_ref).map(Into::into).unwrap();
+
+        let msg = MsgUpdateAnyClient {
+            client_id: client_id.clone(),
+            header: latest_header,
+            signer,
+        };
+
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
+
+        match output {
+            Ok(HandlerOutput {
+                result,
+                mut events,
+                log,
+            }) => {
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                assert!(
+                    matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
+                );
+                assert!(log.is_empty());
+                // Check the result
+                match result {
+                    Update(upd_res) => {
+                        assert_eq!(upd_res.client_id, client_id);
+                        assert_eq!(upd_res.client_state.is_frozen(), true);
+                        assert_ne!(
+                            upd_res.client_state,
+                            ctx.latest_client_states(&client_id).clone()
+                        );
+                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                    }
+                    _ => panic!("update handler result has incorrect type"),
+                }
+            }
+            Err(_err) => {
+                panic!("unexpected error");
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_syntetic_tendermint_client_lower_height() {
+        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_height = Height::new(1, 20);
+
+        let client_update_height = Height::new(1, 19);
+
+        let chain_start_height = Height::new(1, 11);
+
+        let ctx = MockContext::new(
+            ChainId::new("mockgaiaA".to_string(), 1),
+            HostType::Mock,
+            5,
+            chain_start_height,
+        )
+        .with_client_parametrized(
+            &client_id,
+            client_height,
+            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(client_height),
+        );
+
+        let ctx_b = MockContext::new(
+            ChainId::new("mockgaiaB".to_string(), 1),
+            HostType::SyntheticTendermint,
+            5,
+            client_height,
+        );
+
+        let signer = get_dummy_account_id();
+
+        let block_ref = ctx_b.host_block(client_update_height);
+        let latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
+
+        let msg = MsgUpdateAnyClient {
+            client_id,
+            header: latest_header,
+            signer,
+        };
+
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg));
+
+        match output {
+            Ok(_) => {
+                panic!("update handler result has incorrect type");
+            }
+            Err(err) => {
+                assert_eq!(err.kind(), &Kind::HeaderVerificationFailure);
+                println!("err is {}", err.to_string());
             }
         }
     }
