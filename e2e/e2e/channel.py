@@ -244,6 +244,20 @@ class ChannelEnd:
     state: str
     version: str
 
+@ dataclass
+class ChannelEnds:
+    chain_id: str
+    client_id: str
+    connection_id: str
+    channel_id: str
+    port_id: str
+
+    counterparty_chain_id: str
+    counterparty_client_id: str
+    counterparty_connection_id: str
+    counterparty_channel_id: str
+    counterparty_port_id: str
+
 
 @ cmd("query channel end")
 @ dataclass
@@ -258,6 +272,18 @@ class QueryChannelEnd(Cmd[ChannelEnd]):
     def process(self, result: Any) -> ChannelEnd:
         return from_dict(ChannelEnd, result)
 
+@ cmd("query channel ends")
+@ dataclass
+class QueryChannelEnds(Cmd[ChannelEnds]):
+    chain_id: ChainId
+    port_id: PortId
+    channel_id: ChannelId
+
+    def args(self) -> List[str]:
+        return [self.chain_id, self.port_id, self.channel_id]
+
+    def process(self, result: Any) -> ChannelEnds:
+        return from_dict(ChannelEnds, result)
 
 # =============================================================================
 # CHANNEL handshake
@@ -463,6 +489,32 @@ def handshake(
             f'Channel end with id {b_chan_id} on chain {side_b} is not in Open state, got: {b_chan_end.state}')
         exit(1)
 
+    a_chan_ends = query_channel_ends(c, side_a, port_id, a_chan_id)
+    l.debug(f'query channel ends result: {a_chan_ends}')
+
+    assert a_chan_ends.chain_id == side_a
+    assert a_chan_ends.connection_id == conn_a
+    assert a_chan_ends.port_id == port_id
+    assert a_chan_ends.channel_id == a_chan_id
+
+    assert a_chan_ends.counterparty_chain_id == side_b
+    assert a_chan_ends.counterparty_connection_id == conn_b
+    assert a_chan_ends.counterparty_port_id == port_id
+    assert a_chan_ends.counterparty_channel_id == b_chan_id
+
+    b_chan_ends = query_channel_ends(c, side_b, port_id, b_chan_id)
+    l.debug(f'query channel ends result: {b_chan_ends}')
+
+    assert b_chan_ends.chain_id == side_b
+    assert b_chan_ends.connection_id == conn_b
+    assert b_chan_ends.port_id == port_id
+    assert b_chan_ends.channel_id == b_chan_id
+
+    assert b_chan_ends.counterparty_chain_id == side_a
+    assert b_chan_ends.counterparty_connection_id == conn_a
+    assert b_chan_ends.counterparty_port_id == port_id
+    assert b_chan_ends.counterparty_channel_id == a_chan_id
+
     return a_chan_id, b_chan_id
 
 
@@ -476,6 +528,19 @@ def query_channel_end(c: Config, chain_id: ChainId, port: PortId, chan_id: Chann
     res = cmd.run(c).success()
 
     l.debug(f'Status of channel end {chan_id}: {res}')
+
+    return res
+
+
+# =============================================================================
+# CHANNEL ENDS query
+# =============================================================================
+
+def query_channel_ends(c: Config, chain_id: ChainId, port: PortId, chan_id: ChannelId) -> ChannelEnd:
+    cmd = QueryChannelEnds(chain_id, port, chan_id)
+    res = cmd.run(c).success()
+
+    l.debug(f'Status of channel ends {chan_id}: {res}')
 
     return res
 

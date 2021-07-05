@@ -2,18 +2,17 @@
 
 use std::path::PathBuf;
 
+use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
     component::Component,
-    config,
-    terminal::component::Terminal,
-    Application, Configurable, FrameworkError, StandardPaths,
+    config, Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
 
 use crate::{
     commands::CliCmd,
     components::{JsonTracing, PrettyTracing},
-    config::Config,
+    config::{Config, validate_config},
     entry::EntryPoint,
 };
 
@@ -125,7 +124,11 @@ impl Application for CliApp {
     fn after_config(&mut self, config: Self::Cfg) -> Result<(), FrameworkError> {
         // Configure components
         self.state.components.after_config(&config)?;
+
+        validate_config(&config)
+            .map_err(|validation_err| FrameworkErrorKind::ConfigError.context(validation_err))?;
         self.config = Some(config);
+
         Ok(())
     }
 

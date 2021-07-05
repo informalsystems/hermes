@@ -2,16 +2,26 @@
 
 ## Unreleased
 
-## FEATURES
-
-- The chains configuration can be reloaded by sending the Hermes process a `SIGHUP` signal ([#1117])
+### FEATURES
+- [ibc-relayer]
+  - The chains configuration can be reloaded by sending the Hermes process a `SIGHUP` signal ([#1117])
+  
+- [ibc-relayer-cli]
+  - Added `config validate` CLI to Hermes ([#600])
+  - Added basic channel filter ([#1140])
+  - Added `query channel ends` CLI command ([#1062])
 
 ### IMPROVEMENTS
 
 - Update to `tendermint-rs` v0.20.0 ([#1125])
+- Add inline documentation to config.toml ([#1127])
 
+[#600]: https://github.com/informalsystems/ibc-rs/issues/600
+[#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
 [#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
+[#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
+[#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
 
 
 ## v0.5.0

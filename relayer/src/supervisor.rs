@@ -7,9 +7,14 @@ use std::{
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
+
 use tracing::{debug, error, info};
 
-use ibc::{events::IbcEvent, ics24_host::identifier::ChainId, Height};
+use ibc::{
+    events::IbcEvent,
+    ics24_host::identifier::{ChainId, ChannelId},
+    Height,
+};
 
 use crate::{
     chain::handle::ChainHandle,
@@ -25,6 +30,7 @@ use crate::{
 
 mod error;
 pub use error::Error;
+use ibc::ics24_host::identifier::PortId;
 
 pub mod dump_state;
 use dump_state::SupervisorState;
@@ -77,6 +83,41 @@ impl Supervisor {
         };
 
         (supervisor, cmd_tx)
+    }
+
+    fn relay_on_channel(
+        &self,
+        chain_id: &ChainId,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> bool {
+        !self.config.read().expect("poisoned lock").global.filter
+            || self.config.read().expect("poisoned lock").find_chain(chain_id).map_or_else(
+                || false,
+                |chain_config| {
+                    chain_config
+                        .filters
+                        .channels
+                        .contains(&(port_id.clone(), channel_id.clone()))
+                },
+            )
+    }
+
+    fn relay_on_object(&self, chain_id: &ChainId, object: &Object) -> bool {
+        if !self.config.read().expect("poisoned lock").global.filter {
+            return true;
+        }
+
+        match object {
+            Object::Client(_) => true,
+            Object::Channel(c) => {
+                self.relay_on_channel(chain_id, c.src_port_id(), c.src_channel_id())
+            }
+            Object::Packet(u) => {
+                self.relay_on_channel(chain_id, u.src_port_id(), &u.src_channel_id())
+            }
+            Object::Connection(_) => true,
+        }
     }
 
     /// Collect the events we are interested in from an [`EventBatch`],
@@ -448,6 +489,16 @@ impl Supervisor {
         let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
+            if !self.relay_on_object(&src_chain.id(), &object) {
+                info!(
+                    "skipping events for '{}'. \
+                    reason: filtering is enabled and channel does not match any enabled channels",
+                    object.short_name()
+                );
+
+                continue;
+            }
+
             if events.is_empty() {
                 continue;
             }

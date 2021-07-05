@@ -173,8 +173,16 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain =
-            ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()).unwrap();
+        let chain = match ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt.clone()) {
+            Ok(chain) => chain,
+            Err(e) => {
+                return Output::error(format!(
+                    "error when spawning the chain runtime for {}: {}",
+                    chain_config.id, e,
+                ))
+                .exit();
+            }
+        };
 
         let channel_connection_client =
             match channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id) {
@@ -209,7 +217,16 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         };
 
         let counterparty_chain =
-            ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt).unwrap();
+            match ChainRuntime::<CosmosSdkChain>::spawn(counterparty_chain_config.clone(), rt) {
+                Ok(chain) => chain,
+                Err(e) => {
+                    return Output::error(format!(
+                        "error when spawning the chain runtime for {}: {}",
+                        chain_config.id, e,
+                    ))
+                    .exit();
+                }
+            };
 
         // get the packet commitments on the counterparty/ source chain
         let commitments_request = QueryPacketCommitmentsRequest {
