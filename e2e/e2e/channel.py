@@ -272,7 +272,7 @@ class QueryChannelEnd(Cmd[ChannelEnd]):
     def process(self, result: Any) -> ChannelEnd:
         return from_dict(ChannelEnd, result)
 
-@ cmd("query channel ends -s")
+@ cmd("query channel ends")
 @ dataclass
 class QueryChannelEnds(Cmd[ChannelEnds]):
     chain_id: ChainId
