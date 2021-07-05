@@ -40,6 +40,10 @@ impl ClientDef for TendermintClient {
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
         // check if a consensus state is already installed; if so it should
         // match the untrusted header.
+
+        //TODO remove:
+        // let time = header.signed_header.header.time;
+
         if let Some(cs) = ctx.consensus_state(&client_id, header.height()) {
             //could the header height be zero ?
             let consensus_state = downcast!(
@@ -47,14 +51,21 @@ impl ClientDef for TendermintClient {
             )
             .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
 
+            //     //TODO remove:
+            // header.signed_header.header.time = consensus_state.timestamp;
+
             if consensus_state != ConsensusState::from(header.clone()) {
                 //freeze the client and return the installed consensus state
                 return Ok((
                     client_state.with_set_frozen(header.height()),
                     consensus_state,
                 ));
+            } else {
+                return Ok((client_state, consensus_state));
             }
         };
+        //  //TODO remove:
+        //     header.signed_header.header.time = time;
 
         let latest_consensus_state =
             match ctx.consensus_state(&client_id, client_state.latest_height) {
