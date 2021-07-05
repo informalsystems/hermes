@@ -33,7 +33,7 @@ fn version() -> String {
 }
 
 fn is_ci_release() -> bool {
-    env::var("GITHUB_JOB") == Ok("create-release".to_owned())
+    matches!(env::var("GITHUB_JOB"), Ok(job) if job == "create-release" || job == "test-stable")
 }
 
 mod git {
