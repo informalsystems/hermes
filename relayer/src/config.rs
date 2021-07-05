@@ -39,12 +39,12 @@ impl fmt::Display for GasPrice {
 pub enum ChannelFilter {
     Allow(ChannelsSpec),
     Deny(ChannelsSpec),
-    None,
+    AllowAll,
 }
 
 impl Default for ChannelFilter {
     fn default() -> Self {
-        Self::None
+        Self::AllowAll
     }
 }
 
@@ -54,7 +54,7 @@ pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
 
 impl Default for ChannelsSpec {
     fn default() -> Self {
-        Self { 0: HashSet::new() }
+        Self( HashSet::new() )
     }
 }
 
@@ -119,7 +119,7 @@ impl Config {
             Some(chain_config) => match &chain_config.channel_filter {
                 ChannelFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
                 ChannelFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
-                ChannelFilter::None => true,
+                ChannelFilter::AllowAll => true,
             },
         }
     }
