@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, State};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
@@ -29,12 +29,15 @@ pub struct QueryChannelEndsCmd {
     #[options(help = "height of the state to query", short = "h")]
     height: Option<u64>,
 
-    #[options(help = "display result in summary form", short = "s")]
-    summary: bool,
+    #[options(
+        help = "enable verbose output, displaying all details of channels, connections & clients",
+        short = "v"
+    )]
+    verbose: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TraceResult {
+pub struct ChannelEnds {
     channel_end: ChannelEnd,
     connection_end: ConnectionEnd,
     client_state: ClientState,
@@ -44,7 +47,7 @@ pub struct TraceResult {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TraceSummary {
+pub struct ChannelEndsSummary {
     chain_id: ChainId,
     client_id: ClientId,
     connection_id: ConnectionId,
@@ -74,19 +77,29 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
     let rt = Arc::new(TokioRuntime::new()?);
     let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt.clone())?;
 
-    // let chain = spawn_chain_runtime(&config, &chain_id)?;
-
     let chain_height = match cmd.height {
         Some(height) => Height::new(chain.id().version(), height),
         None => chain.query_latest_height()?,
     };
 
     let channel_end = chain.query_channel(&port_id, &channel_id, chain_height)?;
+    if channel_end.state_matches(&State::Uninitialized) {
+        return Err(format!(
+            "{}/{} on chain {} @ {:?} is uninitialized",
+            port_id, channel_id, chain_id, chain_height
+        )
+        .into());
+    }
 
     let connection_id = channel_end
         .connection_hops
         .first()
-        .ok_or_else(|| format!("missing connection_hops for channel {}", channel_id))?
+        .ok_or_else(|| {
+            format!(
+                "missing connection_hops for {}/{} on chain {} @ {:?}",
+                port_id, channel_id, chain_id, chain_height
+            )
+        })?
         .clone();
 
     let connection_end = chain.query_connection(&connection_id, chain_height)?;
@@ -102,7 +115,10 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
 
     let counterparty_connection_id = connection_counterparty.connection_id.ok_or_else(|| {
         format!(
-            "connection end do not have counterparty connection id: {:?}",
+            "connection end for {} on chain {} @ {:?} does not have counterparty connection id: {:?}",
+            connection_id,
+            chain_id,
+            chain_height,
             connection_end
         )
     })?;
@@ -111,8 +127,8 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
 
     let counterparty_channel_id = channel_counterparty.channel_id.ok_or_else(|| {
         format!(
-            "channel end do not have counterparty channel id: {:?}",
-            channel_end
+            "channel end for {}/{} on chain {} @ {:?} does not have counterparty channel id: {:?}",
+            port_id, channel_id, chain_id, chain_height, channel_end
         )
     })?;
 
@@ -120,7 +136,7 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
 
     let chain_config_b = config.find_chain(&counterparty_chain_id).ok_or_else(|| {
         format!(
-            "chain '{}' not found in configuration file",
+            "counterparty chain '{}' not found in configuration file",
             counterparty_chain_id
         )
     })?;
@@ -141,8 +157,20 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
         counterparty_chain_height,
     )?;
 
-    if cmd.summary {
-        let res = TraceSummary {
+    if cmd.verbose {
+        let res = ChannelEnds {
+            channel_end,
+            connection_end,
+            client_state,
+
+            counterparty_channel_end,
+            counterparty_connection_end,
+            counterparty_client_state,
+        };
+
+        Output::success(res).exit();
+    } else {
+        let res = ChannelEndsSummary {
             chain_id,
             client_id,
             connection_id,
@@ -154,18 +182,6 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
             counterparty_connection_id,
             counterparty_channel_id,
             counterparty_port_id,
-        };
-
-        Output::success(res).exit();
-    } else {
-        let res = TraceResult {
-            channel_end,
-            connection_end,
-            client_state,
-
-            counterparty_channel_end,
-            counterparty_connection_end,
-            counterparty_client_state,
         };
 
         Output::success(res).exit();

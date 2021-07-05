@@ -87,7 +87,7 @@ pub enum QueryChannelCmds {
     End(channel::QueryChannelEndCmd),
 
     /// The `query channel ends` subcommand
-    #[options(help = "Query the channel ends and associated IDs on a given chain")]
+    #[options(help = "Query channel ends and underlying connection and client objects")]
     Ends(QueryChannelEndsCmd),
 }
 
