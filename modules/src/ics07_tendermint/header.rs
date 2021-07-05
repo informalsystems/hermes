@@ -191,7 +191,7 @@ pub mod test_util {
             281_815_u64.try_into().unwrap(),
         );
 
-        let vs = ValidatorSet::new(vec![v1], Some(v1));
+        let vs = ValidatorSet::new(vec![v1.clone()], Some(v1));
 
         Header {
             signed_header: shdr,
