@@ -503,7 +503,7 @@ def handshake(
     assert a_chan_ends.counterparty_channel_id == b_chan_id
 
     b_chan_ends = query_channel_ends(c, side_b, port_id, b_chan_id)
-    l.debug(f'query channel ends result: {a_chan_ends}')
+    l.debug(f'query channel ends result: {b_chan_ends}')
 
     assert b_chan_ends.chain_id == side_b
     assert b_chan_ends.connection_id == conn_b
