@@ -50,6 +50,8 @@ use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
+use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{
@@ -123,85 +125,87 @@ impl CosmosSdkChain {
     /// Exits early if any health check fails, without doing any
     /// further checks.
     fn health_checkup(&self) {
-        // Checkup on the self-reported health endpoint
-        if let Err(e) = self.block_on(self.rpc_client.health()) {
-            return report_potential_problem(Kind::HealthCheckJsonRpc {
-                chain_id: self.id().clone(),
-                address: self.config.rpc_addr.to_string(),
-                endpoint: "/health".to_string(),
-                cause: e,
-            });
-        }
+        async fn do_health_checkup(chain: &CosmosSdkChain) -> Result<(), Error> {
+            let chain_id = chain.id();
+            let grpc_address = chain.grpc_addr.to_string();
+            let rpc_address = chain.config.rpc_addr.to_string();
 
-        // Checkup on transaction indexing
-        if let Err(e) = self.block_on(self.rpc_client.tx_search(
-            Query::default(),
-            false,
-            1,
-            1,
-            Order::Ascending,
-        )) {
-            return report_potential_problem(Kind::HealthCheckJsonRpc {
-                chain_id: self.id().clone(),
-                address: self.config.rpc_addr.to_string(),
-                endpoint: "/tx_search".to_string(),
-                cause: e,
-            });
-        }
+            // Checkup on the self-reported health endpoint
+            chain
+                .rpc_client
+                .health()
+                .await
+                .map_err(|e| Kind::HealthCheckJsonRpc {
+                    chain_id: chain_id.clone(),
+                    address: rpc_address.clone(),
+                    endpoint: "/health".to_string(),
+                    cause: e,
+                })?;
 
-        // Checkup on the underlying SDK version
-        match self.block_on(
-            ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-                self.grpc_addr.clone(),
-            ),
-        ) {
-            Ok(mut client) => {
-                let request = tonic::Request::new(
-                    ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest {},
-                );
+            // Checkup on transaction indexing
+            chain
+                .rpc_client
+                .tx_search(Query::default(), false, 1, 1, Order::Ascending)
+                .await
+                .map_err(|e| Kind::HealthCheckJsonRpc {
+                    chain_id: chain_id.clone(),
+                    address: rpc_address.clone(),
+                    endpoint: "/tx_search".to_string(),
+                    cause: e,
+                })?;
 
-                let _ = self
-                    .block_on(client.get_node_info(request))
-                    .map_err(|e| {
-                        report_potential_problem(Kind::HealthCheckGrpc {
-                            chain_id: self.id().clone(),
-                            address: self.grpc_addr.to_string(),
-                            endpoint: "tendermint::GetNodeInfoRequest".to_string(),
-                            cause: e.to_string(),
-                        })
-                    })
-                    .map(|response| match response.into_inner().application_version {
-                        None => report_potential_problem(Kind::HealthCheckGrpc {
-                            chain_id: self.id().clone(),
-                            address: self.grpc_addr.to_string(),
-                            endpoint: "tendermint::GetNodeInfoRequest".to_string(),
-                            cause: "the gRPC response contains no application version information"
-                                .to_string(),
-                        }),
-                        Some(version) => {
-                            let _ = compatibility::run_diagnostic(version).map(|d| {
-                                return report_potential_problem(Kind::SdkModuleVersion {
-                                    chain_id: self.id().clone(),
-                                    address: self.grpc_addr.to_string(),
-                                    cause: d.to_string(),
-                                });
-                            });
-                        }
-                    });
+            let mut client = ServiceClient::connect(chain.grpc_addr.clone())
+                .await
+                .map_err(|e| {
+                    // Failed to create the gRPC client to call into `/node_info`.
+                    Kind::HealthCheckGrpc {
+                        chain_id: chain_id.clone(),
+                        address: grpc_address.clone(),
+                        endpoint: "tendermint::ServiceClient".to_string(),
+                        cause: e.to_string(),
+                    }
+                })?;
+
+            let request = tonic::Request::new(GetNodeInfoRequest {});
+
+            let response =
+                client
+                    .get_node_info(request)
+                    .await
+                    .map_err(|e| Kind::HealthCheckGrpc {
+                        chain_id: chain_id.clone(),
+                        address: grpc_address.clone(),
+                        endpoint: "tendermint::GetNodeInfoRequest".to_string(),
+                        cause: e.to_string(),
+                    })?;
+
+            let version =
+                response
+                    .into_inner()
+                    .application_version
+                    .ok_or_else(|| Kind::HealthCheckGrpc {
+                        chain_id: chain_id.clone(),
+                        address: grpc_address.clone(),
+                        endpoint: "tendermint::GetNodeInfoRequest".to_string(),
+                        cause: "the gRPC response contains no application version information"
+                            .to_string(),
+                    })?;
+
+            // Checkup on the underlying SDK version
+            if let Some(diagnostic) = compatibility::run_diagnostic(version) {
+                return Err(Kind::SdkModuleVersion {
+                    chain_id: chain_id.clone(),
+                    address: grpc_address.clone(),
+                    cause: diagnostic.to_string(),
+                }
+                .into());
             }
-            // Failed to create the gRPC client to call into `/node_info`.
-            Err(e) => {
-                return report_potential_problem(Kind::HealthCheckGrpc {
-                    chain_id: self.id().clone(),
-                    address: self.grpc_addr.to_string(),
-                    endpoint: "tendermint::ServiceClient".to_string(),
-                    cause: e.to_string(),
-                });
-            }
+
+            Ok(())
         }
 
-        fn report_potential_problem(k: Kind) {
-            warn!("{}", k);
+        if let Err(e) = self.block_on(do_health_checkup(self)) {
+            warn!("{}", e);
             warn!("some Hermes features may not work in this mode!");
         }
     }
