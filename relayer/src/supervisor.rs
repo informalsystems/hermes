@@ -92,15 +92,20 @@ impl Supervisor {
         channel_id: &ChannelId,
     ) -> bool {
         !self.config.read().expect("poisoned lock").global.filter
-            || self.config.read().expect("poisoned lock").find_chain(chain_id).map_or_else(
-                || false,
-                |chain_config| {
-                    chain_config
-                        .filters
-                        .channels
-                        .contains(&(port_id.clone(), channel_id.clone()))
-                },
-            )
+            || self
+                .config
+                .read()
+                .expect("poisoned lock")
+                .find_chain(chain_id)
+                .map_or_else(
+                    || false,
+                    |chain_config| {
+                        chain_config
+                            .filters
+                            .channels
+                            .contains(&(port_id.clone(), channel_id.clone()))
+                    },
+                )
     }
 
     fn relay_on_object(&self, chain_id: &ChainId, object: &Object) -> bool {

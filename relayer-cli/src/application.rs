@@ -12,7 +12,7 @@ use abscissa_core::{
 use crate::{
     commands::CliCmd,
     components::{JsonTracing, PrettyTracing},
-    config::{Config, validate_config},
+    config::{validate_config, Config},
     entry::EntryPoint,
 };
 
