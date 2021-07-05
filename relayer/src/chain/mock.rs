@@ -385,12 +385,13 @@ impl Chain for MockChain {
 // For integration tests with the modules
 #[cfg(test)]
 pub mod test_utils {
+    use std::collections::HashSet;
     use std::str::FromStr;
     use std::time::Duration;
 
     use ibc::ics24_host::identifier::ChainId;
 
-    use crate::config::{ChainConfig, GasPrice};
+    use crate::config::{ChainConfig, ChainFilters, GasPrice};
 
     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
@@ -411,6 +412,9 @@ pub mod test_utils {
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),
+            filters: ChainFilters {
+                channels: HashSet::new(),
+            },
         }
     }
 }

@@ -87,6 +87,12 @@ impl Channel {
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.src_port_id
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.src_channel_id
+    }
 }
 
 /// A unidirectional path from a source chain, channel and port.
@@ -111,6 +117,12 @@ impl UnidirectionalChannelPath {
             "{}/{}:{}->{}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
+    }
+    pub fn src_port_id(&self) -> &PortId {
+        &self.src_port_id
+    }
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.src_channel_id
     }
 }
 
