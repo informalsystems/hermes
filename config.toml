@@ -102,15 +102,20 @@ trust_threshold = { numerator = '1', denominator = '3' }
 
 # Channel filter specification. Default: no filter
 # This whole section can be deleted and then all filtering is disabled for this chain.
-[chains.channel_filter]
-# Channel filter type:
+#
+# `type` - Channel filter type:
 # 	- 'allow': permit relaying only on the port/channel id in the list below,
-#	- 'deny': permit relaying on any channel except for the list below.
-type = 'deny'
-# List of ports and channels.
-list = [
-	['transfer', 'channel-0'],
-       ]
+#		- 'deny': permit relaying on any channel except for the list below.
+#
+# `list` - List of ports and channels.
+#
+# Example config:
+#
+# [chains.channel_filter]
+# type = 'deny'
+# list = [
+# 	['transfer', 'channel-0'],
+# ]
 
 
 [[chains]]
@@ -130,12 +135,3 @@ max_tx_size = 2097152
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
-
-[chains.channel_filter]
-type = 'allow'
-list = [
-	['transfer', 'channel-0'],
-	['transfer', 'channel-1'],
-	['transfer', 'channel-2'],
-       ]
-
