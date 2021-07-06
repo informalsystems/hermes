@@ -24,7 +24,7 @@ use tendermint_rpc::query::{EventType, Query};
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, trace, warn};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
