@@ -151,9 +151,7 @@ impl Predicates {
         validator_set
             .validators()
             .iter()
-            .fold(0u64, |total, val_info| {
-                total + val_info.power.value()
-            })
+            .fold(0u64, |total, val_info| total + val_info.power.value())
     }
 }
 
