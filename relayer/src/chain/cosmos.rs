@@ -355,6 +355,9 @@ impl CosmosSdkChain {
                 if (s.code() == tonic::Code::InvalidArgument)
                     || (s.code() == tonic::Code::AlreadyExists) =>
             {
+                // These specific errors indicate that the error cannot be recovered.
+                // Propagate this to the caller, and caller should
+                // abandon sending out the transactions.
                 error!("send_tx_simulate error: {:?}", s);
                 Err(Kind::TxSimulateError(s.code(), s.message().to_owned()).into())
             }
