@@ -6,12 +6,14 @@ use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+use alloc::string::String;
+use alloc::string::ToString;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 use tendermint_proto::Protobuf;
 
-use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
+use core::convert::{TryFrom, TryInto};
+use core::str::FromStr;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenTry";
 
@@ -174,9 +176,9 @@ pub mod test_util {
 mod tests {
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+    use core::convert::TryFrom;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
     use ibc_proto::ibc::core::client::v1::Height;
-    use std::convert::TryFrom;
     use test_env_log::test;
 
     #[test]

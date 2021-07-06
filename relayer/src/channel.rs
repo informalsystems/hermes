@@ -1,6 +1,6 @@
 #![allow(clippy::borrowed_box)]
 
-use std::time::Duration;
+use core::time::Duration;
 
 use anomaly::BoxError;
 use prost_types::Any;
@@ -34,7 +34,7 @@ use crate::util::retry::RetryResult;
 use crate::util::retry::{retry_count, retry_with_index};
 
 mod retry_strategy {
-    use std::time::Duration;
+    use core::time::Duration;
 
     use retry::delay::Fibonacci;
 

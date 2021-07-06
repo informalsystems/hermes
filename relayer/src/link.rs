@@ -1,7 +1,7 @@
 #![allow(clippy::borrowed_box)]
 
-use std::collections::HashMap;
-use std::fmt;
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use core::fmt;
 use std::thread;
 use std::time::Instant;
 

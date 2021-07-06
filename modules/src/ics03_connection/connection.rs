@@ -1,9 +1,10 @@
-use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
-use std::time::Duration;
-use std::u64;
-
+use alloc::string::ToString;
+use alloc::vec::Vec;
 use anomaly::fail;
+use core::convert::{TryFrom, TryInto};
+use core::str::FromStr;
+use core::time::Duration;
+use core::u64;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -12,7 +13,7 @@ use ibc_proto::ibc::core::connection::v1::{
     IdentifiedConnection as RawIdentifiedConnection,
 };
 
-use crate::ics03_connection::error::{self, Error, Kind};
+use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
@@ -353,7 +354,7 @@ impl State {
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            _ => fail!(error::Kind::InvalidState(s), s),
+            _ => fail!(Kind::InvalidState(s), s),
         }
     }
     pub fn is_open(self) -> bool {

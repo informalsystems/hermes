@@ -1,5 +1,8 @@
-use std::collections::HashMap;
-
+use alloc::borrow::ToOwned;
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 
@@ -11,8 +14,8 @@ use crate::ics04_channel::events as ChannelEvents;
 use crate::ics04_channel::events::Attributes as ChannelAttributes;
 
 use crate::Height;
+use core::fmt;
 use prost::alloc::fmt::Formatter;
-use std::fmt;
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -234,8 +237,8 @@ impl RawObject {
     }
 }
 
-pub fn extract_events<S: ::std::hash::BuildHasher>(
-    events: &HashMap<String, Vec<String>, S>,
+pub fn extract_events(
+    events: &HashMap<String, Vec<String>>,
     action_string: &str,
 ) -> Result<(), BoxError> {
     if let Some(message_action) = events.get("message.action") {
@@ -252,10 +255,10 @@ macro_rules! make_event {
     ($a:ident, $b:literal) => {
         #[derive(Debug, Deserialize, Serialize, Clone)]
         pub struct $a {
-            pub data: ::std::collections::HashMap<String, Vec<String>>,
+            pub data: ::alloc::collections::btree_map::BTreeMap<String, Vec<String>>,
         }
-        impl ::std::convert::TryFrom<$crate::events::RawObject> for $a {
-            type Error = ::anomaly::BoxError;
+        impl ::core::convert::TryFrom<$crate::events::RawObject> for $a {
+            type Error = $crate::event::Error;
 
             fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
                 match $crate::events::extract_events(&result.events, $b) {

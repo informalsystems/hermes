@@ -1,7 +1,7 @@
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use core::fmt::Debug;
 use ibc::ics03_connection::connection::State as ConnectionState;
 use serde::{Deserialize, Deserializer};
-use std::collections::HashMap;
-use std::fmt::Debug;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Step {

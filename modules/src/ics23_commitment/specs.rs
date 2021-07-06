@@ -1,6 +1,6 @@
-use ics23::ProofSpec;
-
+use alloc::vec::Vec;
 use ibc_proto::ics23::ProofSpec as ProtoProofSpec;
+use ics23::ProofSpec;
 
 /// An array of proof specifications.
 ///

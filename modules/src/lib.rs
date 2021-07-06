@@ -27,6 +27,8 @@
 //! - Applications:
 //!    - ICS 20: Fungible Token Transfer
 
+extern crate alloc;
+
 pub mod application;
 pub mod events;
 pub mod handler;

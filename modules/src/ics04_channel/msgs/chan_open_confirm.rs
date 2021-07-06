@@ -4,10 +4,11 @@ use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
+use alloc::string::String;
+use alloc::string::ToString;
+use core::convert::{TryFrom, TryInto};
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint_proto::Protobuf;
-
-use std::convert::{TryFrom, TryInto};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 
@@ -136,8 +137,8 @@ mod tests {
 
     use crate::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
     use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
+    use core::convert::TryFrom;
     use ibc_proto::ibc::core::client::v1::Height;
-    use std::convert::TryFrom;
 
     #[test]
     fn parse_channel_open_confirm_msg() {

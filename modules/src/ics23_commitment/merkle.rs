@@ -5,6 +5,10 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use crate::ics23_commitment::error::Error;
+use alloc::format;
+use alloc::string::String;
+
+use alloc::vec::Vec;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,

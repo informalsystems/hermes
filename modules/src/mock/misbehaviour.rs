@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 
 use tendermint_proto::Protobuf;
 

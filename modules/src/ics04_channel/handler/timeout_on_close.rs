@@ -2,6 +2,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
+use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::TimeoutOnClosePacket;
 use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::verify::{
@@ -9,9 +10,8 @@ use crate::ics04_channel::handler::verify::{
 };
 use crate::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use crate::ics04_channel::packet::PacketResult;
-use crate::ics04_channel::{
-    context::ChannelReader, error::Error, error::Kind, handler::timeout::TimeoutPacketResult,
-};
+use crate::ics04_channel::{context::ChannelReader, handler::timeout::TimeoutPacketResult};
+use alloc::format;
 
 pub fn process(
     ctx: &dyn ChannelReader,
@@ -155,7 +155,7 @@ mod tests {
 
     use crate::mock::context::MockContext;
 
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     #[test]

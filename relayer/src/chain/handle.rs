@@ -1,7 +1,5 @@
-use std::{
-    fmt::{self, Debug},
-    sync::Arc,
-};
+use alloc::sync::Arc;
+use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
 use dyn_clone::DynClone;

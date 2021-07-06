@@ -19,7 +19,7 @@ use crate::chain::{
 };
 
 /// Client
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Client {
     /// Destination chain identifier.
     /// This is the chain hosting the client.
@@ -43,7 +43,7 @@ impl Client {
 }
 
 /// Connection
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Connection {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
@@ -65,7 +65,7 @@ impl Connection {
 }
 
 /// Channel
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Channel {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
@@ -96,7 +96,7 @@ impl Channel {
 }
 
 /// A unidirectional path from a source chain, channel and port.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct UnidirectionalChannelPath {
     /// Destination chain identifier.
     pub dst_chain_id: ChainId,
@@ -132,7 +132,7 @@ impl UnidirectionalChannelPath {
 /// [`Worker`] is spawned and all [`IbcEvent`]s mapped
 /// to an [`Object`] are sent to the associated [`Worker`]
 /// for processing.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub enum Object {
     /// See [`Client`].
     Client(Client),

@@ -1,7 +1,8 @@
 //! Relayer configuration
 
-use std::collections::HashSet;
-use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
+use alloc::collections::BTreeSet as HashSet;
+use core::{fmt, time::Duration};
+use std::{fs, fs::File, io::Write, path::Path};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;

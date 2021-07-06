@@ -1,4 +1,6 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use alloc::sync::Arc;
+use core::time::Duration;
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
@@ -593,9 +595,9 @@ impl Supervisor {
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
-        let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
+        let collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
-        for (object, events) in collected.per_object.drain() {
+        for (object, events) in collected.per_object.into_iter() {
             if !self.relay_on_object(&src_chain.id(), &object) {
                 info!(
                     "skipping events for '{}'. \

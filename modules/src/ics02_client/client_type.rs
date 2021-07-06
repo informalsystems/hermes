@@ -1,5 +1,5 @@
-use std::fmt;
-
+use alloc::string::ToString;
+use core::fmt;
 use serde_derive::{Deserialize, Serialize};
 
 use super::error;
@@ -31,7 +31,7 @@ impl fmt::Display for ClientType {
     }
 }
 
-impl std::str::FromStr for ClientType {
+impl core::str::FromStr for ClientType {
     type Err = error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -48,7 +48,7 @@ impl std::str::FromStr for ClientType {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use core::str::FromStr;
     use test_env_log::test;
 
     use super::ClientType;

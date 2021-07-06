@@ -1,8 +1,11 @@
-use std::{
+use core::{
     convert::{TryFrom, TryInto},
     str::FromStr,
     time::Duration,
 };
+
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use tendermint_proto::Protobuf;
 
@@ -267,7 +270,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use ibc_proto::ibc::core::client::v1::Height;

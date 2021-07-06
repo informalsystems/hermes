@@ -76,8 +76,8 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-    use std::str::FromStr;
+    use core::convert::TryFrom;
+    use core::str::FromStr;
     use test_env_log::test;
 
     use crate::events::IbcEvent;

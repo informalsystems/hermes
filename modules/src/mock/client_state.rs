@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-use std::time::Duration;
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use core::convert::{TryFrom, TryInto};
+use core::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;

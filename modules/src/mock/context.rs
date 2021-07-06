@@ -1,7 +1,7 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
-use std::cmp::min;
-use std::collections::HashMap;
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use core::cmp::min;
 use std::error::Error;
 
 use prost_types::Any;

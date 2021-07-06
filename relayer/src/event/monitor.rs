@@ -1,4 +1,5 @@
-use std::{cmp::Ordering, sync::Arc};
+use alloc::sync::Arc;
+use core::cmp::Ordering;
 
 use crossbeam_channel as channel;
 use futures::{
@@ -27,8 +28,8 @@ use crate::util::{
 
 mod retry_strategy {
     use crate::util::retry::clamp_total;
+    use core::time::Duration;
     use retry::delay::Fibonacci;
-    use std::time::Duration;
 
     // Default parameters for the retrying mechanism
     const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
@@ -226,8 +227,8 @@ impl EventMonitor {
 
         // Swap the new client with the previous one which failed,
         // so that we can shut the latter down gracefully.
-        std::mem::swap(&mut self.client, &mut client);
-        std::mem::swap(&mut self.driver_handle, &mut driver_handle);
+        core::mem::swap(&mut self.client, &mut client);
+        core::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
         trace!(
             chain.id = %self.chain_id,
@@ -303,7 +304,7 @@ impl EventMonitor {
     fn run_loop(&mut self) {
         // Take ownership of the subscriptions
         let subscriptions =
-            std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
+            core::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
 
         // Convert the stream of RPC events into a stream of event batches.
         let batches = stream_batches(subscriptions, self.chain_id.clone());

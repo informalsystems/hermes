@@ -1,14 +1,16 @@
-use std::{
+use std::{thread, time::Instant};
+
+use core::{
     cmp::min,
     convert::{TryFrom, TryInto},
     future::Future,
     str::FromStr,
-    sync::Arc,
-    thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
+use alloc::sync::Arc;
 use anomaly::fail;
+
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use prost::Message;
@@ -94,7 +96,7 @@ const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
 
 mod retry_strategy {
     use crate::util::retry::Fixed;
-    use std::time::Duration;
+    use core::time::Duration;
 
     pub fn wait_for_block_commits() -> impl Iterator<Item = Duration> {
         // The total time should be higher than the full node timeout which defaults to 10sec.

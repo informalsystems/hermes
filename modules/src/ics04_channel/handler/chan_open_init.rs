@@ -9,6 +9,8 @@ use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::ics24_host::identifier::ChannelId;
+use alloc::format;
+use alloc::string::ToString;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -85,7 +87,7 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use crate::events::IbcEvent;

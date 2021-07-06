@@ -7,6 +7,8 @@ use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::ics24_host::identifier::ClientId;
 use crate::proofs::Proofs;
+use alloc::format;
+use alloc::vec::Vec;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
 pub fn verify_channel_proofs(

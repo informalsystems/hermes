@@ -1,4 +1,5 @@
-use std::{collections::HashMap, convert::TryFrom};
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use core::convert::TryFrom;
 
 use anomaly::BoxError;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
@@ -30,7 +31,8 @@ pub fn get_all_events(
         }
 
         RpcEventData::Tx { .. } => {
-            let events = &result.events.ok_or("missing events")?;
+            let events: HashMap<String, Vec<String>> =
+                result.events.ok_or("missing events")?.into_iter().collect();
             let height_raw = events.get("tx.height").ok_or("tx.height")?[0]
                 .parse::<u64>()
                 .map_err(|e| e.to_string())?;
@@ -39,7 +41,7 @@ pub fn get_all_events(
                 height_raw,
             );
 
-            let actions_and_indices = extract_helper(events)?;
+            let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
                 if let Ok(event) = build_event(RawObject::new(
                     height,

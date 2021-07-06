@@ -27,13 +27,13 @@ where
                     state = Some(State { cur: x, group: vec![] });
                 },
                 Some(state) if group_these(&state.cur, &x) => {
-                    let prev = std::mem::replace(&mut state.cur, x);
+                    let prev = core::mem::replace(&mut state.cur, x);
                     state.group.push(prev);
                 },
                 Some(state) => {
-                    let cur = std::mem::replace(&mut state.cur, x);
+                    let cur = core::mem::replace(&mut state.cur, x);
                     state.group.push(cur);
-                    let group = std::mem::replace(&mut state.group, vec![]);
+                    let group = core::mem::replace(&mut state.group, vec![]);
                     yield group;
                 }
             }

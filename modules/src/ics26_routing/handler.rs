@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
@@ -244,7 +246,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use crate::events::IbcEvent;

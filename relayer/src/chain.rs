@@ -1,4 +1,5 @@
-use std::{sync::Arc, thread};
+use alloc::sync::Arc;
+use std::thread;
 
 use prost_types::Any;
 use tendermint::block::Height;

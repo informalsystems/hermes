@@ -3,7 +3,7 @@
 //! Enables the following pattern in our codebase:
 //!
 //! ```
-//! use std::convert::TryInto;
+//! use core::convert::TryInto;
 //! use ibc_proto::ibc::core::client::v1::Height as ProtoHeight;
 //! use ibc::Height;
 //! use ibc::utils::UnwrapInfallible;
@@ -16,7 +16,7 @@
 //!
 //! [`unwrap-infallible`]: [https://crates.io/crates/unwrap-infallible
 
-use std::convert::Infallible;
+use core::convert::Infallible;
 
 // TODO: Remove this trait and its associated impl once `into_ok` stabilizes:
 //  https://github.com/rust-lang/rust/issues/61695

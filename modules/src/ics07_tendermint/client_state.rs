@@ -1,6 +1,9 @@
-use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
-use std::time::Duration;
+use core::convert::{TryFrom, TryInto};
+use core::str::FromStr;
+use core::time::Duration;
+
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use serde::{Deserialize, Serialize};
 use tendermint::trust_threshold::{
@@ -234,7 +237,7 @@ impl From<ClientState> for RawClientState {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use core::time::Duration;
     use test_env_log::test;
 
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
@@ -373,7 +376,7 @@ mod tests {
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
-    use std::time::Duration;
+    use core::time::Duration;
 
     use tendermint::block::Header;
 

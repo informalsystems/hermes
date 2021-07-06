@@ -1,5 +1,6 @@
-use std::convert::{TryFrom, TryInto};
-
+use alloc::string::String;
+use alloc::string::ToString;
+use core::convert::{TryFrom, TryInto};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
@@ -112,7 +113,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod test {
-    use std::convert::{TryFrom, TryInto};
+    use core::convert::{TryFrom, TryInto};
     use test_env_log::test;
 
     use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;

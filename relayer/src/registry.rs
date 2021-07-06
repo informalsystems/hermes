@@ -1,6 +1,7 @@
 //! Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 
-use std::{collections::HashMap, sync::Arc};
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use alloc::sync::Arc;
 
 use anomaly::BoxError;
 use tokio::runtime::Runtime as TokioRuntime;

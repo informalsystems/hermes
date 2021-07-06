@@ -1,10 +1,13 @@
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 use tendermint_proto::Protobuf;
 
 use crate::ics04_channel::error::{Error, Kind};
-use std::str::FromStr;
+use alloc::string::{String, ToString};
+
+use alloc::vec::Vec;
+use core::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Version {
@@ -52,8 +55,8 @@ impl FromStr for Version {
     }
 }
 
-impl std::fmt::Display for Version {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl core::fmt::Display for Version {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             f,
             "{}",

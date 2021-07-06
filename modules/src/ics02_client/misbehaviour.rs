@@ -1,5 +1,6 @@
-use std::convert::TryFrom;
-
+use alloc::string::ToString;
+use alloc::vec::Vec;
+use core::convert::TryFrom;
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
@@ -20,7 +21,7 @@ pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.
 pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
 
 #[dyn_clonable::clonable]
-pub trait Misbehaviour: Clone + std::fmt::Debug + Send + Sync {
+pub trait Misbehaviour: Clone + core::fmt::Debug + Send + Sync {
     /// The type of client (eg. Tendermint)
     fn client_id(&self) -> &ClientId;
 
@@ -106,8 +107,8 @@ impl From<AnyMisbehaviour> for Any {
     }
 }
 
-impl std::fmt::Display for AnyMisbehaviour {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl core::fmt::Display for AnyMisbehaviour {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self {
             AnyMisbehaviour::Tendermint(tm) => write!(f, "{}", tm),
 

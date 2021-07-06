@@ -3,9 +3,10 @@ use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::{attribute, some_attribute};
+
 use anomaly::BoxError;
+use core::convert::TryFrom;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
 
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
 const INIT_EVENT_TYPE: &str = "connection_open_init";

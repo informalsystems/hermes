@@ -1,9 +1,11 @@
-use std::convert::TryInto;
-use std::fmt::Display;
-use std::num::{ParseIntError, TryFromIntError};
-use std::ops::{Add, Sub};
-use std::str::FromStr;
-use std::time::Duration;
+use core::convert::TryInto;
+use core::fmt::Display;
+use core::num::{ParseIntError, TryFromIntError};
+use core::ops::{Add, Sub};
+use core::str::FromStr;
+use core::time::Duration;
+
+use alloc::string::ToString;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
 use serde_derive::{Deserialize, Serialize};
@@ -71,7 +73,7 @@ impl Timestamp {
     }
 
     /// Computes the duration difference of another `Timestamp` from the current one.
-    /// Returns the difference in time as an [`std::time::Duration`].
+    /// Returns the difference in time as an [`core::time::Duration`].
     /// Returns `None` if the other `Timestamp` is more advanced
     /// than the current or if either of the `Timestamp`s is not set.
     pub fn duration_since(&self, other: &Timestamp) -> Option<Duration> {
@@ -115,7 +117,7 @@ impl Timestamp {
 }
 
 impl Display for Timestamp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "Timestamp({})",
@@ -189,9 +191,9 @@ impl Default for Timestamp {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
+    use core::convert::TryInto;
+    use core::time::Duration;
     use std::thread::sleep;
-    use std::time::Duration;
     use test_env_log::test;
 
     use super::{Expiry, Timestamp, ZERO_DURATION};

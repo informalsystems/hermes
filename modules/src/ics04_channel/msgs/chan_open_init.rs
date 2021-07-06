@@ -3,11 +3,13 @@ use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::PortId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+use alloc::string::String;
+use alloc::string::ToString;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use tendermint_proto::Protobuf;
 
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenInit";
 
@@ -103,8 +105,8 @@ pub mod test_util {
 mod tests {
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+    use core::convert::TryFrom;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
-    use std::convert::TryFrom;
     use test_env_log::test;
 
     #[test]

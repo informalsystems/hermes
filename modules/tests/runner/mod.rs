@@ -1,9 +1,9 @@
 pub mod step;
 
-use std::collections::HashMap;
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use core::fmt::{Debug, Display};
+use core::time::Duration;
 use std::error::Error;
-use std::fmt::{Debug, Display};
-use std::time::Duration;
 
 use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::client_state::AnyClientState;

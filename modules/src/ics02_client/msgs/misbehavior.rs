@@ -1,4 +1,6 @@
-use std::convert::TryFrom;
+use alloc::string::String;
+use alloc::string::ToString;
+use core::convert::TryFrom;
 
 use tendermint_proto::Protobuf;
 

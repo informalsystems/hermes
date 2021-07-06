@@ -1,3 +1,4 @@
+use alloc::string::String;
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 

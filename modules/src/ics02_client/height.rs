@@ -1,7 +1,10 @@
-use std::cmp::Ordering;
-use std::convert::{Infallible, TryFrom};
-use std::str::FromStr;
-
+use alloc::borrow::ToOwned;
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
+use core::convert::{Infallible, TryFrom};
+use core::str::FromStr;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -123,8 +126,8 @@ impl From<Height> for RawHeight {
     }
 }
 
-impl std::fmt::Debug for Height {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl core::fmt::Debug for Height {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         f.debug_struct("Height")
             .field("revision", &self.revision_number)
             .field("height", &self.revision_height)
@@ -133,8 +136,8 @@ impl std::fmt::Debug for Height {
 }
 
 /// Custom debug output to omit the packet data
-impl std::fmt::Display for Height {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl core::fmt::Display for Height {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(f, "{}-{}", self.revision_number, self.revision_height)
     }
 }
