@@ -20,7 +20,7 @@ use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
-use tendermint_rpc::query::Query;
+use tendermint_rpc::query::{EventType, Query};
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
@@ -145,7 +145,13 @@ impl CosmosSdkChain {
             // Checkup on transaction indexing
             chain
                 .rpc_client
-                .tx_search(Query::default(), false, 1, 1, Order::Ascending)
+                .tx_search(
+                    Query::from(EventType::NewBlock),
+                    false,
+                    1,
+                    1,
+                    Order::Ascending,
+                )
                 .await
                 .map_err(|e| Kind::HealthCheckJsonRpc {
                     chain_id: chain_id.clone(),
