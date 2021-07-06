@@ -104,8 +104,8 @@ trust_threshold = { numerator = '1', denominator = '3' }
 # This whole section can be deleted and then all filtering is disabled for this chain.
 #
 # `type` - Channel filter type:
-# 	- 'allow': permit relaying only on the port/channel id in the list below,
-#		- 'deny': permit relaying on any channel except for the list below.
+#   - 'allow': permit relaying only on the port/channel id in the list below,
+#   - 'deny': permit relaying on any channel except for the list below.
 #
 # `list` - List of ports and channels.
 #
@@ -114,7 +114,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 # [chains.channel_filter]
 # type = 'deny'
 # list = [
-# 	['transfer', 'channel-0'],
+#   ['transfer', 'channel-0'],
 # ]
 
 
