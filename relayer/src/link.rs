@@ -1284,18 +1284,21 @@ impl RelayPath {
         }
     }
 
-    /// Checks if there are any operational data items ready, and if so performs the relaying
-    /// of corresponding packets to the target chain.
+    /// Checks if there is any operational data items ready,
+    /// and if so performs the relaying of corresponding packets
+    /// to the target chain.
     pub fn execute_schedule(&mut self) -> Result<RelaySummary, LinkError> {
-        let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
-
         let mut summary = RelaySummary::empty();
 
-        for od in dst_ods {
+        // Handle first messages heading to the destination chain.
+        let dst_od = self.try_fetch_scheduled_operational_data_dst();
+        if let Some(od) = dst_od {
             summary.extend(self.relay_from_operational_data(od)?);
         }
 
-        for od in src_ods {
+        // Now handle messages heading to the source chain.
+        let src_od = self.try_fetch_scheduled_operational_data_src();
+        if let Some(od) = src_od {
             summary.extend(self.relay_from_operational_data(od)?);
         }
 
@@ -1426,34 +1429,42 @@ impl RelayPath {
         Ok(())
     }
 
-    /// Pulls out the operational elements with elapsed delay period and that can
+    /// Destination-chain fetching of operational data.
+    ///
+    /// Pulls out an operational elements with elapsed delay period and that can
     /// now be processed. Does not block: if no OD fulfilled the delay period (or none is
-    /// scheduled), returns immediately with `vec![]`.
-    fn try_fetch_scheduled_operational_data(
-        &mut self,
-    ) -> (Vec<OperationalData>, Vec<OperationalData>) {
-        // The first elements of the op. data vector contain the oldest entry.
-        // Remove and return the elements with elapsed delay.
-
-        let src_ods: Vec<OperationalData> = self
-            .src_operational_data
-            .iter()
-            .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
-            .cloned()
-            .collect();
-
-        self.src_operational_data = self.src_operational_data[src_ods.len()..].to_owned();
-
-        let dst_ods: Vec<OperationalData> = self
+    /// scheduled), returns immediately with `None`.
+    fn try_fetch_scheduled_operational_data_dst(&mut self) -> Option<OperationalData> {
+        // Check if the delay elapsed for some item, and return its position.
+        let found = self
             .dst_operational_data
             .iter()
-            .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
-            .cloned()
-            .collect();
+            .position(|op| op.scheduled_time.elapsed() > self.channel.connection_delay);
 
-        self.dst_operational_data = self.dst_operational_data[dst_ods.len()..].to_owned();
+        if let Some(pos) = found {
+            let item = self.dst_operational_data.remove(pos);
+            Some(item)
+        } else {
+            None
+        }
+    }
 
-        (src_ods, dst_ods)
+    /// Source-chain fetching of operational data.
+    ///
+    /// Equivalent to [`try_fetch_scheduled_operational_data_dst`]
+    /// but for the source chain operational data.
+    fn try_fetch_scheduled_operational_data_src(&mut self) -> Option<OperationalData> {
+        let found = self
+            .src_operational_data
+            .iter()
+            .position(|op| op.scheduled_time.elapsed() > self.channel.connection_delay);
+
+        if let Some(pos) = found {
+            let item = self.src_operational_data.remove(pos);
+            Some(item)
+        } else {
+            None
+        }
     }
 
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
