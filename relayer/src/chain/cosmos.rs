@@ -20,11 +20,11 @@ use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
-use tendermint_rpc::query::Query;
+use tendermint_rpc::query::{EventType, Query};
 use tendermint_rpc::{endpoint::broadcast::tx_sync::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
-use tracing::{debug, trace};
+use tracing::{debug, trace, warn};
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -50,6 +50,8 @@ use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
+use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{
@@ -82,6 +84,8 @@ use crate::light_client::Verified;
 
 use super::Chain;
 
+mod compatibility;
+
 const DEFAULT_MAX_GAS: u64 = 300_000;
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
@@ -109,6 +113,109 @@ pub struct CosmosSdkChain {
 }
 
 impl CosmosSdkChain {
+    /// Does multiple RPC calls to the full node, to check for
+    /// reachability and that some basic APIs are available.
+    ///
+    /// Currently this checks that:
+    ///     - the node responds OK to `/health` RPC call;
+    ///     - the node has transaction indexing enabled;
+    ///     - the SDK version is supported.
+    ///
+    /// Emits a log warning in case anything is amiss.
+    /// Exits early if any health check fails, without doing any
+    /// further checks.
+    fn health_checkup(&self) {
+        async fn do_health_checkup(chain: &CosmosSdkChain) -> Result<(), Error> {
+            let chain_id = chain.id();
+            let grpc_address = chain.grpc_addr.to_string();
+            let rpc_address = chain.config.rpc_addr.to_string();
+
+            // Checkup on the self-reported health endpoint
+            chain
+                .rpc_client
+                .health()
+                .await
+                .map_err(|e| Kind::HealthCheckJsonRpc {
+                    chain_id: chain_id.clone(),
+                    address: rpc_address.clone(),
+                    endpoint: "/health".to_string(),
+                    cause: e,
+                })?;
+
+            // Checkup on transaction indexing
+            chain
+                .rpc_client
+                .tx_search(
+                    Query::from(EventType::NewBlock),
+                    false,
+                    1,
+                    1,
+                    Order::Ascending,
+                )
+                .await
+                .map_err(|e| Kind::HealthCheckJsonRpc {
+                    chain_id: chain_id.clone(),
+                    address: rpc_address.clone(),
+                    endpoint: "/tx_search".to_string(),
+                    cause: e,
+                })?;
+
+            let mut client = ServiceClient::connect(chain.grpc_addr.clone())
+                .await
+                .map_err(|e| {
+                    // Failed to create the gRPC client to call into `/node_info`.
+                    Kind::HealthCheckGrpc {
+                        chain_id: chain_id.clone(),
+                        address: grpc_address.clone(),
+                        endpoint: "tendermint::ServiceClient".to_string(),
+                        cause: e.to_string(),
+                    }
+                })?;
+
+            let request = tonic::Request::new(GetNodeInfoRequest {});
+
+            let response =
+                client
+                    .get_node_info(request)
+                    .await
+                    .map_err(|e| Kind::HealthCheckGrpc {
+                        chain_id: chain_id.clone(),
+                        address: grpc_address.clone(),
+                        endpoint: "tendermint::GetNodeInfoRequest".to_string(),
+                        cause: e.to_string(),
+                    })?;
+
+            let version =
+                response
+                    .into_inner()
+                    .application_version
+                    .ok_or_else(|| Kind::HealthCheckGrpc {
+                        chain_id: chain_id.clone(),
+                        address: grpc_address.clone(),
+                        endpoint: "tendermint::GetNodeInfoRequest".to_string(),
+                        cause: "the gRPC response contains no application version information"
+                            .to_string(),
+                    })?;
+
+            // Checkup on the underlying SDK version
+            if let Some(diagnostic) = compatibility::run_diagnostic(version) {
+                return Err(Kind::SdkModuleVersion {
+                    chain_id: chain_id.clone(),
+                    address: grpc_address.clone(),
+                    cause: diagnostic.to_string(),
+                }
+                .into());
+            }
+
+            Ok(())
+        }
+
+        if let Err(e) = self.block_on(do_health_checkup(self)) {
+            warn!("{}", e);
+            warn!("some Hermes features may not work in this mode!");
+        }
+    }
+
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
@@ -573,14 +680,18 @@ impl Chain for CosmosSdkChain {
         let grpc_addr =
             Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
 
-        Ok(Self {
+        let chain = Self {
             config,
             rpc_client,
             grpc_addr,
             rt,
             keybase,
             account: None,
-        })
+        };
+
+        chain.health_checkup();
+
+        Ok(chain)
     }
 
     fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
