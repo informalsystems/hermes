@@ -48,7 +48,7 @@ impl fmt::Display for Worker {
 }
 
 impl Worker {
-    /// Spawn a worker which relay events pertaining to an [`Object`] between two `chains`.
+    /// Spawn a worker which relays events pertaining to an [`Object`] between two `chains`.
     pub fn spawn(
         chains: ChainHandlePair,
         object: Object,

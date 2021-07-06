@@ -320,21 +320,56 @@ impl Object {
 
     /// Build the Channel object associated with the given [`Open`] channel event.
     pub fn channel_from_chan_open_events(
-        e: &Attributes,
+        attributes: &Attributes,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, BoxError> {
-        let channel_id = e
+        let channel_id = attributes
             .channel_id()
-            .ok_or_else(|| format!("channel_id missing in OpenInit event '{:?}'", e))?;
+            .ok_or_else(|| format!("channel_id missing in event attributes'{:?}'", attributes))?;
 
-        let dst_chain_id = counterparty_chain_from_channel(src_chain, channel_id, &e.port_id())
-            .map_err(|_| "dest chain missing in init".to_string())?;
+        let dst_chain_id =
+            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id()).map_err(
+                |err| {
+                    format!(
+                        "cannot identify destination chain from event attributes {:?}: {}",
+                        attributes, err
+                    )
+                },
+            )?;
 
         Ok(Channel {
             dst_chain_id,
             src_chain_id: src_chain.id(),
             src_channel_id: channel_id.clone(),
-            src_port_id: e.port_id().clone(),
+            src_port_id: attributes.port_id().clone(),
+        }
+        .into())
+    }
+
+    /// Build the Packet object associated with the given [`Open`] channel event.
+    pub fn packet_from_chan_open_events(
+        attributes: &Attributes,
+        src_chain: &dyn ChainHandle,
+    ) -> Result<Self, BoxError> {
+        let channel_id = attributes
+            .channel_id()
+            .ok_or_else(|| format!("channel_id missing in event attributes'{:?}'", attributes))?;
+
+        let dst_chain_id =
+            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id()).map_err(
+                |err| {
+                    format!(
+                        "cannot identify destination chain from event attributes {:?}: {}",
+                        attributes, err
+                    )
+                },
+            )?;
+
+        Ok(Packet {
+            dst_chain_id,
+            src_chain_id: src_chain.id(),
+            src_channel_id: channel_id.clone(),
+            src_port_id: attributes.port_id().clone(),
         }
         .into())
     }

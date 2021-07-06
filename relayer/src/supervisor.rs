@@ -182,37 +182,57 @@ impl Supervisor {
                     }
                 }
                 IbcEvent::OpenAckChannel(ref open_ack) => {
-                    // Create client worker here as channel end must be opened
-                    if let Ok(object) =
+                    // Create client and packet workers here as channel end must be opened
+                    if let Ok(client_object) =
                         Object::client_from_chan_open_events(open_ack.attributes(), src_chain)
                     {
                         collected
                             .per_object
-                            .entry(object)
+                            .entry(client_object)
                             .or_default()
                             .push(event.clone());
                     }
 
-                    if !handshake_enabled {
-                        continue;
+                    if let Ok(packet_object) =
+                        Object::packet_from_chan_open_events(open_ack.attributes(), src_chain)
+                    {
+                        collected
+                            .per_object
+                            .entry(packet_object)
+                            .or_default()
+                            .push(event.clone());
                     }
 
-                    let object = event
-                        .channel_attributes()
-                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
-
-                    if let Some(Ok(object)) = object {
-                        collected.per_object.entry(object).or_default().push(event);
+                    // If handshake message relaying is enabled create worker to send the MsgChannelOpenConfirm message
+                    if handshake_enabled {
+                        if let Ok(channel_object) =
+                            Object::channel_from_chan_open_events(open_ack.attributes(), src_chain)
+                        {
+                            collected
+                                .per_object
+                                .entry(channel_object)
+                                .or_default()
+                                .push(event);
+                        }
                     }
                 }
                 IbcEvent::OpenConfirmChannel(ref open_confirm) => {
                     // Create client worker here as channel end must be opened
-                    if let Ok(object) =
+                    if let Ok(client_object) =
                         Object::client_from_chan_open_events(open_confirm.attributes(), src_chain)
                     {
                         collected
                             .per_object
-                            .entry(object)
+                            .entry(client_object)
+                            .or_default()
+                            .push(event.clone());
+                    }
+                    if let Ok(packet_object) =
+                        Object::packet_from_chan_open_events(open_confirm.attributes(), src_chain)
+                    {
+                        collected
+                            .per_object
+                            .entry(packet_object)
                             .or_default()
                             .push(event.clone());
                     }
