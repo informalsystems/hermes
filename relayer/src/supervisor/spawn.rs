@@ -457,10 +457,7 @@ impl<'a> SpawnContext<'a> {
                     });
             }
 
-            // TODO: Only start the Packet worker if there are outstanding packets or ACKs.
-            //       https://github.com/informalsystems/ibc-rs/issues/901
-
-            // create the path object and spawn worker
+            // create the Packet object and spawn worker
             let path_object = Object::Packet(Packet {
                 dst_chain_id: counterparty_chain.id(),
                 src_chain_id: chain.id(),
@@ -483,19 +480,16 @@ impl<'a> SpawnContext<'a> {
             // On config reload, we need to spawn the Packet worker for the counterparty as well,
             // otherwise we may never do it, eg. if the counterparty chain was not updated in the
             // config.
+            let remote_channel = (
+                channel.channel_end.remote.port_id.clone(),
+                channel.channel_end.remote.channel_id,
+            );
 
-            let remote_channel = counterparty_channel.and_then(|c| {
-                c.remote
-                    .channel_id
-                    .as_ref()
-                    .map(|cid| (c.remote.port_id.clone(), cid.clone()))
-            });
-
-            if let Some((remote_port_id, remote_channel_id)) = remote_channel {
+            if let (remote_port_id, Some(remote_channel_id)) = remote_channel {
                 // spawn worker for the counterparty chain
                 let counterparty_path_object = Object::Packet(Packet {
-                    src_chain_id: counterparty_chain.id(),
                     dst_chain_id: chain.id(),
+                    src_chain_id: counterparty_chain.id(),
                     src_channel_id: remote_channel_id,
                     src_port_id: remote_port_id,
                 });
