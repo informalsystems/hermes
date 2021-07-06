@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use ibc_proto::cosmos::base::tendermint::v1beta1::VersionInfo;
 
-/// Specifies the SDK module name, as it is expected to appear
+/// Specifies the SDK module path, as it is expected to appear
 /// in the application version information.
 ///
 /// The module identification is captured in a [`Module`]
@@ -20,8 +20,7 @@ const SDK_MODULE_NAME: &str = "cosmos/cosmos-sdk";
 
 /// Specifies the SDK module version requirement.
 ///
-/// Maintain this consistently with the [features] page
-/// in the guide.
+/// # Note: Should be consistent with [features] guide page.
 ///
 /// [features]: https://hermes.informal.systems/features.html
 const SDK_MODULE_VERSION_REQ: &str = ">=0.41.3, <=0.42.6";
@@ -45,6 +44,7 @@ impl std::fmt::Display for AppInfo {
 pub enum Diagnostic {
     #[error("no SDK module '{pattern}' was found for application {app}")]
     SdkModuleNotFound { pattern: String, app: AppInfo },
+
     #[error("failed parsing the SDK module ('{module_path}') version number '{raw_version}' into a semver for application {app}; cause: {cause}")]
     VersionParsingFailed {
         module_path: String,
@@ -62,7 +62,7 @@ pub enum Diagnostic {
 }
 
 /// Runs a diagnostic check on the provided [`VersionInfo`]
-/// to ensure that the sdk module version matches the
+/// to ensure that the Sdk module version matches the
 /// predefined requirements.
 ///
 /// Returns `None` upon success, or a [`Diagnostic`] upon

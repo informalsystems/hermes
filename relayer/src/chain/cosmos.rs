@@ -113,11 +113,11 @@ pub struct CosmosSdkChain {
 }
 
 impl CosmosSdkChain {
-    /// Does multiple RPC calls the full node, and ensures
-    /// reachability and some basic functions are available.
+    /// Does multiple RPC calls to the full node, to check for
+    /// reachability and that some basic APIs are available.
     ///
-    /// Currently this method does the following checks:
-    ///     - that the node responds OK to `/health` RPC call;
+    /// Currently this checks that:
+    ///     - the node responds OK to `/health` RPC call;
     ///     - the node has transaction indexing enabled;
     ///     - the SDK version is supported.
     ///
