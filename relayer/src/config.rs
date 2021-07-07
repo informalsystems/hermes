@@ -32,7 +32,7 @@ impl fmt::Display for GasPrice {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(
     rename_all = "lowercase",
-    tag = "type",
+    tag = "policy",
     content = "list",
     deny_unknown_fields
 )]

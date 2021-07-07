@@ -104,17 +104,17 @@ trust_threshold = { numerator = '1', denominator = '3' }
 
 # Channel filter specification. Default: no filter
 # This whole section can be deleted and then all filtering is disabled for this chain.
-# This section will be ignored if the global 'filter' option is 'false'.
+# This section is ignored if the global 'filter' option is set to 'false'.
 # A channel filter has two fields:
-# 1. `type` - Channel filter type:
-#   - 'allow': permit relaying only on the port/channel id in the list below,
-#   - 'deny': permit relaying on any channel except for the list below.
+# 1. `policy` - Channel filter policy. One out of two types of policies are supported:
+#       - 'allow': permit relaying _only on_ the port/channel id in the list below,
+#       - 'deny': permit relaying on any channel _except for_ the list below.
 # 2. `list` - List of ports and channels.
 #
 # Example configuration of a channel filter, denying 'channel-0' on port 'transfer':
 #
 # [chains.channel_filter]
-# type = 'deny'
+# policy = 'deny'
 # list = [
 #   ['transfer', 'channel-0'],
 # ]

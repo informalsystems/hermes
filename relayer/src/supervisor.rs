@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
-use tracing::{debug, error, info, warn, trace};
+use tracing::{debug, error, info, trace, warn};
 
 use ibc::{
     events::IbcEvent,
