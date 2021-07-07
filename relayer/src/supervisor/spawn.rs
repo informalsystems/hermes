@@ -166,138 +166,98 @@ impl<'a> SpawnContext<'a> {
                     "skipping workers for chain {} and connection {}, reason: failed to query connection end: {}",
                     chain_id, connection_id, e
                 );
-
                 return;
             }
         };
+
+        let connection = IdentifiedConnectionEnd {
+            connection_id: connection_id.clone(),
+            connection_end: connection_end.clone(),
+        };
+
+        match self.spawn_connection_workers(chain.clone(), client.clone(), connection.clone()) {
+            Ok(()) => debug!(
+                "done spawning workers for connection {} on chain {}",
+                connection.connection_id,
+                chain.id(),
+            ),
+            Err(e) => error!(
+                "skipped workers for connection {} on chain {} due to error {}",
+                chain.id(),
+                connection.connection_id,
+                e
+            ),
+        }
 
         if !connection_end.is_open() {
             debug!(
-                "connection {} not open, skip workers for channels over this connetion",
-                connection_id
+                "connection {} not open, skip workers for channels over this connection",
+                connection.connection_id
             );
-
             return;
         }
 
-        let conns_req = QueryClientConnectionsRequest {
-            client_id: client.client_id.to_string(),
+        let connection = IdentifiedConnectionEnd {
+            connection_id: connection_id.clone(),
+            connection_end: connection_end.clone(),
         };
 
-        let client_connections = match chain.query_client_connections(conns_req) {
-            Ok(connections) => connections,
+        match self.counterparty_connection_state(client.clone(), connection.clone()) {
             Err(e) => {
-                error!(
-                    "skipping workers for chain {}, reason: failed to query client connections for client {}: {}",
-                    chain_id, client.client_id, e
-                );
-
+                debug!("error with counterparty: reason {}", e);
                 return;
             }
-        };
-
-        for connection_id in client_connections {
-            let connection_end = match chain.query_connection(&connection_id, Height::zero()) {
-                Ok(connection_end) => connection_end,
-                Err(e) => {
-                    error!(
-                        "skipping workers for chain {} and connection {}, reason: failed to query connection end: {}",
-                        chain_id, connection_id, e
+            Ok(state) => {
+                if !state.eq(&ConnectionState::Open) {
+                    debug!(
+                        "connection {} not open, skip workers for channels over this connection",
+                        connection.connection_id
                     );
 
-                    continue;
-                }
-            };
-
-            let connection = IdentifiedConnectionEnd {
-                connection_id: connection_id.clone(),
-                connection_end: connection_end.clone(),
-            };
-
-            match self.spawn_connection_workers(chain.clone(), client.clone(), connection.clone()) {
-                Ok(()) => debug!(
-                    "done spawning workers for connection {} on chain {}",
-                    connection.connection_id,
-                    chain.id(),
-                ),
-                Err(e) => error!(
-                    "skipped workers for connection {} on chain {} due to error {}",
-                    chain.id(),
-                    connection.connection_id,
-                    e
-                ),
-            }
-
-            if !connection_end.is_open() {
-                debug!(
-                    "connection {} not open, skip workers for channels over this connetion",
-                    connection.connection_id
-                );
-                continue;
-            }
-
-            let connection = IdentifiedConnectionEnd {
-                connection_id: connection_id.clone(),
-                connection_end: connection_end.clone(),
-            };
-
-            match self.counterparty_connection_state(client.clone(), connection.clone()) {
-                Err(e) => {
-                    debug!("error with counterparty: reason {}", e);
-                    continue;
-                }
-                Ok(state) => {
-                    if !state.eq(&ConnectionState::Open) {
-                        debug!(
-                            "connection {} not open, skip workers for channels over this connection",
-                            connection.connection_id
-                        );
-
-                        debug!(
-                            "drop connection {} because its counterparty is not open",
-                            connection_id
-                        );
-
-                        continue;
-                    }
-                }
-            };
-
-            let chans_req = QueryConnectionChannelsRequest {
-                connection: connection_id.to_string(),
-                pagination: ibc_proto::cosmos::base::query::pagination::all(),
-            };
-
-            let connection_channels = match chain.query_connection_channels(chans_req) {
-                Ok(channels) => channels,
-                Err(e) => {
-                    error!(
-                        "skipping workers for chain {} and connection {}, reason: failed to query its channels: {}",
-                        chain.id(), connection_id, e
+                    debug!(
+                        "drop connection {} because its counterparty is not open",
+                        connection_id
                     );
 
                     return;
                 }
-            };
+            }
+        };
 
-            let connection = IdentifiedConnectionEnd::new(connection_id, connection_end);
+        let chans_req = QueryConnectionChannelsRequest {
+            connection: connection_id.to_string(),
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        };
 
-            for channel in connection_channels {
-                let channel_id = channel.channel_id.clone();
+        let connection_channels = match chain.query_connection_channels(chans_req) {
+            Ok(channels) => channels,
+            Err(e) => {
+                error!(
+                    "skipping workers for chain {} and connection {}, reason: failed to query its channels: {}",
+                    chain.id(), connection_id, e
+                );
 
-                match self.spawn_workers_for_channel(chain.clone(), &client, &connection, channel) {
-                    Ok(()) => debug!(
-                        "done spawning workers for chain {} and channel {}",
-                        chain.id(),
-                        channel_id,
-                    ),
-                    Err(e) => error!(
-                        "skipped workers for chain {} and channel {} due to error {}",
-                        chain.id(),
-                        channel_id,
-                        e
-                    ),
-                }
+                return;
+            }
+        };
+
+        let connection = IdentifiedConnectionEnd::new(connection_id, connection_end);
+
+        for channel in connection_channels {
+            let channel_id = channel.channel_id.clone();
+
+            match self.spawn_workers_for_channel(chain.clone(), &client, &connection, channel) {
+                Ok(()) => debug!(
+                    "done spawning workers for chain {} and channel {}",
+                    chain.id(),
+                    channel_id,
+                ),
+                Err(e) => error!(
+                    "skipped workers for chain {} and channel {} due to error {}",
+                    chain.id(),
+                    channel_id,
+                    e
+                ),
             }
         }
     }

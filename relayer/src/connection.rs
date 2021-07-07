@@ -219,6 +219,12 @@ impl Connection {
                 counterparty_chain.query_connections(req)?;
 
             for conn in connections {
+                if !conn
+                    .connection_end
+                    .client_id_matches(a_connection.counterparty().client_id())
+                {
+                    continue;
+                }
                 if let Some(remote_connection_id) =
                     conn.connection_end.counterparty().connection_id()
                 {
