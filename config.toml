@@ -15,7 +15,7 @@ filter = true
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'trace'
+log_level = 'info'
 
 
 # The telemetry section defines parameters for Hermes' built-in telemetry capabilities.
@@ -109,7 +109,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 # 1. `policy` - Channel filter policy. One out of two types of policies are supported:
 #       - 'allow': permit relaying _only on_ the port/channel id in the list below,
 #       - 'deny': permit relaying on any channel _except for_ the list below.
-# 2. `list` - List of ports and channels.
+# 2. `list` - List of ports and channel identifiers.
 #
 # Example configuration of a channel filter, denying 'channel-0' on port 'transfer':
 #
