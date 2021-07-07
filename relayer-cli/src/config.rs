@@ -9,8 +9,9 @@ use std::collections::BTreeSet;
 use thiserror::Error;
 
 use ibc::ics24_host::identifier::ChainId;
-pub use ibc_relayer::config::Config;
 use tendermint_light_client::types::TrustThreshold;
+
+pub use ibc_relayer::config::Config;
 
 /// Specifies all the possible syntactic errors
 /// that a Hermes configuration file could contain.
@@ -33,8 +34,7 @@ pub enum Error {
     InvalidTrustThreshold(TrustThreshold, ChainId, String),
 }
 
-/// Method for syntactic validation of the input
-/// configuration file.
+/// Method for syntactic validation of the input configuration file.
 pub fn validate_config(config: &Config) -> Result<(), Error> {
     // Check for duplicate chain configuration and invalid trust thresholds
     let mut unique_chain_ids = BTreeSet::new();
@@ -43,28 +43,40 @@ pub fn validate_config(config: &Config) -> Result<(), Error> {
             return Err(Error::DuplicateChains(c.id.clone()));
         }
 
-        // TODO: move below validation to tendermint::trust_threshold
-        if c.trust_threshold.denominator == 0 {
-            return Err(Error::InvalidTrustThreshold(
-                c.trust_threshold,
-                c.id.clone(),
-                "trust threshold denominator cannot be zero".to_owned(),
-            ));
-        }
-        if c.trust_threshold.numerator * 3 < c.trust_threshold.denominator {
-            return Err(Error::InvalidTrustThreshold(
-                c.trust_threshold,
-                c.id.clone(),
-                "trust threshold cannot be < 1/3".to_owned(),
-            ));
-        }
-        if c.trust_threshold.numerator >= c.trust_threshold.denominator {
-            return Err(Error::InvalidTrustThreshold(
-                c.trust_threshold,
-                c.id.clone(),
-                "trust threshold cannot be >= 1".to_owned(),
-            ));
-        }
+        validate_trust_threshold(&c.id, c.trust_threshold)?;
+    }
+
+    Ok(())
+}
+
+/// Check that the trust threshold is:
+///
+/// a) non-zero
+/// b) greater or equal to 1/3
+/// c) strictly less than 1
+fn validate_trust_threshold(id: &ChainId, trust_threshold: TrustThreshold) -> Result<(), Error> {
+    if trust_threshold.denominator == 0 {
+        return Err(Error::InvalidTrustThreshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold denominator cannot be zero".to_string(),
+        ));
+    }
+
+    if trust_threshold.numerator * 3 < trust_threshold.denominator {
+        return Err(Error::InvalidTrustThreshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold cannot be < 1/3".to_string(),
+        ));
+    }
+
+    if trust_threshold.numerator >= trust_threshold.denominator {
+        return Err(Error::InvalidTrustThreshold(
+            trust_threshold,
+            id.clone(),
+            "trust threshold cannot be >= 1".to_string(),
+        ));
     }
 
     Ok(())
