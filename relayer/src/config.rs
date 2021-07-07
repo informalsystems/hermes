@@ -43,20 +43,27 @@ pub enum ChannelFilter {
 }
 
 impl Default for ChannelFilter {
+    /// By default, allows all channels & ports.
     fn default() -> Self {
         Self::AllowAll
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
-
-impl Default for ChannelsSpec {
-    fn default() -> Self {
-        Self(HashSet::new())
+impl ChannelFilter {
+    /// Returns true if the [`PortId`] and [`ChannelId`]
+    /// is allowed on this filter, and false otherwise.
+    pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
+        match self {
+            ChannelFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
+            ChannelFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
+            ChannelFilter::AllowAll => true,
+        }
     }
 }
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
 
 impl ChannelsSpec {
     pub fn contains(&self, channel_port: &(PortId, ChannelId)) -> bool {
@@ -116,11 +123,7 @@ impl Config {
     ) -> bool {
         match self.find_chain(chain_id) {
             None => false,
-            Some(chain_config) => match &chain_config.channel_filter {
-                ChannelFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
-                ChannelFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
-                ChannelFilter::AllowAll => true,
-            },
+            Some(chain_config) => chain_config.channel_filter.is_allowed(port_id, channel_id),
         }
     }
 }
