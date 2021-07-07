@@ -2,12 +2,16 @@
 
 ## Unreleased
 
+Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
+reliability of Hermes ([#697]).
+
 ### FEATURES
 
 - [ibc-relayer-cli]
   - Added `config validate` CLI to Hermes ([#600])
   - Added basic channel filter ([#1140])
   - Added `query channel ends` CLI command ([#1062])
+  - Added a health checkup mechanism for Hermes ([#697, #1057])
 
 ### IMPROVEMENTS
 
@@ -17,13 +21,21 @@
 - [ibc-relayer]
   - Hermes will now clear pending packets at a configurable interval ([#1124])
 
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix for schedule refreshing bug ([#1143])
+
 
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
+[#697]: https://github.com/informalsystems/ibc-rs/issues/697
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
+[#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 [#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
 [#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
+[#1143]: https://github.com/informalsystems/ibc-rs/issues/1143
 
 
 ## v0.5.0
