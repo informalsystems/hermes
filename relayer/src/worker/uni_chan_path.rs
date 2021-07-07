@@ -95,13 +95,13 @@ impl UniChanPathWorker {
                     link.a_to_b.update_schedule(batch)
                 }
 
-                // Handles the arrival of an event signaling that the
-                // source chain (side a) has advanced to a new block.
+                // Handle the arrival of an event signaling that the
+                // source chain has advanced to a new block.
                 WorkerCmd::NewBlock {
                     height,
                     new_block: _,
                 } => {
-                    // Schedules the clearing of pending packets
+                    // Schedule the clearing of pending packets
                     // at predefined block intervals.
                     if height.revision_height % self.clear_packets_interval == 0 {
                         link.a_to_b.clear_packets(height)
