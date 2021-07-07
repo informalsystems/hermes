@@ -18,6 +18,12 @@ reliability of Hermes ([#697]).
 - Update to `tendermint-rs` v0.20.0 ([#1125])
 - Add inline documentation to config.toml ([#1127])
 
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix for schedule refreshing bug ([#1143])
+
+
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#697]: https://github.com/informalsystems/ibc-rs/issues/697
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
@@ -25,6 +31,7 @@ reliability of Hermes ([#697]).
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
 [#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
+[#1143]: https://github.com/informalsystems/ibc-rs/issues/1143
 
 
 ## v0.5.0
