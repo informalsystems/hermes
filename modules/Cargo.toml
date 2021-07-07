@@ -24,7 +24,7 @@ ibc-proto = { version = "0.8.0", path = "../proto" }
 ics23 = "0.6.5"
 anomaly = "0.2.0"
 chrono = "0.4.19"
-thiserror = "1.0.25"
+thiserror = "1.0.26"
 serde_derive = "1.0.104"
 serde = "1.0.125"
 serde_json = "1"
