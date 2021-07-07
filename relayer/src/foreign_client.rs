@@ -802,7 +802,8 @@ impl ForeignClient {
                 break;
             }
 
-            //
+            // No header in events, cannot run misbehavior.
+            // May happen on chains running older SDKs (e.g., Akash)
             if update_event.header.is_none() {
                 return Err(ForeignClientError::MisbehaviourExit(
                     "no header in update client events".to_string(),
@@ -917,7 +918,7 @@ impl ForeignClient {
         // warn the user and continue.
         match result {
             Err(ForeignClientError::MisbehaviourExit(s)) => {
-                error!(
+                warn!(
                     "[{}] misbehaviour checking is being disabled: {:?}",
                     self, s
                 );

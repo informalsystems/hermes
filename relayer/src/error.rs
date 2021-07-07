@@ -200,6 +200,29 @@ pub enum Kind {
         expected: ClientType,
         got: ClientType,
     },
+
+    #[error("Hermes health check failed for endpoint {endpoint} on the Json RPC interface of chain {chain_id}:{address}; caused by: {cause}")]
+    HealthCheckJsonRpc {
+        chain_id: ChainId,
+        address: String,
+        endpoint: String,
+        cause: tendermint_rpc::error::Error,
+    },
+
+    #[error("Hermes health check failed for service {endpoint} on the gRPC interface of chain {chain_id}:{address}; caused by: {cause}")]
+    HealthCheckGrpc {
+        chain_id: ChainId,
+        address: String,
+        endpoint: String,
+        cause: String,
+    },
+
+    #[error("Hermes health check failed while verifying the application compatibility for chain {chain_id}:{address}; caused by: {cause}")]
+    SdkModuleVersion {
+        chain_id: ChainId,
+        address: String,
+        cause: String,
+    },
 }
 
 impl Kind {

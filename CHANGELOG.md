@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
+reliability of Hermes ([#697]).
+
 ### FEATURES
 
 - [ibc-relayer-cli]
@@ -9,6 +12,7 @@
   - Added filtering capability to deny or allow for specific channels ([#1140], [#1141], [#69])
   - Added basic channel filter ([#1140])
   - Added `query channel ends` CLI command ([#1062])
+  - Added a health checkup mechanism for Hermes ([#697, #1057])
 
 ### IMPROVEMENTS
 
@@ -17,7 +21,9 @@
 
 [#69]: https://github.com/informalsystems/ibc-rs/issues/69
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
+[#697]: https://github.com/informalsystems/ibc-rs/issues/697
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
+[#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
 [#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
