@@ -101,7 +101,9 @@ trusting_period = '14days'
 # Specify the trust threshold for the light client, ie. the maximum fraction of validators
 # which have changed between two blocks.
 # Default: { numerator = '1', denominator = '3' }, ie. 1/3.
+# Warning: This is an advanced feature! Modify with caution.
 trust_threshold = { numerator = '1', denominator = '3' }
+
 [chains.filters]
 channels = [['transfer', 'channel-0']]
 

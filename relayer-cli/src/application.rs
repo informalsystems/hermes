@@ -113,6 +113,7 @@ impl Application for CliApp {
 
         validate_config(&config)
             .map_err(|validation_err| FrameworkErrorKind::ConfigError.context(validation_err))?;
+
         self.config = Some(config);
 
         Ok(())
