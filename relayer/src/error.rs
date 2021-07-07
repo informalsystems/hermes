@@ -78,8 +78,8 @@ pub enum Kind {
     #[error("Failed to create client state")]
     BuildClientStateFailure,
 
-    /// Tx failure due to lack of confirmation
-    #[error("Failed Tx: no confirmation {0}")]
+    /// Did not find tx confirmation
+    #[error("did not find tx confirmation {0}")]
     TxNoConfirmation(String),
 
     /// Gas estimate from simulated Tx exceeds the maximum configured
