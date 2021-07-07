@@ -9,7 +9,7 @@ strategy = 'packets'
 
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
-# Currently Hermes supports paket filtering on a per-chain basis; see the
+# Currently Hermes supports packet filtering on a per-chain basis; see the
 # chain-specific filter specification below in [chains.packet_filter].
 filter = true
 
