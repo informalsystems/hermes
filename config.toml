@@ -9,6 +9,8 @@ strategy = 'packets'
 
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
+# Currently Hermes supports channel filtering on a per-chain basis; see the
+# chain-specific filter specification below in [chains.channel_filter].
 filter = true
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
@@ -102,14 +104,14 @@ trust_threshold = { numerator = '1', denominator = '3' }
 
 # Channel filter specification. Default: no filter
 # This whole section can be deleted and then all filtering is disabled for this chain.
-#
-# `type` - Channel filter type:
+# This section will be ignored if the global 'filter' option is 'false'.
+# A channel filter has two fields:
+# 1. `type` - Channel filter type:
 #   - 'allow': permit relaying only on the port/channel id in the list below,
 #   - 'deny': permit relaying on any channel except for the list below.
+# 2. `list` - List of ports and channels.
 #
-# `list` - List of ports and channels.
-#
-# Example config:
+# Example configuration of a channel filter, denying 'channel-0' on port 'transfer':
 #
 # [chains.channel_filter]
 # type = 'deny'
