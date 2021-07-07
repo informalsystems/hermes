@@ -253,10 +253,11 @@ port = 3001
 <p><strong>trusting_period</strong>: <em>(string)</em> Specify the amount of time to be used as the light client trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default: <code>14days</code> (336 hours)</p>
 </li>
 <li>
-<p><strong>trust_threshold</strong>: <em>(table)</em> Specify the trust threshold for the light client, ie. the maximum fraction of validators which have changed between two blocks. Default: <code>{ numerator = '1', denominator = '3' }</code>, ie. 1/3.</p>
+<p><strong>trust_threshold</strong> <sup>(advanced)</sup>: <em>(table)</em> Specify the trust threshold for the light client, ie. the maximum fraction of validators which have changed between two blocks. Default: <code>{ numerator = '1', denominator = '3' }</code>, ie. 1/3.</p>
 <ul>
 <li><strong>numerator</strong>: <em>(string)</em> The numerator of the fraction (must parse to a <code>u64</code>).</li>
-<li><strong>denominator</strong>: <em>(string)</em> The denominator of the fraction (must parse to a <code>u64</code>).</li>
+<li><strong>denominator</strong>: <em>(string)</em> The denominator of the fraction (must parse to a <code>u64</code>).
+<strong>Warning</strong> - <em>This is an advanced feature! Modify with caution.</em></li>
 </ul>
 </li>
 </ul>
