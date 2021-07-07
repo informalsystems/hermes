@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, warn, trace};
 
 use ibc::{
     events::IbcEvent,
@@ -596,9 +596,9 @@ impl Supervisor {
 
         for (object, events) in collected.per_object.drain() {
             if !self.relay_on_object(&src_chain.id(), &object) {
-                info!(
+                trace!(
                     "skipping events for '{}'. \
-                    reason: filtering is enabled and channel does not match any enabled channels",
+                    reason: filtering is enabled and channel does not match any allowed channels",
                     object.short_name()
                 );
 
