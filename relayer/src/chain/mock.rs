@@ -390,7 +390,7 @@ pub mod test_utils {
 
     use ibc::ics24_host::identifier::ChainId;
 
-    use crate::config::{ChainConfig, ChannelFilter, GasPrice};
+    use crate::config::{ChainConfig, GasPrice, PacketFilter};
 
     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
@@ -411,7 +411,7 @@ pub mod test_utils {
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),
-            channel_filter: ChannelFilter::default(),
+            packet_filter: PacketFilter::default(),
         }
     }
 }

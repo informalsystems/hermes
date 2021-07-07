@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use itertools::Itertools;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, trace, warn};
 
 use ibc::{
     events::IbcEvent,
@@ -70,7 +70,7 @@ impl Supervisor {
         self.config.global.strategy == Strategy::HandshakeAndPackets
     }
 
-    fn relay_on_channel(
+    fn relay_packets_on_channel(
         &self,
         chain_id: &ChainId,
         port_id: &PortId,
@@ -81,7 +81,8 @@ impl Supervisor {
             return true;
         }
 
-        self.config.channel_allowed(chain_id, port_id, channel_id)
+        self.config
+            .packets_on_channel_allowed(chain_id, port_id, channel_id)
     }
 
     fn relay_on_object(&self, chain_id: &ChainId, object: &Object) -> bool {
@@ -91,13 +92,11 @@ impl Supervisor {
 
         match object {
             Object::Client(_) => true,
-            Object::Channel(c) => {
-                self.relay_on_channel(chain_id, c.src_port_id(), c.src_channel_id())
-            }
-            Object::UnidirectionalChannelPath(u) => {
-                self.relay_on_channel(chain_id, u.src_port_id(), &u.src_channel_id())
-            }
             Object::Connection(_) => true,
+            Object::Channel(_) => true,
+            Object::UnidirectionalChannelPath(u) => {
+                self.relay_packets_on_channel(chain_id, u.src_port_id(), &u.src_channel_id())
+            }
         }
     }
 
@@ -357,20 +356,6 @@ impl Supervisor {
                         IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
 
                     for channel in connection_channels {
-                        if !self.relay_on_channel(&chain_id, &channel.port_id, &channel.channel_id)
-                        {
-                            info!(
-                                "skipping workers for {}/{}:{}->{}. \
-                                reason: filtering is enabled and channel is not allowed",
-                                &channel.port_id,
-                                &channel.channel_id,
-                                chain.id(),
-                                counterparty_chain_id
-                            );
-
-                            continue;
-                        }
-
                         let spawn_result = self.spawn_workers_for_channel(
                             chain.clone(),
                             client.clone(),

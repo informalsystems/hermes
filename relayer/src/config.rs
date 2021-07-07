@@ -36,27 +36,27 @@ impl fmt::Display for GasPrice {
     content = "list",
     deny_unknown_fields
 )]
-pub enum ChannelFilter {
+pub enum PacketFilter {
     Allow(ChannelsSpec),
     Deny(ChannelsSpec),
     AllowAll,
 }
 
-impl Default for ChannelFilter {
+impl Default for PacketFilter {
     /// By default, allows all channels & ports.
     fn default() -> Self {
         Self::AllowAll
     }
 }
 
-impl ChannelFilter {
-    /// Returns true if the [`PortId`] and [`ChannelId`]
-    /// is allowed on this filter, and false otherwise.
+impl PacketFilter {
+    /// Returns true if the packets can be relayed on the channel with [`PortId`] and [`ChannelId`],
+    /// false otherwise.
     pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
         match self {
-            ChannelFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
-            ChannelFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
-            ChannelFilter::AllowAll => true,
+            PacketFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::AllowAll => true,
         }
     }
 }
@@ -112,10 +112,10 @@ impl Config {
         self.chains.iter_mut().find(|c| c.id == *id)
     }
 
-    /// Returns true if the given pair [`PortId`] [`ChannelId`] on
-    /// [`ChainId`] is allowed.
+    /// Returns true if packets are allowed on the channel [`PortId`] [`ChannelId`] on
+    /// [`ChainId`].
     /// Returns false otherwise.
-    pub fn channel_allowed(
+    pub fn packets_on_channel_allowed(
         &self,
         chain_id: &ChainId,
         port_id: &PortId,
@@ -123,7 +123,7 @@ impl Config {
     ) -> bool {
         match self.find_chain(chain_id) {
             None => false,
-            Some(chain_config) => chain_config.channel_filter.is_allowed(port_id, channel_id),
+            Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
         }
     }
 }
@@ -237,7 +237,7 @@ pub struct ChainConfig {
     pub trust_threshold: TrustThreshold,
     pub gas_price: GasPrice,
     #[serde(default)]
-    pub channel_filter: ChannelFilter,
+    pub packet_filter: PacketFilter,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

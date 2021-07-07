@@ -102,18 +102,20 @@ trusting_period = '14days'
 # Default: { numerator = '1', denominator = '3' }, ie. 1/3.
 trust_threshold = { numerator = '1', denominator = '3' }
 
-# Channel filter specification. Default: no filter
-# This whole section can be deleted and then all filtering is disabled for this chain.
-# This section is ignored if the global 'filter' option is set to 'false'.
+# This section specifies the filters for policy based relaying.
+# Default: no policy/ filters
+# The section is ignored if the global 'filter' option is set to 'false'.
+# If the global 'filter' option is set to 'true' and this section is missing then no filtering is performed for this chain.
+# Only packet filtering based on channel identifier can be specified.
 # A channel filter has two fields:
-# 1. `policy` - Channel filter policy. One out of two types of policies are supported:
+# 1. `policy` - one of two types are supported:
 #       - 'allow': permit relaying _only on_ the port/channel id in the list below,
 #       - 'deny': permit relaying on any channel _except for_ the list below.
-# 2. `list` - List of ports and channel identifiers.
+# 2. `list` - the list of channels specified by the port and channel identifiers.
 #
-# Example configuration of a channel filter, denying 'channel-0' on port 'transfer':
+# Example configuration of a channel filter, denying packet relaying on channel with port ID 'transfer' and channel ID 'channel-0':
 #
-# [chains.channel_filter]
+# [chains.packet_filter]
 # policy = 'deny'
 # list = [
 #   ['transfer', 'channel-0'],
