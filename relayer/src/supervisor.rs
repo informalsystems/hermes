@@ -451,7 +451,10 @@ impl Supervisor {
             counterparty_chain.id(),
             chan_state_dst
         );
-        if chan_state_src.is_open() && chan_state_dst.is_open() {
+        if chan_state_src.is_open()
+            && chan_state_dst.is_open()
+            && self.relay_packets_on_channel(&chain.id(), &channel.port_id, &channel.channel_id)
+        {
             // create the client object and spawn worker
             let client_object = Object::Client(Client {
                 dst_client_id: client.client_id.clone(),
