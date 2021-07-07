@@ -9,8 +9,8 @@ strategy = 'packets'
 
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
-# Currently Hermes supports channel filtering on a per-chain basis; see the
-# chain-specific filter specification below in [chains.channel_filter].
+# Currently Hermes supports paket filtering on a per-chain basis; see the
+# chain-specific filter specification below in [chains.packet_filter].
 filter = true
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
