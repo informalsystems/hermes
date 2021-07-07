@@ -40,7 +40,7 @@ pub struct UpgradePlanOptions {
     pub amount: u64,
     pub height_offset: u64,
     pub upgraded_chain_id: ChainId,
-    pub upgraded_unbonding_period: Duration,
+    pub upgraded_unbonding_period: Option<Duration>,
     pub upgrade_plan_name: String,
 }
 
@@ -51,16 +51,21 @@ pub fn build_and_send_ibc_upgrade_proposal(
 ) -> Result<Vec<IbcEvent>, UpgradeChainError> {
     let upgrade_height = dst_chain
         .query_latest_height()
-        .unwrap()
+        .map_err(|e| UpgradeChainError::Failed(e.to_string()))?
         .add(opts.height_offset);
 
     let client_state = src_chain
         .query_client_state(&opts.src_client_id, Height::zero())
-        .unwrap();
+        .map_err(|e| UpgradeChainError::Failed(e.to_string()))?;
+
+    // Retain the old unbonding period in case the user did not specify a new one
+    let upgraded_unbonding_period = opts
+        .upgraded_unbonding_period
+        .unwrap_or(client_state.unbonding_period);
 
     let mut upgraded_client_state = ClientState::zero_custom_fields(client_state);
     upgraded_client_state.latest_height = upgrade_height.increment();
-    upgraded_client_state.unbonding_period = opts.upgraded_unbonding_period;
+    upgraded_client_state.unbonding_period = upgraded_unbonding_period;
     upgraded_client_state.chain_id = opts.upgraded_chain_id.clone();
 
     let raw_client_state = AnyClientState::Tendermint(upgraded_client_state);

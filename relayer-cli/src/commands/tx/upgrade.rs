@@ -51,7 +51,7 @@ pub struct TxIbcUpgradeChainCmd {
     #[options(
         short = "u",
         meta = "PERIOD",
-        help = "new unbonding period to assign to the upgrading chain, in seconds (default: 400 hrs)"
+        help = "new unbonding period to assign to the upgrading chain, in seconds (optional)"
     )]
     new_unbonding: Option<u64>,
 
@@ -83,10 +83,7 @@ impl TxIbcUpgradeChainCmd {
                 .new_chain_id
                 .clone()
                 .unwrap_or_else(|| self.dst_chain_id.clone()),
-            upgraded_unbonding_period: self
-                .new_unbonding
-                .map(Duration::from_secs)
-                .unwrap_or_else(|| Duration::from_secs(400 * 3600)),
+            upgraded_unbonding_period: self.new_unbonding.map(Duration::from_secs),
             upgrade_plan_name: self
                 .upgrade_name
                 .clone()
