@@ -36,7 +36,7 @@ pub enum Error {
 /// Method for syntactic validation of the input
 /// configuration file.
 pub fn validate_config(config: &Config) -> Result<(), Error> {
-    // Check for duplicate chain configuration and invalid trust-thresholds
+    // Check for duplicate chain configuration and invalid trust thresholds
     let mut unique_chain_ids = BTreeSet::new();
     for c in &config.chains {
         if !unique_chain_ids.insert(c.id.clone()) {
@@ -48,21 +48,21 @@ pub fn validate_config(config: &Config) -> Result<(), Error> {
             return Err(Error::InvalidTrustThreshold(
                 c.trust_threshold,
                 c.id.clone(),
-                "Denominator cannot be zero".to_owned(),
+                "trust threshold denominator cannot be zero".to_owned(),
             ));
         }
         if c.trust_threshold.numerator * 3 < c.trust_threshold.denominator {
             return Err(Error::InvalidTrustThreshold(
                 c.trust_threshold,
                 c.id.clone(),
-                "Threshold cannot be < 1/3".to_owned(),
+                "trust threshold cannot be < 1/3".to_owned(),
             ));
         }
         if c.trust_threshold.numerator >= c.trust_threshold.denominator {
             return Err(Error::InvalidTrustThreshold(
                 c.trust_threshold,
                 c.id.clone(),
-                "Threshold cannot be >= 1".to_owned(),
+                "trust threshold cannot be >= 1".to_owned(),
             ));
         }
     }
