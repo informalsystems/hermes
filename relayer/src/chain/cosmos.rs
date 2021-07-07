@@ -11,6 +11,7 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -96,9 +97,10 @@ mod retry_strategy {
     use crate::util::retry::Fixed;
     use std::time::Duration;
 
-    pub fn wait_for_block_commits() -> impl Iterator<Item = Duration> {
-        // The total time should be higher than the full node timeout which defaults to 10sec.
-        Fixed::from_millis(300).take(40) // 12 seconds
+    pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
+        let backoff_millis = 300; // The periodic backoff
+        let count: usize = (max_total_wait.as_millis() / backoff_millis as u128) as usize;
+        Fixed::from_millis(backoff_millis).take(count)
     }
 }
 
@@ -598,57 +600,69 @@ impl CosmosSdkChain {
 
         trace!("waiting for commit of block(s)");
 
+        let hashes = tx_sync_results
+            .iter()
+            .map(|res| res.response.hash.to_string())
+            .join(", ");
+
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));
 
         let start = Instant::now();
+        let result = retry_with_index(
+            retry_strategy::wait_for_block_commits(self.config.rpc_timeout),
+            |index| {
+                if all_tx_results_found(&tx_sync_results) {
+                    trace!(
+                        "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
+                        tx_sync_results.len(),
+                        index,
+                        start.elapsed().as_millis()
+                    );
 
-        let result = retry_with_index(retry_strategy::wait_for_block_commits(), |index| {
-            if all_tx_results_found(&tx_sync_results) {
-                trace!(
-                    "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
-                    tx_sync_results.len(),
-                    index,
-                    start.elapsed().as_millis()
-                );
+                    // All transactions confirmed
+                    return RetryResult::Ok(());
+                }
 
-                // All transactions confirmed
-                return RetryResult::Ok(());
-            }
-
-            for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
-                // If this transaction was not committed, determine whether it was because it failed
-                // or because it hasn't been committed yet.
-                if empty_event_present(&events) {
-                    // If the transaction failed, replace the events with an error,
-                    // so that we don't attempt to resolve the transaction later on.
-                    if response.code.value() != 0 {
-                        *events = vec![IbcEvent::ChainError(format!(
-                            "deliver_tx for Tx hash {} reports error: code={:?}, log={:?}",
-                            response.hash, response.code, response.log
+                for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
+                    // If this transaction was not committed, determine whether it was because it failed
+                    // or because it hasn't been committed yet.
+                    if empty_event_present(&events) {
+                        // If the transaction failed, replace the events with an error,
+                        // so that we don't attempt to resolve the transaction later on.
+                        if response.code.value() != 0 {
+                            *events = vec![IbcEvent::ChainError(format!(
+                            "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                            self.id(), response.hash, response.code, response.log
                         ))];
 
-                    // Otherwise, try to resolve transaction hash to the corresponding events.
-                    } else if let Ok(events_per_tx) =
-                        self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
-                    {
-                        // If we get events back, progress was made, so we replace the events
-                        // with the new ones. in both cases we will check in the next iteration
-                        // whether or not the transaction was fully committed.
-                        if !events_per_tx.is_empty() {
-                            *events = events_per_tx;
+                        // Otherwise, try to resolve transaction hash to the corresponding events.
+                        } else if let Ok(events_per_tx) =
+                            self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
+                        {
+                            // If we get events back, progress was made, so we replace the events
+                            // with the new ones. in both cases we will check in the next iteration
+                            // whether or not the transaction was fully committed.
+                            if !events_per_tx.is_empty() {
+                                *events = events_per_tx;
+                            }
                         }
                     }
                 }
-            }
-            RetryResult::Retry(index)
-        });
+                RetryResult::Retry(index)
+            },
+        );
 
         match result {
             // All transactions confirmed
             Ok(()) => Ok(tx_sync_results),
             // Did not find confirmation
-            Err(_) => Err(Kind::TxNoConfirmation.into()),
+            Err(_) => Err(Kind::TxNoConfirmation(format!(
+                "from chain {} for hash(es) {}",
+                self.id(),
+                hashes
+            ))
+            .into()),
         }
     }
 }

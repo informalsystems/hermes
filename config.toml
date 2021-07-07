@@ -15,6 +15,9 @@ filter = true
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
 log_level = 'info'
 
+# Interval (in number of blocks) at which pending packets
+# should be eagerly cleared. Default: 100
+clear_packets_interval = 100
 
 # The telemetry section defines parameters for Hermes' built-in telemetry capabilities.
 # https://hermes.informal.systems/telemetry.html
