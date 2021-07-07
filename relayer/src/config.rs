@@ -137,6 +137,7 @@ pub struct GlobalConfig {
     #[serde(default)]
     pub filter: bool,
     pub log_level: LogLevel,
+    pub clear_packets_interval: u64,
 }
 
 impl Default for GlobalConfig {
@@ -145,6 +146,7 @@ impl Default for GlobalConfig {
             strategy: Strategy::default(),
             filter: false,
             log_level: LogLevel::default(),
+            clear_packets_interval: 100,
         }
     }
 }

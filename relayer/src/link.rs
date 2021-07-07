@@ -412,20 +412,6 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    /// Handles the arrival of an event signaling that the
-    /// source chain (side a) has advanced to a new block.
-    ///
-    /// Schedules the clearing of pending packets
-    /// at predefined block intervals, currently
-    /// hardcoded at `100`.
-    pub fn handle_new_block(&mut self, block_height: Height) -> Result<(), LinkError> {
-        if block_height.revision_height % 100 == 0 {
-            self.clear_packets(block_height)
-        } else {
-            Ok(())
-        }
-    }
-
     /// Queries the source chain at the given [`Height`]
     /// to find any packets or acknowledgements that are pending,
     /// and fetches the relevant packet event data. Finally, this
