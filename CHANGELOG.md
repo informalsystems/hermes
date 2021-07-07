@@ -14,9 +14,14 @@
 - Update to `tendermint-rs` v0.20.0 ([#1125])
 - Add inline documentation to config.toml ([#1127])
 
+- [ibc-relayer]
+  - Hermes will now clear pending packets at a configurable interval ([#1124])
+
+
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
+[#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
 [#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
 
