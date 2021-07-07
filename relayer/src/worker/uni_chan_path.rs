@@ -1,4 +1,4 @@
-use std::{thread, time::Duration};
+use std::time::Duration;
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
@@ -57,10 +57,17 @@ impl UniChanPathWorker {
         }
 
         loop {
-            thread::sleep(Duration::from_millis(200));
+            const BACKOFF: Duration = Duration::from_millis(200);
+
+            // Pop-out any unprocessed commands
+            // If there are no incoming commands, it's safe to backoff.
+            let maybe_cmd = crossbeam_channel::select! {
+                recv(self.cmd_rx) -> cmd => cmd.ok(),
+                recv(crossbeam_channel::after(BACKOFF)) -> _ => None,
+            };
 
             let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                Self::step(self.cmd_rx.try_recv().ok(), &mut link, index)
+                Self::step(maybe_cmd.clone(), &mut link, index)
             });
 
             match result {
