@@ -16,6 +16,7 @@ use crate::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
 use crate::Height;
+use tendermint::trust_threshold::TrustThresholdFraction;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
@@ -55,6 +56,13 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.latest_height(),
+        }
+    }
+
+    pub fn trust_threshold(&self) -> Option<TrustThresholdFraction> {
+        match self {
+            AnyClientState::Tendermint(state) => Some(state.trust_level),
+            AnyClientState::Mock(_) => None,
         }
     }
 

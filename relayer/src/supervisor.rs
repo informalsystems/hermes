@@ -35,7 +35,9 @@ use crate::{
 
 mod error;
 pub use error::Error;
-use ibc::ics24_host::identifier::PortId;
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics24_host::identifier::{ClientId, ConnectionId, PortId};
+use ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -70,6 +72,15 @@ impl Supervisor {
         self.config.global.strategy == Strategy::HandshakeAndPackets
     }
 
+    fn relay_for_client(client_state: &AnyClientState) -> bool {
+        debug!("\t [filter] relay for client ? {:?}", client_state);
+
+        match client_state.trust_threshold() {
+            None => false,
+            Some(trust) => trust.numerator == 1 && trust.denominator == 3,
+        }
+    }
+
     fn relay_packets_on_channel(
         &self,
         chain_id: &ChainId,
@@ -85,17 +96,74 @@ impl Supervisor {
             .packets_on_channel_allowed(chain_id, port_id, channel_id)
     }
 
-    fn relay_on_object(&self, chain_id: &ChainId, object: &Object) -> bool {
+    fn relay_on_object(&mut self, chain_id: &ChainId, object: &Object) -> Result<bool, BoxError> {
         if !self.config.global.filter {
-            return true;
+            return Ok(true);
+        }
+
+        let host_chain = self.registry.get_or_spawn(chain_id)?;
+        debug!("\t [filter] host chain: {:?}", chain_id);
+
+        fn relay_on_client_id(
+            host_chain: Box<dyn ChainHandle>,
+            client_id: &ClientId,
+        ) -> Result<bool, BoxError> {
+            debug!(
+                "\t [filter] deciding if to relay on {:?} for chain {}",
+                client_id,
+                host_chain.id()
+            );
+            let client_state = host_chain.query_client_state(&client_id, Height::zero())?;
+
+            Ok(Supervisor::relay_for_client(&client_state))
+        }
+
+        fn relay_on_connection_object(
+            host_chain: Box<dyn ChainHandle>,
+            conn_id: &ConnectionId,
+        ) -> Result<bool, BoxError> {
+            debug!(
+                "\t [filter] deciding if to relay on {} for chain {}",
+                conn_id,
+                host_chain.id()
+            );
+            let conn = host_chain.query_connection(&conn_id, Height::zero())?;
+            relay_on_client_id(host_chain, &conn.client_id())
+        }
+
+        fn relay_on_channel_object(
+            host_chain: Box<dyn ChainHandle>,
+            port_id: &PortId,
+            channel_id: &ChannelId,
+        ) -> Result<bool, BoxError> {
+            debug!(
+                "\t [filter] deciding if to relay on {}/{} for chain {}",
+                channel_id,
+                port_id,
+                host_chain.id()
+            );
+            let req = QueryChannelClientStateRequest {
+                port_id: port_id.to_string(),
+                channel_id: channel_id.to_string(),
+            };
+            let opt_client_state = host_chain.query_channel_client_state(req)?;
+
+            match opt_client_state {
+                None => todo!(),
+                Some(cs) => Ok(Supervisor::relay_for_client(&cs.client_state)),
+            }
         }
 
         match object {
-            Object::Client(_) => true,
-            Object::Connection(_) => true,
-            Object::Channel(_) => true,
+            Object::Client(client) => relay_on_client_id(host_chain, &client.dst_client_id),
+            Object::Connection(conn) => {
+                relay_on_connection_object(host_chain, &conn.src_connection_id)
+            }
+            Object::Channel(chan) => {
+                relay_on_channel_object(host_chain, &chan.src_port_id, &chan.src_channel_id)
+            }
             Object::UnidirectionalChannelPath(u) => {
-                self.relay_packets_on_channel(chain_id, u.src_port_id(), &u.src_channel_id())
+                Ok(self.relay_packets_on_channel(chain_id, u.src_port_id(), &u.src_channel_id()))
             }
         }
     }
@@ -251,6 +319,18 @@ impl Supervisor {
             };
 
             for client in clients {
+                // Potentially ignore the client
+                if !Supervisor::relay_for_client(&client.client_state) {
+                    warn!(
+                        "skipping workers for chain {} and client {}. \
+                             reason: client is not allowed (client trust level={:?})",
+                        chain_id,
+                        client.client_id,
+                        client.client_state.trust_threshold()
+                    );
+                    continue;
+                }
+
                 let counterparty_chain_id = client.client_state.chain_id();
                 if self.config.find_chain(&counterparty_chain_id).is_none() {
                     continue;
@@ -427,7 +507,9 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
+    /// Spawns all the [`Worker`]s that will handle a given channel for
+    /// a given source chain.
+    /// Runs upon supervisor startup, to setup all necessary workers.
     fn spawn_workers_for_channel(
         &mut self,
         chain: Box<dyn ChainHandle>,
@@ -583,7 +665,7 @@ impl Supervisor {
         let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
-            if !self.relay_on_object(&src_chain.id(), &object) {
+            if !self.relay_on_object(&src_chain.id(), &object)? {
                 trace!(
                     "skipping events for '{}'. \
                     reason: filtering is enabled and channel does not match any allowed channels",
