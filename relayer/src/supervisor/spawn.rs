@@ -1,6 +1,6 @@
 use anomaly::BoxError;
 use itertools::Itertools;
-use tracing::{debug, error, warn};
+use tracing::{debug, error};
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
@@ -73,6 +73,46 @@ impl<'a> SpawnContext<'a> {
         }
     }
 
+    pub fn spawn_workers_from_chain_to_chain(
+        &mut self,
+        from_chain_id: &ChainId,
+        to_chain_id: &ChainId,
+    ) {
+        let clients_req = QueryClientStatesRequest {
+            pagination: ibc_proto::cosmos::base::query::pagination::all(),
+        };
+
+        let chain = match self.registry.get_or_spawn(from_chain_id) {
+            Ok(chain_handle) => chain_handle,
+            Err(e) => {
+                error!(
+                    "skipping workers for chain {}, reason: failed to spawn chain runtime with error: {}",
+                    from_chain_id, e
+                );
+
+                return;
+            }
+        };
+
+        let clients = match chain.query_clients(clients_req) {
+            Ok(clients) => clients,
+            Err(e) => {
+                error!(
+                    "skipping workers for chain {}, reason: failed to query clients with error: {}",
+                    from_chain_id, e
+                );
+
+                return;
+            }
+        };
+
+        for client in clients {
+            if &client.client_state.chain_id() == to_chain_id {
+                self.spawn_workers_for_client(chain.clone(), client);
+            }
+        }
+    }
+
     pub fn spawn_workers_for_chain(&mut self, chain_id: &ChainId) {
         let clients_req = QueryClientStatesRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
@@ -104,6 +144,27 @@ impl<'a> SpawnContext<'a> {
 
         for client in clients {
             self.spawn_workers_for_client(chain.clone(), client);
+        }
+
+        if self.mode != SpawnMode::Reload {
+            return;
+        }
+
+        let chain_ids = self
+            .config
+            .read()
+            .expect("poisoned lock")
+            .chains
+            .iter()
+            .map(|c| &c.id)
+            .cloned()
+            .collect_vec();
+
+        for id in chain_ids {
+            if chain_id == &id {
+                continue;
+            }
+            self.spawn_workers_from_chain_to_chain(&id, &chain_id);
         }
     }
 
@@ -394,32 +455,6 @@ impl<'a> SpawnContext<'a> {
                 )
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
-            // On config reload, we need to spawn the Client worker for the counterparty as well,
-            // otherwise we may never do it, eg. if the counterparty chain was not updated in the
-            // config.
-            if self.mode == SpawnMode::Reload {
-                let counterparty_client_id = connection.connection_end.counterparty().client_id();
-                let counterparty_client_object = Object::Client(Client {
-                    dst_client_id: counterparty_client_id.clone(),
-                    dst_chain_id: client.client_state.chain_id(),
-                    src_chain_id: chain.id(),
-                });
-
-                self.workers
-                    .spawn(
-                        chain.clone(),
-                        counterparty_chain.clone(),
-                        &counterparty_client_object,
-                        &self.config.read().expect("poisoned lock"),
-                    )
-                    .then(|| {
-                        debug!(
-                            "spawned Client worker: {}",
-                            counterparty_client_object.short_name()
-                        )
-                    });
-            }
-
             // create the Packet object and spawn worker
             let path_object = Object::Packet(Packet {
                 dst_chain_id: counterparty_chain.id(),
@@ -436,48 +471,6 @@ impl<'a> SpawnContext<'a> {
                     &self.config.read().expect("poisoned lock"),
                 )
                 .then(|| debug!("spawned Path worker: {}", path_object.short_name()));
-
-            if self.mode != SpawnMode::Reload {
-                return Ok(());
-            }
-
-            // On config reload, we need to spawn the Packet worker for the counterparty as well,
-            // otherwise we may never do it, eg. if the counterparty chain was not updated in the
-            // config.
-            let remote_channel = (
-                channel.channel_end.remote.port_id.clone(),
-                channel.channel_end.remote.channel_id,
-            );
-
-            if let (remote_port_id, Some(remote_channel_id)) = remote_channel {
-                // spawn worker for the counterparty chain
-                let counterparty_path_object = Object::Packet(Packet {
-                    dst_chain_id: chain.id(),
-                    src_chain_id: counterparty_chain.id(),
-                    src_channel_id: remote_channel_id,
-                    src_port_id: remote_port_id,
-                });
-
-                self.workers
-                    .spawn(
-                        counterparty_chain,
-                        chain,
-                        &counterparty_path_object,
-                        &self.config.read().expect("poisoned lock"),
-                    )
-                    .then(|| {
-                        debug!(
-                            "spawned Path worker: {}",
-                            counterparty_path_object.short_name()
-                        )
-                    });
-            } else {
-                warn!(
-                    "cannot spawn counterparty to Packet worker '{}', \
-                     reason: cannot find remote channel on counterparty",
-                    path_object.short_name()
-                );
-            }
         } else if !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
             && handshake_enabled
