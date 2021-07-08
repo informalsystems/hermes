@@ -101,7 +101,7 @@ impl Supervisor {
             return Ok(true);
         }
 
-        let host_chain = self.registry.get_or_spawn(chain_id)?;
+        let chain = self.registry.get_or_spawn(chain_id)?;
         debug!("\t [filter] host chain: {:?}", chain_id);
 
         fn relay_on_client_id(
@@ -118,7 +118,7 @@ impl Supervisor {
             Ok(Supervisor::relay_for_client(&client_state))
         }
 
-        fn relay_on_connection_object(
+        fn relay_on_connection_id(
             host_chain: Box<dyn ChainHandle>,
             conn_id: &ConnectionId,
         ) -> Result<bool, BoxError> {
@@ -131,7 +131,7 @@ impl Supervisor {
             relay_on_client_id(host_chain, &conn.client_id())
         }
 
-        fn relay_on_channel_object(
+        fn relay_on_port_channel_id(
             host_chain: Box<dyn ChainHandle>,
             port_id: &PortId,
             channel_id: &ChannelId,
@@ -155,15 +155,17 @@ impl Supervisor {
         }
 
         match object {
-            Object::Client(client) => relay_on_client_id(host_chain, &client.dst_client_id),
-            Object::Connection(conn) => {
-                relay_on_connection_object(host_chain, &conn.src_connection_id)
-            }
+            Object::Client(client) => relay_on_client_id(chain, &client.dst_client_id),
+            Object::Connection(conn) => relay_on_connection_id(chain, &conn.src_connection_id),
             Object::Channel(chan) => {
-                relay_on_channel_object(host_chain, &chan.src_port_id, &chan.src_channel_id)
+                relay_on_port_channel_id(chain, &chan.src_port_id, &chan.src_channel_id)
             }
             Object::UnidirectionalChannelPath(u) => {
-                Ok(self.relay_packets_on_channel(chain_id, u.src_port_id(), &u.src_channel_id()))
+                let client_allowed =
+                    relay_on_port_channel_id(chain, &u.src_port_id, &u.src_channel_id)?;
+                let channel_allowed =
+                    self.relay_packets_on_channel(chain_id, u.src_port_id(), &u.src_channel_id());
+                Ok(client_allowed & channel_allowed)
             }
         }
     }
@@ -306,6 +308,9 @@ impl Supervisor {
                 }
             };
 
+            // denied_clients: remember them here
+            // then iterate again through all chains... for conns & chans
+
             let clients = match chain.query_clients(clients_req.clone()) {
                 Ok(clients) => clients,
                 Err(e) => {
@@ -366,6 +371,47 @@ impl Supervisor {
                             }
                         };
 
+                    // Check trust level of the client on counterparty chain
+                    let counterparty_chain_id = client.client_state.chain_id();
+                    let counterparty_chain = match self
+                        .registry
+                        .get_or_spawn(&counterparty_chain_id)
+                    {
+                        Ok(cparty_chain_handle) => cparty_chain_handle,
+                        Err(e) => {
+                            error!(
+                            "skipping workers for chain {}. \
+                            reason: failed to spawn chain runtime for counterparty chain with error: {}",
+                            chain_id, e
+                            );
+                            continue;
+                        }
+                    };
+                    let counterparty_client_id = connection_end.counterparty().client_id();
+                    let counterparty_client_state = match counterparty_chain
+                        .query_client_state(&counterparty_client_id, Height::zero())
+                    {
+                        Ok(state) => state,
+                        Err(e) => {
+                            error!(
+                            "skipping workers for chain {}. \
+                            reason: failed to fetch counterparty client state for client id {} from counterparty chain with error: {}",
+                            counterparty_client_id, counterparty_chain_id, e
+                            );
+                            continue;
+                        }
+                    };
+                    if !Supervisor::relay_for_client(&counterparty_client_state) {
+                        warn!(
+                            "skipping workers for chain {} and client {}. \
+                             reason: counterparty client is not allowed (client trust level={:?})",
+                            chain_id,
+                            counterparty_client_id,
+                            counterparty_client_state.trust_threshold()
+                        );
+                        continue;
+                    }
+
                     let connection = IdentifiedConnectionEnd {
                         connection_id: connection_id.clone(),
                         connection_end: connection_end.clone(),
@@ -404,7 +450,7 @@ impl Supervisor {
                         }
                         Ok(state) => {
                             if !state.eq(&ConnectionState::Open) {
-                                debug!("connection {} not open, skip workers for channels over this connetion", connection.connection_id);
+                                debug!("connection {} not open, skip workers for channels over this connection", connection.connection_id);
 
                                 debug!(
                                     "drop connection {} because its counterparty is not open ",
