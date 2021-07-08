@@ -189,7 +189,10 @@ impl Runnable for TxUpgradeClientsCmd {
         let results = config
             .chains
             .iter()
-            .map(|chain| self.upgrade_clients_for_chain(&config, src_chain.clone(), &chain.id))
+            .filter_map(|chain| {
+                (self.src_chain_id != chain.id)
+                    .then(|| self.upgrade_clients_for_chain(&config, src_chain.clone(), &chain.id))
+            })
             .collect();
 
         let output = OutputBuffer(results);
@@ -217,7 +220,7 @@ impl TxUpgradeClientsCmd {
             .map_err(|e| Kind::Query.context(e))?
             .into_iter()
             .filter_map(|c| (self.src_chain_id == c.client_state.chain_id()).then(|| c.client_id))
-            .map(|id| TxUpgradeClientsCmd::upgrade_client(id, src_chain.clone(), dst_chain.clone()))
+            .map(|id| TxUpgradeClientsCmd::upgrade_client(id, dst_chain.clone(), src_chain.clone()))
             .collect();
 
         Ok(outputs)
@@ -225,10 +228,10 @@ impl TxUpgradeClientsCmd {
 
     fn upgrade_client(
         client_id: ClientId,
-        src_chain: Box<dyn ChainHandle>,
         dst_chain: Box<dyn ChainHandle>,
+        src_chain: Box<dyn ChainHandle>,
     ) -> Result<Vec<IbcEvent>, Error> {
-        let client = ForeignClient::restore(client_id, src_chain.clone(), dst_chain.clone());
+        let client = ForeignClient::restore(client_id, dst_chain.clone(), src_chain.clone());
         client.upgrade().map_err(|e| Kind::Query.context(e).into())
     }
 }
