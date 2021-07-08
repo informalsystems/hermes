@@ -653,10 +653,6 @@ impl RelayPath {
                 }
                 Err(e) => {
                     // Unrecoverable error, propagate up the stack
-                    error!(
-                        "[{}] unrecoverable error in send_from_operational_data {}",
-                        self, e
-                    );
                     return Err(e);
                 }
             }

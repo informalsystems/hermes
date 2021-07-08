@@ -119,7 +119,10 @@ impl UniChanPathWorker {
             };
 
             if let Err(e) = result {
-                error!("[{}] step() encountered error: {}", link.a_to_b, e);
+                error!(
+                    "[{}] worker: handling command encountered error: {}",
+                    link.a_to_b, e
+                );
                 return RetryResult::Retry(index);
             }
         }
@@ -132,7 +135,10 @@ impl UniChanPathWorker {
         match result {
             Ok(summary) => RetryResult::Ok(summary),
             Err(e) => {
-                error!("[{}] step() encountered error: {}", link.a_to_b, e);
+                error!(
+                    "[{}] worker: schedule execution encountered error: {}",
+                    link.a_to_b, e
+                );
                 RetryResult::Retry(index)
             }
         }
