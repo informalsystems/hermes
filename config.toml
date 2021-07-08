@@ -9,7 +9,7 @@ strategy = 'packets'
 
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
-filter = true
+filter = false
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.

@@ -277,9 +277,9 @@ impl CosmosSdkChain {
         let account_seq = self.account_sequence()?;
 
         debug!(
-            "send_tx: sending {} messages to {} using nonce {}",
-            proto_msgs.len(),
+            "[{}] send_tx: sending {} messages using nonce {}",
             self.id(),
+            proto_msgs.len(),
             account_seq,
         );
 
@@ -320,7 +320,7 @@ impl CosmosSdkChain {
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         trace!(
-            "send_tx: {} based on the estimated gas, adjusting fee from {:?} to {:?}",
+            "[{}] send_tx: based on the estimated gas, adjusting fee from {:?} to {:?}",
             self.id(),
             fee,
             adjusted_fee
@@ -344,11 +344,7 @@ impl CosmosSdkChain {
             .block_on(broadcast_tx_sync(self, tx_bytes))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
-        debug!(
-            "send_tx: broadcast_tx_sync to {}: {:?}",
-            self.id(),
-            response
-        );
+        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
 
         self.incr_account_sequence()?;
 
@@ -500,7 +496,7 @@ impl CosmosSdkChain {
             debug!(
                 sequence = %account.sequence,
                 number = %account.account_number,
-                "send_tx: retrieved account for {}",
+                "[{}] send_tx: retrieved account",
                 self.id()
             );
 
@@ -598,12 +594,12 @@ impl CosmosSdkChain {
     ) -> Result<Vec<TxSyncResult>, Error> {
         use crate::util::retry::{retry_with_index, RetryResult};
 
-        trace!("waiting for commit of block(s)");
-
         let hashes = tx_sync_results
             .iter()
             .map(|res| res.response.hash.to_string())
             .join(", ");
+
+        debug!("[{}] waiting for commit of block(s) {}", self.id(), hashes);
 
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));
@@ -614,7 +610,8 @@ impl CosmosSdkChain {
             |index| {
                 if all_tx_results_found(&tx_sync_results) {
                     trace!(
-                        "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
+                        "[{}] wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
+                        self.id(),
                         tx_sync_results.len(),
                         index,
                         start.elapsed().as_millis()
