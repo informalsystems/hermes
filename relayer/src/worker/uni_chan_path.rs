@@ -1,4 +1,4 @@
-use std::{thread, time::Duration};
+use std::time::Duration;
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
@@ -27,6 +27,7 @@ pub struct PacketWorker {
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
     telemetry: Telemetry,
+    clear_packets_interval: u64,
 }
 
 impl PacketWorker {
@@ -35,12 +36,14 @@ impl PacketWorker {
         chains: ChainHandlePair,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
+        clear_packets_interval: u64,
     ) -> Self {
         Self {
             path,
             chains,
             cmd_rx,
             telemetry,
+            clear_packets_interval,
         }
     }
 
@@ -62,10 +65,17 @@ impl PacketWorker {
         }
 
         loop {
-            thread::sleep(Duration::from_millis(200));
+            const BACKOFF: Duration = Duration::from_millis(200);
+
+            // Pop-out any unprocessed commands
+            // If there are no incoming commands, it's safe to backoff.
+            let maybe_cmd = crossbeam_channel::select! {
+                recv(self.cmd_rx) -> cmd => cmd.ok(),
+                recv(crossbeam_channel::after(BACKOFF)) -> _ => None,
+            };
 
             let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                self.step(self.cmd_rx.try_recv().ok(), &mut link, index)
+                self.step(maybe_cmd.clone(), &mut link, index)
             });
 
             match result {
@@ -93,10 +103,20 @@ impl PacketWorker {
                     link.a_to_b.update_schedule(batch)
                 }
 
+                // Handle the arrival of an event signaling that the
+                // source chain has advanced to a new block.
                 WorkerCmd::NewBlock {
                     height,
                     new_block: _,
-                } => link.a_to_b.clear_packets(height),
+                } => {
+                    // Schedule the clearing of pending packets
+                    // at predefined block intervals.
+                    if height.revision_height % self.clear_packets_interval == 0 {
+                        link.a_to_b.clear_packets(height)
+                    } else {
+                        Ok(())
+                    }
+                }
 
                 WorkerCmd::Shutdown => {
                     return RetryResult::Ok(Step::Shutdown);
@@ -104,7 +124,12 @@ impl PacketWorker {
             };
 
             if let Err(e) = result {
-                error!(path = %self.path.short_name(), "{}", e);
+                error!(
+                    path = %self.path.short_name(),
+                    "[{}] worker: handling command encountered error: {}",
+                    link.a_to_b, e
+                );
+
                 return RetryResult::Retry(index);
             }
         }
@@ -117,7 +142,12 @@ impl PacketWorker {
         match result {
             Ok(summary) => RetryResult::Ok(Step::Success(summary)),
             Err(e) => {
-                error!(path = %self.path.short_name(), "{}", e);
+                error!(
+                    path = %self.path.short_name(),
+                    "[{}] worker: schedule execution encountered error: {}",
+                    link.a_to_b, e
+                );
+
                 RetryResult::Retry(index)
             }
         }

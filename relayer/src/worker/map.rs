@@ -7,6 +7,7 @@ use tracing::{debug, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
+    config::Config,
     object::Object,
     telemetry,
     telemetry::Telemetry,
@@ -75,11 +76,12 @@ impl WorkerMap {
         object: Object,
         src: Box<dyn ChainHandle>,
         dst: Box<dyn ChainHandle>,
+        config: &Config,
     ) -> &WorkerHandle {
         if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
-            let worker = self.spawn_worker(src, dst, &object);
+            let worker = self.spawn_worker(src, dst, &object, config);
             self.workers.entry(object).or_insert(worker)
         }
     }
@@ -89,13 +91,14 @@ impl WorkerMap {
     /// Returns whether or not the worker was actually spawned.
     pub fn spawn(
         &mut self,
-        object: Object,
         src: Box<dyn ChainHandle>,
         dst: Box<dyn ChainHandle>,
+        object: &Object,
+        config: &Config,
     ) -> bool {
-        if !self.workers.contains_key(&object) {
-            let worker = self.spawn_worker(src, dst, &object);
-            self.workers.entry(object).or_insert(worker);
+        if !self.workers.contains_key(object) {
+            let worker = self.spawn_worker(src, dst, object, config);
+            self.workers.entry(object.clone()).or_insert(worker);
             true
         } else {
             false
@@ -108,6 +111,7 @@ impl WorkerMap {
         src: Box<dyn ChainHandle>,
         dst: Box<dyn ChainHandle>,
         object: &Object,
+        config: &Config,
     ) -> WorkerHandle {
         telemetry!(self.telemetry.worker(metric_type(object), 1));
 
@@ -116,6 +120,7 @@ impl WorkerMap {
             object.clone(),
             self.msg_tx.clone(),
             self.telemetry.clone(),
+            config,
         )
     }
 

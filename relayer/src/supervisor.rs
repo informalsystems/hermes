@@ -531,7 +531,11 @@ impl Supervisor {
             let src = self.registry.get_or_spawn(object.src_chain_id())?;
             let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
 
-            let worker = self.workers.get_or_spawn(object, src, dst);
+            let worker = {
+                let config = self.config.read().expect("poisoned lock");
+                self.workers.get_or_spawn(object, src, dst, &config)
+            };
+
             worker.send_events(height, events, chain_id.clone())?
         }
 

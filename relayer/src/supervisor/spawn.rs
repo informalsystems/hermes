@@ -325,9 +325,10 @@ impl<'a> SpawnContext<'a> {
 
             self.workers
                 .spawn(
-                    connection_object.clone(),
                     chain.clone(),
                     counterparty_chain.clone(),
+                    &connection_object,
+                    &self.config.read().expect("poisoned lock"),
                 )
                 .then(|| {
                     debug!(
@@ -386,9 +387,10 @@ impl<'a> SpawnContext<'a> {
 
             self.workers
                 .spawn(
-                    client_object.clone(),
                     counterparty_chain.clone(),
                     chain.clone(),
+                    &client_object,
+                    &self.config.read().expect("poisoned lock"),
                 )
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
@@ -405,9 +407,10 @@ impl<'a> SpawnContext<'a> {
 
                 self.workers
                     .spawn(
-                        counterparty_client_object.clone(),
                         chain.clone(),
                         counterparty_chain.clone(),
+                        &counterparty_client_object,
+                        &self.config.read().expect("poisoned lock"),
                     )
                     .then(|| {
                         debug!(
@@ -427,9 +430,10 @@ impl<'a> SpawnContext<'a> {
 
             self.workers
                 .spawn(
-                    path_object.clone(),
                     chain.clone(),
                     counterparty_chain.clone(),
+                    &path_object,
+                    &self.config.read().expect("poisoned lock"),
                 )
                 .then(|| debug!("spawned Path worker: {}", path_object.short_name()));
 
@@ -455,7 +459,12 @@ impl<'a> SpawnContext<'a> {
                 });
 
                 self.workers
-                    .spawn(counterparty_path_object.clone(), counterparty_chain, chain)
+                    .spawn(
+                        counterparty_chain,
+                        chain,
+                        &counterparty_path_object,
+                        &self.config.read().expect("poisoned lock"),
+                    )
                     .then(|| {
                         debug!(
                             "spawned Path worker: {}",
@@ -482,7 +491,12 @@ impl<'a> SpawnContext<'a> {
             });
 
             self.workers
-                .spawn(channel_object.clone(), chain, counterparty_chain)
+                .spawn(
+                    chain,
+                    counterparty_chain,
+                    &channel_object,
+                    &self.config.read().expect("poisoned lock"),
+                )
                 .then(|| debug!("spawned Channel worker: {}", channel_object.short_name()));
         }
 
