@@ -38,7 +38,7 @@ pub enum Worker {
     Client(ClientWorker),
     Connection(ConnectionWorker),
     Channel(ChannelWorker),
-    UniChanPath(PacketWorker),
+    Packet(PacketWorker),
 }
 
 impl fmt::Display for Worker {
@@ -70,7 +70,7 @@ impl Worker {
             Object::Channel(channel) => {
                 Self::Channel(ChannelWorker::new(channel, chains, cmd_rx, telemetry))
             }
-            Object::Packet(path) => Self::UniChanPath(PacketWorker::new(
+            Object::Packet(path) => Self::Packet(PacketWorker::new(
                 path,
                 chains,
                 cmd_rx,
@@ -92,7 +92,7 @@ impl Worker {
             Self::Client(w) => w.run(),
             Self::Connection(w) => w.run(),
             Self::Channel(w) => w.run(),
-            Self::UniChanPath(w) => w.run(),
+            Self::Packet(w) => w.run(),
         };
 
         if let Err(e) = result {
@@ -114,7 +114,7 @@ impl Worker {
             Self::Client(w) => &w.chains(),
             Self::Connection(w) => w.chains(),
             Self::Channel(w) => w.chains(),
-            Self::UniChanPath(w) => w.chains(),
+            Self::Packet(w) => w.chains(),
         }
     }
 
@@ -123,7 +123,7 @@ impl Worker {
             Worker::Client(w) => w.object().clone().into(),
             Worker::Connection(w) => w.object().clone().into(),
             Worker::Channel(w) => w.object().clone().into(),
-            Worker::UniChanPath(w) => w.object().clone().into(),
+            Worker::Packet(w) => w.object().clone().into(),
         }
     }
 }
