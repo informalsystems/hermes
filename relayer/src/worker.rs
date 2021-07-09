@@ -3,7 +3,7 @@ use core::fmt;
 use crossbeam_channel::Sender;
 use tracing::{debug, error, info};
 
-use crate::{chain::handle::ChainHandlePair, object::Object, telemetry::Telemetry};
+use crate::{chain::handle::ChainHandlePair, config::Config, object::Object, telemetry::Telemetry};
 
 pub mod retry_strategy;
 
@@ -54,6 +54,7 @@ impl Worker {
         object: Object,
         msg_tx: Sender<WorkerMsg>,
         telemetry: Telemetry,
+        config: &Config,
     ) -> WorkerHandle {
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 
@@ -75,9 +76,13 @@ impl Worker {
             Object::Channel(channel) => {
                 Self::Channel(ChannelWorker::new(channel, chains, cmd_rx, telemetry))
             }
-            Object::UnidirectionalChannelPath(path) => {
-                Self::UniChanPath(UniChanPathWorker::new(path, chains, cmd_rx, telemetry))
-            }
+            Object::UnidirectionalChannelPath(path) => Self::UniChanPath(UniChanPathWorker::new(
+                path,
+                chains,
+                cmd_rx,
+                telemetry,
+                config.global.clear_packets_interval,
+            )),
         };
 
         let thread_handle = std::thread::spawn(move || worker.run(msg_tx));

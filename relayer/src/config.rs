@@ -47,6 +47,14 @@ impl Default for ChainFilters {
 pub mod default {
     use super::*;
 
+    pub fn filter() -> bool {
+        false
+    }
+
+    pub fn clear_packets_interval() -> u64 {
+        100
+    }
+
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
     }
@@ -135,17 +143,20 @@ impl fmt::Display for LogLevel {
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
     pub strategy: Strategy,
-    #[serde(default)]
-    pub filter: bool,
     pub log_level: LogLevel,
+    #[serde(default = "default::filter")]
+    pub filter: bool,
+    #[serde(default = "default::clear_packets_interval")]
+    pub clear_packets_interval: u64,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
-            filter: false,
             log_level: LogLevel::default(),
+            filter: default::filter(),
+            clear_packets_interval: default::clear_packets_interval(),
         }
     }
 }

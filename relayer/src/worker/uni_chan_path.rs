@@ -1,5 +1,4 @@
 use core::time::Duration;
-use std::thread;
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
@@ -23,6 +22,7 @@ pub struct UniChanPathWorker {
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
     telemetry: Telemetry,
+    clear_packets_interval: u64,
 }
 
 impl UniChanPathWorker {
@@ -31,12 +31,14 @@ impl UniChanPathWorker {
         chains: ChainHandlePair,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
+        clear_packets_interval: u64,
     ) -> Self {
         Self {
             path,
             chains,
             cmd_rx,
             telemetry,
+            clear_packets_interval,
         }
     }
 
@@ -58,10 +60,17 @@ impl UniChanPathWorker {
         }
 
         loop {
-            thread::sleep(Duration::from_millis(200));
+            const BACKOFF: Duration = Duration::from_millis(200);
+
+            // Pop-out any unprocessed commands
+            // If there are no incoming commands, it's safe to backoff.
+            let maybe_cmd = crossbeam_channel::select! {
+                recv(self.cmd_rx) -> cmd => cmd.ok(),
+                recv(crossbeam_channel::after(BACKOFF)) -> _ => None,
+            };
 
             let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                Self::step(self.cmd_rx.try_recv().ok(), &mut link, index)
+                self.step(maybe_cmd.clone(), &mut link, index)
             });
 
             match result {
@@ -80,21 +89,40 @@ impl UniChanPathWorker {
         }
     }
 
-    fn step(cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<RelaySummary, u64> {
+    fn step(
+        &self,
+        cmd: Option<WorkerCmd>,
+        link: &mut Link,
+        index: u64,
+    ) -> RetryResult<RelaySummary, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
                 WorkerCmd::IbcEvents { batch } => {
                     // Update scheduled batches.
                     link.a_to_b.update_schedule(batch)
                 }
+
+                // Handle the arrival of an event signaling that the
+                // source chain has advanced to a new block.
                 WorkerCmd::NewBlock {
                     height,
                     new_block: _,
-                } => link.a_to_b.clear_packets(height),
+                } => {
+                    // Schedule the clearing of pending packets
+                    // at predefined block intervals.
+                    if height.revision_height % self.clear_packets_interval == 0 {
+                        link.a_to_b.clear_packets(height)
+                    } else {
+                        Ok(())
+                    }
+                }
             };
 
             if let Err(e) = result {
-                error!("{}", e);
+                error!(
+                    "[{}] worker: handling command encountered error: {}",
+                    link.a_to_b, e
+                );
                 return RetryResult::Retry(index);
             }
         }
@@ -107,7 +135,10 @@ impl UniChanPathWorker {
         match result {
             Ok(summary) => RetryResult::Ok(summary),
             Err(e) => {
-                error!("{}", e);
+                error!(
+                    "[{}] worker: schedule execution encountered error: {}",
+                    link.a_to_b, e
+                );
                 RetryResult::Retry(index)
             }
         }

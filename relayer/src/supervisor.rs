@@ -438,8 +438,12 @@ impl Supervisor {
                 src_connection_id: connection.connection_id,
             });
 
-            self.workers
-                .get_or_spawn(connection_object, chain.clone(), counterparty_chain.clone());
+            self.workers.get_or_spawn(
+                connection_object,
+                chain.clone(),
+                counterparty_chain.clone(),
+                &self.config,
+            );
         }
 
         Ok(())
@@ -469,6 +473,7 @@ impl Supervisor {
             counterparty_chain.id(),
             chan_state_dst
         );
+
         if chan_state_src.is_open() && chan_state_dst.is_open() {
             // create the client object and spawn worker
             let client_object = Object::Client(Client {
@@ -476,8 +481,13 @@ impl Supervisor {
                 dst_chain_id: chain.id(),
                 src_chain_id: client.client_state.chain_id(),
             });
-            self.workers
-                .get_or_spawn(client_object, counterparty_chain.clone(), chain.clone());
+
+            self.workers.get_or_spawn(
+                client_object,
+                counterparty_chain.clone(),
+                chain.clone(),
+                &self.config,
+            );
 
             // TODO: Only start the Uni worker if there are outstanding packets or ACKs.
             //  https://github.com/informalsystems/ibc-rs/issues/901
@@ -488,8 +498,13 @@ impl Supervisor {
                 src_channel_id: channel.channel_id.clone(),
                 src_port_id: channel.port_id,
             });
-            self.workers
-                .get_or_spawn(path_object, chain.clone(), counterparty_chain.clone());
+
+            self.workers.get_or_spawn(
+                path_object,
+                chain.clone(),
+                counterparty_chain.clone(),
+                &self.config,
+            );
         } else if !chan_state_dst.is_open()
             && chan_state_dst as u32 <= chan_state_src as u32
             && self.handshake_enabled()
@@ -502,8 +517,12 @@ impl Supervisor {
                 src_port_id: channel.port_id,
             });
 
-            self.workers
-                .get_or_spawn(channel_object, chain.clone(), counterparty_chain.clone());
+            self.workers.get_or_spawn(
+                channel_object,
+                chain.clone(),
+                counterparty_chain.clone(),
+                &self.config,
+            );
         }
         Ok(())
     }
@@ -615,7 +634,7 @@ impl Supervisor {
             let src = self.registry.get_or_spawn(object.src_chain_id())?;
             let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
 
-            let worker = self.workers.get_or_spawn(object, src, dst);
+            let worker = self.workers.get_or_spawn(object, src, dst, &self.config);
             worker.send_events(height, events, chain_id.clone())?
         }
 

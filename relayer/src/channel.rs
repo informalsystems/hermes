@@ -625,7 +625,7 @@ impl Channel {
 
         match self.handshake_step(state) {
             Err(e) => {
-                error!("Failed {:?} with error {}", state, e);
+                error!("Failed Chan{:?} with error: {}", state, e);
                 RetryResult::Retry(index)
             }
             Ok(ev) => {

@@ -9,12 +9,15 @@ strategy = 'packets'
 
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
-filter = true
+filter = false
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
 log_level = 'info'
 
+# Interval (in number of blocks) at which pending packets
+# should be eagerly cleared. Default: 100
+clear_packets_interval = 100
 
 # The telemetry section defines parameters for Hermes' built-in telemetry capabilities.
 # https://hermes.informal.systems/telemetry.html
@@ -98,7 +101,9 @@ trusting_period = '14days'
 # Specify the trust threshold for the light client, ie. the maximum fraction of validators
 # which have changed between two blocks.
 # Default: { numerator = '1', denominator = '3' }, ie. 1/3.
+# Warning: This is an advanced feature! Modify with caution.
 trust_threshold = { numerator = '1', denominator = '3' }
+
 [chains.filters]
 channels = [['transfer', 'channel-0']]
 
