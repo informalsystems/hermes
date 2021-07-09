@@ -58,15 +58,20 @@ impl FilterPolicy {
         connection: &ConnectionEnd,
         connection_id: &ConnectionId,
     ) -> Result<Permission, BoxError> {
+        let identifier = CacheKey::from((client_state.chain_id(), connection_id.clone()));
+
+        // Return if cache hit
+        if let Some(p) = self.permission_cache.get(&identifier) {
+            trace!("cache hit for {:?}: {:?}", identifier, p);
+            return Ok(*p);
+        }
+
         // Fetch the details of the client on counterparty chain.
         let counterparty_chain_id = client_state.chain_id();
         let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
         let counterparty_client_id = connection.counterparty().client_id();
         let counterparty_client_state =
             counterparty_chain.query_client_state(&counterparty_client_id, Height::zero())?;
-
-        // Figure out the identifier of the connection
-        let identifier = CacheKey::from((client_state.chain_id(), connection_id.clone()));
 
         // Control both clients, cache their results.
         let client_control = self.control_client(&connection.client_id(), &client_state);
@@ -94,6 +99,12 @@ impl FilterPolicy {
     pub fn control_client(&mut self, client_id: &ClientId, state: &AnyClientState) -> Permission {
         let identifier = CacheKey::from((state.chain_id(), client_id.clone()));
 
+        // Return if cache hit
+        if let Some(p) = self.permission_cache.get(&identifier) {
+            trace!("cache hit for {:?}: {:?}", identifier, p);
+            return *p;
+        }
+
         let permission = match state.trust_threshold() {
             Some(trust) if trust.numerator == 1 && trust.denominator == 3 => Permission::Allow,
             _ => Permission::Deny,
@@ -115,6 +126,14 @@ impl FilterPolicy {
         registry: &mut Registry,
         obj: &object::Client,
     ) -> Result<Permission, BoxError> {
+        let identifier = CacheKey::Client(obj.dst_chain_id.clone(), obj.dst_client_id.clone());
+
+        // Return if cache hit
+        if let Some(p) = self.permission_cache.get(&identifier) {
+            trace!("cache hit for {:?}: {:?}", identifier, p);
+            return Ok(*p);
+        }
+
         let chain = registry.get_or_spawn(&obj.dst_chain_id)?;
         trace!(
             "[client filter] deciding if to relay on {:?} hosted chain {}",
@@ -130,6 +149,15 @@ impl FilterPolicy {
         registry: &mut Registry,
         obj: &object::Connection,
     ) -> Result<Permission, BoxError> {
+        let identifier =
+            CacheKey::Connection(obj.src_chain_id.clone(), obj.src_connection_id.clone());
+
+        // Return if cache hit
+        if let Some(p) = self.permission_cache.get(&identifier) {
+            trace!("cache hit for {:?}: {:?}", identifier, p);
+            return Ok(*p);
+        }
+
         let src_chain = registry.get_or_spawn(&obj.src_chain_id)?;
         trace!(
             "[filter] deciding if to relay on {:?} hosted on chain {}",
@@ -155,6 +183,14 @@ impl FilterPolicy {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> Result<Permission, BoxError> {
+        let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
+
+        // Return if cache hit
+        if let Some(p) = self.permission_cache.get(&identifier) {
+            trace!("cache hit for {:?}: {:?}", identifier, p);
+            return Ok(*p);
+        }
+
         let src_chain = registry.get_or_spawn(&chain_id)?;
         trace!(
             "[filter] deciding if to relay on {}/{} hosted on chain {}",
