@@ -51,19 +51,23 @@ impl FilterPolicy {
     /// client on the counterparty chain.
     /// Returns `true` if both clients are allowed, `false` otherwise.
     /// Caches the result for both clients as well as the connection.
+    ///
+    /// May encounter errors caused by failed queries. Any such error
+    /// is propagated and nothing is cached.
     pub fn control_connection_end_and_client(
         &mut self,
         registry: &mut Registry,
+        chain_id: &ChainId, // Chain hosting the client & connection
         client_state: &AnyClientState,
         connection: &ConnectionEnd,
         connection_id: &ConnectionId,
     ) -> Result<Permission, BoxError> {
-        let identifier = CacheKey::from((client_state.chain_id(), connection_id.clone()));
+        let identifier = CacheKey::from((chain_id.clone(), connection_id.clone()));
         trace!("controlling permissions for {:?}", identifier);
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", p, identifier);
             return Ok(*p);
         }
 
@@ -103,7 +107,7 @@ impl FilterPolicy {
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", p, identifier);
             return *p;
         }
 
@@ -133,7 +137,7 @@ impl FilterPolicy {
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", p, identifier);
             return Ok(*p);
         }
 
@@ -158,7 +162,7 @@ impl FilterPolicy {
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", p, identifier);
             return Ok(*p);
         }
 
@@ -174,6 +178,7 @@ impl FilterPolicy {
 
         self.control_connection_end_and_client(
             registry,
+            &obj.src_chain_id,
             &client_state,
             &connection_end,
             &obj.src_connection_id,
@@ -192,17 +197,11 @@ impl FilterPolicy {
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", p, identifier);
             return Ok(*p);
         }
 
         let src_chain = registry.get_or_spawn(&chain_id)?;
-        trace!(
-            "[filter] deciding if to relay on {}/{} hosted on chain {}",
-            port_id,
-            channel_id,
-            chain_id
-        );
         let channel_end = src_chain.query_channel(&port_id, &channel_id, Height::zero())?;
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
             Kind::InvalidConnectionHopsLength(1, channel_end.connection_hops().len())
@@ -213,6 +212,7 @@ impl FilterPolicy {
 
         let permission = self.control_connection_end_and_client(
             registry,
+            &chain_id,
             &client_state,
             &connection_end,
             &conn_id,
