@@ -115,7 +115,7 @@ impl Supervisor {
 
         // First, apply the channel filter
         if let Object::UnidirectionalChannelPath(u) = object {
-            if !self.relay_packets_on_channel(chain_id, u.src_port_id(), &u.src_channel_id()) {
+            if !self.relay_packets_on_channel(chain_id, u.src_port_id(), u.src_channel_id()) {
                 return false;
             }
         }
@@ -359,7 +359,7 @@ impl Supervisor {
                             &connection_end,
                             &connection_id,
                         ) {
-                            Ok(allowed) if !allowed => {
+                            Ok(false) => {
                                 warn!(
                                     "skipping workers for chain {} and client {}. \
                                  reason: client or counterparty client is not allowed",
@@ -369,8 +369,7 @@ impl Supervisor {
                             }
                             Err(e) => {
                                 error!(
-                                    "skipping workers for chain {}. \
-                                reason: {}",
+                                    "skipping workers for chain {}. reason: {}",
                                     chain_id, e
                                 );
                                 continue;
