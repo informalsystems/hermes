@@ -62,7 +62,7 @@ impl FilterPolicy {
         connection: &ConnectionEnd,
         connection_id: &ConnectionId,
     ) -> Result<Permission, BoxError> {
-        let identifier = CacheKey::from((chain_id.clone(), connection_id.clone()));
+        let identifier = CacheKey::Connection(chain_id.clone(), connection_id.clone());
         trace!("controlling permissions for {:?}", identifier);
 
         // Return if cache hit
@@ -102,7 +102,7 @@ impl FilterPolicy {
     /// Returns `true` if client is allowed, `false` otherwise.
     /// Caches the result.
     pub fn control_client(&mut self, client_id: &ClientId, state: &AnyClientState) -> Permission {
-        let identifier = CacheKey::from((state.chain_id(), client_id.clone()));
+        let identifier = CacheKey::Client(state.chain_id(), client_id.clone());
         trace!("controlling permissions for {:?}", identifier);
 
         // Return if cache hit
@@ -218,7 +218,7 @@ impl FilterPolicy {
             &conn_id,
         )?;
 
-        let key = CacheKey::from((chain_id.clone(), port_id.clone(), channel_id.clone()));
+        let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
         debug!(
             "[client filter] {:?}: relay for channel {:?}: ",
             permission, key
@@ -252,23 +252,5 @@ impl FilterPolicy {
             &obj.src_port_id,
             &obj.src_channel_id,
         )
-    }
-}
-
-impl From<(ChainId, ClientId)> for CacheKey {
-    fn from(source: (ChainId, ClientId)) -> CacheKey {
-        CacheKey::Client(source.0, source.1)
-    }
-}
-
-impl From<(ChainId, ConnectionId)> for CacheKey {
-    fn from(source: (ChainId, ConnectionId)) -> CacheKey {
-        CacheKey::Connection(source.0, source.1)
-    }
-}
-
-impl From<(ChainId, PortId, ChannelId)> for CacheKey {
-    fn from(source: (ChainId, PortId, ChannelId)) -> Self {
-        CacheKey::Channel(source.0, source.1, source.2)
     }
 }
