@@ -10,20 +10,40 @@ use ibc::ics04_channel::error::Kind;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 
-type Identifier = String;
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Permission {
+    Allow,
+    Deny,
+}
+
+impl Permission {
+    fn and(self, other: &Permission) -> Permission {
+        if matches!(self, Permission::Allow) && matches!(other, Permission::Allow) {
+            self
+        } else {
+            Permission::Deny
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum CacheKey {
+    Client(ChainId, ClientId),
+    Channel(ChainId, PortId, ChannelId),
+    Connection(ChainId, ConnectionId),
+}
 
 /// A cache storing filtering status (allow or deny) for
 /// arbitrary identifiers.
 #[derive(Default, Debug)]
-pub(crate) struct FilterCache {
-    /// A cache associating a generic identifier, such as
-    /// client id, channel id, or connection id, with a
-    /// boolean, representing either allow (if `true`) or
-    /// deny (if `false`) that identifier.
-    permission_cache: HashMap<Identifier, bool>,
+pub(crate) struct FilterPolicy {
+    /// A cache associating a generic identifying key, such as
+    /// client id, channel id, or connection id, with an
+    /// [`Allowed`] status.
+    permission_cache: HashMap<CacheKey, Permission>,
 }
 
-impl FilterCache {
+impl FilterPolicy {
     /// Given a connection end and the underlying client for that
     /// connection, controls both the client as well as the
     /// client on the counterparty chain.
@@ -35,7 +55,7 @@ impl FilterCache {
         client_state: &AnyClientState,
         connection: &ConnectionEnd,
         connection_id: &ConnectionId,
-    ) -> Result<bool, BoxError> {
+    ) -> Result<Permission, BoxError> {
         // Fetch the details of the client on counterparty chain.
         let counterparty_chain_id = client_state.chain_id();
         let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
@@ -44,13 +64,13 @@ impl FilterCache {
             counterparty_chain.query_client_state(&counterparty_client_id, Height::zero())?;
 
         // Figure out the identifier of the connection
-        let id_conn = identifier_from_connection_id(&client_state.chain_id(), connection_id);
+        let id_conn = CacheKey::from((client_state.chain_id(), connection_id.clone()));
 
         // Control both clients, cache their results.
         let client_control = self.control_client(&connection.client_id(), &client_state);
         let counterparty_client_control =
             self.control_client(&counterparty_client_id, &counterparty_client_state);
-        let allowed = client_control || counterparty_client_control;
+        let allowed = client_control.and(&counterparty_client_control);
 
         // Save the connection id in the cache
         self.permission_cache.entry(id_conn).or_insert(allowed);
@@ -63,14 +83,14 @@ impl FilterCache {
     /// be allowed or not.
     /// Returns `true` if client is allowed, `false` otherwise.
     /// Caches the result.
-    pub fn control_client(&mut self, id: &ClientId, state: &AnyClientState) -> bool {
+    pub fn control_client(&mut self, client_id: &ClientId, state: &AnyClientState) -> Permission {
         debug!("\t [filter] relay for client ? {:?}", state);
 
-        let identifier = identifier_from_client_state(id, state);
+        let identifier = CacheKey::from((state.chain_id(), client_id.clone()));
 
         let status = match state.trust_threshold() {
-            None => false,
-            Some(trust) => trust.numerator == 1 && trust.denominator == 3,
+            Some(trust) if trust.numerator == 1 && trust.denominator == 3 => Permission::Allow,
+            _ => Permission::Deny,
         };
 
         self.permission_cache.entry(identifier).or_insert(status);
@@ -81,7 +101,7 @@ impl FilterCache {
         &mut self,
         registry: &mut Registry,
         obj: &object::Client,
-    ) -> Result<bool, BoxError> {
+    ) -> Result<Permission, BoxError> {
         let chain = registry.get_or_spawn(&obj.dst_chain_id)?;
         debug!(
             "\t [filter] deciding if to relay on {:?} hosted chain {}",
@@ -95,7 +115,7 @@ impl FilterCache {
         &mut self,
         registry: &mut Registry,
         obj: &object::Connection,
-    ) -> Result<bool, BoxError> {
+    ) -> Result<Permission, BoxError> {
         let src_chain = registry.get_or_spawn(&obj.src_chain_id)?;
         debug!(
             "\t [filter] deciding if to relay on {:?} hosted on chain {}",
@@ -119,21 +139,16 @@ impl FilterCache {
         chain_id: &ChainId,
         port_id: &PortId,
         channel_id: &ChannelId,
-    ) -> Result<bool, BoxError> {
+    ) -> Result<Permission, BoxError> {
         let src_chain = registry.get_or_spawn(&chain_id)?;
         debug!(
             "\t [filter] deciding if to relay on {}/{} hosted on chain {}",
             port_id, channel_id, chain_id
         );
         let channel_end = src_chain.query_channel(&port_id, &channel_id, Height::zero())?;
-        let conn_id =
-            channel_end
-                .connection_hops
-                .first()
-                .ok_or_else(||Kind::InvalidConnectionHopsLength(
-                    1,
-                    channel_end.connection_hops().len(),
-                ))?;
+        let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
+            Kind::InvalidConnectionHopsLength(1, channel_end.connection_hops().len())
+        })?;
         let connection_end = src_chain.query_connection(conn_id, Height::zero())?;
         let client_state =
             src_chain.query_client_state(&connection_end.client_id(), Height::zero())?;
@@ -145,8 +160,8 @@ impl FilterCache {
             &conn_id,
         )?;
 
-        let chan_id = identifier_from_channel_id(chain_id, port_id, channel_id);
-        self.permission_cache.entry(chan_id).or_insert(allowed);
+        let key = CacheKey::from((chain_id.clone(), port_id.clone(), channel_id.clone()));
+        self.permission_cache.entry(key).or_insert(allowed);
 
         Ok(allowed)
     }
@@ -155,7 +170,7 @@ impl FilterCache {
         &mut self,
         registry: &mut Registry,
         obj: &object::Channel,
-    ) -> Result<bool, BoxError> {
+    ) -> Result<Permission, BoxError> {
         self.control_channel(
             registry,
             &obj.src_chain_id,
@@ -168,7 +183,7 @@ impl FilterCache {
         &mut self,
         registry: &mut Registry,
         obj: &object::UnidirectionalChannelPath,
-    ) -> Result<bool, BoxError> {
+    ) -> Result<Permission, BoxError> {
         self.control_channel(
             registry,
             &obj.src_chain_id,
@@ -178,18 +193,20 @@ impl FilterCache {
     }
 }
 
-fn identifier_from_client_state(id: &ClientId, state: &AnyClientState) -> Identifier {
-    format!("{}:{}", state.chain_id(), id)
+impl From<(ChainId, ClientId)> for CacheKey {
+    fn from(source: (ChainId, ClientId)) -> CacheKey {
+        CacheKey::Client(source.0, source.1)
+    }
 }
 
-fn identifier_from_connection_id(chain_id: &ChainId, id: &ConnectionId) -> Identifier {
-    format!("{}:{}", chain_id, id)
+impl From<(ChainId, ConnectionId)> for CacheKey {
+    fn from(source: (ChainId, ConnectionId)) -> CacheKey {
+        CacheKey::Connection(source.0, source.1)
+    }
 }
 
-fn identifier_from_channel_id(
-    chain_id: &ChainId,
-    port_id: &PortId,
-    channel_id: &ChannelId,
-) -> Identifier {
-    format!("{}:{}/{}", chain_id, port_id, channel_id)
+impl From<(ChainId, PortId, ChannelId)> for CacheKey {
+    fn from(source: (ChainId, PortId, ChannelId)) -> Self {
+        CacheKey::Channel(source.0, source.1, source.2)
+    }
 }

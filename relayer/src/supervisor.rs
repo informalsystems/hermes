@@ -36,7 +36,7 @@ use crate::{
 mod client_state_filter;
 mod error;
 
-use client_state_filter::FilterCache;
+use client_state_filter::{FilterPolicy, Permission};
 
 pub use error::Error;
 use ibc::ics24_host::identifier::PortId;
@@ -49,7 +49,7 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
-    client_state_filter: FilterCache,
+    client_state_filter: FilterPolicy,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
@@ -61,7 +61,7 @@ impl Supervisor {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
-        let client_state_filter = FilterCache::default();
+        let client_state_filter = FilterPolicy::default();
 
         Self {
             config,
@@ -137,9 +137,9 @@ impl Supervisor {
         };
 
         match client_filter_outcome {
-            Ok(true) => true,
-            Ok(false) => {
-                warn!("client filter disallows relaying on object {:?}", object);
+            Ok(Permission::Allow) => true,
+            Ok(Permission::Deny) => {
+                warn!("client filter denies relaying on object {:?}", object);
                 false
             }
             Err(e) => {
@@ -302,9 +302,11 @@ impl Supervisor {
             for client in clients {
                 // Potentially ignore the client
                 if self.client_filter_enabled()
-                    && self
-                        .client_state_filter
-                        .control_client(&client.client_id, &client.client_state)
+                    && matches!(
+                        self.client_state_filter
+                            .control_client(&client.client_id, &client.client_state),
+                        Permission::Deny
+                    )
                 {
                     warn!(
                         "skipping workers for chain {} and client {}. \
@@ -359,7 +361,7 @@ impl Supervisor {
                             &connection_end,
                             &connection_id,
                         ) {
-                            Ok(false) => {
+                            Ok(Permission::Deny) => {
                                 warn!(
                                     "skipping workers for chain {} and client {}. \
                                  reason: client or counterparty client is not allowed",
@@ -368,13 +370,10 @@ impl Supervisor {
                                 continue;
                             }
                             Err(e) => {
-                                error!(
-                                    "skipping workers for chain {}. reason: {}",
-                                    chain_id, e
-                                );
+                                error!("skipping workers for chain {}. reason: {}", chain_id, e);
                                 continue;
                             }
-                            _ => {}
+                            _ => {} // allowed
                         }
                     }
 
