@@ -23,8 +23,8 @@ use crate::{
     config::Config,
     object::{Channel, Client, Connection, Object, Packet},
     registry::Registry,
-    worker::WorkerMap,
     supervisor::client_state_filter::{FilterPolicy, Permission},
+    worker::WorkerMap,
 };
 
 use super::{Error, RwArc};
@@ -117,23 +117,6 @@ impl<'a> SpawnContext<'a> {
 
         for client in clients {
             if &client.client_state.chain_id() == to_chain_id {
-                // Potentially ignore the client
-                if self.client_filter_enabled()
-                    && matches!(
-                        self.client_state_filter
-                            .control_client(&client.client_id, &client.client_state),
-                        Permission::Deny
-                    )
-                {
-                    warn!(
-                        "skipping workers from chain {} to chain {} and client {}. \
-                             reason: client is not allowed (client trust level={:?})",
-                        from_chain_id, to_chain_id,
-                        client.client_id,
-                        client.client_state.trust_threshold()
-                    );
-                    continue;
-                }
                 self.spawn_workers_for_client(chain.clone(), client);
             }
         }
@@ -199,6 +182,25 @@ impl<'a> SpawnContext<'a> {
         chain: Box<dyn ChainHandle>,
         client: IdentifiedAnyClientState,
     ) {
+        // Potentially ignore the client
+        if self.client_filter_enabled()
+            && matches!(
+                self.client_state_filter
+                    .control_client(&client.client_id, &client.client_state),
+                Permission::Deny
+            )
+        {
+            warn!(
+                "skipping workers for chain {}, client {}. \
+                             reason: client is not allowed (client trust level={:?})",
+                chain.id(),
+                client.client_id,
+                client.client_state.trust_threshold()
+            );
+
+            return;
+        }
+
         let counterparty_chain_id = client.client_state.chain_id();
         let has_counterparty = self
             .config
@@ -261,6 +263,31 @@ impl<'a> SpawnContext<'a> {
             connection_id: connection_id.clone(),
             connection_end: connection_end.clone(),
         };
+
+        // Apply the client state filter
+        if self.client_filter_enabled() {
+            match self.client_state_filter.control_connection_end_and_client(
+                &mut self.registry,
+                &chain_id,
+                &client.client_state,
+                &connection_end,
+                &connection_id,
+            ) {
+                Ok(Permission::Deny) => {
+                    warn!(
+                        "skipping workers for chain {}, client {} & conn {}. \
+                                 reason: client or counterparty client is not allowed",
+                        chain_id, client.client_id, connection_id
+                    );
+                    return;
+                }
+                Err(e) => {
+                    error!("skipping workers for chain {}. reason: {}", chain_id, e);
+                    return;
+                }
+                _ => {} // allowed
+            }
+        }
 
         match self.spawn_connection_workers(chain.clone(), client.clone(), connection.clone()) {
             Ok(()) => debug!(

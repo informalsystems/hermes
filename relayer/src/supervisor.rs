@@ -9,7 +9,11 @@ use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
 use tracing::{debug, error, info, trace, warn};
 
-use ibc::{events::IbcEvent, ics24_host::identifier::{ChainId, ChannelId, PortId}, Height};
+use ibc::{
+    events::IbcEvent,
+    ics24_host::identifier::{ChainId, ChannelId, PortId},
+    Height,
+};
 
 use crate::{
     chain::handle::ChainHandle,
@@ -301,7 +305,13 @@ impl Supervisor {
 
     /// Create a new `SpawnContext` for spawning workers.
     fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_> {
-        SpawnContext::new(&self.config, &mut self.registry, &mut self.client_state_filter, &mut self.workers, mode)
+        SpawnContext::new(
+            &self.config,
+            &mut self.registry,
+            &mut self.client_state_filter,
+            &mut self.workers,
+            mode,
+        )
     }
 
     /// Spawn all the workers necessary for the relayer to connect
