@@ -1,14 +1,16 @@
 use std::collections::HashMap;
-use tracing::debug;
 
-use crate::object;
-use crate::registry::Registry;
 use anomaly::BoxError;
+use tracing::{debug, trace};
+
 use ibc::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::error::Kind;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
+
+use crate::object;
+use crate::registry::Registry;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Permission {
@@ -64,7 +66,7 @@ impl FilterPolicy {
             counterparty_chain.query_client_state(&counterparty_client_id, Height::zero())?;
 
         // Figure out the identifier of the connection
-        let id_conn = CacheKey::from((client_state.chain_id(), connection_id.clone()));
+        let identifier = CacheKey::from((client_state.chain_id(), connection_id.clone()));
 
         // Control both clients, cache their results.
         let client_control = self.control_client(&connection.client_id(), &client_state);
@@ -73,11 +75,13 @@ impl FilterPolicy {
         let permission = client_control.and(&counterparty_client_control);
 
         debug!(
-            "\t [filter] relay for conn ? {:?}: {:?}",
-            id_conn, permission
+            "[client filter] {:?}: relay for conn {:?}",
+            permission, identifier,
         );
         // Save the connection id in the cache
-        self.permission_cache.entry(id_conn).or_insert(permission);
+        self.permission_cache
+            .entry(identifier)
+            .or_insert(permission);
 
         Ok(permission)
     }
@@ -96,8 +100,8 @@ impl FilterPolicy {
         };
 
         debug!(
-            "\t [filter] relay for client ? {:?}: {:?}",
-            state, permission
+            "[client filter] {:?}: relay for client {:?}",
+            permission, identifier
         );
         self.permission_cache
             .entry(identifier)
@@ -112,9 +116,10 @@ impl FilterPolicy {
         obj: &object::Client,
     ) -> Result<Permission, BoxError> {
         let chain = registry.get_or_spawn(&obj.dst_chain_id)?;
-        debug!(
-            "\t [filter] deciding if to relay on {:?} hosted chain {}",
-            obj.dst_client_id, obj.dst_chain_id
+        trace!(
+            "[client filter] deciding if to relay on {:?} hosted chain {}",
+            obj.dst_client_id,
+            obj.dst_chain_id
         );
         let client_state = chain.query_client_state(&obj.dst_client_id, Height::zero())?;
         Ok(self.control_client(&obj.dst_client_id, &client_state))
@@ -126,9 +131,10 @@ impl FilterPolicy {
         obj: &object::Connection,
     ) -> Result<Permission, BoxError> {
         let src_chain = registry.get_or_spawn(&obj.src_chain_id)?;
-        debug!(
-            "\t [filter] deciding if to relay on {:?} hosted on chain {}",
-            obj, obj.src_chain_id
+        trace!(
+            "[filter] deciding if to relay on {:?} hosted on chain {}",
+            obj,
+            obj.src_chain_id
         );
         let connection_end = src_chain.query_connection(&obj.src_connection_id, Height::zero())?;
         let client_state =
@@ -150,9 +156,11 @@ impl FilterPolicy {
         channel_id: &ChannelId,
     ) -> Result<Permission, BoxError> {
         let src_chain = registry.get_or_spawn(&chain_id)?;
-        debug!(
-            "\t [filter] deciding if to relay on {}/{} hosted on chain {}",
-            port_id, channel_id, chain_id
+        trace!(
+            "[filter] deciding if to relay on {}/{} hosted on chain {}",
+            port_id,
+            channel_id,
+            chain_id
         );
         let channel_end = src_chain.query_channel(&port_id, &channel_id, Height::zero())?;
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
@@ -171,8 +179,8 @@ impl FilterPolicy {
 
         let key = CacheKey::from((chain_id.clone(), port_id.clone(), channel_id.clone()));
         debug!(
-            "\t [filter] relay for channel ? {:?}: {:?}",
-            key, permission
+            "[client filter] {:?}: relay for channel {:?}: ",
+            permission, key
         );
         self.permission_cache.entry(key).or_insert(permission);
 
