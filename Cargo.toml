@@ -13,11 +13,11 @@ exclude = [
 ]
 
 [patch.crates-io]
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-0.8" }
-tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-0.8" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-0.8" }
-tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-0.8" }
-tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-0.8" }
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 
 # tendermint              = { path = "../tendermint-rs/tendermint" }
 # tendermint-rpc          = { path = "../tendermint-rs/rpc" }
