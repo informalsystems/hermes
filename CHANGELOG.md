@@ -5,7 +5,28 @@
 Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
 reliability of Hermes ([#697]).
 
+__! Configuration file changes:__
+The Hermes config.toml configuration file has went through a few revisions
+in this release. The changes are as follows:
+- Added inline documentation for all options.
+- Added a filtering mechanism to allow packet relaying only on
+  specific channels. Consequently, there are two new options in the
+  configuration file:
+    1. A global `filter` parameter to enable or disable filtering globally.
+    2. A per-chain `.filters` option that expects a list of channel and
+       port identifiers, so that packet relaying will be restricted to this
+       list for the corresponding chain.
+- Added a packet clearing configuration option, to parametrize the frequency
+  at which Hermes will clear pending packets. This is a global option, called
+  `clear_packets_interval`, which applies to all chains in the configuration.
+
+Note that both the `filter` and `clear_packets_interval` features apply
+only to Hermes passive relaying mode (command `hermes start`), and will
+not affect the other commands.
+
 ### FEATURES
+- [ibc-relayer]
+  - The chains configuration can be reloaded by sending the Hermes process a `SIGHUP` signal ([#1117])
 
 - [ibc-relayer-cli]
   - Added `config validate` CLI to Hermes ([#600])
@@ -19,6 +40,9 @@ reliability of Hermes ([#697]).
 - Update to `tendermint-rs` v0.20.0 ([#1125])
 - Add inline documentation to config.toml ([#1127])
 
+- [ibc-relayer]
+  - Hermes will now clear pending packets at a configurable interval ([#1124])
+
 ### BUG FIXES
 
 - [ibc-relayer]
@@ -29,8 +53,10 @@ reliability of Hermes ([#697]).
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#697]: https://github.com/informalsystems/ibc-rs/issues/697
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
+[#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
 [#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
+[#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
 [#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
 [#1141]: https://github.com/informalsystems/ibc-rs/issues/1141

@@ -46,7 +46,7 @@ use crate::{
     error::{Error, Kind},
     event::{
         bus::EventBus,
-        monitor::{EventBatch, EventReceiver, Result as MonitorResult},
+        monitor::{EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd},
     },
     keyring::KeyEntry,
     light_client::LightClient,
@@ -80,6 +80,9 @@ pub struct ChainRuntime<C: Chain> {
     /// Receiver channel from the event bus
     event_receiver: EventReceiver,
 
+    /// Sender channel to terminate the event monitor
+    tx_monitor_cmd: TxMonitorCmd,
+
     /// A handle to the light client
     light_client: Box<dyn LightClient<C>>,
 
@@ -92,7 +95,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     pub fn spawn(
         config: ChainConfig,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
+    ) -> Result<Box<dyn ChainHandle>, Error> {
         // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
 
@@ -100,17 +103,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let light_client = chain.init_light_client()?;
 
         // Start the event monitor
-        let (event_batch_rx, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
+        let (event_batch_rx, tx_monitor_cmd) = chain.init_event_monitor(rt.clone())?;
 
         // Instantiate & spawn the runtime
-        let (handle, runtime_thread) = Self::init(chain, light_client, event_batch_rx, rt);
+        let (handle, _) = Self::init(chain, light_client, event_batch_rx, tx_monitor_cmd, rt);
 
-        let threads = Threads {
-            chain_runtime: runtime_thread,
-            event_monitor: event_monitor_thread,
-        };
-
-        Ok((handle, threads))
+        Ok(handle)
     }
 
     /// Initializes a runtime for a given chain, and spawns the associated thread
@@ -118,9 +116,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: EventReceiver,
+        tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
     ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
-        let chain_runtime = Self::new(chain, light_client, event_receiver, rt);
+        let chain_runtime = Self::new(chain, light_client, event_receiver, tx_monitor_cmd, rt);
 
         // Get a handle to the runtime
         let handle = chain_runtime.handle();
@@ -141,6 +140,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: EventReceiver,
+        tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
     ) -> Self {
         let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
@@ -152,6 +152,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             request_receiver,
             event_bus: EventBus::new(),
             event_receiver,
+            tx_monitor_cmd,
             light_client,
         }
     }
@@ -170,8 +171,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                     match event_batch {
                         Ok(event_batch) => {
                             self.event_bus
-                                .broadcast(Arc::new(event_batch))
-                                .map_err(Kind::channel)?;
+                                .broadcast(Arc::new(event_batch));
                         },
                         Err(e) => {
                             error!("received error via event bus: {}", e);
@@ -181,8 +181,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                 },
                 recv(self.request_receiver) -> event => {
                     match event {
-                        Ok(ChainRequest::Terminate { reply_to }) => {
-                            reply_to.send(Ok(())).map_err(Kind::channel)?;
+                        Ok(ChainRequest::Shutdown { reply_to }) => {
+                            self.tx_monitor_cmd.send(MonitorCmd::Shutdown).map_err(Kind::channel)?;
+
+                            let res = self.chain.shutdown();
+                            reply_to.send(res).map_err(Kind::channel)?;
+
                             break;
                         }
 

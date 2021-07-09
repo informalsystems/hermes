@@ -46,10 +46,8 @@ pub fn spawn_chain_runtime(
         .map_err(|e| Kind::Config.context(e))?;
 
     let rt = Arc::new(TokioRuntime::new().unwrap());
-    let chain_res = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt)
-        .map_err(|e| Kind::Runtime.context(e));
-
-    let handle = chain_res.map(|(handle, _)| handle)?;
+    let handle = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt)
+        .map_err(|e| Kind::Runtime.context(e))?;
 
     Ok(handle)
 }
