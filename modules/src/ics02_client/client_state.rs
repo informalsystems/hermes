@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use prost_types::Any;
 use serde::{Deserialize, Serialize};
+use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
@@ -16,7 +17,6 @@ use crate::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
 use crate::Height;
-use tendermint::trust_threshold::TrustThresholdFraction;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
