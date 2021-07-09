@@ -94,6 +94,7 @@ impl TryFrom<RawHeader> for Header {
                 .signed_header
                 .ok_or_else(error::missing_signed_header_error)?
                 .try_into()
+                .map_err(|val : Box<dyn std::error::Error + Send + Sync> | val.into())
                 .map_err(|e| {
                     error::invalid_header_error("signed header conversion".to_string(), e)
                 })?,
@@ -101,6 +102,7 @@ impl TryFrom<RawHeader> for Header {
                 .validator_set
                 .ok_or_else(error::missing_validator_set_error)?
                 .try_into()
+                .map_err(|val : Box<dyn std::error::Error + Send + Sync> | val.into())
                 .map_err(error::invalid_raw_header_error)?,
             trusted_height: raw
                 .trusted_height
@@ -110,6 +112,7 @@ impl TryFrom<RawHeader> for Header {
                 .trusted_validators
                 .ok_or_else(error::missing_trusted_validator_set_error)?
                 .try_into()
+                .map_err(|val : Box<dyn std::error::Error + Send + Sync> | val.into())
                 .map_err(error::invalid_raw_header_error)?,
         })
     }

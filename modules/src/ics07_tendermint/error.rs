@@ -1,5 +1,70 @@
 use crate::ics24_host::error::ValidationError;
 use flex_error::{define_error, DisplayOnly, TraceError};
+use std::fmt::Display;
+
+#[derive(Debug)]
+pub struct StdError {
+    inner: Box<dyn std::error::Error + Send + Sync>,
+}
+
+impl StdError {
+    pub fn new(value: Box<dyn std::error::Error + Send + Sync>) -> Self  {
+        Self {
+            inner: value
+        }
+    }
+
+}
+
+impl From<String> for StdError {
+    fn from(value: String) -> Self {
+        Self {
+            inner: value.into()
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum LegacyError {
+    InnerBox(StdError),
+    #[cfg(feature = "test_no_std")]
+    InnerString(String),
+}
+
+impl LegacyError {
+    fn as_str(&self) -> String {
+        match self {
+            LegacyError::InnerBox(val) => {
+                val.inner.to_string()
+            }
+            #[cfg(feature = "test_no_std")]
+            LegacyError::InnerString(val) => {
+                val.clone()
+            }
+        }
+    }
+}
+
+impl Display for LegacyError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "LegacyError: {}", self.as_str())
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<Box<dyn std::error::Error + Send + Sync>> for LegacyError {
+    fn from(value: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        LegacyError::InnerBox(StdError::new(value))
+    }
+
+}
+
+#[cfg(feature = "test_no_std")]
+impl From<Box<dyn std::error::Error + Send + Sync>> for LegacyError {
+    fn from(value: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        LegacyError::InnerString(value.to_string())
+    }
+}
 
 define_error! {
     Error {
@@ -16,7 +81,7 @@ define_error! {
 
         InvalidHeader
             { reason: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ DisplayOnly<LegacyError> ]
             | _ | { "invalid header, failed basic validation" },
 
         MissingSignedHeader
@@ -80,7 +145,7 @@ define_error! {
             | _ | { "invalid raw client consensus state" },
 
         InvalidRawHeader
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ DisplayOnly<LegacyError> ]
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour

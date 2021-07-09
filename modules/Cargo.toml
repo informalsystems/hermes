@@ -17,6 +17,7 @@ description = """
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
 mocks = [ "tendermint-testgen", "sha2" ]
+test_no_std = []
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
