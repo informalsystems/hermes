@@ -36,10 +36,10 @@ use crate::{
 mod client_state_filter;
 mod error;
 
+use client_state_filter::FilterCache;
+
 pub use error::Error;
-use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics24_host::identifier::{ClientId, ConnectionId, PortId};
-use ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest;
+use ibc::ics24_host::identifier::PortId;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
@@ -49,6 +49,7 @@ pub struct Supervisor {
     registry: Registry,
     workers: WorkerMap,
     worker_msg_rx: Receiver<WorkerMsg>,
+    client_state_filter: FilterCache,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
@@ -60,12 +61,14 @@ impl Supervisor {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
+        let client_state_filter = FilterCache::default();
 
         Self {
             config,
             registry,
             workers,
             worker_msg_rx,
+            client_state_filter,
             telemetry,
         }
     }
@@ -82,13 +85,11 @@ impl Supervisor {
         self.config.global.filter
     }
 
-    fn relay_for_client(client_state: &AnyClientState) -> bool {
-        debug!("\t [filter] relay for client ? {:?}", client_state);
-
-        match client_state.trust_threshold() {
-            None => false,
-            Some(trust) => trust.numerator == 1 && trust.denominator == 3,
-        }
+    /// Returns `true` if the relayer should filter based on
+    /// channel identifiers.
+    /// Returns `false` otherwise.
+    fn channel_filter_enabled(&self) -> bool {
+        self.config.global.filter
     }
 
     fn relay_packets_on_channel(
@@ -98,7 +99,7 @@ impl Supervisor {
         channel_id: &ChannelId,
     ) -> bool {
         // If filtering is disabled, then relay all channels
-        if !self.config.global.filter {
+        if !self.channel_filter_enabled() {
             return true;
         }
 
@@ -106,76 +107,44 @@ impl Supervisor {
             .packets_on_channel_allowed(chain_id, port_id, channel_id)
     }
 
-    fn relay_on_object(&mut self, chain_id: &ChainId, object: &Object) -> Result<bool, BoxError> {
-        if !self.config.global.filter {
-            return Ok(true);
+    fn relay_on_object(&mut self, chain_id: &ChainId, object: &Object) -> bool {
+        // No filter is enabled, bail fast.
+        if !self.channel_filter_enabled() && !self.client_filter_enabled() {
+            return true;
         }
 
-        let chain = self.registry.get_or_spawn(chain_id)?;
-        debug!("\t [filter] host chain: {:?}", chain_id);
-
-        fn relay_on_client_id(
-            host_chain: Box<dyn ChainHandle>,
-            client_id: &ClientId,
-        ) -> Result<bool, BoxError> {
-            debug!(
-                "\t [filter] deciding if to relay on {:?} for chain {}",
-                client_id,
-                host_chain.id()
-            );
-            let client_state = host_chain.query_client_state(&client_id, Height::zero())?;
-
-            Ok(Supervisor::relay_for_client(&client_state))
-        }
-
-        fn relay_on_connection_id(
-            host_chain: Box<dyn ChainHandle>,
-            conn_id: &ConnectionId,
-        ) -> Result<bool, BoxError> {
-            debug!(
-                "\t [filter] deciding if to relay on {} for chain {}",
-                conn_id,
-                host_chain.id()
-            );
-            let conn = host_chain.query_connection(&conn_id, Height::zero())?;
-            relay_on_client_id(host_chain, &conn.client_id())
-        }
-
-        fn relay_on_port_channel_id(
-            host_chain: Box<dyn ChainHandle>,
-            port_id: &PortId,
-            channel_id: &ChannelId,
-        ) -> Result<bool, BoxError> {
-            debug!(
-                "\t [filter] deciding if to relay on {}/{} for chain {}",
-                channel_id,
-                port_id,
-                host_chain.id()
-            );
-            let req = QueryChannelClientStateRequest {
-                port_id: port_id.to_string(),
-                channel_id: channel_id.to_string(),
-            };
-            let opt_client_state = host_chain.query_channel_client_state(req)?;
-
-            match opt_client_state {
-                None => todo!(),
-                Some(cs) => Ok(Supervisor::relay_for_client(&cs.client_state)),
+        // First, apply the channel filter
+        if let Object::UnidirectionalChannelPath(u) = object {
+            if !self.relay_packets_on_channel(chain_id, u.src_port_id(), &u.src_channel_id()) {
+                return false;
             }
         }
 
-        match object {
-            Object::Client(client) => relay_on_client_id(chain, &client.dst_client_id),
-            Object::Connection(conn) => relay_on_connection_id(chain, &conn.src_connection_id),
-            Object::Channel(chan) => {
-                relay_on_port_channel_id(chain, &chan.src_port_id, &chan.src_channel_id)
+        // Second, apply the client filter
+        let client_filter_outcome = match object {
+            Object::Client(client) => self
+                .client_state_filter
+                .control_client_object(&mut self.registry, client),
+            Object::Connection(conn) => self
+                .client_state_filter
+                .control_conn_object(&mut self.registry, conn),
+            Object::Channel(chan) => self
+                .client_state_filter
+                .control_chan_object(&mut self.registry, chan),
+            Object::UnidirectionalChannelPath(u) => self
+                .client_state_filter
+                .control_uni_chan_path_object(&mut self.registry, u),
+        };
+
+        match client_filter_outcome {
+            Ok(true) => true,
+            Ok(false) => {
+                warn!("client filter disallows relaying on object {:?}", object);
+                false
             }
-            Object::UnidirectionalChannelPath(u) => {
-                let client_allowed =
-                    relay_on_port_channel_id(chain, &u.src_port_id, &u.src_channel_id)?;
-                let channel_allowed =
-                    self.relay_packets_on_channel(chain_id, u.src_port_id(), &u.src_channel_id());
-                Ok(client_allowed & channel_allowed)
+            Err(e) => {
+                warn!("denying relaying on object {:?}, caused by: {}", object, e);
+                false
             }
         }
     }
@@ -336,7 +305,9 @@ impl Supervisor {
             for client in clients {
                 // Potentially ignore the client
                 if self.client_filter_enabled()
-                    && !Supervisor::relay_for_client(&client.client_state)
+                    && self
+                        .client_state_filter
+                        .control_client(&client.client_id, &client.client_state)
                 {
                     warn!(
                         "skipping workers for chain {} and client {}. \
@@ -385,45 +356,29 @@ impl Supervisor {
 
                     // Check trust level of the client on counterparty chain
                     if self.client_filter_enabled() {
-                        let counterparty_chain_id = client.client_state.chain_id();
-                        let counterparty_chain = match self
-                            .registry
-                            .get_or_spawn(&counterparty_chain_id)
-                        {
-                            Ok(cparty_chain_handle) => cparty_chain_handle,
-                            Err(e) => {
-                                error!(
-                                "skipping workers for chain {}. \
-                                reason: failed to spawn chain runtime for counterparty chain with error: {}",
-                                chain_id, e
+                        match self.client_state_filter.control_connection_end_and_client(
+                            &mut self.registry,
+                            &client.client_state,
+                            &connection_end,
+                            &connection_id,
+                        ) {
+                            Ok(allowed) if !allowed => {
+                                warn!(
+                                    "skipping workers for chain {} and client {}. \
+                                 reason: client or counterparty client is not allowed",
+                                    chain_id, client.client_id,
                                 );
                                 continue;
                             }
-                        };
-                        let counterparty_client_id = connection_end.counterparty().client_id();
-                        let counterparty_client_state = match counterparty_chain
-                            .query_client_state(&counterparty_client_id, Height::zero())
-                        {
-                            Ok(state) => state,
                             Err(e) => {
                                 error!(
-                                "skipping workers for chain {}. \
-                                reason: failed to fetch counterparty client state for client id {} from counterparty chain {} with error: {}",
-                                    chain_id, counterparty_client_id, counterparty_chain_id, e
+                                    "skipping workers for chain {}. \
+                                reason: {}",
+                                    chain_id, e
                                 );
                                 continue;
                             }
-                        };
-                        if !Supervisor::relay_for_client(&counterparty_client_state) {
-                            warn!(
-                                "skipping workers for chain {} and client {}. \
-                                 reason: counterparty client {} is not allowed (client trust level={:?})",
-                                chain_id,
-                                client.client_id,
-                                counterparty_client_id,
-                                counterparty_client_state.trust_threshold()
-                            );
-                            continue;
+                            _ => {}
                         }
                     }
 
@@ -726,7 +681,7 @@ impl Supervisor {
         let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
 
         for (object, events) in collected.per_object.drain() {
-            if !self.relay_on_object(&src_chain.id(), &object)? {
+            if !self.relay_on_object(&src_chain.id(), &object) {
                 trace!(
                     "skipping events for '{}'. \
                     reason: filtering is enabled and channel does not match any allowed channels",
