@@ -82,7 +82,7 @@ pub mod query_client {
         #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: core::convert::TryInto<tonic::transport::Endpoint>,
+            D: std::convert::TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -142,8 +142,8 @@ pub mod query_client {
             }
         }
     }
-    impl<T> core::fmt::Debug for QueryClient<T> {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    impl<T> std::fmt::Debug for QueryClient<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "QueryClient {{ ... }}")
         }
     }
