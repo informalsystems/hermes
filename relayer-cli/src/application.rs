@@ -75,7 +75,7 @@ impl CliApp {
         self.json_output
     }
 
-    /// Whether or not JSON output is enabled
+    /// Returns the path to the configuration file
     pub fn config_path(&self) -> Option<&PathBuf> {
         self.config_path.as_ref()
     }
