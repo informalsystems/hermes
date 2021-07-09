@@ -33,7 +33,9 @@ use crate::{
     worker::{WorkerMap, WorkerMsg},
 };
 
+mod client_state_filter;
 mod error;
+
 pub use error::Error;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId, PortId};
@@ -70,6 +72,14 @@ impl Supervisor {
 
     fn handshake_enabled(&self) -> bool {
         self.config.global.strategy == Strategy::HandshakeAndPackets
+    }
+
+    /// Returns `true` if the relayer should filter based on
+    /// client state attributes, e.g., trust threshold.
+    /// Returns `false` otherwise.
+    fn client_filter_enabled(&self) -> bool {
+        // Currently just a wrapper over the global filter.
+        self.config.global.filter
     }
 
     fn relay_for_client(client_state: &AnyClientState) -> bool {
@@ -325,7 +335,9 @@ impl Supervisor {
 
             for client in clients {
                 // Potentially ignore the client
-                if !Supervisor::relay_for_client(&client.client_state) {
+                if self.client_filter_enabled()
+                    && !Supervisor::relay_for_client(&client.client_state)
+                {
                     warn!(
                         "skipping workers for chain {} and client {}. \
                              reason: client is not allowed (client trust level={:?})",
@@ -372,44 +384,47 @@ impl Supervisor {
                         };
 
                     // Check trust level of the client on counterparty chain
-                    let counterparty_chain_id = client.client_state.chain_id();
-                    let counterparty_chain = match self
-                        .registry
-                        .get_or_spawn(&counterparty_chain_id)
-                    {
-                        Ok(cparty_chain_handle) => cparty_chain_handle,
-                        Err(e) => {
-                            error!(
-                            "skipping workers for chain {}. \
-                            reason: failed to spawn chain runtime for counterparty chain with error: {}",
-                            chain_id, e
+                    if self.client_filter_enabled() {
+                        let counterparty_chain_id = client.client_state.chain_id();
+                        let counterparty_chain = match self
+                            .registry
+                            .get_or_spawn(&counterparty_chain_id)
+                        {
+                            Ok(cparty_chain_handle) => cparty_chain_handle,
+                            Err(e) => {
+                                error!(
+                                "skipping workers for chain {}. \
+                                reason: failed to spawn chain runtime for counterparty chain with error: {}",
+                                chain_id, e
+                                );
+                                continue;
+                            }
+                        };
+                        let counterparty_client_id = connection_end.counterparty().client_id();
+                        let counterparty_client_state = match counterparty_chain
+                            .query_client_state(&counterparty_client_id, Height::zero())
+                        {
+                            Ok(state) => state,
+                            Err(e) => {
+                                error!(
+                                "skipping workers for chain {}. \
+                                reason: failed to fetch counterparty client state for client id {} from counterparty chain {} with error: {}",
+                                    chain_id, counterparty_client_id, counterparty_chain_id, e
+                                );
+                                continue;
+                            }
+                        };
+                        if !Supervisor::relay_for_client(&counterparty_client_state) {
+                            warn!(
+                                "skipping workers for chain {} and client {}. \
+                                 reason: counterparty client {} is not allowed (client trust level={:?})",
+                                chain_id,
+                                client.client_id,
+                                counterparty_client_id,
+                                counterparty_client_state.trust_threshold()
                             );
                             continue;
                         }
-                    };
-                    let counterparty_client_id = connection_end.counterparty().client_id();
-                    let counterparty_client_state = match counterparty_chain
-                        .query_client_state(&counterparty_client_id, Height::zero())
-                    {
-                        Ok(state) => state,
-                        Err(e) => {
-                            error!(
-                            "skipping workers for chain {}. \
-                            reason: failed to fetch counterparty client state for client id {} from counterparty chain with error: {}",
-                            counterparty_client_id, counterparty_chain_id, e
-                            );
-                            continue;
-                        }
-                    };
-                    if !Supervisor::relay_for_client(&counterparty_client_state) {
-                        warn!(
-                            "skipping workers for chain {} and client {}. \
-                             reason: counterparty client is not allowed (client trust level={:?})",
-                            chain_id,
-                            counterparty_client_id,
-                            counterparty_client_state.trust_threshold()
-                        );
-                        continue;
                     }
 
                     let connection = IdentifiedConnectionEnd {
