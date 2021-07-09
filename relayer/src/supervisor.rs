@@ -154,11 +154,20 @@ impl Supervisor {
         match client_filter_outcome {
             Ok(Permission::Allow) => true,
             Ok(Permission::Deny) => {
-                warn!("client filter denies relaying on object {:?}", object);
+                warn!(
+                    "client filter denies relaying on object {}",
+                    object.short_name()
+                );
+
                 false
             }
             Err(e) => {
-                warn!("denying relaying on object {:?}, caused by: {}", object, e);
+                warn!(
+                    "denying relaying on object {}, caused by: {}",
+                    object.short_name(),
+                    e
+                );
+
                 false
             }
         }

@@ -63,11 +63,15 @@ impl FilterPolicy {
         connection_id: &ConnectionId,
     ) -> Result<Permission, BoxError> {
         let identifier = CacheKey::Connection(chain_id.clone(), connection_id.clone());
-        trace!("controlling permissions for {:?}", identifier);
+
+        trace!(
+            "[client filter] controlling permissions for {:?}",
+            identifier
+        );
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", p, identifier);
+            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
             return Ok(*p);
         }
 
@@ -103,23 +107,44 @@ impl FilterPolicy {
     /// Caches the result.
     pub fn control_client(&mut self, client_id: &ClientId, state: &AnyClientState) -> Permission {
         let identifier = CacheKey::Client(state.chain_id(), client_id.clone());
-        trace!("controlling permissions for {:?}", identifier);
+
+        trace!(
+            "[client filter] controlling permissions for {:?}",
+            identifier
+        );
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", p, identifier);
+            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
             return *p;
         }
 
         let permission = match state.trust_threshold() {
             Some(trust) if trust.numerator == 1 && trust.denominator == 3 => Permission::Allow,
-            _ => Permission::Deny,
+            Some(_) => {
+                trace!(
+                    "[client filter] client {} on chain {} has a trust threshold different than 1/3",
+                    client_id, state.chain_id()
+                );
+
+                Permission::Deny
+            }
+            None => {
+                trace!(
+                    "[client filter] client {} on chain {} does not have a trust threshold set",
+                    client_id,
+                    state.chain_id()
+                );
+
+                Permission::Deny
+            }
         };
 
         debug!(
             "[client filter] {:?}: relay for client {:?}",
             permission, identifier
         );
+
         self.permission_cache
             .entry(identifier)
             .or_insert(permission);
@@ -133,20 +158,26 @@ impl FilterPolicy {
         obj: &object::Client,
     ) -> Result<Permission, BoxError> {
         let identifier = CacheKey::Client(obj.dst_chain_id.clone(), obj.dst_client_id.clone());
-        trace!("controlling permissions for {:?}", identifier);
+
+        trace!(
+            "[client filter] controlling permissions for {:?}",
+            identifier
+        );
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", p, identifier);
+            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
             return Ok(*p);
         }
 
         let chain = registry.get_or_spawn(&obj.dst_chain_id)?;
+
         trace!(
             "[client filter] deciding if to relay on {:?} hosted chain {}",
             obj.dst_client_id,
             obj.dst_chain_id
         );
+
         let client_state = chain.query_client_state(&obj.dst_client_id, Height::zero())?;
         Ok(self.control_client(&obj.dst_client_id, &client_state))
     }
@@ -158,20 +189,25 @@ impl FilterPolicy {
     ) -> Result<Permission, BoxError> {
         let identifier =
             CacheKey::Connection(obj.src_chain_id.clone(), obj.src_connection_id.clone());
-        trace!("controlling permissions for {:?}", identifier);
+
+        trace!(
+            "[client filter] controlling permissions for {:?}",
+            identifier
+        );
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", p, identifier);
+            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
             return Ok(*p);
         }
 
         let src_chain = registry.get_or_spawn(&obj.src_chain_id)?;
         trace!(
-            "[filter] deciding if to relay on {:?} hosted on chain {}",
+            "[client filter] deciding if to relay on {:?} hosted on chain {}",
             obj,
             obj.src_chain_id
         );
+
         let connection_end = src_chain.query_connection(&obj.src_connection_id, Height::zero())?;
         let client_state =
             src_chain.query_client_state(&connection_end.client_id(), Height::zero())?;
@@ -193,11 +229,15 @@ impl FilterPolicy {
         channel_id: &ChannelId,
     ) -> Result<Permission, BoxError> {
         let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
-        trace!("controlling permissions for {:?}", identifier);
+
+        trace!(
+            "[client filter] controlling permissions for {:?}",
+            identifier
+        );
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit {:?} for {:?}", p, identifier);
+            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
             return Ok(*p);
         }
 
@@ -219,10 +259,12 @@ impl FilterPolicy {
         )?;
 
         let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
+
         debug!(
             "[client filter] {:?}: relay for channel {:?}: ",
             permission, key
         );
+
         self.permission_cache.entry(key).or_insert(permission);
 
         Ok(permission)
