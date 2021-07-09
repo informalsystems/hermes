@@ -3,10 +3,23 @@
 // Todo: automate the creation of this module setup based on the dots in the filenames.
 //  This module setup is necessary because the generated code contains "super::" calls for dependencies.
 
+#![no_std]
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![forbid(unsafe_code)]
 #![doc(html_root_url = "https://docs.rs/ibc-proto/0.7.0")]
+
+extern crate alloc;
+extern crate core as std;
+
+// re-export format! macro from alloc::format to allow its use
+// in generated code
+#[macro_export]
+macro_rules! format {
+    ($($args:tt)*) => {
+        ::alloc::format!($( $args )*)
+    }
+}
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
 pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
