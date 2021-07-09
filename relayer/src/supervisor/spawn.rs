@@ -55,8 +55,8 @@ impl<'a> SpawnContext<'a> {
         Self {
             config,
             registry,
-            client_state_filter,
             workers,
+            client_state_filter,
             mode,
         }
     }
