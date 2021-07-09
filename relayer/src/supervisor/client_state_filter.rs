@@ -38,7 +38,7 @@ enum CacheKey {
 /// A cache storing filtering status (allow or deny) for
 /// arbitrary identifiers.
 #[derive(Default, Debug)]
-pub(crate) struct FilterPolicy {
+pub struct FilterPolicy {
     /// A cache associating a generic identifying key, such as
     /// client id, channel id, or connection id, with an
     /// [`Allowed`] status.
@@ -241,10 +241,10 @@ impl FilterPolicy {
         )
     }
 
-    pub fn control_uni_chan_path_object(
+    pub fn control_packet_object(
         &mut self,
         registry: &mut Registry,
-        obj: &object::UnidirectionalChannelPath,
+        obj: &object::Packet,
     ) -> Result<Permission, BoxError> {
         self.control_channel(
             registry,

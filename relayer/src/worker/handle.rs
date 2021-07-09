@@ -56,6 +56,12 @@ impl WorkerHandle {
         Ok(())
     }
 
+    /// Shutdown the worker.
+    pub fn shutdown(&self) -> Result<(), BoxError> {
+        self.tx.send(WorkerCmd::Shutdown)?;
+        Ok(())
+    }
+
     /// Wait for the worker thread to finish.
     pub fn join(self) -> thread::Result<()> {
         self.thread_handle.join()

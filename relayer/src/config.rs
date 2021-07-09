@@ -1,6 +1,8 @@
 //! Relayer configuration
 
-use std::collections::HashSet;
+pub mod reload;
+
+use std::collections::{HashMap, HashSet};
 use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
@@ -75,6 +77,14 @@ impl ChannelsSpec {
 pub mod default {
     use super::*;
 
+    pub fn filter() -> bool {
+        false
+    }
+
+    pub fn clear_packets_interval() -> u64 {
+        100
+    }
+
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
     }
@@ -104,6 +114,10 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn has_chain(&self, id: &ChainId) -> bool {
+        self.chains.iter().any(|c| c.id == *id)
+    }
+
     pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
         self.chains.iter().find(|c| c.id == *id)
     }
@@ -112,8 +126,8 @@ impl Config {
         self.chains.iter_mut().find(|c| c.id == *id)
     }
 
-    /// Returns true if packets are allowed on the channel [`PortId`] [`ChannelId`] on
-    /// [`ChainId`].
+    /// Returns true if filtering is disabled or if packets are allowed on
+    /// the channel [`PortId`] [`ChannelId`] on [`ChainId`].
     /// Returns false otherwise.
     pub fn packets_on_channel_allowed(
         &self,
@@ -121,10 +135,22 @@ impl Config {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> bool {
+        if !self.global.filter {
+            return true;
+        }
+
         match self.find_chain(chain_id) {
             None => false,
             Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
         }
+    }
+
+    pub fn handshake_enabled(&self) -> bool {
+        self.global.strategy == Strategy::HandshakeAndPackets
+    }
+
+    pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
+        self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }
 
@@ -178,17 +204,20 @@ impl fmt::Display for LogLevel {
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
     pub strategy: Strategy,
-    #[serde(default)]
-    pub filter: bool,
     pub log_level: LogLevel,
+    #[serde(default = "default::filter")]
+    pub filter: bool,
+    #[serde(default = "default::clear_packets_interval")]
+    pub clear_packets_interval: u64,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
-            filter: false,
             log_level: LogLevel::default(),
+            filter: default::filter(),
+            clear_packets_interval: default::clear_packets_interval(),
         }
     }
 }
@@ -241,7 +270,7 @@ pub struct ChainConfig {
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
-pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
+pub fn load(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     let config_toml =
         std::fs::read_to_string(&path).map_err(|e| error::Kind::ConfigIo.context(e))?;
 
@@ -275,7 +304,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use super::{parse, store_writer};
+    use super::{load, store_writer};
     use test_env_log::test;
 
     #[test]
@@ -285,7 +314,7 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = parse(path);
+        let config = load(path);
         println!("{:?}", config);
         assert!(config.is_ok());
     }
@@ -297,7 +326,7 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = parse(path).expect("could not parse config");
+        let config = load(path).expect("could not parse config");
 
         let mut buffer = Vec::new();
         store_writer(&config, &mut buffer).unwrap();
