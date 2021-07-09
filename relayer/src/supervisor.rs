@@ -287,9 +287,6 @@ impl Supervisor {
                 }
             };
 
-            // denied_clients: remember them here
-            // then iterate again through all chains... for conns & chans
-
             let clients = match chain.query_clients(clients_req.clone()) {
                 Ok(clients) => clients,
                 Err(e) => {
