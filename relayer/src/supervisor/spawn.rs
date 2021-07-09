@@ -185,8 +185,11 @@ impl<'a> SpawnContext<'a> {
         // Potentially ignore the client
         if self.client_filter_enabled()
             && matches!(
-                self.client_state_filter
-                    .control_client(&client.client_id, &client.client_state),
+                self.client_state_filter.control_client(
+                    &chain.id(),
+                    &client.client_id,
+                    &client.client_state
+                ),
                 Permission::Deny
             )
         {

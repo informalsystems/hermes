@@ -83,10 +83,14 @@ impl FilterPolicy {
             counterparty_chain.query_client_state(&counterparty_client_id, Height::zero())?;
 
         // Control both clients, cache their results.
-        let client_control = self.control_client(&connection.client_id(), &client_state);
-        let counterparty_client_control =
-            self.control_client(&counterparty_client_id, &counterparty_client_state);
-        let permission = client_control.and(&counterparty_client_control);
+        let client_permission =
+            self.control_client(chain_id, &connection.client_id(), &client_state);
+        let counterparty_client_permission = self.control_client(
+            &counterparty_chain_id,
+            &counterparty_client_id,
+            &counterparty_client_state,
+        );
+        let permission = client_permission.and(&counterparty_client_permission);
 
         debug!(
             "[client filter] {:?}: relay for conn {:?}",
@@ -105,8 +109,13 @@ impl FilterPolicy {
     /// be allowed or not.
     /// Returns `true` if client is allowed, `false` otherwise.
     /// Caches the result.
-    pub fn control_client(&mut self, client_id: &ClientId, state: &AnyClientState) -> Permission {
-        let identifier = CacheKey::Client(state.chain_id(), client_id.clone());
+    pub fn control_client(
+        &mut self,
+        host_chain: &ChainId,
+        client_id: &ClientId,
+        state: &AnyClientState,
+    ) -> Permission {
+        let identifier = CacheKey::Client(host_chain.clone(), client_id.clone());
 
         trace!(
             "[client filter] controlling permissions for {:?}",
@@ -179,7 +188,7 @@ impl FilterPolicy {
         );
 
         let client_state = chain.query_client_state(&obj.dst_client_id, Height::zero())?;
-        Ok(self.control_client(&obj.dst_client_id, &client_state))
+        Ok(self.control_client(&obj.dst_chain_id, &obj.dst_client_id, &client_state))
     }
 
     pub fn control_conn_object(
