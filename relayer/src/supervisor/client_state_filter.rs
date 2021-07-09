@@ -19,11 +19,11 @@ pub enum Permission {
 }
 
 impl Permission {
-    fn and(self, other: &Permission) -> Permission {
-        if matches!(self, Permission::Allow) && matches!(other, Permission::Allow) {
-            self
+    fn and(self, other: &Self) -> Self {
+        if matches!(self, Self::Allow) && matches!(other, Self::Allow) {
+            Self::Allow
         } else {
-            Permission::Deny
+            Self::Deny
         }
     }
 }
