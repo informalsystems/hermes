@@ -59,10 +59,11 @@ impl FilterPolicy {
         connection_id: &ConnectionId,
     ) -> Result<Permission, BoxError> {
         let identifier = CacheKey::from((client_state.chain_id(), connection_id.clone()));
+        trace!("controlling permissions for {:?}", identifier);
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit for {:?}: {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", identifier, p);
             return Ok(*p);
         }
 
@@ -98,10 +99,11 @@ impl FilterPolicy {
     /// Caches the result.
     pub fn control_client(&mut self, client_id: &ClientId, state: &AnyClientState) -> Permission {
         let identifier = CacheKey::from((state.chain_id(), client_id.clone()));
+        trace!("controlling permissions for {:?}", identifier);
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit for {:?}: {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", identifier, p);
             return *p;
         }
 
@@ -127,10 +129,11 @@ impl FilterPolicy {
         obj: &object::Client,
     ) -> Result<Permission, BoxError> {
         let identifier = CacheKey::Client(obj.dst_chain_id.clone(), obj.dst_client_id.clone());
+        trace!("controlling permissions for {:?}", identifier);
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit for {:?}: {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", identifier, p);
             return Ok(*p);
         }
 
@@ -151,10 +154,11 @@ impl FilterPolicy {
     ) -> Result<Permission, BoxError> {
         let identifier =
             CacheKey::Connection(obj.src_chain_id.clone(), obj.src_connection_id.clone());
+        trace!("controlling permissions for {:?}", identifier);
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit for {:?}: {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", identifier, p);
             return Ok(*p);
         }
 
@@ -184,10 +188,11 @@ impl FilterPolicy {
         channel_id: &ChannelId,
     ) -> Result<Permission, BoxError> {
         let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
+        trace!("controlling permissions for {:?}", identifier);
 
         // Return if cache hit
         if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("cache hit for {:?}: {:?}", identifier, p);
+            trace!("cache hit {:?} for {:?}", identifier, p);
             return Ok(*p);
         }
 
