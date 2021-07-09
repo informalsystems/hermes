@@ -133,7 +133,7 @@ impl FilterPolicy {
             Some(_) => {
                 trace!(
                     "[client filter] client {} on chain {} has a trust threshold different than 1/3",
-                    client_id, state.chain_id()
+                    client_id, host_chain
                 );
 
                 Permission::Deny
@@ -142,7 +142,7 @@ impl FilterPolicy {
                 trace!(
                     "[client filter] client {} on chain {} does not have a trust threshold set",
                     client_id,
-                    state.chain_id()
+                    host_chain
                 );
 
                 Permission::Deny
