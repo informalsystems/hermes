@@ -70,12 +70,16 @@ impl FilterPolicy {
         let client_control = self.control_client(&connection.client_id(), &client_state);
         let counterparty_client_control =
             self.control_client(&counterparty_client_id, &counterparty_client_state);
-        let allowed = client_control.and(&counterparty_client_control);
+        let permission = client_control.and(&counterparty_client_control);
 
+        debug!(
+            "\t [filter] relay for conn ? {:?}: {:?}",
+            id_conn, permission
+        );
         // Save the connection id in the cache
-        self.permission_cache.entry(id_conn).or_insert(allowed);
+        self.permission_cache.entry(id_conn).or_insert(permission);
 
-        Ok(allowed)
+        Ok(permission)
     }
 
     /// Given a client identifier and its corresponding client state,
@@ -84,17 +88,22 @@ impl FilterPolicy {
     /// Returns `true` if client is allowed, `false` otherwise.
     /// Caches the result.
     pub fn control_client(&mut self, client_id: &ClientId, state: &AnyClientState) -> Permission {
-        debug!("\t [filter] relay for client ? {:?}", state);
-
         let identifier = CacheKey::from((state.chain_id(), client_id.clone()));
 
-        let status = match state.trust_threshold() {
+        let permission = match state.trust_threshold() {
             Some(trust) if trust.numerator == 1 && trust.denominator == 3 => Permission::Allow,
             _ => Permission::Deny,
         };
 
-        self.permission_cache.entry(identifier).or_insert(status);
-        status
+        debug!(
+            "\t [filter] relay for client ? {:?}: {:?}",
+            state, permission
+        );
+        self.permission_cache
+            .entry(identifier)
+            .or_insert(permission);
+
+        permission
     }
 
     pub fn control_client_object(
@@ -153,7 +162,7 @@ impl FilterPolicy {
         let client_state =
             src_chain.query_client_state(&connection_end.client_id(), Height::zero())?;
 
-        let allowed = self.control_connection_end_and_client(
+        let permission = self.control_connection_end_and_client(
             registry,
             &client_state,
             &connection_end,
@@ -161,9 +170,13 @@ impl FilterPolicy {
         )?;
 
         let key = CacheKey::from((chain_id.clone(), port_id.clone(), channel_id.clone()));
-        self.permission_cache.entry(key).or_insert(allowed);
+        debug!(
+            "\t [filter] relay for channel ? {:?}: {:?}",
+            key, permission
+        );
+        self.permission_cache.entry(key).or_insert(permission);
 
-        Ok(allowed)
+        Ok(permission)
     }
 
     pub fn control_chan_object(

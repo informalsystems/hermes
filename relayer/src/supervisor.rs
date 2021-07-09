@@ -363,9 +363,9 @@ impl Supervisor {
                         ) {
                             Ok(Permission::Deny) => {
                                 warn!(
-                                    "skipping workers for chain {} and client {}. \
+                                    "skipping workers for chain {}, client {} & conn {}. \
                                  reason: client or counterparty client is not allowed",
-                                    chain_id, client.client_id,
+                                    chain_id, client.client_id, connection_id
                                 );
                                 continue;
                             }
