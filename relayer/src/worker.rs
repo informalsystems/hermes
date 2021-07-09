@@ -26,7 +26,7 @@ mod channel;
 pub use channel::ChannelWorker;
 
 mod uni_chan_path;
-pub use uni_chan_path::UniChanPathWorker;
+pub use uni_chan_path::PacketWorker;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WorkerMsg {
@@ -38,7 +38,7 @@ pub enum Worker {
     Client(ClientWorker),
     Connection(ConnectionWorker),
     Channel(ChannelWorker),
-    UniChanPath(UniChanPathWorker),
+    Packet(PacketWorker),
 }
 
 impl fmt::Display for Worker {
@@ -48,7 +48,7 @@ impl fmt::Display for Worker {
 }
 
 impl Worker {
-    /// Spawn a worker which relay events pertaining to an [`Object`] between two `chains`.
+    /// Spawn a worker which relays events pertaining to an [`Object`] between two `chains`.
     pub fn spawn(
         chains: ChainHandlePair,
         object: Object,
@@ -58,13 +58,7 @@ impl Worker {
     ) -> WorkerHandle {
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 
-        debug!(
-            "[{}] spawned worker with chains a:{} and b:{} for object {:#?} ",
-            object.short_name(),
-            chains.a.id(),
-            chains.b.id(),
-            object,
-        );
+        debug!("spawning worker for object {}", object.short_name(),);
 
         let worker = match object {
             Object::Client(client) => {
@@ -76,7 +70,7 @@ impl Worker {
             Object::Channel(channel) => {
                 Self::Channel(ChannelWorker::new(channel, chains, cmd_rx, telemetry))
             }
-            Object::UnidirectionalChannelPath(path) => Self::UniChanPath(UniChanPathWorker::new(
+            Object::Packet(path) => Self::Packet(PacketWorker::new(
                 path,
                 chains,
                 cmd_rx,
@@ -98,7 +92,7 @@ impl Worker {
             Self::Client(w) => w.run(),
             Self::Connection(w) => w.run(),
             Self::Channel(w) => w.run(),
-            Self::UniChanPath(w) => w.run(),
+            Self::Packet(w) => w.run(),
         };
 
         if let Err(e) = result {
@@ -120,7 +114,7 @@ impl Worker {
             Self::Client(w) => &w.chains(),
             Self::Connection(w) => w.chains(),
             Self::Channel(w) => w.chains(),
-            Self::UniChanPath(w) => w.chains(),
+            Self::Packet(w) => w.chains(),
         }
     }
 
@@ -129,7 +123,7 @@ impl Worker {
             Worker::Client(w) => w.object().clone().into(),
             Worker::Connection(w) => w.object().clone().into(),
             Worker::Channel(w) => w.object().clone().into(),
-            Worker::UniChanPath(w) => w.object().clone().into(),
+            Worker::Packet(w) => w.object().clone().into(),
         }
     }
 }

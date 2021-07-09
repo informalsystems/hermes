@@ -597,8 +597,8 @@ impl Channel {
                 })?;
 
         channel_state_on_destination(
-            channel_deps.channel.clone(),
-            channel_deps.connection,
+            &channel_deps.channel,
+            &channel_deps.connection,
             self.dst_chain().as_ref(),
         )
         .map_err(|_| {

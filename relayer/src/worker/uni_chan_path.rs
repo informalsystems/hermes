@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::{
     chain::handle::ChainHandlePair,
     link::{Link, LinkParameters, RelaySummary},
-    object::UnidirectionalChannelPath,
+    object::Packet,
     telemetry,
     telemetry::Telemetry,
     util::retry::{retry_with_index, RetryResult},
@@ -16,18 +16,23 @@ use crate::{
 
 use super::WorkerCmd;
 
+enum Step {
+    Success(RelaySummary),
+    Shutdown,
+}
+
 #[derive(Debug)]
-pub struct UniChanPathWorker {
-    path: UnidirectionalChannelPath,
+pub struct PacketWorker {
+    path: Packet,
     chains: ChainHandlePair,
     cmd_rx: Receiver<WorkerCmd>,
     telemetry: Telemetry,
     clear_packets_interval: u64,
 }
 
-impl UniChanPathWorker {
+impl PacketWorker {
     pub fn new(
-        path: UnidirectionalChannelPath,
+        path: Packet,
         chains: ChainHandlePair,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
@@ -42,7 +47,7 @@ impl UniChanPathWorker {
         }
     }
 
-    /// Run the event loop for events associated with a [`UnidirectionalChannelPath`].
+    /// Run the event loop for events associated with a [`Packet`].
     pub fn run(self) -> Result<(), BoxError> {
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
@@ -74,27 +79,23 @@ impl UniChanPathWorker {
             });
 
             match result {
-                Ok(_summary) => {
+                Ok(Step::Success(_summary)) => {
                     telemetry!(self.packet_metrics(&_summary));
                 }
 
+                Ok(Step::Shutdown) => {
+                    info!(path = %self.path.short_name(), "shutting down Packet worker");
+                    return Ok(());
+                }
+
                 Err(retries) => {
-                    return Err(format!(
-                        "UnidirectionalChannelPath worker failed after {} retries",
-                        retries
-                    )
-                    .into());
+                    return Err(format!("Packet worker failed after {} retries", retries).into());
                 }
             }
         }
     }
 
-    fn step(
-        &self,
-        cmd: Option<WorkerCmd>,
-        link: &mut Link,
-        index: u64,
-    ) -> RetryResult<RelaySummary, u64> {
+    fn step(&self, cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<Step, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
                 WorkerCmd::IbcEvents { batch } => {
@@ -116,13 +117,19 @@ impl UniChanPathWorker {
                         Ok(())
                     }
                 }
+
+                WorkerCmd::Shutdown => {
+                    return RetryResult::Ok(Step::Shutdown);
+                }
             };
 
             if let Err(e) = result {
                 error!(
+                    path = %self.path.short_name(),
                     "[{}] worker: handling command encountered error: {}",
                     link.a_to_b, e
                 );
+
                 return RetryResult::Retry(index);
             }
         }
@@ -133,12 +140,14 @@ impl UniChanPathWorker {
             .and_then(|_| link.a_to_b.execute_schedule());
 
         match result {
-            Ok(summary) => RetryResult::Ok(summary),
+            Ok(summary) => RetryResult::Ok(Step::Success(summary)),
             Err(e) => {
                 error!(
+                    path = %self.path.short_name(),
                     "[{}] worker: schedule execution encountered error: {}",
                     link.a_to_b, e
                 );
+
                 RetryResult::Retry(index)
             }
         }
@@ -150,7 +159,7 @@ impl UniChanPathWorker {
     }
 
     /// Get a reference to the client worker's object.
-    pub fn object(&self) -> &UnidirectionalChannelPath {
+    pub fn object(&self) -> &Packet {
         &self.path
     }
 

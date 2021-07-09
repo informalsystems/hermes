@@ -1,6 +1,8 @@
 //! Relayer configuration
 
-use std::collections::HashSet;
+pub mod reload;
+
+use std::collections::{HashMap, HashSet};
 use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
@@ -83,12 +85,24 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn has_chain(&self, id: &ChainId) -> bool {
+        self.chains.iter().any(|c| c.id == *id)
+    }
+
     pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
         self.chains.iter().find(|c| c.id == *id)
     }
 
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
+    }
+
+    pub fn handshake_enabled(&self) -> bool {
+        self.global.strategy == Strategy::HandshakeAndPackets
+    }
+
+    pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
+        self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }
 
@@ -208,7 +222,7 @@ pub struct ChainConfig {
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
-pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
+pub fn load(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     let config_toml =
         std::fs::read_to_string(&path).map_err(|e| error::Kind::ConfigIo.context(e))?;
 
@@ -242,7 +256,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use super::{parse, store_writer};
+    use super::{load, store_writer};
     use test_env_log::test;
 
     #[test]
@@ -252,7 +266,7 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = parse(path);
+        let config = load(path);
         println!("{:?}", config);
         assert!(config.is_ok());
     }
@@ -264,7 +278,7 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = parse(path).expect("could not parse config");
+        let config = load(path).expect("could not parse config");
 
         let mut buffer = Vec::new();
         store_writer(&config, &mut buffer).unwrap();

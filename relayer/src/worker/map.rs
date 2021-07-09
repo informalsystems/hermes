@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crossbeam_channel::Sender;
 
 use ibc::ics24_host::identifier::ChainId;
+use tracing::{debug, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
@@ -85,6 +86,26 @@ impl WorkerMap {
         }
     }
 
+    /// Spawn a new [`Worker`], only if one does not exists already.
+    ///
+    /// Returns whether or not the worker was actually spawned.
+    pub fn spawn(
+        &mut self,
+        src: Box<dyn ChainHandle>,
+        dst: Box<dyn ChainHandle>,
+        object: &Object,
+        config: &Config,
+    ) -> bool {
+        if !self.workers.contains_key(object) {
+            let worker = self.spawn_worker(src, dst, object, config);
+            self.workers.entry(object.clone()).or_insert(worker);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Force spawn a worker for the given [`Object`].
     fn spawn_worker(
         &mut self,
         src: Box<dyn ChainHandle>,
@@ -102,6 +123,38 @@ impl WorkerMap {
             config,
         )
     }
+
+    /// List the [`Object`]s for which there is an associated worker
+    /// for the given chain.
+    pub fn objects_for_chain(&self, chain_id: &ChainId) -> Vec<Object> {
+        self.workers
+            .keys()
+            .filter(|o| o.for_chain(chain_id))
+            .cloned()
+            .collect()
+    }
+
+    /// Shutdown the worker associated with the given [`Object`].
+    pub fn shutdown_worker(&mut self, object: &Object) {
+        if let Some(handle) = self.workers.remove(object) {
+            telemetry!(self.telemetry.worker(metric_type(object), -1));
+
+            match handle.shutdown() {
+                Ok(()) => {
+                    debug!(object = %object.short_name(), "waiting for worker to exit");
+                    let _ = handle.join();
+                }
+                Err(e) => {
+                    warn!(object = %object.short_name(), "a worker may have failed to shutdown properly: {}", e);
+                }
+            }
+        }
+    }
+
+    /// Get an iterator over the worker map's objects.
+    pub fn objects(&self) -> impl Iterator<Item = &Object> {
+        self.workers.keys()
+    }
 }
 
 #[cfg(feature = "telemetry")]
@@ -111,6 +164,6 @@ fn metric_type(o: &Object) -> ibc_telemetry::state::WorkerType {
         Object::Client(_) => Client,
         Object::Connection(_) => Connection,
         Object::Channel(_) => Channel,
-        Object::UnidirectionalChannelPath(_) => Packet,
+        Object::Packet(_) => Packet,
     }
 }

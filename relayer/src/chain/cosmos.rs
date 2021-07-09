@@ -74,7 +74,6 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::QueryResponse;
 use crate::config::{ChainConfig, GasPrice};
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventMonitor, EventReceiver};
@@ -82,6 +81,7 @@ use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
+use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
 
 use super::Chain;
 
@@ -724,10 +724,10 @@ impl Chain for CosmosSdkChain {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
         crate::time!("init_event_monitor");
 
-        let (mut event_monitor, event_receiver) = EventMonitor::new(
+        let (mut event_monitor, event_receiver, monitor_tx) = EventMonitor::new(
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
             rt,
@@ -736,9 +736,13 @@ impl Chain for CosmosSdkChain {
 
         event_monitor.subscribe().map_err(Kind::EventMonitor)?;
 
-        let monitor_thread = thread::spawn(move || event_monitor.run());
+        thread::spawn(move || event_monitor.run());
 
-        Ok((event_receiver, Some(monitor_thread)))
+        Ok((event_receiver, monitor_tx))
+    }
+
+    fn shutdown(self) -> Result<(), Error> {
+        Ok(())
     }
 
     fn id(&self) -> &ChainId {
