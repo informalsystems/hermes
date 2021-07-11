@@ -48,10 +48,8 @@
             src = ./.;
           }) {
             # Individual crate overrides go here
-            # Example: https://github.com/balsoft/simple-osd-daemons/blob/6f85144934c0c1382c7a4d3a2bbb80106776e270/flake.nix#L28-L50
             defaultCrateOverrides = pkgs.defaultCrateOverrides // {
-              # The ibc-proto-compiler crate itself is overriden here. Typically we
-              # configure non-Rust dependencies (see below) here.
+              # The ibc-proto-compiler crate itself is overriden here.
               ${name} = oldAttrs: {
                 nativeBuildInputs = with pkgs; [ rustc cargo pkgconfig ];
               };
