@@ -83,7 +83,7 @@
               compileScript = pkgs.writeShellScriptBin "compile" ''
                 ${self.packages.${system}.${name}}/bin/${name} clone --out /tmp/cosmos --sdk-commit ${cosmos-sdk-rev} --ibc-go-commit ${ibc-go-rev}
                 ${self.packages.${system}.${name}}/bin/${name} compile --sdk /tmp/cosmos/sdk --ibc /tmp/cosmos/ibc --out ../proto/src/prost
-                ## rm -rf /tmp/cosmos/
+                rm -rf /tmp/cosmos/
               '';
           in
             pkgs.mkShell {

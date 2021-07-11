@@ -10,9 +10,14 @@ There is a script wrapper provided by nix that takes care of the `protoc` depend
 
 Instruction on how to install nix can be found [here](https://nixos.org/download.html)
 
-```shell
-$ nix-shell # you can run "nix develop" if you have experimental support for flakes
-$ compile
+```
+nix-shell --run "compile"
+```
+
+Or if you have experimental nix with support for flakes
+
+```
+nix develop -c "compile"
 ```
 
 ### Using Cargo
