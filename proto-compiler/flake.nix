@@ -78,9 +78,10 @@
           devShell =
           let cosmos-sdk-rev = "7648bfca45b9d0897103ec739210607dce77c4fb";
               ibc-go-rev = "333c1f338b2a14a1928a6f8ab64c37123c0e97b6";
+              exe-path = "${self.packages.${system}.${name}}/bin/${name}";
               compileScript = pkgs.writeShellScriptBin "compile" ''
-                ${self.packages.${system}.${name}}/bin/${name} clone --out /tmp/cosmos --sdk-commit ${cosmos-sdk-rev} --ibc-go-commit ${ibc-go-rev}
-                ${self.packages.${system}.${name}}/bin/${name} compile --sdk /tmp/cosmos/sdk --ibc /tmp/cosmos/ibc --out ../proto/src/prost
+                ${exe-path} clone --out /tmp/cosmos --sdk-commit ${cosmos-sdk-rev} --ibc-go-commit ${ibc-go-rev}
+                ${exe-path} compile --sdk /tmp/cosmos/sdk --ibc /tmp/cosmos/ibc --out ../proto/src/prost
                 rm -rf /tmp/cosmos/
               '';
           in
