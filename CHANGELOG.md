@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+@JonathanLorimer added a nix expression to `ibc-proto-compiler` ([#1170])
+
 Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
 reliability of Hermes ([#697]).
 
