@@ -4,6 +4,17 @@ The `ibc-proto-compiler` is a simple command-line tool to automate the compilati
 
 ## Usage
 
+### Nix Shell
+
+There is a script wrapper provided by nix that takes care of the `protoc` dependency imposed by `prost-build` and provides a shell wrapper that handles cloning the cosmos go dependencies.
+
+Instruaction on how to install nix can be found [here](https://nixos.org/download.html)
+
+```shell
+$ nix-shell # nix develop if you have experimental support for flakes
+$ compile
+```
+
 ### Clone the Cosmos SDK
 
 From within the `proto-compiler` directory, compile the binary using the `--locked` flag:
@@ -41,5 +52,5 @@ Note: the `--ibc` option is not mandatory; if omitted, then the IBC .proto files
 Additionally, this command will output the commit hash at which the Cosmos SDK is checked out into `$out/COSMOS_SDK_COMMIT` and
 similarly the commit hash for IBC-go is saved into `$out/COSMOS_IBC_VERSION`.
 
-The two commit values are exposed via the `ibc_proto::COSMOS_SDK_VERSION` and `ibc_proto::COSMOS_IBC_VERSION` 
+The two commit values are exposed via the `ibc_proto::COSMOS_SDK_VERSION` and `ibc_proto::COSMOS_IBC_VERSION`
 constants in the `ibc-proto` library.
