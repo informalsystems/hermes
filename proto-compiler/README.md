@@ -8,10 +8,10 @@ The `ibc-proto-compiler` is a simple command-line tool to automate the compilati
 
 There is a script wrapper provided by nix that takes care of the `protoc` dependency imposed by `prost-build` and provides a shell wrapper that handles cloning the cosmos go dependencies.
 
-Instruaction on how to install nix can be found [here](https://nixos.org/download.html)
+Instruction on how to install nix can be found [here](https://nixos.org/download.html)
 
 ```shell
-$ nix-shell # nix develop if you have experimental support for flakes
+$ nix-shell # you can run "nix develop" if you have experimental support for flakes
 $ compile
 ```
 
