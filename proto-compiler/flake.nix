@@ -56,8 +56,8 @@
                 nativeBuildInputs = with pkgs; [ rustc cargo pkgconfig ];
               };
               prost-build = oldAttrs: {
-                buildInputs = [ pkgs.protobuf ];
-                PROTOC = "protoc";
+                buildInputs = [pkgs.protobuf];
+                PROTOC = "${pkgs.protobuf}/bin/protoc";
               };
             };
           };
@@ -83,13 +83,13 @@
               compileScript = pkgs.writeShellScriptBin "compile" ''
                 ${self.packages.${system}.${name}}/bin/${name} clone --out /tmp/cosmos --sdk-commit ${cosmos-sdk-rev} --ibc-go-commit ${ibc-go-rev}
                 ${self.packages.${system}.${name}}/bin/${name} compile --sdk /tmp/cosmos/sdk --ibc /tmp/cosmos/ibc --out ../proto/src/prost
-                rm -rf /tmp/cosmos/
+                ## rm -rf /tmp/cosmos/
               '';
           in
             pkgs.mkShell {
               packages = [ compileScript ];
               inputsFrom = builtins.attrValues self.packages.${system};
-              buildInputs = with pkgs; [ cargo cargo-watch trunk protobuf];
+              buildInputs = with pkgs; [ cargo cargo-watch trunk ];
               RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
             };
         }
