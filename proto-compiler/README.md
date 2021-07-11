@@ -15,7 +15,7 @@ $ nix-shell # you can run "nix develop" if you have experimental support for fla
 $ compile
 ```
 
-### Clone the Cosmos SDK
+### Using Cargo
 
 From within the `proto-compiler` directory, compile the binary using the `--locked` flag:
 
