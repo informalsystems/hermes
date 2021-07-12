@@ -25,8 +25,10 @@ only to Hermes passive relaying mode (command `hermes start`), and will
 not affect the other commands.
 
 ### FEATURES
+
 - [ibc-relayer]
   - The chains configuration can be reloaded by sending the Hermes process a `SIGHUP` signal ([#1117])
+  - Added support for filtering based on client state trust threshold ([#1165])
 
 - [ibc-relayer-cli]
   - Added `config validate` CLI to Hermes ([#600])
@@ -61,6 +63,7 @@ not affect the other commands.
 [#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
 [#1141]: https://github.com/informalsystems/ibc-rs/issues/1141
 [#1143]: https://github.com/informalsystems/ibc-rs/issues/1143
+[#1165]: https://github.com/informalsystems/ibc-rs/issues/1165
 
 
 ## v0.5.0
