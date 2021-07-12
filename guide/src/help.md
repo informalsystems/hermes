@@ -143,25 +143,33 @@ kill -SIGUSR1 PID
 
 Hermes will print some information about the workers which are currently running.
 
-For example, with two chains configured and one channel between the pair of chains:
+For example, with three chains configured and one channel between each pair of chains:
 
 ```text
-Jun 28 22:01:32.103  INFO Dumping state (triggered by SIGUSR1)
-Jun 28 22:01:32.108  INFO
-Jun 28 22:01:32.109  INFO * Chains: ibc-0, ibc-1
-Jun 28 22:01:32.109  INFO * Client workers:
-Jun 28 22:01:32.109  INFO   - client::ibc-0->ibc-1:07-tendermint-0
-Jun 28 22:01:32.109  INFO   - client::ibc-1->ibc-0:07-tendermint-1
-Jun 28 22:01:32.109  INFO * Packet workers:
-Jun 28 22:01:32.109  INFO   - packet::channel-0/transfer:ibc-1->ibc-0
-Jun 28 22:01:32.109  INFO   - packet::channel-1/transfer:ibc-0->ibc-1
+INFO Dumping state (triggered by SIGUSR1)
+INFO
+INFO * Chains: ibc-0, ibc-1, ibc-2
+INFO * Client workers:
+INFO   - client::ibc-0->ibc-1:07-tendermint-0 (id: 5)
+INFO   - client::ibc-0->ibc-2:07-tendermint-0 (id: 9)
+INFO   - client::ibc-1->ibc-0:07-tendermint-0 (id: 1)
+INFO   - client::ibc-1->ibc-2:07-tendermint-1 (id: 11)
+INFO   - client::ibc-2->ibc-0:07-tendermint-1 (id: 3)
+INFO   - client::ibc-2->ibc-1:07-tendermint-1 (id: 7)
+INFO * Packet workers:
+INFO   - packet::channel-0/transfer:ibc-0->ibc-1 (id: 2)
+INFO   - packet::channel-0/transfer:ibc-1->ibc-0 (id: 6)
+INFO   - packet::channel-0/transfer:ibc-2->ibc-0 (id: 10)
+INFO   - packet::channel-1/transfer:ibc-0->ibc-2 (id: 4)
+INFO   - packet::channel-1/transfer:ibc-1->ibc-2 (id: 8)
+INFO   - packet::channel-1/transfer:ibc-2->ibc-1 (id: 12)
 ```
 
 or in JSON form (prettified):
 
 ```json
 {
-  "timestamp": "Jun 28 22:01:59.403",
+  "timestamp": "Jul 12 17:04:37.244",
   "level": "INFO",
   "fields": {
     "message": "Dumping state (triggered by SIGUSR1)"
@@ -170,37 +178,126 @@ or in JSON form (prettified):
 {
   "chains": [
     "ibc-0",
-    "ibc-1"
+    "ibc-1",
+    "ibc-2"
   ],
   "workers": {
     "Client": [
       {
-        "type": "Client",
-        "dst_chain_id": "ibc-1",
-        "dst_client_id": "07-tendermint-0",
-        "src_chain_id": "ibc-0"
+        "id": 5,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-1",
+          "dst_client_id": "07-tendermint-0",
+          "src_chain_id": "ibc-0"
+        }
       },
       {
-        "type": "Client",
-        "dst_chain_id": "ibc-0",
-        "dst_client_id": "07-tendermint-1",
-        "src_chain_id": "ibc-1"
+        "id": 9,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-2",
+          "dst_client_id": "07-tendermint-0",
+          "src_chain_id": "ibc-0"
+        }
+      },
+      {
+        "id": 1,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-0",
+          "dst_client_id": "07-tendermint-0",
+          "src_chain_id": "ibc-1"
+        }
+      },
+      {
+        "id": 11,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-2",
+          "dst_client_id": "07-tendermint-1",
+          "src_chain_id": "ibc-1"
+        }
+      },
+      {
+        "id": 3,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-0",
+          "dst_client_id": "07-tendermint-1",
+          "src_chain_id": "ibc-2"
+        }
+      },
+      {
+        "id": 7,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-1",
+          "dst_client_id": "07-tendermint-1",
+          "src_chain_id": "ibc-2"
+        }
       }
     ],
     "Packet": [
       {
-        "type": "Packet",
-        "dst_chain_id": "ibc-0",
-        "src_chain_id": "ibc-1",
-        "src_channel_id": "channel-0",
-        "src_port_id": "transfer"
+        "id": 2,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-1",
+          "src_chain_id": "ibc-0",
+          "src_channel_id": "channel-0",
+          "src_port_id": "transfer"
+        }
       },
       {
-        "type": "Packet",
-        "dst_chain_id": "ibc-1",
-        "src_chain_id": "ibc-0",
-        "src_channel_id": "channel-1",
-        "src_port_id": "transfer"
+        "id": 6,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-0",
+          "src_chain_id": "ibc-1",
+          "src_channel_id": "channel-0",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 10,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-0",
+          "src_chain_id": "ibc-2",
+          "src_channel_id": "channel-0",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 4,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-2",
+          "src_chain_id": "ibc-0",
+          "src_channel_id": "channel-1",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 8,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-2",
+          "src_chain_id": "ibc-1",
+          "src_channel_id": "channel-1",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 12,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-1",
+          "src_chain_id": "ibc-2",
+          "src_channel_id": "channel-1",
+          "src_port_id": "transfer"
+        }
       }
     ]
   }
