@@ -24,6 +24,11 @@ hermes [-c CONFIG_FILE] COMMAND
 
 The configuration file must have one `global` section, and one `chains` section for each chain.
 
+> **Note:** As of 0.6.0, the Hermes configuration file is self-documented.
+> This section of the guide which discusses each parameter in turn is no
+> longer maintained, and we may remove it soon. Please read the configuration
+> file `config.toml` itself for the most up-to-date documentation of parameters.
+
 ### `[global]`
 
 The `global` section has parameters that apply globally to the relayer operation.
@@ -185,8 +190,13 @@ As of version 0.6.0, Hermes will react to receiving a `SIGHUP` signal
 by reloading the `[chains]` section of the configuration, and
 stopping, starting or restarting the affected workers.
 
+> ⚠️  **Warning:** the configuration reload feature only supports
+> adding, removing, or updating configuration of chains. It does
+> not support dynamically changing global features, such as the
+> filtering mechanism or logging level.
+
 For example, say you start with the configuration given in the previous section
-in `~/.hermes/config.toml, ie. with two chains `ibc-0` and `ibc-1`.
+in `~/.hermes/config.toml`, ie. with two chains `ibc-0` and `ibc-1`.
 
 1. Start three chains `ibc-0`, `ibc-1` and `ibc-2`:
 
