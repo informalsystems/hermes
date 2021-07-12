@@ -163,7 +163,7 @@ Removing network ibc-rs_relaynet
 
 ### [Upgrading the gaia chains release and generating new container images](#upgrading-chains)
 
-The repository stores the files used to configure and build the chains for the containers. For example, the files for a `gaia` chain release `v3.0.0` can be seen [here](./chains/gaia)
+The repository stores the files used to configure and build the chains for the containers. For example, the files for a `gaia` chain release `v5.0.0` can be seen [here](./chains/gaia)
 
 If you need to generate configuration files for a new gaia release and new containers, please follow the steps below:
 
@@ -172,8 +172,8 @@ If you need to generate configuration files for a new gaia release and new conta
     `cd ci`
 
 
-2. Open the `build-ibc-chains.sh` file and change the release. Just replace the value for the `GAIA_BRANCH` parameter. For example to set it to release `v3.0.0` use:
-    `GAIA_BRANCH="v3.0.0"`
+2. Open the `build-ibc-chains.sh` file and change the release. Just replace the value for the `GAIA_BRANCH` parameter. For example to set it to release `v5.0.0` use:
+    `GAIA_BRANCH="v5.0.0"`
 
 
 3. Run the `build-ibc-chains.sh` script:
@@ -187,17 +187,17 @@ __Note__: This will generate the files for the chains in the `/ci/chains/gaia` f
 4. Committing the release files. **You have to** add the new chain files generated to the ibc-rs repository, just `git commit` the files, otherwise the CI might fail because private keys don't match.
 
 
-5. Update the release for Docker Compose. If this new release should be the default release for running the end to end (e2e) test you need to update the release version in the `docker-compose.yml` file in the `ci` folder of the repository. Open the file and change the release version in all the places required (image name and RELEASE variables. For example, if current release is `v3.0.0` and the new one is `v4.0.0` just do a find and replace with these two values.
+5. Update the release for Docker Compose. If this new release should be the default release for running the end to end (e2e) test you need to update the release version in the `docker-compose.yml` file in the `ci` folder of the repository. Open the file and change the release version in all the places required (image name and RELEASE variables. For example, if current release is `v4.0.0` and the new one is `v5.0.0` just do a find and replace with these two values.
    
 Change the version in the image for ibc-0 and ibc-1 services:
    
    ```
-   image: "informaldev/ibc-0:v4.1.0"
+   image: "informaldev/ibc-0:v4.0.0"
    ```
    
 And in the relayer service:
 
    ```
       args:
-        RELEASE: v4.1.0
+        RELEASE: v4.0.0
    ```
