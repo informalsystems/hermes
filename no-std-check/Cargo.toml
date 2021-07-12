@@ -1,0 +1,9 @@
+[package]
+name = "no-std-check"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+ibc = { path = "../modules" }
+ibc-proto = { path = "../proto" }
+flex-error = { version = "0.3.0", default-features = false }

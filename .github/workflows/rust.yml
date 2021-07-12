@@ -83,6 +83,21 @@ jobs:
           command: test
           args: --all-features --no-fail-fast -- --nocapture
 
+  no-std-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: no-std-check
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+
   # test-coverage:
   #   runs-on: ubuntu-latest
   #   steps:

@@ -9,6 +9,7 @@ members = [
 ]
 
 exclude = [
+    "no-std-check",
     "proto-compiler"
 ]
 
