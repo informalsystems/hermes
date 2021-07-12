@@ -101,6 +101,7 @@ impl KeyEntry {
 pub trait KeyStore {
     fn get_key(&self, key_name: &str) -> Result<KeyEntry, Error>;
     fn add_key(&mut self, key_name: &str, key_entry: KeyEntry) -> Result<(), Error>;
+    fn remove_key(&mut self, key_name: &str) -> Result<(), Error>;
     fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error>;
 }
 
@@ -134,6 +135,11 @@ impl KeyStore for Memory {
 
         self.keys.insert(key_name.to_string(), key_entry);
 
+        Ok(())
+    }
+
+    fn remove_key(&mut self, key_name: &str) -> Result<(), Error> {
+        self.keys.remove(key_name).ok_or(Kind::KeyNotFound)?;
         Ok(())
     }
 
@@ -196,6 +202,17 @@ impl KeyStore for Test {
 
         serde_json::to_writer_pretty(file, &key_entry)
             .map_err(|_| Kind::KeyStore.context("error writing the key file"))?;
+
+        Ok(())
+    }
+
+    fn remove_key(&mut self, key_name: &str) -> Result<(), Error> {
+        let mut filename = self.store.join(key_name);
+        filename.set_extension(KEYSTORE_FILE_EXTENSION);
+
+        fs::remove_file(filename.clone()).map_err(|_| {
+            Kind::KeyStore.context(format!("cannot find key file at '{}'", filename.display()))
+        })?;
 
         Ok(())
     }
@@ -263,6 +280,13 @@ impl KeyRing {
         match self {
             KeyRing::Memory(m) => m.add_key(key_name, key_entry),
             KeyRing::Test(d) => d.add_key(key_name, key_entry),
+        }
+    }
+
+    pub fn remove_key(&mut self, key_name: &str) -> Result<(), Error> {
+        match self {
+            KeyRing::Memory(m) => m.remove_key(key_name),
+            KeyRing::Test(d) => d.remove_key(key_name),
         }
     }
 
