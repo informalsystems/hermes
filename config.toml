@@ -9,10 +9,9 @@ strategy = 'packets'
 
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
-
 # Currently Hermes supports packet filtering on a per-chain basis; see the
 # chain-specific filter specification below in [chains.packet_filter].
-filter = true
+filter = false
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
@@ -144,25 +143,3 @@ max_tx_size = 2097152
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
-
-
-
-[[chains]]
-id = 'ibc-2'
-rpc_addr = 'http://127.0.0.1:26457'
-grpc_addr = 'http://127.0.0.1:9092'
-websocket_addr = 'ws://127.0.0.1:26457/websocket'
-rpc_timeout = '10s'
-account_prefix = 'cosmos'
-key_name = 'testkey'
-store_prefix = 'ibc'
-max_gas = 3000000
-gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
-max_msg_num = 30
-max_tx_size = 2097152
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-
