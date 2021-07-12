@@ -62,6 +62,11 @@ pub mod cosmos {
         pub mod v1beta1 {
             include!("prost/cosmos.base.v1beta1.rs");
         }
+        pub mod tendermint {
+            pub mod v1beta1 {
+                include!("prost/cosmos.base.tendermint.v1beta1.rs");
+            }
+        }
     }
     pub mod crypto {
         pub mod multisig {

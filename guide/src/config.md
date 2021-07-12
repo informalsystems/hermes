@@ -105,9 +105,11 @@ A `chains` section includes parameters related to a chain and the full node to w
 
 * __trusting_period__: *(string)* Specify the amount of time to be used as the light client trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default: `14days` (336 hours)
 
-* __trust_threshold__: *(table)* Specify the trust threshold for the light client, ie. the maximum fraction of validators which have changed between two blocks. Default: `{ numerator = '1', denominator = '3' }`, ie. 1/3.
+* __trust_threshold__ <sup>(advanced)</sup>: *(table)* Specify the trust threshold for the light client, ie. the maximum fraction of validators which have changed between two blocks. Default: `{ numerator = '1', denominator = '3' }`, ie. 1/3.
   * __numerator__: *(string)* The numerator of the fraction (must parse to a `u64`).
   * __denominator__: *(string)* The denominator of the fraction (must parse to a `u64`).
+
+  __Warning__ - _This is an advanced feature! Modify with caution._
 
 For example if you want to add a configuration for a chain named `ibc-0`:
 
@@ -250,4 +252,3 @@ on [inspecting the relayer state](help.md#inspecting-the-relayer-state).
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
 [log-level]: ./help.html#parametrizing-the-log-output-level
-

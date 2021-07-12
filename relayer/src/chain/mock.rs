@@ -1,6 +1,5 @@
 use std::ops::Add;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
 
 use crossbeam_channel as channel;
@@ -42,7 +41,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use crate::chain::Chain;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::{EventReceiver, EventSender};
+use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
@@ -88,12 +87,17 @@ impl Chain for MockChain {
     fn init_event_monitor(
         &self,
         _rt: Arc<Runtime>,
-    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
-        Ok((self.event_receiver.clone(), None))
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
+        let (tx, _) = crossbeam_channel::unbounded();
+        Ok((self.event_receiver.clone(), tx))
     }
 
     fn id(&self) -> &ChainId {
         &self.config.id
+    }
+
+    fn shutdown(self) -> Result<(), Error> {
+        Ok(())
     }
 
     fn keybase(&self) -> &KeyRing {
@@ -390,7 +394,7 @@ pub mod test_utils {
 
     use ibc::ics24_host::identifier::ChainId;
 
-    use crate::config::{ChainConfig, GasPrice};
+    use crate::config::{ChainConfig, GasPrice, PacketFilter};
 
     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
@@ -411,6 +415,7 @@ pub mod test_utils {
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),
+            packet_filter: PacketFilter::default(),
         }
     }
 }

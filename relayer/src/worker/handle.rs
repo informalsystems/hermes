@@ -50,9 +50,15 @@ impl WorkerHandle {
         Ok(())
     }
 
-    /// Send a batch of [`NewBlock`] event to the worker.
+    /// Send a [`NewBlock`] event to the worker.
     pub fn send_new_block(&self, height: Height, new_block: NewBlock) -> Result<(), BoxError> {
         self.tx.send(WorkerCmd::NewBlock { height, new_block })?;
+        Ok(())
+    }
+
+    /// Shutdown the worker.
+    pub fn shutdown(&self) -> Result<(), BoxError> {
+        self.tx.send(WorkerCmd::Shutdown)?;
         Ok(())
     }
 
