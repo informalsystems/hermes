@@ -27,7 +27,7 @@ The configuration file must have one `global` section, and one `chains` section 
 > **Note:** As of 0.6.0, the Hermes configuration file is self-documented.
 > This section of the guide which discusses each parameter in turn is no
 > longer maintained, and we may remove it soon. Please read the configuration
-> file `config.toml` itself for the most up-to-date documentation of parameters.
+> file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.6.0/config.toml) itself for the most up-to-date documentation of parameters.
 
 ### `[global]`
 
