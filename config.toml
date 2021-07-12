@@ -9,8 +9,13 @@ strategy = 'packets'
 
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
-# Currently Hermes supports packet filtering on a per-chain basis; see the
-# chain-specific filter specification below in [chains.packet_filter].
+# Currently Hermes supports two filters:
+# 1. Packet filtering on a per-chain basis; see the chain-specific
+#   filter specification below in [chains.packet_filter].
+# 2. Filter for all activities based on client state trust threshold; this filter
+#   is parametrized with (numerator = 1, denominator = 3), so that clients with
+#   thresholds different than this will be ignored.
+# If set to 'true', both of the above filters will be enabled.
 filter = false
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
@@ -104,7 +109,7 @@ trusting_period = '14days'
 # which have changed between two blocks.
 # Default: { numerator = '1', denominator = '3' }, ie. 1/3.
 # Warning: This is an advanced feature! Modify with caution.
-trust_threshold = { numerator = '2', denominator = '3' }
+trust_threshold = { numerator = '1', denominator = '3' }
 
 # This section specifies the filters for policy based relaying.
 # Default: no policy/ filters
