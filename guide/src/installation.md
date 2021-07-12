@@ -159,6 +159,7 @@ USAGE:
 
 SUBCOMMANDS:
     help       Get usage information
+    config     Validate Hermes configuration file
     keys       Manage keys in the relayer for each chain
     create     Create objects (client, connection, or channel) on chains
     update     Update objects (clients) on chains
