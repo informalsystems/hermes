@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crossbeam_channel::Sender;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info};
 
 use crate::{chain::handle::ChainHandlePair, config::Config, object::Object, telemetry::Telemetry};
@@ -28,17 +29,37 @@ pub use channel::ChannelWorker;
 mod uni_chan_path;
 pub use uni_chan_path::PacketWorker;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct WorkerId(u64);
+
+impl WorkerId {
+    pub fn new(id: u64) -> Self {
+        Self(id)
+    }
+
+    pub fn next(self) -> Self {
+        Self(self.0 + 1)
+    }
+}
+
+impl fmt::Display for WorkerId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WorkerMsg {
-    Stopped(Object),
+    Stopped(WorkerId, Object),
 }
 
 /// A worker processes batches of events associated with a given [`Object`].
 pub enum Worker {
-    Client(ClientWorker),
-    Connection(ConnectionWorker),
-    Channel(ChannelWorker),
-    Packet(PacketWorker),
+    Client(WorkerId, ClientWorker),
+    Connection(WorkerId, ConnectionWorker),
+    Channel(WorkerId, ChannelWorker),
+    Packet(WorkerId, PacketWorker),
 }
 
 impl fmt::Display for Worker {
@@ -51,6 +72,7 @@ impl Worker {
     /// Spawn a worker which relays events pertaining to an [`Object`] between two `chains`.
     pub fn spawn(
         chains: ChainHandlePair,
+        id: WorkerId,
         object: Object,
         msg_tx: Sender<WorkerMsg>,
         telemetry: Telemetry,
@@ -60,46 +82,53 @@ impl Worker {
 
         debug!("spawning worker for object {}", object.short_name(),);
 
-        let worker = match object {
-            Object::Client(client) => {
-                Self::Client(ClientWorker::new(client, chains, cmd_rx, telemetry))
-            }
-            Object::Connection(connection) => {
-                Self::Connection(ConnectionWorker::new(connection, chains, cmd_rx, telemetry))
-            }
-            Object::Channel(channel) => {
-                Self::Channel(ChannelWorker::new(channel, chains, cmd_rx, telemetry))
-            }
-            Object::Packet(path) => Self::Packet(PacketWorker::new(
-                path,
-                chains,
-                cmd_rx,
-                telemetry,
-                config.global.clear_packets_interval,
-            )),
+        let worker = match &object {
+            Object::Client(client) => Self::Client(
+                id,
+                ClientWorker::new(client.clone(), chains, cmd_rx, telemetry),
+            ),
+            Object::Connection(connection) => Self::Connection(
+                id,
+                ConnectionWorker::new(connection.clone(), chains, cmd_rx, telemetry),
+            ),
+            Object::Channel(channel) => Self::Channel(
+                id,
+                ChannelWorker::new(channel.clone(), chains, cmd_rx, telemetry),
+            ),
+            Object::Packet(path) => Self::Packet(
+                id,
+                PacketWorker::new(
+                    path.clone(),
+                    chains,
+                    cmd_rx,
+                    telemetry,
+                    config.global.clear_packets_interval,
+                ),
+            ),
         };
 
         let thread_handle = std::thread::spawn(move || worker.run(msg_tx));
-        WorkerHandle::new(cmd_tx, thread_handle)
+        WorkerHandle::new(id, object, cmd_tx, thread_handle)
     }
 
     /// Run the worker event loop.
     fn run(self, msg_tx: Sender<WorkerMsg>) {
+        let id = self.id();
         let object = self.object();
-        let name = object.short_name();
+        let name = format!("{}#{}", object.short_name(), id);
 
         let result = match self {
-            Self::Client(w) => w.run(),
-            Self::Connection(w) => w.run(),
-            Self::Channel(w) => w.run(),
-            Self::Packet(w) => w.run(),
+            Self::Client(_, w) => w.run(),
+            Self::Connection(_, w) => w.run(),
+            Self::Channel(_, w) => w.run(),
+            Self::Packet(_, w) => w.run(),
         };
 
         if let Err(e) = result {
             error!("[{}] worker aborted with error: {}", name, e);
         }
 
-        if let Err(e) = msg_tx.send(WorkerMsg::Stopped(object)) {
+        if let Err(e) = msg_tx.send(WorkerMsg::Stopped(id, object)) {
             error!(
                 "[{}] failed to notify supervisor that worker stopped: {}",
                 name, e
@@ -109,21 +138,30 @@ impl Worker {
         info!("[{}] worker stopped", name);
     }
 
+    fn id(&self) -> WorkerId {
+        match self {
+            Self::Client(id, _) => *id,
+            Self::Connection(id, _) => *id,
+            Self::Channel(id, _) => *id,
+            Self::Packet(id, _) => *id,
+        }
+    }
+
     fn chains(&self) -> &ChainHandlePair {
         match self {
-            Self::Client(w) => &w.chains(),
-            Self::Connection(w) => w.chains(),
-            Self::Channel(w) => w.chains(),
-            Self::Packet(w) => w.chains(),
+            Self::Client(_, w) => &w.chains(),
+            Self::Connection(_, w) => w.chains(),
+            Self::Channel(_, w) => w.chains(),
+            Self::Packet(_, w) => w.chains(),
         }
     }
 
     fn object(&self) -> Object {
         match self {
-            Worker::Client(w) => w.object().clone().into(),
-            Worker::Connection(w) => w.object().clone().into(),
-            Worker::Channel(w) => w.object().clone().into(),
-            Worker::Packet(w) => w.object().clone().into(),
+            Worker::Client(_, w) => w.object().clone().into(),
+            Worker::Connection(_, w) => w.object().clone().into(),
+            Worker::Channel(_, w) => w.object().clone().into(),
+            Worker::Packet(_, w) => w.object().clone().into(),
         }
     }
 }
