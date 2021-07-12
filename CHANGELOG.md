@@ -25,11 +25,14 @@ only to Hermes passive relaying mode (command `hermes start`), and will
 not affect the other commands.
 
 ### FEATURES
+
 - [ibc-relayer]
   - The chains configuration can be reloaded by sending the Hermes process a `SIGHUP` signal ([#1117])
+  - Added support for filtering based on client state trust threshold ([#1165])
 
 - [ibc-relayer-cli]
   - Added `config validate` CLI to Hermes ([#600])
+  - Added filtering capability to deny or allow for specific channels ([#1140], [#1141], [#69])
   - Added basic channel filter ([#1140])
   - Added `query channel ends` CLI command ([#1062])
   - Added a health checkup mechanism for Hermes ([#697, #1057])
@@ -48,6 +51,7 @@ not affect the other commands.
   - Fix for schedule refreshing bug ([#1143])
 
 
+[#69]: https://github.com/informalsystems/ibc-rs/issues/69
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#697]: https://github.com/informalsystems/ibc-rs/issues/697
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
@@ -57,7 +61,9 @@ not affect the other commands.
 [#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
 [#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
+[#1141]: https://github.com/informalsystems/ibc-rs/issues/1141
 [#1143]: https://github.com/informalsystems/ibc-rs/issues/1143
+[#1165]: https://github.com/informalsystems/ibc-rs/issues/1165
 
 
 ## v0.5.0

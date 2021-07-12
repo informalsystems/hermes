@@ -9,6 +9,13 @@ strategy = 'packets'
 
 # Enable or disable the filtering mechanism. Default: 'false'
 # Valid options are 'true', 'false'.
+# Currently Hermes supports two filters:
+# 1. Packet filtering on a per-chain basis; see the chain-specific
+#   filter specification below in [chains.packet_filter].
+# 2. Filter for all activities based on client state trust threshold; this filter
+#   is parametrized with (numerator = 1, denominator = 3), so that clients with
+#   thresholds different than this will be ignored.
+# If set to 'true', both of the above filters will be enabled.
 filter = false
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
@@ -104,8 +111,25 @@ trusting_period = '14days'
 # Warning: This is an advanced feature! Modify with caution.
 trust_threshold = { numerator = '1', denominator = '3' }
 
-[chains.filters]
-channels = [['transfer', 'channel-0']]
+# This section specifies the filters for policy based relaying.
+# Default: no policy/ filters
+# The section is ignored if the global 'filter' option is set to 'false'.
+# If the global 'filter' option is set to 'true' and this section is missing then no filtering is performed for this chain.
+# Only packet filtering based on channel identifier can be specified.
+# A channel filter has two fields:
+# 1. `policy` - one of two types are supported:
+#       - 'allow': permit relaying _only on_ the port/channel id in the list below,
+#       - 'deny': permit relaying on any channel _except for_ the list below.
+# 2. `list` - the list of channels specified by the port and channel identifiers.
+#
+# Example configuration of a channel filter, denying packet relaying on channel with port ID 'transfer' and channel ID 'channel-0':
+#
+# [chains.packet_filter]
+# policy = 'deny'
+# list = [
+#   ['transfer', 'channel-0'],
+# ]
+
 
 [[chains]]
 id = 'ibc-1'
@@ -124,5 +148,3 @@ max_tx_size = 2097152
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
-[chains.filters]
-channels = [['transfer', 'channel-0']]

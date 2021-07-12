@@ -32,15 +32,44 @@ impl fmt::Display for GasPrice {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ChainFilters {
-    pub channels: HashSet<(PortId, ChannelId)>,
+#[serde(
+    rename_all = "lowercase",
+    tag = "policy",
+    content = "list",
+    deny_unknown_fields
+)]
+pub enum PacketFilter {
+    Allow(ChannelsSpec),
+    Deny(ChannelsSpec),
+    AllowAll,
 }
 
-impl Default for ChainFilters {
+impl Default for PacketFilter {
+    /// By default, allows all channels & ports.
     fn default() -> Self {
-        Self {
-            channels: HashSet::new(),
+        Self::AllowAll
+    }
+}
+
+impl PacketFilter {
+    /// Returns true if the packets can be relayed on the channel with [`PortId`] and [`ChannelId`],
+    /// false otherwise.
+    pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
+        match self {
+            PacketFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::AllowAll => true,
         }
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
+
+impl ChannelsSpec {
+    pub fn contains(&self, channel_port: &(PortId, ChannelId)) -> bool {
+        self.0.contains(channel_port)
     }
 }
 
@@ -95,6 +124,25 @@ impl Config {
 
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
+    }
+
+    /// Returns true if filtering is disabled or if packets are allowed on
+    /// the channel [`PortId`] [`ChannelId`] on [`ChainId`].
+    /// Returns false otherwise.
+    pub fn packets_on_channel_allowed(
+        &self,
+        chain_id: &ChainId,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> bool {
+        if !self.global.filter {
+            return true;
+        }
+
+        match self.find_chain(chain_id) {
+            None => false,
+            Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
+        }
     }
 
     pub fn handshake_enabled(&self) -> bool {
@@ -218,7 +266,7 @@ pub struct ChainConfig {
     pub trust_threshold: TrustThreshold,
     pub gas_price: GasPrice,
     #[serde(default)]
-    pub filters: ChainFilters,
+    pub packet_filter: PacketFilter,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
