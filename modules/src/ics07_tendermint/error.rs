@@ -51,7 +51,7 @@ impl Display for LegacyError {
     }
 }
 
-#[cfg(feature = "std")]
+// #[cfg(feature = "std")]
 impl From<Box<dyn std::error::Error + Send + Sync>> for LegacyError {
     fn from(value: Box<dyn std::error::Error + Send + Sync>) -> Self {
         LegacyError::InnerBox(StdError::new(value))
