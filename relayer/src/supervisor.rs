@@ -7,9 +7,13 @@ use std::{
 use anomaly::BoxError;
 use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info, trace, warn};
 
-use ibc::{events::IbcEvent, ics24_host::identifier::ChainId, Height};
+use ibc::{
+    events::IbcEvent,
+    ics24_host::identifier::{ChainId, ChannelId, PortId},
+    Height,
+};
 
 use crate::{
     chain::handle::ChainHandle,
@@ -23,7 +27,11 @@ use crate::{
     worker::{WorkerMap, WorkerMsg},
 };
 
+pub mod client_state_filter;
 mod error;
+
+use client_state_filter::{FilterPolicy, Permission};
+
 pub use error::Error;
 
 pub mod dump_state;
@@ -53,6 +61,7 @@ pub struct Supervisor {
 
     cmd_rx: Receiver<SupervisorCmd>,
     worker_msg_rx: Receiver<WorkerMsg>,
+    client_state_filter: FilterPolicy,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
@@ -64,6 +73,7 @@ impl Supervisor {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
+        let client_state_filter = FilterPolicy::default();
 
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 
@@ -73,21 +83,92 @@ impl Supervisor {
             workers,
             cmd_rx,
             worker_msg_rx,
+            client_state_filter,
             telemetry,
         };
 
         (supervisor, cmd_tx)
     }
 
-    fn relay_on_object(&self, chain_id: &ChainId, object: &Object) -> bool {
-        let config = self.config.read().expect("poisoned lock");
+    /// Returns `true` if the relayer should filter based on
+    /// client state attributes, e.g., trust threshold.
+    /// Returns `false` otherwise.
+    fn client_filter_enabled(&self) -> bool {
+        // Currently just a wrapper over the global filter.
+        self.config.read().expect("poisoned lock").global.filter
+    }
 
-        match object {
-            Object::Client(_) => true,
-            Object::Connection(_) => true,
-            Object::Channel(_) => true,
-            Object::Packet(u) => {
-                config.packets_on_channel_allowed(chain_id, u.src_port_id(), &u.src_channel_id())
+    /// Returns `true` if the relayer should filter based on
+    /// channel identifiers.
+    /// Returns `false` otherwise.
+    fn channel_filter_enabled(&self) -> bool {
+        self.config.read().expect("poisoned lock").global.filter
+    }
+
+    fn relay_packets_on_channel(
+        &self,
+        chain_id: &ChainId,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> bool {
+        // If filtering is disabled, then relay all channels
+        if !self.channel_filter_enabled() {
+            return true;
+        }
+
+        self.config
+            .read()
+            .expect("poisoned lock")
+            .packets_on_channel_allowed(chain_id, port_id, channel_id)
+    }
+
+    fn relay_on_object(&mut self, chain_id: &ChainId, object: &Object) -> bool {
+        // No filter is enabled, bail fast.
+        if !self.channel_filter_enabled() && !self.client_filter_enabled() {
+            return true;
+        }
+
+        // First, apply the channel filter
+        if let Object::Packet(u) = object {
+            if !self.relay_packets_on_channel(chain_id, u.src_port_id(), u.src_channel_id()) {
+                return false;
+            }
+        }
+
+        // Second, apply the client filter
+        let client_filter_outcome = match object {
+            Object::Client(client) => self
+                .client_state_filter
+                .control_client_object(&mut self.registry, client),
+            Object::Connection(conn) => self
+                .client_state_filter
+                .control_conn_object(&mut self.registry, conn),
+            Object::Channel(chan) => self
+                .client_state_filter
+                .control_chan_object(&mut self.registry, chan),
+            Object::Packet(u) => self
+                .client_state_filter
+                .control_packet_object(&mut self.registry, u),
+        };
+
+        match client_filter_outcome {
+            Ok(Permission::Allow) => true,
+            Ok(Permission::Deny) => {
+                warn!(
+                    "client filter denies relaying on object {}",
+                    object.short_name()
+                );
+
+                false
+            }
+            Err(e) => {
+                warn!(
+                    "denying relaying on object {}, caused by: {}",
+                    object.short_name(),
+                    e
+                );
+
+                false
             }
         }
     }
@@ -233,7 +314,13 @@ impl Supervisor {
 
     /// Create a new `SpawnContext` for spawning workers.
     fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_> {
-        SpawnContext::new(&self.config, &mut self.registry, &mut self.workers, mode)
+        SpawnContext::new(
+            &self.config,
+            &mut self.registry,
+            &mut self.client_state_filter,
+            &mut self.workers,
+            mode,
+        )
     }
 
     /// Spawn all the workers necessary for the relayer to connect
