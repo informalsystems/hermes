@@ -33,7 +33,7 @@ services:
       context: ../
       dockerfile: ci/relayer.Dockerfile
       args:
-        RELEASE: v4.2.0
+        RELEASE: v5.0.0
     environment:
       - CHAIN_A=ibc-0
       - CHAIN_A_HOME=/data/ibc-0
