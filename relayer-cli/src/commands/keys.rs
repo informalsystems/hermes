@@ -17,8 +17,8 @@ pub enum KeysCmd {
     #[options(help = "Adds a key to a configured chain")]
     Add(add::KeysAddCmd),
 
-    /// The `keys add` subcommand
-    #[options(help = "Adds a key to a configured chain")]
+    /// The `keys clean` subcommand
+    #[options(help = "Removes a key from a configured chain")]
     Clean(clean::KeysCleanCmd),
 
     /// The `keys list` subcommand
