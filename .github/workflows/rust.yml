@@ -85,9 +85,6 @@ jobs:
 
   no-std-check:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: no-std-check
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -95,6 +92,7 @@ jobs:
           toolchain: stable
           override: true
       - uses: actions-rs/cargo@v1
+        args: --manifest-path no-std-check/Cargo.tom
         with:
           command: build
 
