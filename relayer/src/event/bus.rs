@@ -25,16 +25,23 @@ impl<T> EventBus<T> {
         rx
     }
 
-    pub fn broadcast(&self, value: T) -> Result<(), channel::SendError<T>>
+    pub fn broadcast(&mut self, value: T)
     where
         T: Clone,
     {
-        // TODO: Avoid cloning when sending to last subscriber
-        for tx in &self.txs {
-            tx.send(value.clone())?;
+        let mut disconnected = Vec::new();
+
+        for (idx, tx) in self.txs.iter().enumerate() {
+            // TODO: Avoid cloning when sending to last subscriber
+            if let Err(channel::SendError(_)) = tx.send(value.clone()) {
+                disconnected.push(idx);
+            }
         }
 
-        Ok(())
+        // Remove all disconnected subscribers
+        for idx in disconnected {
+            self.txs.remove(idx);
+        }
     }
 }
 
@@ -78,8 +85,8 @@ mod tests {
         let mut bus = EventBus::new();
         let rx = bus.subscribe();
 
-        bus.broadcast(Value(42)).unwrap();
-        bus.broadcast(Value(113)).unwrap();
+        bus.broadcast(Value(42));
+        bus.broadcast(Value(113));
 
         assert_eq!(rx.recv(), Ok(Value(42)));
         assert_eq!(rx.recv(), Ok(Value(113)));
@@ -100,8 +107,8 @@ mod tests {
             rxs.push(bus.subscribe());
         }
 
-        bus.broadcast(Value(42)).unwrap();
-        bus.broadcast(Value(113)).unwrap();
+        bus.broadcast(Value(42));
+        bus.broadcast(Value(113));
 
         for rx in rxs {
             assert_eq!(rx.recv(), Ok(Value(42)));

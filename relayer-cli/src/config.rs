@@ -5,6 +5,7 @@
 //! for specifying it.
 
 use std::collections::BTreeSet;
+use std::path::PathBuf;
 
 use thiserror::Error;
 
@@ -12,6 +13,14 @@ use ibc::ics24_host::identifier::ChainId;
 use tendermint_light_client::types::TrustThreshold;
 
 pub use ibc_relayer::config::Config;
+
+use crate::application::app_reader;
+
+/// Get the path to configuration file
+pub fn config_path() -> Option<PathBuf> {
+    let app = app_reader();
+    app.config_path().cloned()
+}
 
 /// Specifies all the possible syntactic errors
 /// that a Hermes configuration file could contain.

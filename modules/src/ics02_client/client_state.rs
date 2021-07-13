@@ -5,6 +5,7 @@ use core::time::Duration;
 use alloc::string::ToString;
 use prost_types::Any;
 use serde::{Deserialize, Serialize};
+use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
@@ -56,6 +57,15 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.latest_height(),
+        }
+    }
+
+    pub fn trust_threshold(&self) -> Option<TrustThresholdFraction> {
+        match self {
+            AnyClientState::Tendermint(state) => Some(state.trust_level),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(_) => None,
         }
     }
 
