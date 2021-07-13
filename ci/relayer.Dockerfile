@@ -26,9 +26,13 @@ COPY e2e ./e2e
 
 # Copy key files
 COPY ci/chains/gaia/$RELEASE/ibc-0/user_seed.json  ./user_seed_ibc-0.json
+RUN cat ./user_seed_ibc-0.json
 COPY ci/chains/gaia/$RELEASE/ibc-1/user_seed.json  ./user_seed_ibc-1.json
+RUN cat ./user_seed_ibc-1.json
 COPY ci/chains/gaia/$RELEASE/ibc-0/user2_seed.json ./user2_seed_ibc-0.json
+RUN cat ./user2_seed_ibc-0.json
 COPY ci/chains/gaia/$RELEASE/ibc-1/user2_seed.json ./user2_seed_ibc-1.json
+RUN cat ./user2_seed_ibc-1.json
 
 # Make it executable
 RUN chmod +x e2e.sh
