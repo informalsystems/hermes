@@ -135,24 +135,10 @@ pub enum Kind {
     #[error("header not withing trusting period: expires_at={0} now={1}")]
     HeaderNotWithinTrustPeriod(Timestamp, Timestamp),
 
-    #[error(
-        "Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp{1}"
-    )]
-    HeaderTimestampOutsideTrustingTime(String, String),
-
     #[error("Header revision {0} and client state revision {1} should coincide")]
     MismatchedRevisions(u64, u64),
-
-    #[error(" hearder height {0} must be at greater than current client height {1}")]
-    LowUpdateHeight(Height, Height),
-
     // #[error(" hearder timestamp {0} must be at greater than current client consensus state timestamp {1}")]
     // LowUpdateTimestamp(Timestamp, Timestamp),
-    #[error(" hearder timestamp {0} must be at greater than current client consensus state timestamp {1}")]
-    LowUpdateTimestamp(String, String),
-
-    #[error(" hearder height = {0} is invalid")]
-    InvalidHeaderHeight(Height),
 }
 
 impl Kind {

@@ -6,4 +6,4 @@ pub mod consensus_state;
 pub mod error;
 pub mod header;
 pub mod misbehaviour;
-pub mod predicates;
+//pub mod predicates;

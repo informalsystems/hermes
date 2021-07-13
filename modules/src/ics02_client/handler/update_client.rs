@@ -386,7 +386,7 @@ mod tests {
                 match result {
                     Update(upd_res) => {
                         assert_eq!(upd_res.client_id, client_id);
-                        assert!(upd_res.client_state.is_frozen());
+                        assert!(!upd_res.client_state.is_frozen());
                         assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
                     }
                     _ => panic!("update handler result has incorrect type"),

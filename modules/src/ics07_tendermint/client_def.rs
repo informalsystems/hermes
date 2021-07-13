@@ -12,7 +12,7 @@ use crate::ics04_channel::packet::Sequence;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::header::Header;
-use crate::ics07_tendermint::predicates::Predicates;
+use crate::ics07_tendermint::header::{monotonicity_checks, voting_power_in};
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::ConnectionId;
@@ -41,18 +41,12 @@ impl ClientDef for TendermintClient {
         // check if a consensus state is already installed; if so it should
         // match the untrusted header.
 
-        //TODO remove:
-        // let time = header.signed_header.header.time;
-
         if let Some(cs) = ctx.consensus_state(&client_id, header.height()) {
             //could the header height be zero ?
             let consensus_state = downcast!(
                 cs => AnyConsensusState::Tendermint
             )
             .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
-
-            //     //TODO remove:
-            // header.signed_header.header.time = consensus_state.timestamp;
 
             if consensus_state != ConsensusState::from(header.clone()) {
                 //freeze the client and return the installed consensus state
@@ -64,8 +58,6 @@ impl ClientDef for TendermintClient {
                 return Ok((client_state, consensus_state));
             }
         };
-        //  //TODO remove:
-        //     header.signed_header.header.time = time;
 
         let latest_consensus_state =
             match ctx.consensus_state(&client_id, client_state.latest_height) {
@@ -83,9 +75,7 @@ impl ClientDef for TendermintClient {
                 }
             };
 
-        let pred = Predicates::default();
-
-        pred.monotonicity_checks(latest_consensus_state, header.clone(), client_state.clone())?;
+        monotonicity_checks(latest_consensus_state, header.clone(), client_state.clone())?;
 
         // check that the versions of the client state and the header match
         if client_state.latest_height.revision_number != header.height().revision_number {
@@ -121,7 +111,7 @@ impl ClientDef for TendermintClient {
 
             // check that the validators that sign the commit of the untrusted header
             // have 2/3 of the voting power of the current validator set.
-            if let Err(e) = pred.voting_power_in(
+            if let Err(e) = voting_power_in(
                 &header.signed_header,
                 &header.validator_set,
                 TrustThresholdFraction::TWO_THIRDS,
@@ -133,7 +123,7 @@ impl ClientDef for TendermintClient {
 
             //check that a subset of the trusted validator set, having 1/3 of the voting power
             //signes the commit of the untrusted header
-            if let Err(e) = pred.voting_power_in(
+            if let Err(e) = voting_power_in(
                 &header.signed_header,
                 &header.trusted_validator_set,
                 TrustThresholdFraction::default(),
@@ -143,7 +133,7 @@ impl ClientDef for TendermintClient {
 
             // check that the validators that sign the commit of the untrusted header
             // have 2/3 of the voting power of the current validator set.
-            if let Err(e) = pred.voting_power_in(
+            if let Err(e) = voting_power_in(
                 &header.signed_header,
                 &header.validator_set,
                 TrustThresholdFraction::TWO_THIRDS,

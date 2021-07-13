@@ -1,3 +1,4 @@
+use crate::Height;
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
@@ -40,6 +41,20 @@ pub enum Kind {
 
     #[error("invalid raw misbehaviour")]
     InvalidRawMisbehaviour,
+
+    #[error(" hearder timestamp {0} must be at greater than current client consensus state timestamp {1}")]
+    LowUpdateTimestamp(String, String),
+
+    #[error(
+        "Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp{1}"
+    )]
+    HeaderTimestampOutsideTrustingTime(String, String),
+
+    #[error(" hearder height = {0} is invalid")]
+    InvalidHeaderHeight(Height),
+
+    #[error(" hearder height {0} must be at greater than current client height {1}")]
+    LowUpdateHeight(Height, Height),
 }
 
 impl Kind {
