@@ -15,6 +15,8 @@ pub enum ClientType {
 
 impl ClientType {
     const TENDERMINT_STR: &'static str = "07-tendermint";
+
+    #[cfg_attr(not(test), allow(dead_code))]
     const MOCK_STR: &'static str = "9999-mock";
 
     /// Yields the identifier of this client type as a string
