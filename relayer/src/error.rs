@@ -78,6 +78,10 @@ pub enum Kind {
     #[error("Failed to create client state")]
     BuildClientStateFailure,
 
+    /// Did not find tx confirmation
+    #[error("did not find tx confirmation {0}")]
+    TxNoConfirmation(String),
+
     /// Gas estimate from simulated Tx exceeds the maximum configured
     #[error("{chain_id} gas estimate {estimated_gas} from simulated Tx exceeds the maximum configured {max_gas}")]
     TxSimulateGasEstimateExceeded {
@@ -85,10 +89,6 @@ pub enum Kind {
         estimated_gas: u64,
         max_gas: u64,
     },
-
-    /// Tx failure for lack of confirmation
-    #[error("Failed Tx: no confirmation")]
-    TxNoConfirmation,
 
     /// Create client failure
     #[error("Failed to create client {0}")]
@@ -199,6 +199,29 @@ pub enum Kind {
     ClientTypeMismatch {
         expected: ClientType,
         got: ClientType,
+    },
+
+    #[error("Hermes health check failed for endpoint {endpoint} on the Json RPC interface of chain {chain_id}:{address}; caused by: {cause}")]
+    HealthCheckJsonRpc {
+        chain_id: ChainId,
+        address: String,
+        endpoint: String,
+        cause: tendermint_rpc::error::Error,
+    },
+
+    #[error("Hermes health check failed for service {endpoint} on the gRPC interface of chain {chain_id}:{address}; caused by: {cause}")]
+    HealthCheckGrpc {
+        chain_id: ChainId,
+        address: String,
+        endpoint: String,
+        cause: String,
+    },
+
+    #[error("Hermes health check failed while verifying the application compatibility for chain {chain_id}:{address}; caused by: {cause}")]
+    SdkModuleVersion {
+        chain_id: ChainId,
+        address: String,
+        cause: String,
     },
 }
 

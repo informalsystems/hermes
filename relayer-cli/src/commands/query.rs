@@ -2,9 +2,11 @@
 
 use abscissa_core::{Command, Options, Runnable};
 
+use crate::commands::query::channel_ends::QueryChannelEndsCmd;
 use crate::commands::query::channels::QueryChannelsCmd;
 
 mod channel;
+mod channel_ends;
 mod channels;
 mod client;
 mod clients;
@@ -83,6 +85,10 @@ pub enum QueryChannelCmds {
     /// The `query channel end` subcommand
     #[options(help = "Query channel end")]
     End(channel::QueryChannelEndCmd),
+
+    /// The `query channel ends` subcommand
+    #[options(help = "Query channel ends and underlying connection and client objects")]
+    Ends(QueryChannelEndsCmd),
 }
 
 #[derive(Command, Debug, Options, Runnable)]
