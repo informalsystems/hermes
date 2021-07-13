@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use crate::connection::Connection as RelayConnection;
 use crate::telemetry::Telemetry;
@@ -56,7 +56,10 @@ impl ConnectionWorker {
                         // process the last event, the one with highest "rank".
                         let last_event = batch.events.last();
 
-                        debug!("connection worker starts processing {:#?}", last_event);
+                        debug!(
+                            connection = %self.connection.short_name(),
+                            "connection worker starts processing {:#?}", last_event
+                        );
 
                         match last_event {
                             Some(event) => {
@@ -74,6 +77,7 @@ impl ConnectionWorker {
                             None => Ok(()),
                         }
                     }
+
                     WorkerCmd::NewBlock {
                         height: current_height,
                         new_block: _,
@@ -83,6 +87,7 @@ impl ConnectionWorker {
                         }
 
                         debug!(
+                            connection = %self.connection.short_name(),
                             "connection worker starts processing block event at {}",
                             current_height
                         );
@@ -101,10 +106,18 @@ impl ConnectionWorker {
                             handshake_connection.step_state(state, index)
                         })
                     }
+
+                    WorkerCmd::Shutdown => {
+                        info!(connection = %self.connection.short_name(), "shutting down Connection worker");
+                        return Ok(());
+                    }
                 };
 
                 if let Err(retries) = result {
-                    warn!("connection worker failed after {} retries", retries);
+                    warn!(
+                        connection = %self.connection.short_name(),
+                        "connection worker failed after {} retries", retries
+                    );
 
                     // Resume handshake on next iteration.
                     resume_handshake = true;

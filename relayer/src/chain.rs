@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 
 use prost_types::Any;
 use tendermint::block::Height;
@@ -36,6 +36,7 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
+use crate::event::monitor::TxMonitorCmd;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
@@ -90,7 +91,9 @@ pub trait Chain: Sized {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error>;
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error>;
+
+    fn shutdown(self) -> Result<(), Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;

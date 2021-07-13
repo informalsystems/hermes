@@ -11,6 +11,7 @@ use std::{
 use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
+use itertools::Itertools;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -73,7 +74,6 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::QueryResponse;
 use crate::config::{ChainConfig, GasPrice};
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventMonitor, EventReceiver};
@@ -81,6 +81,7 @@ use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::LightClient;
 use crate::light_client::Verified;
+use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
 
 use super::Chain;
 
@@ -96,9 +97,10 @@ mod retry_strategy {
     use crate::util::retry::Fixed;
     use std::time::Duration;
 
-    pub fn wait_for_block_commits() -> impl Iterator<Item = Duration> {
-        // The total time should be higher than the full node timeout which defaults to 10sec.
-        Fixed::from_millis(300).take(40) // 12 seconds
+    pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
+        let backoff_millis = 300; // The periodic backoff
+        let count: usize = (max_total_wait.as_millis() / backoff_millis as u128) as usize;
+        Fixed::from_millis(backoff_millis).take(count)
     }
 }
 
@@ -275,9 +277,9 @@ impl CosmosSdkChain {
         let account_seq = self.account_sequence()?;
 
         debug!(
-            "send_tx: sending {} messages to {} using nonce {}",
-            proto_msgs.len(),
+            "[{}] send_tx: sending {} messages using nonce {}",
             self.id(),
+            proto_msgs.len(),
             account_seq,
         );
 
@@ -318,7 +320,7 @@ impl CosmosSdkChain {
         let adjusted_fee = self.fee_with_gas(estimated_gas);
 
         trace!(
-            "send_tx: {} based on the estimated gas, adjusting fee from {:?} to {:?}",
+            "[{}] send_tx: based on the estimated gas, adjusting fee from {:?} to {:?}",
             self.id(),
             fee,
             adjusted_fee
@@ -342,11 +344,7 @@ impl CosmosSdkChain {
             .block_on(broadcast_tx_sync(self, tx_bytes))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
-        debug!(
-            "send_tx: broadcast_tx_sync to {}: {:?}",
-            self.id(),
-            response
-        );
+        debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
 
         self.incr_account_sequence()?;
 
@@ -498,7 +496,7 @@ impl CosmosSdkChain {
             debug!(
                 sequence = %account.sequence,
                 number = %account.account_number,
-                "send_tx: retrieved account for {}",
+                "[{}] send_tx: retrieved account",
                 self.id()
             );
 
@@ -596,59 +594,72 @@ impl CosmosSdkChain {
     ) -> Result<Vec<TxSyncResult>, Error> {
         use crate::util::retry::{retry_with_index, RetryResult};
 
-        trace!("waiting for commit of block(s)");
+        let hashes = tx_sync_results
+            .iter()
+            .map(|res| res.response.hash.to_string())
+            .join(", ");
+
+        debug!("[{}] waiting for commit of block(s) {}", self.id(), hashes);
 
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));
 
         let start = Instant::now();
+        let result = retry_with_index(
+            retry_strategy::wait_for_block_commits(self.config.rpc_timeout),
+            |index| {
+                if all_tx_results_found(&tx_sync_results) {
+                    trace!(
+                        "[{}] wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
+                        self.id(),
+                        tx_sync_results.len(),
+                        index,
+                        start.elapsed().as_millis()
+                    );
 
-        let result = retry_with_index(retry_strategy::wait_for_block_commits(), |index| {
-            if all_tx_results_found(&tx_sync_results) {
-                trace!(
-                    "wait_for_block_commits: retrieved {} tx results after {} tries ({}ms)",
-                    tx_sync_results.len(),
-                    index,
-                    start.elapsed().as_millis()
-                );
+                    // All transactions confirmed
+                    return RetryResult::Ok(());
+                }
 
-                // All transactions confirmed
-                return RetryResult::Ok(());
-            }
-
-            for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
-                // If this transaction was not committed, determine whether it was because it failed
-                // or because it hasn't been committed yet.
-                if empty_event_present(&events) {
-                    // If the transaction failed, replace the events with an error,
-                    // so that we don't attempt to resolve the transaction later on.
-                    if response.code.value() != 0 {
-                        *events = vec![IbcEvent::ChainError(format!(
-                            "deliver_tx for Tx hash {} reports error: code={:?}, log={:?}",
-                            response.hash, response.code, response.log
+                for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
+                    // If this transaction was not committed, determine whether it was because it failed
+                    // or because it hasn't been committed yet.
+                    if empty_event_present(&events) {
+                        // If the transaction failed, replace the events with an error,
+                        // so that we don't attempt to resolve the transaction later on.
+                        if response.code.value() != 0 {
+                            *events = vec![IbcEvent::ChainError(format!(
+                            "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                            self.id(), response.hash, response.code, response.log
                         ))];
 
-                    // Otherwise, try to resolve transaction hash to the corresponding events.
-                    } else if let Ok(events_per_tx) =
-                        self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
-                    {
-                        // If we get events back, progress was made, so we replace the events
-                        // with the new ones. in both cases we will check in the next iteration
-                        // whether or not the transaction was fully committed.
-                        if !events_per_tx.is_empty() {
-                            *events = events_per_tx;
+                        // Otherwise, try to resolve transaction hash to the corresponding events.
+                        } else if let Ok(events_per_tx) =
+                            self.query_txs(QueryTxRequest::Transaction(QueryTxHash(response.hash)))
+                        {
+                            // If we get events back, progress was made, so we replace the events
+                            // with the new ones. in both cases we will check in the next iteration
+                            // whether or not the transaction was fully committed.
+                            if !events_per_tx.is_empty() {
+                                *events = events_per_tx;
+                            }
                         }
                     }
                 }
-            }
-            RetryResult::Retry(index)
-        });
+                RetryResult::Retry(index)
+            },
+        );
 
         match result {
             // All transactions confirmed
             Ok(()) => Ok(tx_sync_results),
             // Did not find confirmation
-            Err(_) => Err(Kind::TxNoConfirmation.into()),
+            Err(_) => Err(Kind::TxNoConfirmation(format!(
+                "from chain {} for hash(es) {}",
+                self.id(),
+                hashes
+            ))
+            .into()),
         }
     }
 }
@@ -713,10 +724,10 @@ impl Chain for CosmosSdkChain {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
         crate::time!("init_event_monitor");
 
-        let (mut event_monitor, event_receiver) = EventMonitor::new(
+        let (mut event_monitor, event_receiver, monitor_tx) = EventMonitor::new(
             self.config.id.clone(),
             self.config.websocket_addr.clone(),
             rt,
@@ -725,9 +736,13 @@ impl Chain for CosmosSdkChain {
 
         event_monitor.subscribe().map_err(Kind::EventMonitor)?;
 
-        let monitor_thread = thread::spawn(move || event_monitor.run());
+        thread::spawn(move || event_monitor.run());
 
-        Ok((event_receiver, Some(monitor_thread)))
+        Ok((event_receiver, monitor_tx))
+    }
+
+    fn shutdown(self) -> Result<(), Error> {
+        Ok(())
     }
 
     fn id(&self) -> &ChainId {
