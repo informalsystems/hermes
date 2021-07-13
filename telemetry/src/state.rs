@@ -13,6 +13,7 @@ use prometheus::proto::MetricFamily;
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
     Client,
+    Connection,
     Channel,
     Packet,
 }
@@ -21,6 +22,7 @@ impl fmt::Display for WorkerType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Client => write!(f, "client"),
+            Self::Connection => write!(f, "connection"),
             Self::Channel => write!(f, "channel"),
             Self::Packet => write!(f, "packet"),
         }

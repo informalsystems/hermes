@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 
 use prost_types::Any;
 use tendermint::block::Height;
@@ -12,7 +12,7 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::{AnyClientState, ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::header::Header;
-use ibc::ics03_connection::connection::{ConnectionEnd, State};
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -36,6 +36,7 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
+use crate::event::monitor::TxMonitorCmd;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
@@ -90,7 +91,9 @@ pub trait Chain: Sized {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error>;
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error>;
+
+    fn shutdown(self) -> Result<(), Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;
@@ -160,7 +163,7 @@ pub trait Chain: Sized {
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error>;
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_client_connections(

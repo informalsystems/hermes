@@ -5,6 +5,8 @@ use std::{
 
 use crossbeam_channel as channel;
 use dyn_clone::DynClone;
+use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::{Serialize, Serializer};
 
 use ibc::{
@@ -91,7 +93,7 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
 #[derive(Clone, Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum ChainRequest {
-    Terminate {
+    Shutdown {
         reply_to: ReplyTo<()>,
     },
 
@@ -206,6 +208,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<ConnectionEnd>,
     },
 
+    QueryConnections {
+        request: QueryConnectionsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
+    },
+
     QueryConnectionChannels {
         request: QueryConnectionChannelsRequest,
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
@@ -298,11 +305,17 @@ pub enum ChainRequest {
 dyn_clone::clone_trait_object!(ChainHandle);
 
 pub trait ChainHandle: DynClone + Send + Sync + Debug {
+    /// Get the [`ChainId`] of this chain.
     fn id(&self) -> ChainId;
 
+    /// Shutdown the chain runtime.
+    fn shutdown(&self) -> Result<(), Error>;
+
+    /// Subscribe to the events emitted by the chain.
     fn subscribe(&self) -> Result<Subscription, Error>;
 
-    /// Send a transaction with `msgs` to chain.
+    /// Send the given `msgs` to the chain, packaged as one or more transactions,
+    /// and return the list of events emitted by the chain after the transaction was committed.
     fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
@@ -360,6 +373,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
+
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
 
     fn query_connection_channels(
         &self,

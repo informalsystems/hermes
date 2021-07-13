@@ -56,7 +56,7 @@ The `hermes misbehaviour` outputs an error message displaying `MISBEHAVIOUR DETE
 hermes misbehaviour ibc-0 07-tendermint-0
 ```
 
-```rust
+```json
 Apr 13 20:04:03.347  INFO ibc_relayer::foreign_client: checking misbehaviour for consensus state heights [Height { revision: 1, height: 195 }, Height { revision: 1, height: 85 }, Height { revision: 1, height: 28 }]
 Apr 13 20:04:04.425 ERROR ibc_relayer::foreign_client: MISBEHAVIOUR DETECTED ClientId("07-tendermint-0") h1: Height { revision: 1, height: 195 }-Height { revision: 1, height: 85 } h2: Height { revision: 1, height: 195 }-Height { revision: 1, height: 85 }, sending evidence
 Apr 13 20:04:05.070  INFO ibc_relayer_cli::commands::misbehaviour: evidence submission result [ClientMisbehaviour(ClientMisbehaviour(Attributes { height: Height { revision: 0, height: 1521 }, client_id: ClientId("07-tendermint-0"), client_type: Tendermint, consensus_height: Height { revision: 1, height: 195 } }))]

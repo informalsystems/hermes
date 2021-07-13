@@ -27,7 +27,7 @@ impl ProofSpecs {
 
 /// Converts from the domain type (which is represented as a vector of `ics23::ProofSpec`
 /// to the corresponding proto type (vector of `ibc_proto::ProofSpec`).
-/// TODO: fix with https://github.com/informalsystems/ibc-rs/issues/853
+/// TODO: fix with <https://github.com/informalsystems/ibc-rs/issues/853>
 impl From<ProofSpecs> for Vec<ProtoProofSpec> {
     fn from(domain_specs: ProofSpecs) -> Self {
         let mut raw_specs = vec![];

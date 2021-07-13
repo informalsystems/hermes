@@ -3,17 +3,103 @@ use tracing::{error, trace};
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::IdentifiedConnectionEnd,
+    ics03_connection::connection::{
+        ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
+    },
     ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
-    ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId},
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     Height,
 };
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
+use ibc_proto::ibc::core::{
+    channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryClientConnectionsRequest,
+};
 
 use crate::channel::ChannelError;
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
+
+pub fn counterparty_chain_from_connection(
+    src_chain: &dyn ChainHandle,
+    src_connection_id: &ConnectionId,
+) -> Result<ChainId, Error> {
+    let connection_end = src_chain
+        .query_connection(&src_connection_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    let client_id = connection_end.client_id();
+    let client_state = src_chain
+        .query_client_state(&client_id, Height::zero())
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    trace!(
+        chain_id=%src_chain.id(), connection_id=%src_connection_id,
+        "counterparty chain: {}", client_state.chain_id()
+    );
+    Ok(client_state.chain_id())
+}
+
+fn connection_on_destination(
+    connection_id_on_source: &ConnectionId,
+    counterparty_client_id: &ClientId,
+    counterparty_chain: &dyn ChainHandle,
+) -> Result<Option<ConnectionEnd>, Error> {
+    let req = QueryClientConnectionsRequest {
+        client_id: counterparty_client_id.to_string(),
+    };
+
+    let counterparty_connections =
+        counterparty_chain
+            .query_client_connections(req)
+            .map_err(|e| {
+                Error::QueryFailed(format!(
+                    "counterparty::query_client_connections({}) failed with error: {}",
+                    counterparty_client_id, e
+                ))
+            })?;
+
+    for counterparty_connection in counterparty_connections.into_iter() {
+        let counterparty_connection_end = counterparty_chain
+            .query_connection(&counterparty_connection, Height::zero())
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        let local_connection_end = &counterparty_connection_end.counterparty();
+        if let Some(local_connection_id) = local_connection_end.connection_id() {
+            if local_connection_id == connection_id_on_source {
+                return Ok(Some(counterparty_connection_end));
+            }
+        }
+    }
+    Ok(None)
+}
+
+pub fn connection_state_on_destination(
+    connection: IdentifiedConnectionEnd,
+    counterparty_chain: &dyn ChainHandle,
+) -> Result<ConnectionState, Error> {
+    if let Some(remote_connection_id) = connection.connection_end.counterparty().connection_id() {
+        let connection_end = counterparty_chain
+            .query_connection(remote_connection_id, Height::zero())
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        Ok(connection_end.state)
+    } else {
+        // The remote connection id (used on `counterparty_chain`) is unknown.
+        // Try to retrieve this id by looking at client connections.
+        let counterparty_client_id = connection.connection_end.counterparty().client_id();
+
+        let dst_connection = connection_on_destination(
+            &connection.connection_id,
+            counterparty_client_id,
+            counterparty_chain,
+        )?;
+
+        dst_connection.map_or_else(
+            || Ok(ConnectionState::Uninitialized),
+            |remote_connection| Ok(remote_connection.state),
+        )
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelConnectionClient {
@@ -43,12 +129,12 @@ pub fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
-    trace!(
-        chain_id = %chain.id(),
-        port_id = %port_id,
-        channel_id = %channel_id,
-        "getting counterparty chain"
-    );
+    // trace!(
+    //     chain_id = %chain.id(),
+    //     port_id = %port_id,
+    //     channel_id = %channel_id,
+    //     "getting counterparty chain"
+    // );
 
     let channel_end = chain
         .query_channel(port_id, channel_id, Height::zero())
@@ -80,10 +166,10 @@ pub fn channel_connection_client(
         .query_client_state(client_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    trace!(
-        chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
-        "counterparty chain: {}", client_state.chain_id()
-    );
+    // trace!(
+    //     chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
+    //     "counterparty chain: {}", client_state.chain_id()
+    // );
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
@@ -92,7 +178,7 @@ pub fn channel_connection_client(
     Ok(ChannelConnectionClient::new(channel, connection, client))
 }
 
-pub fn get_counterparty_chain(
+pub fn counterparty_chain_from_channel(
     src_chain: &dyn ChainHandle,
     src_channel_id: &ChannelId,
     src_port_id: &PortId,
@@ -101,7 +187,7 @@ pub fn get_counterparty_chain(
         .map(|c| c.client.client_state.chain_id())
 }
 
-fn channel_on_destination(
+fn fetch_channel_on_destination(
     port_id: &PortId,
     channel_id: &ChannelId,
     counterparty_chain: &dyn ChainHandle,
@@ -128,35 +214,42 @@ fn channel_on_destination(
 }
 
 pub fn channel_state_on_destination(
-    channel: IdentifiedChannelEnd,
-    connection: IdentifiedConnectionEnd,
+    channel: &IdentifiedChannelEnd,
+    connection: &IdentifiedConnectionEnd,
     counterparty_chain: &dyn ChainHandle,
 ) -> Result<State, Error> {
-    let counterparty_state =
-        if let Some(remote_channel_id) = channel.channel_end.remote.channel_id() {
-            counterparty_chain
-                .query_channel(
-                    channel.channel_end.remote.port_id(),
-                    remote_channel_id,
-                    Height::zero(),
-                )
-                .map_err(|e| Error::QueryFailed(format!("{}", e)))?
-                .state
-        } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
-            channel_on_destination(
-                &channel.port_id,
-                &channel.channel_id,
-                counterparty_chain,
-                remote_connection_id,
-            )?
-            .map_or_else(
-                || State::Uninitialized,
-                |remote_channel| remote_channel.state,
+    let remote_channel = channel_on_destination(channel, connection, counterparty_chain)?;
+    Ok(remote_channel.map_or_else(
+        || State::Uninitialized,
+        |remote_channel| remote_channel.state,
+    ))
+}
+
+pub fn channel_on_destination(
+    channel: &IdentifiedChannelEnd,
+    connection: &IdentifiedConnectionEnd,
+    counterparty_chain: &dyn ChainHandle,
+) -> Result<Option<ChannelEnd>, Error> {
+    if let Some(remote_channel_id) = channel.channel_end.remote.channel_id() {
+        let counterparty = counterparty_chain
+            .query_channel(
+                channel.channel_end.remote.port_id(),
+                remote_channel_id,
+                Height::zero(),
             )
-        } else {
-            State::Uninitialized
-        };
-    Ok(counterparty_state)
+            .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+        Ok(Some(counterparty))
+    } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
+        fetch_channel_on_destination(
+            &channel.port_id,
+            &channel.channel_id,
+            counterparty_chain,
+            remote_connection_id,
+        )
+    } else {
+        Ok(None)
+    }
 }
 
 /// Queries a channel end on a [`ChainHandle`], and verifies

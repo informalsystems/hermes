@@ -59,7 +59,7 @@ First, let's initialize the channel on `ibc-0` using an existing connection iden
 hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer
 ```
 
-```rust
+```json
 Success: OpenInitChannel(
     OpenInit(
         Attributes {
@@ -122,7 +122,7 @@ Let's now create the counterparty to `channel-0` on chain `ibc-1`:
 hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channel-0
 ```
 
-```rust
+```json
 Success: OpenTryChannel(
     OpenTry(
         Attributes {
@@ -190,7 +190,7 @@ We can now acknowledge on `ibc-0` that `ibc-1` has accepted the opening of the c
 hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1
 ```
 
-```rust
+```json
 Success: OpenAckChannel(
     OpenAck(
         Attributes {
@@ -258,7 +258,7 @@ after which the channel is open on both chains.
 hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0
 ```
 
-```rust
+```json
     OpenConfirm(
         Attributes {
             height: Height {

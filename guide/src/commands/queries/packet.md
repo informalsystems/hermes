@@ -50,7 +50,7 @@ Query `ibc-0` for the sequence numbers of packets that still have commitments on
 hermes query packet commitments ibc-0 transfer channel-0
 ```
 
-```rust
+```json
 Success: PacketSeqs {
     height: Height {
         revision: 0,
@@ -93,7 +93,7 @@ Query `ibc-0` for the commitment of packet with sequence `3` sent on `transfer` 
 hermes query packet commitment ibc-0 transfer channel-0 3
 ```
 
-```rust
+```json
 Success: "F9458DC7EBEBCD6D18E983FCAB5BD752CC2A74532BBD50B812DB229997739EFC"
 ```
 
@@ -122,7 +122,7 @@ Query `ibc-1` for the sequence numbers of packets acknowledged that were receive
 hermes query packet acks ibc-1 transfer channel-1
 ```
 
-```rust
+```json
 Success: PacketSeqs {
     height: Height {
         revision: 1,
@@ -165,7 +165,7 @@ Query `ibc-1` for the acknowledgment of packet with sequence `2` received on `tr
 hermes query packet ack ibc-1 transfer channel-1 2
 ```
 
-```rust
+```json
 Success: "08F7557ED51826FE18D84512BF24EC75001EDBAF2123A477DF72A0A9F3640A7C"
 ```
 

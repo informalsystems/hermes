@@ -1,9 +1,9 @@
 use std::io;
 
-use abscissa_core::{Component, FrameworkError};
+use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
 use tracing_subscriber::{
     fmt::{
-        format::{Format, Json, JsonFields},
+        format::{DefaultFields, Format, Full, Json, JsonFields},
         time::SystemTime,
         Formatter as TracingFormatter,
     },
@@ -13,7 +13,8 @@ use tracing_subscriber::{
 };
 
 use ibc_relayer::config::GlobalConfig;
-use tracing_subscriber::fmt::format::{DefaultFields, Full};
+
+use crate::config;
 
 /// Custom types to simplify the `Tracing` definition below
 type JsonFormatter = TracingFormatter<JsonFields, Format<Json, SystemTime>, StdWriter>;
@@ -35,11 +36,13 @@ impl JsonTracing {
     /// Creates a new [`Tracing`] component
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level);
+        let filter = build_tracing_filter(cfg.log_level.to_string())?;
+        // Note: JSON formatter is un-affected by ANSI 'color' option. Set to 'false'.
         let use_color = false;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
+            .with_target(false)
             .with_env_filter(filter)
             .with_writer(std::io::stderr as StdWriter)
             .with_ansi(use_color)
@@ -64,14 +67,14 @@ impl PrettyTracing {
     /// Creates a new [`Tracing`] component
     #[allow(trivial_casts)]
     pub fn new(cfg: GlobalConfig) -> Result<Self, FrameworkError> {
-        let filter = build_tracing_filter(cfg.log_level);
-        let use_color = false;
+        let filter = build_tracing_filter(cfg.log_level.to_string())?;
 
         // Construct a tracing subscriber with the supplied filter and enable reloading.
         let builder = FmtSubscriber::builder()
+            .with_target(false)
             .with_env_filter(filter)
             .with_writer(std::io::stderr as StdWriter)
-            .with_ansi(use_color)
+            .with_ansi(enable_ansi())
             .with_filter_reloading();
 
         let filter_handle = builder.reload_handle();
@@ -83,12 +86,37 @@ impl PrettyTracing {
     }
 }
 
-fn build_tracing_filter(log_level: String) -> String {
+/// Check if both stdout and stderr are proper terminal (tty),
+/// so that we know whether or not to enable colored output,
+/// using ANSI escape codes. If either is not, eg. because
+/// stdout is redirected to a file, we don't enable colored output.
+fn enable_ansi() -> bool {
+    atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
+}
+
+/// Builds a tracing filter based on the input `log_level`.
+/// Enables tracing exclusively for the relayer crates.
+/// Returns error if the filter failed to build.
+fn build_tracing_filter(log_level: String) -> Result<EnvFilter, FrameworkError> {
     let target_crates = ["ibc_relayer", "ibc_relayer_cli"];
 
-    target_crates
+    // SAFETY: unwrap() below works as long as `target_crates` is not empty.
+    let directive_raw = target_crates
         .iter()
         .map(|&c| format!("{}={}", c, log_level))
         .reduce(|a, b| format!("{},{}", a, b))
-        .unwrap()
+        .unwrap();
+
+    // Build the filter directive
+    match EnvFilter::try_new(directive_raw.clone()) {
+        Ok(out) => Ok(out),
+        Err(e) => {
+            let our_err = config::Error::InvalidLogLevel(log_level, e.to_string());
+            eprintln!(
+                "Unable to initialize Hermes from filter directive {:?}: {}",
+                directive_raw, e
+            );
+            Err(FrameworkErrorKind::ConfigError.context(our_err).into())
+        }
+    }
 }

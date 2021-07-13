@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.4.0)
+# Hermes (v0.6.0)
 
 ---
 - [Introduction](./index.md)
@@ -28,13 +28,14 @@
 - [Commands Reference](./commands/index.md)
    - [Global options and JSON output](./commands/global.md)
    - [Keys](./commands/keys/index.md)
+   - [Config](./commands/config.md) 
    - [Path setup](./commands/path-setup/index.md)
      - [Clients](./commands/path-setup/clients.md)
      - [Connections](./commands/path-setup/connections.md)
      - [Channels](./commands/path-setup/channels.md)
    - [Relaying](commands/relaying/index.md)
      - [Packet Messages](./commands/relaying/packets.md)
-     - [Channel Open Handshake Messages](commands/relaying/channel.md)
+     - [Handshake Messages](commands/relaying/handshakes.md)
    - [Listen mode](./commands/listen/index.md)
    - [Client upgrade](./commands/upgrade/index.md)
      - [Testing client upgrade](./commands/upgrade/test.md)
@@ -44,6 +45,7 @@
      - [Connection](./commands/queries/connection.md)
      - [Channel](./commands/queries/channel.md)
      - [Packet](./commands/queries/packet.md)
+     - [Tx](./commands/queries/tx.md)
    - [Raw transactions](./commands/raw/index.md)
      - [Client](./commands/raw/client.md)
      - [Connection](./commands/raw/connection.md)

@@ -13,7 +13,7 @@ class Config:
     config_file: Path
     relayer_cmd: str
     log_level: str
-    max_retries: int = 5
+    max_retries: int = 10
 
 
 T = TypeVar('T')
