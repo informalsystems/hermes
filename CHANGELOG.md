@@ -6,8 +6,10 @@
 
 - [ibc-relayer-cli]
   - Add CLI git hash ([#1094])
+  - Fix unwraps in `packet query` CLIs ([#1114])
 
 [#1094]: https://github.com/informalsystems/ibc-rs/issues/1094
+[#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
 
 ## v0.6.0
 *July 12th, 2021*

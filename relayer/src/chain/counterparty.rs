@@ -129,19 +129,16 @@ pub fn channel_connection_client(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
-    // trace!(
-    //     chain_id = %chain.id(),
-    //     port_id = %port_id,
-    //     channel_id = %channel_id,
-    //     "getting counterparty chain"
-    // );
-
     let channel_end = chain
         .query_channel(port_id, channel_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
     if channel_end.state_matches(&State::Uninitialized) {
-        return Err(Error::ChannelUninitialized(channel_id.clone(), chain.id()));
+        return Err(Error::ChannelUninitialized(
+            port_id.clone(),
+            channel_id.clone(),
+            chain.id(),
+        ));
     }
 
     let connection_id = channel_end
@@ -165,11 +162,6 @@ pub fn channel_connection_client(
     let client_state = chain
         .query_client_state(client_id, Height::zero())
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
-
-    // trace!(
-    //     chain_id=%chain.id(), port_id=%port_id, channel_id=%channel_id,
-    //     "counterparty chain: {}", client_state.chain_id()
-    // );
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
