@@ -8,8 +8,15 @@
   - Add CLI git hash ([#1094])
   - Fix unwraps in `packet query` CLIs ([#1114])
 
+### BUG FIXES
+
+- [ibc]
+  - Fix stack overflow in `MockHeader` implementation ([#1192])
+  - Align `as_str` and `from_str` behavior in `ClientType` ([#1192])
+
 [#1094]: https://github.com/informalsystems/ibc-rs/issues/1094
 [#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
+[#1192]: https://github.com/informalsystems/ibc-rs/issues/1192
 
 ## v0.6.0
 *July 12th, 2021*
