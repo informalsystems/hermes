@@ -26,8 +26,8 @@ pub use connection::ConnectionWorker;
 mod channel;
 pub use channel::ChannelWorker;
 
-mod uni_chan_path;
-pub use uni_chan_path::PacketWorker;
+mod packet;
+pub use packet::PacketWorker;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
