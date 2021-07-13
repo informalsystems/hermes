@@ -14,13 +14,16 @@ pub enum ClientType {
 }
 
 impl ClientType {
+    const TENDERMINT_STR: &'static str = "07-tendermint";
+    const MOCK_STR: &'static str = "9999-mock";
+
     /// Yields the identifier of this client type as a string
     pub fn as_string(&self) -> &'static str {
         match self {
-            Self::Tendermint => "07-tendermint",
+            Self::Tendermint => Self::TENDERMINT_STR,
 
             #[cfg(any(test, feature = "mocks"))]
-            Self::Mock => "9999-mock",
+            Self::Mock => Self::MOCK_STR,
         }
     }
 }
@@ -36,10 +39,10 @@ impl std::str::FromStr for ClientType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "07-tendermint" => Ok(Self::Tendermint),
+            Self::TENDERMINT_STR => Ok(Self::Tendermint),
 
             #[cfg(any(test, feature = "mocks"))]
-            "9999-mock" => Ok(Self::Mock),
+            Self::MOCK_STR => Ok(Self::Mock),
 
             _ => Err(error::Kind::UnknownClientType(s.to_string()).into()),
         }
