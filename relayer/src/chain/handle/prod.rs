@@ -81,6 +81,10 @@ impl ChainHandle for ProdChainHandle {
         self.chain_id.clone()
     }
 
+    fn shutdown(&self) -> Result<(), Error> {
+        self.send(|reply_to| ChainRequest::Shutdown { reply_to })
+    }
+
     fn subscribe(&self) -> Result<Subscription, Error> {
         self.send(|reply_to| ChainRequest::Subscribe { reply_to })
     }

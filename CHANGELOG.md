@@ -1,24 +1,98 @@
 # Changelog
 
-## Unreleased
+## v0.6.0
+*July 12th, 2021*
+
+Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
+reliability of Hermes ([#697]).
+
+This release includes two major features to Hermes: (1) support for reloading
+the chains from the configuration file at runtime, and (2) a filtering mechanism
+to restrict Hermes activity based on predefined parameters (e.g., packet relaying
+on certain ports and channels exclusively, and ignoring activity for clients
+that have non-standard trust threshold).
+
+In addition to these two, we have also added a health checkup mechanism, plus new
+`config validate` and `query channel ends` CLIs.
+
+### Upgrading from 0.5.0 to 0.6.0
+
+When upgrading from Hermes v0.5.0 to v0.6.0, the most important
+point to watch out for is the configuration file.
+The Hermes config.toml configuration file has went through a few revisions,
+with the changes described below.
+
+#### Added inline documentation for all options.
+
+Please have a look around the [config.toml](./config.toml) directly.
+
+#### Added a packet filtering mechanism based on channel/port identifiers
+
+This feature will restrict the channels on which Hermes relays packets.
+There are two new options in the configuration file:
+
+1. A global `filter` parameter to enable or disable filtering globally.
+2. A per-chain `.filters` option that expects a `policy` (either `allow` or
+   `deny`) plus a list of channel and
+   port identifiers. If policy is `allow`, then packet relaying will be restricted to this
+   list for the corresponding chain. If the policy is `deny`, then any packets
+   from this list will be ignored.
+
+#### Added filtering based on client state
+
+The global `filter` option additionally enables filtering of all activities
+based on client state trust threshold. If enabled, Hermes will ignore all
+activity for clients that have a trust threshold different than `1/3`.
+
+#### Added a packet clearing configuration option
+
+This will enable the parametrization of the frequency
+at which Hermes will clear pending packets. This is a global option, called
+`clear_packets_interval`, which applies to all chains in the configuration.
+
+
+The full list of changes is described below.
 
 ### FEATURES
 
+- [ibc-relayer]
+  - The chains configuration can be reloaded by sending the Hermes process a `SIGHUP` signal ([#1117])
+  - Added support for filtering based on client state trust threshold ([#1165])
+
 - [ibc-relayer-cli]
   - Added `config validate` CLI to Hermes ([#600])
+  - Added filtering capability to deny or allow for specific channels ([#1140], [#1141], [#69])
+  - Added basic channel filter ([#1140])
+  - Added `query channel ends` CLI command ([#1062])
+  - Added a health checkup mechanism for Hermes ([#697, #1057])
 
 ### IMPROVEMENTS
 
 - Update to `tendermint-rs` v0.20.0 ([#1125])
 - Add inline documentation to config.toml ([#1127])
 
-- [ibc-relayer-cli]
-  - Fix unwraps in `packet query` CLIs ([#1114])
+- [ibc-relayer]
+  - Hermes will now clear pending packets at a configurable interval ([#1124])
 
+### BUG FIXES
+
+- [ibc-relayer]
+  - Fix for schedule refreshing bug ([#1143])
+
+
+[#69]: https://github.com/informalsystems/ibc-rs/issues/69
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
-[#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
+[#697]: https://github.com/informalsystems/ibc-rs/issues/697
+[#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
+[#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
+[#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
+[#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
 [#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
+[#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
+[#1141]: https://github.com/informalsystems/ibc-rs/issues/1141
+[#1143]: https://github.com/informalsystems/ibc-rs/issues/1143
+[#1165]: https://github.com/informalsystems/ibc-rs/issues/1165
 
 
 ## v0.5.0

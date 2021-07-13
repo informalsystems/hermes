@@ -224,7 +224,7 @@ def main():
     sleep(2.0)
 
     connection.passive_connection_try_then_start(config, ibc1, ibc0, ibc1_client_id, ibc0_client_id)
-    sleep(2.0) 
+    sleep(2.0)
 
     channel.passive_channel_start_then_init(config, ibc1, ibc0, ibc1_conn_id, port_id)
     sleep(2.0)

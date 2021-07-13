@@ -25,8 +25,9 @@ use crate::ics26_routing::msgs::Ics26Envelope::{
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
-/// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
 /// Returns a vector of all events that got generated as a byproduct of processing `messages`.
+///
+/// See <https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics>
 pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
 where
     Ctx: Ics26Context,
