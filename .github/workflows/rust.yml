@@ -83,20 +83,6 @@ jobs:
           command: test
           args: --all-features --no-fail-fast -- --nocapture
 
-  no-std-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-x86_64-unknown-linux-gnu
-          components: rust-src
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          args: -j1 --manifest-path no-std-check/Cargo.toml -Z build-std=core,alloc --target x86_64-unknown-linux-gnu
-          command: build
-
   # test-coverage:
   #   runs-on: ubuntu-latest
   #   steps:
