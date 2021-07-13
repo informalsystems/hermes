@@ -1,5 +1,3 @@
-use alloc::sync::Arc;
-
 use abscissa_core::{Command, Options, Runnable};
 
 mod ack;

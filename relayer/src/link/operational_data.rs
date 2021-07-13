@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 use std::time::Instant;
 
 use prost_types::Any;

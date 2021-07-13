@@ -89,7 +89,7 @@ impl UnwrapOrClone for Result<EventBatch> {
 type SubscriptionResult = RpcResult<RpcEvent>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 pub type EventSender = channel::Sender<Result<EventBatch>>;
 pub type EventReceiver = channel::Receiver<Result<EventBatch>>;

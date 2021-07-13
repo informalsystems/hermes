@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use alloc::collections::BTreeMap as HashMap;
+use core::fmt;
+use std::thread;
 use std::time::Instant;
-use std::{fmt, thread};
 
 use itertools::Itertools;
 use prost_types::Any;
