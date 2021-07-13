@@ -18,7 +18,7 @@ impl ClientType {
     const MOCK_STR: &'static str = "9999-mock";
 
     /// Yields the identifier of this client type as a string
-    pub fn as_string(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Self::Tendermint => Self::TENDERMINT_STR,
 
@@ -30,7 +30,7 @@ impl ClientType {
 
 impl fmt::Display for ClientType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ClientType({})", self.as_string())
+        write!(f, "ClientType({})", self.as_str())
     }
 }
 
@@ -92,7 +92,7 @@ mod tests {
     #[test]
     fn parse_mock_as_string_result() {
         let client_type = ClientType::Mock;
-        let type_string = client_type.as_string();
+        let type_string = client_type.as_str();
         let client_type_from_str = ClientType::from_str(type_string).unwrap();
         assert_eq!(client_type_from_str, client_type);
     }
@@ -100,7 +100,7 @@ mod tests {
     #[test]
     fn parse_tendermint_as_string_result() {
         let client_type = ClientType::Tendermint;
-        let type_string = client_type.as_string();
+        let type_string = client_type.as_str();
         let client_type_from_str = ClientType::from_str(type_string).unwrap();
         assert_eq!(client_type_from_str, client_type);
     }
