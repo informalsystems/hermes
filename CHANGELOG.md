@@ -1,5 +1,14 @@
 # Changelog
 
+## UNRELEASED
+
+### IMPROVEMENTS
+
+- [ibc-relayer-cli]
+  - Add CLI git hash ([#1094])
+
+[#1094]: https://github.com/informalsystems/ibc-rs/issues/1094
+
 ## v0.6.0
 *July 12th, 2021*
 
