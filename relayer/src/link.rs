@@ -28,15 +28,12 @@ pub struct LinkParameters {
 
 pub struct Link {
     pub a_to_b: RelayPath,
-    pub b_to_a: RelayPath,
 }
 
 impl Link {
     pub fn new(channel: Channel) -> Self {
-        let flipped = channel.flipped();
         Self {
             a_to_b: RelayPath::new(channel),
-            b_to_a: RelayPath::new(flipped),
         }
     }
 
