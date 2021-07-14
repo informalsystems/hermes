@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, trace};
+use tracing::{error, trace};
 
 use crate::channel::ChannelError;
 use crate::supervisor::Error;
@@ -13,7 +13,8 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    QueryConnectionChannelsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
@@ -318,18 +319,11 @@ pub fn unreceived_packets(
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
 
-    let commitments = counterparty_chain
+    let sequences = counterparty_chain
         .query_packet_commitments(commitments_request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
-
-    // extract the sequences
-    let sequences: Vec<u64> = commitments.0.into_iter().map(|v| v.sequence).collect();
-
-    debug!(
-        "commitment sequence(s) obtained from counterparty chain {}: {:?}",
-        counterparty_chain.id(),
-        sequences
-    );
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))
+        // extract the sequences
+        .map(|(packet_state, _)| packet_state.into_iter().map(|v| v.sequence).collect())?;
 
     let request = QueryUnreceivedPacketsRequest {
         port_id: channel.port_id.to_string(),
@@ -339,5 +333,47 @@ pub fn unreceived_packets(
 
     chain
         .query_unreceived_packets(request)
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))
+}
+
+pub fn unreceived_acknowledgements(
+    chain: &dyn ChainHandle,
+    counterparty_chain: &dyn ChainHandle,
+    channel: IdentifiedChannelEnd,
+) -> Result<Vec<u64>, Error> {
+    let counterparty_channel_id = channel
+        .channel_end
+        .counterparty()
+        .channel_id
+        .as_ref()
+        .ok_or_else(|| {
+            Error::QueryFailed(format!(
+                "the channel {:?} has no counterparty channel id",
+                channel
+            ))
+        })?
+        .to_string();
+
+    // get the packet acknowledgments on counterparty chain
+    let acks_request = QueryPacketAcknowledgementsRequest {
+        port_id: channel.channel_end.counterparty().port_id.to_string(),
+        channel_id: counterparty_channel_id,
+        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+    };
+
+    let sequences: Vec<u64> = counterparty_chain
+        .query_packet_acknowledgements(acks_request)
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))
+        // extract the sequences
+        .map(|(packet_state, _)| packet_state.into_iter().map(|v| v.sequence).collect())?;
+
+    let request = QueryUnreceivedAcksRequest {
+        port_id: channel.port_id.to_string(),
+        channel_id: channel.channel_id.to_string(),
+        packet_ack_sequences: sequences,
+    };
+
+    chain
+        .query_unreceived_acknowledgement(request)
         .map_err(|e| Error::QueryFailed(format!("{}", e)))
 }

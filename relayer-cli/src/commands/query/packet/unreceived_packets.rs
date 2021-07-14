@@ -40,23 +40,23 @@ pub struct QueryUnreceivedPacketsCmd {
 impl QueryUnreceivedPacketsCmd {
     fn execute(&self) -> Result<Vec<u64>, Error> {
         let config = app_config();
-
         debug!("Options: {:?}", self);
 
-        let chain = spawn_chain_runtime(&*config, &self.chain_id)?;
+        let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
         let channel_connection_client =
             channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id)
                 .map_err(|e| Kind::Query.context(e))?;
-
         let channel = channel_connection_client.channel;
         debug!(
             "fetched from source chain {} the following channel {:?}",
             self.chain_id, channel
         );
 
-        let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
-        let counterparty_chain = spawn_chain_runtime(&*config, &counterparty_chain_id)?;
+        let counterparty_chain = {
+            let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
+            spawn_chain_runtime(&config, &counterparty_chain_id)?
+        };
 
         unreceived_packets(chain.as_ref(), counterparty_chain.as_ref(), channel)
             .map_err(|e| Kind::Query.context(e).into())
