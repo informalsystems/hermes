@@ -261,12 +261,16 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
+    pub fn clear_packets(&self) -> bool {
+        self.clear_packets
+    }
+
     /// Queries the source chain at the given [`Height`]
     /// to find any packets or acknowledgements that are pending,
     /// and fetches the relevant packet event data. Finally, this
     /// method also schedules the corresponding operational data,
     /// so that the relayer will later relay the pending packets.
-    pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
+    pub fn do_clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
         info!(
             "[{}] clearing pending packets from events before height {}",
             self, above_height
@@ -294,7 +298,7 @@ impl RelayPath {
     pub fn update_schedule(&mut self, batch: EventBatch) -> Result<(), LinkError> {
         // With the first batch of events, also trigger the clearing of old packets.
         if self.clear_packets {
-            self.clear_packets(batch.height)?;
+            self.do_clear_packets(batch.height)?;
 
             // Disable further clearing of old packet.
             // Clearing will happen separately, upon new blocks.

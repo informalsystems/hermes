@@ -109,12 +109,13 @@ impl PacketWorker {
                     height,
                     new_block: _,
                 } => {
-                    // Schedule the clearing of pending packets
+                    // Schedule the clearing of pending packets at start and
                     // at predefined block intervals.
-                    if self.clear_packets_interval != 0
-                        && height.revision_height % self.clear_packets_interval == 0
+                    if link.a_to_b.clear_packets()
+                        || self.clear_packets_interval != 0
+                            && height.revision_height % self.clear_packets_interval == 0
                     {
-                        link.a_to_b.clear_packets(height)
+                        link.a_to_b.do_clear_packets(height)
                     } else {
                         Ok(())
                     }
