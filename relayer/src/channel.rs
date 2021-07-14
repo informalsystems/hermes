@@ -6,7 +6,7 @@ use anomaly::BoxError;
 use prost_types::Any;
 use serde::Serialize;
 use thiserror::Error;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use ibc::events::IbcEvent;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State};
@@ -431,20 +431,21 @@ impl Channel {
         Ok(())
     }
 
-    /// Does a single step towards finalizing the channel open handshake.
-    /// Covers only a step of type either Ack or Confirm.
-    /// (Assumes that the channel open handshake was previously
-    /// initialized with Init & Try steps.)
+    /// Sends the last two steps, consisting of `Ack` and `Confirm`
+    /// messages, for finalizing the channel open handshake.
+    ///
+    /// Assumes that the channel open handshake was previously
+    /// started (with `Init` & `Try` steps).
     ///
     /// Returns `Ok` when both channel ends are in state `Open`.
     /// Also returns `Ok` if the channel is undergoing a closing handshake.
     ///
     /// An `Err` can signal two cases:
-    ///     - the attempted handshake step has failed,
-    ///     - the attempted step may have finished successfully, but further
-    ///     steps are necessary to finalize the channel open handshake.
+    ///     - the common-case flow for the handshake protocol was interrupted,
+    ///         e.g., by a competing relayer.
+    ///     - Rpc problems (a query or submitting a tx failed).
     /// In both `Err` cases, there should be retry calling this method.
-    fn do_chan_open_ack_confirm_step(&self) -> Result<(), ChannelError> {
+    fn do_chan_open_finalize(&self) -> Result<(), ChannelError> {
         fn query_channel_states(channel: &Channel) -> Result<(State, State), ChannelError> {
             let src_channel_id = channel
                 .src_channel_id()
@@ -489,7 +490,7 @@ impl Channel {
             if (a1, b1) == (a2, b2) {
                 Ok(())
             } else {
-                debug!(
+                warn!(
                     "Expected channels to progress to states {}, {}), instead got ({}, {})",
                     a1, b1, a2, b2
                 );
@@ -509,7 +510,8 @@ impl Channel {
         );
 
         match (a_state, b_state) {
-            // Handle sending the Ack message to the source chain
+            // Handle sending the Ack message to the source chain,
+            // then the Confirm message to the destination.
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                 self.flipped().build_chan_open_ack_and_send()?;
 
@@ -522,7 +524,8 @@ impl Channel {
                 Ok(())
             }
 
-            // Handle sending the Ack message to the destination chain
+            // Handle sending the Ack message to the destination chain,
+            // then the Confirm to the source chain.
             (State::TryOpen, State::Init) => {
                 self.flipped().build_chan_open_ack_and_send()?;
 
@@ -535,7 +538,7 @@ impl Channel {
                 Ok(())
             }
 
-            // Handle sending the Confirm message to the destination chain
+            // Handle sending the Confirm message to the destination chain.
             (State::Open, State::TryOpen) => {
                 self.build_chan_open_confirm_and_send()?;
 
@@ -544,7 +547,7 @@ impl Channel {
                 Ok(())
             }
 
-            // Send Confirm to the source chain
+            // Send Confirm to the source chain.
             (State::TryOpen, State::Open) => {
                 self.flipped().build_chan_open_confirm_and_send()?;
 
@@ -565,22 +568,21 @@ impl Channel {
 
     /// Takes a partially open channel and finalizes the open handshake protocol.
     ///
-    /// Pre-condition: the channel identifiers are already established on both ends
-    ///   (i.e., the OpenInit and OpenTry steps have been fulfilled for this channel).
+    /// Pre-condition: the channel identifiers are established on both ends
+    ///   (i.e., `OpenInit` and `OpenTry` have executed previously for this channel).
     ///
     /// Post-condition: the channel state is `Open` on both ends if successful.
     fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| {
-            self.do_chan_open_ack_confirm_step()
-        })
-        .map_err(|err| {
-            error!("failed to open channel after {} retries", err);
-            ChannelError::Failed(format!(
-                "Failed to finish channel handshake in {} iterations for {:?}",
-                retry_count(&err),
-                self
-            ))
-        })?;
+        retry_with_index(retry_strategy::default(), |_| self.do_chan_open_finalize()).map_err(
+            |err| {
+                error!("failed to open channel after {} retries", err);
+                ChannelError::Failed(format!(
+                    "Failed to finish channel handshake in {} iterations for {:?}",
+                    retry_count(&err),
+                    self
+                ))
+            },
+        )?;
 
         Ok(())
     }
