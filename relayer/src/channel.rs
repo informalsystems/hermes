@@ -456,7 +456,7 @@ impl Channel {
                 .ok_or(ChannelError::MissingCounterpartyChannelId)?;
 
             debug!(
-                "do_chan_open_ack_confirm_step with src_channel_id: {}, dst_channel_id: {}",
+                "do_chan_open_finalize for src_channel_id: {}, dst_channel_id: {}",
                 src_channel_id, dst_channel_id
             );
 
@@ -491,11 +491,11 @@ impl Channel {
                 Ok(())
             } else {
                 warn!(
-                    "Expected channels to progress to states {}, {}), instead got ({}, {})",
+                    "expected channels to progress to states {}, {}), instead got ({}, {})",
                     a1, b1, a2, b2
                 );
 
-                debug!("Returning PartialOpenHandshake to retry");
+                debug!("returning PartialOpenHandshake to retry");
 
                 // One more step (confirm) left.
                 // Returning error signals that the caller should retry.
@@ -505,7 +505,7 @@ impl Channel {
 
         let (a_state, b_state) = query_channel_states(self)?;
         debug!(
-            "do_chan_open_ack_confirm_step with channel states: {}, {}",
+            "do_chan_open_finalize with channel states: {}, {}",
             a_state, b_state
         );
 
