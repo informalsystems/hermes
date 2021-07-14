@@ -508,14 +508,17 @@ impl<'a> SpawnContext<'a> {
                 )
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
-            let unreceived_packets =
-                unreceived_packets(chain.as_ref(), counterparty_chain.as_ref(), channel.clone())?;
-            let unreceived_acks = unreceived_acknowledgements(
-                chain.as_ref(),
-                counterparty_chain.as_ref(),
-                channel.clone(),
-            )?;
-            if !unreceived_packets.is_empty() || !unreceived_acks.is_empty() {
+            let outstanding_packets =
+                !unreceived_packets(chain.as_ref(), counterparty_chain.as_ref(), channel.clone())?
+                    .is_empty()
+                    || !unreceived_acknowledgements(
+                        chain.as_ref(),
+                        counterparty_chain.as_ref(),
+                        channel.clone(),
+                    )?
+                    .is_empty();
+
+            if outstanding_packets {
                 // create the Packet object and spawn worker
                 let path_object = Object::Packet(Packet {
                     dst_chain_id: counterparty_chain.id(),
