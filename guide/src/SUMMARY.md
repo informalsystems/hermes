@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.5.0)
+# Hermes (v0.6.0)
 
 ---
 - [Introduction](./index.md)
@@ -28,6 +28,7 @@
 - [Commands Reference](./commands/index.md)
    - [Global options and JSON output](./commands/global.md)
    - [Keys](./commands/keys/index.md)
+   - [Config](./commands/config.md) 
    - [Path setup](./commands/path-setup/index.md)
      - [Clients](./commands/path-setup/clients.md)
      - [Connections](./commands/path-setup/connections.md)

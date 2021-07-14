@@ -608,8 +608,8 @@ impl Channel {
                 })?;
 
         channel_state_on_destination(
-            channel_deps.channel.clone(),
-            channel_deps.connection,
+            &channel_deps.channel,
+            &channel_deps.connection,
             self.dst_chain().as_ref(),
         )
         .map_err(|_| {
@@ -636,7 +636,7 @@ impl Channel {
 
         match self.handshake_step(state) {
             Err(e) => {
-                error!("Failed {:?} with error {}", state, e);
+                error!("Failed Chan{:?} with error: {}", state, e);
                 RetryResult::Retry(index)
             }
             Ok(ev) => {

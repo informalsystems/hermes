@@ -1,11 +1,14 @@
 //! Relayer configuration
 
+pub mod reload;
+
+use std::collections::{HashMap, HashSet};
 use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
@@ -28,9 +31,59 @@ impl fmt::Display for GasPrice {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(
+    rename_all = "lowercase",
+    tag = "policy",
+    content = "list",
+    deny_unknown_fields
+)]
+pub enum PacketFilter {
+    Allow(ChannelsSpec),
+    Deny(ChannelsSpec),
+    AllowAll,
+}
+
+impl Default for PacketFilter {
+    /// By default, allows all channels & ports.
+    fn default() -> Self {
+        Self::AllowAll
+    }
+}
+
+impl PacketFilter {
+    /// Returns true if the packets can be relayed on the channel with [`PortId`] and [`ChannelId`],
+    /// false otherwise.
+    pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
+        match self {
+            PacketFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::AllowAll => true,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
+
+impl ChannelsSpec {
+    pub fn contains(&self, channel_port: &(PortId, ChannelId)) -> bool {
+        self.0.contains(channel_port)
+    }
+}
+
 /// Defaults for various fields
 pub mod default {
     use super::*;
+
+    pub fn filter() -> bool {
+        false
+    }
+
+    pub fn clear_packets_interval() -> u64 {
+        100
+    }
 
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
@@ -50,7 +103,9 @@ pub mod default {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
+    #[serde(default)]
     pub global: GlobalConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
@@ -59,12 +114,43 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn has_chain(&self, id: &ChainId) -> bool {
+        self.chains.iter().any(|c| c.id == *id)
+    }
+
     pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
         self.chains.iter().find(|c| c.id == *id)
     }
 
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
+    }
+
+    /// Returns true if filtering is disabled or if packets are allowed on
+    /// the channel [`PortId`] [`ChannelId`] on [`ChainId`].
+    /// Returns false otherwise.
+    pub fn packets_on_channel_allowed(
+        &self,
+        chain_id: &ChainId,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> bool {
+        if !self.global.filter {
+            return true;
+        }
+
+        match self.find_chain(chain_id) {
+            None => false,
+            Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
+        }
+    }
+
+    pub fn handshake_enabled(&self) -> bool {
+        self.global.strategy == Strategy::HandshakeAndPackets
+    }
+
+    pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
+        self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }
 
@@ -83,26 +169,61 @@ impl Default for Strategy {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GlobalConfig {
-    #[serde(default)]
-    pub strategy: Strategy,
+/// Log levels are wrappers over [`tracing_core::Level`].
+///
+/// [`tracing_core::Level`]: https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
 
-    /// All valid log levels, as defined in tracing:
-    /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
-    pub log_level: String,
+impl Default for LogLevel {
+    fn default() -> Self {
+        Self::Info
+    }
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LogLevel::Trace => write!(f, "trace"),
+            LogLevel::Debug => write!(f, "debug"),
+            LogLevel::Info => write!(f, "info"),
+            LogLevel::Warn => write!(f, "warn"),
+            LogLevel::Error => write!(f, "error"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct GlobalConfig {
+    pub strategy: Strategy,
+    pub log_level: LogLevel,
+    #[serde(default = "default::filter")]
+    pub filter: bool,
+    #[serde(default = "default::clear_packets_interval")]
+    pub clear_packets_interval: u64,
 }
 
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
-            log_level: "info".to_string(),
+            log_level: LogLevel::default(),
+            filter: default::filter(),
+            clear_packets_interval: default::clear_packets_interval(),
         }
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct TelemetryConfig {
     pub enabled: bool,
     pub host: String,
@@ -120,6 +241,7 @@ impl Default for TelemetryConfig {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
     pub rpc_addr: tendermint_rpc::Url,
@@ -143,10 +265,12 @@ pub struct ChainConfig {
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
     pub gas_price: GasPrice,
+    #[serde(default)]
+    pub packet_filter: PacketFilter,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
-pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
+pub fn load(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     let config_toml =
         std::fs::read_to_string(&path).map_err(|e| error::Kind::ConfigIo.context(e))?;
 
@@ -180,7 +304,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use super::{parse, store_writer};
+    use super::{load, store_writer};
     use test_env_log::test;
 
     #[test]
@@ -190,7 +314,7 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = parse(path);
+        let config = load(path);
         println!("{:?}", config);
         assert!(config.is_ok());
     }
@@ -202,7 +326,7 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = parse(path).expect("could not parse config");
+        let config = load(path).expect("could not parse config");
 
         let mut buffer = Vec::new();
         store_writer(&config, &mut buffer).unwrap();
