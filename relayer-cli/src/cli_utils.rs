@@ -1,7 +1,10 @@
 use std::sync::Arc;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics02_client::client_state::ClientState;
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer::chain::counterparty::channel_connection_client;
 use ibc_relayer::{
     chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSdkChain},
     config::Config,
@@ -50,4 +53,27 @@ pub fn spawn_chain_runtime(
         .map_err(|e| Kind::Runtime.context(e))?;
 
     Ok(handle)
+}
+
+pub fn spawn_chain_counterparty(
+    config: &Config,
+    chain_id: &ChainId,
+    port_id: &PortId,
+    channel_id: &ChannelId,
+) -> Result<(ChainHandlePair, IdentifiedChannelEnd), Error> {
+    let chain = spawn_chain_runtime(config, chain_id)?;
+    let channel_connection_client = channel_connection_client(chain.as_ref(), port_id, channel_id)
+        .map_err(|e| Kind::Query.context(e))?;
+    let counterparty_chain = {
+        let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
+        spawn_chain_runtime(config, &counterparty_chain_id)?
+    };
+
+    Ok((
+        ChainHandlePair {
+            src: chain,
+            dst: counterparty_chain,
+        },
+        channel_connection_client.channel,
+    ))
 }

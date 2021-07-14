@@ -1,12 +1,11 @@
 use abscissa_core::{Command, Options, Runnable};
 use serde::Serialize;
 
-use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
-use ibc_relayer::chain::counterparty::{channel_connection_client, unreceived_packets};
+use ibc_relayer::chain::counterparty::unreceived_packets;
 
-use crate::cli_utils::spawn_chain_runtime;
+use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
@@ -42,23 +41,14 @@ impl QueryUnreceivedPacketsCmd {
         let config = app_config();
         debug!("Options: {:?}", self);
 
-        let chain = spawn_chain_runtime(&config, &self.chain_id)?;
-
-        let channel_connection_client =
-            channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id)
-                .map_err(|e| Kind::Query.context(e))?;
-        let channel = channel_connection_client.channel;
+        let (chains, channel) =
+            spawn_chain_counterparty(&config, &self.chain_id, &self.port_id, &self.channel_id)?;
         debug!(
             "fetched from source chain {} the following channel {:?}",
             self.chain_id, channel
         );
 
-        let counterparty_chain = {
-            let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
-            spawn_chain_runtime(&config, &counterparty_chain_id)?
-        };
-
-        unreceived_packets(chain.as_ref(), counterparty_chain.as_ref(), channel)
+        unreceived_packets(chains.src.as_ref(), chains.dst.as_ref(), channel)
             .map_err(|e| Kind::Query.context(e).into())
     }
 }
