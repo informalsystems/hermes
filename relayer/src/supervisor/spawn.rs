@@ -314,11 +314,6 @@ impl<'a> SpawnContext<'a> {
             return;
         }
 
-        let connection = IdentifiedConnectionEnd {
-            connection_id: connection_id.clone(),
-            connection_end: connection_end.clone(),
-        };
-
         match self.counterparty_connection_state(client.clone(), connection.clone()) {
             Err(e) => {
                 debug!("error with counterparty: reason {}", e);
@@ -357,8 +352,6 @@ impl<'a> SpawnContext<'a> {
                 return;
             }
         };
-
-        let connection = IdentifiedConnectionEnd::new(connection_id, connection_end);
 
         for channel in connection_channels {
             let channel_id = channel.channel_id.clone();
