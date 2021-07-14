@@ -43,6 +43,11 @@ where
     Ok(res)
 }
 
+/// Attempts to convert a message into a [Ics26Envelope] message
+pub fn decode(message: Any) -> Result<Ics26Envelope, Error> {
+    message.try_into()
+}
+
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
 /// Returns a handler output with empty result of type `HandlerOutput<()>` which contains the log
 /// and events produced after processing the input `msg`.
