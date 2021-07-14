@@ -4,10 +4,7 @@ use serde::Serialize;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
-use ibc_proto::ibc::core::channel::v1::{
-    QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
-};
-use ibc_relayer::chain::counterparty::channel_connection_client;
+use ibc_relayer::chain::counterparty::{channel_connection_client, unreceived_packets};
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
@@ -57,50 +54,11 @@ impl QueryUnreceivedPacketsCmd {
             "fetched from source chain {} the following channel {:?}",
             self.chain_id, channel
         );
-        let counterparty_channel_id = channel
-            .channel_end
-            .counterparty()
-            .channel_id
-            .as_ref()
-            .ok_or_else(|| {
-                Kind::Query.context(format!(
-                    "the channel {:?} counterparty has no channel id",
-                    channel
-                ))
-            })?
-            .to_string();
 
         let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
         let counterparty_chain = spawn_chain_runtime(&*config, &counterparty_chain_id)?;
 
-        // get the packet commitments on the counterparty/ source chain
-        let commitments_request = QueryPacketCommitmentsRequest {
-            port_id: channel.channel_end.counterparty().port_id.to_string(),
-            channel_id: counterparty_channel_id,
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
-
-        let commitments = counterparty_chain
-            .query_packet_commitments(commitments_request)
-            .map_err(|e| Kind::Query.context(e))?;
-
-        // extract the sequences
-        let sequences: Vec<u64> = commitments.0.into_iter().map(|v| v.sequence).collect();
-
-        debug!(
-            "commitment sequence(s) obtained from counterparty chain {}: {:?}",
-            counterparty_chain.id(),
-            sequences
-        );
-
-        let request = QueryUnreceivedPacketsRequest {
-            port_id: channel.port_id.to_string(),
-            channel_id: channel.channel_id.to_string(),
-            packet_commitment_sequences: sequences,
-        };
-
-        chain
-            .query_unreceived_packets(request)
+        unreceived_packets(chain.as_ref(), counterparty_chain.as_ref(), channel)
             .map_err(|e| Kind::Query.context(e).into())
     }
 }
