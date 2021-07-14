@@ -261,10 +261,6 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    pub fn clear_packets(&self) -> bool {
-        self.clear_packets
-    }
-
     /// Queries the source chain at the given [`Height`]
     /// to find any packets or acknowledgements that are pending,
     /// and fetches the relevant packet event data. Finally, this
@@ -294,17 +290,33 @@ impl RelayPath {
         Ok(())
     }
 
-    /// Generate & schedule operational data from the input `batch` of IBC events.
-    pub fn update_schedule(&mut self, batch: EventBatch) -> Result<(), LinkError> {
-        // With the first batch of events, also trigger the clearing of old packets.
-        if self.clear_packets {
-            self.do_clear_packets(batch.height)?;
+    /// Trigger the clearing of old packets.
+    ///
+    /// Packet clearing is regulated by the
+    /// internal `clear_packets` flag, so that we
+    /// only clear packets once per execution.
+    ///
+    /// The flag `force` allow to override the internal
+    /// `clear_packets` flag and schedule packet clearing
+    /// regardless of the flag.
+    pub fn schedule_packet_clearing(
+        &mut self,
+        height: Height,
+        force: bool,
+    ) -> Result<(), LinkError> {
+        if self.clear_packets || force {
+            self.do_clear_packets(height)?;
 
-            // Disable further clearing of old packet.
-            // Clearing will happen separately, upon new blocks.
+            // Disable further clearing of old packets by default.
+            // Clearing may still happen: upon new blocks, when `force = true`.
             self.clear_packets = false;
         }
 
+        Ok(())
+    }
+
+    /// Generate & schedule operational data from the input `batch` of IBC events.
+    pub fn update_schedule(&mut self, batch: EventBatch) -> Result<(), LinkError> {
         // Collect relevant events from the incoming batch & adjust their height.
         let events = self.filter_events(&batch.events);
 
@@ -1404,11 +1416,6 @@ impl RelayPath {
         } else {
             None
         }
-    }
-
-    /// Set the relay path's clear packets flag.
-    pub fn set_clear_packets(&mut self, clear_packets: bool) {
-        self.clear_packets = clear_packets;
     }
 
     fn restore_src_client(&self) -> ForeignClient {

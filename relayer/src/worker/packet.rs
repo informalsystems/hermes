@@ -99,8 +99,12 @@ impl PacketWorker {
         if let Some(cmd) = cmd {
             let result = match cmd {
                 WorkerCmd::IbcEvents { batch } => {
-                    // Update scheduled batches.
-                    link.a_to_b.update_schedule(batch)
+                    // Try to clear old packets.
+                    link.a_to_b
+                        .schedule_packet_clearing(batch.height, false)
+                        .and_then(|_|
+                        // Update scheduled batches
+                        link.a_to_b.update_schedule(batch))
                 }
 
                 // Handle the arrival of an event signaling that the
@@ -109,16 +113,12 @@ impl PacketWorker {
                     height,
                     new_block: _,
                 } => {
-                    // Schedule the clearing of pending packets at start and
-                    // at predefined block intervals.
-                    if link.a_to_b.clear_packets()
-                        || self.clear_packets_interval != 0
-                            && height.revision_height % self.clear_packets_interval == 0
-                    {
-                        link.a_to_b.do_clear_packets(height)
-                    } else {
-                        Ok(())
-                    }
+                    // Schedule the clearing of pending packets. This should happen
+                    // once at start, and _forced_ at predefined block intervals.
+                    let force_packet_clearing = self.clear_packets_interval != 0
+                        && height.revision_height % self.clear_packets_interval == 0;
+                    link.a_to_b
+                        .schedule_packet_clearing(height, force_packet_clearing)
                 }
 
                 WorkerCmd::Shutdown => {
