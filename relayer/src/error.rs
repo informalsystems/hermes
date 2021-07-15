@@ -209,6 +209,7 @@ pub enum Kind {
     ConsensusStateTypeMismatch {
         expected: ClientType,
         got: ClientType,
+    },
 
     #[error("Hermes health check failed for endpoint {endpoint} on the Json RPC interface of chain {chain_id}:{address}; caused by: {cause}")]
     HealthCheckJsonRpc {
