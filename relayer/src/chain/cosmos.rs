@@ -815,7 +815,35 @@ impl Chain for CosmosSdkChain {
     }
 
     fn submit_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<Response>, Error> {
-        todo!()
+        crate::time!("submit_msgs");
+
+        if proto_msgs.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut responses = vec![];
+
+        let mut n = 0;
+        let mut size = 0;
+        let mut msg_batch = vec![];
+        for msg in proto_msgs.iter() {
+            msg_batch.push(msg.clone());
+            let mut buf = Vec::new();
+            prost::Message::encode(msg, &mut buf).unwrap();
+            n += 1;
+            size += buf.len();
+            if n >= self.max_msg_num() || size >= self.max_tx_size() {
+                // Send the tx and enqueue the resulting response
+                responses.push(self.send_tx(msg_batch)?);
+                n = 0;
+                size = 0;
+                msg_batch = vec![];
+            }
+        }
+        if !msg_batch.is_empty() {
+            responses.push(self.send_tx(msg_batch)?);
+        }
+
+        Ok(responses)
     }
 
     /// Get the account for the signer
