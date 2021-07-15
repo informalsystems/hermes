@@ -18,7 +18,7 @@ pub enum KeysCmd {
     Add(add::KeysAddCmd),
 
     /// The `keys delete` subcommand
-    #[options(help = "Deletes a key from a configured chain")]
+    #[options(help = "Delete key(s) from a configured chain")]
     Delete(delete::KeysDeleteCmd),
 
     /// The `keys list` subcommand
