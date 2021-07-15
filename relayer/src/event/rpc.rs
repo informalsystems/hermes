@@ -108,10 +108,13 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, BoxError> {
         // Note: There is no message.action "send_packet", the only one we can hook into is the
         // module's action:
         // - "transfer" for ICS20
-        // - "register" and "send" for ICS27
+        // - "MsgSend" and "MsgRegister" for ICS27
         // However the attributes are all prefixed with "send_packet" therefore the overwrite here
         // TODO: This need to be sorted out
-        "transfer" | ibc::application::ics20_fungible_token_transfer::msgs::transfer::TYPE_URL => {
+        "transfer"
+        | ibc::application::ics20_fungible_token_transfer::msgs::transfer::TYPE_URL
+        | ibc::application::ICS27_SEND_TYPE_URL
+        | ibc::application::ICS27_REGISTER_TYPE_URL => {
             object.action = "send_packet".to_string();
             Ok(IbcEvent::from(ChannelEvents::SendPacket::try_from(object)?))
         }
