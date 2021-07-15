@@ -11,7 +11,7 @@ use crate::application::app_config;
 use crate::conclude::Output;
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct KeysCleanCmd {
+pub struct KeysDeleteCmd {
     #[options(free, required, help = "identifier of the chain")]
     chain_id: ChainId,
 
@@ -22,8 +22,8 @@ pub struct KeysCleanCmd {
     name: Option<String>,
 }
 
-impl KeysCleanCmd {
-    fn options(&self, config: &Config) -> Result<KeysCleanOptions, BoxError> {
+impl KeysDeleteCmd {
+    fn options(&self, config: &Config) -> Result<KeysDeleteOptions, BoxError> {
         let chain_config = config
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
@@ -33,7 +33,7 @@ impl KeysCleanCmd {
             .clone()
             .unwrap_or_else(|| chain_config.key_name.clone());
 
-        Ok(KeysCleanOptions {
+        Ok(KeysDeleteOptions {
             config: chain_config.clone(),
             name,
         })
@@ -41,12 +41,12 @@ impl KeysCleanCmd {
 }
 
 #[derive(Clone, Debug)]
-pub struct KeysCleanOptions {
+pub struct KeysDeleteOptions {
     pub name: String,
     pub config: ChainConfig,
 }
 
-impl Runnable for KeysCleanCmd {
+impl Runnable for KeysDeleteCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -55,7 +55,7 @@ impl Runnable for KeysCleanCmd {
             Ok(result) => result,
         };
 
-        match clean_key(&opts.config, &opts.name) {
+        match delete_key(&opts.config, &opts.name) {
             Ok(_) => Output::success_msg(format!(
                 "Removed key '{}' on chain {}",
                 opts.name, opts.config.id
@@ -66,7 +66,7 @@ impl Runnable for KeysCleanCmd {
     }
 }
 
-pub fn clean_key(config: &ChainConfig, key_name: &str) -> Result<(), BoxError> {
+pub fn delete_key(config: &ChainConfig, key_name: &str) -> Result<(), BoxError> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     keyring.remove_key(key_name)?;
     Ok(())
