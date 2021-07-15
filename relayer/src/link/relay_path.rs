@@ -261,55 +261,37 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    /// Queries the source chain at the given [`Height`]
-    /// to find any packets or acknowledgements that are pending,
-    /// and fetches the relevant packet event data. Finally, this
-    /// method also schedules the corresponding operational data,
-    /// so that the relayer will later relay the pending packets.
-    pub fn do_clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
-        info!(
-            "[{}] clearing pending packets from events before height {}",
-            self, above_height
-        );
-
-        let clear_height = above_height.decrement().map_err(|e| {
-            LinkError::Failed(format!(
-                "Cannot clear packets @height {}, because this height cannot be decremented: {}",
-                above_height,
-                e.to_string()
-            ))
-        })?;
-
-        self.relay_pending_packets(clear_height)?;
-
-        info!(
-            "[{}] finished scheduling the clearing of pending packets",
-            self
-        );
-
-        Ok(())
-    }
-
-    /// Trigger the clearing of old packets.
-    ///
-    /// Packet clearing is regulated by the
-    /// internal `clear_packets` flag, so that we
-    /// only clear packets once per execution.
-    ///
-    /// The flag `force` allow to override the internal
-    /// `clear_packets` flag and schedule packet clearing
-    /// regardless of the flag.
+    /// Clears any packets that were sent before `height`, either if the `clear_packets` flag
+    /// is set or if clearing is forced by the caller.
     pub fn schedule_packet_clearing(
         &mut self,
         height: Height,
         force: bool,
     ) -> Result<(), LinkError> {
         if self.clear_packets || force {
-            self.do_clear_packets(height)?;
-
             // Disable further clearing of old packets by default.
             // Clearing may still happen: upon new blocks, when `force = true`.
             self.clear_packets = false;
+
+            info!(
+                "[{}] clearing pending packets from events before height {}",
+                self, height
+            );
+
+            let clear_height = height.decrement().map_err(|e| {
+                LinkError::Failed(format!(
+                    "Cannot clear packets @height {}, because this height cannot be decremented: {}",
+                    height,
+                    e.to_string()
+                ))
+            })?;
+
+            self.relay_pending_packets(clear_height)?;
+
+            info!(
+                "[{}] finished scheduling the clearing of pending packets",
+                self
+            );
         }
 
         Ok(())
