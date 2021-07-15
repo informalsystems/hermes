@@ -30,7 +30,7 @@ where
 
     for any_msg in messages {
         // Decode the proto message into a domain message, creating an ICS26 envelope.
-        let envelope = any_msg.try_into()?;
+        let envelope = decode(any_msg)?;
 
         // Process the envelope, and accumulate any events that were generated.
         let mut output = dispatch(&mut ctx_interim, envelope)?;
