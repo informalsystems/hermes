@@ -40,7 +40,10 @@ impl TryFrom<RawMockHeader> for MockHeader {
 
 impl From<MockHeader> for RawMockHeader {
     fn from(value: MockHeader) -> Self {
-        value.into()
+        RawMockHeader {
+            height: Some(value.height.into()),
+            timestamp: value.timestamp.as_nanoseconds(),
+        }
     }
 }
 
@@ -48,6 +51,7 @@ impl MockHeader {
     pub fn height(&self) -> Height {
         self.height
     }
+
     pub fn new(height: Height) -> Self {
         Self {
             height,
@@ -68,16 +72,35 @@ impl Header for MockHeader {
     }
 
     fn height(&self) -> Height {
-        todo!()
+        self.height
     }
 
     fn wrap_any(self) -> AnyHeader {
-        todo!()
+        AnyHeader::Mock(self)
     }
 }
 
 impl From<MockHeader> for AnyConsensusState {
     fn from(h: MockHeader) -> Self {
         AnyConsensusState::Mock(MockConsensusState(h))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encode_any() {
+        let header = MockHeader::new(Height::new(1, 10));
+        let bytes = header.wrap_any().encode_vec().unwrap();
+
+        assert_eq!(
+            &bytes,
+            &[
+                10, 16, 47, 105, 98, 99, 46, 109, 111, 99, 107, 46, 72, 101, 97, 100, 101, 114, 18,
+                6, 10, 4, 8, 1, 16, 10,
+            ]
+        );
     }
 }

@@ -139,7 +139,7 @@ fn subscribe(
     chain_config: &ChainConfig,
     rt: Arc<TokioRuntime>,
 ) -> Result<(EventMonitor, EventReceiver), BoxError> {
-    let (mut event_monitor, rx) = EventMonitor::new(
+    let (mut event_monitor, rx, _) = EventMonitor::new(
         chain_config.id.clone(),
         chain_config.websocket_addr.clone(),
         rt,

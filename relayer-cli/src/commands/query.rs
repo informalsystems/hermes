@@ -2,9 +2,12 @@
 
 use abscissa_core::{Command, Options, Runnable};
 
+use crate::commands::query::channel_ends::QueryChannelEndsCmd;
 use crate::commands::query::channels::QueryChannelsCmd;
+use crate::commands::query::packet::QueryPacketCmds;
 
 mod channel;
+mod channel_ends;
 mod channels;
 mod client;
 mod clients;
@@ -83,31 +86,8 @@ pub enum QueryChannelCmds {
     /// The `query channel end` subcommand
     #[options(help = "Query channel end")]
     End(channel::QueryChannelEndCmd),
-}
 
-#[derive(Command, Debug, Options, Runnable)]
-pub enum QueryPacketCmds {
-    /// The `query packet commitments` subcommand
-    #[options(help = "Query packet commitments")]
-    Commitments(packet::QueryPacketCommitmentsCmd),
-
-    /// The `query packet commitment` subcommand
-    #[options(help = "Query packet commitment")]
-    Commitment(packet::QueryPacketCommitmentCmd),
-
-    /// The `query packet acks` subcommand
-    #[options(help = "Query packet acknowledgments")]
-    Acks(packet::QueryPacketAcknowledgementsCmd),
-
-    /// The `query packet ack` subcommand
-    #[options(help = "Query packet acknowledgment")]
-    Ack(packet::QueryPacketAcknowledgmentCmd),
-
-    /// The `query packet unreceived-packets` subcommand
-    #[options(help = "Query unreceived packets")]
-    UnreceivedPackets(packet::QueryUnreceivedPacketsCmd),
-
-    /// The `query packet unreceived-acks` subcommand
-    #[options(help = "Query unreceived acknowledgments")]
-    UnreceivedAcks(packet::QueryUnreceivedAcknowledgementCmd),
+    /// The `query channel ends` subcommand
+    #[options(help = "Query channel ends and underlying connection and client objects")]
+    Ends(QueryChannelEndsCmd),
 }

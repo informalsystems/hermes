@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use anomaly::BoxError;
 use crossbeam_channel::Receiver;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use crate::channel::Channel as RelayChannel;
 use crate::telemetry::Telemetry;
@@ -55,7 +55,10 @@ impl ChannelWorker {
                         // there can be up to two event for this channel, e.g. init and try.
                         // process the last event, the one with highest "rank".
                         let last_event = batch.events.last();
-                        debug!("channel worker starts processing {:#?}", last_event);
+                        debug!(
+                            channel = %self.channel.short_name(),
+                            "channel worker starts processing {:#?}", last_event
+                        );
 
                         match last_event {
                             Some(event) => {
@@ -82,8 +85,8 @@ impl ChannelWorker {
                         }
 
                         debug!(
-                            "channel worker starts processing block event at {:#?}",
-                            current_height
+                            channel = %self.channel.short_name(),
+                            "Channel worker starts processing block event at {:#?}", current_height
                         );
 
                         let height = current_height.decrement()?;
@@ -99,10 +102,15 @@ impl ChannelWorker {
                             handshake_channel.step_state(state, index)
                         })
                     }
+
+                    WorkerCmd::Shutdown => {
+                        info!(channel = %self.channel.short_name(), "shutting down Channel worker");
+                        return Ok(());
+                    }
                 };
 
                 if let Err(retries) = result {
-                    warn!("Channel worker failed after {} retries", retries);
+                    warn!(channel = %self.channel.short_name(), "Channel worker failed after {} retries", retries);
 
                     // Resume handshake on next iteration.
                     resume_handshake = true;
