@@ -814,6 +814,10 @@ impl Chain for CosmosSdkChain {
         Ok(events)
     }
 
+    fn submit_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<Response>, Error> {
+        todo!()
+    }
+
     /// Get the account for the signer
     fn get_signer(&mut self) -> Result<Signer, Error> {
         crate::time!("get_signer");

@@ -198,6 +198,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.send_msgs(proto_msgs, reply_to)?
                         },
 
+                        Ok(ChainRequest::SubmitMsgs { proto_msgs, reply_to }) => {
+                            self.submit_msgs(proto_msgs, reply_to)?
+                        },
+
                         Ok(ChainRequest::Signer { reply_to }) => {
                             self.get_signer(reply_to)?
                         }
@@ -361,6 +365,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_msgs(proto_msgs);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn submit_msgs(
+        &mut self,
+        proto_msgs: Vec<prost_types::Any>,
+        reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.submit_msgs(proto_msgs);
 
         reply_to.send(result).map_err(Kind::channel)?;
 

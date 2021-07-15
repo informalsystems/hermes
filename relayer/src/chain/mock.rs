@@ -118,6 +118,13 @@ impl Chain for MockChain {
         Ok(events)
     }
 
+    fn submit_msgs(
+        &mut self,
+        _proto_msgs: Vec<Any>,
+    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
+        todo!()
+    }
+
     fn get_signer(&mut self) -> Result<Signer, Error> {
         Ok(get_dummy_account_id())
     }

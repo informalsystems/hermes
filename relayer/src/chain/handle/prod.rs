@@ -96,6 +96,16 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
+    fn submit_msgs(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
+        self.send(|reply_to| ChainRequest::SubmitMsgs {
+            proto_msgs,
+            reply_to,
+        })
+    }
+
     fn get_signer(&self) -> Result<Signer, Error> {
         self.send(|reply_to| ChainRequest::Signer { reply_to })
     }

@@ -107,6 +107,13 @@ pub trait Chain: Sized {
     /// Sends one or more transactions with `msgs` to chain.
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
 
+    /// Sends one or more transactions with `msgs` to chain.
+    /// Non-blocking alternative to `send_msgs` interface.
+    fn submit_msgs(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error>;
+
     fn get_signer(&mut self) -> Result<Signer, Error>;
 
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
