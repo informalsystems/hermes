@@ -26,10 +26,12 @@ use ibc::{
     Height,
 };
 use ibc_proto::ibc::core::channel::v1::{
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
+use crate::chain::counterparty::{
+    unreceived_acknowledgements_sequences, unreceived_packets_sequences,
+};
 use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelError};
 use crate::event::monitor::EventBatch;
@@ -772,37 +774,21 @@ impl RelayPath {
         let mut events_result = vec![];
 
         let src_channel_id = self.src_channel_id()?;
+        let dst_channel_id = self.dst_channel_id()?;
 
-        // Query packet commitments on source chain that have not been acknowledged
-        let pc_request = QueryPacketCommitmentsRequest {
-            port_id: self.src_port_id().to_string(),
-            channel_id: src_channel_id.to_string(),
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
-        let (packet_commitments, src_response_height) =
-            self.src_chain().query_packet_commitments(pc_request)?;
+        let (commit_sequences, sequences, src_response_height) = unreceived_packets_sequences(
+            self.src_chain().as_ref(),
+            src_channel_id,
+            self.src_port_id(),
+            self.dst_chain().as_ref(),
+            dst_channel_id,
+            self.dst_port_id(),
+        )
+        .map_err(|e| LinkError::Failed(e.to_string()))?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
-        if packet_commitments.is_empty() {
-            return Ok((events_result, query_height));
-        }
-        let commit_sequences: Vec<u64> = packet_commitments.iter().map(|p| p.sequence).collect();
-
-        // Get the packets that have not been received on destination chain
-        let request = QueryUnreceivedPacketsRequest {
-            port_id: self.dst_port_id().to_string(),
-            channel_id: self.dst_channel_id()?.to_string(),
-            packet_commitment_sequences: commit_sequences.clone(),
-        };
-
-        let sequences: Vec<Sequence> = self
-            .dst_chain()
-            .query_unreceived_packets(request)?
-            .into_iter()
-            .map(From::from)
-            .collect();
-
+        let sequences: Vec<Sequence> = sequences.into_iter().map(From::from).collect();
         if sequences.is_empty() {
             return Ok((events_result, query_height));
         }
@@ -828,7 +814,7 @@ impl RelayPath {
             source_port_id: self.src_port_id().clone(),
             source_channel_id: src_channel_id.clone(),
             destination_port_id: self.dst_port_id().clone(),
-            destination_channel_id: self.dst_channel_id()?.clone(),
+            destination_channel_id: dst_channel_id.clone(),
             sequences,
             height: query_height,
         });
@@ -866,40 +852,20 @@ impl RelayPath {
         let src_channel_id = self.src_channel_id()?;
         let dst_channel_id = self.dst_channel_id()?;
 
-        // Get the sequences of packets that have been acknowledged on source
-        let pc_request = QueryPacketAcknowledgementsRequest {
-            port_id: self.src_port_id().to_string(),
-            channel_id: src_channel_id.to_string(),
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
-        let (acks_on_source, src_response_height) = self
-            .src_chain()
-            .query_packet_acknowledgements(pc_request)
-            .map_err(|e| LinkError::QueryError(self.src_chain().id(), e))?;
+        let (acked_sequences, sequences, src_response_height) =
+            unreceived_acknowledgements_sequences(
+                self.src_chain().as_ref(),
+                src_channel_id,
+                self.src_port_id(),
+                self.dst_chain().as_ref(),
+                dst_channel_id,
+                self.dst_port_id(),
+            )
+            .map_err(|e| LinkError::Failed(e.to_string()))?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
-        if acks_on_source.is_empty() {
-            return Ok((events_result, query_height));
-        }
-
-        let mut acked_sequences: Vec<u64> = acks_on_source.iter().map(|p| p.sequence).collect();
-        acked_sequences.sort_unstable();
-
-        let request = QueryUnreceivedAcksRequest {
-            port_id: self.dst_port_id().to_string(),
-            channel_id: dst_channel_id.to_string(),
-            packet_ack_sequences: acked_sequences.clone(),
-        };
-
-        let sequences: Vec<Sequence> = self
-            .dst_chain()
-            .query_unreceived_acknowledgement(request)
-            .map_err(|e| LinkError::QueryError(self.dst_chain().id(), e))?
-            .into_iter()
-            .map(From::from)
-            .collect();
-
+        let sequences: Vec<Sequence> = sequences.into_iter().map(From::from).collect();
         if sequences.is_empty() {
             return Ok((events_result, query_height));
         }

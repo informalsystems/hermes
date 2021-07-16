@@ -309,35 +309,55 @@ pub fn unreceived_packets(
                 "the channel {:?} has no counterparty channel id",
                 channel
             ))
-        })?
-        .to_string();
+        })?;
 
+    let (_, sequences, _) = unreceived_packets_sequences(
+        counterparty_chain,
+        counterparty_channel_id,
+        &channel.channel_end.counterparty().port_id,
+        chain,
+        &channel.channel_id,
+        &channel.port_id,
+    )?;
+
+    Ok(sequences)
+}
+
+pub(crate) fn unreceived_packets_sequences(
+    src_chain: &dyn ChainHandle,
+    src_channel_id: &ChannelId,
+    src_port_id: &PortId,
+    dst_chain: &dyn ChainHandle,
+    dst_channel_id: &ChannelId,
+    dst_port_id: &PortId,
+) -> Result<(Vec<u64>, Vec<u64>, Height), Error> {
     // get the packet commitments on the counterparty/ source chain
     let commitments_request = QueryPacketCommitmentsRequest {
-        port_id: channel.channel_end.counterparty().port_id.to_string(),
-        channel_id: counterparty_channel_id,
+        port_id: src_port_id.to_string(),
+        channel_id: src_channel_id.to_string(),
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
 
-    let sequences: Vec<u64> = counterparty_chain
+    let (commitments, src_response_height) = src_chain
         .query_packet_commitments(commitments_request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))
-        // extract the sequences
-        .map(|(packet_state, _)| packet_state.into_iter().map(|v| v.sequence).collect())?;
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    if sequences.is_empty() {
-        return Ok(sequences);
+    let commit_sequences: Vec<u64> = commitments.into_iter().map(|ps| ps.sequence).collect();
+    if commit_sequences.is_empty() {
+        return Ok((commit_sequences, vec![], src_response_height));
     }
 
     let request = QueryUnreceivedPacketsRequest {
-        port_id: channel.port_id.to_string(),
-        channel_id: channel.channel_id.to_string(),
-        packet_commitment_sequences: sequences,
+        port_id: dst_port_id.to_string(),
+        channel_id: dst_channel_id.to_string(),
+        packet_commitment_sequences: commit_sequences.clone(),
     };
 
-    chain
+    let sequences = dst_chain
         .query_unreceived_packets(request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    Ok((commit_sequences, sequences, src_response_height))
 }
 
 pub fn unreceived_acknowledgements(
@@ -355,29 +375,55 @@ pub fn unreceived_acknowledgements(
                 "the channel {:?} has no counterparty channel id",
                 channel
             ))
-        })?
-        .to_string();
+        })?;
 
-    // get the packet acknowledgments on counterparty chain
+    let (_, sequences, _) = unreceived_packets_sequences(
+        counterparty_chain,
+        counterparty_channel_id,
+        &channel.channel_end.counterparty().port_id,
+        chain,
+        &channel.channel_id,
+        &channel.port_id,
+    )?;
+
+    Ok(sequences)
+}
+
+pub(crate) fn unreceived_acknowledgements_sequences(
+    src_chain: &dyn ChainHandle,
+    src_channel_id: &ChannelId,
+    src_port_id: &PortId,
+    dst_chain: &dyn ChainHandle,
+    dst_channel_id: &ChannelId,
+    dst_port_id: &PortId,
+) -> Result<(Vec<u64>, Vec<u64>, Height), Error> {
+    // get the packet acknowledgments on counterparty/source chain
     let acks_request = QueryPacketAcknowledgementsRequest {
-        port_id: channel.channel_end.counterparty().port_id.to_string(),
-        channel_id: counterparty_channel_id,
+        port_id: src_port_id.to_string(),
+        channel_id: src_channel_id.to_string(),
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
 
-    let sequences: Vec<u64> = counterparty_chain
+    let (acks, src_response_height) = src_chain
         .query_packet_acknowledgements(acks_request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))
-        // extract the sequences
-        .map(|(packet_state, _)| packet_state.into_iter().map(|v| v.sequence).collect())?;
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    let mut acked_sequences: Vec<u64> = acks.into_iter().map(|ps| ps.sequence).collect();
+    if acked_sequences.is_empty() {
+        return Ok((acked_sequences, vec![], src_response_height));
+    }
+
+    acked_sequences.sort_unstable();
 
     let request = QueryUnreceivedAcksRequest {
-        port_id: channel.port_id.to_string(),
-        channel_id: channel.channel_id.to_string(),
-        packet_ack_sequences: sequences,
+        port_id: dst_port_id.to_string(),
+        channel_id: dst_channel_id.to_string(),
+        packet_ack_sequences: acked_sequences.clone(),
     };
 
-    chain
+    let sequences = dst_chain
         .query_unreceived_acknowledgement(request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))
+        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+
+    Ok((acked_sequences, sequences, src_response_height))
 }
