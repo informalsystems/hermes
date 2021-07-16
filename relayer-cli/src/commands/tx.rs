@@ -44,8 +44,8 @@ pub enum TxRawCommands {
     #[options(help = "Upgrade the specified client on destination chain")]
     UpgradeClient(TxUpgradeClientCmd),
 
-    /// The `tx raw upgrade-clients` subcommand. Submits a MsgUpgradeClient in a transaction to multiple chain.
-    #[options(help = "Upgrade the specified client on all destination chains that target it")]
+    /// The `tx raw upgrade-clients` subcommand. Submits a MsgUpgradeClient in a transaction to multiple chains.
+    #[options(help = "Upgrade all IBC clients that target a specific chain")]
     UpgradeClients(TxUpgradeClientsCmd),
 
     /// The `tx raw conn-init` subcommand
