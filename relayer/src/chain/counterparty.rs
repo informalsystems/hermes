@@ -319,11 +319,15 @@ pub fn unreceived_packets(
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
 
-    let sequences = counterparty_chain
+    let sequences: Vec<u64> = counterparty_chain
         .query_packet_commitments(commitments_request)
         .map_err(|e| Error::QueryFailed(format!("{}", e)))
         // extract the sequences
         .map(|(packet_state, _)| packet_state.into_iter().map(|v| v.sequence).collect())?;
+
+    if sequences.is_empty() {
+        return Ok(sequences);
+    }
 
     let request = QueryUnreceivedPacketsRequest {
         port_id: channel.port_id.to_string(),
