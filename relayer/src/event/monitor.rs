@@ -4,7 +4,7 @@ use crossbeam_channel as channel;
 use futures::{
     pin_mut,
     stream::{self, select_all, StreamExt},
-    Stream,
+    Stream, TryStreamExt,
 };
 use thiserror::Error;
 use tokio::task::JoinHandle;
@@ -22,7 +22,7 @@ use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier
 
 use crate::util::{
     retry::{retry_count, retry_with_index, RetryResult},
-    stream::group_while,
+    stream::try_group_while,
 };
 
 mod retry_strategy {
@@ -62,6 +62,9 @@ pub enum Error {
 
     #[error("failed to extract IBC events: {0}")]
     CollectEventsFailed(String),
+
+    #[error("RPC error: {0}")]
+    RpcError(RpcError),
 
     #[error("event monitor failed to dispatch event batch to subscribers")]
     ChannelSendFailed,
@@ -336,7 +339,7 @@ impl EventMonitor {
 
             let result = rt.block_on(async {
                 tokio::select! {
-                    Some(batch) = batches.next() => Ok(batch),
+                    Some(batch) = batches.next() => batch,
                     Some(err) = self.rx_err.recv() => Err(Error::WebSocketDriver(err)),
                 }
             });
@@ -375,28 +378,32 @@ impl EventMonitor {
 }
 
 /// Collect the IBC events from an RPC event
-fn collect_events(chain_id: &ChainId, event: RpcEvent) -> impl Stream<Item = (Height, IbcEvent)> {
+fn collect_events(
+    chain_id: &ChainId,
+    event: RpcEvent,
+) -> impl Stream<Item = Result<(Height, IbcEvent)>> {
     let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
-    stream::iter(events)
+    stream::iter(events).map(Ok)
 }
 
 /// Convert a stream of RPC event into a stream of event batches
 fn stream_batches(
     subscriptions: Box<SubscriptionStream>,
     chain_id: ChainId,
-) -> impl Stream<Item = EventBatch> {
+) -> impl Stream<Item = Result<EventBatch>> {
     let id = chain_id.clone();
 
     // Collect IBC events from each RPC event
     let events = subscriptions
-        .filter_map(|rpc_event| async { rpc_event.ok() })
-        .flat_map(move |rpc_event| collect_events(&id, rpc_event));
+        .map_ok(move |rpc_event| collect_events(&id, rpc_event))
+        .map_err(Error::RpcError)
+        .try_flatten();
 
     // Group events by height
-    let grouped = group_while(events, |(h0, _), (h1, _)| h0 == h1);
+    let grouped = try_group_while(events, |(h0, _), (h1, _)| h0 == h1);
 
     // Convert each group to a batch
-    grouped.map(move |events| {
+    grouped.map_ok(move |events| {
         let height = events
             .first()
             .map(|(h, _)| h)
