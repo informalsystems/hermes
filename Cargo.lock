@@ -2954,6 +2954,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.20.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/929-931#f228f7871a06ffa765f95eaf6d03959705b3e7c2"
 dependencies = [
  "anomaly",
  "async-trait",
@@ -2984,6 +2985,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.20.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/929-931#f228f7871a06ffa765f95eaf6d03959705b3e7c2"
 dependencies = [
  "anomaly",
  "contracts",
@@ -3004,6 +3006,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.20.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/929-931#f228f7871a06ffa765f95eaf6d03959705b3e7c2"
 dependencies = [
  "anomaly",
  "bytes",
@@ -3021,6 +3024,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.20.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/929-931#f228f7871a06ffa765f95eaf6d03959705b3e7c2"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3050,6 +3054,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.20.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/929-931#f228f7871a06ffa765f95eaf6d03959705b3e7c2"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",
