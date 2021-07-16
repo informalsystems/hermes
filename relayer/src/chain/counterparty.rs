@@ -342,7 +342,7 @@ pub(crate) fn unreceived_packets_sequences(
         .query_packet_commitments(commitments_request)
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    let commit_sequences: Vec<u64> = commitments.into_iter().map(|ps| ps.sequence).collect();
+    let commit_sequences: Vec<u64> = commitments.into_iter().map(|v| v.sequence).collect();
     if commit_sequences.is_empty() {
         return Ok((commit_sequences, vec![], src_response_height));
     }
@@ -377,7 +377,7 @@ pub fn unreceived_acknowledgements(
             ))
         })?;
 
-    let (_, sequences, _) = unreceived_packets_sequences(
+    let (_, sequences, _) = unreceived_acknowledgements_sequences(
         counterparty_chain,
         counterparty_channel_id,
         &channel.channel_end.counterparty().port_id,
@@ -408,7 +408,7 @@ pub(crate) fn unreceived_acknowledgements_sequences(
         .query_packet_acknowledgements(acks_request)
         .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
 
-    let mut acked_sequences: Vec<u64> = acks.into_iter().map(|ps| ps.sequence).collect();
+    let mut acked_sequences: Vec<u64> = acks.into_iter().map(|v| v.sequence).collect();
     if acked_sequences.is_empty() {
         return Ok((acked_sequences, vec![], src_response_height));
     }
