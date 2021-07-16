@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### FEATURES
+
+- [ibc]
+  - Enable `pub` access to verification methods of ICS 03 & 04 ([#1198])
+
 ### IMPROVEMENTS
 
 - [ibc-relayer-cli]
@@ -20,6 +25,7 @@
 [#1094]: https://github.com/informalsystems/ibc-rs/issues/1094
 [#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
 [#1192]: https://github.com/informalsystems/ibc-rs/issues/1192
+[#1198]: https://github.com/informalsystems/ibc-rs/issues/1198
 [#1200]: https://github.com/informalsystems/ibc-rs/issues/1200
 
 ## v0.6.0
