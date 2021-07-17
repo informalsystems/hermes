@@ -20,18 +20,14 @@ impl Display for LegacyError {
 #[cfg(feature = "std_err")]
 impl From<Box<dyn std::error::Error + Send + Sync>> for LegacyError {
     fn from(value: Box<dyn std::error::Error + Send + Sync>) -> Self {
-        Self {
-            error: value,
-        }
+        Self { error: value }
     }
 }
 
 #[cfg(not(feature = "std_err"))]
 impl From<String> for LegacyError {
     fn from(value: String) -> Self {
-        Self {
-            error: value,
-        }
+        Self { error: value }
     }
 }
 

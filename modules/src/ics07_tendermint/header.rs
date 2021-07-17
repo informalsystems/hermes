@@ -94,14 +94,16 @@ impl TryFrom<RawHeader> for Header {
                 .signed_header
                 .ok_or_else(error::missing_signed_header_error)?
                 .try_into()
-                .map_err(|e: Box<dyn std::error::Error + Send + Sync> | {
+                .map_err(|e: Box<dyn std::error::Error + Send + Sync>| {
                     error::invalid_header_error("signed header conversion".to_string(), e.into())
                 })?,
             validator_set: raw
                 .validator_set
                 .ok_or_else(error::missing_validator_set_error)?
                 .try_into()
-                .map_err(|e: Box<dyn std::error::Error + Send + Sync> |error::invalid_raw_header_error(e.into()))?,
+                .map_err(|e: Box<dyn std::error::Error + Send + Sync>| {
+                    error::invalid_raw_header_error(e.into())
+                })?,
             trusted_height: raw
                 .trusted_height
                 .ok_or_else(error::missing_trusted_height_error)?
@@ -110,7 +112,9 @@ impl TryFrom<RawHeader> for Header {
                 .trusted_validators
                 .ok_or_else(error::missing_trusted_validator_set_error)?
                 .try_into()
-                .map_err(|e: Box<dyn std::error::Error + Send + Sync> |error::invalid_raw_header_error(e.into()))?,
+                .map_err(|e: Box<dyn std::error::Error + Send + Sync>| {
+                    error::invalid_raw_header_error(e.into())
+                })?,
         })
     }
 }
