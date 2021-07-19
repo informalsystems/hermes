@@ -6,6 +6,9 @@
 
 - [ibc]
   - Enable `pub` access to verification methods of ICS 03 & 04 ([#1198])
+  
+- [ibc-relayer-cli]
+  - Added `upgrade-clients` CLI ([#763])
 
 ### IMPROVEMENTS
 
@@ -30,6 +33,7 @@
 
 ## v0.6.0
 *July 12th, 2021*
+
 
 Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
 reliability of Hermes ([#697]).
@@ -111,6 +115,7 @@ The full list of changes is described below.
 [#69]: https://github.com/informalsystems/ibc-rs/issues/69
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#697]: https://github.com/informalsystems/ibc-rs/issues/697
+[#763]: https://github.com/informalsystems/ibc-rs/issues/763
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
 [#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
 [#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
