@@ -120,8 +120,11 @@ impl ClientWorker {
 
                 Next::Continue
             }
-            WorkerCmd::Shutdown => Next::Abort,
+
             WorkerCmd::NewBlock { .. } => Next::Continue,
+            WorkerCmd::ClearPendingPackets => Next::Continue,
+
+            WorkerCmd::Shutdown => Next::Abort,
         }
     }
 

@@ -9,9 +9,10 @@ use futures::{
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
+    error::Code,
     event::Event as RpcEvent,
     query::{EventType, Query},
     Error as RpcError, Result as RpcResult, SubscriptionClient, WebSocketClient,
@@ -63,11 +64,25 @@ pub enum Error {
     #[error("failed to extract IBC events: {0}")]
     CollectEventsFailed(String),
 
+    #[error("{0}")]
+    SubscriptionCancelled(RpcError),
+
     #[error("RPC error: {0}")]
-    RpcError(RpcError),
+    GenericRpcError(RpcError),
 
     #[error("event monitor failed to dispatch event batch to subscribers")]
     ChannelSendFailed,
+}
+
+impl Error {
+    fn canceled_or_generic(e: RpcError) -> Self {
+        match (e.code(), e.data()) {
+            (Code::ServerError, Some(msg)) if msg.contains("subscription was cancelled") => {
+                Self::SubscriptionCancelled(e)
+            }
+            _ => Self::GenericRpcError(e),
+        }
+    }
 }
 
 /// A batch of events from a chain at a specific height
@@ -256,11 +271,11 @@ impl EventMonitor {
         self.subscribe()
     }
 
-    /// Attempt to restart the WebSocket client using the given retry strategy.
+    /// Attempt to reconnect the WebSocket client using the given retry strategy.
     ///
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
-    fn restart(&mut self) {
+    fn reconnect(&mut self) {
         let result = retry_with_index(retry_strategy::default(), |_| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
@@ -270,7 +285,7 @@ impl EventMonitor {
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
-                trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
+                trace!(chain.id = %self.chain_id, "error when resubscribing: {}", e);
                 return RetryResult::Retry(());
             }
 
@@ -346,25 +361,48 @@ impl EventMonitor {
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
-                    warn!(chain.id = %self.chain_id, "{}", e);
+                    error!(chain.id = %self.chain_id, "{}", e);
                 }),
-                Err(e) => {
-                    error!(chain.id = %self.chain_id, "failed to collect events: {}", e);
+                Err(Error::SubscriptionCancelled(reason)) => {
+                    error!(chain.id = %self.chain_id, "subscription cancelled, reason: {}", reason);
 
-                    // Restart the event monitor, reconnect to the WebSocket endpoint,
-                    // and subscribe again to the queries.
-                    self.restart();
+                    self.propagate_error(Error::SubscriptionCancelled(reason))
+                        .unwrap_or_else(|e| {
+                            error!(chain.id = %self.chain_id, "{}", e);
+                        });
+
+                    // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                    self.reconnect();
 
                     // Abort this event loop, the `run` method will start a new one.
                     // We can't just write `return self.run()` here because Rust
                     // does not perform tail call optimization, and we would
                     // thus potentially blow up the stack after many restarts.
-                    break;
+                    return Next::Continue;
+                }
+                Err(e) => {
+                    error!(chain.id = %self.chain_id, "failed to collect events: {}", e);
+
+                    // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                    self.reconnect();
+
+                    // Abort this event loop, the `run` method will start a new one.
+                    // We can't just write `return self.run()` here because Rust
+                    // does not perform tail call optimization, and we would
+                    // thus potentially blow up the stack after many restarts.
+                    return Next::Continue;
                 }
             }
         }
+    }
 
-        Next::Continue
+    /// Propagate error to subscribers
+    fn propagate_error(&self, error: Error) -> Result<()> {
+        self.tx_batch
+            .send(Err(error))
+            .map_err(|_| Error::ChannelSendFailed)?;
+
+        Ok(())
     }
 
     /// Collect the IBC events from the subscriptions
@@ -396,7 +434,7 @@ fn stream_batches(
     // Collect IBC events from each RPC event
     let events = subscriptions
         .map_ok(move |rpc_event| collect_events(&id, rpc_event))
-        .map_err(Error::RpcError)
+        .map_err(Error::canceled_or_generic)
         .try_flatten();
 
     // Group events by height

@@ -25,10 +25,12 @@ use futures::stream::Stream;
 ///     block_on(output),
 ///     vec![
 ///         Ok(vec![1, 1]),
+///         Ok(vec![2]),
 ///         Err(()),
-///         Ok(vec![2, 2, 2]),
+///         Ok(vec![2, 2]),
+///         Ok(vec![3]),
+///         Ok(vec![3]),
 ///         Err(()),
-///         Ok(vec![3, 3])
 ///     ]
 /// );
 /// ```
@@ -62,18 +64,25 @@ where
                         Some(state) => {
                             let cur = std::mem::replace(&mut state.cur, x);
                             state.group.push(cur);
-                            let group = std::mem::replace(&mut state.group, vec![]);
+                            let group = std::mem::take(&mut state.group);
                             yield Ok(group);
                         }
                     }
                 }
                 Err(e) => {
+                    if let Some(cur_state) = std::mem::take(&mut state) {
+                        if !cur_state.group.is_empty() {
+                            yield Ok(cur_state.group);
+                        }
+                        yield Ok(vec![cur_state.cur]);
+                    }
+
                     yield Err(e);
                 }
             }
         }
 
-        if let Some(State{ cur, mut group }) = state {
+        if let Some(State { cur, mut group }) = state {
             group.push(cur);
             yield Ok(group);
         }
@@ -144,11 +153,14 @@ mod tests {
             vec![
                 Ok(vec![(1, 1), (1, 2)]),
                 Ok(vec![(2, 1)]),
+                Ok(vec![(3, 1)]),
+                Ok(vec![(3, 2)]),
                 Err(()),
-                Ok(vec![(3, 1), (3, 2), (3, 3)]),
+                Ok(vec![(3, 3)]),
                 Ok(vec![(4, 1)]),
+                Ok(vec![(5, 1)]),
+                Ok(vec![(5, 2)]),
                 Err(()),
-                Ok(vec![(5, 1), (5, 2)])
             ]
         );
     }
