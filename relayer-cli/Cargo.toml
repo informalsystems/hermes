@@ -30,7 +30,7 @@ ibc-telemetry = { version = "0.5.0", path = "../telemetry", optional = true }
 anomaly = "0.2.0"
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
-thiserror = "1"
+thiserror = "1.0.25"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.26"
 tracing-subscriber = "0.2.19"
