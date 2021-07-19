@@ -84,16 +84,6 @@ def passive_packets(
     sleep(10.0)
 
     # 6. verify that there are no pending packets
-    # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 3
-    packet.packet_send(c, src=ibc1, dst=ibc0 , src_port=port_id,
-                       src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
-
-    # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
-    packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
-                       src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=4)
-
-    sleep(10.0)
-
     # hermes query packet unreceived-packets ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
@@ -122,7 +112,45 @@ def passive_packets(
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived acks mismatch (expected 0)")
 
-    # 7.Stop the relayer
+    # 7. send some packets
+    # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 3
+    packet.packet_send(c, src=ibc1, dst=ibc0 , src_port=port_id,
+                       src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
+
+    # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
+    packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
+                       src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=4)
+
+    sleep(10.0)
+    # 8. verify that there are no pending packets
+    # hermes query packet unreceived-packets ibc-1 transfer channel-1
+    unreceived = packet.query_unreceived_packets(
+        c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
+
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
+
+    # hermes query packet unreceived-acks ibc-1 transfer channel-1
+    unreceived = packet.query_unreceived_acks(
+        c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
+
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
+
+    # hermes query packet unreceived-packets ibc-0 transfer channel-0
+    unreceived = packet.query_unreceived_packets(
+        c, chain=ibc0 , port=port_id, channel=ibc0_channel_id)
+
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived packets mismatch (expected 0)")
+
+    # hermes query packet unreceived-acks ibc-0 transfer channel-0
+    unreceived = packet.query_unreceived_acks(
+        c, chain=ibc0 , port=port_id, channel=ibc0_channel_id)
+
+    assert (len(unreceived) == 0), (unreceived,
+                                    "unreceived acks mismatch (expected 0)")
+    # 9.Stop the relayer
     proc.kill()
 
 
@@ -215,7 +243,6 @@ def main():
 
     passive_packets(config, ibc0, ibc1, port_id, ibc0_chan_id, ibc1_chan_id)
     sleep(2.0)
-
 
     connection.passive_connection_init_then_start(config, ibc1, ibc0, ibc1_client_id, ibc0_client_id)
     sleep(2.0)
