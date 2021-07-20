@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+
+use std::fmt;
+
 use prost_types::Any;
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
@@ -5,6 +9,7 @@ use tracing::info;
 use ibc::events::{IbcEvent, PrettyEvents};
 
 use crate::chain::handle::ChainHandle;
+use crate::event::tx_hash::TxHash;
 use crate::link::error::LinkError;
 use crate::link::RelaySummary;
 
@@ -30,7 +35,6 @@ impl Submit for SyncSender {
     type Reply = RelaySummary;
 
     fn submit(target: &dyn ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
-        // TODO: Lift the waiting part out of `send_msgs` into this method.
         let tx_events = target.send_msgs(msgs)?;
         info!(
             "[Sync->{}] result {}\n",
@@ -50,7 +54,6 @@ impl Submit for SyncSender {
     }
 }
 
-#[allow(dead_code)]
 pub struct AsyncReply {
     responses: Vec<tx_sync::Response>,
 }
@@ -61,6 +64,16 @@ impl SubmitReply for AsyncReply {
     }
 }
 
+impl AsyncReply {
+    pub fn extend(&mut self, other: AsyncReply) {
+        self.responses.extend(other.responses)
+    }
+
+    pub fn hashes(self) -> impl Iterator<Item = TxHash> {
+        self.responses.into_iter().map(|r| r.hash.into())
+    }
+}
+
 pub struct AsyncSender;
 
 impl Submit for AsyncSender {
@@ -68,10 +81,18 @@ impl Submit for AsyncSender {
 
     fn submit(target: &dyn ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
         let a = target.submit_msgs(msgs)?;
-        info!("[Async~>{}] result {} response(s)\n", target.id(), a.len());
-
         let reply = AsyncReply { responses: a };
+        info!("[Async~>{}] {}\n", target.id(), reply);
 
         Ok(reply)
+    }
+}
+
+impl fmt::Display for AsyncReply {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "response(s): {}", self.responses.len())?;
+        self.responses
+            .iter()
+            .try_for_each(|r| write!(f, "; {:?}:{}", r.code, r.hash))
     }
 }
