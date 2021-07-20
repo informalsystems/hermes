@@ -95,6 +95,14 @@ impl PacketWorker {
         }
     }
 
+    /// Receives worker commands, which may be:
+    ///     - IbcEvent => then it updates schedule
+    ///     - NewBlock => schedules packet clearing
+    ///     - Shutdown => exits
+    ///
+    /// Regardless of the incoming command, this method
+    /// also refreshes and executes any scheduled operational
+    /// data that is ready.
     fn step(&self, cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<Step, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {

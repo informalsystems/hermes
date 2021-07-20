@@ -16,6 +16,7 @@ mod error;
 mod operational_data;
 mod relay_path;
 mod relay_summary;
+mod relay_sender;
 
 // Re-export the telemetries summary
 pub use relay_summary::RelaySummary;
@@ -169,6 +170,7 @@ impl Link {
         Ok(Link::new(channel))
     }
 
+    /// Implements the `packet-recv` CLI
     pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
         self.a_to_b.build_recv_packet_and_timeout_msgs(None)?;
 
@@ -183,6 +185,7 @@ impl Link {
         Ok(results)
     }
 
+    /// Implements the `packet-ack` CLI
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
         self.a_to_b.build_packet_ack_msgs(None)?;
 
