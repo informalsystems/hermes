@@ -4,7 +4,7 @@
 //! application's configuration file and/or command-line options
 //! for specifying it.
 
-use std::collections::BTreeSet;
+use alloc::collections::BTreeSet;
 use std::path::PathBuf;
 
 use thiserror::Error;
