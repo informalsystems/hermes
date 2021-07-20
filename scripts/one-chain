@@ -130,8 +130,8 @@ else
   sed -i '' 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPC_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2P_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's#"localhost:6060"#"localhost:'"$PROF_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
-  sed -i '' 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
-  sed -i '' 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+  sed -i '' 's/timeout_commit = "5s"/timeout_commit = "10s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+  sed -i '' 's/timeout_propose = "3s"/timeout_propose = "10s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   # sed -i '' 's/min-retain-blocks = 0/min-retain-blocks = 100/g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
   # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
