@@ -12,7 +12,7 @@ pub mod conn_open_confirm;
 pub mod conn_open_init;
 pub mod conn_open_try;
 
-mod verify;
+pub mod verify;
 
 /// Defines the possible states of a connection identifier in a `ConnectionResult`.
 #[derive(Clone, Debug)]
