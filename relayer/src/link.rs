@@ -15,8 +15,8 @@ use crate::link::relay_path::RelayPath;
 mod error;
 mod operational_data;
 mod relay_path;
-mod relay_summary;
 mod relay_sender;
+mod relay_summary;
 
 // Re-export the telemetries summary
 pub use relay_summary::RelaySummary;
@@ -27,6 +27,7 @@ pub struct LinkParameters {
     pub src_channel_id: ChannelId,
 }
 
+// TODO: Refactor this, so we avoid calling `link.a_to_b`.
 pub struct Link {
     pub a_to_b: RelayPath,
 }
@@ -178,7 +179,9 @@ impl Link {
 
         // Block waiting for all of the scheduled data (until `None` is returned)
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
-            let mut last_res = self.a_to_b.relay_from_operational_data(odata)?;
+            let mut last_res = self
+                .a_to_b
+                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
             results.append(&mut last_res.events);
         }
 
@@ -193,7 +196,9 @@ impl Link {
 
         // Block waiting for all of the scheduled data
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
-            let mut last_res = self.a_to_b.relay_from_operational_data(odata)?;
+            let mut last_res = self
+                .a_to_b
+                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
             results.append(&mut last_res.events);
         }
 

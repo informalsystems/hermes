@@ -599,7 +599,11 @@ impl CosmosSdkChain {
             .map(|res| res.response.hash.to_string())
             .join(", ");
 
-        warn!("[{}] waiting for commit of tx hashes(s) {}", self.id(), hashes);
+        warn!(
+            "[{}] waiting for commit of tx hashes(s) {}",
+            self.id(),
+            hashes
+        );
 
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));

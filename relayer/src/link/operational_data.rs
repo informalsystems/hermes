@@ -9,7 +9,6 @@ use ibc::Height;
 
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
-// use crate::link::relay_sender;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum OperationalDataTarget {
@@ -66,8 +65,7 @@ impl OperationalData {
     }
 
     /// Returns all the messages in this operational data,
-    /// also prepending the client update message if
-    /// necessary.
+    /// also prepending the client update message if necessary.
     pub fn assemble_msgs(self, relay_path: &RelayPath) -> Result<Vec<Any>, LinkError> {
         if self.batch.is_empty() {
             warn!("assemble_msgs() method call on an empty OperationalData!");
