@@ -68,13 +68,9 @@ impl ProdChainHandle {
         let (sender, receiver) = reply_channel();
         let input = f(sender);
 
-        self.runtime_sender
-            .send(input)
-            .map_err(|_| error::channel_send_error())?;
+        self.runtime_sender.send(input).map_err(error::send_error)?;
 
-        receiver
-            .recv()
-            .map_err(|_| error::channel_receive_error())?
+        receiver.recv().map_err(error::channel_receive_error)?
     }
 }
 

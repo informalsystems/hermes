@@ -274,6 +274,7 @@ define_error! {
             |_| { "failed to send through channel" },
 
         ChannelReceive
+            [ TraceError<crossbeam_channel::RecvError> ]
             |_| { "failed to receive through channel" },
 
         InvalidInputHeader
@@ -384,4 +385,8 @@ define_error! {
             },
 
     }
+}
+
+pub fn send_error<T>(_: crossbeam_channel::SendError<T>) -> Error {
+    channel_send_error()
 }
