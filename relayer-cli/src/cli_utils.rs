@@ -45,10 +45,8 @@ pub fn spawn_chain_runtime(
         .ok_or_else(|| error::missing_config_error(chain_id.clone()))?;
 
     let rt = Arc::new(TokioRuntime::new().unwrap());
-    let chain_res =
-        ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt).map_err(error::relayer_error);
-
-    let handle = chain_res.map(|(handle, _)| handle)?;
+    let handle =
+        ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt).map_err(error::relayer_error)?;
 
     Ok(handle)
 }

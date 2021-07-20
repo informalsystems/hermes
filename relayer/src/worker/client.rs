@@ -48,17 +48,12 @@ impl ClientWorker {
         );
 
         info!(
-            "running client worker & initial misbehaviour detection for {}",
+            "[{}] running client worker & initial misbehaviour detection",
             client
         );
 
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.detect_misbehaviour(&client, None);
-
-        info!(
-            "running client worker (misbehaviour and refresh) for {}",
-            client
-        );
 
         loop {
             thread::sleep(Duration::from_millis(600));
@@ -75,7 +70,7 @@ impl ClientWorker {
                     };
                 }
                 Err(e) => {
-                    if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail {
+                    if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
                         warn!("failed to refresh client '{}': {}", client, e);
 
                         // This worker has completed its job as the client cannot be refreshed any
@@ -90,12 +85,25 @@ impl ClientWorker {
                 continue;
             }
 
-            if let Ok(WorkerCmd::IbcEvents { batch }) = self.cmd_rx.try_recv() {
-                trace!("client '{}' worker receives batch {:?}", client, batch);
+            if let Ok(cmd) = self.cmd_rx.try_recv() {
+                match self.process_cmd(cmd, &client) {
+                    Next::Continue => continue,
+                    Next::Abort => break,
+                };
+            }
+        }
+
+        Ok(())
+    }
+
+    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient) -> Next {
+        match cmd {
+            WorkerCmd::IbcEvents { batch } => {
+                trace!("[{}] worker received batch: {:?}", client, batch);
 
                 for event in batch.events {
                     if let IbcEvent::UpdateClient(update) = event {
-                        debug!("client '{}' updated", client);
+                        debug!("[{}] client was updated", client);
 
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
@@ -110,7 +118,11 @@ impl ClientWorker {
                         }
                     }
                 }
+
+                Next::Continue
             }
+            WorkerCmd::Shutdown => Next::Abort,
+            WorkerCmd::NewBlock { .. } => Next::Continue,
         }
     }
 
@@ -142,4 +154,9 @@ impl ClientWorker {
     pub fn object(&self) -> &Client {
         &self.client
     }
+}
+
+pub enum Next {
+    Abort,
+    Continue,
 }

@@ -1,7 +1,7 @@
-use flex_error::define_error;
+use flex_error::{define_error, DisplayOnly};
 
 use ibc::ics03_connection::connection::Counterparty;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId};
 
 use crate::error::Error as RelayerError;
 
@@ -9,6 +9,7 @@ define_error! {
     Error {
         ChannelUninitialized
             {
+                port_id: PortId,
                 channel_id: ChannelId,
                 chain_id: ChainId,
             }
@@ -53,5 +54,12 @@ define_error! {
             [ RelayerError ]
             |_| { "relayer error" },
 
+        NoChainsAvailable
+            |_| { "supervisor was not able to connect to any chains" },
+
+
+        FailedToSpawnChainRuntime
+            [ DisplayOnly<Box<dyn std::error::Error>> ]
+            |_| { "supervisor was not able to connect to any chains" },
     }
 }

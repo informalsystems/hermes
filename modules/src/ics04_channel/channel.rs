@@ -393,8 +393,23 @@ impl State {
             _ => Err(error::unknown_state_error(s)),
         }
     }
+
+    /// Returns whether or not this channel state is `Open`.
     pub fn is_open(self) -> bool {
         self == State::Open
+    }
+
+    /// Returns whether or not the channel with this state
+    /// has progressed less or the same than the argument.
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// assert!(State::Init.less_or_equal_progress(State::Open));
+    /// assert!(State::TryOpen.less_or_equal_progress(State::TryOpen));
+    /// assert!(!State::Closed.less_or_equal_progress(State::Open));
+    /// ```
+    pub fn less_or_equal_progress(self, other: Self) -> bool {
+        self as u32 <= other as u32
     }
 }
 

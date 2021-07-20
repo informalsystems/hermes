@@ -56,7 +56,7 @@ pub trait ClientDef: Clone {
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
     /// Verification functions as specified in:
-    /// https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
+    /// <https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics>
     ///
     /// Verify a `proof` that the consensus state of a given client (at height `consensus_height`)
     /// matches the input `consensus_state`. The parameter `counterparty_height` represent the

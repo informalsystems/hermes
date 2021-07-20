@@ -1,11 +1,14 @@
 //! Relayer configuration
 
+pub mod reload;
+
+use std::collections::{HashMap, HashSet};
 use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client::types::TrustThreshold;
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::error;
@@ -28,9 +31,59 @@ impl fmt::Display for GasPrice {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(
+    rename_all = "lowercase",
+    tag = "policy",
+    content = "list",
+    deny_unknown_fields
+)]
+pub enum PacketFilter {
+    Allow(ChannelsSpec),
+    Deny(ChannelsSpec),
+    AllowAll,
+}
+
+impl Default for PacketFilter {
+    /// By default, allows all channels & ports.
+    fn default() -> Self {
+        Self::AllowAll
+    }
+}
+
+impl PacketFilter {
+    /// Returns true if the packets can be relayed on the channel with [`PortId`] and [`ChannelId`],
+    /// false otherwise.
+    pub fn is_allowed(&self, port_id: &PortId, channel_id: &ChannelId) -> bool {
+        match self {
+            PacketFilter::Allow(spec) => spec.contains(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::Deny(spec) => !spec.contains(&(port_id.clone(), channel_id.clone())),
+            PacketFilter::AllowAll => true,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelsSpec(HashSet<(PortId, ChannelId)>);
+
+impl ChannelsSpec {
+    pub fn contains(&self, channel_port: &(PortId, ChannelId)) -> bool {
+        self.0.contains(channel_port)
+    }
+}
+
 /// Defaults for various fields
 pub mod default {
     use super::*;
+
+    pub fn filter() -> bool {
+        false
+    }
+
+    pub fn clear_packets_interval() -> u64 {
+        100
+    }
 
     pub fn rpc_timeout() -> Duration {
         Duration::from_secs(10)
@@ -61,12 +114,43 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn has_chain(&self, id: &ChainId) -> bool {
+        self.chains.iter().any(|c| c.id == *id)
+    }
+
     pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
         self.chains.iter().find(|c| c.id == *id)
     }
 
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
+    }
+
+    /// Returns true if filtering is disabled or if packets are allowed on
+    /// the channel [`PortId`] [`ChannelId`] on [`ChainId`].
+    /// Returns false otherwise.
+    pub fn packets_on_channel_allowed(
+        &self,
+        chain_id: &ChainId,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> bool {
+        if !self.global.filter {
+            return true;
+        }
+
+        match self.find_chain(chain_id) {
+            None => false,
+            Some(chain_config) => chain_config.packet_filter.is_allowed(port_id, channel_id),
+        }
+    }
+
+    pub fn handshake_enabled(&self) -> bool {
+        self.global.strategy == Strategy::HandshakeAndPackets
+    }
+
+    pub fn chains_map(&self) -> HashMap<&ChainId, &ChainConfig> {
+        self.chains.iter().map(|c| (&c.id, c)).collect()
     }
 }
 
@@ -121,6 +205,10 @@ impl fmt::Display for LogLevel {
 pub struct GlobalConfig {
     pub strategy: Strategy,
     pub log_level: LogLevel,
+    #[serde(default = "default::filter")]
+    pub filter: bool,
+    #[serde(default = "default::clear_packets_interval")]
+    pub clear_packets_interval: u64,
 }
 
 impl Default for GlobalConfig {
@@ -128,6 +216,8 @@ impl Default for GlobalConfig {
         Self {
             strategy: Strategy::default(),
             log_level: LogLevel::default(),
+            filter: default::filter(),
+            clear_packets_interval: default::clear_packets_interval(),
         }
     }
 }
@@ -175,10 +265,12 @@ pub struct ChainConfig {
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
     pub gas_price: GasPrice,
+    #[serde(default)]
+    pub packet_filter: PacketFilter,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
-pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
+pub fn load(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     let config_toml = std::fs::read_to_string(&path).map_err(error::config_io_error)?;
 
     let config = toml::from_str::<Config>(&config_toml[..]).map_err(error::config_decode_error)?;
@@ -209,7 +301,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use super::{parse, store_writer};
+    use super::{load, store_writer};
     use test_env_log::test;
 
     #[test]
@@ -219,7 +311,7 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = parse(path);
+        let config = load(path);
         println!("{:?}", config);
         assert!(config.is_ok());
     }
@@ -231,7 +323,7 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
 
-        let config = parse(path).expect("could not parse config");
+        let config = load(path).expect("could not parse config");
 
         let mut buffer = Vec::new();
         store_writer(&config, &mut buffer).unwrap();

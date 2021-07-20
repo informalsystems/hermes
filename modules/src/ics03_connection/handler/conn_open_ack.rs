@@ -196,7 +196,7 @@ mod tests {
                 match_error: {
                     let connection_id = conn_id.clone();
                     Box::new(move |e| {
-                        match e.detail {
+                        match e.detail() {
                             error::ErrorDetail::UninitializedConnection(e) => {
                                 assert_eq!(e.connection_id, connection_id)
                             }
@@ -218,7 +218,7 @@ mod tests {
                 match_error: {
                     let connection_id = conn_id.clone();
                     Box::new(move |e| {
-                        match e.detail {
+                        match e.detail() {
                             error::ErrorDetail::ConnectionMismatch(e) => {
                                 assert_eq!(e.connection_id, connection_id);
                             }
@@ -239,7 +239,7 @@ mod tests {
                 want_pass: false,
                 match_error:
                     Box::new(move |e| {
-                        match e.detail {
+                        match e.detail() {
                             error::ErrorDetail::ConsensusStateVerificationFailure(e) => {
                                 assert_eq!(e.height, proof_height)
                             }

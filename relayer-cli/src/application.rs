@@ -1,5 +1,7 @@
 //! Cli Abscissa Application
 
+use std::path::PathBuf;
+
 use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
@@ -8,9 +10,12 @@ use abscissa_core::{
 };
 use ibc_relayer::config::Config;
 
-use crate::components::{JsonTracing, PrettyTracing};
-use crate::entry::EntryPoint;
-use crate::{commands::CliCmd, config::validate_config};
+use crate::{
+    commands::CliCmd,
+    components::{JsonTracing, PrettyTracing},
+    config::validate_config,
+    entry::EntryPoint,
+};
 
 /// Application state
 pub static APPLICATION: AppCell<CliApp> = AppCell::new();
@@ -45,6 +50,9 @@ pub struct CliApp {
 
     /// Toggle json output on/off. Changed with the global config option `-j` / `--json`.
     json_output: bool,
+
+    /// Path to the config file.
+    config_path: Option<PathBuf>,
 }
 
 /// Initialize a new application instance.
@@ -57,6 +65,7 @@ impl Default for CliApp {
             config: None,
             state: application::State::default(),
             json_output: false,
+            config_path: None,
         }
     }
 }
@@ -65,6 +74,11 @@ impl CliApp {
     /// Whether or not JSON output is enabled
     pub fn json_output(&self) -> bool {
         self.json_output
+    }
+
+    /// Returns the path to the configuration file
+    pub fn config_path(&self) -> Option<&PathBuf> {
+        self.config_path.as_ref()
     }
 }
 
@@ -114,6 +128,7 @@ impl Application for CliApp {
 
         validate_config(&config)
             .map_err(|validation_err| FrameworkErrorKind::ConfigError.context(validation_err))?;
+
         self.config = Some(config);
 
         Ok(())
@@ -127,8 +142,10 @@ impl Application for CliApp {
     ) -> Result<Vec<Box<dyn Component<Self>>>, FrameworkError> {
         let terminal = Terminal::new(self.term_colors(command));
 
-        let config = command
-            .config_path()
+        let config_path = command.config_path();
+        self.config_path = config_path.clone();
+
+        let config = config_path
             .map(|path| self.load_config(&path))
             .transpose()?
             .unwrap_or_default();

@@ -438,7 +438,7 @@ mod tests {
                         e,
                     );
 
-                    (test.match_error)(e.detail);
+                    (test.match_error)(e.0);
                 }
             }
         }

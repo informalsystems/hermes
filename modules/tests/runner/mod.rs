@@ -86,7 +86,7 @@ impl IbcTestRunner {
         ics18_result: Result<(), relayer_error::Error>,
     ) -> client_error::ErrorDetail {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
-        match ics18_error.detail {
+        match ics18_error.0 {
             relayer_error::ErrorDetail::TransactionFailed(e) => match e.source {
                 routing_error::ErrorDetail::Ics02Client(e) => e.source,
                 e => {
@@ -104,7 +104,7 @@ impl IbcTestRunner {
     ) -> connection_error::ErrorDetail {
         let ics18_error = ics18_result.expect_err("ICS18 error expected");
 
-        match ics18_error.detail {
+        match ics18_error.0 {
             relayer_error::ErrorDetail::TransactionFailed(e) => match e.source {
                 routing_error::ErrorDetail::Ics03Connection(e) => e.source,
                 e => {

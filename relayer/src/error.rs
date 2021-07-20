@@ -324,5 +324,64 @@ define_error! {
                 format!("{} gas estimate {} from simulated Tx exceeds the maximum configured {}",
                     e.chain_id, e.estimated_gas, e.max_gas)
             },
+
+        HealthCheckJsonRpc
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+            }
+            [ DisplayOnly<tendermint_rpc::error::Error> ]
+            |e| {
+                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}",
+                    e.endpoint, e.chain_id, e.address)
+            },
+
+        HealthCheckJsonGrpcTransport
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+            }
+            [ DisplayOnly<tonic::transport::Error> ]
+            |e| {
+                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}",
+                    e.endpoint, e.chain_id, e.address)
+            },
+
+        HealthCheckJsonGrpcStatus
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+                status: tonic::Status
+            }
+            |e| {
+                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; caused by: {3}",
+                    e.endpoint, e.chain_id, e.address, e.status)
+            },
+
+        HealthCheckInvalidVersion
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+            }
+            |e| {
+                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; the gRPC response contains no application version information",
+                    e.endpoint, e.chain_id, e.address)
+            },
+
+        SdkModuleVersion
+            {
+                chain_id: ChainId,
+                address: String,
+                cause: String
+            }
+            |e| {
+                format!("Hermes health check failed while verifying the application compatibility for chain {0}:{1}; caused by: {2}",
+                    e.chain_id, e.address, e.cause)
+            },
+
     }
 }

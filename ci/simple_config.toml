@@ -1,6 +1,7 @@
 [global]
 strategy = 'all'
 log_level = 'info'
+clear_packets_interval = 100
 
 [[chains]]
 id = 'ibc-0'

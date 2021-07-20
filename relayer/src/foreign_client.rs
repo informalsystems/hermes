@@ -6,7 +6,7 @@ use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
 
 use crate::error::Error as RelayerError;
-use flex_error::define_error;
+use flex_error::{define_error, ErrorReport};
 use ibc::downcast;
 use ibc::events::{IbcEvent, IbcEventType};
 use ibc::ics02_client::client_consensus::{
@@ -915,7 +915,8 @@ impl ForeignClient {
                 break;
             }
 
-            //
+            // No header in events, cannot run misbehavior.
+            // May happen on chains running older SDKs (e.g., Akash)
             if update_event.header.is_none() {
                 return Err(misbehaviour_exit_error(
                     "no header in update client events".to_string(),
@@ -1035,6 +1036,13 @@ impl ForeignClient {
         // Even if some states may have failed to verify, e.g. if they were expired, just
         // warn the user and continue.
         match result {
+            Err(ErrorReport(ForeignClientErrorDetail::MisbehaviourExit(s), _)) => {
+                warn!(
+                    "[{}] misbehaviour checking is being disabled: {:?}",
+                    self, s
+                );
+                MisbehaviourResults::CannotExecute
+            }
             Ok(misbehaviour_detection_result) => {
                 if !misbehaviour_detection_result.is_empty() {
                     info!(
@@ -1046,7 +1054,7 @@ impl ForeignClient {
                     MisbehaviourResults::ValidClient
                 }
             }
-            Err(e) => match e.detail {
+            Err(e) => match e.detail() {
                 ForeignClientErrorDetail::MisbehaviourExit(s) => {
                     error!(
                         "[{}] misbehaviour checking is being disabled: {:?}",
@@ -1110,8 +1118,8 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let a_client =
             ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
@@ -1148,8 +1156,8 @@ mod test {
         let num_iterations = 3;
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
@@ -1254,8 +1262,8 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
@@ -1302,8 +1310,8 @@ mod test {
         let mut _b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());
