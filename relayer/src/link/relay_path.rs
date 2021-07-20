@@ -261,46 +261,44 @@ impl RelayPath {
         Err(LinkError::OldPacketClearingFailed)
     }
 
-    /// Queries the source chain at the given [`Height`]
-    /// to find any packets or acknowledgements that are pending,
-    /// and fetches the relevant packet event data. Finally, this
-    /// method also schedules the corresponding operational data,
-    /// so that the relayer will later relay the pending packets.
-    pub fn clear_packets(&mut self, above_height: Height) -> Result<(), LinkError> {
-        info!(
-            "[{}] clearing pending packets from events before height {}",
-            self, above_height
-        );
+    /// Clears any packets that were sent before `height`, either if the `clear_packets` flag
+    /// is set or if clearing is forced by the caller.
+    pub fn schedule_packet_clearing(
+        &mut self,
+        height: Height,
+        force: bool,
+    ) -> Result<(), LinkError> {
+        if self.clear_packets || force {
+            // Disable further clearing of old packets by default.
+            // Clearing may still happen: upon new blocks, when `force = true`.
+            self.clear_packets = false;
 
-        let clear_height = above_height.decrement().map_err(|e| {
-            LinkError::Failed(format!(
-                "Cannot clear packets @height {}, because this height cannot be decremented: {}",
-                above_height,
-                e.to_string()
-            ))
-        })?;
+            info!(
+                "[{}] clearing pending packets from events before height {}",
+                self, height
+            );
 
-        self.relay_pending_packets(clear_height)?;
+            let clear_height = height.decrement().map_err(|e| {
+                LinkError::Failed(format!(
+                    "Cannot clear packets @height {}, because this height cannot be decremented: {}",
+                    height,
+                    e.to_string()
+                ))
+            })?;
 
-        info!(
-            "[{}] finished scheduling the clearing of pending packets",
-            self
-        );
+            self.relay_pending_packets(clear_height)?;
+
+            info!(
+                "[{}] finished scheduling the clearing of pending packets",
+                self
+            );
+        }
 
         Ok(())
     }
 
     /// Generate & schedule operational data from the input `batch` of IBC events.
     pub fn update_schedule(&mut self, batch: EventBatch) -> Result<(), LinkError> {
-        // With the first batch of events, also trigger the clearing of old packets.
-        if self.clear_packets {
-            self.clear_packets(batch.height)?;
-
-            // Disable further clearing of old packet.
-            // Clearing will happen separately, upon new blocks.
-            self.clear_packets = false;
-        }
-
         // Collect relevant events from the incoming batch & adjust their height.
         let events = self.filter_events(&batch.events);
 
@@ -1400,11 +1398,6 @@ impl RelayPath {
         } else {
             None
         }
-    }
-
-    /// Set the relay path's clear packets flag.
-    pub fn set_clear_packets(&mut self, clear_packets: bool) {
-        self.clear_packets = clear_packets;
     }
 
     fn restore_src_client(&self) -> ForeignClient {
