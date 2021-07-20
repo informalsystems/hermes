@@ -85,16 +85,17 @@ impl ClientWorker {
             }
 
             if let Ok(cmd) = self.cmd_rx.try_recv() {
-                if self.process_cmd(cmd, &client) {
-                    break;
-                }
+                match self.process_cmd(cmd, &client) {
+                    Next::Continue => continue,
+                    Next::Abort => break,
+                };
             }
         }
 
         Ok(())
     }
 
-    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient) -> bool {
+    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient) -> Next {
         match cmd {
             WorkerCmd::IbcEvents { batch } => {
                 trace!("[{}] worker received batch: {:?}", client, batch);
@@ -117,10 +118,10 @@ impl ClientWorker {
                     }
                 }
 
-                false
+                Next::Continue
             }
-            WorkerCmd::Shutdown => true,
-            WorkerCmd::NewBlock { .. } => false,
+            WorkerCmd::Shutdown => Next::Abort,
+            WorkerCmd::NewBlock { .. } => Next::Continue,
         }
     }
 
@@ -152,4 +153,9 @@ impl ClientWorker {
     pub fn object(&self) -> &Client {
         &self.client
     }
+}
+
+pub enum Next {
+    Abort,
+    Continue,
 }

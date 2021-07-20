@@ -22,8 +22,10 @@ filter = false
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
 log_level = 'info'
 
+# Parametrize the periodic packet clearing feature.
 # Interval (in number of blocks) at which pending packets
-# should be eagerly cleared. Default: 100
+# should be eagerly cleared. A value of '0' will disable
+# periodic packet clearing. Default: 100
 clear_packets_interval = 100
 
 # The telemetry section defines parameters for Hermes' built-in telemetry capabilities.

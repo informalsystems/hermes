@@ -98,10 +98,7 @@ impl PacketWorker {
     fn step(&self, cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<Step, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
-                WorkerCmd::IbcEvents { batch } => {
-                    // Update scheduled batches.
-                    link.a_to_b.update_schedule(batch)
-                }
+                WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
 
                 // Handle the arrival of an event signaling that the
                 // source chain has advanced to a new block.
@@ -109,13 +106,12 @@ impl PacketWorker {
                     height,
                     new_block: _,
                 } => {
-                    // Schedule the clearing of pending packets
-                    // at predefined block intervals.
-                    if height.revision_height % self.clear_packets_interval == 0 {
-                        link.a_to_b.clear_packets(height)
-                    } else {
-                        Ok(())
-                    }
+                    // Schedule the clearing of pending packets. This should happen
+                    // once at start, and _forced_ at predefined block intervals.
+                    let force_packet_clearing = self.clear_packets_interval != 0
+                        && height.revision_height % self.clear_packets_interval == 0;
+                    link.a_to_b
+                        .schedule_packet_clearing(height, force_packet_clearing)
                 }
 
                 WorkerCmd::Shutdown => {

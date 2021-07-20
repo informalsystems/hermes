@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     sync::{Arc, RwLock},
     time::Duration,
 };
@@ -412,19 +412,9 @@ impl Supervisor {
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
     fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
-        let mut chains = self.registry.chains().map(|c| c.id()).collect_vec();
-        chains.sort();
-
-        let workers = self
-            .workers
-            .objects()
-            .cloned()
-            .into_group_map_by(|o| o.object_type())
-            .into_iter()
-            .update(|(_, os)| os.sort_by_key(Object::short_name))
-            .collect::<BTreeMap<_, _>>();
-
-        let _ = reply_to.try_send(SupervisorState::new(chains, workers));
+        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
+        let state = SupervisorState::new(chains, self.workers.objects());
+        let _ = reply_to.try_send(state);
 
         CmdEffect::Nothing
     }
@@ -533,8 +523,8 @@ impl Supervisor {
     /// Process the given [`WorkerMsg`] sent by a worker.
     fn handle_worker_msg(&mut self, msg: WorkerMsg) {
         match msg {
-            WorkerMsg::Stopped(object) => {
-                self.workers.remove_stopped(&object);
+            WorkerMsg::Stopped(id, object) => {
+                self.workers.remove_stopped(id, object);
             }
         }
     }
