@@ -17,24 +17,6 @@ use crate::Height;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_def::MockClient;
 
-// define_error!{
-//     Error {
-//         Ics02
-//             [ client_client_error::Error ]
-//             | _ | { "ICS02 client error" },
-
-//         LowHeaderHeight
-//             {
-//                 header_height: Height,
-//                 latest_height: Height
-//             }
-//             | e | {
-//                 format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
-//                     e.header_height, e.latest_height)
-//             },
-//     }
-// }
-
 pub trait ClientDef: Clone {
     type Header: Header;
     type ClientState: ClientState;

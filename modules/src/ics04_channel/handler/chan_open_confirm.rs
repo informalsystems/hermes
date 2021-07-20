@@ -79,7 +79,8 @@ pub(crate) fn process(
         &conn,
         &expected_channel_end,
         msg.proofs(),
-    )?;
+    )
+    .map_err(error::chan_open_configm_proof_verification_error)?;
 
     output.log("success: channel open confirm ");
 

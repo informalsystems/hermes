@@ -97,8 +97,10 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
         Ok(MsgUpgradeAnyClient {
             client_id: ClientId::from_str(&proto_msg.client_id)
                 .map_err(error::invalid_client_identifier_error)?,
-            client_state: AnyClientState::try_from(raw_client_state)?,
-            consensus_state: AnyConsensusState::try_from(raw_consensus_state)?,
+            client_state: AnyClientState::try_from(raw_client_state)
+                .map_err(error::invalid_raw_client_state)?,
+            consensus_state: AnyConsensusState::try_from(raw_consensus_state)
+                .map_err(error::invalid_raw_client_state)?,
             proof_upgrade_client: RawMerkleProof::try_from(c_bytes)
                 .map_err(error::invalid_upgrade_client_proof_error)?,
             proof_upgrade_consensus_state: RawMerkleProof::try_from(cs_bytes)

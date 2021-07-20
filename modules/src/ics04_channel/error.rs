@@ -316,3 +316,7 @@ define_error! {
 
     }
 }
+
+pub fn chan_open_configm_proof_verification_error(e: Error) -> Error {
+    e.add_trace(&"Handshake proof verification fails at ChannelOpenConfirm")
+}

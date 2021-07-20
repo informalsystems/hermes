@@ -239,7 +239,6 @@ impl TryFrom<RawObject> for UpdateClient {
             .events
             .get("update_client.header")
             .and_then(|tags| tags[obj.idx].parse().ok());
-        // some_attribute!(obj, "update_client.header");
 
         let header: Option<AnyHeader> = match header_str {
             Some(str) => {
@@ -294,7 +293,6 @@ impl ClientMisbehaviour {
 impl TryFrom<RawObject> for ClientMisbehaviour {
     type Error = events::Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        // attribute!(obj, "client_misbehaviour.consensus_height");
         Ok(ClientMisbehaviour(extract_attributes(
             &obj,
             "client_misbehaviour",

@@ -59,7 +59,7 @@ pub fn process(
             msg.proof_upgrade_client.clone(),
             msg.proof_upgrade_consensus_state,
         )
-        .map_err(|e| error::upgrade_verification_failure_error(e.to_string()))?;
+        .map_err(error::upgrade_verification_failed_error)?;
 
     // Not implemented yet: https://github.com/informalsystems/ibc-rs/issues/722
     // todo!()
@@ -80,6 +80,7 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
+    use flex_error::ErrorReport;
     use std::{convert::TryFrom, str::FromStr};
 
     use crate::events::IbcEvent;
@@ -174,17 +175,12 @@ mod tests {
         let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
 
         match output {
-            Ok(_) => {
-                panic!("unexpected success (expected error)");
+            Err(ErrorReport(error::ErrorDetail::ClientNotFound(e), _)) => {
+                assert_eq!(e.client_id, msg.client_id);
             }
-            Err(err) => match err.detail() {
-                error::ErrorDetail::ClientNotFound(e) => {
-                    assert_eq!(e.client_id, msg.client_id);
-                }
-                _ => {
-                    panic!("unexpected suberror {}", err);
-                }
-            },
+            _ => {
+                panic!("expected ClientNotFound error, instead got {:?}", output);
+            }
         }
     }
 

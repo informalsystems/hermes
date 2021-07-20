@@ -228,7 +228,6 @@ mod tests {
                         }
                     })
                 },
-                // error_kind: Some(error::connection_mismatch_error(conn_id.clone()).detail)
             },
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
@@ -248,9 +247,6 @@ mod tests {
                             }
                         }
                     }),
-                // error_kind: Some(error::ErrorDetail::ConsensusStateVerificationFailure{
-                //     height: proof_height,
-                // })
             },
             /*
             Test {
@@ -300,16 +296,6 @@ mod tests {
 
                     // Verify that the error kind matches
                     (test.match_error)(e);
-                    // if let Some(expected_kind) = test.error_kind {
-                    //     assert_eq!(
-                    //         expected_kind,
-                    //         e.detail,
-                    //         "conn_open_ack: failed for test: {}\nexpected error kind: {:?}\nfound: {:?}",
-                    //         test.name,
-                    //         expected_kind,
-                    //         e
-                    //     )
-                    // }
                 }
             }
         }

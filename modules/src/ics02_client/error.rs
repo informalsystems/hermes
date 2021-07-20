@@ -57,6 +57,7 @@ define_error! {
             | _ | { "the client state was not found" },
 
         EmptyPrefix
+            { source: crate::ics23_commitment::merkle::EmptyPrefixError }
             | _ | { "empty prefix" },
 
         UnknownConsensusStateType
@@ -177,10 +178,6 @@ define_error! {
                     e.state_type, e.consensus_type)
             },
 
-        UpgradeVerificationFailure
-            { reason: String }
-            | e | { format_args!("upgrade verification failed with reason: {}", e.reason) },
-
         LowHeaderHeight
             {
                 header_height: Height,
@@ -201,4 +198,12 @@ define_error! {
                     e.upgraded_height, e.client_height)
             },
     }
+}
+
+pub fn upgrade_verification_failed_error(e: Error) -> Error {
+    e.add_trace(&"upgrade verification failed")
+}
+
+pub fn invalid_raw_client_state(e: Error) -> Error {
+    e.add_trace(&"invalid raw client state")
 }

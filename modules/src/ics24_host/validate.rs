@@ -1,12 +1,5 @@
 use super::error::{self, ValidationError};
 
-/// Bails from the current function with the given error kind.
-macro_rules! bail {
-    ($kind:expr) => {
-        return Err($kind.into());
-    };
-}
-
 /// Path separator (ie. forward slash '/')
 const PATH_SEPARATOR: char = '/';
 const VALID_SPECIAL_CHARS: &str = "._+-#[]<>";
@@ -20,21 +13,21 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
 
     // Check identifier is not empty
     if id.is_empty() {
-        bail!(error::empty_error());
+        return Err(error::empty_error());
     }
 
     // Check identifier does not contain path separators
     if id.contains(PATH_SEPARATOR) {
-        bail!(error::contain_separator_error(id.to_string()));
+        return Err(error::contain_separator_error(id.to_string()));
     }
 
     // Check identifier length is between given min/max
     if id.len() < min || id.len() > max {
-        bail!(error::invalid_length_error(
+        return Err(error::invalid_length_error(
             id.to_string(),
             id.len(),
             min,
-            max
+            max,
         ));
     }
 
@@ -46,7 +39,7 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
         .chars()
         .all(|c| c.is_alphanumeric() || VALID_SPECIAL_CHARS.contains(c))
     {
-        bail!(error::invalid_character_error(id.to_string()));
+        return Err(error::invalid_character_error(id.to_string()));
     }
 
     // All good!

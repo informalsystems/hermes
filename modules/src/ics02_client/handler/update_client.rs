@@ -73,6 +73,7 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
+    use flex_error::ErrorReport;
     use std::str::FromStr;
     use test_env_log::test;
 
@@ -154,17 +155,12 @@ mod tests {
         let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
-            Ok(_) => {
-                panic!("unexpected success (expected error)");
+            Err(ErrorReport(error::ErrorDetail::ClientNotFound(e), _)) => {
+                assert_eq!(e.client_id, msg.client_id);
             }
-            Err(err) => match err.detail() {
-                error::ErrorDetail::ClientNotFound(e) => {
-                    assert_eq!(e.client_id, msg.client_id);
-                }
-                _ => {
-                    panic!("unexpected suberror {}", err);
-                }
-            },
+            _ => {
+                panic!("expected ClientNotFound error, instead got {:?}", output)
+            }
         }
     }
 

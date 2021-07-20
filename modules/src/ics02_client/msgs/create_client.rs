@@ -78,8 +78,9 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
             .ok_or_else(error::missing_raw_client_state_error)?;
 
         MsgCreateAnyClient::new(
-            AnyClientState::try_from(raw_client_state)?,
-            AnyConsensusState::try_from(raw_consensus_state)?,
+            AnyClientState::try_from(raw_client_state).map_err(error::invalid_raw_client_state)?,
+            AnyConsensusState::try_from(raw_consensus_state)
+                .map_err(error::invalid_raw_client_state)?,
             raw.signer.into(),
         )
     }
