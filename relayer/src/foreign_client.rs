@@ -62,8 +62,8 @@ pub enum ForeignClientError {
     #[error("cannot run misbehaviour: {0}")]
     MisbehaviourExit(String),
 
-    #[error("failed while trying to upgrade client id {0} with error: {1}")]
-    ClientUpgrade(ClientId, String),
+    #[error("failed while trying to upgrade client id {0} hosted on chain id {1} with error: {2}")]
+    ClientUpgrade(ClientId, ChainId, String),
 }
 
 #[derive(Clone, Debug)]
@@ -180,6 +180,7 @@ impl ForeignClient {
         let src_height = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::ClientUpgrade(
                 self.id.clone(),
+                self.dst_chain.id(),
                 format!(
                     "failed while querying src chain ({}) for latest height: {}",
                     self.src_chain.id(),
@@ -199,6 +200,7 @@ impl ForeignClient {
             .map_err(|e| {
                 ForeignClientError::ClientUpgrade(
                     self.id.clone(),
+                    self.dst_chain.id(),
                     format!(
                         "failed while fetching from chain {} the upgraded client state: {}",
                         self.src_chain.id(),
@@ -212,9 +214,12 @@ impl ForeignClient {
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
             .query_upgraded_consensus_state(src_height)
-            .map_err(|e| ForeignClientError::ClientUpgrade(self.id.clone(), format!(
-                "failed while fetching from chain {} the upgraded client consensus state: {}", self.src_chain.id(), e)))
-            ?;
+            .map_err(|e| ForeignClientError::ClientUpgrade(self.id.clone(),
+                                                           self.dst_chain.id(),
+                                                           format!(
+                                                               "failed while fetching from chain {} \
+                                                                the upgraded client consensus state: {}",
+                                                               self.src_chain.id(), e)))?;
 
         debug!(
             "[{}]  upgraded client consensus state {:?}",
@@ -225,11 +230,8 @@ impl ForeignClient {
         let signer = self.dst_chain.get_signer().map_err(|e| {
             ForeignClientError::ClientUpgrade(
                 self.id.clone(),
-                format!(
-                    "failed while fetching the destination chain ({}) signer: {}",
-                    self.dst_chain.id(),
-                    e
-                ),
+                self.dst_chain.id(),
+                format!("failed while fetching the destination chain signer: {}", e),
             )
         })?;
 
@@ -248,9 +250,9 @@ impl ForeignClient {
         let res = self.dst_chain.send_msgs(msgs).map_err(|e| {
             ForeignClientError::ClientUpgrade(
                 self.id.clone(),
+                self.dst_chain.id(),
                 format!(
-                    "failed while sending message to destination chain {} with err: {}",
-                    self.dst_chain.id(),
+                    "failed while sending message to destination chain with err: {}",
                     e
                 ),
             )
@@ -306,7 +308,7 @@ impl ForeignClient {
             .wrap_any();
 
         let consensus_state = self.src_chain
-            .build_consensus_state(client_state.latest_height(),  latest_height, client_state.clone())
+            .build_consensus_state(client_state.latest_height(), latest_height, client_state.clone())
             .map_err(|e| ForeignClientError::ClientCreate(format!("failed while building client consensus state from src chain ({}) with error: {}", self.src_chain.id(), e)))?
             .wrap_any();
 

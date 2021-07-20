@@ -2,17 +2,41 @@
 
 ## UNRELEASED
 
+### FEATURES
+
+- [ibc]
+  - Enable `pub` access to verification methods of ICS 03 & 04 ([#1198])
+  - Add `ics26_routing::handler::decode` function ([#1194])
+  
+- [ibc-relayer-cli]
+  - Added `upgrade-clients` CLI ([#763])
+
 ### IMPROVEMENTS
 
 - [ibc-relayer-cli]
   - Add CLI git hash ([#1094])
   - Fix unwraps in `packet query` CLIs ([#1114])
 
+### BUG FIXES
+
+- [ibc]
+  - Fix stack overflow in `MockHeader` implementation ([#1192])
+  - Align `as_str` and `from_str` behavior in `ClientType` ([#1192])
+
+- [ibc-relayer]
+  - Fixed: Hermes does not clear packets on start ([#1200])
+
 [#1094]: https://github.com/informalsystems/ibc-rs/issues/1094
 [#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
+[#1192]: https://github.com/informalsystems/ibc-rs/issues/1192
+[#1194]: https://github.com/informalsystems/ibc-rs/issues/1194
+[#1198]: https://github.com/informalsystems/ibc-rs/issues/1198
+[#1200]: https://github.com/informalsystems/ibc-rs/issues/1200
+
 
 ## v0.6.0
 *July 12th, 2021*
+
 
 Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
 reliability of Hermes ([#697]).
@@ -94,6 +118,7 @@ The full list of changes is described below.
 [#69]: https://github.com/informalsystems/ibc-rs/issues/69
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#697]: https://github.com/informalsystems/ibc-rs/issues/697
+[#763]: https://github.com/informalsystems/ibc-rs/issues/763
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
 [#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
 [#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
