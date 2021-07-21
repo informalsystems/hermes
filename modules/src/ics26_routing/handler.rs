@@ -204,7 +204,9 @@ mod tests {
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState(MockHeader::new(start_client_height))),
-            AnyConsensusState::from(MockConsensusState(MockHeader::new(start_client_height))),
+            AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
+                start_client_height,
+            ))),
             default_signer.clone(),
         )
         .unwrap();
@@ -434,7 +436,7 @@ mod tests {
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
                     client_id.clone(),
                     AnyClientState::Mock(MockClientState(MockHeader::new(upgrade_client_height))),
-                    AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
+                    AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
                         upgrade_client_height,
                     ))),
                     get_dummy_merkle_proof(),
@@ -450,7 +452,7 @@ mod tests {
                     AnyClientState::Mock(MockClientState(MockHeader::new(
                         upgrade_client_height_second,
                     ))),
-                    AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
+                    AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
                         upgrade_client_height_second,
                     ))),
                     get_dummy_merkle_proof(),

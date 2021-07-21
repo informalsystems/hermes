@@ -82,7 +82,7 @@ impl Header for MockHeader {
 
 impl From<MockHeader> for AnyConsensusState {
     fn from(h: MockHeader) -> Self {
-        AnyConsensusState::Mock(MockConsensusState(h))
+        AnyConsensusState::Mock(MockConsensusState::new(h))
     }
 }
 
