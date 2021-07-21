@@ -116,7 +116,9 @@ fn build_tracing_filter(log_level: String) -> Result<EnvFilter, FrameworkError> 
                 directive_raw, e
             );
             let our_err = Error::invalid_log_level(log_level, e);
-            Err(FrameworkErrorKind::ConfigError.context(our_err).into())
+            Err(FrameworkErrorKind::ConfigError
+                .context(format!("{}", our_err))
+                .into())
         }
     }
 }

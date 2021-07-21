@@ -46,7 +46,7 @@ impl PacketWorker {
         }
     }
 
-    /// Run the event loop for events associated with a [`UnidirectionalChannelPath`].
+    /// Run the event loop for events associated with a [`Packet`].
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),

@@ -126,8 +126,9 @@ impl Application for CliApp {
         // Configure components
         self.state.components.after_config(&config)?;
 
-        validate_config(&config)
-            .map_err(|validation_err| FrameworkErrorKind::ConfigError.context(validation_err))?;
+        validate_config(&config).map_err(|validation_err| {
+            FrameworkErrorKind::ConfigError.context(format!("{}", validation_err))
+        })?;
 
         self.config = Some(config);
 
