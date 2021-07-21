@@ -34,7 +34,7 @@ impl ClientDef for MockClient {
                 client_state.latest_height(),
             ));
         }
-        Ok((MockClientState(header), MockConsensusState(header)))
+        Ok((MockClientState(header), MockConsensusState::new(header)))
     }
 
     fn verify_client_consensus_state(
@@ -159,6 +159,6 @@ impl ClientDef for MockClient {
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
-        Ok((*client_state, *consensus_state))
+        Ok((*client_state, consensus_state.clone()))
     }
 }
