@@ -174,6 +174,7 @@ mod tests {
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
     use crate::Height;
+    use crate::timestamp::Timestamp;
 
     #[test]
     /// These tests exercise two main paths: (1) the ability of the ICS26 routing module to dispatch
@@ -302,7 +303,7 @@ mod tests {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader::new(update_client_height).into(),
+                    header: MockHeader::new(update_client_height).with_timestamp(Timestamp::now()).into(),
                     signer: default_signer.clone(),
                 })),
                 want_pass: true,
@@ -377,10 +378,10 @@ mod tests {
             // The client update is required in this test, because the proof associated with
             // msg_recv_packet has the same height as the packet TO height (see get_dummy_raw_msg_recv_packet)
             Test {
-                name: "Client update successful".to_string(),
+                name: "Client update successful #2".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader::new(update_client_height_after_send).into(),
+                    header: MockHeader::new(update_client_height_after_send).with_timestamp(Timestamp::now()).into(),
                     signer: default_signer.clone(),
                 })),
                 want_pass: true,

@@ -136,7 +136,7 @@ mod tests {
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader::new_time(Height::new(0, 46), timestamp).into(),
+            header: MockHeader::new(Height::new(0, 46)).with_timestamp(timestamp).into(),
             signer,
         };
 
@@ -160,10 +160,9 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(MockHeader::new_time(
-                                msg.header.height(),
-                                timestamp
-                            )))
+                            AnyClientState::Mock(MockClientState(MockHeader::new(
+                                msg.header.height()
+                            ).with_timestamp(timestamp)))
                         )
                     }
                     _ => panic!("update handler result has incorrect type"),
