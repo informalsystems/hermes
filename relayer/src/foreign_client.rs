@@ -61,8 +61,8 @@ pub enum ForeignClientError {
     #[error("cannot run misbehaviour: {0}")]
     MisbehaviourExit(String),
 
-    #[error("failed while trying to upgrade client id {0} with error: {1}")]
-    ClientUpgrade(ClientId, String),
+    #[error("failed while trying to upgrade client id {0} hosted on chain id {1} with error: {2}")]
+    ClientUpgrade(ClientId, ChainId, String),
 }
 
 #[derive(Clone, Debug)]
@@ -179,6 +179,7 @@ impl ForeignClient {
         let src_height = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::ClientUpgrade(
                 self.id.clone(),
+                self.dst_chain.id(),
                 format!(
                     "failed while querying src chain ({}) for latest height: {}",
                     self.src_chain.id(),
@@ -198,6 +199,7 @@ impl ForeignClient {
             .map_err(|e| {
                 ForeignClientError::ClientUpgrade(
                     self.id.clone(),
+                    self.dst_chain.id(),
                     format!(
                         "failed while fetching from chain {} the upgraded client state: {}",
                         self.src_chain.id(),
@@ -211,9 +213,12 @@ impl ForeignClient {
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
             .query_upgraded_consensus_state(src_height)
-            .map_err(|e| ForeignClientError::ClientUpgrade(self.id.clone(), format!(
-                "failed while fetching from chain {} the upgraded client consensus state: {}", self.src_chain.id(), e)))
-            ?;
+            .map_err(|e| ForeignClientError::ClientUpgrade(self.id.clone(),
+                                                           self.dst_chain.id(),
+                                                           format!(
+                                                               "failed while fetching from chain {} \
+                                                                the upgraded client consensus state: {}",
+                                                               self.src_chain.id(), e)))?;
 
         debug!(
             "[{}]  upgraded client consensus state {:?}",
@@ -224,11 +229,8 @@ impl ForeignClient {
         let signer = self.dst_chain.get_signer().map_err(|e| {
             ForeignClientError::ClientUpgrade(
                 self.id.clone(),
-                format!(
-                    "failed while fetching the destination chain ({}) signer: {}",
-                    self.dst_chain.id(),
-                    e
-                ),
+                self.dst_chain.id(),
+                format!("failed while fetching the destination chain signer: {}", e),
             )
         })?;
 
@@ -247,9 +249,9 @@ impl ForeignClient {
         let res = self.dst_chain.send_msgs(msgs).map_err(|e| {
             ForeignClientError::ClientUpgrade(
                 self.id.clone(),
+                self.dst_chain.id(),
                 format!(
-                    "failed while sending message to destination chain {} with err: {}",
-                    self.dst_chain.id(),
+                    "failed while sending message to destination chain with err: {}",
                     e
                 ),
             )
@@ -305,7 +307,7 @@ impl ForeignClient {
             .wrap_any();
 
         let consensus_state = self.src_chain
-            .build_consensus_state(client_state.latest_height(),  latest_height, client_state.clone())
+            .build_consensus_state(client_state.latest_height(), latest_height, client_state.clone())
             .map_err(|e| ForeignClientError::ClientCreate(format!("failed while building client consensus state from src chain ({}) with error: {}", self.src_chain.id(), e)))?
             .wrap_any();
 
@@ -802,7 +804,8 @@ impl ForeignClient {
                 break;
             }
 
-            //
+            // No header in events, cannot run misbehavior.
+            // May happen on chains running older SDKs (e.g., Akash)
             if update_event.header.is_none() {
                 return Err(ForeignClientError::MisbehaviourExit(
                     "no header in update client events".to_string(),
@@ -917,7 +920,7 @@ impl ForeignClient {
         // warn the user and continue.
         match result {
             Err(ForeignClientError::MisbehaviourExit(s)) => {
-                error!(
+                warn!(
                     "[{}] misbehaviour checking is being disabled: {:?}",
                     self, s
                 );
@@ -992,8 +995,8 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let a_client =
             ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
@@ -1030,8 +1033,8 @@ mod test {
         let num_iterations = 3;
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
         let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
@@ -1136,8 +1139,8 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
@@ -1184,8 +1187,8 @@ mod test {
         let mut _b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());

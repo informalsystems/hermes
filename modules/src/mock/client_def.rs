@@ -35,7 +35,7 @@ impl ClientDef for MockClient {
                 "received header height is lower than (or equal to) client latest height".into(),
             );
         }
-        Ok((MockClientState(header), MockConsensusState(header)))
+        Ok((MockClientState(header), MockConsensusState::new(header)))
     }
 
     fn verify_client_consensus_state(
@@ -159,6 +159,6 @@ impl ClientDef for MockClient {
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
-        Ok((*client_state, *consensus_state))
+        Ok((*client_state, consensus_state.clone()))
     }
 }

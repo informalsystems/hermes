@@ -141,7 +141,7 @@ pub mod test_util {
                 AnyClientState::Mock(MockClientState(MockHeader::new(height))).into(),
             ),
             consensus_state: Some(
-                AnyConsensusState::Mock(MockConsensusState(MockHeader::new(height))).into(),
+                AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height))).into(),
             ),
             proof_upgrade_client: get_dummy_proof(),
             proof_upgrade_consensus_state: get_dummy_proof(),
@@ -178,7 +178,8 @@ mod tests {
         let height = Height::new(1, 1);
 
         let client_state = AnyClientState::Mock(MockClientState(MockHeader::new(height)));
-        let consensus_state = AnyConsensusState::Mock(MockConsensusState(MockHeader::new(height)));
+        let consensus_state =
+            AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height)));
 
         let proof = get_dummy_merkle_proof();
 
