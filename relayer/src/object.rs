@@ -291,7 +291,7 @@ impl Object {
         if client_state.refresh_period().is_none() {
             return Err(ObjectError::refresh_not_required(
                 e.client_id().clone(),
-                dst_chain.id().clone(),
+                dst_chain.id(),
             ));
         }
 
@@ -320,7 +320,7 @@ impl Object {
 
         if client.client_state.refresh_period().is_none() {
             return Err(ObjectError::refresh_not_required(
-                client.client_id.clone(),
+                client.client_id,
                 chain.id(),
             ));
         }
