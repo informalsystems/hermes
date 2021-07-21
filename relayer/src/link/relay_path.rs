@@ -37,26 +37,34 @@ use crate::event::tx_hash::TxHash;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::LinkError;
 use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
-use crate::link::relay_sender;
+use crate::link::{relay_sender, unconfirmed};
 use crate::link::relay_sender::SubmitReply;
 use crate::link::relay_summary::RelaySummary;
+use crate::link::unconfirmed::Outcome;
 
 const MAX_RETRIES: usize = 5;
 
 pub struct RelayPath {
     channel: Channel,
+
     // Marks whether this path has already cleared pending packets.
     // Packets should be cleared once (at startup), then this
     // flag turns to `false`.
     clear_packets: bool,
+
     // Operational data, targeting both the source and destination chain.
-    // These vectors of operational data are ordered decreasingly by their age, with element at
-    // position `0` being the oldest.
-    // The operational data targeting the source chain comprises mostly timeout packet messages.
+    // These vectors of operational data are ordered decreasingly by
+    // their age, with element at position `0` being the oldest.
+    // The operational data targeting the source chain comprises
+    // mostly timeout packet messages.
+    // The operational data targeting the destination chain
+    // comprises mostly RecvPacket and Ack msgs.
     src_operational_data: Vec<OperationalData>,
-    // The operational data targeting the destination chain comprises mostly RecvPacket and Ack msgs.
     dst_operational_data: Vec<OperationalData>,
-    unconfirmed: HashSet<TxHash>,
+
+    // The mediator stores operational data after the relayer sends it to
+    // a chain, until the chain confirms that it executed it successfully.
+    unconfirmed: unconfirmed::Mediator,
 }
 
 impl RelayPath {
@@ -610,14 +618,20 @@ impl RelayPath {
             return Ok(S::Reply::empty());
         }
 
-        let target = match odata.target {
-            OperationalDataTarget::Source => self.src_chain(),
-            OperationalDataTarget::Destination => self.dst_chain(),
-        };
+        let target = self.infer_target_chain(&odata);
 
         let msgs = odata.assemble_msgs(self)?;
 
         S::submit(target.as_ref(), msgs)
+    }
+
+    /// Returns the chain handle for the chain that is the
+    /// target of the given [`OperationalData`].
+    fn infer_target_chain(&self, odata: &OperationalData) -> &Box<dyn ChainHandle> {
+        match odata.target {
+            OperationalDataTarget::Source => self.src_chain(),
+            OperationalDataTarget::Destination => self.dst_chain(),
+        }
     }
 
     /// Checks if a sent packet has been received on destination.
@@ -1178,21 +1192,30 @@ impl RelayPath {
     /// This method performs relaying using the asynchronous sender.
     /// Retains the operational data as unconfirmed, and associates it
     /// with one or more transaction hash(es).
-    pub fn execute_schedule(&mut self) -> Result<RelaySummary, LinkError> {
+    pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
 
-        // let mut summary = RelaySummary::empty();
-
         for od in dst_ods {
-            // Todo: should retain the od!
-            let reply = self.relay_from_operational_data::<relay_sender::AsyncSender>(od)?;
-            self.unconfirmed.extend(reply.hashes());
+            let reply = self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
+            let target_chain = self.infer_target_chain(&od);
+            self.unconfirmed.insert(reply, od, target_chain);
         }
 
         for od in src_ods {
-            let reply = self.relay_from_operational_data::<relay_sender::AsyncSender>(od)?;
-            self.unconfirmed.extend(reply.hashes());
+            let reply = self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
+            let target_chain = self.infer_target_chain(&od);
+            self.unconfirmed.insert(reply, od, target_chain);
         }
+
+        Ok(())
+    }
+
+    pub fn handle_confirmations(&mut self) -> Result<RelaySummary, LinkError> {
+        match self.unconfirmed.confirm_step() {
+            Outcome::TimedOut(_) => { todo!() }
+            Outcome::Confirmed(_) => { todo!() }
+            Outcome::None => { todo!() }
+        };
 
         Ok(RelaySummary::empty())
     }

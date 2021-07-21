@@ -138,12 +138,14 @@ impl PacketWorker {
             }
         }
 
-        let result = link
-            .a_to_b
+        link.a_to_b
             .refresh_schedule()
             .and_then(|_| link.a_to_b.execute_schedule());
 
-        match result {
+        let confirmation_result =
+            link.a_to_b.handle_confirmations();
+
+        match confirmation_result {
             Ok(summary) => RetryResult::Ok(Step::Success(summary)),
             Err(e) => {
                 error!(

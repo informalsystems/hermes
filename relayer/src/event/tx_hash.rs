@@ -7,18 +7,24 @@ use tendermint::abci::transaction;
 
 #[derive(Copy, Clone, Debug)]
 pub struct TxHash {
-    hash: transaction::Hash,
+    inner: transaction::Hash,
 }
 
 impl From<transaction::Hash> for TxHash {
     fn from(h: transaction::Hash) -> Self {
-        Self { hash: h }
+        Self { inner: h }
+    }
+}
+
+impl From<TxHash> for transaction::Hash {
+    fn from(h: TxHash) -> Self {
+        h.inner
     }
 }
 
 impl PartialEq for TxHash {
     fn eq(&self, other: &Self) -> bool {
-        self.hash.ct_eq(&other.hash).into()
+        self.inner.ct_eq(&other.inner).into()
     }
 }
 
@@ -26,7 +32,7 @@ impl Eq for TxHash {}
 
 impl Hash for TxHash {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.hash.hash(state)
+        self.inner.hash(state)
     }
 }
 
@@ -35,12 +41,12 @@ impl FromStr for TxHash {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hash: transaction::Hash = s.parse()?;
-        Ok(Self { hash })
+        Ok(Self { inner: hash })
     }
 }
 
 impl fmt::Display for TxHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.hash)
+        write!(f, "{}", self.inner)
     }
 }
