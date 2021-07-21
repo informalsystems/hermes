@@ -257,7 +257,7 @@ impl MockContext {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => (
                 Some(MockClientState(MockHeader::new(client_state_height)).into()),
-                MockConsensusState(MockHeader::new(cs_height)).into(),
+                MockConsensusState::new(MockHeader::new(cs_height)).into(),
             ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {
@@ -277,7 +277,7 @@ impl MockContext {
 
         let prev_consensus_state = match client_type {
             // If it's a mock client, create the corresponding mock states.
-            ClientType::Mock => MockConsensusState(MockHeader::new(prev_cs_height)).into(),
+            ClientType::Mock => MockConsensusState::new(MockHeader::new(prev_cs_height)).into(),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(

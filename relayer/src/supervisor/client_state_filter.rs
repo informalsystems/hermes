@@ -129,7 +129,7 @@ impl FilterPolicy {
         }
 
         let permission = match state.trust_threshold() {
-            Some(trust) if trust.numerator == 1 && trust.denominator == 3 => Permission::Allow,
+            Some(trust) if trust.numerator() == 1 && trust.denominator() == 3 => Permission::Allow,
             Some(_) => {
                 trace!(
                     "[client filter] client {} on chain {} has a trust threshold different than 1/3",
