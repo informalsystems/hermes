@@ -173,8 +173,8 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
-    use crate::Height;
     use crate::timestamp::Timestamp;
+    use crate::Height;
 
     #[test]
     /// These tests exercise two main paths: (1) the ability of the ICS26 routing module to dispatch
@@ -303,7 +303,9 @@ mod tests {
                 name: "Client update successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader::new(update_client_height).with_timestamp(Timestamp::now()).into(),
+                    header: MockHeader::new(update_client_height)
+                        .with_timestamp(Timestamp::now())
+                        .into(),
                     signer: default_signer.clone(),
                 })),
                 want_pass: true,
@@ -381,7 +383,9 @@ mod tests {
                 name: "Client update successful #2".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader::new(update_client_height_after_send).with_timestamp(Timestamp::now()).into(),
+                    header: MockHeader::new(update_client_height_after_send)
+                        .with_timestamp(Timestamp::now())
+                        .into(),
                     signer: default_signer.clone(),
                 })),
                 want_pass: true,

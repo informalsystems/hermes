@@ -60,10 +60,7 @@ impl MockHeader {
     }
 
     pub fn with_timestamp(self, timestamp: Timestamp) -> Self {
-        Self {
-            timestamp,
-            ..self
-        }
+        Self { timestamp, ..self }
     }
 }
 
