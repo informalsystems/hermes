@@ -23,7 +23,7 @@ use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 
 use crate::chain::handle::ChainHandle;
-use crate::error::Error;
+use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::supervisor::Error as SupervisorError;
@@ -35,6 +35,10 @@ const MAX_RETRIES: usize = 5;
 
 define_error! {
     ConnectionError {
+        Relayer
+            [ RelayerError ]
+            |_| { "relayer error" },
+
         MissingLocalConnectionId
             |_| { "failed due to missing local channel id" },
 
@@ -50,14 +54,14 @@ define_error! {
 
         ChainQuery
             { chain_id: ChainId }
-            [ Error ]
+            [ RelayerError ]
             |e| {
                 format!("failed during a query to chain id {0}", e.chain_id)
             },
 
         ConnectionQuery
             { connection_id: ConnectionId }
-            [ Error ]
+            [ RelayerError ]
             |e| {
                 format!("failed to query the connection for {}", e.connection_id)
             },
@@ -75,7 +79,7 @@ define_error! {
 
         Submit
             { chain_id: ChainId }
-            [ Error ]
+            [ RelayerError ]
             |e| {
                 format!("failed during a transaction submission step to chain id {0}",
                     e.chain_id)
@@ -152,7 +156,7 @@ define_error! {
 
         Signer
             { chain_id: ChainId }
-            [ Error ]
+            [ RelayerError ]
             |e| {
                 format!("failed while fetching the signer for chain ({})",
                     e.chain_id)
@@ -174,7 +178,7 @@ define_error! {
             |_| { "no conn confirm event was in the response" },
 
         ConnectionProof
-            [ Error ]
+            [ RelayerError ]
             |_| { "failed to build connection proofs" },
 
         ConnectionAlreadyExist
@@ -274,7 +278,7 @@ impl Connection {
         chain: Box<dyn ChainHandle>,
         counterparty_chain: Box<dyn ChainHandle>,
         connection_open_event: IbcEvent,
-    ) -> Result<Connection, Box<dyn std::error::Error>> {
+    ) -> Result<Connection, ConnectionError> {
         let connection_event_attributes = connection_open_event
             .connection_attributes()
             .ok_or_else(|| ConnectionError::invalid_event(connection_open_event.clone()))?;
@@ -307,8 +311,11 @@ impl Connection {
         counterparty_chain: Box<dyn ChainHandle>,
         connection: WorkerConnectionObject,
         height: Height,
-    ) -> Result<(Connection, State), Box<dyn std::error::Error>> {
-        let a_connection = chain.query_connection(&connection.src_connection_id, height)?;
+    ) -> Result<(Connection, State), ConnectionError> {
+        let a_connection = chain
+            .query_connection(&connection.src_connection_id, height)
+            .map_err(ConnectionError::relayer)?;
+
         let client_id = a_connection.client_id();
         let delay_period = a_connection.delay_period();
 
@@ -334,8 +341,9 @@ impl Connection {
             let req = QueryConnectionsRequest {
                 pagination: ibc_proto::cosmos::base::query::pagination::all(),
             };
-            let connections: Vec<IdentifiedConnectionEnd> =
-                counterparty_chain.query_connections(req)?;
+            let connections: Vec<IdentifiedConnectionEnd> = counterparty_chain
+                .query_connections(req)
+                .map_err(ConnectionError::relayer)?;
 
             for conn in connections {
                 if !conn

@@ -6,7 +6,7 @@ use ibc::ics02_client::events::NewBlock;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::{
-    events::{IbcEvent, RawObject},
+    events::{Error as EventError, IbcEvent, RawObject},
     ics02_client::events as ClientEvents,
     ics03_connection::events as ConnectionEvents,
     ics04_channel::events as ChannelEvents,
@@ -56,7 +56,7 @@ pub fn get_all_events(
     Ok(vals)
 }
 
-pub fn build_event(mut object: RawObject) -> Result<IbcEvent, Box<dyn std::error::Error>> {
+pub fn build_event(mut object: RawObject) -> Result<IbcEvent, EventError> {
     match object.action.as_str() {
         // Client events
         "create_client" => Ok(IbcEvent::from(ClientEvents::CreateClient::try_from(
@@ -127,7 +127,7 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, Box<dyn std::error
             ))
         }
 
-        event_type => Err(format!("Incorrect event type: '{}'", event_type).into()),
+        event_type => Err(EventError::incorrect_event_type(event_type.to_string())),
     }
 }
 

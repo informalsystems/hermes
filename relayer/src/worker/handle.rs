@@ -12,6 +12,7 @@ use ibc::{
 
 use crate::{event::monitor::EventBatch, object::Object};
 
+use super::error::WorkerError;
 use super::{WorkerCmd, WorkerId};
 
 /// Handle to a [`Worker`], for sending [`WorkerCmd`]s to it.
@@ -52,31 +53,28 @@ impl WorkerHandle {
         height: Height,
         events: Vec<IbcEvent>,
         chain_id: ChainId,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), WorkerError> {
         let batch = EventBatch {
             chain_id,
             height,
             events,
         };
 
-        self.tx.send(WorkerCmd::IbcEvents { batch })?;
-        Ok(())
+        self.tx
+            .send(WorkerCmd::IbcEvents { batch })
+            .map_err(WorkerError::send)
     }
 
     /// Send a batch of [`NewBlock`] event to the worker.
-    pub fn send_new_block(
-        &self,
-        height: Height,
-        new_block: NewBlock,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        self.tx.send(WorkerCmd::NewBlock { height, new_block })?;
-        Ok(())
+    pub fn send_new_block(&self, height: Height, new_block: NewBlock) -> Result<(), WorkerError> {
+        self.tx
+            .send(WorkerCmd::NewBlock { height, new_block })
+            .map_err(WorkerError::send)
     }
 
     /// Shutdown the worker.
-    pub fn shutdown(&self) -> Result<(), Box<dyn std::error::Error>> {
-        self.tx.send(WorkerCmd::Shutdown)?;
-        Ok(())
+    pub fn shutdown(&self) -> Result<(), WorkerError> {
+        self.tx.send(WorkerCmd::Shutdown).map_err(WorkerError::send)
     }
 
     /// Wait for the worker thread to finish.

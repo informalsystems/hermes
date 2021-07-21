@@ -1,9 +1,11 @@
-use flex_error::{define_error, DisplayOnly};
+use flex_error::define_error;
 
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId};
 
 use crate::error::Error as RelayerError;
+use crate::registry::SpawnError;
+use crate::worker::WorkerError;
 
 define_error! {
     Error {
@@ -14,7 +16,7 @@ define_error! {
                 chain_id: ChainId,
             }
             |e| {
-                format!("channel {0} on chain {1} is not open",
+                format_args!("channel {0} on chain {1} is not open",
                     e.channel_id, e.chain_id)
             },
 
@@ -25,7 +27,7 @@ define_error! {
                 counterparty: Counterparty
             }
             |e| {
-                format!("channel {} on chain {} has a connection with uninitialized counterparty {:?}",
+                format_args!("channel {} on chain {} has a connection with uninitialized counterparty {:?}",
                     e.channel_id, e.chain_id, e.counterparty)
             },
 
@@ -36,7 +38,7 @@ define_error! {
                 chain_id: ChainId,
             }
             |e| {
-                format!("connection {0} (underlying channel {1}) on chain {2} is not open",
+                format_args!("connection {0} (underlying channel {1}) on chain {2} is not open",
                     e.connection_id, e.channel_id, e.chain_id)
             },
 
@@ -46,7 +48,7 @@ define_error! {
                 chain_id: ChainId,
             }
             |e| {
-                format!("channel {0} on chain {1} has no connection hops specified",
+                format_args!("channel {0} on chain {1} has no connection hops specified",
                     e.channel_id, e.chain_id)
             },
 
@@ -57,9 +59,12 @@ define_error! {
         NoChainsAvailable
             |_| { "supervisor was not able to connect to any chains" },
 
-
-        FailedToSpawnChainRuntime
-            [ DisplayOnly<Box<dyn std::error::Error>> ]
+        Spawn
+            [ SpawnError ]
             |_| { "supervisor was not able to connect to any chains" },
+
+        Worker
+            [ WorkerError ]
+            |_| { "worker error" },
     }
 }

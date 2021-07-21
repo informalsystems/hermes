@@ -358,7 +358,7 @@ impl Supervisor {
     }
 
     /// Run the supervisor event loop.
-    pub fn run(mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(mut self) -> Result<(), Error> {
         self.spawn_workers(SpawnMode::Startup);
 
         let mut subscriptions = self.init_subscriptions()?;
@@ -381,7 +381,7 @@ impl Supervisor {
                             subscriptions = subs;
                         }
                         Err(Error(ErrorDetail::NoChainsAvailable(_), _)) => (),
-                        Err(e) => return Err(e.into()),
+                        Err(e) => return Err(e),
                     }
                 }
             }
@@ -579,7 +579,7 @@ impl Supervisor {
         &mut self,
         src_chain: Box<dyn ChainHandle>,
         batch: &EventBatch,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         assert_eq!(src_chain.id(), batch.chain_id);
 
         let height = batch.height;
@@ -602,21 +602,32 @@ impl Supervisor {
                 continue;
             }
 
-            let src = self.registry.get_or_spawn(object.src_chain_id())?;
-            let dst = self.registry.get_or_spawn(object.dst_chain_id())?;
+            let src = self
+                .registry
+                .get_or_spawn(object.src_chain_id())
+                .map_err(Error::spawn)?;
+
+            let dst = self
+                .registry
+                .get_or_spawn(object.dst_chain_id())
+                .map_err(Error::spawn)?;
 
             let worker = {
                 let config = self.config.read().expect("poisoned lock");
                 self.workers.get_or_spawn(object, src, dst, &config)
             };
 
-            worker.send_events(height, events, chain_id.clone())?
+            worker
+                .send_events(height, events, chain_id.clone())
+                .map_err(Error::worker)?
         }
 
         // If there is a NewBlock event, forward the event to any workers affected by it.
         if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
             for worker in self.workers.to_notify(&src_chain.id()) {
-                worker.send_new_block(height, new_block)?;
+                worker
+                    .send_new_block(height, new_block)
+                    .map_err(Error::worker)?
             }
         }
 

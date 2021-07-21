@@ -383,15 +383,13 @@ impl<'a> SpawnContext<'a> {
         &mut self,
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
-    ) -> Result<ConnectionState, Box<dyn std::error::Error>> {
+    ) -> Result<ConnectionState, Error> {
         let counterparty_chain = self
             .registry
-            .get_or_spawn(&client.client_state.chain_id())?;
+            .get_or_spawn(&client.client_state.chain_id())
+            .map_err(Error::spawn)?;
 
-        Ok(connection_state_on_destination(
-            connection,
-            counterparty_chain.as_ref(),
-        )?)
+        connection_state_on_destination(connection, counterparty_chain.as_ref())
     }
 
     fn spawn_connection_workers(
@@ -399,7 +397,7 @@ impl<'a> SpawnContext<'a> {
         chain: Box<dyn ChainHandle>,
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         let handshake_enabled = self
             .config
             .read()
@@ -408,7 +406,8 @@ impl<'a> SpawnContext<'a> {
 
         let counterparty_chain = self
             .registry
-            .get_or_spawn(&client.client_state.chain_id())?;
+            .get_or_spawn(&client.client_state.chain_id())
+            .map_err(Error::spawn)?;
 
         let conn_state_src = connection.connection_end.state;
         let conn_state_dst =
@@ -475,7 +474,7 @@ impl<'a> SpawnContext<'a> {
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())
-            .map_err(SupervisorError::failed_to_spawn_chain_runtime)?;
+            .map_err(SupervisorError::spawn)?;
 
         let counterparty_channel =
             channel_on_destination(&channel, &connection, counterparty_chain.as_ref())?;

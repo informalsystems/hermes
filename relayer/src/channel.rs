@@ -23,7 +23,7 @@ use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
 use crate::object::Channel as WorkerChannelObject;
-use crate::supervisor::error::Error;
+use crate::supervisor::error::Error as SupervisorError;
 use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
 
@@ -175,7 +175,7 @@ impl Channel {
         chain: Box<dyn ChainHandle>,
         counterparty_chain: Box<dyn ChainHandle>,
         channel_open_event: IbcEvent,
-    ) -> Result<Channel, Box<dyn std::error::Error>> {
+    ) -> Result<Channel, ChannelError> {
         let channel_event_attributes = channel_open_event
             .channel_attributes()
             .ok_or_else(|| ChannelError::invalid_event(channel_open_event.clone()))?;
@@ -188,7 +188,10 @@ impl Channel {
             .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
 
         let connection_id = channel_event_attributes.connection_id.clone();
-        let connection = chain.query_connection(&connection_id, Height::zero())?;
+        let connection = chain
+            .query_connection(&connection_id, Height::zero())
+            .map_err(ChannelError::relayer)?;
+
         let connection_counterparty = connection.counterparty();
 
         let counterparty_connection_id = connection_counterparty
@@ -228,25 +231,32 @@ impl Channel {
         counterparty_chain: Box<dyn ChainHandle>,
         channel: WorkerChannelObject,
         height: Height,
-    ) -> Result<(Channel, State), Box<dyn std::error::Error>> {
-        let a_channel =
-            chain.query_channel(&channel.src_port_id, &channel.src_channel_id, height)?;
+    ) -> Result<(Channel, State), ChannelError> {
+        let a_channel = chain
+            .query_channel(&channel.src_port_id, &channel.src_channel_id, height)
+            .map_err(ChannelError::relayer)?;
 
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
-            Error::missing_connection_hops(channel.src_channel_id.clone(), chain.id())
+            ChannelError::supervisor(SupervisorError::missing_connection_hops(
+                channel.src_channel_id.clone(),
+                chain.id(),
+            ))
         })?;
 
-        let a_connection = chain.query_connection(a_connection_id, Height::zero())?;
+        let a_connection = chain
+            .query_connection(a_connection_id, Height::zero())
+            .map_err(ChannelError::relayer)?;
+
         let b_connection_id = a_connection
             .counterparty()
             .connection_id()
             .cloned()
             .ok_or_else(|| {
-                Error::channel_connection_uninitialized(
+                ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
                     channel.src_channel_id.clone(),
                     chain.id(),
                     a_connection.counterparty().clone(),
-                )
+                ))
             })?;
 
         let mut handshake_channel = Channel {
@@ -275,8 +285,9 @@ impl Channel {
                 pagination: ibc_proto::cosmos::base::query::pagination::all(),
             };
 
-            let channels: Vec<IdentifiedChannelEnd> =
-                counterparty_chain.query_connection_channels(req)?;
+            let channels: Vec<IdentifiedChannelEnd> = counterparty_chain
+                .query_connection_channels(req)
+                .map_err(ChannelError::relayer)?;
 
             for chan in channels {
                 if let Some(remote_channel_id) = chan.channel_end.remote.channel_id() {

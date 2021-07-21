@@ -388,10 +388,10 @@ impl MockContext {
     }
 
     /// Validates this context. Should be called after the context is mutated by a test.
-    pub fn validate(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn validate(&self) -> Result<(), String> {
         // Check that the number of entries is not higher than window size.
         if self.history.len() > self.max_history_size {
-            return Err("too many entries".to_string().into());
+            return Err("too many entries".to_string());
         }
 
         // Check the content of the history.
@@ -400,7 +400,7 @@ impl MockContext {
             let lh = &self.history[self.history.len() - 1];
             // Check latest is properly updated with highest header height.
             if lh.height() != self.latest_height {
-                return Err("latest height is not updated".to_string().into());
+                return Err("latest height is not updated".to_string());
             }
         }
 
@@ -409,7 +409,7 @@ impl MockContext {
             let ph = &self.history[i - 1];
             let h = &self.history[i];
             if ph.height().increment() != h.height() {
-                return Err("headers in history not sequential".to_string().into());
+                return Err("headers in history not sequential".to_string());
             }
         }
         Ok(())

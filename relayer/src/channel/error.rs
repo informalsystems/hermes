@@ -1,15 +1,28 @@
 use flex_error::define_error;
 use ibc::events::IbcEvent;
+use ibc::ics02_client::error::Error as ClientError;
 use ibc::ics04_channel::channel::State;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortChannelId, PortId};
 use std::time::Duration;
 
 use crate::error::Error;
 use crate::foreign_client::ForeignClientError;
-use crate::supervisor::Error as WorkerChannelError;
+use crate::supervisor::Error as SupervisorError;
 
 define_error! {
     ChannelError {
+        Relayer
+            [ Error ]
+            |_| { "relayer error" },
+
+        Supervisor
+            [ SupervisorError ]
+            |_| { "supervisor error" },
+
+        Client
+            [ ClientError ]
+            |_| { "ICS02 client error" },
+
         InvalidChannel
             { reason: String }
             | e | {
@@ -19,7 +32,6 @@ define_error! {
 
         MissingLocalChannelId
             |_| { "failed due to missing local channel id" },
-
 
         MissingLocalConnection
             { chain_id: ChainId }
@@ -64,7 +76,7 @@ define_error! {
 
         QueryChannel
             { channel_id: ChannelId }
-            [ WorkerChannelError ]
+            [ SupervisorError ]
             |e| { format_args!("failed during a query to channel id {0}", e.channel_id) },
 
         Submit

@@ -56,7 +56,11 @@ define_error! {
             | _ | { "Missing action string" },
 
         IncorrectEventType
-            | _ | { "Incorrect Event Type" },
+            { event: String }
+            | e | {
+                format_args!("Incorrect Event Type {}",
+                    e.event)
+            },
     }
 }
 
@@ -290,7 +294,7 @@ pub fn extract_events<S: ::std::hash::BuildHasher>(
         }
         return Err(Error::missing_action_string());
     }
-    Err(Error::incorrect_event_type())
+    Err(Error::incorrect_event_type(action_string.to_string()))
 }
 
 pub fn extract_attribute(object: &RawObject, key: &str) -> Result<String, Error> {
