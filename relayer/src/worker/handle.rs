@@ -64,9 +64,15 @@ impl WorkerHandle {
         Ok(())
     }
 
-    /// Send a [`NewBlock`] event to the worker.
+    /// Notify the worker that a new block as been committed.
     pub fn send_new_block(&self, height: Height, new_block: NewBlock) -> Result<(), BoxError> {
         self.tx.send(WorkerCmd::NewBlock { height, new_block })?;
+        Ok(())
+    }
+
+    /// Instruct the worker to clear pending packets.
+    pub fn clear_pending_packets(&self) -> Result<(), BoxError> {
+        self.tx.send(WorkerCmd::ClearPendingPackets)?;
         Ok(())
     }
 

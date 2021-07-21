@@ -4,14 +4,15 @@ use crossbeam_channel as channel;
 use futures::{
     pin_mut,
     stream::{self, select_all, StreamExt},
-    Stream,
+    Stream, TryStreamExt,
 };
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
+    error::Code,
     event::Event as RpcEvent,
     query::{EventType, Query},
     Error as RpcError, Result as RpcResult, SubscriptionClient, WebSocketClient,
@@ -22,7 +23,7 @@ use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier
 
 use crate::util::{
     retry::{retry_count, retry_with_index, RetryResult},
-    stream::group_while,
+    stream::try_group_while,
 };
 
 mod retry_strategy {
@@ -63,8 +64,25 @@ pub enum Error {
     #[error("failed to extract IBC events: {0}")]
     CollectEventsFailed(String),
 
+    #[error("{0}")]
+    SubscriptionCancelled(RpcError),
+
+    #[error("RPC error: {0}")]
+    GenericRpcError(RpcError),
+
     #[error("event monitor failed to dispatch event batch to subscribers")]
     ChannelSendFailed,
+}
+
+impl Error {
+    fn canceled_or_generic(e: RpcError) -> Self {
+        match (e.code(), e.data()) {
+            (Code::ServerError, Some(msg)) if msg.contains("subscription was cancelled") => {
+                Self::SubscriptionCancelled(e)
+            }
+            _ => Self::GenericRpcError(e),
+        }
+    }
 }
 
 /// A batch of events from a chain at a specific height
@@ -192,7 +210,7 @@ impl EventMonitor {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
-            trace!(chain.id = %self.chain_id, "subscribing to query: {}", query);
+            trace!("[{}] subscribing to query: {}", self.chain_id, query);
 
             let subscription = self
                 .rt
@@ -204,14 +222,15 @@ impl EventMonitor {
 
         self.subscriptions = Box::new(select_all(subscriptions));
 
-        trace!(chain.id = %self.chain_id, "subscribed to all queries");
+        trace!("[{}] subscribed to all queries", self.chain_id);
 
         Ok(())
     }
 
     fn try_reconnect(&mut self) -> Result<()> {
-        trace!(chain.id = %self.chain_id,
-            "trying to reconnect to WebSocket endpoint {}",
+        trace!(
+            "[{}] trying to reconnect to WebSocket endpoint {}",
+            self.chain_id,
             self.node_addr
         );
 
@@ -229,45 +248,49 @@ impl EventMonitor {
         std::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
         trace!(
-            chain.id = %self.chain_id,
-            "reconnected to WebSocket endpoint {}",
-            self.node_addr,
+            "[{}] reconnected to WebSocket endpoint {}",
+            self.chain_id,
+            self.node_addr
         );
 
         // Shut down previous client
-        trace!(chain.id = %self.chain_id, "gracefully shutting down previous client");
+        trace!(
+            "[{}] gracefully shutting down previous client",
+            self.chain_id
+        );
+
         let _ = client.close();
 
         self.rt
             .block_on(driver_handle)
             .map_err(|e| Error::ClientTerminationFailed(Arc::new(e)))?;
 
-        trace!(chain.id = %self.chain_id, "previous client successfully shutdown");
+        trace!("[{}] previous client successfully shutdown", self.chain_id);
 
         Ok(())
     }
 
     /// Try to resubscribe to events
     fn try_resubscribe(&mut self) -> Result<()> {
-        trace!(chain.id = %self.chain_id, "trying to resubscribe to events");
+        trace!("[{}] trying to resubscribe to events", self.chain_id);
         self.subscribe()
     }
 
-    /// Attempt to restart the WebSocket client using the given retry strategy.
+    /// Attempt to reconnect the WebSocket client using the given retry strategy.
     ///
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
-    fn restart(&mut self) {
+    fn reconnect(&mut self) {
         let result = retry_with_index(retry_strategy::default(), |_| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
-                trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
+                trace!("[{}] error when reconnecting: {}", self.chain_id, e);
                 return RetryResult::Retry(());
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
-                trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
+                trace!("[{}] error when resubscribing: {}", self.chain_id, e);
                 return RetryResult::Retry(());
             }
 
@@ -276,14 +299,14 @@ impl EventMonitor {
 
         match result {
             Ok(()) => info!(
-                chain.id = %self.chain_id,
-                "successfully reconnected to WebSocket endpoint {}",
-                self.node_addr
+                "[{}] successfully reconnected to WebSocket endpoint {}",
+                self.chain_id, self.node_addr
             ),
             Err(retries) => error!(
-                chain.id = %self.chain_id,
-                "failed to reconnect to {} after {} retries",
-                self.node_addr, retry_count(&retries)
+                "[{}] failed to reconnect to {} after {} retries",
+                self.chain_id,
+                self.node_addr,
+                retry_count(&retries)
             ),
         }
     }
@@ -291,7 +314,7 @@ impl EventMonitor {
     /// Event monitor loop
     #[allow(clippy::while_let_loop)]
     pub fn run(mut self) {
-        debug!(chain.id = %self.chain_id, "starting event monitor");
+        debug!("[{}] starting event monitor", self.chain_id);
 
         // Continuously run the event loop, so that when it aborts
         // because of WebSocket client restart, we pick up the work again.
@@ -302,7 +325,7 @@ impl EventMonitor {
             }
         }
 
-        debug!(chain.id = %self.chain_id, "event monitor is shutting down");
+        debug!("[{}] event monitor is shutting down", self.chain_id);
 
         // Close the WebSocket connection
         let _ = self.client.close();
@@ -310,7 +333,10 @@ impl EventMonitor {
         // Wait for the WebSocket driver to finish
         let _ = self.rt.block_on(self.driver_handle);
 
-        trace!(chain.id = %self.chain_id, "event monitor has successfully shut down");
+        trace!(
+            "[{}] event monitor has successfully shut down",
+            self.chain_id
+        );
     }
 
     fn run_loop(&mut self) -> Next {
@@ -336,32 +362,64 @@ impl EventMonitor {
 
             let result = rt.block_on(async {
                 tokio::select! {
-                    Some(batch) = batches.next() => Ok(batch),
+                    Some(batch) = batches.next() => batch,
                     Some(err) = self.rx_err.recv() => Err(Error::WebSocketDriver(err)),
                 }
             });
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
-                    warn!(chain.id = %self.chain_id, "{}", e);
+                    error!("[{}] {}", self.chain_id, e);
                 }),
-                Err(e) => {
-                    error!(chain.id = %self.chain_id, "failed to collect events: {}", e);
+                Err(Error::SubscriptionCancelled(reason)) => {
+                    error!(
+                        "[{}] subscription cancelled, reason: {}",
+                        self.chain_id, reason
+                    );
 
-                    // Restart the event monitor, reconnect to the WebSocket endpoint,
-                    // and subscribe again to the queries.
-                    self.restart();
+                    self.propagate_error(Error::SubscriptionCancelled(reason))
+                        .unwrap_or_else(|e| {
+                            error!("[{}] {}", self.chain_id, e);
+                        });
+
+                    // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                    self.reconnect();
 
                     // Abort this event loop, the `run` method will start a new one.
                     // We can't just write `return self.run()` here because Rust
                     // does not perform tail call optimization, and we would
                     // thus potentially blow up the stack after many restarts.
-                    break;
+                    return Next::Continue;
+                }
+                Err(e) => {
+                    error!("[{}] failed to collect events: {}", self.chain_id, e);
+
+                    // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                    self.reconnect();
+
+                    // Abort this event loop, the `run` method will start a new one.
+                    // We can't just write `return self.run()` here because Rust
+                    // does not perform tail call optimization, and we would
+                    // thus potentially blow up the stack after many restarts.
+                    return Next::Continue;
                 }
             }
         }
+    }
 
-        Next::Continue
+    /// Propagate error to subscribers.
+    ///
+    /// The main use case for propagating RPC errors is for the [`Supervisor`]
+    /// to notice that the WebSocket connection or subscription has been closed,
+    /// and to trigger a clearing of packets, as this typically means that we have
+    /// missed a bunch of events which were emitted after the subscrption was closed.
+    /// In that case, this error will be handled in [`Supervisor::handle_batch`].
+    fn propagate_error(&self, error: Error) -> Result<()> {
+        self.tx_batch
+            .send(Err(error))
+            .map_err(|_| Error::ChannelSendFailed)?;
+
+        Ok(())
     }
 
     /// Collect the IBC events from the subscriptions
@@ -375,28 +433,32 @@ impl EventMonitor {
 }
 
 /// Collect the IBC events from an RPC event
-fn collect_events(chain_id: &ChainId, event: RpcEvent) -> impl Stream<Item = (Height, IbcEvent)> {
+fn collect_events(
+    chain_id: &ChainId,
+    event: RpcEvent,
+) -> impl Stream<Item = Result<(Height, IbcEvent)>> {
     let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
-    stream::iter(events)
+    stream::iter(events).map(Ok)
 }
 
 /// Convert a stream of RPC event into a stream of event batches
 fn stream_batches(
     subscriptions: Box<SubscriptionStream>,
     chain_id: ChainId,
-) -> impl Stream<Item = EventBatch> {
+) -> impl Stream<Item = Result<EventBatch>> {
     let id = chain_id.clone();
 
     // Collect IBC events from each RPC event
     let events = subscriptions
-        .filter_map(|rpc_event| async { rpc_event.ok() })
-        .flat_map(move |rpc_event| collect_events(&id, rpc_event));
+        .map_ok(move |rpc_event| collect_events(&id, rpc_event))
+        .map_err(Error::canceled_or_generic)
+        .try_flatten();
 
     // Group events by height
-    let grouped = group_while(events, |(h0, _), (h1, _)| h0 == h1);
+    let grouped = try_group_while(events, |(h0, _), (h1, _)| h0 == h1);
 
     // Convert each group to a batch
-    grouped.map(move |events| {
+    grouped.map_ok(move |events| {
         let height = events
             .first()
             .map(|(h, _)| h)
