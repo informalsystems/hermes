@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anomaly::BoxError;
+use tendermint_light_client::types::TrustThreshold;
 use tracing::{debug, trace};
 
 use ibc::ics02_client::client_state::{AnyClientState, ClientState};
@@ -129,7 +130,7 @@ impl FilterPolicy {
         }
 
         let permission = match state.trust_threshold() {
-            Some(trust) if trust.numerator == 1 && trust.denominator == 3 => Permission::Allow,
+            Some(trust) if trust == TrustThreshold::ONE_THIRD => Permission::Allow,
             Some(_) => {
                 trace!(
                     "[client filter] client {} on chain {} has a trust threshold different than 1/3",

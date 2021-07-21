@@ -115,10 +115,7 @@ impl ClientState {
     /// Resets all fields except the blockchain-specific ones.
     pub fn zero_custom_fields(mut client_state: Self) -> Self {
         client_state.trusting_period = ZERO_DURATION;
-        client_state.trust_level = TrustThresholdFraction {
-            numerator: 0,
-            denominator: 0,
-        };
+        client_state.trust_level = TrustThresholdFraction::default();
         client_state.allow_update.after_expiry = false;
         client_state.allow_update.after_misbehaviour = false;
         client_state.frozen_height = Height::zero();
@@ -173,10 +170,8 @@ impl TryFrom<RawClientState> for ClientState {
         Ok(Self {
             chain_id: ChainId::from_str(raw.chain_id.as_str())
                 .map_err(|_| Kind::InvalidRawClientState.context("Invalid chain identifier"))?,
-            trust_level: TrustThreshold {
-                numerator: trust_level.numerator,
-                denominator: trust_level.denominator,
-            },
+            trust_level: TrustThreshold::new(trust_level.numerator, trust_level.denominator)
+                .map_err(|e| Kind::InvalidTrustThreshold.context(e))?,
             trusting_period: raw
                 .trusting_period
                 .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?
@@ -216,8 +211,8 @@ impl From<ClientState> for RawClientState {
         RawClientState {
             chain_id: value.chain_id.to_string(),
             trust_level: Some(Fraction {
-                numerator: value.trust_level.numerator,
-                denominator: value.trust_level.denominator,
+                numerator: value.trust_level.numerator(),
+                denominator: value.trust_level.denominator(),
             }),
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
@@ -279,10 +274,7 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: ChainId::default(),
-            trust_level: TrustThreshold {
-                numerator: 1,
-                denominator: 3,
-            },
+            trust_level: TrustThreshold::ONE_THIRD,
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
