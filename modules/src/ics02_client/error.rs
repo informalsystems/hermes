@@ -1,6 +1,7 @@
 use std::num::ParseIntError;
 
 use anomaly::{BoxError, Context};
+use tendermint::hash::Hash;
 use thiserror::Error;
 
 use crate::ics02_client::client_type::ClientType;
@@ -9,7 +10,6 @@ use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use tendermint::hash::Hash;
 
 pub type Error = anomaly::Error<Kind>;
 
@@ -137,8 +137,6 @@ pub enum Kind {
 
     #[error("Header revision {0} and client state revision {1} should coincide")]
     MismatchedRevisions(u64, u64),
-    // #[error(" hearder timestamp {0} must be at greater than current client consensus state timestamp {1}")]
-    // LowUpdateTimestamp(Timestamp, Timestamp),
 }
 
 impl Kind {

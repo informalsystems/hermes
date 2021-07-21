@@ -101,16 +101,17 @@ impl From<MsgTransfer> for RawMsgTransfer {
 
 #[cfg(test)]
 pub mod test_util {
+    use std::ops::Add;
+    use std::time::Duration;
+
     use crate::{
         ics24_host::identifier::{ChannelId, PortId},
         test_utils::get_dummy_account_id,
+        timestamp::Timestamp,
         Height,
     };
 
     use super::MsgTransfer;
-    use crate::timestamp::Timestamp;
-    use std::ops::Add;
-    use std::time::Duration;
 
     // Returns a dummy `RawMsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer {

@@ -1,5 +1,7 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
+use tracing::info;
+
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_consensus::AnyConsensusState;
@@ -12,8 +14,6 @@ use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
-
-use tracing::info;
 
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
@@ -59,7 +59,7 @@ pub fn process(
             Kind::ConsensusStateNotFound(client_id.clone(), client_state.latest_height())
         })?;
 
-    info!("latest conseus state {:?}", latest_consensus_state);
+    info!("latest consensus state {:?}", latest_consensus_state);
 
     let duration = Timestamp::now()
         .duration_since(&latest_consensus_state.timestamp())
@@ -103,6 +103,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
     use test_env_log::test;
 
     use crate::events::IbcEvent;
@@ -116,7 +117,6 @@ mod tests {
     use crate::ics02_client::header::{AnyHeader, Header};
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
-
     use crate::ics24_host::identifier::{ChainId, ClientId};
     use crate::mock::client_state::MockClientState;
     use crate::mock::context::MockContext;
