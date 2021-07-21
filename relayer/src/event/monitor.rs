@@ -396,7 +396,13 @@ impl EventMonitor {
         }
     }
 
-    /// Propagate error to subscribers
+    /// Propagate error to subscribers.
+    ///
+    /// The main use case for propagating RPC errors is for the [`Supervisor`]
+    /// to notice that the WebSocket connection or subscription has been closed,
+    /// and to trigger a clearing of packets, as this typically means that we have
+    /// missed a bunch of events which were emitted after the subscrption was closed.
+    /// In that case, this error will be handled in [`Supervisor::handle_batch`].
     fn propagate_error(&self, error: Error) -> Result<()> {
         self.tx_batch
             .send(Err(error))
