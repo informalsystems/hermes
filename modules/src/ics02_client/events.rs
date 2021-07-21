@@ -6,7 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
-use crate::events::{self, extract_attribute, IbcEvent, RawObject};
+use crate::events::{extract_attribute, Error, IbcEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
@@ -134,22 +134,22 @@ impl std::fmt::Display for Attributes {
     }
 }
 
-fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, events::Error> {
+fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, Error> {
     Ok(Attributes {
         height: object.height,
 
         client_id: extract_attribute(object, &format!("{}.client_id", namespace))?
             .parse()
-            .map_err(events::parse_error)?,
+            .map_err(Error::parse)?,
 
         client_type: extract_attribute(object, &format!("{}.client_type", namespace))?
             .parse()
-            .map_err(events::client_error)?,
+            .map_err(Error::client)?,
 
         consensus_height: extract_attribute(object, &format!("{}.consensus_height", namespace))?
             .as_str()
             .try_into()
-            .map_err(events::height_error)?,
+            .map_err(Error::height)?,
     })
 }
 
@@ -176,7 +176,7 @@ impl From<Attributes> for CreateClient {
 }
 
 impl TryFrom<RawObject> for CreateClient {
-    type Error = events::Error;
+    type Error = Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CreateClient(extract_attributes(&obj, "create_client")?))
     }
@@ -232,7 +232,7 @@ impl From<Attributes> for UpdateClient {
 }
 
 impl TryFrom<RawObject> for UpdateClient {
-    type Error = events::Error;
+    type Error = Error;
 
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let header_str: Option<String> = obj
@@ -242,12 +242,12 @@ impl TryFrom<RawObject> for UpdateClient {
 
         let header: Option<AnyHeader> = match header_str {
             Some(str) => {
-                let header_bytes = hex::decode(str).map_err(events::subtle_encoding_error)?;
+                let header_bytes = hex::decode(str).map_err(Error::subtle_encoding)?;
 
                 let decoded = prost_types::Any::decode(header_bytes.as_ref())
-                    .map_err(events::decode_error)?
+                    .map_err(Error::decode)?
                     .try_into()
-                    .map_err(events::client_error)?;
+                    .map_err(Error::client)?;
 
                 Some(decoded)
             }
@@ -291,8 +291,8 @@ impl ClientMisbehaviour {
 }
 
 impl TryFrom<RawObject> for ClientMisbehaviour {
-    type Error = events::Error;
-    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+    type Error = Error;
+    fn try_from(obj: RawObject) -> Result<Self, Error> {
         Ok(ClientMisbehaviour(extract_attributes(
             &obj,
             "client_misbehaviour",

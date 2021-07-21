@@ -1,4 +1,4 @@
-use crate::ics04_channel::error;
+use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -48,7 +48,7 @@ impl MsgChannelOpenConfirm {
 }
 
 impl Msg for MsgChannelOpenConfirm {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
     type Raw = RawMsgChannelOpenConfirm;
 
     fn route(&self) -> String {
@@ -63,7 +63,7 @@ impl Msg for MsgChannelOpenConfirm {
 impl Protobuf<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {}
 
 impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelOpenConfirm) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -73,17 +73,14 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(error::missing_height_error)?
+                .ok_or_else(Error::missing_height)?
                 .into(),
         )
-        .map_err(error::invalid_proof_error)?;
+        .map_err(Error::invalid_proof)?;
 
         Ok(MsgChannelOpenConfirm {
-            port_id: raw_msg.port_id.parse().map_err(error::identifier_error)?,
-            channel_id: raw_msg
-                .channel_id
-                .parse()
-                .map_err(error::identifier_error)?,
+            port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
+            channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             proofs,
             signer: raw_msg.signer.into(),
         })

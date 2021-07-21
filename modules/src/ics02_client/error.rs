@@ -200,10 +200,12 @@ define_error! {
     }
 }
 
-pub fn upgrade_verification_failed_error(e: Error) -> Error {
-    e.add_trace(&"upgrade verification failed")
-}
+impl Error {
+    pub fn upgrade_verification_failed(e: Error) -> Error {
+        e.add_trace(&"upgrade verification failed")
+    }
 
-pub fn invalid_raw_client_state(e: Error) -> Error {
-    e.add_trace(&"invalid raw client state")
+    pub fn invalid_raw_client_state(e: Error) -> Error {
+        e.add_trace(&"invalid raw client state")
+    }
 }

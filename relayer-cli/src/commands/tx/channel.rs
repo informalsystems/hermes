@@ -9,7 +9,7 @@ use ibc_relayer::channel::{Channel, ChannelSide};
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::prelude::*;
 
 macro_rules! tx_chan_cmd {
@@ -35,7 +35,7 @@ macro_rules! tx_chan_cmd {
 
         info!("Message {}: {:?}", $dbg_string, channel);
 
-        let res: Result<IbcEvent, Error> = channel.$func().map_err(error::channel_error);
+        let res: Result<IbcEvent, Error> = channel.$func().map_err(Error::channel);
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
@@ -107,7 +107,7 @@ impl Runnable for TxRawChanOpenInitCmd {
 
         let res: Result<IbcEvent, Error> = channel
             .build_chan_open_init_and_send()
-            .map_err(error::channel_error);
+            .map_err(Error::channel);
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
@@ -191,7 +191,7 @@ impl Runnable for TxRawChanOpenTryCmd {
 
         let res: Result<IbcEvent, Error> = channel
             .build_chan_open_try_and_send()
-            .map_err(error::channel_error);
+            .map_err(Error::channel);
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),

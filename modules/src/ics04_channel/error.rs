@@ -300,9 +300,6 @@ define_error! {
                     e.sequence)
             },
 
-        ChanOpenConfirmProofVerification
-            | _ | { "Handshake proof verification fails at ChannelOpenConfirm" },
-
         IncorrectPacketCommitment
             { sequence: Sequence }
             | e | {
@@ -317,6 +314,8 @@ define_error! {
     }
 }
 
-pub fn chan_open_configm_proof_verification_error(e: Error) -> Error {
-    e.add_trace(&"Handshake proof verification fails at ChannelOpenConfirm")
+impl Error {
+    pub fn chan_open_confirm_proof_verification(e: Error) -> Error {
+        e.add_trace(&"Handshake proof verification fails at ChannelOpenConfirm")
+    }
 }

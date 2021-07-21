@@ -1,5 +1,5 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
-use crate::events::{self, extract_attribute, maybe_extract_attribute, IbcEvent, RawObject};
+use crate::events::{extract_attribute, maybe_extract_attribute, Error, IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
@@ -67,7 +67,7 @@ pub struct Attributes {
     pub counterparty_client_id: ClientId,
 }
 
-fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, events::Error> {
+fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, Error> {
     Ok(Attributes {
         height: object.height,
 
@@ -76,7 +76,7 @@ fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes,
 
         client_id: extract_attribute(&object, &format!("{}.client_id", namespace))?
             .parse()
-            .map_err(events::parse_error)?,
+            .map_err(Error::parse)?,
 
         counterparty_connection_id: maybe_extract_attribute(
             &object,
@@ -89,7 +89,7 @@ fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes,
             &format!("{}.counterparty_client_id", namespace),
         )?
         .parse()
-        .map_err(events::parse_error)?,
+        .map_err(Error::parse)?,
     })
 }
 
@@ -130,7 +130,7 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-    type Error = events::Error;
+    type Error = Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(extract_attributes(&obj, "connection_open_init")?))
     }
@@ -167,7 +167,7 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = events::Error;
+    type Error = Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(extract_attributes(&obj, "connection_open_try")?))
     }
@@ -204,7 +204,7 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = events::Error;
+    type Error = Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(extract_attributes(&obj, "connection_open_ack")?))
     }
@@ -241,7 +241,7 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = events::Error;
+    type Error = Error;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(extract_attributes(
             &obj,

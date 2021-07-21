@@ -3,7 +3,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
-use crate::ics02_client::error::{self as client_error, Error};
+use crate::ics02_client::error::Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::packet::Sequence;
@@ -29,7 +29,7 @@ impl ClientDef for MockClient {
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
         if client_state.latest_height() >= header.height() {
-            return Err(client_error::low_header_height_error(
+            return Err(Error::low_header_height(
                 header.height(),
                 client_state.latest_height(),
             ));
@@ -54,8 +54,8 @@ impl ClientDef for MockClient {
         }
         .to_string();
 
-        let _path = apply_prefix(prefix, vec![client_prefixed_path])
-            .map_err(client_error::empty_prefix_error)?;
+        let _path =
+            apply_prefix(prefix, vec![client_prefixed_path]).map_err(Error::empty_prefix)?;
 
         // TODO - add ctx to all client verification functions
         // let cs = ctx.fetch_self_consensus_state(height);

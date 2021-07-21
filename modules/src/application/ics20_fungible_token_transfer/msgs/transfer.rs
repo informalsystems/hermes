@@ -6,7 +6,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::apps::transfer::v1::MsgTransfer as RawMsgTransfer;
 
-use crate::application::ics20_fungible_token_transfer::error;
+use crate::application::ics20_fungible_token_transfer::error::Error;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
@@ -39,7 +39,7 @@ pub struct MsgTransfer {
 }
 
 impl Msg for MsgTransfer {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
     type Raw = RawMsgTransfer;
 
     fn route(&self) -> String {
@@ -54,18 +54,16 @@ impl Msg for MsgTransfer {
 impl Protobuf<RawMsgTransfer> for MsgTransfer {}
 
 impl TryFrom<RawMsgTransfer> for MsgTransfer {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw_msg: RawMsgTransfer) -> Result<Self, Self::Error> {
-        let timeout_timestamp =
-            Timestamp::from_nanoseconds(raw_msg.timeout_timestamp).map_err(|_| {
-                error::invalid_packet_timeout_timestamp_error(raw_msg.timeout_timestamp)
-            })?;
+        let timeout_timestamp = Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
+            .map_err(|_| Error::invalid_packet_timeout_timestamp(raw_msg.timeout_timestamp))?;
 
         let timeout_height = match raw_msg.timeout_height.clone() {
             None => Height::zero(),
             Some(raw_height) => raw_height.try_into().map_err(|e| {
-                error::invalid_packet_timeout_height_error(format!("invalid timeout height {}", e))
+                Error::invalid_packet_timeout_height(format!("invalid timeout height {}", e))
             })?,
         };
 
@@ -73,11 +71,11 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             source_port: raw_msg
                 .source_port
                 .parse()
-                .map_err(|e| error::invalid_port_id_error(raw_msg.source_port.clone(), e))?,
+                .map_err(|e| Error::invalid_port_id(raw_msg.source_port.clone(), e))?,
             source_channel: raw_msg
                 .source_channel
                 .parse()
-                .map_err(|e| error::invalid_channel_id_error(raw_msg.source_channel.clone(), e))?,
+                .map_err(|e| Error::invalid_channel_id(raw_msg.source_channel.clone(), e))?,
             token: raw_msg.token,
             sender: raw_msg.sender.into(),
             receiver: raw_msg.receiver.into(),

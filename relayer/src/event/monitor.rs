@@ -145,7 +145,7 @@ impl EventMonitor {
         let ws_addr = node_addr.clone();
         let (client, driver) = rt
             .block_on(async move { WebSocketClient::new(ws_addr).await })
-            .map_err(client_creation_failed_error)?;
+            .map_err(Error::client_creation_failed)?;
 
         let (tx_err, rx_err) = mpsc::unbounded_channel();
         let websocket_driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
@@ -196,7 +196,7 @@ impl EventMonitor {
             let subscription = self
                 .rt
                 .block_on(self.client.subscribe(query.clone()))
-                .map_err(client_subscription_failed_error)?;
+                .map_err(Error::client_subscription_failed)?;
 
             subscriptions.push(subscription);
         }
@@ -218,7 +218,7 @@ impl EventMonitor {
         let (mut client, driver) = self
             .rt
             .block_on(WebSocketClient::new(self.node_addr.clone()))
-            .map_err(client_creation_failed_error)?;
+            .map_err(Error::client_creation_failed)?;
 
         let mut driver_handle = self.rt.spawn(run_driver(driver, self.tx_err.clone()));
 
@@ -239,7 +239,7 @@ impl EventMonitor {
 
         self.rt
             .block_on(driver_handle)
-            .map_err(client_termination_failed_error)?;
+            .map_err(Error::client_termination_failed)?;
 
         trace!(chain.id = %self.chain_id, "previous client successfully shutdown");
 
@@ -336,7 +336,7 @@ impl EventMonitor {
             let result = rt.block_on(async {
                 tokio::select! {
                     Some(batch) = batches.next() => Ok(batch),
-                    Some(e) = self.rx_err.recv() => Err(web_socket_driver_error(e)),
+                    Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
                 }
             });
 
@@ -367,7 +367,7 @@ impl EventMonitor {
     fn process_batch(&self, batch: EventBatch) -> Result<()> {
         self.tx_batch
             .send(Ok(batch))
-            .map_err(|_| channel_send_failed_error())?;
+            .map_err(|_| Error::channel_send_failed())?;
 
         Ok(())
     }

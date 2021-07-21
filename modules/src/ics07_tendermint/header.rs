@@ -12,7 +12,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
-use crate::ics07_tendermint::error;
+use crate::ics07_tendermint::error::Error;
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
 use std::cmp::Ordering;
@@ -86,39 +86,35 @@ impl crate::ics02_client::header::Header for Header {
 impl Protobuf<RawHeader> for Header {}
 
 impl TryFrom<RawHeader> for Header {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw: RawHeader) -> Result<Self, Self::Error> {
         Ok(Self {
             signed_header: raw
                 .signed_header
-                .ok_or_else(error::missing_signed_header_error)?
+                .ok_or_else(Error::missing_signed_header)?
                 .try_into()
-                .map_err(|e| {
-                    error::invalid_header_error("signed header conversion".to_string(), e)
-                })?,
+                .map_err(|e| Error::invalid_header("signed header conversion".to_string(), e))?,
             validator_set: raw
                 .validator_set
-                .ok_or_else(error::missing_validator_set_error)?
+                .ok_or_else(Error::missing_validator_set)?
                 .try_into()
-                .map_err(error::invalid_raw_header_error)?,
+                .map_err(Error::invalid_raw_header)?,
             trusted_height: raw
                 .trusted_height
-                .ok_or_else(error::missing_trusted_height_error)?
+                .ok_or_else(Error::missing_trusted_height)?
                 .into(),
             trusted_validator_set: raw
                 .trusted_validators
-                .ok_or_else(error::missing_trusted_validator_set_error)?
+                .ok_or_else(Error::missing_trusted_validator_set)?
                 .try_into()
-                .map_err(error::invalid_raw_header_error)?,
+                .map_err(Error::invalid_raw_header)?,
         })
     }
 }
 
-pub fn decode_header<B: Buf>(buf: B) -> Result<Header, error::Error> {
-    RawHeader::decode(buf)
-        .map_err(error::decode_error)?
-        .try_into()
+pub fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
+    RawHeader::decode(buf).map_err(Error::decode)?.try_into()
 }
 
 impl From<Header> for RawHeader {

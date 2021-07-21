@@ -12,7 +12,7 @@ use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error;
+use crate::ics02_client::error::Error;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
@@ -61,7 +61,7 @@ impl From<MockClientState> for AnyClientState {
 }
 
 impl TryFrom<RawMockClientState> for MockClientState {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw: RawMockClientState) -> Result<Self, Self::Error> {
         Ok(MockClientState(raw.header.unwrap().try_into()?))
@@ -120,12 +120,10 @@ impl MockConsensusState {
 impl Protobuf<RawMockConsensusState> for MockConsensusState {}
 
 impl TryFrom<RawMockConsensusState> for MockConsensusState {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
-        let raw_header = raw
-            .header
-            .ok_or_else(error::missing_raw_consensus_state_error)?;
+        let raw_header = raw.header.ok_or_else(Error::missing_raw_consensus_state)?;
 
         Ok(Self(MockHeader::try_from(raw_header)?))
     }

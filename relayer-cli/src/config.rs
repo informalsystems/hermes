@@ -62,7 +62,7 @@ pub fn validate_config(config: &Config) -> Result<(), Error> {
     let mut unique_chain_ids = BTreeSet::new();
     for c in config.chains.iter() {
         if !unique_chain_ids.insert(c.id.clone()) {
-            return Err(duplicate_chains_error(c.id.clone()));
+            return Err(Error::duplicate_chains(c.id.clone()));
         }
 
         validate_trust_threshold(&c.id, c.trust_threshold)?;
@@ -78,7 +78,7 @@ pub fn validate_config(config: &Config) -> Result<(), Error> {
 /// c) strictly less than 1
 fn validate_trust_threshold(id: &ChainId, trust_threshold: TrustThreshold) -> Result<(), Error> {
     if trust_threshold.denominator == 0 {
-        return Err(invalid_trust_threshold_error(
+        return Err(Error::invalid_trust_threshold(
             trust_threshold,
             id.clone(),
             "trust threshold denominator cannot be zero".to_string(),
@@ -86,7 +86,7 @@ fn validate_trust_threshold(id: &ChainId, trust_threshold: TrustThreshold) -> Re
     }
 
     if trust_threshold.numerator * 3 < trust_threshold.denominator {
-        return Err(invalid_trust_threshold_error(
+        return Err(Error::invalid_trust_threshold(
             trust_threshold,
             id.clone(),
             "trust threshold cannot be < 1/3".to_string(),
@@ -94,7 +94,7 @@ fn validate_trust_threshold(id: &ChainId, trust_threshold: TrustThreshold) -> Re
     }
 
     if trust_threshold.numerator >= trust_threshold.denominator {
-        return Err(invalid_trust_threshold_error(
+        return Err(Error::invalid_trust_threshold(
             trust_threshold,
             id.clone(),
             "trust threshold cannot be >= 1".to_string(),

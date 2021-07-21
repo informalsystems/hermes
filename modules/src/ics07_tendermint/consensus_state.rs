@@ -12,7 +12,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensus
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::error;
+use crate::ics07_tendermint::error::Error;
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 
@@ -56,18 +56,18 @@ impl crate::ics02_client::client_consensus::ConsensusState for ConsensusState {
 impl Protobuf<RawConsensusState> for ConsensusState {}
 
 impl TryFrom<RawConsensusState> for ConsensusState {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
         let proto_timestamp = raw
             .timestamp
-            .ok_or_else(|| error::invalid_raw_consensus_state_error("missing timestamp".into()))?;
+            .ok_or_else(|| Error::invalid_raw_consensus_state("missing timestamp".into()))?;
 
         Ok(Self {
             root: raw
                 .root
                 .ok_or_else(|| {
-                    error::invalid_raw_consensus_state_error("missing commitment root".into())
+                    Error::invalid_raw_consensus_state("missing commitment root".into())
                 })?
                 .hash
                 .into(),
@@ -75,7 +75,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
                 .timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32)
                 .into(),
             next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
-                .map_err(|e| error::invalid_raw_consensus_state_error(e.to_string()))?,
+                .map_err(|e| Error::invalid_raw_consensus_state(e.to_string()))?,
         })
     }
 }

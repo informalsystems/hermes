@@ -38,11 +38,11 @@ impl Proofs {
         height: Height,
     ) -> Result<Self, ProofError> {
         if height.is_zero() {
-            return Err(zero_height_error());
+            return Err(ProofError::zero_height());
         }
 
         if object_proof.is_empty() {
-            return Err(empty_proof_error());
+            return Err(ProofError::empty_proof());
         }
 
         Ok(Self {
@@ -89,10 +89,10 @@ impl ConsensusProof {
         consensus_height: Height,
     ) -> Result<Self, ProofError> {
         if consensus_height.is_zero() {
-            return Err(zero_height_error());
+            return Err(ProofError::zero_height());
         }
         if consensus_proof.is_empty() {
-            return Err(empty_proof_error());
+            return Err(ProofError::empty_proof());
         }
 
         Ok(Self {

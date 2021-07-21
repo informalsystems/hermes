@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::time::Instant;
 use std::{fmt, thread};
 
-use flex_error::ErrorReport;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace};
@@ -31,10 +30,10 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 
 use crate::chain::handle::ChainHandle;
-use crate::channel::error as channel_error;
+use crate::channel::error::ChannelError;
 use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
-use crate::foreign_client::{self, ForeignClient};
+use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
 use crate::link::relay_summary::RelaySummary;
@@ -103,13 +102,13 @@ impl RelayPath {
     pub fn src_channel_id(&self) -> Result<&ChannelId, LinkError> {
         self.channel
             .src_channel_id()
-            .ok_or_else(|| error::missing_channel_id_error(self.src_chain().id()))
+            .ok_or_else(|| LinkError::missing_channel_id(self.src_chain().id()))
     }
 
     pub fn dst_channel_id(&self) -> Result<&ChannelId, LinkError> {
         self.channel
             .dst_channel_id()
-            .ok_or_else(|| error::missing_channel_id_error(self.dst_chain().id()))
+            .ok_or_else(|| LinkError::missing_channel_id(self.dst_chain().id()))
     }
 
     pub fn channel(&self) -> &Channel {
@@ -119,31 +118,31 @@ impl RelayPath {
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id()?, height)
-            .map_err(|e| error::channel_error(channel_error::query_error(self.src_chain().id(), e)))
+            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.dst_chain()
             .query_channel(self.dst_port_id(), self.dst_channel_id()?, height)
-            .map_err(|e| error::channel_error(channel_error::query_error(self.src_chain().id(), e)))
+            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn src_signer(&self) -> Result<Signer, LinkError> {
         self.src_chain()
             .get_signer()
-            .map_err(|e| error::signer_error(self.src_chain().id(), e))
+            .map_err(|e| LinkError::signer(self.src_chain().id(), e))
     }
 
     fn dst_signer(&self) -> Result<Signer, LinkError> {
         self.dst_chain()
             .get_signer()
-            .map_err(|e| error::signer_error(self.dst_chain().id(), e))
+            .map_err(|e| LinkError::signer(self.dst_chain().id(), e))
     }
 
     pub fn dst_latest_height(&self) -> Result<Height, LinkError> {
         self.dst_chain()
             .query_latest_height()
-            .map_err(|e| error::query_error(self.dst_chain().id(), e))
+            .map_err(|e| LinkError::query(self.dst_chain().id(), e))
     }
 
     fn unordered_channel(&self) -> bool {
@@ -158,14 +157,14 @@ impl RelayPath {
         let client = self.restore_dst_client();
         client
             .build_update_client(height)
-            .map_err(error::client_error)
+            .map_err(LinkError::client)
     }
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = self.restore_src_client();
         client
             .build_update_client(height)
-            .map_err(error::client_error)
+            .map_err(LinkError::client)
     }
 
     fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
@@ -173,7 +172,7 @@ impl RelayPath {
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
-            .map_err(|e| error::channel_error(channel_error::channel_proof_error(e)))?;
+            .map_err(|e| LinkError::channel(ChannelError::channel_proof(e)))?;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
@@ -243,7 +242,7 @@ impl RelayPath {
                 return Ok(());
             }
         }
-        Err(error::old_packet_clearing_failed_error())
+        Err(LinkError::old_packet_clearing_failed())
     }
 
     /// Clears any packets that were sent before `height`, either if the `clear_packets` flag
@@ -265,7 +264,7 @@ impl RelayPath {
 
             let clear_height = height
                 .decrement()
-                .map_err(|e| error::decrement_height_error(height, e))?;
+                .map_err(|e| LinkError::decrement_height(height, e))?;
 
             self.relay_pending_packets(clear_height)?;
 
@@ -461,7 +460,7 @@ impl RelayPath {
 
                     return Ok(summary);
                 }
-                Err(ErrorReport(error::LinkErrorDetail::Send(e), _)) => {
+                Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
                     // This error means we could retry
                     error!("[{}] error {}", self, e.event);
                     if i + 1 == MAX_RETRIES {
@@ -586,7 +585,7 @@ impl RelayPath {
 
         let msgs = odata.assemble_msgs(self)?;
 
-        let tx_events = target.send_msgs(msgs).map_err(error::relayer_error)?;
+        let tx_events = target.send_msgs(msgs).map_err(LinkError::relayer)?;
         info!("[{}] result {}\n", self, PrettyEvents(&tx_events));
 
         let ev = tx_events
@@ -595,7 +594,7 @@ impl RelayPath {
             .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
         match ev {
-            Some(ev) => Err(error::send_error(ev)),
+            Some(ev) => Err(LinkError::send(ev)),
             None => Ok(RelaySummary::from_events(tx_events)),
         }
     }
@@ -609,7 +608,7 @@ impl RelayPath {
                 channel_id: self.dst_channel_id()?.to_string(),
                 packet_commitment_sequences: vec![packet.sequence.into()],
             })
-            .map_err(error::relayer_error)?;
+            .map_err(LinkError::relayer)?;
 
         Ok(unreceived_packet.is_empty())
     }
@@ -626,7 +625,7 @@ impl RelayPath {
                 packet.sequence,
                 Height::zero(),
             )
-            .map_err(error::relayer_error)?;
+            .map_err(LinkError::relayer)?;
 
         Ok(bytes.is_empty())
     }
@@ -648,7 +647,7 @@ impl RelayPath {
                 channel_id: self.dst_channel_id()?.to_string(),
                 packet_ack_sequences: vec![packet.sequence.into()],
             })
-            .map_err(error::relayer_error)?;
+            .map_err(LinkError::relayer)?;
 
         Ok(unreceived_ack.is_empty())
     }
@@ -690,7 +689,7 @@ impl RelayPath {
             let dst_tx_events = self
                 .dst_chain()
                 .send_msgs(dst_update)
-                .map_err(error::relayer_error)?;
+                .map_err(LinkError::relayer)?;
             info!("[{}] result {}\n", self, PrettyEvents(&dst_tx_events));
 
             dst_err_ev = dst_tx_events
@@ -702,9 +701,10 @@ impl RelayPath {
             }
         }
 
-        Err(error::client_error(
-            foreign_client::chain_error_event_error(self.dst_chain().id(), dst_err_ev.unwrap()),
-        ))
+        Err(LinkError::client(ForeignClientError::chain_error_event(
+            self.dst_chain().id(),
+            dst_err_ev.unwrap(),
+        )))
     }
 
     /// Handles updating the client on the source chain
@@ -730,7 +730,7 @@ impl RelayPath {
             let src_tx_events = self
                 .src_chain()
                 .send_msgs(src_update)
-                .map_err(error::relayer_error)?;
+                .map_err(LinkError::relayer)?;
             info!("[{}] result {}\n", self, PrettyEvents(&src_tx_events));
 
             src_err_ev = src_tx_events
@@ -742,9 +742,10 @@ impl RelayPath {
             }
         }
 
-        Err(error::client_error(
-            foreign_client::chain_error_event_error(self.src_chain().id(), src_err_ev.unwrap()),
-        ))
+        Err(LinkError::client(ForeignClientError::chain_error_event(
+            self.src_chain().id(),
+            src_err_ev.unwrap(),
+        )))
     }
 
     /// Returns relevant packet events for building RecvPacket and timeout messages.
@@ -766,7 +767,7 @@ impl RelayPath {
         let (packet_commitments, src_response_height) = self
             .src_chain()
             .query_packet_commitments(pc_request)
-            .map_err(error::relayer_error)?;
+            .map_err(LinkError::relayer)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -785,7 +786,7 @@ impl RelayPath {
         let sequences: Vec<Sequence> = self
             .dst_chain()
             .query_unreceived_packets(request)
-            .map_err(error::relayer_error)?
+            .map_err(LinkError::relayer)?
             .into_iter()
             .map(From::from)
             .collect();
@@ -823,7 +824,7 @@ impl RelayPath {
         events_result = self
             .src_chain()
             .query_txs(query)
-            .map_err(error::relayer_error)?;
+            .map_err(LinkError::relayer)?;
 
         let mut packet_sequences = vec![];
         for event in events_result.iter() {
@@ -835,7 +836,7 @@ impl RelayPath {
                         break;
                     }
                 }
-                _ => return Err(error::unexpected_event_error(event.clone())),
+                _ => return Err(LinkError::unexpected_event(event.clone())),
             }
         }
         info!(
@@ -868,7 +869,7 @@ impl RelayPath {
         let (acks_on_source, src_response_height) = self
             .src_chain()
             .query_packet_acknowledgements(pc_request)
-            .map_err(|e| error::query_error(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -888,7 +889,7 @@ impl RelayPath {
         let sequences: Vec<Sequence> = self
             .dst_chain()
             .query_unreceived_acknowledgement(request)
-            .map_err(|e| error::query_error(self.dst_chain().id(), e))?
+            .map_err(|e| LinkError::query(self.dst_chain().id(), e))?
             .into_iter()
             .map(From::from)
             .collect();
@@ -925,7 +926,7 @@ impl RelayPath {
                 sequences,
                 height: query_height,
             }))
-            .map_err(|e| error::query_error(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
 
         let mut packet_sequences = vec![];
         for event in events_result.iter() {
@@ -938,7 +939,7 @@ impl RelayPath {
                     }
                 }
                 _ => {
-                    return Err(error::unexpected_event_error(event.clone()));
+                    return Err(LinkError::unexpected_event(event.clone()));
                 }
             }
         }
@@ -1008,7 +1009,7 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| error::packet_proofs_constructor_error(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::packet_proofs_constructor(self.src_chain().id(), e))?;
 
         let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?);
 
@@ -1037,7 +1038,7 @@ impl RelayPath {
                 packet.sequence,
                 event.height,
             )
-            .map_err(|e| error::packet_proofs_constructor_error(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::packet_proofs_constructor(self.src_chain().id(), e))?;
 
         let msg = MsgAcknowledgement::new(
             packet,
@@ -1070,7 +1071,7 @@ impl RelayPath {
                     port_id: self.dst_port_id().to_string(),
                     channel_id: dst_channel_id.to_string(),
                 })
-                .map_err(|e| error::query_error(self.dst_chain().id(), e))?;
+                .map_err(|e| LinkError::query(self.dst_chain().id(), e))?;
             (PacketMsgType::TimeoutOrdered, next_seq)
         } else {
             (PacketMsgType::TimeoutUnordered, packet.sequence)
@@ -1085,7 +1086,7 @@ impl RelayPath {
                 next_sequence_received,
                 height,
             )
-            .map_err(|e| error::packet_proofs_constructor_error(self.dst_chain().id(), e))?;
+            .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
         let msg = MsgTimeout::new(
             packet.clone(),
@@ -1118,7 +1119,7 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| error::packet_proofs_constructor_error(self.dst_chain().id(), e))?;
+            .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),

@@ -11,7 +11,7 @@ use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 
 use crate::events::IbcEventType;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error;
+use crate::ics02_client::error::Error;
 use crate::ics02_client::height::Height;
 use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
@@ -77,24 +77,24 @@ impl AnyConsensusState {
 impl Protobuf<Any> for AnyConsensusState {}
 
 impl TryFrom<Any> for AnyConsensusState {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
-            "" => Err(error::empty_consensus_state_response_error()),
+            "" => Err(Error::empty_consensus_state_response()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
                 consensus_state::ConsensusState::decode_vec(&value.value)
-                    .map_err(error::decode_raw_client_state_error)?,
+                    .map_err(Error::decode_raw_client_state)?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
                 MockConsensusState::decode_vec(&value.value)
-                    .map_err(error::decode_raw_client_state_error)?,
+                    .map_err(Error::decode_raw_client_state)?,
             )),
 
-            _ => Err(error::unknown_consensus_state_type_error(value.type_url)),
+            _ => Err(Error::unknown_consensus_state_type(value.type_url)),
         }
     }
 }
@@ -128,17 +128,17 @@ pub struct AnyConsensusStateWithHeight {
 impl Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {}
 
 impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(value: ConsensusStateWithHeight) -> Result<Self, Self::Error> {
         let state = value
             .consensus_state
             .map(AnyConsensusState::try_from)
             .transpose()?
-            .ok_or_else(error::empty_consensus_state_response_error)?;
+            .ok_or_else(Error::empty_consensus_state_response)?;
 
         Ok(AnyConsensusStateWithHeight {
-            height: value.height.ok_or_else(error::missing_height_error)?.into(),
+            height: value.height.ok_or_else(Error::missing_height)?.into(),
             consensus_state: state,
         })
     }

@@ -7,7 +7,7 @@ use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics04_channel::handler::channel_dispatch as ics4_msg_dispatcher;
 use crate::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
 use crate::ics26_routing::context::Ics26Context;
-use crate::ics26_routing::error::{self, Error};
+use crate::ics26_routing::error::Error;
 use crate::ics26_routing::msgs::Ics26Envelope::{
     self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
 };
@@ -55,12 +55,11 @@ where
 {
     let output = match msg {
         Ics2Msg(msg) => {
-            let handler_output =
-                ics2_msg_dispatcher(ctx, msg).map_err(error::ics02_client_error)?;
+            let handler_output = ics2_msg_dispatcher(ctx, msg).map_err(Error::ics02_client)?;
 
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
-                .map_err(error::ics02_client_error)?;
+                .map_err(Error::ics02_client)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -69,12 +68,11 @@ where
         }
 
         Ics3Msg(msg) => {
-            let handler_output =
-                ics3_msg_dispatcher(ctx, msg).map_err(error::ics03_connection_error)?;
+            let handler_output = ics3_msg_dispatcher(ctx, msg).map_err(Error::ics03_connection)?;
 
             // Apply any results to the host chain store.
             ctx.store_connection_result(handler_output.result)
-                .map_err(error::ics03_connection_error)?;
+                .map_err(Error::ics03_connection)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -83,12 +81,11 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let handler_output =
-                ics4_msg_dispatcher(ctx, msg).map_err(error::ics04_channel_error)?;
+            let handler_output = ics4_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(handler_output.result)
-                .map_err(error::ics04_channel_error)?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -97,12 +94,12 @@ where
         }
 
         Ics20Msg(msg) => {
-            let handler_output = ics20_msg_dispatcher(ctx, msg)
-                .map_err(error::ics20_fungible_token_transfer_error)?;
+            let handler_output =
+                ics20_msg_dispatcher(ctx, msg).map_err(Error::ics20_fungible_token_transfer)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
-                .map_err(error::ics04_channel_error)?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -112,11 +109,11 @@ where
 
         Ics4PacketMsg(msg) => {
             let handler_output =
-                ics04_packet_msg_dispatcher(ctx, msg).map_err(error::ics04_channel_error)?;
+                ics04_packet_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
-                .map_err(error::ics04_channel_error)?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)

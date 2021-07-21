@@ -10,7 +10,7 @@ use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::{Chain, CosmosSdkChain};
 
 use crate::conclude::Output;
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::prelude::*;
 
 /// Query clients command
@@ -64,7 +64,7 @@ impl Runnable for QueryAllClientsCmd {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let res: Result<_, Error> = chain.query_clients(req).map_err(error::relayer_error);
+        let res: Result<_, Error> = chain.query_clients(req).map_err(Error::relayer);
 
         match res {
             Ok(clients) => {

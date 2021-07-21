@@ -2,7 +2,7 @@ use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics02_client::msgs::ClientMsg;
 use crate::ics18_relayer::context::Ics18Context;
-use crate::ics18_relayer::error::{self, Error};
+use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
 
 /// Builds a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
@@ -19,12 +19,12 @@ where
     // - query client state on destination chain
     let dest_client_state = dest
         .query_client_full_state(client_id)
-        .ok_or_else(|| error::client_state_not_found_error(client_id.clone()))?;
+        .ok_or_else(|| Error::client_state_not_found(client_id.clone()))?;
 
     let dest_client_latest_height = dest_client_state.latest_height();
 
     if src_header.height() == dest_client_latest_height {
-        return Err(error::client_already_up_to_date_error(
+        return Err(Error::client_already_up_to_date(
             client_id.clone(),
             src_header.height(),
             dest_client_latest_height,
@@ -32,7 +32,7 @@ where
     };
 
     if dest_client_latest_height > src_header.height() {
-        return Err(error::client_at_higher_height_error(
+        return Err(Error::client_at_higher_height(
             client_id.clone(),
             src_header.height(),
             dest_client_latest_height,

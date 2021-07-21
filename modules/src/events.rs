@@ -5,7 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::ics02_client::error as client_error;
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
-use crate::ics02_client::height::Error as HeightError;
+use crate::ics02_client::height::HeightError;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics03_connection::events::Attributes as ConnectionAttributes;
 use crate::ics04_channel::error as channel_error;
@@ -288,16 +288,16 @@ pub fn extract_events<S: ::std::hash::BuildHasher>(
         if message_action.contains(&action_string.to_owned()) {
             return Ok(());
         }
-        return Err(missing_action_string_error());
+        return Err(Error::missing_action_string());
     }
-    Err(incorrect_event_type_error())
+    Err(Error::incorrect_event_type())
 }
 
 pub fn extract_attribute(object: &RawObject, key: &str) -> Result<String, Error> {
     let value = object
         .events
         .get(key)
-        .ok_or_else(|| missing_key_error(key.to_string()))?[object.idx]
+        .ok_or_else(|| Error::missing_key(key.to_string()))?[object.idx]
         .clone();
 
     Ok(value)

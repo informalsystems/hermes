@@ -12,7 +12,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState
 
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::error;
+use crate::ics07_tendermint::error::Error;
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::specs::ProofSpecs;
 use crate::ics24_host::identifier::ChainId;
@@ -53,33 +53,33 @@ impl ClientState {
         frozen_height: Height,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
-    ) -> Result<ClientState, error::Error> {
+    ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
-            return Err(error::invalid_trusting_period_error(
+            return Err(Error::invalid_trusting_period(
                 "ClientState trusting period must be greater than zero".to_string(),
             ));
         }
         if unbonding_period <= Duration::new(0, 0) {
-            return Err(error::invalid_unbounding_period_error(
+            return Err(Error::invalid_unbounding_period(
                 "ClientState unbonding period must be greater than zero".to_string(),
             ));
         }
         if trusting_period >= unbonding_period {
-            return Err(error::invalid_unbounding_period_error(
+            return Err(Error::invalid_unbounding_period(
                 "ClientState trusting period must be smaller than unbonding period".to_string(),
             ));
         }
 
         // Basic validation for the frozen_height parameter.
         if !frozen_height.is_zero() {
-            return Err(error::validation_error(
+            return Err(Error::validation(
                 "ClientState cannot be frozen at creation time".to_string(),
             ));
         }
         // Basic validation for the latest_height parameter.
         if latest_height <= Height::zero() {
-            return Err(error::validation_error(
+            return Err(Error::validation(
                 "ClientState latest height cannot be smaller or equal than zero".to_string(),
             ));
         }
@@ -162,43 +162,43 @@ impl crate::ics02_client::client_state::ClientState for ClientState {
 }
 
 impl TryFrom<RawClientState> for ClientState {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
         let trust_level = raw
             .trust_level
             .clone()
-            .ok_or_else(error::missing_trusting_period_error)?;
+            .ok_or_else(Error::missing_trusting_period)?;
 
         Ok(Self {
             chain_id: ChainId::from_str(raw.chain_id.as_str())
-                .map_err(error::invalid_chain_identifier_error)?,
+                .map_err(Error::invalid_chain_identifier)?,
             trust_level: TrustThreshold {
                 numerator: trust_level.numerator,
                 denominator: trust_level.denominator,
             },
             trusting_period: raw
                 .trusting_period
-                .ok_or_else(error::missing_trusting_period_error)?
+                .ok_or_else(Error::missing_trusting_period)?
                 .try_into()
-                .map_err(|_| error::negative_trusting_period_error())?,
+                .map_err(|_| Error::negative_trusting_period())?,
             unbonding_period: raw
                 .unbonding_period
-                .ok_or_else(error::missing_unbonding_period_error)?
+                .ok_or_else(Error::missing_unbonding_period)?
                 .try_into()
-                .map_err(|_| error::negative_unbonding_period_error())?,
+                .map_err(|_| Error::negative_unbonding_period())?,
             max_clock_drift: raw
                 .max_clock_drift
-                .ok_or_else(error::missing_max_clock_drift_error)?
+                .ok_or_else(Error::missing_max_clock_drift)?
                 .try_into()
-                .map_err(|_| error::negative_max_clock_drift_error())?,
+                .map_err(|_| Error::negative_max_clock_drift())?,
             latest_height: raw
                 .latest_height
-                .ok_or_else(error::missing_latest_height_error)?
+                .ok_or_else(Error::missing_latest_height)?
                 .into(),
             frozen_height: raw
                 .frozen_height
-                .ok_or_else(error::missing_frozen_height_error)?
+                .ok_or_else(Error::missing_frozen_height)?
                 .into(),
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {

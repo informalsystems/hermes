@@ -114,35 +114,35 @@ define_error! {
 // ibc-go/modules/core/02-client/types/errors.go
 fn client_error_from_code(code: u32) -> ClientError {
     match code {
-        2 => light_client_already_exists_error(),
-        3 => invalid_light_client_error(),
-        4 => light_client_not_found_error(),
-        5 => frozen_light_client_error(),
-        6 => invalid_client_metadata_error(),
-        7 => consensus_state_not_found_error(),
-        8 => invalid_consensus_state_error(),
-        9 => client_type_not_found_error(),
-        10 => invalid_client_type_error(),
-        11 => commitment_root_not_found_error(),
-        12 => invalid_client_header_error(),
-        13 => invalid_light_client_misbehavior_error(),
-        14 => client_state_verification_failed_error(),
-        15 => client_consensus_state_verification_failed_error(),
-        16 => connection_state_verification_failed_error(),
-        17 => client_state_verification_failed_error(),
-        18 => packet_commitment_verification_failed_error(),
-        19 => packet_acknowledgement_verification_failed_error(),
-        20 => packet_receipt_verification_failed_error(),
-        21 => next_sequence_receive_verification_failed_error(),
-        22 => self_consensus_state_not_found_error(),
-        23 => update_light_client_failed_error(),
-        24 => invalid_update_client_proposal_error(),
-        25 => invalid_client_upgrade_error(),
-        26 => invalid_height_error(),
-        27 => invalid_client_state_substitute_error(),
-        28 => invalid_upgrade_proposal_error(),
-        29 => inactive_client_error(),
-        _ => unknown_client_error(code),
+        2 => ClientError::light_client_already_exists(),
+        3 => ClientError::invalid_light_client(),
+        4 => ClientError::light_client_not_found(),
+        5 => ClientError::frozen_light_client(),
+        6 => ClientError::invalid_client_metadata(),
+        7 => ClientError::consensus_state_not_found(),
+        8 => ClientError::invalid_consensus_state(),
+        9 => ClientError::client_type_not_found(),
+        10 => ClientError::invalid_client_type(),
+        11 => ClientError::commitment_root_not_found(),
+        12 => ClientError::invalid_client_header(),
+        13 => ClientError::invalid_light_client_misbehavior(),
+        14 => ClientError::client_state_verification_failed(),
+        15 => ClientError::client_consensus_state_verification_failed(),
+        16 => ClientError::connection_state_verification_failed(),
+        17 => ClientError::client_state_verification_failed(),
+        18 => ClientError::packet_commitment_verification_failed(),
+        19 => ClientError::packet_acknowledgement_verification_failed(),
+        20 => ClientError::packet_receipt_verification_failed(),
+        21 => ClientError::next_sequence_receive_verification_failed(),
+        22 => ClientError::self_consensus_state_not_found(),
+        23 => ClientError::update_light_client_failed(),
+        24 => ClientError::invalid_update_client_proposal(),
+        25 => ClientError::invalid_client_upgrade(),
+        26 => ClientError::invalid_height(),
+        27 => ClientError::invalid_client_state_substitute(),
+        28 => ClientError::invalid_upgrade_proposal(),
+        29 => ClientError::inactive_client(),
+        _ => ClientError::unknown_client(code),
     }
 }
 
@@ -154,14 +154,14 @@ fn client_error_from_code(code: u32) -> ClientError {
 // the errors.go source code directly
 pub fn sdk_error_from_tx_result(result: &TxResult) -> SdkError {
     match result.code {
-        Code::Ok => unexpected_ok_error(),
+        Code::Ok => SdkError::unexpected_ok(),
         Code::Err(code) => {
             let codespace = result.codespace.to_string();
             if codespace == "client" {
-                client_error(client_error_from_code(code))
+                SdkError::client(client_error_from_code(code))
             } else {
                 // TODO: Implement mapping for other codespaces in ibc-go
-                unknown_sdk_error(code)
+                SdkError::unknown_sdk(code)
             }
         }
     }

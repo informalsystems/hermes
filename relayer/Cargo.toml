@@ -13,6 +13,8 @@ description = """
 """
 
 [features]
+default = ["std"]
+std = []
 profiling = []
 telemetry = ["ibc-telemetry"]
 

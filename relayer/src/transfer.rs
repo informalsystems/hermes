@@ -73,14 +73,14 @@ pub fn build_and_send_transfer_messages(
         None => packet_dst_chain.get_signer(),
         Some(r) => Ok(r.clone().into()),
     }
-    .map_err(key_error)?;
+    .map_err(PacketError::key)?;
 
-    let sender = packet_src_chain.get_signer().map_err(key_error)?;
+    let sender = packet_src_chain.get_signer().map_err(PacketError::key)?;
 
     let timeout_timestamp = if opts.timeout_seconds == Duration::from_secs(0) {
         Timestamp::none()
     } else {
-        (Timestamp::now() + opts.timeout_seconds).map_err(timestamp_overflow_error)?
+        (Timestamp::now() + opts.timeout_seconds).map_err(PacketError::timestamp_overflow)?
     };
 
     let timeout_height = if opts.timeout_height_offset == 0 {
@@ -88,7 +88,7 @@ pub fn build_and_send_transfer_messages(
     } else {
         packet_dst_chain
             .query_latest_height()
-            .map_err(relayer_error)?
+            .map_err(PacketError::relayer)?
             .add(opts.timeout_height_offset)
     };
 
@@ -110,7 +110,7 @@ pub fn build_and_send_transfer_messages(
 
     let events = packet_src_chain
         .send_msgs(msgs)
-        .map_err(|e| submit_error(packet_src_chain.id(), e))?;
+        .map_err(|e| PacketError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events
@@ -121,7 +121,7 @@ pub fn build_and_send_transfer_messages(
         None => Ok(events),
         Some(err) => {
             if let IbcEvent::ChainError(err) = err {
-                Err(tx_response_error(err.clone()))
+                Err(PacketError::tx_response(err.clone()))
             } else {
                 panic!(
                     "internal error, expected IBCEvent::ChainError, got {:?}",

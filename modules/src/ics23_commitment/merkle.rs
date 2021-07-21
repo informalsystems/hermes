@@ -4,7 +4,7 @@ use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use crate::ics23_commitment::error;
+use crate::ics23_commitment::error::Error;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct EmptyPrefixError;
@@ -80,13 +80,13 @@ pub struct MerkleProof {
 //     }
 // }
 
-pub fn convert_tm_to_ics_merkle_proof(tm_proof: &Proof) -> Result<RawMerkleProof, error::Error> {
+pub fn convert_tm_to_ics_merkle_proof(tm_proof: &Proof) -> Result<RawMerkleProof, Error> {
     let mut proofs = vec![];
 
     for op in &tm_proof.ops {
         let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
         prost::Message::merge(&mut parsed, op.data.as_slice())
-            .map_err(error::commitment_proof_decoding_failed_error)?;
+            .map_err(Error::commitment_proof_decoding_failed)?;
 
         proofs.push(parsed);
     }

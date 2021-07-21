@@ -35,7 +35,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::connection::ConnectionMsgType;
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::event::monitor::TxMonitorCmd;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
@@ -313,19 +313,19 @@ pub trait Chain: Sized {
                 if !connection_end.state_matches(&State::Init)
                     && !connection_end.state_matches(&State::TryOpen)
                 {
-                    return Err(error::bad_connection_state_error());
+                    return Err(Error::bad_connection_state());
                 }
             }
             ConnectionMsgType::OpenAck => {
                 if !connection_end.state_matches(&State::TryOpen)
                     && !connection_end.state_matches(&State::Open)
                 {
-                    return Err(error::bad_connection_state_error());
+                    return Err(Error::bad_connection_state());
                 }
             }
             ConnectionMsgType::OpenConfirm => {
                 if !connection_end.state_matches(&State::Open) {
-                    return Err(error::bad_connection_state_error());
+                    return Err(Error::bad_connection_state());
                 }
             }
         }
@@ -350,7 +350,7 @@ pub trait Chain: Sized {
                         CommitmentProofBytes::from(consensus_state_proof),
                         client_state_value.latest_height(),
                     )
-                    .map_err(error::consensus_proof_error)?,
+                    .map_err(Error::consensus_proof)?,
                 );
 
                 client_state = Some(client_state_value);
@@ -367,7 +367,7 @@ pub trait Chain: Sized {
                 None,
                 height.increment(),
             )
-            .map_err(error::malformed_proof_error)?,
+            .map_err(Error::malformed_proof)?,
         ))
     }
 
@@ -383,7 +383,7 @@ pub trait Chain: Sized {
             CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, height)?.1);
 
         Proofs::new(channel_proof, None, None, None, height.increment())
-            .map_err(error::malformed_proof_error)
+            .map_err(Error::malformed_proof)
     }
 
     /// Builds the proof for packet messages.
@@ -413,7 +413,7 @@ pub trait Chain: Sized {
             channel_proof,
             height.increment(),
         )
-        .map_err(error::malformed_proof_error)?;
+        .map_err(Error::malformed_proof)?;
 
         Ok((bytes, proofs))
     }

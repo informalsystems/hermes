@@ -10,7 +10,7 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnecti
 
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::Counterparty;
-use crate::ics03_connection::error;
+use crate::ics03_connection::error::Error;
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -78,7 +78,7 @@ impl MsgConnectionOpenTry {
 }
 
 impl Msg for MsgConnectionOpenTry {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
     type Raw = RawMsgConnectionOpenTry;
 
     fn route(&self) -> String {
@@ -93,26 +93,26 @@ impl Msg for MsgConnectionOpenTry {
 impl Protobuf<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {}
 
 impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
         let previous_connection_id = Some(msg.previous_connection_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(error::invalid_identifier_error)?;
+            .map_err(Error::invalid_identifier)?;
 
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(error::missing_consensus_height_error)?
+            .ok_or_else(Error::missing_consensus_height)?
             .into();
 
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
-            .map_err(error::invalid_proof_error)?;
+            .map_err(Error::invalid_proof)?;
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(error::missing_proof_height_error)?
+            .ok_or_else(Error::missing_proof_height)?
             .into();
 
         let client_proof = Some(msg.proof_client)
@@ -126,23 +126,20 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             .collect::<Result<Vec<_>, _>>()?;
 
         if counterparty_versions.is_empty() {
-            return Err(error::empty_versions_error());
+            return Err(Error::empty_versions());
         }
 
         Ok(Self {
             previous_connection_id,
-            client_id: msg
-                .client_id
-                .parse()
-                .map_err(error::invalid_identifier_error)?,
+            client_id: msg.client_id.parse().map_err(Error::invalid_identifier)?,
             client_state: msg
                 .client_state
                 .map(AnyClientState::try_from)
                 .transpose()
-                .map_err(error::ics02_client_error)?,
+                .map_err(Error::ics02_client)?,
             counterparty: msg
                 .counterparty
-                .ok_or_else(error::missing_counterparty_error)?
+                .ok_or_else(Error::missing_counterparty)?
                 .try_into()?,
             counterparty_versions,
             proofs: Proofs::new(
@@ -152,7 +149,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 None,
                 proof_height,
             )
-            .map_err(error::invalid_proof_error)?,
+            .map_err(Error::invalid_proof)?,
             delay_period: Duration::from_nanos(msg.delay_period),
             signer: msg.signer.into(),
         })

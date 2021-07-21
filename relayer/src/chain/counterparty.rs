@@ -14,9 +14,7 @@ use ibc_proto::ibc::core::{
     channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryClientConnectionsRequest,
 };
 
-use crate::channel::error as channel_error;
 use crate::channel::ChannelError;
-use crate::supervisor::error as supervisor_error;
 use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
@@ -27,12 +25,12 @@ pub fn counterparty_chain_from_connection(
 ) -> Result<ChainId, Error> {
     let connection_end = src_chain
         .query_connection(&src_connection_id, Height::zero())
-        .map_err(supervisor_error::relayer_error)?;
+        .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
     let client_state = src_chain
         .query_client_state(&client_id, Height::zero())
-        .map_err(supervisor_error::relayer_error)?;
+        .map_err(Error::relayer)?;
 
     trace!(
         chain_id=%src_chain.id(), connection_id=%src_connection_id,
@@ -52,12 +50,12 @@ fn connection_on_destination(
 
     let counterparty_connections = counterparty_chain
         .query_client_connections(req)
-        .map_err(supervisor_error::relayer_error)?;
+        .map_err(Error::relayer)?;
 
     for counterparty_connection in counterparty_connections.into_iter() {
         let counterparty_connection_end = counterparty_chain
             .query_connection(&counterparty_connection, Height::zero())
-            .map_err(supervisor_error::relayer_error)?;
+            .map_err(Error::relayer)?;
 
         let local_connection_end = &counterparty_connection_end.counterparty();
         if let Some(local_connection_id) = local_connection_end.connection_id() {
@@ -76,7 +74,7 @@ pub fn connection_state_on_destination(
     if let Some(remote_connection_id) = connection.connection_end.counterparty().connection_id() {
         let connection_end = counterparty_chain
             .query_connection(remote_connection_id, Height::zero())
-            .map_err(supervisor_error::relayer_error)?;
+            .map_err(Error::relayer)?;
 
         Ok(connection_end.state)
     } else {
@@ -127,26 +125,27 @@ pub fn channel_connection_client(
 ) -> Result<ChannelConnectionClient, Error> {
     let channel_end = chain
         .query_channel(port_id, channel_id, Height::zero())
-        .map_err(supervisor_error::relayer_error)?;
+        .map_err(Error::relayer)?;
 
     if channel_end.state_matches(&State::Uninitialized) {
-        return Err(supervisor_error::channel_uninitialized_error(
+        return Err(Error::channel_uninitialized(
             port_id.clone(),
             channel_id.clone(),
             chain.id(),
         ));
     }
 
-    let connection_id = channel_end.connection_hops().first().ok_or_else(|| {
-        supervisor_error::missing_connection_hops_error(channel_id.clone(), chain.id())
-    })?;
+    let connection_id = channel_end
+        .connection_hops()
+        .first()
+        .ok_or_else(|| Error::missing_connection_hops(channel_id.clone(), chain.id()))?;
 
     let connection_end = chain
         .query_connection(connection_id, Height::zero())
-        .map_err(supervisor_error::relayer_error)?;
+        .map_err(Error::relayer)?;
 
     if !connection_end.is_open() {
-        return Err(supervisor_error::connection_not_open_error(
+        return Err(Error::connection_not_open(
             connection_id.clone(),
             channel_id.clone(),
             chain.id(),
@@ -156,7 +155,7 @@ pub fn channel_connection_client(
     let client_id = connection_end.client_id();
     let client_state = chain
         .query_client_state(client_id, Height::zero())
-        .map_err(supervisor_error::relayer_error)?;
+        .map_err(Error::relayer)?;
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
@@ -187,7 +186,7 @@ fn fetch_channel_on_destination(
 
     let counterparty_channels = counterparty_chain
         .query_connection_channels(req)
-        .map_err(supervisor_error::relayer_error)?;
+        .map_err(Error::relayer)?;
 
     for counterparty_channel in counterparty_channels.into_iter() {
         let local_channel_end = &counterparty_channel.channel_end.remote;
@@ -224,7 +223,7 @@ pub fn channel_on_destination(
                 remote_channel_id,
                 Height::zero(),
             )
-            .map_err(supervisor_error::relayer_error)?;
+            .map_err(Error::relayer)?;
 
         Ok(Some(counterparty))
     } else if let Some(remote_connection_id) = connection.end().counterparty().connection_id() {
@@ -254,7 +253,7 @@ pub fn check_channel_counterparty(
             &target_pchan.channel_id,
             Height::zero(),
         )
-        .map_err(|e| channel_error::query_error(target_chain.id(), e))?;
+        .map_err(|e| ChannelError::query(target_chain.id(), e))?;
 
     let counterparty = channel_end_dst.remote;
     match counterparty.channel_id {
@@ -264,7 +263,7 @@ pub fn check_channel_counterparty(
                 port_id: counterparty.port_id,
             };
             if &actual != expected {
-                return Err(channel_error::mismatch_channel_ends_error(
+                return Err(ChannelError::mismatch_channel_ends(
                     target_chain.id(),
                     target_pchan.clone(),
                     expected.clone(),
@@ -278,7 +277,7 @@ pub fn check_channel_counterparty(
                 target_pchan,
                 target_chain.id()
             );
-            return Err(channel_error::incomplete_channel_state_error(
+            return Err(ChannelError::incomplete_channel_state(
                 target_chain.id(),
                 target_pchan.clone(),
             ));

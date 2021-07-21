@@ -17,7 +17,8 @@ description = """
 name = "hermes"
 
 [features]
-default   = ["telemetry"]
+default   = ["telemetry", "std"]
+std = []
 profiling = ["ibc-relayer/profiling"]
 telemetry = ["ibc-relayer/telemetry", "ibc-telemetry"]
 

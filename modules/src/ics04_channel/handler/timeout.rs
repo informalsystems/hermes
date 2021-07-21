@@ -8,7 +8,7 @@ use crate::ics04_channel::handler::verify::{
 };
 use crate::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
-use crate::ics04_channel::{context::ChannelReader, error};
+use crate::ics04_channel::{context::ChannelReader, error::Error};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::timestamp::Expiry;
 
@@ -20,10 +20,7 @@ pub struct TimeoutPacketResult {
     pub channel: Option<ChannelEnd>,
 }
 
-pub fn process(
-    ctx: &dyn ChannelReader,
-    msg: MsgTimeout,
-) -> HandlerResult<PacketResult, error::Error> {
+pub fn process(ctx: &dyn ChannelReader, msg: MsgTimeout) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
@@ -31,14 +28,11 @@ pub fn process(
     let mut source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or_else(|| {
-            error::channel_not_found_error(
-                packet.source_port.clone(),
-                packet.source_channel.clone(),
-            )
+            Error::channel_not_found(packet.source_port.clone(), packet.source_channel.clone())
         })?;
 
     if !source_channel_end.state_matches(&State::Open) {
-        return Err(error::channel_closed_error(packet.source_channel.clone()));
+        return Err(Error::channel_closed(packet.source_channel.clone()));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
@@ -49,7 +43,7 @@ pub fn process(
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
-        return Err(error::invalid_packet_counterparty_error(
+        return Err(Error::invalid_packet_counterparty(
             packet.destination_port.clone(),
             packet.destination_channel.clone(),
         ));
@@ -58,7 +52,7 @@ pub fn process(
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
         .ok_or_else(|| {
-            error::missing_connection_error(source_channel_end.connection_hops()[0].clone())
+            Error::missing_connection(source_channel_end.connection_hops()[0].clone())
         })?;
 
     let client_id = connection_end.client_id().clone();
@@ -68,7 +62,7 @@ pub fn process(
     let packet_height = packet.timeout_height;
 
     if (!packet.timeout_height.is_zero()) && packet_height > proof_height {
-        return Err(error::packet_timeout_height_not_reached_error(
+        return Err(Error::packet_timeout_height_not_reached(
             packet.timeout_height,
             proof_height,
         ));
@@ -76,15 +70,13 @@ pub fn process(
 
     let consensus_state = ctx
         .client_consensus_state(&client_id, proof_height)
-        .ok_or_else(|| {
-            error::missing_client_consensus_state_error(client_id.clone(), proof_height)
-        })?;
+        .ok_or_else(|| Error::missing_client_consensus_state(client_id.clone(), proof_height))?;
 
     let proof_timestamp = consensus_state.timestamp();
 
     let packet_timestamp = packet.timeout_timestamp;
     if let Expiry::Expired = packet_timestamp.check_expiry(&proof_timestamp) {
-        return Err(error::packet_timeout_timestamp_not_reached_error(
+        return Err(Error::packet_timeout_timestamp_not_reached(
             packet_timestamp,
             proof_timestamp,
         ));
@@ -97,7 +89,7 @@ pub fn process(
             packet.source_channel.clone(),
             packet.sequence,
         ))
-        .ok_or_else(|| error::packet_commitment_not_found_error(packet.sequence))?;
+        .ok_or_else(|| Error::packet_commitment_not_found(packet.sequence))?;
 
     let input = format!(
         "{:?},{:?},{:?}",
@@ -105,12 +97,12 @@ pub fn process(
     );
 
     if packet_commitment != ChannelReader::hash(ctx, input) {
-        return Err(error::incorrect_packet_commitment_error(packet.sequence));
+        return Err(Error::incorrect_packet_commitment(packet.sequence));
     }
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
         if packet.sequence < msg.next_sequence_recv {
-            return Err(error::invalid_packet_sequence_error(
+            return Err(Error::invalid_packet_sequence(
                 packet.sequence,
                 msg.next_sequence_recv,
             ));

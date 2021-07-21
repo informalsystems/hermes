@@ -1,7 +1,7 @@
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::WriteAcknowledgement;
 use crate::ics04_channel::packet::{Packet, PacketResult, Sequence};
-use crate::ics04_channel::{context::ChannelReader, error};
+use crate::ics04_channel::{context::ChannelReader, error::Error};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::{
     events::IbcEvent,
@@ -20,7 +20,7 @@ pub fn process(
     ctx: &dyn ChannelReader,
     packet: Packet,
     ack: Vec<u8>,
-) -> HandlerResult<PacketResult, error::Error> {
+) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let dest_channel_end = ctx
@@ -29,14 +29,14 @@ pub fn process(
             packet.destination_channel.clone(),
         ))
         .ok_or_else(|| {
-            error::channel_not_found_error(
+            Error::channel_not_found(
                 packet.destination_port.clone(),
                 packet.destination_channel.clone(),
             )
         })?;
 
     if !dest_channel_end.state_matches(&State::Open) {
-        return Err(error::invalid_channel_state_error(
+        return Err(Error::invalid_channel_state(
             packet.source_channel,
             dest_channel_end.state,
         ));
@@ -55,11 +55,11 @@ pub fn process(
         ))
         .is_some()
     {
-        return Err(error::acknowledgement_exists_error(packet.sequence));
+        return Err(Error::acknowledgement_exists(packet.sequence));
     }
 
     if ack.is_empty() {
-        return Err(error::invalid_acknowledgement_error());
+        return Err(Error::invalid_acknowledgement());
     }
 
     let result = PacketResult::WriteAck(WriteAckPacketResult {

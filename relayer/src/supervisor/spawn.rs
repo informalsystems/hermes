@@ -23,7 +23,7 @@ use crate::{
     object::{Channel, Client, Connection, Object, Packet},
     registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
-    supervisor::error as supervisor_error,
+    supervisor::error::Error as SupervisorError,
     worker::WorkerMap,
 };
 
@@ -475,7 +475,7 @@ impl<'a> SpawnContext<'a> {
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())
-            .map_err(supervisor_error::failed_to_spawn_chain_runtime_error)?;
+            .map_err(SupervisorError::failed_to_spawn_chain_runtime)?;
 
         let counterparty_channel =
             channel_on_destination(&channel, &connection, counterparty_chain.as_ref())?;

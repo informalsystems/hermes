@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::ops::Deref;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error;
+use crate::ics02_client::error::Error;
 use crate::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
@@ -63,22 +63,22 @@ impl Header for AnyHeader {
 impl Protobuf<Any> for AnyHeader {}
 
 impl TryFrom<Any> for AnyHeader {
-    type Error = error::Error;
+    type Error = Error;
 
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
+    fn try_from(raw: Any) -> Result<Self, Error> {
         match raw.type_url.as_str() {
             TENDERMINT_HEADER_TYPE_URL => {
-                let val = decode_header(raw.value.deref()).map_err(error::tendermint_error)?;
+                let val = decode_header(raw.value.deref()).map_err(Error::tendermint)?;
 
                 Ok(AnyHeader::Tendermint(val))
             }
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                MockHeader::decode_vec(&raw.value).map_err(error::invalid_raw_header_error)?,
+                MockHeader::decode_vec(&raw.value).map_err(Error::invalid_raw_header)?,
             )),
 
-            _ => Err(error::unknown_header_type_error(raw.type_url)),
+            _ => Err(Error::unknown_header_type(raw.type_url)),
         }
     }
 }

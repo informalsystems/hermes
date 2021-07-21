@@ -6,7 +6,6 @@ use std::{
 };
 
 use crossbeam_channel::{Receiver, Sender};
-use flex_error::ErrorReport;
 use itertools::Itertools;
 use tracing::{debug, error, info, trace, warn};
 
@@ -33,7 +32,7 @@ pub mod error;
 
 use client_state_filter::{FilterPolicy, Permission};
 
-pub use error::Error;
+pub use error::{Error, ErrorDetail};
 
 pub mod dump_state;
 use dump_state::SupervisorState;
@@ -381,7 +380,7 @@ impl Supervisor {
                         Ok(subs) => {
                             subscriptions = subs;
                         }
-                        Err(ErrorReport(error::ErrorDetail::NoChainsAvailable(_), _)) => (),
+                        Err(Error(ErrorDetail::NoChainsAvailable(_), _)) => (),
                         Err(e) => return Err(e.into()),
                     }
                 }
@@ -421,7 +420,7 @@ impl Supervisor {
         // At least one chain runtime should be available, otherwise the supervisor
         // cannot do anything and will hang indefinitely.
         if self.registry.size() == 0 {
-            return Err(error::no_chains_available_error());
+            return Err(Error::no_chains_available());
         }
 
         Ok(subscriptions)

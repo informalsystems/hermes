@@ -387,6 +387,8 @@ define_error! {
     }
 }
 
-pub fn send_error<T>(_: crossbeam_channel::SendError<T>) -> Error {
-    channel_send_error()
+impl Error {
+    pub fn send<T>(_: crossbeam_channel::SendError<T>) -> Error {
+        Error::channel_send()
+    }
 }

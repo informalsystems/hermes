@@ -45,11 +45,7 @@ impl Link {
             .src_chain()
             .query_channel(self.a_to_b.src_port_id(), a_channel_id, Height::default())
             .map_err(|e| {
-                error::channel_not_found_error(
-                    a_channel_id.clone(),
-                    self.a_to_b.src_chain().id(),
-                    e,
-                )
+                LinkError::channel_not_found(a_channel_id.clone(), self.a_to_b.src_chain().id(), e)
             })?;
 
         let b_channel_id = self.a_to_b.dst_channel_id()?;
@@ -59,11 +55,7 @@ impl Link {
             .dst_chain()
             .query_channel(self.a_to_b.dst_port_id(), b_channel_id, Height::default())
             .map_err(|e| {
-                error::channel_not_found_error(
-                    b_channel_id.clone(),
-                    self.a_to_b.dst_chain().id(),
-                    e,
-                )
+                LinkError::channel_not_found(b_channel_id.clone(), self.a_to_b.dst_chain().id(), e)
             })?;
 
         if a_channel.state_matches(&ChannelState::Closed)
@@ -84,12 +76,12 @@ impl Link {
         let a_channel_id = &opts.src_channel_id;
         let a_channel = a_chain
             .query_channel(&opts.src_port_id, a_channel_id, Height::default())
-            .map_err(|e| error::channel_not_found_error(a_channel_id.clone(), a_chain.id(), e))?;
+            .map_err(|e| LinkError::channel_not_found(a_channel_id.clone(), a_chain.id(), e))?;
 
         if !a_channel.state_matches(&ChannelState::Open)
             && !a_channel.state_matches(&ChannelState::Closed)
         {
-            return Err(error::invalid_channel_state_error(
+            return Err(LinkError::invalid_channel_state(
                 a_channel_id.clone(),
                 a_chain.id(),
             ));
@@ -99,10 +91,10 @@ impl Link {
             .counterparty()
             .channel_id
             .clone()
-            .ok_or_else(|| error::counterparty_channel_not_found_error(a_channel_id.clone()))?;
+            .ok_or_else(|| LinkError::counterparty_channel_not_found(a_channel_id.clone()))?;
 
         if a_channel.connection_hops().is_empty() {
-            return Err(error::no_connection_hop_error(
+            return Err(LinkError::no_connection_hop(
                 a_channel_id.clone(),
                 a_chain.id(),
             ));
@@ -120,16 +112,16 @@ impl Link {
                 port_id: opts.src_port_id.clone(),
             },
         )
-        .map_err(error::initialization_error)?;
+        .map_err(LinkError::initialization)?;
 
         // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
         let a_connection = a_chain
             .query_connection(&a_connection_id, Height::zero())
-            .map_err(error::relayer_error)?;
+            .map_err(LinkError::relayer)?;
 
         if !a_connection.state_matches(&ConnectionState::Open) {
-            return Err(error::channel_not_opened_error(
+            return Err(LinkError::channel_not_opened(
                 a_channel_id.clone(),
                 a_chain.id(),
             ));

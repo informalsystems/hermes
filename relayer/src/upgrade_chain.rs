@@ -90,7 +90,7 @@ pub fn build_and_send_upgrade_chain_message(
     };
 
     // build the msg submit proposal
-    let proposer = dst_chain.get_signer().map_err(key_error)?;
+    let proposer = dst_chain.get_signer().map_err(UpgradeChainError::key)?;
 
     let coins = ibc_proto::cosmos::base::v1beta1::Coin {
         denom: "stake".to_string(),
@@ -112,7 +112,7 @@ pub fn build_and_send_upgrade_chain_message(
 
     let events = dst_chain
         .send_msgs(vec![any_msg])
-        .map_err(|e| submit_error(dst_chain.id().clone(), e))?;
+        .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events.iter().find_map(|event| match event {
@@ -122,6 +122,6 @@ pub fn build_and_send_upgrade_chain_message(
 
     match result {
         None => Ok(events),
-        Some(reason) => Err(tx_response_error(reason)),
+        Some(reason) => Err(UpgradeChainError::tx_response(reason)),
     }
 }

@@ -5,7 +5,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 
-use crate::ics03_connection::error;
+use crate::ics03_connection::error::Error;
 
 /// Stores the identifier and the features supported by a version
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -26,14 +26,14 @@ impl Version {
 impl Protobuf<RawVersion> for Version {}
 
 impl TryFrom<RawVersion> for Version {
-    type Error = error::Error;
+    type Error = Error;
     fn try_from(value: RawVersion) -> Result<Self, Self::Error> {
         if value.identifier.trim().is_empty() {
-            return Err(error::empty_versions_error());
+            return Err(Error::empty_versions());
         }
         for feature in value.features.iter() {
             if feature.trim().is_empty() {
-                return Err(error::empty_features_error());
+                return Err(Error::empty_features());
             }
         }
         Ok(Version {

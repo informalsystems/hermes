@@ -5,7 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
-use crate::ics04_channel::error;
+use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::timestamp::{Expiry::Expired, Timestamp};
 use crate::Height;
@@ -62,11 +62,11 @@ impl Default for Sequence {
 }
 
 impl FromStr for Sequence {
-    type Err = error::Error;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self::from(s.parse::<u64>().map_err(|e| {
-            error::invalid_string_as_sequence_error(s.to_string(), e)
+            Error::invalid_string_as_sequence(s.to_string(), e)
         })?))
     }
 }
@@ -163,45 +163,39 @@ impl Default for Packet {
 }
 
 impl TryFrom<RawPacket> for Packet {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw_pkt: RawPacket) -> Result<Self, Self::Error> {
         if Sequence::from(raw_pkt.sequence).is_zero() {
-            return Err(error::zero_packet_sequence_error());
+            return Err(Error::zero_packet_sequence());
         }
         let packet_timeout_height: Height = raw_pkt
             .timeout_height
-            .ok_or_else(error::missing_height_error)?
+            .ok_or_else(Error::missing_height)?
             .into();
 
         if packet_timeout_height.is_zero() && raw_pkt.timeout_timestamp == 0 {
-            return Err(error::zero_packet_timeout_error());
+            return Err(Error::zero_packet_timeout());
         }
         if raw_pkt.data.is_empty() {
-            return Err(error::zero_packet_data_error());
+            return Err(Error::zero_packet_data());
         }
 
         let timeout_timestamp = Timestamp::from_nanoseconds(raw_pkt.timeout_timestamp)
-            .map_err(error::invalid_packet_timestamp_error)?;
+            .map_err(Error::invalid_packet_timestamp)?;
 
         Ok(Packet {
             sequence: Sequence::from(raw_pkt.sequence),
-            source_port: raw_pkt
-                .source_port
-                .parse()
-                .map_err(error::identifier_error)?,
-            source_channel: raw_pkt
-                .source_channel
-                .parse()
-                .map_err(error::identifier_error)?,
+            source_port: raw_pkt.source_port.parse().map_err(Error::identifier)?,
+            source_channel: raw_pkt.source_channel.parse().map_err(Error::identifier)?,
             destination_port: raw_pkt
                 .destination_port
                 .parse()
-                .map_err(error::identifier_error)?,
+                .map_err(Error::identifier)?,
             destination_channel: raw_pkt
                 .destination_channel
                 .parse()
-                .map_err(error::identifier_error)?,
+                .map_err(Error::identifier)?,
             data: raw_pkt.data,
             timeout_height: packet_timeout_height,
             timeout_timestamp,

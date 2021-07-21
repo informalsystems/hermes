@@ -11,7 +11,7 @@ use ibc_relayer::chain::counterparty::channel_connection_client;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
-use crate::error::{self, Error};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Serialize, Debug)]
@@ -50,7 +50,7 @@ impl QueryUnreceivedPacketsCmd {
 
         let channel_connection_client =
             channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id)
-                .map_err(error::supervisor_error)?;
+                .map_err(Error::supervisor)?;
 
         let channel = channel_connection_client.channel;
         debug!(
@@ -62,7 +62,7 @@ impl QueryUnreceivedPacketsCmd {
             .counterparty()
             .channel_id
             .as_ref()
-            .ok_or_else(|| error::missing_counterparty_channel_id_error(channel.clone()))?
+            .ok_or_else(|| Error::missing_counterparty_channel_id(channel.clone()))?
             .to_string();
 
         let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
@@ -77,7 +77,7 @@ impl QueryUnreceivedPacketsCmd {
 
         let commitments = counterparty_chain
             .query_packet_commitments(commitments_request)
-            .map_err(error::relayer_error)?;
+            .map_err(Error::relayer)?;
 
         // extract the sequences
         let sequences: Vec<u64> = commitments.0.into_iter().map(|v| v.sequence).collect();
@@ -96,7 +96,7 @@ impl QueryUnreceivedPacketsCmd {
 
         chain
             .query_unreceived_packets(request)
-            .map_err(error::relayer_error)
+            .map_err(Error::relayer)
     }
 }
 

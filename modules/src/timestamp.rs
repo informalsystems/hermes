@@ -138,8 +138,8 @@ impl Add<Duration> for Timestamp {
     fn add(self, duration: Duration) -> Result<Timestamp, TimestampOverflowError> {
         match self.as_datetime() {
             Some(datetime) => {
-                let duration2 =
-                    chrono::Duration::from_std(duration).map_err(|_| timestamp_overflow_error())?;
+                let duration2 = chrono::Duration::from_std(duration)
+                    .map_err(|_| TimestampOverflowError::timestamp_overflow())?;
                 Ok(Self::from_datetime(datetime + duration2))
             }
             None => Ok(self),
@@ -153,8 +153,8 @@ impl Sub<Duration> for Timestamp {
     fn sub(self, duration: Duration) -> Result<Timestamp, TimestampOverflowError> {
         match self.as_datetime() {
             Some(datetime) => {
-                let duration2 =
-                    chrono::Duration::from_std(duration).map_err(|_| timestamp_overflow_error())?;
+                let duration2 = chrono::Duration::from_std(duration)
+                    .map_err(|_| TimestampOverflowError::timestamp_overflow())?;
                 Ok(Self::from_datetime(datetime - duration2))
             }
             None => Ok(self),
@@ -178,9 +178,9 @@ impl FromStr for Timestamp {
     type Err = ParseTimestampError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let seconds = u64::from_str(s).map_err(parse_int_error)?;
+        let seconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
 
-        Timestamp::from_nanoseconds(seconds).map_err(try_from_int_error)
+        Timestamp::from_nanoseconds(seconds).map_err(ParseTimestampError::try_from_int)
     }
 }
 

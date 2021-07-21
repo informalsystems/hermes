@@ -9,7 +9,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
-use crate::ics02_client::error;
+use crate::ics02_client::error::Error;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
@@ -50,9 +50,9 @@ impl Height {
         self.add(1)
     }
 
-    pub fn sub(&self, delta: u64) -> Result<Height, error::Error> {
+    pub fn sub(&self, delta: u64) -> Result<Height, Error> {
         if self.revision_height <= delta {
-            return Err(error::invalid_height_result_error());
+            return Err(Error::invalid_height_result());
         }
 
         Ok(Height {
@@ -61,7 +61,7 @@ impl Height {
         })
     }
 
-    pub fn decrement(&self) -> Result<Height, error::Error> {
+    pub fn decrement(&self) -> Result<Height, Error> {
         self.sub(1)
     }
 
@@ -138,7 +138,7 @@ impl std::fmt::Display for Height {
 }
 
 define_error! {
-    Error {
+    HeightError {
         HeightConversion
             { height: String }
             [ TraceError<ParseIntError> ]
@@ -150,17 +150,17 @@ define_error! {
 }
 
 impl TryFrom<&str> for Height {
-    type Error = Error;
+    type Error = HeightError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();
         Ok(Height {
             revision_number: split[0]
                 .parse::<u64>()
-                .map_err(|e| height_conversion_error(value.to_owned(), e))?,
+                .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?,
             revision_height: split[1]
                 .parse::<u64>()
-                .map_err(|e| height_conversion_error(value.to_owned(), e))?,
+                .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?,
         })
     }
 }
@@ -172,7 +172,7 @@ impl From<Height> for String {
 }
 
 impl FromStr for Height {
-    type Err = Error;
+    type Err = HeightError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Height::try_from(s)

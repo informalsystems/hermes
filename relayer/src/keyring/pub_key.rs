@@ -5,7 +5,7 @@ use subtle_encoding::base64;
 use tracing::{error, trace};
 
 use super::decode_bech32;
-use super::errors::{self as error, Error};
+use super::errors::Error;
 
 #[derive(Debug)]
 pub enum EncodedPubKey {
@@ -64,7 +64,7 @@ impl FromStr for EncodedPubKey {
                 );
 
                 if proto.tpe != "/cosmos.crypto.secp256k1.PubKey" {
-                    Err(error::unsupported_public_key_error(proto.tpe))
+                    Err(Error::unsupported_public_key(proto.tpe))
                 } else {
                     Ok(EncodedPubKey::Proto(proto))
                 }
@@ -81,7 +81,7 @@ impl FromStr for EncodedPubKey {
                     s, e
                 );
 
-                Err(error::encoded_public_key_error(s.to_string(), e))
+                Err(Error::encoded_public_key(s.to_string(), e))
             }
         }
     }

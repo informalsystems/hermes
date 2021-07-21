@@ -5,7 +5,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
 use crate::ics02_client::client_state::AnyClientState;
-use crate::ics03_connection::error;
+use crate::ics03_connection::error::Error;
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ConnectionId;
@@ -64,7 +64,7 @@ impl MsgConnectionOpenAck {
 }
 
 impl Msg for MsgConnectionOpenAck {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
     type Raw = RawMsgConnectionOpenAck;
 
     fn route(&self) -> String {
@@ -79,19 +79,19 @@ impl Msg for MsgConnectionOpenAck {
 impl Protobuf<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {}
 
 impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(error::missing_consensus_height_error)?
+            .ok_or_else(Error::missing_consensus_height)?
             .into();
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
-            .map_err(error::invalid_proof_error)?;
+            .map_err(Error::invalid_proof)?;
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(error::missing_proof_height_error)?
+            .ok_or_else(Error::missing_proof_height)?
             .into();
 
         let client_proof = Some(msg.proof_client)
@@ -102,20 +102,17 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             connection_id: msg
                 .connection_id
                 .parse()
-                .map_err(error::invalid_identifier_error)?,
+                .map_err(Error::invalid_identifier)?,
             counterparty_connection_id: msg
                 .counterparty_connection_id
                 .parse()
-                .map_err(error::invalid_identifier_error)?,
+                .map_err(Error::invalid_identifier)?,
             client_state: msg
                 .client_state
                 .map(AnyClientState::try_from)
                 .transpose()
-                .map_err(error::ics02_client_error)?,
-            version: msg
-                .version
-                .ok_or_else(error::empty_versions_error)?
-                .try_into()?,
+                .map_err(Error::ics02_client)?,
+            version: msg.version.ok_or_else(Error::empty_versions)?.try_into()?,
             proofs: Proofs::new(
                 msg.proof_try.into(),
                 client_proof,
@@ -123,7 +120,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 None,
                 proof_height,
             )
-            .map_err(error::invalid_proof_error)?,
+            .map_err(Error::invalid_proof)?,
             signer: msg.signer.into(),
         })
     }

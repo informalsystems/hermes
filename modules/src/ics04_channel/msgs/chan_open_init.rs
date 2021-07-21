@@ -1,5 +1,5 @@
 use crate::ics04_channel::channel::ChannelEnd;
-use crate::ics04_channel::error;
+use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::PortId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -42,7 +42,7 @@ impl MsgChannelOpenInit {
 }
 
 impl Msg for MsgChannelOpenInit {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
     type Raw = RawMsgChannelOpenInit;
 
     fn route(&self) -> String {
@@ -57,14 +57,14 @@ impl Msg for MsgChannelOpenInit {
 impl Protobuf<RawMsgChannelOpenInit> for MsgChannelOpenInit {}
 
 impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelOpenInit) -> Result<Self, Self::Error> {
         Ok(MsgChannelOpenInit {
-            port_id: raw_msg.port_id.parse().map_err(error::identifier_error)?,
+            port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
             channel: raw_msg
                 .channel
-                .ok_or_else(error::missing_channel_error)?
+                .ok_or_else(Error::missing_channel)?
                 .try_into()?,
             signer: raw_msg.signer.into(),
         })

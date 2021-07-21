@@ -1,4 +1,4 @@
-use crate::ics23_commitment::error;
+use crate::ics23_commitment::error::Error;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, fmt};
@@ -84,12 +84,12 @@ impl From<RawMerkleProof> for CommitmentProofBytes {
 }
 
 impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(value: CommitmentProofBytes) -> Result<Self, Self::Error> {
         let value: Vec<u8> = value.into();
-        let res: RawMerkleProof = prost::Message::decode(value.as_ref())
-            .map_err(error::invalid_raw_merkle_proof_error)?;
+        let res: RawMerkleProof =
+            prost::Message::decode(value.as_ref()).map_err(Error::invalid_raw_merkle_proof)?;
         Ok(res)
     }
 }

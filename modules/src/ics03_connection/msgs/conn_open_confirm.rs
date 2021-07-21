@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
-use crate::ics03_connection::error;
+use crate::ics03_connection::error::Error;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -35,7 +35,7 @@ impl MsgConnectionOpenConfirm {
 }
 
 impl Msg for MsgConnectionOpenConfirm {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
     type Raw = RawMsgConnectionOpenConfirm;
 
     fn route(&self) -> String {
@@ -50,21 +50,21 @@ impl Msg for MsgConnectionOpenConfirm {
 impl Protobuf<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {}
 
 impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
         let proof_height = msg
             .proof_height
-            .ok_or_else(error::missing_proof_height_error)?
+            .ok_or_else(Error::missing_proof_height)?
             .into();
 
         Ok(Self {
             connection_id: msg
                 .connection_id
                 .parse()
-                .map_err(error::invalid_identifier_error)?,
+                .map_err(Error::invalid_identifier)?,
             proofs: Proofs::new(msg.proof_ack.into(), None, None, None, proof_height)
-                .map_err(error::invalid_proof_error)?,
+                .map_err(Error::invalid_proof)?,
             signer: msg.signer.into(),
         })
     }

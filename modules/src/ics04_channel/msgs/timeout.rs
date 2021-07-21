@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 
-use crate::ics04_channel::error;
+use crate::ics04_channel::error::Error;
 use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -40,7 +40,7 @@ impl MsgTimeout {
 }
 
 impl Msg for MsgTimeout {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
     type Raw = RawMsgTimeout;
 
     fn route(&self) -> String {
@@ -55,7 +55,7 @@ impl Msg for MsgTimeout {
 impl Protobuf<RawMsgTimeout> for MsgTimeout {}
 
 impl TryFrom<RawMsgTimeout> for MsgTimeout {
-    type Error = error::Error;
+    type Error = Error;
 
     fn try_from(raw_msg: RawMsgTimeout) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -65,17 +65,17 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(error::missing_height_error)?
+                .ok_or_else(Error::missing_height)?
                 .into(),
         )
-        .map_err(error::invalid_proof_error)?;
+        .map_err(Error::invalid_proof)?;
 
         // TODO: Domain type verification for the next sequence: this should probably be > 0.
 
         Ok(MsgTimeout {
             packet: raw_msg
                 .packet
-                .ok_or_else(error::missing_packet_error)?
+                .ok_or_else(Error::missing_packet)?
                 .try_into()?,
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),
             signer: raw_msg.signer.into(),

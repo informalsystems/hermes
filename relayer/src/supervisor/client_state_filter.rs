@@ -4,7 +4,7 @@ use tracing::{debug, trace};
 
 use ibc::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::error as channel_error;
+use ibc::ics04_channel::error::Error as ChannelError;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 
@@ -252,10 +252,7 @@ impl FilterPolicy {
         let src_chain = registry.get_or_spawn(&chain_id)?;
         let channel_end = src_chain.query_channel(&port_id, &channel_id, Height::zero())?;
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
-            channel_error::invalid_connection_hops_length_error(
-                1,
-                channel_end.connection_hops().len(),
-            )
+            ChannelError::invalid_connection_hops_length(1, channel_end.connection_hops().len())
         })?;
         let connection_end = src_chain.query_connection(conn_id, Height::zero())?;
         let client_state =

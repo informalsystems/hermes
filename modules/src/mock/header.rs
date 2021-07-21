@@ -7,7 +7,7 @@ use ibc_proto::ibc::mock::Header as RawMockHeader;
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::{self, Error};
+use crate::ics02_client::error::Error;
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
@@ -27,13 +27,10 @@ impl TryFrom<RawMockHeader> for MockHeader {
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
         Ok(MockHeader {
-            height: raw
-                .height
-                .ok_or_else(error::missing_raw_header_error)?
-                .into(),
+            height: raw.height.ok_or_else(Error::missing_raw_header)?.into(),
 
             timestamp: Timestamp::from_nanoseconds(raw.timestamp)
-                .map_err(error::invalid_packet_timestamp_error)?,
+                .map_err(Error::invalid_packet_timestamp)?,
         })
     }
 }

@@ -2,7 +2,6 @@
 
 use std::cmp::min;
 use std::collections::HashMap;
-use std::error::Error;
 
 use prost_types::Any;
 use sha2::Digest;
@@ -20,13 +19,13 @@ use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as Ics3Error;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
-use crate::ics04_channel::error as channel_error;
+use crate::ics04_channel::error::Error as ChannelError;
 use crate::ics04_channel::packet::{Receipt, Sequence};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics05_port::context::PortReader;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::Ics18Context;
-use crate::ics18_relayer::error::{self, Error as Ics18Error};
+use crate::ics18_relayer::error::Error as Ics18Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::ics26_routing::context::Ics26Context;
@@ -382,14 +381,14 @@ impl MockContext {
     /// Alternative method to `Ics18Context::send` that does not exercise any serialization.
     /// Used in testing the Ics18 algorithms, hence this may return a Ics18Error.
     pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), Ics18Error> {
-        dispatch(self, msg).map_err(error::transaction_failed_error)?;
+        dispatch(self, msg).map_err(Ics18Error::transaction_failed)?;
         // Create a new block.
         self.advance_host_chain_height();
         Ok(())
     }
 
     /// Validates this context. Should be called after the context is mutated by a test.
-    pub fn validate(&self) -> Result<(), Box<dyn Error>> {
+    pub fn validate(&self) -> Result<(), Box<dyn std::error::Error>> {
         // Check that the number of entries is not higher than window size.
         if self.history.len() > self.max_history_size {
             return Err("too many entries".to_string().into());
@@ -471,20 +470,17 @@ impl ChannelReader for MockContext {
         ClientReader::consensus_state(self, client_id, height)
     }
 
-    fn authenticated_capability(
-        &self,
-        port_id: &PortId,
-    ) -> Result<Capability, channel_error::Error> {
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ChannelError> {
         let cap = PortReader::lookup_module_by_port(self, port_id);
         match cap {
             Some(key) => {
                 if !PortReader::authenticate(self, &key, port_id) {
-                    Err(channel_error::invalid_port_capability_error())
+                    Err(ChannelError::invalid_port_capability())
                 } else {
                     Ok(key)
                 }
             }
-            None => Err(channel_error::no_port_capability_error(port_id.clone())),
+            None => Err(ChannelError::no_port_capability(port_id.clone())),
         }
     }
 
@@ -537,7 +533,7 @@ impl ChannelKeeper for MockContext {
         timeout_timestamp: Timestamp,
         timeout_height: Height,
         data: Vec<u8>,
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
         self.packet_commitment
             .insert(key, ChannelReader::hash(self, input));
@@ -548,7 +544,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         key: (PortId, ChannelId, Sequence),
         ack: Vec<u8>,
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         let input = format!("{:?}", ack);
         self.packet_acknowledgement
             .insert(key, ChannelReader::hash(self, input));
@@ -558,7 +554,7 @@ impl ChannelKeeper for MockContext {
     fn delete_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         self.packet_acknowledgement.remove(&key);
         Ok(())
     }
@@ -567,7 +563,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         cid: ConnectionId,
         port_channel_id: &(PortId, ChannelId),
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         self.connection_channels
             .entry(cid)
             .or_insert_with(Vec::new)
@@ -579,7 +575,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         port_channel_id: (PortId, ChannelId),
         channel_end: &ChannelEnd,
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         self.channels.insert(port_channel_id, channel_end.clone());
         Ok(())
     }
@@ -588,7 +584,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         self.next_sequence_send.insert(port_channel_id, seq);
         Ok(())
     }
@@ -597,7 +593,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         self.next_sequence_recv.insert(port_channel_id, seq);
         Ok(())
     }
@@ -606,7 +602,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         self.next_sequence_ack.insert(port_channel_id, seq);
         Ok(())
     }
@@ -618,7 +614,7 @@ impl ChannelKeeper for MockContext {
     fn delete_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         self.packet_commitment.remove(&key);
         Ok(())
     }
@@ -627,7 +623,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         key: (PortId, ChannelId, Sequence),
         receipt: Receipt,
-    ) -> Result<(), channel_error::Error> {
+    ) -> Result<(), ChannelError> {
         self.packet_receipt.insert(key, receipt);
         Ok(())
     }
@@ -802,7 +798,7 @@ impl Ics18Context for MockContext {
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {
         // Forward call to Ics26 delivery method.
-        let events = deliver(self, msgs).map_err(error::transaction_failed_error)?;
+        let events = deliver(self, msgs).map_err(Ics18Error::transaction_failed)?;
 
         self.advance_host_chain_height(); // Advance chain height
         Ok(events)
