@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crossbeam_channel::Sender;
 
 use ibc::ics24_host::identifier::ChainId;
-use tracing::{debug, warn};
+use tracing::{debug, trace, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
@@ -13,12 +13,13 @@ use crate::{
     telemetry::Telemetry,
 };
 
-use super::{Worker, WorkerHandle, WorkerMsg};
+use super::{Worker, WorkerHandle, WorkerId, WorkerMsg};
 
 /// Manage the lifecycle of [`Worker`]s associated with [`Object`]s.
 #[derive(Debug)]
 pub struct WorkerMap {
     workers: HashMap<Object, WorkerHandle>,
+    latest_worker_id: WorkerId,
     msg_tx: Sender<WorkerMsg>,
     telemetry: Telemetry,
 }
@@ -29,6 +30,7 @@ impl WorkerMap {
     pub fn new(msg_tx: Sender<WorkerMsg>, telemetry: Telemetry) -> Self {
         Self {
             workers: HashMap::new(),
+            latest_worker_id: WorkerId::new(0),
             msg_tx,
             telemetry,
         }
@@ -41,13 +43,46 @@ impl WorkerMap {
 
     /// Remove the [`Worker`] associated with the given [`Object`] from
     /// the map and wait for its thread to terminate.
-    pub fn remove_stopped(&mut self, object: &Object) -> bool {
-        if let Some(handle) = self.workers.remove(object) {
-            telemetry!(self.telemetry.worker(metric_type(object), -1));
-            let _ = handle.join();
-            true
-        } else {
-            false
+    pub fn remove_stopped(&mut self, id: WorkerId, object: Object) -> bool {
+        match self.workers.remove(&object) {
+            Some(handle) if handle.id() == id => {
+                telemetry!(self.telemetry.worker(metric_type(&object), -1));
+
+                let id = handle.id();
+
+                trace!(
+                    worker.id = %id, worker.object = %object.short_name(),
+                    "waiting for worker loop to end"
+                );
+
+                let _ = handle.join();
+
+                trace!(
+                    worker.id = %id, worker.object = %object.short_name(),
+                    "worker loop has ended"
+                );
+
+                true
+            }
+            Some(handle) => {
+                debug!(
+                    worker.object = %object.short_name(),
+                    "ignoring attempt to remove worker with outdated id {} (current: {})",
+                    id, handle.id()
+                );
+
+                self.workers.insert(object, handle);
+
+                false
+            }
+            None => {
+                debug!(
+                    worker.object = %object.short_name(),
+                    "ignoring attempt to remove unknown worker",
+                );
+
+                false
+            }
         }
     }
 
@@ -117,11 +152,18 @@ impl WorkerMap {
 
         Worker::spawn(
             ChainHandlePair { a: src, b: dst },
+            self.next_worker_id(),
             object.clone(),
             self.msg_tx.clone(),
             self.telemetry.clone(),
             config,
         )
+    }
+
+    fn next_worker_id(&mut self) -> WorkerId {
+        let id = self.latest_worker_id.next();
+        self.latest_worker_id = id;
+        id
     }
 
     /// List the [`Object`]s for which there is an associated worker
@@ -141,7 +183,7 @@ impl WorkerMap {
 
             match handle.shutdown() {
                 Ok(()) => {
-                    debug!(object = %object.short_name(), "waiting for worker to exit");
+                    trace!(object = %object.short_name(), "waiting for worker to exit");
                     let _ = handle.join();
                 }
                 Err(e) => {
@@ -152,8 +194,10 @@ impl WorkerMap {
     }
 
     /// Get an iterator over the worker map's objects.
-    pub fn objects(&self) -> impl Iterator<Item = &Object> {
-        self.workers.keys()
+    pub fn objects(&self) -> impl Iterator<Item = (WorkerId, &Object)> {
+        self.workers
+            .iter()
+            .map(|(object, handle)| (handle.id(), object))
     }
 }
 

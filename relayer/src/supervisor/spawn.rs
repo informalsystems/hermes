@@ -1,6 +1,6 @@
 use anomaly::BoxError;
 use itertools::Itertools;
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
@@ -23,6 +23,7 @@ use crate::{
     config::Config,
     object::{Channel, Client, Connection, Object, Packet},
     registry::Registry,
+    supervisor::client_state_filter::{FilterPolicy, Permission},
     worker::WorkerMap,
 };
 
@@ -39,6 +40,7 @@ pub struct SpawnContext<'a> {
     config: &'a RwArc<Config>,
     registry: &'a mut Registry,
     workers: &'a mut WorkerMap,
+    client_state_filter: &'a mut FilterPolicy,
     mode: SpawnMode,
 }
 
@@ -46,6 +48,7 @@ impl<'a> SpawnContext<'a> {
     pub fn new(
         config: &'a RwArc<Config>,
         registry: &'a mut Registry,
+        client_state_filter: &'a mut FilterPolicy,
         workers: &'a mut WorkerMap,
         mode: SpawnMode,
     ) -> Self {
@@ -53,8 +56,14 @@ impl<'a> SpawnContext<'a> {
             config,
             registry,
             workers,
+            client_state_filter,
             mode,
         }
+    }
+
+    fn client_filter_enabled(&self) -> bool {
+        // Currently just a wrapper over the global filter.
+        self.config.read().expect("poisoned lock").global.filter
     }
 
     pub fn spawn_workers(&mut self) {
@@ -173,6 +182,28 @@ impl<'a> SpawnContext<'a> {
         chain: Box<dyn ChainHandle>,
         client: IdentifiedAnyClientState,
     ) {
+        // Potentially ignore the client
+        if self.client_filter_enabled()
+            && matches!(
+                self.client_state_filter.control_client(
+                    &chain.id(),
+                    &client.client_id,
+                    &client.client_state
+                ),
+                Permission::Deny
+            )
+        {
+            warn!(
+                "skipping workers for chain {}, client {}. \
+                             reason: client is not allowed (client trust level={:?})",
+                chain.id(),
+                client.client_id,
+                client.client_state.trust_threshold()
+            );
+
+            return;
+        }
+
         let counterparty_chain_id = client.client_state.chain_id();
         let has_counterparty = self
             .config
@@ -235,6 +266,31 @@ impl<'a> SpawnContext<'a> {
             connection_id: connection_id.clone(),
             connection_end: connection_end.clone(),
         };
+
+        // Apply the client state filter
+        if self.client_filter_enabled() {
+            match self.client_state_filter.control_connection_end_and_client(
+                &mut self.registry,
+                &chain_id,
+                &client.client_state,
+                &connection_end,
+                &connection_id,
+            ) {
+                Ok(Permission::Deny) => {
+                    warn!(
+                        "skipping workers for chain {}, client {} & conn {}. \
+                                 reason: client or counterparty client is not allowed",
+                        chain_id, client.client_id, connection_id
+                    );
+                    return;
+                }
+                Err(e) => {
+                    error!("skipping workers for chain {}. reason: {}", chain_id, e);
+                    return;
+                }
+                _ => {} // allowed
+            }
+        }
 
         match self.spawn_connection_workers(chain.clone(), client.clone(), connection.clone()) {
             Ok(()) => debug!(
@@ -438,7 +494,10 @@ impl<'a> SpawnContext<'a> {
             chan_state_dst
         );
 
-        if chan_state_src.is_open() && chan_state_dst.is_open() {
+        if chan_state_src.is_open()
+            && chan_state_dst.is_open()
+            && self.relay_packets_on_channel(chain.as_ref(), &channel)
+        {
             // spawn the client worker
             let client_object = Object::Client(Client {
                 dst_client_id: client.client_id.clone(),
@@ -494,6 +553,15 @@ impl<'a> SpawnContext<'a> {
         }
 
         Ok(())
+    }
+
+    fn relay_packets_on_channel(
+        &mut self,
+        chain: &dyn ChainHandle,
+        channel: &IdentifiedChannelEnd,
+    ) -> bool {
+        let config = self.config.read().expect("poisoned lock");
+        config.packets_on_channel_allowed(&chain.id(), &channel.port_id, &channel.channel_id)
     }
 
     pub fn shutdown_workers_for_chain(&mut self, chain_id: &ChainId) {
