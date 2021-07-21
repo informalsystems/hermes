@@ -10,6 +10,9 @@ pub enum Kind {
     #[error("invalid trusting period")]
     InvalidTrustingPeriod,
 
+    #[error("invalid client state trust threshold")]
+    InvalidTrustThreshold,
+
     #[error("invalid unbonding period")]
     InvalidUnboundingPeriod,
 
