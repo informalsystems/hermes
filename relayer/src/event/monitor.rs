@@ -210,7 +210,7 @@ impl EventMonitor {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
-            trace!(chain.id = %self.chain_id, "subscribing to query: {}", query);
+            trace!("[{}] subscribing to query: {}", self.chain_id, query);
 
             let subscription = self
                 .rt
@@ -222,14 +222,15 @@ impl EventMonitor {
 
         self.subscriptions = Box::new(select_all(subscriptions));
 
-        trace!(chain.id = %self.chain_id, "subscribed to all queries");
+        trace!("[{}] subscribed to all queries", self.chain_id);
 
         Ok(())
     }
 
     fn try_reconnect(&mut self) -> Result<()> {
-        trace!(chain.id = %self.chain_id,
-            "trying to reconnect to WebSocket endpoint {}",
+        trace!(
+            "[{}] trying to reconnect to WebSocket endpoint {}",
+            self.chain_id,
             self.node_addr
         );
 
@@ -247,27 +248,31 @@ impl EventMonitor {
         std::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
         trace!(
-            chain.id = %self.chain_id,
-            "reconnected to WebSocket endpoint {}",
-            self.node_addr,
+            "[{}] reconnected to WebSocket endpoint {}",
+            self.chain_id,
+            self.node_addr
         );
 
         // Shut down previous client
-        trace!(chain.id = %self.chain_id, "gracefully shutting down previous client");
+        trace!(
+            "[{}] gracefully shutting down previous client",
+            self.chain_id
+        );
+
         let _ = client.close();
 
         self.rt
             .block_on(driver_handle)
             .map_err(|e| Error::ClientTerminationFailed(Arc::new(e)))?;
 
-        trace!(chain.id = %self.chain_id, "previous client successfully shutdown");
+        trace!("[{}] previous client successfully shutdown", self.chain_id);
 
         Ok(())
     }
 
     /// Try to resubscribe to events
     fn try_resubscribe(&mut self) -> Result<()> {
-        trace!(chain.id = %self.chain_id, "trying to resubscribe to events");
+        trace!("[{}] trying to resubscribe to events", self.chain_id);
         self.subscribe()
     }
 
@@ -279,13 +284,13 @@ impl EventMonitor {
         let result = retry_with_index(retry_strategy::default(), |_| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
-                trace!(chain.id = %self.chain_id, "error when reconnecting: {}", e);
+                trace!("[{}] error when reconnecting: {}", self.chain_id, e);
                 return RetryResult::Retry(());
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
-                trace!(chain.id = %self.chain_id, "error when resubscribing: {}", e);
+                trace!("[{}] error when resubscribing: {}", self.chain_id, e);
                 return RetryResult::Retry(());
             }
 
@@ -294,14 +299,14 @@ impl EventMonitor {
 
         match result {
             Ok(()) => info!(
-                chain.id = %self.chain_id,
-                "successfully reconnected to WebSocket endpoint {}",
-                self.node_addr
+                "[{}] successfully reconnected to WebSocket endpoint {}",
+                self.chain_id, self.node_addr
             ),
             Err(retries) => error!(
-                chain.id = %self.chain_id,
-                "failed to reconnect to {} after {} retries",
-                self.node_addr, retry_count(&retries)
+                "[{}] failed to reconnect to {} after {} retries",
+                self.chain_id,
+                self.node_addr,
+                retry_count(&retries)
             ),
         }
     }
@@ -309,7 +314,7 @@ impl EventMonitor {
     /// Event monitor loop
     #[allow(clippy::while_let_loop)]
     pub fn run(mut self) {
-        debug!(chain.id = %self.chain_id, "starting event monitor");
+        debug!("[{}] starting event monitor", self.chain_id);
 
         // Continuously run the event loop, so that when it aborts
         // because of WebSocket client restart, we pick up the work again.
@@ -320,7 +325,7 @@ impl EventMonitor {
             }
         }
 
-        debug!(chain.id = %self.chain_id, "event monitor is shutting down");
+        debug!("[{}] event monitor is shutting down", self.chain_id);
 
         // Close the WebSocket connection
         let _ = self.client.close();
@@ -328,7 +333,10 @@ impl EventMonitor {
         // Wait for the WebSocket driver to finish
         let _ = self.rt.block_on(self.driver_handle);
 
-        trace!(chain.id = %self.chain_id, "event monitor has successfully shut down");
+        trace!(
+            "[{}] event monitor has successfully shut down",
+            self.chain_id
+        );
     }
 
     fn run_loop(&mut self) -> Next {
@@ -361,14 +369,17 @@ impl EventMonitor {
 
             match result {
                 Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
-                    error!(chain.id = %self.chain_id, "{}", e);
+                    error!("[{}] {}", self.chain_id, e);
                 }),
                 Err(Error::SubscriptionCancelled(reason)) => {
-                    error!(chain.id = %self.chain_id, "subscription cancelled, reason: {}", reason);
+                    error!(
+                        "[{}] subscription cancelled, reason: {}",
+                        self.chain_id, reason
+                    );
 
                     self.propagate_error(Error::SubscriptionCancelled(reason))
                         .unwrap_or_else(|e| {
-                            error!(chain.id = %self.chain_id, "{}", e);
+                            error!("[{}] {}", self.chain_id, e);
                         });
 
                     // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
@@ -381,7 +392,7 @@ impl EventMonitor {
                     return Next::Continue;
                 }
                 Err(e) => {
-                    error!(chain.id = %self.chain_id, "failed to collect events: {}", e);
+                    error!("[{}] failed to collect events: {}", self.chain_id, e);
 
                     // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
                     self.reconnect();
