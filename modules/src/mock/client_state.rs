@@ -137,9 +137,9 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
             .header
             .ok_or_else(|| ClientKind::InvalidRawConsensusState.context("missing header"))?;
 
-        Ok(Self{
+        Ok(Self {
             header: MockHeader::try_from(raw_header)?,
-            root: CommitmentRoot::from(vec![0])
+            root: CommitmentRoot::from(vec![0]),
         })
     }
 }

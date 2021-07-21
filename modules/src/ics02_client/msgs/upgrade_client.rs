@@ -178,7 +178,8 @@ mod tests {
         let height = Height::new(1, 1);
 
         let client_state = AnyClientState::Mock(MockClientState(MockHeader::new(height)));
-        let consensus_state = AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height)));
+        let consensus_state =
+            AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height)));
 
         let proof = get_dummy_merkle_proof();
 
