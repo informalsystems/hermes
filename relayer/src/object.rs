@@ -1,3 +1,4 @@
+use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
 use ibc::{
@@ -17,6 +18,8 @@ use crate::chain::{
     },
     handle::ChainHandle,
 };
+use crate::error::Error as RelayerError;
+use crate::supervisor::Error as SupervisorError;
 
 /// Client
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -145,6 +148,42 @@ pub enum Object {
     Packet(Packet),
 }
 
+define_error! {
+    ObjectError {
+        Relayer
+            [ RelayerError ]
+            | _ | { "relayer error" },
+
+        Supervisor
+            [ SupervisorError ]
+            | _ | { "supervisor error" },
+
+        RefreshNotRequired
+            {
+                client_id: ClientId,
+                chain_id: ChainId,
+            }
+            | e | {
+                format!("client '{}' on chain {} does not require refresh",
+                    e.client_id, e.chain_id)
+            },
+
+        MissingChannelId
+            { event: Attributes }
+            | e | {
+                format!("channel_id missing in channel open event '{:?}'",
+                    e.event)
+            },
+
+        MissingConnectionId
+            { event: ConnectionAttributes }
+            | e | {
+                format!("connection_id missing from connection handshake event '{:?}'",
+                    e.event)
+            },
+    }
+}
+
 impl Object {
     /// Returns `true` if this [`Object`] is for a [`Worker`] which is interested
     /// in new block events originating from the chain with the given [`ChainId`].
@@ -244,15 +283,16 @@ impl Object {
     pub fn for_update_client(
         e: &UpdateClient,
         dst_chain: &dyn ChainHandle,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let client_state = dst_chain.query_client_state(e.client_id(), Height::zero())?;
+    ) -> Result<Self, ObjectError> {
+        let client_state = dst_chain
+            .query_client_state(e.client_id(), Height::zero())
+            .map_err(ObjectError::relayer)?;
+
         if client_state.refresh_period().is_none() {
-            return Err(format!(
-                "client '{}' on chain {} does not require refresh",
-                e.client_id(),
-                dst_chain.id()
-            )
-            .into());
+            return Err(ObjectError::refresh_not_required(
+                e.client_id().clone(),
+                dst_chain.id().clone(),
+            ));
         }
 
         let src_chain_id = client_state.chain_id();
@@ -269,19 +309,20 @@ impl Object {
     pub fn client_from_chan_open_events(
         e: &Attributes,          // The attributes of the emitted event
         chain: &dyn ChainHandle, // The chain which emitted the event
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, ObjectError> {
         let channel_id = e
             .channel_id()
-            .ok_or_else(|| format!("channel_id missing in channel open event '{:?}'", e))?;
+            .ok_or_else(|| ObjectError::missing_channel_id(e.clone()))?;
 
-        let client = channel_connection_client(chain, e.port_id(), channel_id)?.client;
+        let client = channel_connection_client(chain, e.port_id(), channel_id)
+            .map_err(ObjectError::supervisor)?
+            .client;
+
         if client.client_state.refresh_period().is_none() {
-            return Err(format!(
-                "client '{}' on chain {} does not require refresh",
-                client.client_id,
-                chain.id()
-            )
-            .into());
+            return Err(ObjectError::refresh_not_required(
+                client.client_id.clone(),
+                chain.id(),
+            ));
         }
 
         Ok(Client {
@@ -296,18 +337,14 @@ impl Object {
     pub fn connection_from_conn_open_events(
         e: &ConnectionAttributes,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let connection_id = e.connection_id.as_ref().ok_or_else(|| {
-            format!(
-                "connection_id missing from connection handshake event '{:?}'",
-                e
-            )
-        })?;
+    ) -> Result<Self, ObjectError> {
+        let connection_id = e
+            .connection_id
+            .as_ref()
+            .ok_or_else(|| ObjectError::missing_connection_id(e.clone()))?;
 
-        let dst_chain_id =
-            counterparty_chain_from_connection(src_chain, &connection_id).map_err(|_| {
-                "destination chain id not found during conn open handshake step".to_string()
-            })?;
+        let dst_chain_id = counterparty_chain_from_connection(src_chain, &connection_id)
+            .map_err(ObjectError::supervisor)?;
 
         Ok(Connection {
             dst_chain_id,
@@ -321,20 +358,14 @@ impl Object {
     pub fn channel_from_chan_open_events(
         attributes: &Attributes,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, ObjectError> {
         let channel_id = attributes
             .channel_id()
-            .ok_or_else(|| format!("channel_id missing in event attributes'{:?}'", attributes))?;
+            .ok_or_else(|| ObjectError::missing_channel_id(attributes.clone()))?;
 
         let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id()).map_err(
-                |err| {
-                    format!(
-                        "cannot identify destination chain from event attributes {:?}: {}",
-                        attributes, err
-                    )
-                },
-            )?;
+            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id())
+                .map_err(ObjectError::supervisor)?;
 
         Ok(Channel {
             dst_chain_id,
@@ -349,20 +380,14 @@ impl Object {
     pub fn packet_from_chan_open_events(
         attributes: &Attributes,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, ObjectError> {
         let channel_id = attributes
             .channel_id()
-            .ok_or_else(|| format!("channel_id missing in event attributes'{:?}'", attributes))?;
+            .ok_or_else(|| ObjectError::missing_channel_id(attributes.clone()))?;
 
         let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id()).map_err(
-                |err| {
-                    format!(
-                        "cannot identify destination chain from event attributes {:?}: {}",
-                        attributes, err
-                    )
-                },
-            )?;
+            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id())
+                .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
             dst_chain_id,
@@ -377,12 +402,13 @@ impl Object {
     pub fn for_send_packet(
         e: &SendPacket,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, ObjectError> {
         let dst_chain_id = counterparty_chain_from_channel(
             src_chain,
             &e.packet.source_channel,
             &e.packet.source_port,
-        )?;
+        )
+        .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
             dst_chain_id,
@@ -397,12 +423,13 @@ impl Object {
     pub fn for_write_ack(
         e: &WriteAcknowledgement,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, ObjectError> {
         let dst_chain_id = counterparty_chain_from_channel(
             src_chain,
             &e.packet.destination_channel,
             &e.packet.destination_port,
-        )?;
+        )
+        .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
             dst_chain_id,
@@ -417,12 +444,13 @@ impl Object {
     pub fn for_timeout_packet(
         e: &TimeoutPacket,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, ObjectError> {
         let dst_chain_id = counterparty_chain_from_channel(
             src_chain,
             &e.packet.source_channel,
             &e.packet.source_port,
-        )?;
+        )
+        .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
             dst_chain_id,
@@ -437,9 +465,9 @@ impl Object {
     pub fn for_close_init_channel(
         e: &CloseInit,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, e.channel_id(), &e.port_id())?;
+    ) -> Result<Self, ObjectError> {
+        let dst_chain_id = counterparty_chain_from_channel(src_chain, e.channel_id(), &e.port_id())
+            .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
             dst_chain_id,
