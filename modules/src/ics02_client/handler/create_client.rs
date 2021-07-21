@@ -88,7 +88,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             MockClientState(MockHeader::new(height)).into(),
-            MockConsensusState(MockHeader::new(height)).into(),
+            MockConsensusState::new(MockHeader::new(height)).into(),
             signer,
         )
         .unwrap();
@@ -138,7 +138,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -152,7 +152,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -166,7 +166,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 50,
                     ..height
                 }))
