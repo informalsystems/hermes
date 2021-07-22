@@ -23,7 +23,7 @@ Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
   - Add a pseudo root to `MockConsensusState` ([#1215])
 
 - [ibc-relayer-cli]
-  - Added `upgrade-clients` CLI ([#763])
+  - Added `upgrade clients` CLI ([#763])
 
 ### IMPROVEMENTS
 
