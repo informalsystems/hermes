@@ -536,7 +536,10 @@ impl Supervisor {
 
         let result = match batch.unwrap_or_clone() {
             Ok(batch) => self.process_batch(chain, batch),
-            Err(EventError::SubscriptionCancelled(_)) => self.clear_pending_packets(&chain_id),
+            Err(EventError::SubscriptionCancelled(_)) => {
+                warn!(chain.id = %chain_id, "event subscription was cancelled, clearing pending packets");
+                self.clear_pending_packets(&chain_id)
+            }
             Err(e) => Err(e.into()),
         };
 

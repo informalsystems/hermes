@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.6.0"
+version    = "0.6.1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -20,7 +20,7 @@ mocks = [ "tendermint-testgen", "sha2" ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.8.0", path = "../proto" }
+ibc-proto = { version = "0.9.0", path = "../proto" }
 ics23 = "0.6.5"
 anomaly = "0.2.0"
 chrono = "0.4.19"

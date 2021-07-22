@@ -7,7 +7,7 @@ use thiserror::Error;
 pub type Error = anomaly::Error<Kind>;
 
 /// Kinds of errors
-#[derive(Copy, Clone, Debug, Eq, Error, PartialEq)]
+#[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum Kind {
     /// Error in configuration file
     #[error("config error")]
@@ -16,6 +16,10 @@ pub enum Kind {
     /// Input/output error
     #[error("I/O error")]
     Io,
+
+    /// Input/output error
+    #[error("CLI argument error: {0}")]
+    CliArg(String),
 
     /// Error during network query
     #[error("query error")]

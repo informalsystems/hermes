@@ -131,7 +131,15 @@ pub struct TxUpgradeClientCmd {
 }
 
 impl Runnable for TxUpgradeClientCmd {
+    #[allow(unreachable_code)]
     fn run(&self) {
+        tracing::error!("This command is currently disabled due to a regression in Hermes v0.6.1.");
+        tracing::error!("Please track the following issue for background and progress:");
+        tracing::error!("");
+        tracing::error!("    https://github.com/informalsystems/ibc-rs/issues/1229");
+
+        std::process::exit(1);
+
         let config = app_config();
 
         let dst_chain = match spawn_chain_runtime(&config, &self.chain_id) {
@@ -179,7 +187,15 @@ pub struct TxUpgradeClientsCmd {
 }
 
 impl Runnable for TxUpgradeClientsCmd {
+    #[allow(unreachable_code)]
     fn run(&self) {
+        tracing::error!("This command is currently disabled due to a regression in Hermes v0.6.1.");
+        tracing::error!("Please track the following issue for background and progress:");
+        tracing::error!("");
+        tracing::error!("    https://github.com/informalsystems/ibc-rs/issues/1229");
+
+        std::process::exit(1);
+
         let config = app_config();
         let src_chain = match spawn_chain_runtime(&config, &self.src_chain_id) {
             Ok(handle) => handle,
