@@ -13,6 +13,8 @@ of the relayer by ensuring that pending packets are cleared on start,
 and that Hermes can recover from the WebSocket subscriptions
 being closed under its feet by Tendermint.
 
+Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
+
 ### FEATURES
 
 - [ibc]
@@ -47,6 +49,7 @@ being closed under its feet by Tendermint.
 [#1196]: https://github.com/informalsystems/ibc-rs/issues/1196
 [#1198]: https://github.com/informalsystems/ibc-rs/issues/1198
 [#1200]: https://github.com/informalsystems/ibc-rs/issues/1200
+[#1215]: https://github.com/informalsystems/ibc-rs/issues/1215
 
 
 ## v0.6.0
