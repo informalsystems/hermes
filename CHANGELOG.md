@@ -1,6 +1,17 @@
 # Changelog
 
-## UNRELEASED
+## Unreleased
+
+> Nothing yet
+
+## v0.6.1
+*July 22nd, 2021*
+
+This minor release adds a new `upgrade-clients` command to Hermes
+to upgrade multiple IBC clients at once, and improves the reliability
+of the relayer by ensuring that pending packets are cleared on start,
+and that Hermes can recover from the WebSocket subscriptions
+being closed under its feet by Tendermint.
 
 ### FEATURES
 
@@ -25,7 +36,7 @@
   - Align `as_str` and `from_str` behavior in `ClientType` ([#1192])
 
 - [ibc-relayer]
-  - Fixed: Hermes does not clear packets on start ([#1200])
+  - Ensure pending packets are cleared on start ([#1200])
   - Recover from missed RPC events after WebSocket subscription is closed by Tendermint ([#1196])
 
 
