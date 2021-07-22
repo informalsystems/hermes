@@ -14,6 +14,10 @@ being closed under its feet by Tendermint.
 
 Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
 
+> **WARNING:** Due to a regression ([#1229]), the `upgrade client`
+> and `tx raw upgrade-chain` commands have been temporarily disabled
+> in this version. They will be re-enabled in the next version.
+
 ### FEATURES
 
 - [ibc]
@@ -46,6 +50,7 @@ Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
 [#1198]: https://github.com/informalsystems/ibc-rs/issues/1198
 [#1200]: https://github.com/informalsystems/ibc-rs/issues/1200
 [#1215]: https://github.com/informalsystems/ibc-rs/issues/1215
+[#1229]: https://github.com/informalsystems/ibc-rs/issues/1229
 
 
 ## v0.6.0
