@@ -24,7 +24,7 @@ telemetry = ["ibc-relayer/telemetry", "ibc-telemetry"]
 [dependencies]
 ibc           = { version = "0.6.1", path = "../modules" }
 ibc-relayer   = { version = "0.6.1", path = "../relayer" }
-ibc-proto     = { version = "0.8.3", path = "../proto" }
+ibc-proto     = { version = "0.9.0", path = "../proto" }
 ibc-telemetry = { version = "0.6.1", path = "../telemetry", optional = true }
 
 anomaly = "0.2.0"
