@@ -14,9 +14,10 @@ being closed under its feet by Tendermint.
 
 Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
 
-> **WARNING:** Due to a regression ([#1229]), the `upgrade client`
-> and `tx raw upgrade-chain` commands have been temporarily disabled
-> in this version. They will be re-enabled in the next version.
+> **WARNING:** Due to a regression ([#1229]), the `upgrade client`,
+> `tx raw upgrade-clients`, and `tx raw upgrade-chain` commands have
+> been temporarily disabled in this version.
+> These commands will be re-enabled in the next version.
 
 ### FEATURES
 
