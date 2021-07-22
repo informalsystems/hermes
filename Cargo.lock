@@ -832,8 +832,8 @@ dependencies = [
 
 [[package]]
 name = "flex-error"
-version = "0.3.0"
-source = "git+https://github.com/informalsystems/flex-error?rev=70f867bb562174db8a59fe136102c900c4147885#70f867bb562174db8a59fe136102c900c4147885"
+version = "0.4.0"
+source = "git+https://github.com/informalsystems/flex-error?rev=39beb62250b9210f67e4640022f33aaf4b3541ee#39beb62250b9210f67e4640022f33aaf4b3541ee"
 dependencies = [
  "anyhow",
  "eyre",

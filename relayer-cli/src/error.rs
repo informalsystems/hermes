@@ -11,6 +11,7 @@ use ibc_relayer::transfer::PacketError;
 use ibc_relayer::upgrade_chain::UpgradeChainError;
 
 define_error! {
+    /// An error raised within the relayer CLI
     Error {
         Config
             |_| { "config error" },

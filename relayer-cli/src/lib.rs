@@ -25,7 +25,6 @@ pub mod commands;
 pub mod config;
 pub mod prelude;
 
-#[allow(missing_docs)]
 pub mod error;
 
 pub(crate) mod cli_utils;
