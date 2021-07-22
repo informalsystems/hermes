@@ -26,11 +26,14 @@
 
 - [ibc-relayer]
   - Fixed: Hermes does not clear packets on start ([#1200])
+  - Recover from missed RPC events after WebSocket subscription is closed by Tendermint ([#1196])
+
 
 [#1094]: https://github.com/informalsystems/ibc-rs/issues/1094
 [#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
 [#1192]: https://github.com/informalsystems/ibc-rs/issues/1192
 [#1194]: https://github.com/informalsystems/ibc-rs/issues/1194
+[#1196]: https://github.com/informalsystems/ibc-rs/issues/1196
 [#1198]: https://github.com/informalsystems/ibc-rs/issues/1198
 [#1200]: https://github.com/informalsystems/ibc-rs/issues/1200
 

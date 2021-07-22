@@ -19,7 +19,7 @@ use crate::{
     chain::handle::ChainHandle,
     config::{ChainConfig, Config},
     event,
-    event::monitor::EventBatch,
+    event::monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
     registry::Registry,
     telemetry::Telemetry,
@@ -566,7 +566,15 @@ impl Supervisor {
             Ok(batch) => {
                 let _ = self
                     .process_batch(chain, batch)
-                    .map_err(|e| error!("[{}] error during batch processingh: {}", chain_id, e));
+                    .map_err(|e| error!("[{}] error during batch processing: {}", chain_id, e));
+            }
+            Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
+                let _ = self.clear_pending_packets(&chain_id).map_err(|e| {
+                    error!(
+                        "[{}] error during clearing pending packets: {}",
+                        chain_id, e
+                    )
+                });
             }
             Err(e) => {
                 error!("[{}] error in receiving event batch: {}", chain_id, e)
@@ -629,6 +637,14 @@ impl Supervisor {
                     .send_new_block(height, new_block)
                     .map_err(Error::worker)?
             }
+        }
+
+        Ok(())
+    }
+
+    fn clear_pending_packets(&mut self, chain_id: &ChainId) -> Result<(), Error> {
+        for worker in self.workers.workers_for_chain(chain_id) {
+            worker.clear_pending_packets().map_err(Error::worker)?;
         }
 
         Ok(())

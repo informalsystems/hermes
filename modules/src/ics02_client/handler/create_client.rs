@@ -224,10 +224,7 @@ mod tests {
 
         let tm_client_state = AnyClientState::Tendermint(ClientState {
             chain_id: tm_header.chain_id.clone().into(),
-            trust_level: TrustThreshold {
-                numerator: 1,
-                denominator: 3,
-            },
+            trust_level: TrustThreshold::ONE_THIRD,
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),

@@ -72,6 +72,13 @@ impl WorkerHandle {
             .map_err(WorkerError::send)
     }
 
+    /// Instruct the worker to clear pending packets.
+    pub fn clear_pending_packets(&self) -> Result<(), WorkerError> {
+        self.tx
+            .send(WorkerCmd::ClearPendingPackets)
+            .map_err(WorkerError::send)
+    }
+
     /// Shutdown the worker.
     pub fn shutdown(&self) -> Result<(), WorkerError> {
         self.tx.send(WorkerCmd::Shutdown).map_err(WorkerError::send)

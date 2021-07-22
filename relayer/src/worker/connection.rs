@@ -113,6 +113,8 @@ impl ConnectionWorker {
                         info!(connection = %self.connection.short_name(), "shutting down Connection worker");
                         return Ok(());
                     }
+
+                    WorkerCmd::ClearPendingPackets => Ok(()), // nothing to do
                 };
 
                 if let Err(retries) = result {

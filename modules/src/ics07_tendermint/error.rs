@@ -19,6 +19,13 @@ define_error! {
             [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
             | _ | { "invalid header, failed basic validation" },
 
+        InvalidTrustThreshold
+            { reason: String }
+            | e | {
+                format_args!("invalid client state trust threshold: {}",
+                    e.reason)
+            },
+
         MissingSignedHeader
             | _ | { "missing signed header" },
 

@@ -28,4 +28,4 @@ bytes = "1.0"
 tonic = "0.4"
 
 [dependencies.tendermint-proto]
-version = "=0.20.0"
+version = "=0.21.0"

@@ -3,6 +3,7 @@ use std::{fmt, ops::Deref, str::FromStr, sync::Arc, thread};
 use abscissa_core::{application::fatal_error, Command, Options, Runnable};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::{error, info};
 
 use ibc::{events::IbcEvent, ics24_host::identifier::ChainId};
 
@@ -95,8 +96,8 @@ pub fn listen(
     config: &ChainConfig,
     filters: &[EventFilter],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!(
-        "[info] Listening for events `{}` on '{}'...",
+    info!(
+        "listening for events `{}` on '{}'...",
         filters.iter().format(", "),
         config.id
     );
@@ -119,15 +120,15 @@ pub fn listen(
                     continue;
                 }
 
-                println!("- Event batch at height {}", batch.height);
+                info!("- event batch at height {}", batch.height);
 
                 for event in matching_events {
-                    println!("+ {:#?}", event);
+                    info!("+ {:#?}", event);
                 }
 
-                println!();
+                info!("");
             }
-            Err(e) => println!("- Error: {}", e),
+            Err(e) => error!("- error: {}", e),
         }
     }
 
