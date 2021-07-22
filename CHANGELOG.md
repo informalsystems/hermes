@@ -7,9 +7,8 @@
 ## v0.6.1
 *July 22nd, 2021*
 
-This minor release adds a new `upgrade-clients` command to Hermes
-to upgrade multiple IBC clients at once, and improves the reliability
-of the relayer by ensuring that pending packets are cleared on start,
+This minor release mainly improves the reliability of the relayer
+by ensuring that pending packets are cleared on start,
 and that Hermes can recover from the WebSocket subscriptions
 being closed under its feet by Tendermint.
 
@@ -21,9 +20,6 @@ Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
   - Enable `pub` access to verification methods of ICS 03 & 04 ([#1198])
   - Add `ics26_routing::handler::decode` function ([#1194])
   - Add a pseudo root to `MockConsensusState` ([#1215])
-
-- [ibc-relayer-cli]
-  - Added `upgrade clients` CLI ([#763])
 
 ### IMPROVEMENTS
 
@@ -136,7 +132,6 @@ The full list of changes is described below.
 [#69]: https://github.com/informalsystems/ibc-rs/issues/69
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#697]: https://github.com/informalsystems/ibc-rs/issues/697
-[#763]: https://github.com/informalsystems/ibc-rs/issues/763
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
 [#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
 [#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
