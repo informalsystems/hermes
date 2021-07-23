@@ -107,6 +107,8 @@ impl ChannelWorker {
                         info!(channel = %self.channel.short_name(), "shutting down Channel worker");
                         return Ok(());
                     }
+
+                    WorkerCmd::ClearPendingPackets => Ok(()), // nothing to do
                 };
 
                 if let Err(retries) = result {

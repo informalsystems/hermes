@@ -248,16 +248,18 @@ impl RelayPath {
         result
     }
 
-    fn relay_pending_packets(&mut self, height: Height) -> Result<(), LinkError> {
+    fn relay_pending_packets(&mut self, height: Option<Height>) -> Result<(), LinkError> {
         for _ in 0..MAX_RETRIES {
-            if self
-                .build_recv_packet_and_timeout_msgs(Some(height))
-                .is_ok()
-                && self.build_packet_ack_msgs(Some(height)).is_ok()
-            {
+            let cleared = self
+                .build_recv_packet_and_timeout_msgs(height)
+                .and_then(|()| self.build_packet_ack_msgs(height))
+                .is_ok();
+
+            if cleared {
                 return Ok(());
             }
         }
+
         Err(LinkError::OldPacketClearingFailed)
     }
 
@@ -265,7 +267,7 @@ impl RelayPath {
     /// is set or if clearing is forced by the caller.
     pub fn schedule_packet_clearing(
         &mut self,
-        height: Height,
+        height: Option<Height>,
         force: bool,
     ) -> Result<(), LinkError> {
         if self.clear_packets || force {
@@ -273,25 +275,23 @@ impl RelayPath {
             // Clearing may still happen: upon new blocks, when `force = true`.
             self.clear_packets = false;
 
-            info!(
-                "[{}] clearing pending packets from events before height {}",
-                self, height
-            );
+            let clear_height = if let Some(height) = height {
+                Some(height.decrement().map_err(|e| {
+                    LinkError::Failed(format!(
+                        "Cannot clear packets at height {}, because this height cannot be decremented: {}",
+                        height,
+                        e.to_string()
+                    ))
+                })?)
+            } else {
+                None
+            };
 
-            let clear_height = height.decrement().map_err(|e| {
-                LinkError::Failed(format!(
-                    "Cannot clear packets @height {}, because this height cannot be decremented: {}",
-                    height,
-                    e.to_string()
-                ))
-            })?;
+            info!(height = ?clear_height, "[{}] clearing pending packets", self);
 
             self.relay_pending_packets(clear_height)?;
 
-            info!(
-                "[{}] finished scheduling the clearing of pending packets",
-                self
-            );
+            info!(height = ?clear_height, "[{}] finished scheduling pending packets clearing", self);
         }
 
         Ok(())

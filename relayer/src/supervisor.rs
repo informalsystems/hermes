@@ -19,7 +19,7 @@ use crate::{
     chain::handle::ChainHandle,
     config::{ChainConfig, Config},
     event,
-    event::monitor::{EventBatch, UnwrapOrClone},
+    event::monitor::{Error as EventError, EventBatch, UnwrapOrClone},
     object::Object,
     registry::Registry,
     telemetry::Telemetry,
@@ -534,10 +534,14 @@ impl Supervisor {
     fn handle_batch(&mut self, chain: Box<dyn ChainHandle>, batch: ArcBatch) {
         let chain_id = chain.id();
 
-        let result = batch
-            .unwrap_or_clone()
-            .map_err(Into::into)
-            .and_then(|batch| self.process_batch(chain, batch));
+        let result = match batch.unwrap_or_clone() {
+            Ok(batch) => self.process_batch(chain, batch),
+            Err(EventError::SubscriptionCancelled(_)) => {
+                warn!(chain.id = %chain_id, "event subscription was cancelled, clearing pending packets");
+                self.clear_pending_packets(&chain_id)
+            }
+            Err(e) => Err(e.into()),
+        };
 
         if let Err(e) = result {
             error!("[{}] error during batch processing: {}", chain_id, e);
@@ -588,6 +592,14 @@ impl Supervisor {
             for worker in self.workers.to_notify(&src_chain.id()) {
                 worker.send_new_block(height, new_block)?;
             }
+        }
+
+        Ok(())
+    }
+
+    fn clear_pending_packets(&mut self, chain_id: &ChainId) -> Result<(), BoxError> {
+        for worker in self.workers.workers_for_chain(chain_id) {
+            worker.clear_pending_packets()?;
         }
 
         Ok(())
