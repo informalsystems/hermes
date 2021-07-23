@@ -74,6 +74,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+    use test_env_log::test;
 
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;

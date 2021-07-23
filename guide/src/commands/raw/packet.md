@@ -24,11 +24,12 @@ POSITIONAL ARGUMENTS:
     amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
 
 FLAGS:
-    -o, --timeout-height-offset TIMEOUT-HEIGHT-OFFSET
-    -t, --timeout-seconds TIMEOUT-SECONDS
-    -r, --receiver RECEIVER   receiving account address on the destination chain
-    -d, --denom DENOM         denomination of the coins to send (default: samoleans)
-    -n, --number-msgs NUMBER-MSGS
+    -o, --timeout-height-offset TIMEOUT-HEIGHT-OFFSET  timeout in number of blocks since current
+    -t, --timeout-seconds TIMEOUT-SECONDS              timeout in seconds since current
+    -r, --receiver RECEIVER                            receiving account address on the destination chain
+    -d, --denom DENOM                                  denomination of the coins to send (default: samoleans)
+    -n, --number-msgs NUMBER-MSGS                      number of messages to send
+    -k, --key KEY                                      use the given signing key (default: `key_name` config)
 ```
 
 __Example__
@@ -39,7 +40,7 @@ Send two transfer packets from the `transfer` module and `channel-0` of `ibc-0` 
 hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
 ```
 
-```rust
+```json
 Success: [
     SendPacket(
         SendPacket {
@@ -70,7 +71,7 @@ The transfer packets are stored on `ibc-0` and can be relayed.
 hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 1 -r board:1938586739
 ```
 
-```rust
+```json
 Success: [
     SendPacket(
         SendPacket {
@@ -112,7 +113,7 @@ __NOTE__: The relayer prepends a client update message before the receive messag
 hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 ```
 
-```rust
+```json
 Success: [
     UpdateClient(
         UpdateClient {
@@ -224,7 +225,7 @@ __NOTE__: The relayer prepends a client update message before the acknowledgment
 hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1
 ```
 
-```rust
+```json
 Success: [
     UpdateClient(
         UpdateClient {

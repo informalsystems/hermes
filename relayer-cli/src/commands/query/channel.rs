@@ -9,6 +9,7 @@ use ibc_relayer::chain::{Chain, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::prelude::*;
+use ibc::ics04_channel::channel::State;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {
@@ -48,7 +49,17 @@ impl Runnable for QueryChannelEndCmd {
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
         let res = chain.query_channel(&self.port_id, &self.channel_id, height);
         match res {
-            Ok(ce) => Output::success(ce).exit(),
+            Ok(channel_end) => {
+                if channel_end.state_matches(&State::Uninitialized) {
+                    Output::error(format!(
+                        "port '{}' & channel '{}' does not exist",
+                        self.port_id, self.channel_id
+                    ))
+                    .exit()
+                } else {
+                    Output::success(channel_end).exit()
+                }
+            }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }

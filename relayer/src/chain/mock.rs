@@ -1,6 +1,5 @@
 use std::ops::Add;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
 
 use crossbeam_channel as channel;
@@ -12,7 +11,7 @@ use ibc::downcast;
 use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
@@ -28,9 +27,10 @@ use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -41,8 +41,9 @@ use ibc_proto::ibc::core::connection::v1::{
 use crate::chain::Chain;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::EventReceiver;
+use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
+use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 /// The representation of a mocked chain as the relayer sees it.
@@ -52,6 +53,10 @@ use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
+
+    // keep a reference to event sender to prevent it from being dropped
+    _event_sender: EventSender,
+    event_receiver: EventReceiver,
 }
 
 impl Chain for MockChain {
@@ -61,6 +66,7 @@ impl Chain for MockChain {
     type ClientState = TendermintClientState;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
+        let (sender, receiver) = channel::unbounded();
         Ok(MockChain {
             config: config.clone(),
             context: MockContext::new(
@@ -69,6 +75,8 @@ impl Chain for MockChain {
                 50,
                 Height::new(config.id.version(), 20),
             ),
+            _event_sender: sender,
+            event_receiver: receiver,
         })
     }
 
@@ -79,13 +87,17 @@ impl Chain for MockChain {
     fn init_event_monitor(
         &self,
         _rt: Arc<Runtime>,
-    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error> {
-        let (_, rx) = channel::unbounded();
-        Ok((rx, None))
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
+        let (tx, _) = crossbeam_channel::unbounded();
+        Ok((self.event_receiver.clone(), tx))
     }
 
     fn id(&self) -> &ChainId {
         &self.config.id
+    }
+
+    fn shutdown(self) -> Result<(), Error> {
+        Ok(())
     }
 
     fn keybase(&self) -> &KeyRing {
@@ -170,14 +182,14 @@ impl Chain for MockChain {
     fn query_connections(
         &self,
         _request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         unimplemented!()
     }
 
     fn query_connection_channels(
         &self,
         _request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<ChannelId>, Error> {
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
         unimplemented!()
     }
 
@@ -194,6 +206,13 @@ impl Chain for MockChain {
         _channel_id: &ChannelId,
         _height: Height,
     ) -> Result<ChannelEnd, Error> {
+        unimplemented!()
+    }
+
+    fn query_channel_client_state(
+        &self,
+        _request: QueryChannelClientStateRequest,
+    ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         unimplemented!()
     }
 
@@ -311,15 +330,33 @@ impl Chain for MockChain {
     fn build_header(
         &self,
         trusted_height: Height,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
-        Ok(Self::Header {
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: target_light_block.validators,
+        target_height: Height,
+        client_state: &AnyClientState,
+        light_client: &mut dyn LightClient<Self>,
+    ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
+        let succ_trusted = light_client.fetch(trusted_height.increment())?;
+
+        let Verified { target, supporting } =
+            light_client.verify(trusted_height, target_height, client_state)?;
+
+        let target_header = Self::Header {
+            signed_header: target.signed_header,
+            validator_set: target.validators,
             trusted_height,
-            trusted_validator_set: trusted_light_block.validators,
-        })
+            trusted_validator_set: succ_trusted.validators.clone(),
+        };
+
+        let supporting_headers = supporting
+            .into_iter()
+            .map(|h| Self::Header {
+                signed_header: h.signed_header,
+                validator_set: h.validators,
+                trusted_height,
+                trusted_validator_set: succ_trusted.validators.clone(),
+            })
+            .collect();
+
+        Ok((target_header, supporting_headers))
     }
 
     fn query_consensus_states(
@@ -357,7 +394,7 @@ pub mod test_utils {
 
     use ibc::ics24_host::identifier::ChainId;
 
-    use crate::config::ChainConfig;
+    use crate::config::{ChainConfig, GasPrice, PacketFilter};
 
     /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
@@ -370,14 +407,15 @@ pub mod test_utils {
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),
-            gas: None,
-            fee_denom: "stake".to_string(),
-            fee_amount: Some(1000),
+            max_gas: None,
+            gas_price: GasPrice::new(0.001, "uatom".to_string()),
+            gas_adjustment: None,
             max_msg_num: None,
             max_tx_size: None,
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),
+            packet_filter: PacketFilter::default(),
         }
     }
 }

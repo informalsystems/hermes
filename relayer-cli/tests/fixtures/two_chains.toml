@@ -12,7 +12,6 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 client_ids = ['cla1', 'cla2']
-gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -30,7 +29,6 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 client_ids = ['clb1']
-gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'
 

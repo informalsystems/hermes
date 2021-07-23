@@ -122,6 +122,7 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use test_env_log::test;
 
     use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;

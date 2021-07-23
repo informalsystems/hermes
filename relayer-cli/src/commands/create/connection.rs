@@ -119,7 +119,7 @@ impl CreateConnectionCommand {
 
         // Query client state. Extract the target chain (chain_id which this client is verifying).
         let height = Height::new(chain_a.id().version(), 0);
-        let chain_b_id = match chain_a.query_client_state(&client_a_id, height) {
+        let chain_b_id = match chain_a.query_client_state(client_a_id, height) {
             Ok(cs) => cs.chain_id(),
             Err(e) => {
                 return Output::error(format!(
@@ -153,9 +153,9 @@ impl CreateConnectionCommand {
         );
 
         // Get the two ForeignClient objects.
-        let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), &client_a_id)
+        let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), client_a_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
-        let client_b = ForeignClient::find(chain_a.clone(), chain_b.clone(), &client_b_id)
+        let client_b = ForeignClient::find(chain_a.clone(), chain_b.clone(), client_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // All verification passed. Create the Connection object & do the handshake.

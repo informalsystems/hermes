@@ -57,7 +57,7 @@ impl std::fmt::Display for Version {
         write!(
             f,
             "{}",
-            String::from_utf8(Version::encode_vec(&self).unwrap()).unwrap()
+            String::from_utf8(Version::encode_vec(self).unwrap()).unwrap()
         )
     }
 }

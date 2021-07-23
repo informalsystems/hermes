@@ -17,7 +17,7 @@ For example `07-tendermint-0` is assigned to the first client created on `ibc-1`
 hermes tx raw create-client ibc-1 ibc-0
  ```
 
- ```rust
+ ```json
 Success: CreateClient(
     CreateClient(
         Attributes {
@@ -50,7 +50,7 @@ For example `connection-0` is assigned to the first connection created on `ibc-1
 hermes tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0
 ```
 
-```rust
+```json
 Success: OpenInitConnection(
     OpenInit(
         Attributes {
@@ -86,7 +86,7 @@ For example `channel-0` is assigned to the first channel created on `ibc-1`:
 hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer
 ```
 
-```rust
+```json
 Success: OpenInitChannel(
     OpenInit(
         Attributes {

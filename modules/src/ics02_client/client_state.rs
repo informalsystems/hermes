@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use prost_types::Any;
 use serde::{Deserialize, Serialize};
+use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
@@ -55,6 +56,15 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.latest_height(),
+        }
+    }
+
+    pub fn trust_threshold(&self) -> Option<TrustThresholdFraction> {
+        match self {
+            AnyClientState::Tendermint(state) => Some(state.trust_level),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(_) => None,
         }
     }
 
@@ -116,12 +126,16 @@ impl From<AnyClientState> for Any {
         match value {
             AnyClientState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
+                value: value
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(value) => Any {
                 type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
+                value: value
+                    .encode_vec()
+                    .expect("encoding to `Any` from `AnyClientState::Mock`"),
             },
         }
     }
@@ -205,6 +219,7 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use test_env_log::test;
 
     use prost_types::Any;
 

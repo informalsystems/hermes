@@ -137,7 +137,7 @@ impl std::fmt::Display for Attributes {
 
 /// CreateClient event signals the creation of a new on-chain client (IBC client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct CreateClient(Attributes);
+pub struct CreateClient(pub Attributes);
 
 impl CreateClient {
     pub fn client_id(&self) -> &ClientId {
@@ -298,6 +298,9 @@ pub struct UpgradeClient(Attributes);
 impl UpgradeClient {
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
+    }
+    pub fn client_id(&self) -> &ClientId {
+        &self.0.client_id
     }
 }
 

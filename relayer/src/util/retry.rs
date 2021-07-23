@@ -2,8 +2,19 @@ use std::time::Duration;
 
 pub use retry::{
     delay::{Fibonacci, Fixed},
-    retry_with_index, OperationResult as RetryResult,
+    retry_with_index, Error as RetryError, OperationResult as RetryResult,
 };
+
+pub fn retry_count<E>(err: &RetryError<E>) -> u64 {
+    match err {
+        RetryError::Operation {
+            tries,
+            total_delay: _,
+            error: _,
+        } => *tries,
+        _ => 0,
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub struct ConstantGrowth {
@@ -76,6 +87,7 @@ pub fn clamp_total(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_env_log::test;
 
     const CONST_STRATEGY: ConstantGrowth =
         ConstantGrowth::new(Duration::from_secs(1), Duration::from_millis(500));

@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 
 use prost_types::Any;
 use tendermint::block::Height;
@@ -10,9 +10,9 @@ use ibc::events::IbcEvent;
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
 };
-use ibc::ics02_client::client_state::{ClientState, IdentifiedAnyClientState};
+use ibc::ics02_client::client_state::{AnyClientState, ClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::header::Header;
-use ibc::ics03_connection::connection::{ConnectionEnd, State};
+use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -23,9 +23,10 @@ use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+    QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -35,6 +36,7 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
+use crate::event::monitor::TxMonitorCmd;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::{config::ChainConfig, event::monitor::EventReceiver};
@@ -89,7 +91,9 @@ pub trait Chain: Sized {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, Option<thread::JoinHandle<()>>), Error>;
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error>;
+
+    fn shutdown(self) -> Result<(), Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;
@@ -159,7 +163,7 @@ pub trait Chain: Sized {
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error>;
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
 
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_client_connections(
@@ -177,7 +181,7 @@ pub trait Chain: Sized {
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<ChannelId>, Error>;
+    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
     /// Performs a query to retrieve the identifiers of all channels.
     fn query_channels(
@@ -203,6 +207,11 @@ pub trait Chain: Sized {
             "".to_string()
         }
     }
+
+    fn query_channel_client_state(
+        &self,
+        request: QueryChannelClientStateRequest,
+    ) -> Result<Option<IdentifiedAnyClientState>, Error>;
 
     fn query_packet_commitments(
         &self,
@@ -274,12 +283,18 @@ pub trait Chain: Sized {
         light_block: Self::LightBlock,
     ) -> Result<Self::ConsensusState, Error>;
 
+    /// Fetch, and verify the header at `target_height`, assuming we trust the
+    /// header at `trusted_height` with the given `client_state`.
+    ///
+    /// Returns all the supporting headers that were need to verify the target
+    /// header, for use when building a `ClientUpdate` message.
     fn build_header(
         &self,
         trusted_height: ICSHeight,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error>;
+        target_height: ICSHeight,
+        client_state: &AnyClientState,
+        light_client: &mut dyn LightClient<Self>,
+    ) -> Result<(Self::Header, Vec<Self::Header>), Error>;
 
     /// Builds the required proofs and the client state for connection handshake messages.
     /// The proofs and client state must be obtained from queries at same height.
@@ -290,7 +305,7 @@ pub trait Chain: Sized {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
-        let (connection_end, connection_proof) = self.proven_connection(&connection_id, height)?;
+        let (connection_end, connection_proof) = self.proven_connection(connection_id, height)?;
 
         // Check that the connection state is compatible with the message
         match message_type {
@@ -322,16 +337,12 @@ pub trait Chain: Sized {
         match message_type {
             ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
                 let (client_state_value, client_state_proof) =
-                    self.proven_client_state(&client_id, height)?;
+                    self.proven_client_state(client_id, height)?;
 
                 client_proof = Some(CommitmentProofBytes::from(client_state_proof));
 
                 let consensus_state_proof = self
-                    .proven_client_consensus(
-                        &client_id,
-                        client_state_value.latest_height(),
-                        height,
-                    )?
+                    .proven_client_consensus(client_id, client_state_value.latest_height(), height)?
                     .1;
 
                 consensus_proof = Option::from(

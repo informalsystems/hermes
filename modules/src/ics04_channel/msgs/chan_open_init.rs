@@ -105,6 +105,7 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
     use std::convert::TryFrom;
+    use test_env_log::test;
 
     #[test]
     fn channel_open_init_from_raw() {

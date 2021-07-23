@@ -1,7 +1,10 @@
 //! `tx` subcommand
-use abscissa_core::{Command, Help, Options, Runnable};
+use abscissa_core::{config::Override, Command, Help, Options, Runnable};
+use ibc_relayer::config::Config;
 
-use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd, TxUpgradeClientCmd};
+use crate::commands::tx::client::{
+    TxCreateClientCmd, TxUpdateClientCmd, TxUpgradeClientCmd, TxUpgradeClientsCmd,
+};
 
 mod channel;
 pub(crate) mod client;
@@ -11,6 +14,7 @@ mod transfer;
 mod upgrade;
 
 /// `tx` subcommand
+#[allow(clippy::large_enum_variant)]
 #[derive(Command, Debug, Options, Runnable)]
 pub enum TxCmd {
     /// The `help` subcommand
@@ -39,6 +43,10 @@ pub enum TxRawCommands {
     /// The `tx raw upgrade-client` subcommand. Submits a MsgUpgradeClient in a transaction to a chain.
     #[options(help = "Upgrade the specified client on destination chain")]
     UpgradeClient(TxUpgradeClientCmd),
+
+    /// The `tx raw upgrade-clients` subcommand. Submits a MsgUpgradeClient in a transaction to multiple chains.
+    #[options(help = "Upgrade all IBC clients that target a specific chain")]
+    UpgradeClients(TxUpgradeClientsCmd),
 
     /// The `tx raw conn-init` subcommand
     #[options(help = "Initialize a connection (ConnectionOpenInit)")]
@@ -95,4 +103,22 @@ pub enum TxRawCommands {
     /// The `tx raw upgrade-chain` subcommand
     #[options(help = "Send an upgrade plan")]
     UpgradeChain(upgrade::TxUpgradeChainCmd),
+}
+
+impl Override<Config> for TxCmd {
+    fn override_config(&self, config: Config) -> Result<Config, abscissa_core::FrameworkError> {
+        match self {
+            Self::Raw(cmd) => cmd.override_config(config),
+            _ => Ok(config),
+        }
+    }
+}
+
+impl Override<Config> for TxRawCommands {
+    fn override_config(&self, config: Config) -> Result<Config, abscissa_core::FrameworkError> {
+        match self {
+            Self::FtTransfer(cmd) => cmd.override_config(config),
+            _ => Ok(config),
+        }
+    }
 }

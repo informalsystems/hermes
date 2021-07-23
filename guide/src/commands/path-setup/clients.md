@@ -28,7 +28,7 @@ Create a new client of `ibc-1` on `ibc-0`:
 hermes create client ibc-0 ibc-1
 ```
 
-```rust
+```json
     CreateClient(
         Attributes {
             height: Height {
@@ -79,7 +79,7 @@ the client on `ibc-0` with latest header of `ibc-1`:
 hermes update client ibc-0 07-tendermint-9
 ```
 
-```rust
+```json
 Success: UpdateClient(
     UpdateClient {
         common: Attributes {
@@ -107,7 +107,7 @@ __Update a client to a specific target height__
 hermes update client ibc-0 07-tendermint-1 --target-height 320 --trusted-height 293
 ```
 
-```rust
+```json
 Success: UpdateClient(
     UpdateClient {
         common: Attributes {

@@ -1,15 +1,18 @@
-use std::sync::Arc;
+use std::{cmp::Ordering, sync::Arc};
 
 use crossbeam_channel as channel;
-use futures::stream::StreamExt;
-use futures::{stream::select_all, Stream};
-use itertools::Itertools;
+use futures::{
+    pin_mut,
+    stream::{self, select_all, StreamExt},
+    Stream, TryStreamExt,
+};
 use thiserror::Error;
 use tokio::task::JoinHandle;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{error, info, trace};
+use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
+    error::Code,
     event::Event as RpcEvent,
     query::{EventType, Query},
     Error as RpcError, Result as RpcResult, SubscriptionClient, WebSocketClient,
@@ -18,7 +21,10 @@ use tendermint_rpc::{
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
 
-use crate::util::retry::{retry_with_index, RetryResult};
+use crate::util::{
+    retry::{retry_count, retry_with_index, RetryResult},
+    stream::try_group_while,
+};
 
 mod retry_strategy {
     use crate::util::retry::clamp_total;
@@ -58,8 +64,25 @@ pub enum Error {
     #[error("failed to extract IBC events: {0}")]
     CollectEventsFailed(String),
 
-    #[error("failed to send event batch through channel")]
+    #[error("{0}")]
+    SubscriptionCancelled(RpcError),
+
+    #[error("RPC error: {0}")]
+    GenericRpcError(RpcError),
+
+    #[error("event monitor failed to dispatch event batch to subscribers")]
     ChannelSendFailed,
+}
+
+impl Error {
+    fn canceled_or_generic(e: RpcError) -> Self {
+        match (e.code(), e.data()) {
+            (Code::ServerError, Some(msg)) if msg.contains("subscription was cancelled") => {
+                Self::SubscriptionCancelled(e)
+            }
+            _ => Self::GenericRpcError(e),
+        }
+    }
 }
 
 /// A batch of events from a chain at a specific height
@@ -85,7 +108,14 @@ type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + 
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+pub type EventSender = channel::Sender<Result<EventBatch>>;
 pub type EventReceiver = channel::Receiver<Result<EventBatch>>;
+pub type TxMonitorCmd = channel::Sender<MonitorCmd>;
+
+#[derive(Debug)]
+pub enum MonitorCmd {
+    Shutdown,
+}
 
 /// Connect to a Tendermint node, subscribe to a set of queries,
 /// receive push events over a websocket, and filter them for the
@@ -109,6 +139,8 @@ pub struct EventMonitor {
     rx_err: mpsc::UnboundedReceiver<tendermint_rpc::Error>,
     /// Channel where to send client driver errors
     tx_err: mpsc::UnboundedSender<tendermint_rpc::Error>,
+    /// Channel where to receive commands
+    rx_cmd: channel::Receiver<MonitorCmd>,
     /// Node Address
     node_addr: tendermint_rpc::Url,
     /// Queries
@@ -119,25 +151,15 @@ pub struct EventMonitor {
     rt: Arc<TokioRuntime>,
 }
 
-async fn run_driver(
-    driver: WebSocketClientDriver,
-    tx: mpsc::UnboundedSender<tendermint_rpc::Error>,
-) {
-    if let Err(e) = driver.run().await {
-        if tx.send(e).is_err() {
-            error!("failed to relay driver error to event monitor");
-        }
-    }
-}
-
 impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
         chain_id: ChainId,
         node_addr: tendermint_rpc::Url,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(Self, EventReceiver)> {
+    ) -> Result<(Self, EventReceiver, TxMonitorCmd)> {
         let (tx_batch, rx_batch) = channel::unbounded();
+        let (tx_cmd, rx_cmd) = channel::unbounded();
 
         let ws_addr = node_addr.clone();
         let (client, driver) = rt
@@ -159,11 +181,12 @@ impl EventMonitor {
             tx_batch,
             rx_err,
             tx_err,
+            rx_cmd,
             node_addr,
             subscriptions: Box::new(futures::stream::empty()),
         };
 
-        Ok((monitor, rx_batch))
+        Ok((monitor, rx_batch, tx_cmd))
     }
 
     /// Set the queries to subscribe to.
@@ -187,7 +210,7 @@ impl EventMonitor {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
-            trace!("subscribing to query: {}", query);
+            trace!("[{}] subscribing to query: {}", self.chain_id, query);
 
             let subscription = self
                 .rt
@@ -199,14 +222,15 @@ impl EventMonitor {
 
         self.subscriptions = Box::new(select_all(subscriptions));
 
-        trace!("subscribed to all queries");
+        trace!("[{}] subscribed to all queries", self.chain_id);
 
         Ok(())
     }
 
     fn try_reconnect(&mut self) -> Result<()> {
         trace!(
-            "trying to reconnect to WebSocket endpoint: {}",
+            "[{}] trying to reconnect to WebSocket endpoint {}",
+            self.chain_id,
             self.node_addr
         );
 
@@ -223,115 +247,256 @@ impl EventMonitor {
         std::mem::swap(&mut self.client, &mut client);
         std::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
-        trace!("reconnected to WebSocket endpoint: {}", self.node_addr);
+        trace!(
+            "[{}] reconnected to WebSocket endpoint {}",
+            self.chain_id,
+            self.node_addr
+        );
 
         // Shut down previous client
-        trace!("gracefully shutting down previous client");
-        if let Err(e) = client.close() {
-            trace!("previous websocket client closing failure: {}", e);
-        }
+        trace!(
+            "[{}] gracefully shutting down previous client",
+            self.chain_id
+        );
+
+        let _ = client.close();
 
         self.rt
             .block_on(driver_handle)
             .map_err(|e| Error::ClientTerminationFailed(Arc::new(e)))?;
 
-        trace!("previous client successfully shutdown");
+        trace!("[{}] previous client successfully shutdown", self.chain_id);
 
         Ok(())
     }
 
     /// Try to resubscribe to events
     fn try_resubscribe(&mut self) -> Result<()> {
-        trace!("trying to resubscribe to events");
-
+        trace!("[{}] trying to resubscribe to events", self.chain_id);
         self.subscribe()
     }
 
-    /// Attempt to restart the WebSocket client using the given retry strategy.
+    /// Attempt to reconnect the WebSocket client using the given retry strategy.
     ///
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
-    fn restart(&mut self) {
-        let result = retry_with_index(retry_strategy::default(), |index| {
+    fn reconnect(&mut self) {
+        let result = retry_with_index(retry_strategy::default(), |_| {
             // Try to reconnect
             if let Err(e) = self.try_reconnect() {
-                trace!("error when reconnecting: {}", e);
-                return RetryResult::Retry(index);
+                trace!("[{}] error when reconnecting: {}", self.chain_id, e);
+                return RetryResult::Retry(());
             }
 
             // Try to resubscribe
             if let Err(e) = self.try_resubscribe() {
-                trace!("error when reconnecting: {}", e);
-                return RetryResult::Retry(index);
+                trace!("[{}] error when resubscribing: {}", self.chain_id, e);
+                return RetryResult::Retry(());
             }
 
             RetryResult::Ok(())
         });
 
         match result {
-            Ok(()) => info!("successfully reconnected to WebSocket endpoint"),
-            Err(retries) => error!("failed to reconnect after {} retries", retries),
+            Ok(()) => info!(
+                "[{}] successfully reconnected to WebSocket endpoint {}",
+                self.chain_id, self.node_addr
+            ),
+            Err(retries) => error!(
+                "[{}] failed to reconnect to {} after {} retries",
+                self.chain_id,
+                self.node_addr,
+                retry_count(&retries)
+            ),
         }
     }
 
     /// Event monitor loop
+    #[allow(clippy::while_let_loop)]
     pub fn run(mut self) {
-        info!(chain.id = %self.chain_id, "starting event monitor");
+        debug!("[{}] starting event monitor", self.chain_id);
 
+        // Continuously run the event loop, so that when it aborts
+        // because of WebSocket client restart, we pick up the work again.
+        loop {
+            match self.run_loop() {
+                Next::Continue => continue,
+                Next::Abort => break,
+            }
+        }
+
+        debug!("[{}] event monitor is shutting down", self.chain_id);
+
+        // Close the WebSocket connection
+        let _ = self.client.close();
+
+        // Wait for the WebSocket driver to finish
+        let _ = self.rt.block_on(self.driver_handle);
+
+        trace!(
+            "[{}] event monitor has successfully shut down",
+            self.chain_id
+        );
+    }
+
+    fn run_loop(&mut self) -> Next {
+        // Take ownership of the subscriptions
+        let subscriptions =
+            std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
+
+        // Convert the stream of RPC events into a stream of event batches.
+        let batches = stream_batches(subscriptions, self.chain_id.clone());
+
+        // Needed to be able to poll the stream
+        pin_mut!(batches);
+
+        // Work around double borrow
         let rt = self.rt.clone();
 
         loop {
+            if let Ok(cmd) = self.rx_cmd.try_recv() {
+                match cmd {
+                    MonitorCmd::Shutdown => return Next::Abort,
+                }
+            }
+
             let result = rt.block_on(async {
                 tokio::select! {
-                    Some(event) = self.subscriptions.next() => {
-                        event
-                            .map_err(Error::NextEventBatchFailed)
-                            .and_then(|e| self.collect_events(e))
-                    },
-                    Some(e) = self.rx_err.recv() => Err(Error::WebSocketDriver(e)),
+                    Some(batch) = batches.next() => batch,
+                    Some(err) = self.rx_err.recv() => Err(Error::WebSocketDriver(err)),
                 }
             });
 
             match result {
-                Ok(batches) => self.process_batches(batches).unwrap_or_else(|e| {
-                    error!("failed to process event batch: {}", e);
+                Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
+                    error!("[{}] {}", self.chain_id, e);
                 }),
-                Err(e) => {
-                    error!("failed to collect events: {}", e);
+                Err(Error::SubscriptionCancelled(reason)) => {
+                    error!(
+                        "[{}] subscription cancelled, reason: {}",
+                        self.chain_id, reason
+                    );
 
-                    // Restart the event monitor
-                    self.restart();
+                    self.propagate_error(Error::SubscriptionCancelled(reason))
+                        .unwrap_or_else(|e| {
+                            error!("[{}] {}", self.chain_id, e);
+                        });
+
+                    // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                    self.reconnect();
+
+                    // Abort this event loop, the `run` method will start a new one.
+                    // We can't just write `return self.run()` here because Rust
+                    // does not perform tail call optimization, and we would
+                    // thus potentially blow up the stack after many restarts.
+                    return Next::Continue;
+                }
+                Err(e) => {
+                    error!("[{}] failed to collect events: {}", self.chain_id, e);
+
+                    // Reconnect to the WebSocket endpoint, and subscribe again to the queries.
+                    self.reconnect();
+
+                    // Abort this event loop, the `run` method will start a new one.
+                    // We can't just write `return self.run()` here because Rust
+                    // does not perform tail call optimization, and we would
+                    // thus potentially blow up the stack after many restarts.
+                    return Next::Continue;
                 }
             }
         }
     }
 
-    /// Collect the IBC events from the subscriptions
-    fn process_batches(&self, batches: Vec<EventBatch>) -> Result<()> {
-        for batch in batches {
-            self.tx_batch
-                .send(Ok(batch))
-                .map_err(|_| Error::ChannelSendFailed)?;
-        }
+    /// Propagate error to subscribers.
+    ///
+    /// The main use case for propagating RPC errors is for the [`Supervisor`]
+    /// to notice that the WebSocket connection or subscription has been closed,
+    /// and to trigger a clearing of packets, as this typically means that we have
+    /// missed a bunch of events which were emitted after the subscrption was closed.
+    /// In that case, this error will be handled in [`Supervisor::handle_batch`].
+    fn propagate_error(&self, error: Error) -> Result<()> {
+        self.tx_batch
+            .send(Err(error))
+            .map_err(|_| Error::ChannelSendFailed)?;
 
         Ok(())
     }
 
     /// Collect the IBC events from the subscriptions
-    fn collect_events(&mut self, event: RpcEvent) -> Result<Vec<EventBatch>> {
-        let ibc_events = crate::event::rpc::get_all_events(&self.chain_id, event)
-            .map_err(Error::CollectEventsFailed)?;
+    fn process_batch(&self, batch: EventBatch) -> Result<()> {
+        self.tx_batch
+            .send(Ok(batch))
+            .map_err(|_| Error::ChannelSendFailed)?;
 
-        let events_by_height = ibc_events.into_iter().into_group_map();
-        let batches = events_by_height
-            .into_iter()
-            .map(|(height, events)| EventBatch {
-                chain_id: self.chain_id.clone(),
-                height,
-                events,
-            })
-            .collect();
-
-        Ok(batches)
+        Ok(())
     }
+}
+
+/// Collect the IBC events from an RPC event
+fn collect_events(
+    chain_id: &ChainId,
+    event: RpcEvent,
+) -> impl Stream<Item = Result<(Height, IbcEvent)>> {
+    let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
+    stream::iter(events).map(Ok)
+}
+
+/// Convert a stream of RPC event into a stream of event batches
+fn stream_batches(
+    subscriptions: Box<SubscriptionStream>,
+    chain_id: ChainId,
+) -> impl Stream<Item = Result<EventBatch>> {
+    let id = chain_id.clone();
+
+    // Collect IBC events from each RPC event
+    let events = subscriptions
+        .map_ok(move |rpc_event| collect_events(&id, rpc_event))
+        .map_err(Error::canceled_or_generic)
+        .try_flatten();
+
+    // Group events by height
+    let grouped = try_group_while(events, |(h0, _), (h1, _)| h0 == h1);
+
+    // Convert each group to a batch
+    grouped.map_ok(move |events| {
+        let height = events
+            .first()
+            .map(|(h, _)| h)
+            .copied()
+            .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
+
+        let mut events = events.into_iter().map(|(_, e)| e).collect();
+        sort_events(&mut events);
+
+        EventBatch {
+            height,
+            events,
+            chain_id: chain_id.clone(),
+        }
+    })
+}
+
+/// Sort the given events by putting the NewBlock event first,
+/// and leaving the other events as is.
+fn sort_events(events: &mut Vec<IbcEvent>) {
+    events.sort_by(|a, b| match (a, b) {
+        (IbcEvent::NewBlock(_), _) => Ordering::Less,
+        _ => Ordering::Equal,
+    })
+}
+
+async fn run_driver(
+    driver: WebSocketClientDriver,
+    tx: mpsc::UnboundedSender<tendermint_rpc::Error>,
+) {
+    if let Err(e) = driver.run().await {
+        if tx.send(e).is_err() {
+            error!("failed to relay driver error to event monitor");
+        }
+    }
+}
+
+pub enum Next {
+    Abort,
+    Continue,
 }

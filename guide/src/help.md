@@ -4,6 +4,8 @@ This section provides guidelines regarding troubleshooting and general
 resources for getting help with `hermes`.
 For this purpose, we recommend a few ideas that could be of help:
 
+- [hermes help][help] command, providing a CLI
+  documentation for all `hermes` commands.
 - [profile][profiling] your relayer binary to identify slow methods;
 - [configure][log-level] the `log_level` to help with debugging;
 - [patch][patching] your local gaia chain(s) to enable some corner-case methods
@@ -20,131 +22,70 @@ And if the above options do not address your specific problem:
 Lastly, for general questions, you can reach us at `hello@informal.systems`,
 or on Twitter [@informalinc][twitter].
 
-## Profiling
+## Table of contents
 
-The `relayer` crate provides a `time!` macro which can be used to measure how much time is spent between the invocation of the macro and the end of the enclosing scope.
+<!-- toc -->
 
-### Setup
+## Help command
 
-The `time!` macro has no effect unless the `profiling` feature of the `relayer` crate is enabled.
+The CLI comprises a special `help` command, which accepts as parameter other commands, and provides guidance on what is the correct way to invoke those commands.
 
-To enable it, one must compile the `relayer-cli` crate with the `--features=profiling` flag.
-
-a) One way is to build the `relayer` binary and update the `hermes` alias to point to the executable:
+For instance,
 
 ```shell
-cd relayer-cli/
-cargo build --features=profiling
+hermes help create
 ```
 
-b) Alternatively, one can use the `cargo run` command and update the alias accordingly:
+will provide details about all the valid invocations of the `create` CLI command.
+
+```
+hermes 0.6.1
+Informal Systems <hello@informal.systems>
+Hermes is an IBC Relayer written in Rust.
+
+USAGE:
+    hermes create <SUBCOMMAND>
+
+DESCRIPTION:
+    Create objects (client, connection, or channel) on chains
+
+SUBCOMMANDS:
+    help       Get usage information
+    client     Create a new IBC client
+    connection Create a new connection between two chains
+    channel    Create a new channel between two chains
+```
+
+This can provide further specific guidance if we add additional parameters, e.g., 
 
 ```shell
-alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
-```
-
-The `--manifest-path=relayer-cli/Cargo.toml` flag is needed for `cargo run` to accept the `--features` flag.
-
-### Example
-
-```rust
-fn my_function(x: u32) -> u32 {
-    time!("myfunction: x={}", x); // A
-
-    std::thread::sleep(Duration::from_secs(1));
-
-    {
-        time!("inner operation"); // B
-
-        std::thread::sleep(Duration::from_secs(2));
-
-        // timer B ends here
-    }
-
-    x + 1
-
-    // timer A ends here
-}
-```
-
-#### Output
-
-```
-Jan 20 11:28:46.841  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - start
-Jan 20 11:28:47.842  INFO relayer::macros::profiling:    ⏳ inner operation - start
-Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - elapsed: 2004ms
-Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
-```
-
-Profiling is useful for tracking down unusually slow methods.
-Each transaction or query usually consists of multiple lower-level methods,
-and it's often not clear which of these are the culprit for low performance.
-With profiling enabled, `hermes` will output timing information for individual
-methods involved in a command.
-
-__NOTE__: To be able to see the profiling output, the realyer needs to be compiled with
-the `profiling` feature and the [log level][log-level] should be `info` level or lower.
-
-#### Example output for `tx raw conn-init` command
-
-```
-hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
+hermes help create channel
 ```
 
 ```
-Apr 13 20:58:21.225  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - start
-Apr 13 20:58:21.230  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - elapsed: 4ms
-Apr 13 20:58:21.230  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - start
-Apr 13 20:58:21.235  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - elapsed: 5ms
-Apr 13 20:58:21.235  INFO ibc_relayer::event::monitor: running listener chain.id=ibc-1
-Apr 13 20:58:21.236  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - start
-Apr 13 20:58:21.239  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - elapsed: 2ms
-Apr 13 20:58:21.239  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - start
-Apr 13 20:58:21.244  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - elapsed: 4ms
-Apr 13 20:58:21.244  INFO ibc_relayer::event::monitor: running listener chain.id=ibc-0
-Apr 13 20:58:21.244  INFO ibc_relayer::macros::profiling: ⏳ get_signer - start
-Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling: ⏳ get_signer - elapsed: 1ms
-Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling: ⏳ query_latest_height - start
-Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
-Apr 13 20:58:21.248  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 1ms
-Apr 13 20:58:21.249  INFO ibc_relayer::macros::profiling: ⏳ query_latest_height - elapsed: 3ms
-Apr 13 20:58:21.250  INFO ibc_relayer::macros::profiling: ⏳ unbonding_period - start
-Apr 13 20:58:21.250  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
-Apr 13 20:58:21.251  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 0ms
-Apr 13 20:58:21.270  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
-Apr 13 20:58:21.273  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 2ms
-Apr 13 20:58:21.273  INFO ibc_relayer::macros::profiling: ⏳ unbonding_period - elapsed: 23ms
-Apr 13 20:58:21.279  INFO ibc_relayer::macros::profiling: ⏳ build_consensus_state - start
-Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling: ⏳ build_consensus_state - elapsed: 0ms
-Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling: ⏳ send_msgs - start
-Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling:    ⏳ send_tx - start
-Apr 13 20:58:21.282  INFO ibc_relayer::macros::profiling:       ⏳ PK "03f17d2c094ee68cfcedb2c2f2b7dec6cd82ea158ac1c32d3de0ca8b288a3c8bfa" - start
-Apr 13 20:58:21.282  INFO ibc_relayer::macros::profiling:          ⏳ block_on - start
-Apr 13 20:58:21.285  INFO ibc_relayer::macros::profiling:          ⏳ block_on - elapsed: 3ms
-Apr 13 20:58:21.296  INFO ibc_relayer::macros::profiling:             ⏳ block_on - start
-Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:             ⏳ block_on - elapsed: 1367ms
-Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:       ⏳ PK "03f17d2c094ee68cfcedb2c2f2b7dec6cd82ea158ac1c32d3de0ca8b288a3c8bfa" - elapsed: 1382ms
-Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:    ⏳ send_tx - elapsed: 1384ms
-Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling: ⏳ send_msgs - elapsed: 1384ms
-Success: CreateClient(
-    CreateClient(
-        Attributes {
-            height: Height {
-                revision: 0,
-                height: 10675,
-            },
-            client_id: ClientId(
-                "07-tendermint-7",
-            ),
-            client_type: Tendermint,
-            consensus_height: Height {
-                revision: 1,
-                height: 10663,
-            },
-        },
-    ),
-)
+hermes 0.6.1
+Informal Systems <hello@informal.systems>
+Hermes is an IBC Relayer written in Rust.
+
+USAGE:
+    hermes create channel <OPTIONS>
+
+DESCRIPTION:
+    Create a new channel between two chains
+
+POSITIONAL ARGUMENTS:
+    chain_a_id                identifier of the side `a` chain for the new channel
+    chain_b_id                identifier of the side `b` chain for the new channel (optional)
+
+FLAGS:
+    -c, --connection-a CONNECTION-A
+    --port-a PORT-A           identifier of the side `a` port for the new channel
+    --port-b PORT-B           identifier of the side `b` port for the new channel
+    -o, --order ORDER         the channel ordering, valid options 'unordered' (default) and 'ordered'
+    -v, --version VERSION     the version for the new channel
 ```
+
+The `help` command is a replacement of the familiar `-h`/ `--help` flag typical for CLI applications.
 
 ## Parametrizing the log output level
 
@@ -156,7 +97,7 @@ Relevant snippet:
 
 ```toml
 [global]
-strategy = 'naive'
+strategy = 'packets'
 log_level = 'error'
 ```
 
@@ -165,7 +106,7 @@ These levels correspond to the tracing sub-component of the relayer-cli,
 [see here](https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html).
 
 The relayer will _always_ print a last line summarizing the result of its
-operation for queries of transactions. In addition to  this last line,
+operation for queries or transactions. In addition to this last line,
 arbitrary debug, info, or other outputs may be produced.  Example, with
 `log_level = 'debug'` and JSON output:
 
@@ -186,10 +127,187 @@ produced:
 {"status":"error","result":["query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)"]}
 ```
 
-## Patching `gaia`
+## Inspecting the relayer state
+
+To get a little bit of insight into the state of the relayer,
+Hermes will react to a `SIGUSR1` signal by dumping its state to
+the console, either in plain text form or as a JSON object if Hermes
+was started with the `--json` option.
+
+To send a `SIGUSR1` signal to Hermes, look up its process ID (below PID)
+and use the following command:
+
+```shell
+kill -SIGUSR1 PID
+```
+
+Hermes will print some information about the workers which are currently running.
+
+For example, with three chains configured and one channel between each pair of chains:
+
+```text
+INFO Dumping state (triggered by SIGUSR1)
+INFO
+INFO * Chains: ibc-0, ibc-1, ibc-2
+INFO * Client workers:
+INFO   - client::ibc-0->ibc-1:07-tendermint-0 (id: 5)
+INFO   - client::ibc-0->ibc-2:07-tendermint-0 (id: 9)
+INFO   - client::ibc-1->ibc-0:07-tendermint-0 (id: 1)
+INFO   - client::ibc-1->ibc-2:07-tendermint-1 (id: 11)
+INFO   - client::ibc-2->ibc-0:07-tendermint-1 (id: 3)
+INFO   - client::ibc-2->ibc-1:07-tendermint-1 (id: 7)
+INFO * Packet workers:
+INFO   - packet::channel-0/transfer:ibc-0->ibc-1 (id: 2)
+INFO   - packet::channel-0/transfer:ibc-1->ibc-0 (id: 6)
+INFO   - packet::channel-0/transfer:ibc-2->ibc-0 (id: 10)
+INFO   - packet::channel-1/transfer:ibc-0->ibc-2 (id: 4)
+INFO   - packet::channel-1/transfer:ibc-1->ibc-2 (id: 8)
+INFO   - packet::channel-1/transfer:ibc-2->ibc-1 (id: 12)
+```
+
+or in JSON form (prettified):
+
+```json
+{
+  "timestamp": "Jul 12 17:04:37.244",
+  "level": "INFO",
+  "fields": {
+    "message": "Dumping state (triggered by SIGUSR1)"
+  }
+}
+{
+  "chains": [
+    "ibc-0",
+    "ibc-1",
+    "ibc-2"
+  ],
+  "workers": {
+    "Client": [
+      {
+        "id": 5,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-1",
+          "dst_client_id": "07-tendermint-0",
+          "src_chain_id": "ibc-0"
+        }
+      },
+      {
+        "id": 9,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-2",
+          "dst_client_id": "07-tendermint-0",
+          "src_chain_id": "ibc-0"
+        }
+      },
+      {
+        "id": 1,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-0",
+          "dst_client_id": "07-tendermint-0",
+          "src_chain_id": "ibc-1"
+        }
+      },
+      {
+        "id": 11,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-2",
+          "dst_client_id": "07-tendermint-1",
+          "src_chain_id": "ibc-1"
+        }
+      },
+      {
+        "id": 3,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-0",
+          "dst_client_id": "07-tendermint-1",
+          "src_chain_id": "ibc-2"
+        }
+      },
+      {
+        "id": 7,
+        "object": {
+          "type": "Client",
+          "dst_chain_id": "ibc-1",
+          "dst_client_id": "07-tendermint-1",
+          "src_chain_id": "ibc-2"
+        }
+      }
+    ],
+    "Packet": [
+      {
+        "id": 2,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-1",
+          "src_chain_id": "ibc-0",
+          "src_channel_id": "channel-0",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 6,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-0",
+          "src_chain_id": "ibc-1",
+          "src_channel_id": "channel-0",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 10,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-0",
+          "src_chain_id": "ibc-2",
+          "src_channel_id": "channel-0",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 4,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-2",
+          "src_chain_id": "ibc-0",
+          "src_channel_id": "channel-1",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 8,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-2",
+          "src_chain_id": "ibc-1",
+          "src_channel_id": "channel-1",
+          "src_port_id": "transfer"
+        }
+      },
+      {
+        "id": 12,
+        "object": {
+          "type": "Packet",
+          "dst_chain_id": "ibc-1",
+          "src_chain_id": "ibc-2",
+          "src_channel_id": "channel-1",
+          "src_port_id": "transfer"
+        }
+      }
+    ]
+  }
+}
+```
+
+## Patching `gaia` to support `ChanCloseInit`
 
 The guide below refers specifically to patching your gaia chain so that the
-relayer can initiate the closing of channels by submitting a [`chan-close-init` transaction][chan-close].
+relayer can initiate the closing of channels by submitting a [`ChanCloseInit`][chan-close] message.
 Without this modification, the transaction will be rejected.
 We also describe how to test the channel closing feature.
 
@@ -260,6 +378,7 @@ to close-open:
   hermes -c config.toml query channel end ibc-1 transfer channel-1
   ```
 
+
 ## New Feature Request
 
 If you would like a feature to be added to `hermes`, don't hesitate
@@ -268,6 +387,136 @@ issue template.
 
 > Note that Hermes is packaged as part of the `ibc-relayer-cli` crate.
 
+
+## Profiling
+
+The `relayer` crate provides a `time!` macro which can be used to measure how much time is spent between the invocation of the macro and the end of the enclosing scope.
+
+### Setup
+
+The `time!` macro has no effect unless the `profiling` feature of the `relayer` crate is enabled.
+
+To enable it, one must compile the `relayer-cli` crate with the `--features=profiling` flag.
+
+a) One way is to build the `relayer` binary and update the `hermes` alias to point to the executable:
+
+```shell
+cd relayer-cli/
+cargo build --features=profiling
+```
+
+b) Alternatively, one can use the `cargo run` command and update the alias accordingly:
+
+```shell
+alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
+```
+
+The `--manifest-path=relayer-cli/Cargo.toml` flag is needed for `cargo run` to accept the `--features` flag.
+
+### Example
+
+```rust
+fn my_function(x: u32) -> u32 {
+    time!("myfunction: x={}", x); // A
+
+    std::thread::sleep(Duration::from_secs(1));
+
+    {
+        time!("inner operation"); // B
+
+        std::thread::sleep(Duration::from_secs(2));
+
+        // timer B ends here
+    }
+
+    x + 1
+
+    // timer A ends here
+}
+```
+
+#### Output
+
+```
+Jan 20 11:28:46.841  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - start
+Jan 20 11:28:47.842  INFO relayer::macros::profiling:    ⏳ inner operation - start
+Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - elapsed: 2004ms
+Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
+```
+
+Profiling is useful for tracking down unusually slow methods.
+Each transaction or query usually consists of multiple lower-level methods,
+and it's often not clear which of these are the culprit for low performance.
+With profiling enabled, `hermes` will output timing information for individual
+methods involved in a command.
+
+__NOTE__: To be able to see the profiling output, the realyer needs to be compiled with
+the `profiling` feature and the [log level][log-level] should be `info` level or lower.
+
+#### Example output for `tx raw conn-init` command
+
+```
+hermes -c   config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
+```
+
+```
+Apr 13 20:58:21.225  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - start
+Apr 13 20:58:21.230  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - elapsed: 4ms
+Apr 13 20:58:21.230  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - start
+Apr 13 20:58:21.235  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - elapsed: 5ms
+Apr 13 20:58:21.235  INFO ibc_relayer::event::monitor: running listener chain.id=ibc-1
+Apr 13 20:58:21.236  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - start
+Apr 13 20:58:21.239  INFO ibc_relayer::macros::profiling: ⏳ init_light_client - elapsed: 2ms
+Apr 13 20:58:21.239  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - start
+Apr 13 20:58:21.244  INFO ibc_relayer::macros::profiling: ⏳ init_event_monitor - elapsed: 4ms
+Apr 13 20:58:21.244  INFO ibc_relayer::event::monitor: running listener chain.id=ibc-0
+Apr 13 20:58:21.244  INFO ibc_relayer::macros::profiling: ⏳ get_signer - start
+Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling: ⏳ get_signer - elapsed: 1ms
+Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling: ⏳ query_latest_height - start
+Apr 13 20:58:21.246  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
+Apr 13 20:58:21.248  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 1ms
+Apr 13 20:58:21.249  INFO ibc_relayer::macros::profiling: ⏳ query_latest_height - elapsed: 3ms
+Apr 13 20:58:21.250  INFO ibc_relayer::macros::profiling: ⏳ unbonding_period - start
+Apr 13 20:58:21.250  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
+Apr 13 20:58:21.251  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 0ms
+Apr 13 20:58:21.270  INFO ibc_relayer::macros::profiling:    ⏳ block_on - start
+Apr 13 20:58:21.273  INFO ibc_relayer::macros::profiling:    ⏳ block_on - elapsed: 2ms
+Apr 13 20:58:21.273  INFO ibc_relayer::macros::profiling: ⏳ unbonding_period - elapsed: 23ms
+Apr 13 20:58:21.279  INFO ibc_relayer::macros::profiling: ⏳ build_consensus_state - start
+Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling: ⏳ build_consensus_state - elapsed: 0ms
+Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling: ⏳ send_msgs - start
+Apr 13 20:58:21.280  INFO ibc_relayer::macros::profiling:    ⏳ send_tx - start
+Apr 13 20:58:21.282  INFO ibc_relayer::macros::profiling:       ⏳ PK "03f17d2c094ee68cfcedb2c2f2b7dec6cd82ea158ac1c32d3de0ca8b288a3c8bfa" - start
+Apr 13 20:58:21.282  INFO ibc_relayer::macros::profiling:          ⏳ block_on - start
+Apr 13 20:58:21.285  INFO ibc_relayer::macros::profiling:          ⏳ block_on - elapsed: 3ms
+Apr 13 20:58:21.296  INFO ibc_relayer::macros::profiling:             ⏳ block_on - start
+Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:             ⏳ block_on - elapsed: 1367ms
+Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:       ⏳ PK "03f17d2c094ee68cfcedb2c2f2b7dec6cd82ea158ac1c32d3de0ca8b288a3c8bfa" - elapsed: 1382ms
+Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling:    ⏳ send_tx - elapsed: 1384ms
+Apr 13 20:58:22.664  INFO ibc_relayer::macros::profiling: ⏳ send_msgs - elapsed: 1384ms
+Success: CreateClient(
+    CreateClient(
+        Attributes {
+            height: Height {
+                revision: 0,
+                height: 10675,
+            },
+            client_id: ClientId(
+                "07-tendermint-7",
+            ),
+            client_type: Tendermint,
+            consensus_height: Height {
+                revision: 1,
+                height: 10663,
+            },
+        },
+    ),
+)
+```
+
+
+
+[help]: ./help.md#help-command
 [feature-request]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=feature-request.md
 [bug-report]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=bug-report.md
 [twitter]: https://twitter.com/informalinc

@@ -45,8 +45,11 @@ impl TryFrom<RawMsgSubmitMisbehaviour> for MsgSubmitAnyMisbehaviour {
         let raw_misbehaviour = raw.misbehaviour.ok_or(Kind::InvalidRawMisbehaviour)?;
 
         Ok(MsgSubmitAnyMisbehaviour {
-            client_id: raw.client_id.parse().unwrap(),
-            misbehaviour: AnyMisbehaviour::try_from(raw_misbehaviour).unwrap(),
+            client_id: raw
+                .client_id
+                .parse()
+                .map_err(|e| Kind::InvalidRawMisbehaviour.context(e))?,
+            misbehaviour: AnyMisbehaviour::try_from(raw_misbehaviour)?,
             signer: raw.signer.into(),
         })
     }

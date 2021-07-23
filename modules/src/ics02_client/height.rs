@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::convert::TryFrom;
+use std::convert::{Infallible, TryFrom};
 use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
@@ -104,7 +104,7 @@ impl Ord for Height {
 impl Protobuf<RawHeight> for Height {}
 
 impl TryFrom<RawHeight> for Height {
-    type Error = anomaly::Error<Kind>;
+    type Error = Infallible;
 
     fn try_from(raw: RawHeight) -> Result<Self, Self::Error> {
         Ok(Height {
@@ -140,13 +140,17 @@ impl std::fmt::Display for Height {
 }
 
 impl TryFrom<&str> for Height {
-    type Error = Error;
+    type Error = Kind;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();
         Ok(Height {
-            revision_number: split[0].parse::<u64>().unwrap(),
-            revision_height: split[1].parse::<u64>().unwrap(),
+            revision_number: split[0]
+                .parse::<u64>()
+                .map_err(|e| Kind::HeightConversion(value.to_owned(), e))?,
+            revision_height: split[1]
+                .parse::<u64>()
+                .map_err(|e| Kind::HeightConversion(value.to_owned(), e))?,
         })
     }
 }
@@ -158,9 +162,9 @@ impl From<Height> for String {
 }
 
 impl FromStr for Height {
-    type Err = Error;
+    type Err = Kind;
 
-    fn from_str(s: &str) -> Result<Self, Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Height::try_from(s)
     }
 }

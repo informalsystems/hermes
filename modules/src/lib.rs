@@ -1,5 +1,3 @@
-#![forbid(unsafe_code)]
-#![deny(clippy::all)]
 #![allow(clippy::large_enum_variant)]
 #![deny(
     warnings,
@@ -10,6 +8,10 @@
     unused_qualifications,
     rust_2018_idioms
 )]
+// TODO: disable unwraps:
+//  https://github.com/informalsystems/ibc-rs/issues/987
+// #![cfg_attr(not(test), deny(clippy::unwrap_used))]
+#![forbid(unsafe_code)]
 
 //! Implementation of the following ICS modules:
 //!
@@ -35,6 +37,7 @@ pub mod query;
 pub mod signer;
 pub mod timestamp;
 pub mod tx_msg;
+pub mod utils;
 
 pub mod ics02_client;
 pub mod ics03_connection;

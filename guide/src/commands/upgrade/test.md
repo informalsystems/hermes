@@ -5,7 +5,10 @@
 - gaiad `(v4.2.*)`, for example:
 
 ```shell
-$ gaiad version --log_level error --long | head -n4
+gaiad version --log_level error --long | head -n4
+```
+
+```shell
 name: gaia
 server_name: gaiad
 version: v4.2.0
@@ -17,15 +20,17 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 1. Start two gaia instances and initialize hermes:
 
     ```shell
-    $ ./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
+    ./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
     ```
     The `one-chain` script is invoked for each chain and modifies the `genesis.json` file to use a short window for governance proposals (`200s` for `max_deposit_period` and `voting_period`). Therefore, an upgrade proposal can be submitted, voted on and accepted within a short time.
 
 2. Create one client on `ibc-1` for `ibc-0`:
 
     ```shell
-    $ hermes create client ibc-1 ibc-0
+    hermes create client ibc-1 ibc-0
+    ```
 
+    ```json
     Success: CreateClient(
        CreateClient(
            Attributes {
@@ -46,7 +51,10 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step. In addition, the `unbonding_period` of the client is set to some new value (`400h`)
 
     ```shell
-    $ hermes tx raw upgrade-chain ibc-0 ibc-1 07-tendermint-0 10000000 300
+    hermes tx raw upgrade-chain ibc-0 ibc-1 07-tendermint-0 10000000 300
+    ```
+
+    ```shell
     Success: []
     ```
 
@@ -59,7 +67,8 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     ```shell
     gaiad query gov proposal 1 --home data/ibc-0/
     ```
-    ```
+
+    ```text
     content:
       '@type': /cosmos.upgrade.v1beta1.SoftwareUpgradeProposal
       description: upgrade the chain software and unbonding period
@@ -146,7 +155,10 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     This command must be issued while the proposal status is `PROPOSAL_STATUS_VOTING_PERIOD`. Confirm transaction when prompted.
 
     ```shell
-    $ gaiad tx gov vote 1 yes --home data/ibc-0/data/ --keyring-backend test --keyring-dir data/ibc-0/ --chain-id ibc-0 --from validator
+    gaiad tx gov vote 1 yes --home data/ibc-0/data/ --keyring-backend test --keyring-dir data/ibc-0/ --chain-id ibc-0 --from validator
+    ```
+
+    ```text
     confirm transaction before signing and broadcasting [y/N]: y
 
     {"height":"85","txhash":"AC24D80B1BFE0832769DECFDD3B3DF999A363D5E4390B0B673344FFDED9150B2","codespace":"","code":0,"data":"0A060A04766F7465","raw_log":"[{\"events\":[{\"type\":\"message\",\"attributes\":[{\"key\":\"action\",\"value\":\"vote\"},{\"key\":\"module\",\"value\":\"governance\"},{\"key\":\"sender\",\"value\":\"cosmos1srfzw0jkyyn7wf0ps4zy0tuvdaclfj2ufgp6w3\"}]},{\"type\":\"proposal_vote\",\"attributes\":[{\"key\":\"option\",\"value\":\"VOTE_OPTION_YES\"},{\"key\":\"proposal_id\",\"value\":\"1\"}]}]}]","logs":[{"msg_index":0,"log":"","events":[{"type":"message","attributes":[{"key":"action","value":"vote"},{"key":"module","value":"governance"},{"key":"sender","value":"cosmos1srfzw0jkyyn7wf0ps4zy0tuvdaclfj2ufgp6w3"}]},{"type":"proposal_vote","attributes":[{"key":"option","value":"VOTE_OPTION_YES"},{"key":"proposal_id","value":"1"}]}]}],"info":"","gas_wanted":"200000","gas_used":"43716","tx":null,"timestamp":""}
@@ -155,29 +167,29 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
   6. Wait approximately 200 seconds until the proposal changes status to `PROPOSAL_STATUS_PASSED`.
      Note the `final tally_result` that includes the vote submitted in the previous step.
 
-    ```shell
-    gaiad query gov proposal 1 --home data/ibc-0/
-    ```
+     ```shell
+     gaiad query gov proposal 1 --home data/ibc-0/
+     ```
 
-    ```
-    content:
-      '@type': /cosmos.upgrade.v1beta1.SoftwareUpgradeProposal
-      description: upgrade the chain software and unbonding period
-    ...
-    final_tally_result:
-      abstain: "0"
-      "no": "0"
-      no_with_veto: "0"
-      "yes": "100000000000"
-    proposal_id: "1"
-    status: PROPOSAL_STATUS_PASSED
-    submit_time: "2021-04-12T16:30:17.187389Z"
-    total_deposit:
-    - amount: "10000000"
-      denom: stake
-    voting_end_time: "2021-04-12T16:33:37.187389Z"
-    voting_start_time: "2021-04-12T16:30:17.187389Z"
-    ```
+     ```text
+        content:
+          '@type': /cosmos.upgrade.v1beta1.SoftwareUpgradeProposal
+          description: upgrade the chain software and unbonding period
+        ...
+        final_tally_result:
+          abstain: "0"
+          "no": "0"
+          no_with_veto: "0"
+          "yes": "100000000000"
+        proposal_id: "1"
+        status: PROPOSAL_STATUS_PASSED
+        submit_time: "2021-04-12T16:30:17.187389Z"
+        total_deposit:
+        - amount: "10000000"
+          denom: stake
+        voting_end_time: "2021-04-12T16:33:37.187389Z"
+        voting_start_time: "2021-04-12T16:30:17.187389Z"
+     ```
 
 6. Test the `upgrade client` CLI
 
@@ -185,9 +197,9 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     and another for the upgraded state.
 
     ```shell
-    $ hermes upgrade client ibc-1 07-tendermint-0
+    hermes upgrade client ibc-1 07-tendermint-0
     ```
-    ```rust
+    ```json
     Success: [
         UpdateClient(
             UpdateClient {

@@ -1,3 +1,5 @@
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
@@ -138,6 +140,16 @@ impl ClientDef for TendermintClient {
         _channel_id: &ChannelId,
         _seq: &Sequence,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_upgrade_and_update_state(
+        &self,
+        _client_state: &Self::ClientState,
+        _consensus_state: &Self::ConsensusState,
+        _proof_upgrade_client: MerkleProof,
+        _proof_upgrade_consensus_state: MerkleProof,
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
         todo!()
     }
 }

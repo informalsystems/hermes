@@ -106,6 +106,7 @@ impl From<Header> for ConsensusState {
 #[cfg(test)]
 mod tests {
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
+    use test_env_log::test;
 
     use crate::test::test_serialization_roundtrip;
 

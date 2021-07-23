@@ -8,10 +8,10 @@
 ![Rust Stable][rustc-image]
 ![Rust 1.51+][rustc-version]
 
-This is the repository for the CLI of the IBC Relayer built in Rust, called 
+This is the repository for the CLI of the IBC Relayer built in Rust, called
 `hermes`.
 
-For any information about the relayer binary, please read the comprehensive 
+For any information about the relayer binary, please read the comprehensive
 guide available at [hermes.informal.systems](https://hermes.informal.systems).
 
 
@@ -41,3 +41,4 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
 [rustc-version]: https://img.shields.io/badge/rustc-1.51+-blue.svg
+

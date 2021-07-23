@@ -59,6 +59,7 @@ pub fn process(
 mod tests {
     use std::convert::TryInto;
     use std::time::Duration;
+    use test_env_log::test;
 
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
@@ -87,7 +88,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             MockClientState(MockHeader::new(height)).into(),
-            MockConsensusState(MockHeader::new(height)).into(),
+            MockConsensusState::new(MockHeader::new(height)).into(),
             signer,
         )
         .unwrap();
@@ -137,7 +138,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -151,7 +152,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -165,7 +166,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 50,
                     ..height
                 }))
@@ -223,10 +224,7 @@ mod tests {
 
         let tm_client_state = AnyClientState::Tendermint(ClientState {
             chain_id: tm_header.chain_id.clone().into(),
-            trust_level: TrustThreshold {
-                numerator: 1,
-                denominator: 3,
-            },
+            trust_level: TrustThreshold::ONE_THIRD,
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),

@@ -12,7 +12,7 @@ hermes tx raw create-client ibc-0 ibc-1
 
 if the command is successful a message similar to the one below will be displayed `status:success`:
 
-```rust
+```json
 {
     Success: CreateClient(
         CreateClient(

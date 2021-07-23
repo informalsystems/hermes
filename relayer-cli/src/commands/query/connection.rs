@@ -3,8 +3,11 @@ use std::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics24_host::identifier::ChainId;
-use ibc::ics24_host::identifier::ConnectionId;
+use ibc::{
+    ics03_connection::connection::State,
+    ics24_host::identifier::ConnectionId,
+    ics24_host::identifier::{ChainId, PortChannelId},
+};
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use ibc_relayer::chain::{Chain, CosmosSdkChain};
 
@@ -48,7 +51,17 @@ impl Runnable for QueryConnectionEndCmd {
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
         let res = chain.query_connection(&self.connection_id, height);
         match res {
-            Ok(ce) => Output::success(ce).exit(),
+            Ok(connection_end) => {
+                if connection_end.state_matches(&State::Uninitialized) {
+                    Output::error(format!(
+                        "connection '{}' does not exist",
+                        self.connection_id
+                    ))
+                    .exit()
+                } else {
+                    Output::success(connection_end).exit()
+                }
+            }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -96,7 +109,16 @@ impl Runnable for QueryConnectionChannelsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cids) => Output::success(cids).exit(),
+            Ok(channels) => {
+                let ids: Vec<PortChannelId> = channels
+                    .into_iter()
+                    .map(|identified_channel| PortChannelId {
+                        port_id: identified_channel.port_id,
+                        channel_id: identified_channel.channel_id,
+                    })
+                    .collect();
+                Output::success(ids).exit()
+            }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }

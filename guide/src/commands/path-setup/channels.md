@@ -38,7 +38,7 @@ port name `transfer` on both sides:
 hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
 ```
 
-```rust
+```json
 🥂  ibc-0 => OpenInitConnection(
     OpenInit(
         Attributes {
@@ -327,7 +327,7 @@ hermes create channel ibc-0 --connection-a connection-0 --port-a transfer --port
 Notice that one can omit the destination chain parameter, as Hermes will automatically
 figure it out by looking up the given connection on `ibc-0`.
 
-```rust
+```json
 🥳  ibc-0 => OpenInitChannel(
     OpenInit(
         Attributes {

@@ -4,19 +4,21 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::error;
 
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
         client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
-        client_state::{AnyClientState, ClientState},
+        client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
         events::UpdateClient,
         header::{AnyHeader, Header},
-        misbehaviour::AnyMisbehaviour,
+        misbehaviour::MisbehaviourEvidence,
     },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics03_connection::{
+        connection::{ConnectionEnd, IdentifiedConnectionEnd},
+        version::Version,
+    },
     ics04_channel::{
-        channel::ChannelEnd,
+        channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
     },
     ics23_commitment::commitment::CommitmentPrefix,
@@ -26,15 +28,16 @@ use ibc::{
     signer::Signer,
     Height,
 };
-
 use ibc_proto::ibc::core::{
     channel::v1::{
-        PacketState, QueryChannelsRequest, QueryNextSequenceReceiveRequest,
+        PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
+        QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
         QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
         QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     },
-    client::v1::QueryConsensusStatesRequest,
+    client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest},
     commitment::v1::MerkleProof,
+    connection::v1::{QueryClientConnectionsRequest, QueryConnectionsRequest},
 };
 
 use crate::{
@@ -43,7 +46,7 @@ use crate::{
     error::{Error, Kind},
     event::{
         bus::EventBus,
-        monitor::{EventBatch, EventReceiver, Result as MonitorResult},
+        monitor::{EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd},
     },
     keyring::KeyEntry,
     light_client::LightClient,
@@ -77,6 +80,9 @@ pub struct ChainRuntime<C: Chain> {
     /// Receiver channel from the event bus
     event_receiver: EventReceiver,
 
+    /// Sender channel to terminate the event monitor
+    tx_monitor_cmd: TxMonitorCmd,
+
     /// A handle to the light client
     light_client: Box<dyn LightClient<C>>,
 
@@ -89,7 +95,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     pub fn spawn(
         config: ChainConfig,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
+    ) -> Result<Box<dyn ChainHandle>, Error> {
         // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
 
@@ -97,17 +103,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let light_client = chain.init_light_client()?;
 
         // Start the event monitor
-        let (event_batch_rx, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
+        let (event_batch_rx, tx_monitor_cmd) = chain.init_event_monitor(rt.clone())?;
 
         // Instantiate & spawn the runtime
-        let (handle, runtime_thread) = Self::init(chain, light_client, event_batch_rx, rt);
+        let (handle, _) = Self::init(chain, light_client, event_batch_rx, tx_monitor_cmd, rt);
 
-        let threads = Threads {
-            chain_runtime: runtime_thread,
-            event_monitor: event_monitor_thread,
-        };
-
-        Ok((handle, threads))
+        Ok(handle)
     }
 
     /// Initializes a runtime for a given chain, and spawns the associated thread
@@ -115,9 +116,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: EventReceiver,
+        tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
     ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
-        let chain_runtime = Self::new(chain, light_client, event_receiver, rt);
+        let chain_runtime = Self::new(chain, light_client, event_receiver, tx_monitor_cmd, rt);
 
         // Get a handle to the runtime
         let handle = chain_runtime.handle();
@@ -138,6 +140,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: EventReceiver,
+        tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
     ) -> Self {
         let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
@@ -149,6 +152,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             request_receiver,
             event_bus: EventBus::new(),
             event_receiver,
+            tx_monitor_cmd,
             light_client,
         }
     }
@@ -167,16 +171,22 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                     match event_batch {
                         Ok(event_batch) => {
                             self.event_bus
-                                .broadcast(Arc::new(event_batch))
-                                .map_err(Kind::channel)?;
+                                .broadcast(Arc::new(event_batch));
                         },
-                        Err(e) => error!("received error via event bus: {}", e),
+                        Err(e) => {
+                            error!("received error via event bus: {}", e);
+                            return Err(Kind::Channel.into());
+                        },
                     }
                 },
                 recv(self.request_receiver) -> event => {
                     match event {
-                        Ok(ChainRequest::Terminate { reply_to }) => {
-                            reply_to.send(Ok(())).map_err(Kind::channel)?;
+                        Ok(ChainRequest::Shutdown { reply_to }) => {
+                            self.tx_monitor_cmd.send(MonitorCmd::Shutdown).map_err(Kind::channel)?;
+
+                            let res = self.chain.shutdown();
+                            reply_to.send(res).map_err(Kind::channel)?;
+
                             break;
                         }
 
@@ -228,6 +238,14 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_latest_height(reply_to)?
                         }
 
+                        Ok(ChainRequest::QueryClients { request, reply_to }) => {
+                            self.query_clients(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryClientConnections { request, reply_to }) => {
+                            self.query_client_connections(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
@@ -260,12 +278,24 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_connection(connection_id, height, reply_to)?
                         },
 
+                        Ok(ChainRequest::QueryConnections { request, reply_to }) => {
+                            self.query_connections(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryConnectionChannels { request, reply_to }) => {
+                            self.query_connection_channels(request, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryChannels { request, reply_to }) => {
                             self.query_channels(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
                             self.query_channel(port_id, channel_id, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryChannelClientState { request, reply_to }) => {
+                            self.query_channel_client_state(request, reply_to)?
                         },
 
                         Ok(ChainRequest::ProvenClientState { client_id, height, reply_to }) => {
@@ -374,32 +404,23 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        reply_to: ReplyTo<AnyHeader>,
+        reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
     ) -> Result<(), Error> {
-        // Get the light block at trusted_height + 1 from chain.
-        //
-        // TODO: This is tendermint specific and needs to be refactored during
-        //       the relayer light client refactoring.
-        // NOTE: This is needed to get the next validator set. While there is a next validator set
-        //       in the light block at trusted height, the proposer is not known/set in this set.
-        let trusted_light_block = self.light_client.fetch(trusted_height.increment());
+        let result = self
+            .chain
+            .build_header(
+                trusted_height,
+                target_height,
+                &client_state,
+                self.light_client.as_mut(),
+            )
+            .map(|(header, support)| {
+                let header = header.wrap_any();
+                let support = support.into_iter().map(|h| h.wrap_any()).collect();
+                (header, support)
+            });
 
-        // Get the light block at target_height from chain.
-        let target_light_block =
-            self.light_client
-                .verify(trusted_height, target_height, &client_state);
-
-        // Try to build the header, return first error encountered.
-        let header = match (trusted_light_block, target_light_block) {
-            (Err(eta), _) => Err(eta),
-            (_, Err(etr)) => Err(etr),
-            (Ok(trusted_light_block), Ok(target_light_block)) => self
-                .chain
-                .build_header(trusted_height, trusted_light_block, target_light_block)
-                .map_or_else(Err, |header| Ok(header.wrap_any())),
-        };
-
-        reply_to.send(header).map_err(Kind::channel)?;
+        reply_to.send(result).map_err(Kind::channel)?;
 
         Ok(())
     }
@@ -428,11 +449,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let light_block = self.light_client.verify(trusted, target, &client_state)?;
+        let verified = self.light_client.verify(trusted, target, &client_state)?;
 
         let consensus_state = self
             .chain
-            .build_consensus_state(light_block)
+            .build_consensus_state(verified.target)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(consensus_state).map_err(Kind::channel)?;
@@ -445,7 +466,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         &mut self,
         update_event: UpdateClient,
         client_state: AnyClientState,
-        reply_to: ReplyTo<Option<AnyMisbehaviour>>,
+        reply_to: ReplyTo<Option<MisbehaviourEvidence>>,
     ) -> Result<(), Error> {
         let misbehaviour = self
             .light_client
@@ -473,6 +494,30 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
         let result = result
             .map(|(opt_client_state, proofs)| (opt_client_state.map(|cs| cs.wrap_any()), proofs));
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_clients(
+        &self,
+        request: QueryClientStatesRequest,
+        reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_clients(request);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_client_connections(
+        &self,
+        request: QueryClientConnectionsRequest,
+        reply_to: ReplyTo<Vec<ConnectionId>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_client_connections(request);
 
         reply_to.send(result).map_err(Kind::channel)?;
 
@@ -582,6 +627,32 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_connections(request);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_connection_channels(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
@@ -602,6 +673,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<ChannelEnd>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel(&port_id, &channel_id, height);
+
+        reply_to.send(result).map_err(Kind::channel)?;
+
+        Ok(())
+    }
+
+    fn query_channel_client_state(
+        &self,
+        request: QueryChannelClientStateRequest,
+        reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_channel_client_state(request);
 
         reply_to.send(result).map_err(Kind::channel)?;
 

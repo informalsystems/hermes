@@ -1,17 +1,14 @@
-# Concurrent packet relaying on multiple paths
+# Relay packets on multiple paths
 
-At the moment, the `start` command relays packets over a single channel.
-To relay packets over multiple channels concurrently, one can instead use
-the `start-multi` command.
+Hermes can relay packets over all current or future paths between the configured set of chains.
 
-> __WARNING__: Relaying packets concurrently over multiple channels with the
-> `start-multi` command is currently __experimental__. Use at your own risk.
+Follow the steps below to connect three chains together and relay packets between them:
 
 1. Paste the following configuration in the standard Hermes configuration file at `~/.hermes/config.toml`:
 
     ```toml
     [global]
-    strategy = 'naive'
+    strategy = 'packets'
     log_level = 'info'
 
     [[chains]]
@@ -23,15 +20,12 @@ the `start-multi` command.
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    gas = 200000
-    fee_denom = 'stake'
-    fee_amount = 10
+    max_gas = 2000000
+    gas_price = { price = 0.001, denom = 'stake' }
+    gas_adjustment = 0.1
     clock_drift = '5s'
     trusting_period = '14days'
-
-    [chains.trust_threshold]
-    numerator = '1'
-    denominator = '3'
+    trust_threshold = { numerator = '1', denominator = '3' }
 
     [[chains]]
     id = 'ibc-1'
@@ -42,11 +36,12 @@ the `start-multi` command.
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    gas = 200000
-    fee_denom = 'stake'
-    fee_amount = 10
+    max_gas = 2000000
+    gas_price = { price = 0.001, denom = 'stake' }
+    gas_adjustment = 0.1
     clock_drift = '5s'
     trusting_period = '14days'
+    trust_threshold = { numerator = '1', denominator = '3' }
 
     [[chains]]
     id = 'ibc-2'
@@ -57,15 +52,12 @@ the `start-multi` command.
     account_prefix = 'cosmos'
     key_name = 'testkey'
     store_prefix = 'ibc'
-    gas = 200000
-    fee_denom = 'stake'
-    fee_amount = 10
+    max_gas = 2000000
+    gas_price = { price = 0.001, denom = 'stake' }
+    gas_adjustment = 0.1
     clock_drift = '5s'
     trusting_period = '14days'
-
-    [chains.trust_threshold]
-    numerator = '1'
-    denominator = '3'
+    trust_threshold = { numerator = '1', denominator = '3' }
     ```
 
     This configuration has three chains `ibc-0`, `ibc-1` and `ibc-2`.
@@ -88,7 +80,7 @@ the `start-multi` command.
     hermes create channel ibc-0 ibc-1 --port-a transfer --port-b transfer -o unordered
     ```
 
-    ```rust
+    ```json
     (...)
 
     Success: Channel {
@@ -150,7 +142,7 @@ the `start-multi` command.
     hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
     ```
 
-    ```rust
+    ```json
     (...)
 
     Success: Channel {
@@ -206,14 +198,14 @@ the `start-multi` command.
 
     Note that the channel identifier on `ibc-1` is `channel-1`, and on `ibc-2` it is `channel-0`.
 
-3. Start Hermes using the `start-multi` command:
+3. Start Hermes using the `start` command:
 
     ```shell
-    hermes start-multi
+    hermes start
     ```
 
-   Hermes will first relay the pending packets that have not been relayed and then start passive relaying by listening
-    to and acting on packet events.
+   Hermes will first relay the pending packets that have not been relayed and then
+   start passive relaying by listening to and acting on packet events.
 
 4. In a separate terminal, use the `ft-transfer` command to send:
 
@@ -223,7 +215,7 @@ the `start-multi` command.
       hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
       ```
 
-      ```rust
+      ```json
       Success: [
           SendPacket(
               SendPacket {
@@ -246,7 +238,7 @@ the `start-multi` command.
       hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 -o 1000 -n 2
       ```
 
-      ```rust
+      ```json
       Success: [
           SendPacket(
               SendPacket {
@@ -265,7 +257,7 @@ the `start-multi` command.
 
 5. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packets` are sent out.
 
-    ```
+    ```text
     (...)
 
     INFO ibc_relayer::link: [ibc-0 -> ibc-1] result events:

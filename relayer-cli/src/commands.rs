@@ -7,18 +7,19 @@
 
 use std::path::PathBuf;
 
-use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
-use tracing::info;
+use abscissa_core::{
+    config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
+};
+use tracing::{error, info};
 
 use crate::config::Config;
 use crate::DEFAULT_CONFIG_PATH;
 
 use self::{
-    create::CreateCmds, keys::KeysCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    start_multi::StartMultiCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
-    version::VersionCmd,
+    config::ConfigCmd, create::CreateCmds, keys::KeysCmd, listen::ListenCmd,
+    misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
+    upgrade::UpgradeCmds, version::VersionCmd,
 };
-use crate::commands::misbehaviour::MisbehaviourCmd;
 
 mod config;
 mod create;
@@ -27,7 +28,6 @@ mod listen;
 mod misbehaviour;
 mod query;
 mod start;
-mod start_multi;
 mod tx;
 mod update;
 mod upgrade;
@@ -35,14 +35,8 @@ mod version;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
-    info!("Using default configuration from: '.hermes/config.toml'");
     dirs_next::home_dir().map(|home| home.join(DEFAULT_CONFIG_PATH))
 }
-
-// TODO: Re-add the `config` subcommand
-// /// The `config` subcommand
-// #[options(help = "manipulate the relayer configuration")]
-// Config(ConfigCmd),
 
 /// Cli Subcommands
 #[derive(Command, Debug, Options, Runnable)]
@@ -50,6 +44,10 @@ pub enum CliCmd {
     /// The `help` subcommand
     #[options(help = "Get usage information")]
     Help(Help<Self>),
+
+    /// The `config` subcommand
+    #[options(help = "Validate Hermes configuration file")]
+    Config(ConfigCmd),
 
     /// The `keys` subcommand
     #[options(help = "Manage keys in the relayer for each chain")]
@@ -68,13 +66,9 @@ pub enum CliCmd {
     Upgrade(UpgradeCmds),
 
     /// The `start` subcommand
-    #[options(help = "Start the relayer")]
-    Start(StartCmd),
-
-    /// The `start-multi` subcommand
     #[options(help = "Start the relayer in multi-chain mode. \
-                      Handles packet relaying across all open channels between all chains in the config.")]
-    StartMulti(StartMultiCmd),
+                      Relays packets and open handshake messages between all chains in the config.")]
+    Start(StartCmd),
 
     /// The `query` subcommand
     #[options(help = "Query objects from the chain")]
@@ -100,9 +94,32 @@ pub enum CliCmd {
 /// This trait allows you to define how application configuration is loaded.
 impl Configurable<Config> for CliCmd {
     /// Location of the configuration file
+    /// This is called only when the `-c` command-line option is omitted.
     fn config_path(&self) -> Option<PathBuf> {
-        let filename = default_config_file();
-        filename.filter(|f| f.exists())
+        let path = default_config_file();
+
+        match path {
+            Some(path) if path.exists() => {
+                info!("using default configuration from '{}'", path.display());
+                Some(path)
+            }
+            Some(path) => {
+                // No file exists at the config path
+                error!("could not find configuration file at '{}'", path.display());
+                error!("for an example, please see https://hermes.informal.systems/config.html#example-configuration-file");
+                None
+            }
+            None => {
+                // The path to the default config file could not be found
+                error!("could not find default configuration file");
+                error!(
+                    "please create one at '~/{}' or specify it with the '-c'/'--config' flag",
+                    DEFAULT_CONFIG_PATH
+                );
+                error!("for an example, please see https://hermes.informal.systems/config.html#example-configuration-file");
+                None
+            }
+        }
     }
 
     /// Apply changes to the config after it's been loaded, e.g. overriding
@@ -111,6 +128,20 @@ impl Configurable<Config> for CliCmd {
     /// This can be safely deleted if you don't want to override config
     /// settings from command-line options.
     fn process_config(&self, config: Config) -> Result<Config, FrameworkError> {
-        Ok(config)
+        match self {
+            CliCmd::Tx(cmd) => cmd.override_config(config),
+            // CliCmd::Help(cmd) => cmd.override_config(config),
+            // CliCmd::Keys(cmd) => cmd.override_config(config),
+            // CliCmd::Create(cmd) => cmd.override_config(config),
+            // CliCmd::Update(cmd) => cmd.override_config(config),
+            // CliCmd::Upgrade(cmd) => cmd.override_config(config),
+            // CliCmd::Start(cmd) => cmd.override_config(config),
+            // CliCmd::StartMulti(cmd) => cmd.override_config(config),
+            // CliCmd::Query(cmd) => cmd.override_config(config),
+            // CliCmd::Listen(cmd) => cmd.override_config(config),
+            // CliCmd::Misbehaviour(cmd) => cmd.override_config(config),
+            // CliCmd::Version(cmd) => cmd.override_config(config),
+            _ => Ok(config),
+        }
     }
 }
