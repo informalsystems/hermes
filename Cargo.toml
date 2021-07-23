@@ -13,9 +13,6 @@ exclude = [
 ]
 
 [patch.crates-io]
-flex-error = { git = "https://github.com/informalsystems/flex-error", rev = "9b2a86abfb088a9a84243e0ab9b2a84c1baff875" }
-
-# [patch.crates-io]
 # tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 # tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
 # tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }

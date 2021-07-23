@@ -827,7 +827,8 @@ dependencies = [
 [[package]]
 name = "flex-error"
 version = "0.4.0"
-source = "git+https://github.com/informalsystems/flex-error?rev=9b2a86abfb088a9a84243e0ab9b2a84c1baff875#9b2a86abfb088a9a84243e0ab9b2a84c1baff875"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c488131f59fddbc8554fe2cde68b2cc8877997254f1eeabe88f4cb094e6c1ec"
 dependencies = [
  "anyhow",
  "eyre",
