@@ -569,6 +569,8 @@ impl Supervisor {
                     .map_err(|e| error!("[{}] error during batch processing: {}", chain_id, e));
             }
             Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
+                warn!(chain.id = %chain_id, "event subscription was cancelled, clearing pending packets");
+
                 let _ = self.clear_pending_packets(&chain_id).map_err(|e| {
                     error!(
                         "[{}] error during clearing pending packets: {}",

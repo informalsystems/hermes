@@ -64,7 +64,15 @@ impl TxUpgradeChainCmd {
 }
 
 impl Runnable for TxUpgradeChainCmd {
+    #[allow(unreachable_code)]
     fn run(&self) {
+        tracing::error!("This command is currently disabled due to a regression in Hermes v0.6.1.");
+        tracing::error!("Please track the following issue for background and progress:");
+        tracing::error!("");
+        tracing::error!("    https://github.com/informalsystems/ibc-rs/issues/1229");
+
+        std::process::exit(1);
+
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
