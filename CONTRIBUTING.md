@@ -85,7 +85,27 @@ To pull in updates from the origin repo, run
 
 ## Changelog
 
-Every non-trivial PR must update the [CHANGELOG.md](CHANGELOG.MD).
+Every non-trivial PR must update the [CHANGELOG](CHANGELOG.md). This is
+accomplished indirectly by adding entries to the `.changelog` folder in
+[unclog](https://github.com/informalsystems/unclog) format. `CHANGELOG.md` will
+be built by whomever is responsible for performing a release just prior to
+release - this is to avoid changelog conflicts prior to releases. For example:
+
+```bash
+# Add a .changelog entry for the `ibc` crate (in the `modules` directory)
+# under the `IMPROVEMENTS` section in CHANGELOG.md.
+unclog add -c ibc improvements 1234-some-issue
+
+# Add a .changelog entry for the `ibc-relayer-cli` crate (in the `relayer-cli`
+# directory) under the `FEATURES` section in CHANGELOG.md.
+unclog add -c ibc-relayer-cli features 1235-some-other-issue
+
+# Preview unreleased changes
+unclog build -u
+
+# Build the new CHANGELOG.md from entries in ./.changelog/
+unclog build > CHANGELOG.md
+```
 
 The Changelog is *not* a record of what Pull Requests were merged;
 the commit history already shows that. The Changelog is a notice to users
