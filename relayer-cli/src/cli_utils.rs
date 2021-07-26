@@ -55,6 +55,9 @@ pub fn spawn_chain_runtime(
     Ok(handle)
 }
 
+/// Spawns a chain runtime for specified chain identifier, queries the counterparty chain associated
+/// with specified port and channel id, and spawns a chain runtime for the counterparty chain.
+/// Returns a tuple with a pair of associated chain handles and the ChannelEnd
 pub fn spawn_chain_counterparty(
     config: &Config,
     chain_id: &ChainId,
