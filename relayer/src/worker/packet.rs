@@ -110,9 +110,12 @@ impl PacketWorker {
                     // once at start, and _forced_ at predefined block intervals.
                     let force_packet_clearing = self.clear_packets_interval != 0
                         && height.revision_height % self.clear_packets_interval == 0;
+
                     link.a_to_b
-                        .schedule_packet_clearing(height, force_packet_clearing)
+                        .schedule_packet_clearing(Some(height), force_packet_clearing)
                 }
+
+                WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None, true),
 
                 WorkerCmd::Shutdown => {
                     return RetryResult::Ok(Step::Shutdown);

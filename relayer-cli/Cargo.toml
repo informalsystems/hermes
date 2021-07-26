@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.6.0"
+version    = "0.6.1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -22,10 +22,10 @@ profiling = ["ibc-relayer/profiling"]
 telemetry = ["ibc-relayer/telemetry", "ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.6.0", path = "../modules" }
-ibc-relayer   = { version = "0.6.0", path = "../relayer" }
-ibc-proto     = { version = "0.8.2", path = "../proto" }
-ibc-telemetry = { version = "0.6.0", path = "../telemetry", optional = true }
+ibc           = { version = "0.6.1", path = "../modules" }
+ibc-relayer   = { version = "0.6.1", path = "../relayer" }
+ibc-proto     = { version = "0.9.0", path = "../proto" }
+ibc-telemetry = { version = "0.6.1", path = "../telemetry", optional = true }
 
 anomaly = "0.2.0"
 gumdrop = { version = "0.7", features = ["default_expr"] }
@@ -50,17 +50,17 @@ atty = "0.2.14"
 signal-hook = "0.3.9"
 
 [dependencies.tendermint-proto]
-version = "=0.20.0"
+version = "=0.21.0"
 
 [dependencies.tendermint]
-version = "=0.20.0"
+version = "=0.21.0"
 
 [dependencies.tendermint-rpc]
-version = "=0.20.0"
+version = "=0.21.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.20.0"
+version = "=0.21.0"
 features = ["unstable"]
 
 [dependencies.abscissa_core]

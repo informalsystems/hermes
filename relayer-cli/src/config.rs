@@ -64,7 +64,7 @@ pub fn validate_config(config: &Config) -> Result<(), Error> {
 /// b) greater or equal to 1/3
 /// c) strictly less than 1
 fn validate_trust_threshold(id: &ChainId, trust_threshold: TrustThreshold) -> Result<(), Error> {
-    if trust_threshold.denominator == 0 {
+    if trust_threshold.denominator() == 0 {
         return Err(Error::InvalidTrustThreshold(
             trust_threshold,
             id.clone(),
@@ -72,7 +72,7 @@ fn validate_trust_threshold(id: &ChainId, trust_threshold: TrustThreshold) -> Re
         ));
     }
 
-    if trust_threshold.numerator * 3 < trust_threshold.denominator {
+    if trust_threshold.numerator() * 3 < trust_threshold.denominator() {
         return Err(Error::InvalidTrustThreshold(
             trust_threshold,
             id.clone(),
@@ -80,7 +80,7 @@ fn validate_trust_threshold(id: &ChainId, trust_threshold: TrustThreshold) -> Re
         ));
     }
 
-    if trust_threshold.numerator >= trust_threshold.denominator {
+    if trust_threshold.numerator() >= trust_threshold.denominator() {
         return Err(Error::InvalidTrustThreshold(
             trust_threshold,
             id.clone(),

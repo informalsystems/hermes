@@ -152,7 +152,7 @@ impl IbcTestRunner {
     }
 
     pub fn consensus_state(height: u64) -> AnyConsensusState {
-        AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)))
+        AnyConsensusState::Mock(MockConsensusState::new(Self::mock_header(height)))
     }
 
     fn signer() -> Signer {
