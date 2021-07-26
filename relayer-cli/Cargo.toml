@@ -18,7 +18,9 @@ name = "hermes"
 
 [features]
 default   = ["telemetry", "std"]
-std = []
+std = [
+  "flex-error/std"
+]
 profiling = ["ibc-relayer/profiling"]
 telemetry = ["ibc-relayer/telemetry", "ibc-telemetry"]
 
@@ -46,7 +48,7 @@ subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.1"
 atty = "0.2.14"
-flex-error = "0.4.0"
+flex-error = { version = "0.4.1", default-features = false }
 signal-hook = "0.3.9"
 
 [dependencies.tendermint-proto]

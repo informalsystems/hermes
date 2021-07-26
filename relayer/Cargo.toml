@@ -14,7 +14,9 @@ description = """
 
 [features]
 default = ["std"]
-std = []
+std = [
+    "flex-error/std"
+]
 profiling = []
 telemetry = ["ibc-telemetry"]
 
@@ -56,7 +58,7 @@ dyn-clone = "1.0.3"
 retry = { version = "1.2.1", default-features = false }
 async-stream = "0.3.2"
 http = "0.2.4"
-flex-error = "0.4.0"
+flex-error = { version = "0.4.1", default-features = false }
 signature = "1.3.0"
 anyhow = "1.0.41"
 fraction = {version = "0.8.0", default-features = false }

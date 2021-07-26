@@ -793,16 +793,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "eyre"
-version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "221239d1d5ea86bf5d6f91c9d6bc3646ffe471b08ff9b0f91c44f115ac969d2b"
-dependencies = [
- "indenter",
- "once_cell",
-]
-
-[[package]]
 name = "ff"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -826,14 +816,11 @@ dependencies = [
 
 [[package]]
 name = "flex-error"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c488131f59fddbc8554fe2cde68b2cc8877997254f1eeabe88f4cb094e6c1ec"
+checksum = "f2c21e3345cc1318971ddb5d04add3b4eaa970349e4f3e1d870535173cb745cf"
 dependencies = [
- "anyhow",
- "eyre",
  "paste",
- "serde",
 ]
 
 [[package]]
@@ -1512,12 +1499,6 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
-
-[[package]]
-name = "indenter"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
 name = "indexmap"
