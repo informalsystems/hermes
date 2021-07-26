@@ -17,10 +17,11 @@ description = """
 name = "hermes"
 
 [features]
-default   = ["telemetry", "std"]
+default   = ["telemetry", "std", "eyre"]
 std = [
-  "flex-error/std"
+    "flex-error/std"
 ]
+eyre = ["flex-error/eyre_tracer"]
 profiling = ["ibc-relayer/profiling"]
 telemetry = ["ibc-relayer/telemetry", "ibc-telemetry"]
 

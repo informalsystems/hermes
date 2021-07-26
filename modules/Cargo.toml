@@ -16,10 +16,11 @@ description = """
 [features]
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-default = ["std"]
+default = ["std", "eyre"]
 std = [
     "flex-error/std"
 ]
+eyre = ["flex-error/eyre_tracer"]
 mocks = [ "tendermint-testgen", "sha2" ]
 
 [dependencies]
