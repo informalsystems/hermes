@@ -1,5 +1,5 @@
-use core::mem;
 use async_stream::stream;
+use core::mem;
 use futures::stream::Stream;
 
 /// ## Example
