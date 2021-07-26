@@ -534,7 +534,7 @@ impl<'a> SpawnContext<'a> {
                         &path_object,
                         &self.config.read().expect("poisoned lock"),
                     )
-                    .then(|| debug!("spawned Path worker: {}", path_object.short_name()));
+                    .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
             }
         } else if !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
