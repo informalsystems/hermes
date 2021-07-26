@@ -1,120 +1,211 @@
-use std::num::ParseIntError;
-
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
 use crate::ics02_client::client_type::ClientType;
+use crate::ics07_tendermint::error::Error as Ics07Error;
 use crate::ics23_commitment::error::Error as Ics23Error;
-use crate::ics24_host::error::ValidationKind;
+use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
+use std::num::TryFromIntError;
+use tendermint_proto::Error as TendermintError;
 
-pub type Error = anomaly::Error<Kind>;
+use flex_error::{define_error, TraceError};
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
-    #[error("unknown client type: {0}")]
-    UnknownClientType(String),
+define_error! {
+    Error {
+        UnknownClientType
+            { client_type: String }
+            | e | { format_args!("unknown client type: {0}", e.client_type) },
 
-    #[error("Client identifier constructor failed for type {0} with counter {1}")]
-    ClientIdentifierConstructor(ClientType, u64),
+        ClientIdentifierConstructor
+            { client_type: ClientType, counter: u64 }
+            [ ValidationError ]
+            | e | {
+                format_args!("Client identifier constructor failed for type {0} with counter {1}",
+                    e.client_type, e.counter)
+            },
 
-    #[error("client already exists: {0}")]
-    ClientAlreadyExists(ClientId),
+        ClientAlreadyExists
+            { client_id: ClientId }
+            | e | { format_args!("client already exists: {0}", e.client_id) },
 
-    #[error("client not found: {0}")]
-    ClientNotFound(ClientId),
+        ClientNotFound
+            { client_id: ClientId }
+            | e | { format_args!("client not found: {0}", e.client_id) },
 
-    #[error("client is frozen: {0}")]
-    ClientFrozen(ClientId),
+        ClientFrozen
+            { client_id: ClientId }
+            | e | { format_args!("client is frozen: {0}", e.client_id) },
 
-    #[error("consensus state not found at: {0} at height {1}")]
-    ConsensusStateNotFound(ClientId, Height),
+        ConsensusStateNotFound
+            { client_id: ClientId, height: Height }
+            | e | {
+                format_args!("consensus state not found at: {0} at height {1}",
+                    e.client_id, e.height)
+            },
 
-    #[error("implementation specific")]
-    ImplementationSpecific,
+        ImplementationSpecific
+            | _ | { "implementation specific error" },
 
-    #[error("header verification failed")]
-    HeaderVerificationFailure,
+        HeaderVerificationFailure
+            { reason: String }
+            | e | { format_args!("header verification failed with reason: {}", e.reason) },
 
-    #[error("unknown client state type: {0}")]
-    UnknownClientStateType(String),
+        UnknownClientStateType
+            { client_state_type: String }
+            | e | { format_args!("unknown client state type: {0}", e.client_state_type) },
 
-    #[error("the client state was not found")]
-    EmptyClientStateResponse,
+        EmptyClientStateResponse
+            | _ | { "the client state was not found" },
 
-    #[error("unknown client consensus state type: {0}")]
-    UnknownConsensusStateType(String),
+        EmptyPrefix
+            { source: crate::ics23_commitment::merkle::EmptyPrefixError }
+            | _ | { "empty prefix" },
 
-    #[error("the client consensus state was not found")]
-    EmptyConsensusStateResponse,
+        UnknownConsensusStateType
+            { consensus_state_type: String }
+            | e | {
+                format_args!("unknown client consensus state type: {0}",
+                    e.consensus_state_type)
+            },
 
-    #[error("unknown header type: {0}")]
-    UnknownHeaderType(String),
+        EmptyConsensusStateResponse
+            | _ | { "the client state was not found" },
 
-    #[error("unknown misbehaviour type: {0}")]
-    UnknownMisbehaviourType(String),
+        UnknownHeaderType
+            { header_type: String }
+            | e | {
+                format_args!("unknown header type: {0}",
+                    e.header_type)
+            },
 
-    #[error("invalid raw client identifier {0} with underlying error: {1}")]
-    InvalidRawClientId(String, ValidationKind),
+        UnknownMisbehaviourType
+            { misbehavior_type: String }
+            | e | {
+                format_args!("unknown misbehaviour type: {0}",
+                    e.misbehavior_type)
+            },
 
-    #[error("invalid raw client state")]
-    InvalidRawClientState,
+        InvalidRawClientId
+            { client_id: String }
+            [ ValidationError ]
+            | e | {
+                format_args!("invalid raw client identifier {0}",
+                    e.client_id)
+            },
 
-    #[error("invalid raw client consensus state")]
-    InvalidRawConsensusState,
+        DecodeRawClientState
+            [ TraceError<TendermintError> ]
+            | _ | { "error decoding raw client state" },
 
-    #[error("invalid client id in the update client message")]
-    InvalidMsgUpdateClientId,
+        MissingRawClientState
+            | _ | { "missing raw client state" },
 
-    #[error("invalid raw client consensus state: the height field is missing")]
-    MissingHeight,
+        InvalidRawConsensusState
+            [ TraceError<TendermintError> ]
+            | _ | { "invalid raw client consensus state" },
 
-    #[error("invalid client identifier: validation error: {0}")]
-    InvalidClientIdentifier(ValidationKind),
+        MissingRawConsensusState
+            | _ | { "missing raw client consensus state" },
 
-    #[error("invalid raw header")]
-    InvalidRawHeader,
+        InvalidMsgUpdateClientId
+            [ ValidationError ]
+            | _ | { "invalid client id in the update client message" },
 
-    #[error("invalid raw misbehaviour")]
-    InvalidRawMisbehaviour,
+        Decode
+            [ TraceError<prost::DecodeError> ]
+            | _ | { "decode error" },
 
-    #[error("invalid height result")]
-    InvalidHeightResult,
+        MissingHeight
+            | _ | { "invalid raw client consensus state: the height field is missing" },
 
-    #[error("cannot convert into a `Height` type from string {0}")]
-    HeightConversion(String, ParseIntError),
+        InvalidClientIdentifier
+            [ ValidationError ]
+            | _ | { "invalid client identifier" },
 
-    #[error("invalid address")]
-    InvalidAddress,
+        InvalidRawHeader
+            [ TraceError<TendermintError> ]
+            | _ | { "invalid raw header" },
 
-    #[error("invalid proof for the upgraded client state")]
-    InvalidUpgradeClientProof(Ics23Error),
+        MissingRawHeader
+            | _ | { "missing raw header" },
 
-    #[error("invalid proof for the upgraded consensus state")]
-    InvalidUpgradeConsensusStateProof(Ics23Error),
+        DecodeRawMisbehaviour
+            [ TraceError<TendermintError> ]
+            | _ | { "invalid raw misbehaviour" },
 
-    #[error("invalid packet timeout timestamp value")]
-    InvalidPacketTimestamp,
+        InvalidRawMisbehaviour
+            [ ValidationError ]
+            | _ | { "invalid raw misbehaviour" },
 
-    #[error("mismatch between client and arguments types, expected: {0:?}")]
-    ClientArgsTypeMismatch(ClientType),
+        MissingRawMisbehaviour
+            | _ | { "missing raw misbehaviour" },
 
-    #[error("mismatch raw client consensus state")]
-    RawClientAndConsensusStateTypesMismatch {
-        state_type: ClientType,
-        consensus_type: ClientType,
-    },
+        InvalidHeightResult
+            | _ | { "height cannot end up zero or negative" },
 
-    #[error("upgrade verification failed")]
-    UpgradeVerificationFailure,
+        InvalidAddress
+            | _ | { "invalid address" },
 
-    #[error("upgraded client height {0} must be at greater than current client height {1}")]
-    LowUpgradeHeight(Height, Height),
+        InvalidUpgradeClientProof
+            [ Ics23Error ]
+            | _ | { "invalid proof for the upgraded client state" },
+
+        InvalidUpgradeConsensusStateProof
+            [ Ics23Error ]
+            | _ | { "invalid proof for the upgraded consensus state" },
+
+        Tendermint
+            [ Ics07Error ]
+            | _ | { "tendermint error" },
+
+        InvalidPacketTimestamp
+            [ TraceError<TryFromIntError> ]
+            | _ | { "invalid packet timeout timestamp value" },
+
+        ClientArgsTypeMismatch
+            { client_type: ClientType }
+            | e | {
+                format_args!("mismatch between client and arguments types, expected: {0:?}",
+                    e.client_type)
+            },
+
+        RawClientAndConsensusStateTypesMismatch
+            {
+                state_type: ClientType,
+                consensus_type: ClientType,
+            }
+            | e | {
+                format_args!("mismatch in raw client consensus state {} with expected state {}",
+                    e.state_type, e.consensus_type)
+            },
+
+        LowHeaderHeight
+            {
+                header_height: Height,
+                latest_height: Height
+            }
+            | e | {
+                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
+                    e.header_height, e.latest_height)
+            },
+
+        LowUpgradeHeight
+            {
+                upgraded_height: Height,
+                client_height: Height,
+            }
+            | e | {
+                format_args!("upgraded client height {0} must be at greater than current client height {1}",
+                    e.upgraded_height, e.client_height)
+            },
+    }
 }
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+impl Error {
+    pub fn upgrade_verification_failed(e: Error) -> Error {
+        e.add_trace(&"upgrade verification failed")
+    }
+
+    pub fn invalid_raw_client_state(e: Error) -> Error {
+        e.add_trace(&"invalid raw client state")
     }
 }

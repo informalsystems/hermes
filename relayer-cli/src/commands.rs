@@ -12,8 +12,8 @@ use abscissa_core::{
 };
 use tracing::{error, info};
 
-use crate::config::Config;
 use crate::DEFAULT_CONFIG_PATH;
+use ibc_relayer::config::Config;
 
 use self::{
     config::ConfigCmd, create::CreateCmds, keys::KeysCmd, listen::ListenCmd,

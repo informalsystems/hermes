@@ -1,244 +1,394 @@
 //! This module defines the various errors that be raised in the relayer.
 
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
-use ibc::{
-    ics02_client::client_type::ClientType,
-    ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
+use crate::keyring::errors::Error as KeyringError;
+use crate::sdk_error::SdkError;
+use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
+use http::uri::InvalidUri;
+use prost::DecodeError;
+use tendermint_light_client::{
+    components::io::IoError as LightClientIoError, errors::Error as LightClientError,
+};
+use tendermint_proto::Error as TendermintProtoError;
+use tendermint_rpc::endpoint::abci_query::AbciQuery;
+use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
+use tendermint_rpc::Error as TendermintError;
+use tonic::{
+    metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
+    Status as GrpcStatus,
 };
 
-/// An error that can be raised by the relayer.
-pub type Error = anomaly::Error<Kind>;
+use ibc::{
+    ics02_client::{client_type::ClientType, error as client_error},
+    ics03_connection::error as connection_error,
+    ics07_tendermint::error as tendermint_error,
+    ics18_relayer::error as relayer_error,
+    ics23_commitment::error as commitment_error,
+    ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
+    proofs::ProofError,
+};
 
-/// Various kinds of errors that can be raiser by the relayer.
-#[derive(Clone, Debug, Error)]
-pub enum Kind {
-    /// Config I/O error
-    #[error("config I/O error")]
-    ConfigIo,
+use crate::event::monitor;
 
-    /// I/O error
-    #[error("I/O error")]
-    Io,
+define_error! {
+    Error {
+        ConfigIo
+            [ TraceError<std::io::Error> ]
+            |_| { "config I/O error" },
 
-    /// Invalid configuration
-    #[error("invalid configuration")]
-    Config,
+        Io
+            [ TraceError<std::io::Error> ]
+            |_| { "I/O error" },
 
-    /// RPC error (typically raised by the RPC client or the RPC requester)
-    #[error("RPC error to endpoint {0}")]
-    Rpc(tendermint_rpc::Url),
+        ConfigDecode
+            [ TraceError<toml::de::Error> ]
+            |_| { "invalid configuration" },
 
-    /// Websocket error (typically raised by the Websocket client)
-    #[error("Websocket error to endpoint {0}")]
-    Websocket(tendermint_rpc::Url),
+        ConfigEncode
+            [ TraceError<toml::ser::Error> ]
+            |_| { "invalid configuration" },
 
-    /// Event monitor error
-    #[error("event monitor error: {0}")]
-    EventMonitor(crate::event::monitor::Error),
+        Rpc
+            { url: tendermint_rpc::Url }
+            [ TraceClone<TendermintError> ]
+            |e| { format!("RPC error to endpoint {}", e.url) },
 
-    /// GRPC error (typically raised by the GRPC client or the GRPC requester)
-    #[error("GRPC error")]
-    Grpc,
+        AbciQuery
+            { query: AbciQuery }
+            |e| { format!("ABCI query returns error: {:?}", e.query) },
 
-    /// Light client instance error, typically raised by a `Client`
-    #[error("Light client error for RPC address {0}")]
-    LightClient(String),
+        CheckTx
+            {
+                detail: SdkError,
+                tx: TxResult
+            }
+            |e| { format!("CheckTX Commit returns error: {0}. RawResult: {1:?}", e.detail, e.tx) },
 
-    /// Trusted store error, raised by instances of `Store`
-    #[error("Store error")]
-    Store,
+        DeliverTx
+            {
+                detail: SdkError,
+                tx: TxResult
+            }
+            |e| { format!("DeliverTx Commit returns error: {0}. RawResult: {1:?}", e.detail, e.tx) },
 
-    /// Event error (raised by the event monitor)
-    #[error("Bad Notification")]
-    Event,
+        WebSocket
+            { url: tendermint_rpc::Url }
+            |e| { format!("Websocket error to endpoint {}", e.url) },
 
-    /// Missing ClientState in the upgrade CurrentPlan
-    #[error("The upgrade plan specifies no upgraded client state")]
-    EmptyUpgradedClientState,
+        EventMonitor
+            [ monitor::Error ]
+            |_| { "event monitor error" },
 
-    /// Response does not contain data
-    #[error("Empty response value")]
-    EmptyResponseValue,
+        Grpc
+            |_| { "GRPC error" },
 
-    /// Response does not contain a proof
-    #[error("Empty response proof")]
-    EmptyResponseProof,
+        GrpcStatus
+            { status: GrpcStatus }
+            |e| { format!("GRPC call return error status {0}", e.status) },
 
-    /// Response does not contain a proof
-    #[error("Malformed proof")]
-    MalformedProof,
+        GrpcTransport
+            [ TraceError<TransportError> ]
+            |_| { "error in underlying transport when making GRPC call" },
 
-    /// Invalid height
-    #[error("Invalid height")]
-    InvalidHeight,
+        GrpcResponseParam
+            { param: String }
+            |e| { format!("missing parameter in GRPC response: {}", e.param) },
 
-    /// Unable to build the client state
-    #[error("Failed to create client state")]
-    BuildClientStateFailure,
+        Decode
+            [ TraceError<TendermintProtoError> ]
+            |_| { "error decoding protobuf" },
 
-    /// Did not find tx confirmation
-    #[error("did not find tx confirmation {0}")]
-    TxNoConfirmation(String),
+        LightClient
+            { address: String }
+            [ TraceError<LightClientError> ]
+            |e| { format!("Light client error for RPC address {0}", e.address) },
 
-    /// Gas estimate from simulated Tx exceeds the maximum configured
-    #[error("{chain_id} gas estimate {estimated_gas} from simulated Tx exceeds the maximum configured {max_gas}")]
-    TxSimulateGasEstimateExceeded {
-        chain_id: ChainId,
-        estimated_gas: u64,
-        max_gas: u64,
-    },
+        LightClientIo
+            { address: String }
+            [ TraceError<LightClientIoError> ]
+            |e| { format!("Light client error for RPC address {0}", e.address) },
 
-    /// Create client failure
-    #[error("Failed to create client {0}")]
-    CreateClient(String),
+        ChainNotCaughtUp
+            {
+                address: String,
+                chain_id: ChainId,
+            }
+            |e| { format!("node at {} running chain {} not caught up", e.address, e.chain_id) },
 
-    #[error("Connection not found: {0}")]
-    ConnectionNotFound(ConnectionId),
+        PrivateStore
+            |_| { "requested proof for a path in the private store" },
 
-    /// Common failures to all connection messages
-    #[error("Failed to build conn open message {0}: {1}")]
-    ConnOpen(ConnectionId, String),
+        Store
+            [ TraceError<sled::Error> ]
+            |_| { "Store error" },
 
-    /// Connection open init failure
-    #[error("Failed to build conn open init {0}")]
-    ConnOpenInit(String),
+        Event
+            |_| { "Bad Notification" },
 
-    /// Connection open try failure
-    #[error("Failed to build conn open try {0}")]
-    ConnOpenTry(String),
+        EmptyUpgradedClientState
+            |_| { "The upgrade plan specifies no upgraded client state" },
 
-    /// Connection open ack failure
-    #[error("Failed to build conn open ack {0}: {1}")]
-    ConnOpenAck(ConnectionId, String),
+        EmptyResponseValue
+            |_| { "Empty response value" },
 
-    /// Connection open confirm failure
-    #[error("Failed to build conn open confirm {0}: {1}")]
-    ConnOpenConfirm(ConnectionId, String),
+        EmptyResponseProof
+            |_| { "Empty response proof" },
 
-    /// Common failures to all channel messages
-    #[error("Failed to build chan open msg {0}: {1}")]
-    ChanOpen(ChannelId, String),
+        MalformedProof
+            [ ProofError ]
+            |_| { "Malformed proof" },
 
-    /// Channel open init failure
-    #[error("Failed to build channel open init {0}")]
-    ChanOpenInit(String),
+        InvalidHeight
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            |_| { "Invalid height" },
 
-    /// Channel open try failure
-    #[error("Failed to build channel open try {0}")]
-    ChanOpenTry(String),
+        InvalidMetadata
+            [ TraceError<InvalidMetadataValue> ]
+            |_| { "invalid metadata" },
 
-    /// Channel open ack failure
-    #[error("Failed to build channel open ack {0}: {1}")]
-    ChanOpenAck(ChannelId, String),
+        BuildClientStateFailure
+            |_| { "Failed to create client state" },
 
-    /// Channel open confirm failure
-    #[error("Failed to build channel open confirm {0}: {1}")]
-    ChanOpenConfirm(ChannelId, String),
+        CreateClient
+            { client_id: String }
+            |e| { format!("Failed to create client {0}", e.client_id) },
 
-    /// Packet build failure
-    #[error("Failed to build packet {0}: {1}")]
-    Packet(ChannelId, String),
+        ClientStateType
+            { client_state_type: String }
+            |e| { format!("unexpected client state type {0}", e.client_state_type) },
 
-    /// Packet recv  failure
-    #[error("Failed to build recv packet {0}: {1}")]
-    RecvPacket(ChannelId, String),
+        ConnectionNotFound
+            { connection_id: ConnectionId }
+            |e| { format!("Connection not found: {0}", e.connection_id) },
 
-    /// Packet acknowledgement failure
-    #[error("Failed to build acknowledge packet {0}: {1}")]
-    AckPacket(ChannelId, String),
+        BadConnectionState
+            |_| { "bad connection state" },
 
-    /// Packet timeout  failure
-    #[error("Failed to build timeout packet {0}: {1}")]
-    TimeoutPacket(ChannelId, String),
+        ConnOpen
+            { connection_id: ConnectionId, reason: String }
+            |e| {
+                format!("Failed to build conn open message {0}: {1}",
+                e.connection_id, e.reason)
+            },
 
-    /// A message transaction failure
-    #[error("Message transaction failure: {0}")]
-    MessageTransaction(String),
+        ConnOpenInit
+            { reason: String }
+            |e| { format!("Failed to build conn open init: {0}", e.reason) },
 
-    /// Failed query
-    #[error("Query error occurred (failed to query for {0})")]
-    Query(String),
+        ConnOpenTry
+            { reason: String }
+            |e| { format!("Failed to build conn open try: {0}", e.reason) },
 
-    /// Keybase related error
-    #[error("Keybase error")]
-    KeyBase,
+        ChanOpenAck
+            { channel_id: ChannelId, reason: String }
+            |e| {
+                format!("Failed to build channel open ack {0}: {1}",
+                e.channel_id, e.reason)
+            },
 
-    /// ICS 007 error
-    #[error("ICS 007 error")]
-    Ics007,
+        ChanOpenConfirm
+            { channel_id: ChannelId, reason: String }
+            |e| {
+                format!("Failed to build channel open confirm {0}: {1}",
+                e.channel_id, e.reason)
+            },
 
-    /// ICS 023 error
-    #[error("ICS 023 error")]
-    Ics023(#[from] ibc::ics23_commitment::error::Error),
+        ConsensusProof
+            [ ProofError ]
+            |_| { "failed to build consensus proof" },
 
-    /// Invalid chain identifier
-    #[error("invalid chain identifier format: {0}")]
-    ChainIdentifier(String),
+        Packet
+            { channel_id: ChannelId, reason: String }
+            |e| {
+                format!("Failed to build packet {0}: {1}",
+                e.channel_id, e.reason)
+            },
 
-    #[error("requested proof for data in the privateStore")]
-    NonProvableData,
+        RecvPacket
+            { channel_id: ChannelId, reason: String }
+            |e| {
+                format!("Failed to build recv packet {0}: {1}",
+                e.channel_id, e.reason)
+            },
 
-    #[error("failed to send or receive through channel")]
-    Channel,
+        AckPacket
+            { channel_id: ChannelId, reason: String }
+            |e| {
+                format!("Failed to build acknowledge packet {0}: {1}",
+                e.channel_id, e.reason)
+            },
 
-    #[error("the input header is not recognized as a header for this chain")]
-    InvalidInputHeader,
+        TimeoutPacket
+            { channel_id: ChannelId, reason: String }
+            |e| {
+                format!("Failed to build timeout packet {0}: {1}",
+                e.channel_id, e.reason)
+            },
 
-    #[error("error raised while submitting the misbehaviour evidence: {0}")]
-    Misbehaviour(String),
+        MessageTransaction
+            { reason: String }
+            |e| { format!("Message transaction failure: {0}", e.reason) },
 
-    #[error("invalid key address: {0}")]
-    InvalidKeyAddress(String),
+        Query
+            { query: String }
+            |e| { format!("Query error occurred (failed to query for {0})", e.query) },
 
-    #[error("bech32 encoding failed")]
-    Bech32Encoding(#[from] bech32::Error),
+        KeyBase
+            [ KeyringError ]
+            |_| { "Keybase error" },
 
-    #[error("client type mismatch: expected '{expected}', got '{got}'")]
-    ClientTypeMismatch {
-        expected: ClientType,
-        got: ClientType,
-    },
+        Ics02
+            [ client_error::Error ]
+            |_| { "ICS 02 error" },
 
-    #[error("Hermes health check failed for endpoint {endpoint} on the Json RPC interface of chain {chain_id}:{address}; caused by: {cause}")]
-    HealthCheckJsonRpc {
-        chain_id: ChainId,
-        address: String,
-        endpoint: String,
-        cause: tendermint_rpc::error::Error,
-    },
+        Ics03
+            [ connection_error::Error ]
+            |_| { "ICS 03 error" },
 
-    #[error("Hermes health check failed for service {endpoint} on the gRPC interface of chain {chain_id}:{address}; caused by: {cause}")]
-    HealthCheckGrpc {
-        chain_id: ChainId,
-        address: String,
-        endpoint: String,
-        cause: String,
-    },
+        Ics07
+            [ tendermint_error::Error ]
+            |_| { "ICS 07 error" },
 
-    #[error("Hermes health check failed while verifying the application compatibility for chain {chain_id}:{address}; caused by: {cause}")]
-    SdkModuleVersion {
-        chain_id: ChainId,
-        address: String,
-        cause: String,
-    },
+        Ics18
+            [ relayer_error::Error ]
+            |_| { "ICS 18 error" },
+
+        Ics23
+            [ commitment_error::Error ]
+            |_| { "ICS 23 error" },
+
+        InvalidUri
+            { uri: String }
+            [ TraceError<InvalidUri> ]
+            |e| {
+                format!("error parsing URI {}", e.uri)
+            },
+
+        ChainIdentifier
+            { chain_id: String }
+            |e| { format!("invalid chain identifier format: {0}", e.chain_id) },
+
+        NonProvableData
+            |_| { "requested proof for data in the privateStore" },
+
+        ChannelSend
+            |_| { "failed to send through channel" },
+
+        ChannelReceive
+            [ TraceError<crossbeam_channel::RecvError> ]
+            |_| { "failed to receive through channel" },
+
+        InvalidInputHeader
+            |_| { "the input header is not recognized as a header for this chain" },
+
+        TxNoConfirmation
+            |_| { "Failed Tx: no confirmation" },
+
+        Misbehaviour
+            { reason: String }
+            |e| { format!("error raised while submitting the misbehaviour evidence: {0}", e.reason) },
+
+        InvalidKeyAddress
+            { address: String }
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            |e| { format!("invalid key address: {0}", e.address) },
+
+        Bech32Encoding
+            [ TraceError<bech32::Error> ]
+            |_| { "bech32 encoding failed" },
+
+        ClientTypeMismatch
+            {
+                expected: ClientType,
+                got: ClientType,
+            }
+            |e| {
+                format!("client type mismatch: expected '{}', got '{}'",
+                e.expected, e.got)
+            },
+
+        ProtobufDecode
+            { payload_type: String }
+            [ TraceError<DecodeError> ]
+            |e| { format!("Error decoding protocol buffer for {}", e.payload_type) },
+
+        Cbor
+            [ TraceError<serde_cbor::Error> ]
+            | _ | { "error decoding CBOR payload" },
+
+        TxSimulateGasEstimateExceeded
+            {
+                chain_id: ChainId,
+                estimated_gas: u64,
+                max_gas: u64,
+            }
+            |e| {
+                format!("{} gas estimate {} from simulated Tx exceeds the maximum configured {}",
+                    e.chain_id, e.estimated_gas, e.max_gas)
+            },
+
+        HealthCheckJsonRpc
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+            }
+            [ DisplayOnly<tendermint_rpc::error::Error> ]
+            |e| {
+                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}",
+                    e.endpoint, e.chain_id, e.address)
+            },
+
+        HealthCheckJsonGrpcTransport
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+            }
+            [ DisplayOnly<tonic::transport::Error> ]
+            |e| {
+                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}",
+                    e.endpoint, e.chain_id, e.address)
+            },
+
+        HealthCheckJsonGrpcStatus
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+                status: tonic::Status
+            }
+            |e| {
+                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; caused by: {3}",
+                    e.endpoint, e.chain_id, e.address, e.status)
+            },
+
+        HealthCheckInvalidVersion
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+            }
+            |e| {
+                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; the gRPC response contains no application version information",
+                    e.endpoint, e.chain_id, e.address)
+            },
+
+        SdkModuleVersion
+            {
+                chain_id: ChainId,
+                address: String,
+                cause: String
+            }
+            |e| {
+                format!("Hermes health check failed while verifying the application compatibility for chain {0}:{1}; caused by: {2}",
+                    e.chain_id, e.address, e.cause)
+            },
+
+    }
 }
 
-impl Kind {
-    /// Add a given source error as context for this error kind
-    ///
-    /// This is typically use with `map_err` as follows:
-    ///
-    /// ```ignore
-    /// let x = self.something.do_stuff()
-    ///     .map_err(|e| error::Kind::Config.context(e))?;
-    /// ```
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
-    }
-
-    pub fn channel(err: impl Into<BoxError>) -> Context<Self> {
-        Self::Channel.context(err)
+impl Error {
+    pub fn send<T>(_: crossbeam_channel::SendError<T>) -> Error {
+        Error::channel_send()
     }
 }

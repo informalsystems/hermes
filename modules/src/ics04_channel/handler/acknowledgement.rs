@@ -8,7 +8,7 @@ use crate::ics04_channel::events::AcknowledgePacket;
 use crate::ics04_channel::handler::verify::verify_packet_acknowledgement_proofs;
 use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
-use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
+use crate::ics04_channel::{context::ChannelReader, error::Error};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
 #[derive(Clone, Debug)]
@@ -30,12 +30,11 @@ pub fn process(
     let source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or_else(|| {
-            Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
-                .context(packet.source_channel.to_string())
+            Error::channel_not_found(packet.source_port.clone(), packet.source_channel.clone())
         })?;
 
     if !source_channel_end.state_matches(&State::Open) {
-        return Err(Kind::ChannelClosed(packet.source_channel.clone()).into());
+        return Err(Error::channel_closed(packet.source_channel.clone()));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
@@ -46,21 +45,22 @@ pub fn process(
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
-        return Err(Kind::InvalidPacketCounterparty(
+        return Err(Error::invalid_packet_counterparty(
             packet.destination_port.clone(),
             packet.destination_channel.clone(),
-        )
-        .into());
+        ));
     }
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .ok_or_else(|| Kind::MissingConnection(source_channel_end.connection_hops()[0].clone()))?;
+        .ok_or_else(|| {
+            Error::missing_connection(source_channel_end.connection_hops()[0].clone())
+        })?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
-        return Err(
-            Kind::ConnectionNotOpen(source_channel_end.connection_hops()[0].clone()).into(),
-        );
+        return Err(Error::connection_not_open(
+            source_channel_end.connection_hops()[0].clone(),
+        ));
     }
 
     let client_id = connection_end.client_id().clone();
@@ -72,7 +72,7 @@ pub fn process(
             packet.source_channel.clone(),
             packet.sequence,
         ))
-        .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
+        .ok_or_else(|| Error::packet_commitment_not_found(packet.sequence))?;
 
     let input = format!(
         "{:?},{:?},{:?}",
@@ -80,7 +80,7 @@ pub fn process(
     );
 
     if packet_commitment != ctx.hash(input) {
-        return Err(Kind::IncorrectPacketCommitment(packet.sequence).into());
+        return Err(Error::incorrect_packet_commitment(packet.sequence));
     }
 
     // Verify the acknowledgement proof
@@ -95,10 +95,13 @@ pub fn process(
     let result = if source_channel_end.order_matches(&Order::Ordered) {
         let next_seq_ack = ctx
             .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))
-            .ok_or(Kind::MissingNextAckSeq)?;
+            .ok_or_else(Error::missing_next_ack_seq)?;
 
         if packet.sequence != next_seq_ack {
-            return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_ack).into());
+            return Err(Error::invalid_packet_sequence(
+                packet.sequence,
+                next_seq_ack,
+            ));
         }
 
         PacketResult::Ack(AckPacketResult {

@@ -10,7 +10,7 @@ use crate::ics04_channel::handler::verify::{
 use crate::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use crate::ics04_channel::packet::PacketResult;
 use crate::ics04_channel::{
-    context::ChannelReader, error::Error, error::Kind, handler::timeout::TimeoutPacketResult,
+    context::ChannelReader, error::Error, handler::timeout::TimeoutPacketResult,
 };
 
 pub fn process(
@@ -24,8 +24,7 @@ pub fn process(
     let source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or_else(|| {
-            Kind::ChannelNotFound(packet.source_port.clone(), packet.source_channel.clone())
-                .context(packet.source_channel.to_string())
+            Error::channel_not_found(packet.source_port.clone(), packet.source_channel.clone())
         })?;
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
@@ -36,16 +35,17 @@ pub fn process(
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
-        return Err(Kind::InvalidPacketCounterparty(
+        return Err(Error::invalid_packet_counterparty(
             packet.destination_port.clone(),
             packet.destination_channel.clone(),
-        )
-        .into());
+        ));
     }
 
     let connection_end = ctx
         .connection_end(&source_channel_end.connection_hops()[0])
-        .ok_or_else(|| Kind::MissingConnection(source_channel_end.connection_hops()[0].clone()))?;
+        .ok_or_else(|| {
+            Error::missing_connection(source_channel_end.connection_hops()[0].clone())
+        })?;
 
     let client_id = connection_end.client_id().clone();
 
@@ -56,7 +56,7 @@ pub fn process(
             packet.source_channel.clone(),
             packet.sequence,
         ))
-        .ok_or(Kind::PacketCommitmentNotFound(packet.sequence))?;
+        .ok_or_else(|| Error::packet_commitment_not_found(packet.sequence))?;
 
     let input = format!(
         "{:?},{:?},{:?}",
@@ -64,7 +64,7 @@ pub fn process(
     );
 
     if packet_commitment != ChannelReader::hash(ctx, input) {
-        return Err(Kind::IncorrectPacketCommitment(packet.sequence).into());
+        return Err(Error::incorrect_packet_commitment(packet.sequence));
     }
 
     let expected_counterparty = Counterparty::new(
@@ -74,7 +74,7 @@ pub fn process(
 
     let counterparty = connection_end.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
-        Kind::UndefinedConnectionCounterparty(source_channel_end.connection_hops()[0].clone())
+        Error::undefined_connection_counterparty(source_channel_end.connection_hops()[0].clone())
     })?;
 
     let expected_connection_hops = vec![ccid.clone()];
@@ -97,9 +97,10 @@ pub fn process(
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
         if packet.sequence < msg.next_sequence_recv {
-            return Err(
-                Kind::InvalidPacketSequence(packet.sequence, msg.next_sequence_recv).into(),
-            );
+            return Err(Error::invalid_packet_sequence(
+                packet.sequence,
+                msg.next_sequence_recv,
+            ));
         }
         verify_next_sequence_recv(
             ctx,

@@ -40,7 +40,7 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use crate::chain::Chain;
 use crate::config::ChainConfig;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
@@ -110,10 +110,7 @@ impl Chain for MockChain {
 
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        let events = self
-            .context
-            .send(proto_msgs)
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+        let events = self.context.send(proto_msgs).map_err(Error::ics18)?;
 
         Ok(events)
     }
@@ -150,10 +147,9 @@ impl Chain for MockChain {
         let any_state = self
             .context
             .query_client_full_state(client_id)
-            .ok_or(Kind::EmptyResponseValue)?;
-        let client_state = downcast!(any_state => AnyClientState::Tendermint).ok_or_else(|| {
-            Kind::Query("client state".into()).context("unexpected client state type")
-        })?;
+            .ok_or_else(Error::empty_response_value)?;
+        let client_state = downcast!(any_state.clone() => AnyClientState::Tendermint)
+            .ok_or_else(|| Error::client_state_type(format!("{:?}", any_state)))?;
         Ok(client_state)
     }
 
@@ -315,7 +311,7 @@ impl Chain for MockChain {
                 after_misbehaviour: false,
             },
         )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
+        .map_err(Error::ics07)?;
 
         Ok(client_state)
     }

@@ -1,7 +1,7 @@
 use serde::{de::DeserializeOwned, Serialize};
 use std::marker::PhantomData;
 
-use crate::error;
+use crate::error::Error;
 
 pub fn single<V>(prefix: impl Into<Vec<u8>>) -> SingleDb<V> {
     SingleDb::new(prefix)
@@ -17,11 +17,11 @@ impl<V> SingleDb<V>
 where
     V: Serialize + DeserializeOwned,
 {
-    pub fn get(&self, db: &sled::Db) -> Result<Option<V>, error::Error> {
+    pub fn get(&self, db: &sled::Db) -> Result<Option<V>, Error> {
         self.fetch(db, &())
     }
 
-    pub fn set(&self, db: &sled::Db, value: &V) -> Result<(), error::Error> {
+    pub fn set(&self, db: &sled::Db, value: &V) -> Result<(), Error> {
         self.insert(db, &(), value)
     }
 }
@@ -52,19 +52,16 @@ where
         prefix_bytes
     }
 
-    pub fn fetch(&self, db: &sled::Db, key: &K) -> Result<Option<V>, error::Error> {
-        let key_bytes = serde_cbor::to_vec(&key).map_err(|e| error::Kind::Store.context(e))?;
+    pub fn fetch(&self, db: &sled::Db, key: &K) -> Result<Option<V>, Error> {
+        let key_bytes = serde_cbor::to_vec(&key).map_err(Error::cbor)?;
 
         let prefixed_key_bytes = self.prefixed_key(key_bytes);
 
-        let value_bytes = db
-            .get(prefixed_key_bytes)
-            .map_err(|e| error::Kind::Store.context(e))?;
+        let value_bytes = db.get(prefixed_key_bytes).map_err(Error::store)?;
 
         match value_bytes {
             Some(bytes) => {
-                let value =
-                    serde_cbor::from_slice(&bytes).map_err(|e| error::Kind::Store.context(e))?;
+                let value = serde_cbor::from_slice(&bytes).map_err(Error::cbor)?;
                 Ok(value)
             }
             None => Ok(None),
@@ -82,16 +79,16 @@ where
     //     Ok(exists)
     // }
 
-    pub fn insert(&self, db: &sled::Db, key: &K, value: &V) -> Result<(), error::Error> {
-        let key_bytes = serde_cbor::to_vec(&key).map_err(|e| error::Kind::Store.context(e))?;
+    pub fn insert(&self, db: &sled::Db, key: &K, value: &V) -> Result<(), Error> {
+        let key_bytes = serde_cbor::to_vec(&key).map_err(Error::cbor)?;
 
         let prefixed_key_bytes = self.prefixed_key(key_bytes);
 
-        let value_bytes = serde_cbor::to_vec(&value).map_err(|e| error::Kind::Store.context(e))?;
+        let value_bytes = serde_cbor::to_vec(&value).map_err(Error::cbor)?;
 
         db.insert(prefixed_key_bytes, value_bytes)
             .map(|_| ())
-            .map_err(|e| error::Kind::Store.context(e))?;
+            .map_err(Error::store)?;
 
         Ok(())
     }
