@@ -13,11 +13,11 @@ description = """
 """
 
 [features]
-default = ["std", "eyre"]
+default = ["std", "eyre_tracer"]
 std = [
     "flex-error/std"
 ]
-eyre = ["flex-error/eyre_tracer"]
+eyre_tracer = ["flex-error/eyre_tracer"]
 profiling = []
 telemetry = ["ibc-telemetry"]
 
