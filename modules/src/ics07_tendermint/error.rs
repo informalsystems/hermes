@@ -1,5 +1,6 @@
 use crate::ics24_host::error::ValidationError;
 use flex_error::{define_error, DisplayOnly, TraceError};
+use std::fmt::Display;
 
 define_error! {
     Error {
@@ -16,7 +17,7 @@ define_error! {
 
         InvalidHeader
             { reason: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ DisplayOnly<LegacyError> ]
             | _ | { "invalid header, failed basic validation" },
 
         InvalidTrustThreshold
@@ -87,7 +88,7 @@ define_error! {
             | _ | { "invalid raw client consensus state" },
 
         InvalidRawHeader
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ DisplayOnly<LegacyError> ]
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour
@@ -98,5 +99,33 @@ define_error! {
             [ TraceError<prost::DecodeError> ]
             | _ | { "decode error" },
 
+    }
+}
+
+pub struct LegacyError {
+    #[cfg(feature = "std_err")]
+    pub error: Box<dyn std::error::Error + Send + Sync>,
+
+    #[cfg(not(feature = "std_err"))]
+    pub error: String,
+}
+
+impl Display for LegacyError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "LegacyError: {}", self.to_string())
+    }
+}
+
+#[cfg(feature = "std_err")]
+impl From<Box<dyn std::error::Error + Send + Sync>> for LegacyError {
+    fn from(value: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        Self { error: value }
+    }
+}
+
+#[cfg(not(feature = "std_err"))]
+impl From<String> for LegacyError {
+    fn from(value: String) -> Self {
+        Self { error: value }
     }
 }
