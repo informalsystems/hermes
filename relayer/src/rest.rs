@@ -1,43 +1,29 @@
-use crossbeam_channel as channel;
+use crossbeam_channel::TryRecvError;
 use serde::Serialize;
 use tracing::{debug, error};
 
-use ibc::ics24_host::identifier::ChainId;
-
-use crate::error::Kind as IBCErrorKind;
-use crate::rest::Msg::AddChain;
 use crate::{
     config::{ChainConfig, Config},
-    error::Error,
+    rest::request::{Request, VersionInfo},
 };
 
-pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
-pub type Reply<T> = channel::Receiver<Result<T, Error>>;
+pub mod request;
 
-pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
-    channel::bounded(1)
-}
+mod error;
+pub use error::Error;
 
-#[derive(Clone, Debug)]
-#[allow(clippy::large_enum_variant)]
-pub enum Request {
-    Version {
-        reply_to: ReplyTo<Version>,
-    },
-    AddChain {
-        chain_config: ChainConfig,
-        reply_to: ReplyTo<ChainConfig>,
-    },
-    GetChain {
-        chain_id: ChainId,
-        reply_to: ReplyTo<ChainConfig>,
-    },
-    GetChains {
-        reply_to: ReplyTo<Vec<ChainId>>,
-    },
-}
+pub const NAME: &str = env!(
+    "CARGO_PKG_NAME",
+    "the env. variable CARGO_PKG_NAME in ibc-relayer is not set!"
+);
+pub const VER: &str = env!(
+    "CARGO_PKG_VERSION",
+    "the env. variable CARGO_PKG_VERSION in ibc-relayer is not set!"
+);
 
-pub enum Msg {
+pub type Receiver = crossbeam_channel::Receiver<Request>;
+
+pub enum Command {
     AddChain(ChainConfig),
 }
 
@@ -57,41 +43,59 @@ impl Default for Version {
     }
 }
 
-/// Process incoming requests. This goes into a `loop{}`, namely into the Supervisor's loop.
-pub fn process(config: &Config, rest_receiver: &channel::Receiver<Request>) -> Option<Msg> {
-    match rest_receiver.try_recv() {
+/// Process incoming REST requests.
+///
+/// Non-blocking receiving of requests from
+/// the REST server, and handles locally some of them.
+/// Any request that cannot be handled is propagated
+/// as a [`Command`], which the supervisor itself should handle.
+pub fn process(config: &Config, channel: &Receiver) -> Option<Command> {
+    match channel.try_recv() {
         Ok(request) => {
             match request {
                 Request::Version { reply_to } => {
-                    debug!("REST: Version");
-                    reply_to.send(Ok(Version::default())).unwrap();
+                    debug!("[rest/supervisor] Version");
+                    let v = VersionInfo {
+                        name: NAME.to_string(),
+                        version: VER.to_string(),
+                    };
+                    reply_to.send(Ok(v)).unwrap();
+
+                    // TODO(Adi): remove unwraps
                 }
-                Request::AddChain {
-                    chain_config,
-                    reply_to,
-                } => {
-                    debug!("REST: AddChain {}", chain_config.id.as_str());
-                    reply_to.send(Ok(chain_config.clone())).unwrap();
-                    // Propagate the request to the supervisor
-                    return Some(AddChain(chain_config));
-                }
-                Request::GetChain { chain_id, reply_to } => {
-                    debug!("REST: GetChain {}", chain_id.as_str());
-                    let result = config
-                        .find_chain(&chain_id)
-                        .cloned()
-                        .ok_or_else(|| IBCErrorKind::ChainIdNotFound(chain_id.to_string()).into());
-                    reply_to.send(result).unwrap();
-                }
+
                 Request::GetChains { reply_to } => {
-                    debug!("REST: GetChains");
+                    debug!("[rest/supervisor] GetChains");
                     reply_to
                         .send(Ok(config.chains.iter().map(|c| c.id.clone()).collect()))
                         .unwrap();
                 }
+
+                Request::GetChain { chain_id, reply_to } => {
+                    debug!("[rest/supervisor] GetChain {}", chain_id);
+                    let result = config
+                        .find_chain(&chain_id)
+                        .cloned()
+                        .ok_or(Error::ChainConfigNotFound(chain_id));
+                    reply_to.send(result).unwrap();
+                } // Request::AddChain {
+                  //     chain_config,
+                  //     reply_to,
+                  // } => {
+                  //     debug!("[rest/supervisor] AddChain {}", chain_config);
+                  //     reply_to.send(Ok(chain_config.clone())).unwrap();
+                  //     let cfg: ChainConfig = serde_json::from_str(chain_config.as_str()).unwrap();
+                  //     // Propagate the request to the supervisor
+                  //     return Some(Command::AddChain(cfg));
+                  // }
             }
         }
-        Err(e) => error!("error while waiting for requests: {}", e),
+        Err(e) => {
+            if !matches!(e, TryRecvError::Empty) {
+                error!("[rest] error while waiting for requests: {}", e);
+            }
+        }
     }
+
     None
 }

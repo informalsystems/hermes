@@ -1,9 +1,10 @@
 use anomaly::{BoxError, Context};
+use serde::Serialize;
 use thiserror::Error;
 
 pub type ValidationError = anomaly::Error<ValidationKind>;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
+#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize)]
 pub enum ValidationKind {
     #[error("identifier {id} cannot contain separator '/'")]
     ContainsSeparator { id: String },

@@ -28,6 +28,9 @@ log_level = 'info'
 # periodic packet clearing. Default: 100
 clear_packets_interval = 100
 
+rest_addr = ""
+
+
 # The telemetry section defines parameters for Hermes' built-in telemetry capabilities.
 # https://hermes.informal.systems/telemetry.html
 [telemetry]

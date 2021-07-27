@@ -205,7 +205,7 @@ impl fmt::Display for LogLevel {
 pub struct GlobalConfig {
     pub strategy: Strategy,
     /// REST interface address
-    pub rest_addr: String,
+    pub rest_addr: Option<String>,
     pub log_level: LogLevel,
     #[serde(default = "default::filter")]
     pub filter: bool,
@@ -217,7 +217,7 @@ impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
-            rest_addr: "127.0.0.1:9999".to_string(),
+            rest_addr: None,
             log_level: LogLevel::default(),
             filter: default::filter(),
             clear_packets_interval: default::clear_packets_interval(),

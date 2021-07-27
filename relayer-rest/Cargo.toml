@@ -10,7 +10,7 @@ homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/ibc-rs"
 
 description = """
-  Implementation of the Hermes RPC library in Rust.
+  Rust implementation of a RESTful API server for Hermes.
 """
 
 [dependencies]
@@ -20,4 +20,3 @@ ibc-relayer       = { version = "0.6.1", path = "../relayer" }
 crossbeam-channel = { version = "0.5" }
 rouille           = { version = "3.1" }
 tracing           = { version = "0.1" }
-serde             = { version = "1.0" }

@@ -29,10 +29,9 @@ use crate::{
 };
 
 pub mod client_state_filter;
-mod error;
-
 use client_state_filter::{FilterPolicy, Permission};
 
+mod error;
 pub use error::Error;
 
 pub mod dump_state;
@@ -62,7 +61,7 @@ pub struct Supervisor {
 
     cmd_rx: Receiver<SupervisorCmd>,
     worker_msg_rx: Receiver<WorkerMsg>,
-    rest_receiver: Receiver<rest::Request>,
+    rest_request_rx: Option<rest::Receiver>,
     client_state_filter: FilterPolicy,
 
     #[allow(dead_code)]
@@ -73,7 +72,7 @@ impl Supervisor {
     /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn new(
         config: RwArc<Config>,
-        rest_receiver: Receiver<rest::Request>,
+        rest_receiver: Option<rest::Receiver>,
         telemetry: Telemetry,
     ) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
@@ -89,7 +88,7 @@ impl Supervisor {
             workers,
             cmd_rx,
             worker_msg_rx,
-            rest_receiver,
+            rest_request_rx: rest_receiver,
             client_state_filter,
             telemetry,
         };
@@ -365,10 +364,8 @@ impl Supervisor {
                 }
             }
 
-            let config = &self.config.read().expect("poisoned lock");
-            if let Some(msg) = rest::process(config, &self.rest_receiver) {
-                self.handle_rest_request(msg);
-            }
+            // Process incoming requests from the REST server
+            self.handle_rest_request();
 
             std::thread::sleep(Duration::from_millis(50));
         }
@@ -541,8 +538,17 @@ impl Supervisor {
         }
     }
 
+    fn handle_rest_request(&self) {
+        if let Some(rest_receiver) = &self.rest_request_rx {
+            let config = &self.config.read().expect("poisoned lock");
+            if let Some(command) = rest::process(config, rest_receiver) {
+                self.handle_command(command);
+            }
+        }
+    }
+
     // TODO(Adi): The `self` ref may need to be mutable here.
-    fn handle_rest_request(&self, _m: rest::Msg) {
+    fn handle_command(&self, _m: rest::Command) {
         todo!()
     }
 

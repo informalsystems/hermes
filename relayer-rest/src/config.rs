@@ -1,4 +1,5 @@
 /// REST server configuration
+#[derive(Debug)]
 pub struct Config {
-    pub connection: String,
+    pub address: String,
 }

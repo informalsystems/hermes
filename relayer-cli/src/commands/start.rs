@@ -3,17 +3,16 @@ use std::io;
 use std::sync::{Arc, RwLock};
 
 use abscissa_core::{Command, Options, Runnable};
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::Sender;
 
 use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
+use ibc_relayer::rest;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
-use ibc_relayer_rest::{config::Config as RESTConfig, server as RESTServer};
 
 use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
-use ibc_relayer::rest::Request;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct StartCmd {}
@@ -102,16 +101,21 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
     Ok(())
 }
 
-fn make_rest_receiver(config: &Arc<RwLock<Config>>) -> Receiver<Request> {
-    let rest_config = RESTConfig {
-        connection: config
-            .read()
-            .expect("poisoned lock")
-            .global
-            .rest_addr
-            .clone(),
+fn make_rest_receiver(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
+    let rest_receiver = match &config.read().expect("poisoned lock").global.rest_addr {
+        None => {
+            info!("[rest] address not configured, REST server disabled");
+            None
+        }
+        Some(address) => {
+            let rest_config = ibc_relayer_rest::Config {
+                address: address.clone(),
+            };
+
+            let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
+            Some(rest_receiver)
+        }
     };
-    let (_, rest_receiver) = RESTServer::spawn(rest_config);
 
     rest_receiver
 }

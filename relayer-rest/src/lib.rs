@@ -1,5 +1,9 @@
 #[macro_use]
 extern crate rouille;
 
-pub mod config;
+mod config;
+pub use config::Config;
+
 pub mod server;
+
+pub(crate) mod handle;
