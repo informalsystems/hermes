@@ -112,7 +112,7 @@ pub struct LegacyError {
 
 impl Display for LegacyError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "LegacyError: {}", self.to_string())
+        write!(f, "LegacyError: {}", self.error.to_string())
     }
 }
 
