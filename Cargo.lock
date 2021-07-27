@@ -1030,8 +1030,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcd999463524c52659517fe2cea98493cfe485d10565e7b0fb07dbba7ad2753"
 dependencies = [
  "cfg-if 1.0.0",
+ "js-sys",
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1367,6 +1369,7 @@ name = "ibc-proto"
 version = "0.9.0"
 dependencies = [
  "bytes",
+ "getrandom 0.2.3",
  "prost",
  "prost-types",
  "tendermint-proto",
