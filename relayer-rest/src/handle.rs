@@ -5,6 +5,7 @@ use tracing::error;
 use crossbeam_channel as channel;
 
 use ibc::ics24_host::identifier::ChainId;
+use ibc_relayer::supervisor::dump_state::SupervisorState;
 use ibc_relayer::{
     config::ChainConfig,
     rest::{
@@ -58,6 +59,33 @@ pub fn chain_config(
         }
         Err(e) => Err(RestApiError::invalid_chain_id(chain_id.to_string(), e)),
     }
+}
+
+pub fn add_chain(
+    _sender: &channel::Sender<Request>,
+    request: &rouille::Request,
+) -> Result<(), RestApiError> {
+    let _chain_config: ChainConfig = rouille::input::json_input(&request).map_err(|e| {
+        error!(
+            "[rest-server] failed while parsing new chain config into JSON: {}",
+            e
+        );
+        RestApiError::invalid_chain_config(e.to_string())
+    })?;
+
+    // submit_request(&sender, |reply_to| Request::AddChain {
+    //     chain_config,
+    //     reply_to,
+    // })
+
+    // This feature is not implemented yet
+    Err(RestApiError::unimplemented())
+}
+
+pub fn supervisor_state(
+    sender: &channel::Sender<Request>,
+) -> Result<SupervisorState, RestApiError> {
+    submit_request(&sender, |reply_to| Request::State { reply_to })
 }
 
 pub fn assemble_version_info(sender: &channel::Sender<Request>) -> Vec<VersionInfo> {

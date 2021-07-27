@@ -26,5 +26,12 @@ define_error! {
             { chain_id_raw: String }
             [ ValidationError ]
             |e| { format!("failed to parse the string {0} into a valid chain identifier", e.chain_id_raw) },
+
+        InvalidChainConfig
+            { cause: String }
+            |e| { format!("failed while parsing the request body into a chain configuration {}", e.cause) },
+
+        Unimplemented
+            | _ | { "not implemented".to_string() },
     }
 }

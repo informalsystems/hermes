@@ -393,7 +393,7 @@ impl Supervisor {
             }
 
             // Process incoming requests from the REST server
-            self.handle_rest_request();
+            self.handle_rest_requests();
 
             std::thread::sleep(Duration::from_millis(50));
         }
@@ -449,11 +449,17 @@ impl Supervisor {
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
     fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
-        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
-        let state = SupervisorState::new(chains, self.workers.objects());
+        let state = self.state();
         let _ = reply_to.try_send(state);
 
         CmdEffect::Nothing
+    }
+
+    /// Returns a representation of the supervisor's internal state
+    /// as a [`SupervisorState`].
+    fn state(&self) -> SupervisorState {
+        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
+        SupervisorState::new(chains, self.workers.objects())
     }
 
     /// Apply the given configuration update.
@@ -566,18 +572,28 @@ impl Supervisor {
         }
     }
 
-    fn handle_rest_request(&self) {
+    fn handle_rest_requests(&self) {
         if let Some(rest_receiver) = &self.rest_request_rx {
             let config = &self.config.read().expect("poisoned lock");
-            if let Some(command) = rest::process(config, rest_receiver) {
-                self.handle_command(command);
+            if let Some(command) = rest::process_incoming_requests(config, rest_receiver) {
+                self.handle_rest_command(command);
             }
         }
     }
 
     // TODO(Adi): The `self` ref may need to be mutable here.
-    fn handle_command(&self, _m: rest::Command) {
-        todo!()
+    fn handle_rest_command(&self, m: rest::Command) {
+        match m {
+            rest::Command::AddChain(_cfg, _reply) => {
+                unimplemented!()
+            }
+            rest::Command::DumpState(reply) => {
+                let state = self.state();
+                reply.send(Ok(state)).unwrap_or_else(|e| {
+                    error!("[rest/supervisor] error replying to a REST request {}", e)
+                });
+            }
+        }
     }
 
     /// Process the given batch if it does not contain any errors,

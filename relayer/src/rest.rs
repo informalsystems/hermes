@@ -1,10 +1,11 @@
 use crossbeam_channel::TryRecvError;
-use serde::Serialize;
 use tracing::{debug, error};
 
 use crate::{
     config::{ChainConfig, Config},
+    rest::request::ReplySender,
     rest::request::{Request, VersionInfo},
+    supervisor::dump_state::SupervisorState,
 };
 
 pub mod request;
@@ -23,73 +24,64 @@ pub const VER: &str = env!(
 
 pub type Receiver = crossbeam_channel::Receiver<Request>;
 
+// TODO: Unify this enum with `SupervisorCmd`
 pub enum Command {
-    AddChain(ChainConfig),
-}
-
-/// Version response
-#[derive(Serialize, Debug)]
-pub struct Version {
-    version: String,
-}
-
-impl Default for Version {
-    fn default() -> Self {
-        Self {
-            version: option_env!("CARGO_PKG_VERSION")
-                .unwrap_or("unknown")
-                .to_string(),
-        }
-    }
+    AddChain(ChainConfig, ReplySender<()>),
+    DumpState(ReplySender<SupervisorState>),
 }
 
 /// Process incoming REST requests.
 ///
 /// Non-blocking receiving of requests from
-/// the REST server, and handles locally some of them.
-/// Any request that cannot be handled is propagated
-/// as a [`Command`], which the supervisor itself should handle.
-pub fn process(config: &Config, channel: &Receiver) -> Option<Command> {
+/// the REST server, and tries to handle them locally.
+///
+/// Any request that cannot be handled locally here is propagated
+/// as a [`Command`] to the caller, which the supervisor itself should handle.
+pub fn process_incoming_requests(config: &Config, channel: &Receiver) -> Option<Command> {
     match channel.try_recv() {
-        Ok(request) => {
-            match request {
-                Request::Version { reply_to } => {
-                    debug!("[rest/supervisor] Version");
-                    let v = VersionInfo {
-                        name: NAME.to_string(),
-                        version: VER.to_string(),
-                    };
-                    reply_to.send(Ok(v)).unwrap();
-
-                    // TODO(Adi): remove unwraps
-                }
-
-                Request::GetChains { reply_to } => {
-                    debug!("[rest/supervisor] GetChains");
-                    reply_to
-                        .send(Ok(config.chains.iter().map(|c| c.id.clone()).collect()))
-                        .unwrap();
-                }
-
-                Request::GetChain { chain_id, reply_to } => {
-                    debug!("[rest/supervisor] GetChain {}", chain_id);
-                    let result = config
-                        .find_chain(&chain_id)
-                        .cloned()
-                        .ok_or_else(|| RestApiError::chain_config_not_found(chain_id));
-                    reply_to.send(result).unwrap();
-                } // Request::AddChain {
-                  //     chain_config,
-                  //     reply_to,
-                  // } => {
-                  //     debug!("[rest/supervisor] AddChain {}", chain_config);
-                  //     reply_to.send(Ok(chain_config.clone())).unwrap();
-                  //     let cfg: ChainConfig = serde_json::from_str(chain_config.as_str()).unwrap();
-                  //     // Propagate the request to the supervisor
-                  //     return Some(Command::AddChain(cfg));
-                  // }
+        Ok(request) => match request {
+            Request::Version { reply_to } => {
+                debug!("[rest/supervisor] Version");
+                let v = VersionInfo {
+                    name: NAME.to_string(),
+                    version: VER.to_string(),
+                };
+                reply_to.send(Ok(v)).unwrap_or_else(|e| {
+                    error!("[rest/supervisor] error replying to a REST request {}", e)
+                });
             }
-        }
+
+            Request::GetChains { reply_to } => {
+                debug!("[rest/supervisor] GetChains");
+                reply_to
+                    .send(Ok(config.chains.iter().map(|c| c.id.clone()).collect()))
+                    .unwrap_or_else(|e| {
+                        error!("[rest/supervisor] error replying to a REST request {}", e)
+                    });
+            }
+
+            Request::GetChain { chain_id, reply_to } => {
+                debug!("[rest/supervisor] GetChain {}", chain_id);
+                let result = config
+                    .find_chain(&chain_id)
+                    .cloned()
+                    .ok_or_else(|| RestApiError::chain_config_not_found(chain_id));
+                reply_to.send(result).unwrap_or_else(|e| {
+                    error!("[rest/supervisor] error replying to a REST request {}", e)
+                });
+            }
+
+            Request::State { reply_to } => {
+                debug!("[rest/supervisor] State");
+                return Some(Command::DumpState(reply_to));
+            } // Request::AddChain {
+              //     chain_config,
+              //     reply_to,
+              // } => {
+              //     debug!("[rest/supervisor] AddChain {:#?}", chain_config);
+              //     return Some(Command::AddChain(chain_config, reply_to));
+              // }
+        },
         Err(e) => {
             if !matches!(e, TryRecvError::Empty) {
                 error!("[rest] error while waiting for requests: {}", e);
