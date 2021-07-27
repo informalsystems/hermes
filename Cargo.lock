@@ -1374,6 +1374,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-proto-rpc"
+version = "0.1.0"
+
+[[package]]
 name = "ibc-relayer"
 version = "0.6.1"
 dependencies = [
