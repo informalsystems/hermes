@@ -9,7 +9,7 @@ use ibc_relayer::{
     config::ChainConfig,
     rest::{
         request::{reply_channel, ReplySender, Request, VersionInfo},
-        Error,
+        RestApiError,
     },
 };
 use std::str::FromStr;
@@ -23,7 +23,7 @@ pub const VER: &str = env!(
     "the env. variable CARGO_PKG_VERSION of ibc-relayer-rest is not set!"
 );
 
-fn submit_request<F, O>(request_sender: &channel::Sender<Request>, f: F) -> Result<O, Error>
+fn submit_request<F, O>(request_sender: &channel::Sender<Request>, f: F) -> Result<O, RestApiError>
 where
     F: FnOnce(ReplySender<O>) -> Request,
     O: Debug,
@@ -36,30 +36,27 @@ where
     // Send the request
     request_sender
         .send(req)
-        .map_err(|e| Error::ChannelSend(e.to_string()))?;
+        .map_err(|e| RestApiError::channel_send(e.to_string()))?;
 
     // Wait for the reply
     reply_receiver
         .recv()
-        .map_err(|e| Error::ChannelRecv(e.to_string()))?
+        .map_err(|e| RestApiError::channel_recv(e.to_string()))?
 }
 
-pub fn all_chain_ids(sender: &channel::Sender<Request>) -> Result<Vec<ChainId>, Error> {
+pub fn all_chain_ids(sender: &channel::Sender<Request>) -> Result<Vec<ChainId>, RestApiError> {
     submit_request(&sender, |reply_to| Request::GetChains { reply_to })
 }
 
 pub fn chain_config(
     sender: &channel::Sender<Request>,
     chain_id: &str,
-) -> Result<ChainConfig, Error> {
+) -> Result<ChainConfig, RestApiError> {
     match ChainId::from_str(chain_id) {
         Ok(chain_id) => {
             submit_request(&sender, |reply_to| Request::GetChain { chain_id, reply_to })
         }
-        Err(e) => Err(Error::InvalidChainId(
-            chain_id.to_string(),
-            e.kind().clone(),
-        )),
+        Err(e) => Err(RestApiError::invalid_chain_id(chain_id.to_string(), e)),
     }
 }
 

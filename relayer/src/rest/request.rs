@@ -2,10 +2,10 @@ use serde::Serialize;
 
 use ibc::ics24_host::identifier::ChainId;
 
-use crate::{config::ChainConfig, rest::Error};
+use crate::{config::ChainConfig, rest::RestApiError};
 
-pub type ReplySender<T> = crossbeam_channel::Sender<Result<T, Error>>;
-pub type ReplyReceiver<T> = crossbeam_channel::Receiver<Result<T, Error>>;
+pub type ReplySender<T> = crossbeam_channel::Sender<Result<T, RestApiError>>;
+pub type ReplyReceiver<T> = crossbeam_channel::Receiver<Result<T, RestApiError>>;
 
 pub fn reply_channel<T>() -> (ReplySender<T>, ReplyReceiver<T>) {
     crossbeam_channel::bounded(1)

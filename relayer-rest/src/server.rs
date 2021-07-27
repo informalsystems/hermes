@@ -31,13 +31,14 @@ fn run(config: Config, sender: channel::Sender<Request>) {
             },
 
             (GET) (/chain) => {
+                // TODO(Soares): Add a `into_detail` to consume the error and obtain the underlying detail
                 trace!("[rest/server] /chain");
-                rouille::Response::json(&all_chain_ids(&sender))
+                rouille::Response::json(&all_chain_ids(&sender).map_err(|e| e.0))
             },
 
             (GET) (/chain/{id: String}) => {
                 trace!("[rest/server] /chain/{}", id);
-                rouille::Response::json(&chain_config(&sender, &id))
+                rouille::Response::json(&chain_config(&sender, &id).map_err(|e| e.0))
             },
             //
             // (POST) (/chain) => {

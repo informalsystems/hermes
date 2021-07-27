@@ -10,7 +10,7 @@ use crate::{
 pub mod request;
 
 mod error;
-pub use error::Error;
+pub use error::RestApiError;
 
 pub const NAME: &str = env!(
     "CARGO_PKG_NAME",
@@ -76,7 +76,7 @@ pub fn process(config: &Config, channel: &Receiver) -> Option<Command> {
                     let result = config
                         .find_chain(&chain_id)
                         .cloned()
-                        .ok_or(Error::ChainConfigNotFound(chain_id));
+                        .ok_or_else(|| RestApiError::chain_config_not_found(chain_id));
                     reply_to.send(result).unwrap();
                 } // Request::AddChain {
                   //     chain_config,

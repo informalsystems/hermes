@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{error, info, warn};
 
@@ -14,6 +13,7 @@ use crate::{
     worker::retry_strategy,
 };
 
+use super::error::RunError;
 use super::WorkerCmd;
 
 enum Step {
@@ -48,7 +48,7 @@ impl PacketWorker {
     }
 
     /// Run the event loop for events associated with a [`Packet`].
-    pub fn run(self) -> Result<(), BoxError> {
+    pub fn run(self) -> Result<(), RunError> {
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
             self.chains.b.clone(),
@@ -56,10 +56,13 @@ impl PacketWorker {
                 src_port_id: self.path.src_port_id.clone(),
                 src_channel_id: self.path.src_channel_id.clone(),
             },
-        )?;
+        )
+        .map_err(RunError::link)?;
+
+        let is_closed = link.is_closed().map_err(RunError::link)?;
 
         // TODO: Do periodical checks that the link is closed (upon every retry in the loop).
-        if link.is_closed()? {
+        if is_closed {
             warn!("channel is closed, exiting");
             return Ok(());
         }
@@ -89,7 +92,7 @@ impl PacketWorker {
                 }
 
                 Err(retries) => {
-                    return Err(format!("Packet worker failed after {} retries", retries).into());
+                    return Err(RunError::retry(retries));
                 }
             }
         }

@@ -8,8 +8,7 @@ use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
-use crate::ics02_client::error;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
@@ -30,11 +29,10 @@ impl MsgCreateAnyClient {
         signer: Signer,
     ) -> Result<Self, Error> {
         if client_state.client_type() != consensus_state.client_type() {
-            return Err(error::Kind::RawClientAndConsensusStateTypesMismatch {
-                state_type: client_state.client_type(),
-                consensus_type: consensus_state.client_type(),
-            }
-            .into());
+            return Err(Error::raw_client_and_consensus_state_types_mismatch(
+                client_state.client_type(),
+                consensus_state.client_type(),
+            ));
         }
         Ok(MsgCreateAnyClient {
             client_state,
@@ -70,20 +68,19 @@ impl Protobuf<RawMsgCreateClient> for MsgCreateAnyClient {}
 impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
     type Error = Error;
 
-    fn try_from(raw: RawMsgCreateClient) -> Result<Self, Self::Error> {
+    fn try_from(raw: RawMsgCreateClient) -> Result<Self, Error> {
         let raw_client_state = raw
             .client_state
-            .ok_or_else(|| Kind::InvalidRawClientState.context("missing client state"))?;
+            .ok_or_else(Error::missing_raw_client_state)?;
 
         let raw_consensus_state = raw
             .consensus_state
-            .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing consensus state"))?;
+            .ok_or_else(Error::missing_raw_client_state)?;
 
         MsgCreateAnyClient::new(
-            AnyClientState::try_from(raw_client_state)
-                .map_err(|e| Kind::InvalidRawClientState.context(e))?,
+            AnyClientState::try_from(raw_client_state).map_err(Error::invalid_raw_client_state)?,
             AnyConsensusState::try_from(raw_consensus_state)
-                .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
+                .map_err(Error::invalid_raw_client_state)?,
             raw.signer.into(),
         )
     }

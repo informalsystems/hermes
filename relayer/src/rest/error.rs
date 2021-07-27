@@ -1,23 +1,30 @@
+use flex_error::define_error;
 use serde::Serialize;
 
-use ibc::ics24_host::error::ValidationKind;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::{ics24_host::error::ValidationError, ics24_host::identifier::ChainId};
 
-/// Various kinds of errors that can be raiser by the relayer.
-#[derive(Clone, Debug, thiserror::Error, Serialize)]
-pub enum Error {
-    #[error("failed to send a request through crossbeam channel: {0}")]
-    ChannelSend(String),
+define_error! {
+    #[derive(Debug, Serialize)]
+    RestApiError {
+        ChannelSend
+            { cause: String }
+            |e| { format!("failed to send a request through crossbeam channel: {0}", e.cause) },
 
-    #[error("failed to receive a reply from crossbeam channel: {0}")]
-    ChannelRecv(String),
+        ChannelRecv
+            { cause: String }
+            |e| { format!("failed to receive a reply from crossbeam channel: {0}", e.cause) },
 
-    #[error("failed while serializing reply into json value: {0}")]
-    Serialization(String),
+        Serialization
+            { cause: String }
+            |e| { format!("failed while serializing reply into json value: {0}", e.cause) },
 
-    #[error("could not find configuration for chain id {0}")]
-    ChainConfigNotFound(ChainId),
+        ChainConfigNotFound
+            { chain_id: ChainId }
+            |e| { format!("could not find configuration for chain id {0}", e.chain_id) },
 
-    #[error("failed to parse the string {0} into a valid chain identifier: {1}")]
-    InvalidChainId(String, ValidationKind),
+        InvalidChainId
+            { chain_id_raw: String }
+            [ ValidationError ]
+            |e| { format!("failed to parse the string {0} into a valid chain identifier", e.chain_id_raw) },
+    }
 }

@@ -12,7 +12,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use crate::application::{app_config, CliApp};
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::{Error, Kind};
+use crate::error::Error;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -43,7 +43,7 @@ impl Runnable for TxCreateClientCmd {
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
             .build_create_client_and_send()
-            .map_err(|e| Kind::Tx.context(e).into());
+            .map_err(Error::foreign_client);
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
@@ -112,7 +112,7 @@ impl Runnable for TxUpdateClientCmd {
 
         let res = client
             .build_update_client_and_send(height, trusted_height)
-            .map_err(|e| Kind::Tx.context(e));
+            .map_err(Error::foreign_client);
 
         match res {
             Ok(events) => Output::success(events).exit(),
@@ -233,7 +233,7 @@ impl TxUpgradeClientsCmd {
         };
         let outputs = dst_chain
             .query_clients(req)
-            .map_err(|e| Kind::Query.context(e))?
+            .map_err(Error::relayer)?
             .into_iter()
             .filter_map(|c| (self.src_chain_id == c.client_state.chain_id()).then(|| c.client_id))
             .map(|id| TxUpgradeClientsCmd::upgrade_client(id, dst_chain.clone(), src_chain.clone()))
@@ -248,7 +248,7 @@ impl TxUpgradeClientsCmd {
         src_chain: Box<dyn ChainHandle>,
     ) -> Result<Vec<IbcEvent>, Error> {
         let client = ForeignClient::restore(client_id, dst_chain.clone(), src_chain.clone());
-        client.upgrade().map_err(|e| Kind::Query.context(e).into())
+        client.upgrade().map_err(Error::foreign_client)
     }
 }
 
