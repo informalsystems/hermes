@@ -148,7 +148,8 @@ impl Application for CliApp {
 
         let config = config_path
             .map(|path| self.load_config(&path))
-            .transpose()?
+            .transpose()
+            .map_err(|err| FrameworkErrorKind::ConfigError.context(format!("{}", err)))?
             .unwrap_or_default();
 
         // Update the `json_output` flag used by `conclude::Output`
