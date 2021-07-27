@@ -1370,12 +1370,16 @@ dependencies = [
  "prost",
  "prost-types",
  "tendermint-proto",
- "tonic",
 ]
 
 [[package]]
 name = "ibc-proto-rpc"
 version = "0.1.0"
+dependencies = [
+ "ibc-proto",
+ "tendermint-proto",
+ "tonic",
+]
 
 [[package]]
 name = "ibc-relayer"
@@ -1401,6 +1405,7 @@ dependencies = [
  "humantime-serde",
  "ibc",
  "ibc-proto",
+ "ibc-proto-rpc",
  "ibc-telemetry",
  "itertools 0.10.1",
  "k256",

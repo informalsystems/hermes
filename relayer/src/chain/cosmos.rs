@@ -50,7 +50,7 @@ use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
-use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
+use ibc_proto_rpc::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
@@ -215,7 +215,7 @@ impl CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(
+                ibc_proto_rpc::cosmos::staking::v1beta1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -437,7 +437,7 @@ impl CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
+                ibc_proto_rpc::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -855,7 +855,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::client::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -907,7 +907,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
+                ibc_proto_rpc::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -951,7 +951,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
+                ibc_proto_rpc::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -995,7 +995,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::client::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1039,7 +1039,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::connection::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1073,7 +1073,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::connection::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1109,10 +1109,12 @@ impl Chain for CosmosSdkChain {
             height: ICSHeight,
         ) -> Result<ConnectionEnd, Error> {
             use ibc_proto::ibc::core::connection::v1 as connection;
+            use ibc_proto_rpc::ibc::core::connection::v1 as connection_rpc;
+
             use tonic::{metadata::MetadataValue, IntoRequest};
 
             let mut client =
-                connection::query_client::QueryClient::connect(chain.grpc_addr.clone())
+                connection_rpc::query_client::QueryClient::connect(chain.grpc_addr.clone())
                     .await
                     .map_err(Error::grpc_transport)?;
 
@@ -1163,7 +1165,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1195,7 +1197,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1240,7 +1242,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1269,7 +1271,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1301,7 +1303,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1327,7 +1329,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1359,7 +1361,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1384,7 +1386,7 @@ impl Chain for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto_rpc::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1875,7 +1877,7 @@ async fn broadcast_tx_sync(chain: &CosmosSdkChain, data: Vec<u8>) -> Result<Resp
 
 /// Uses the GRPC client to retrieve the account sequence
 async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
-    let mut client = ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(
+    let mut client = ibc_proto_rpc::cosmos::auth::v1beta1::query_client::QueryClient::connect(
         chain.grpc_addr.clone(),
     )
     .await
