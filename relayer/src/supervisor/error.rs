@@ -1,28 +1,70 @@
-use thiserror::Error;
+use flex_error::define_error;
 
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId};
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Error {
-    #[error("port/channel {0}/{1} on chain {1} is not initialized")]
-    ChannelUninitialized(PortId, ChannelId, ChainId),
+use crate::error::Error as RelayerError;
+use crate::registry::SpawnError;
+use crate::worker::WorkerError;
 
-    #[error("channel {0} on chain {1} has a connection with uninitialized counterparty {:2}")]
-    ChannelConnectionUninitialized(ChannelId, ChainId, Counterparty),
+define_error! {
+    Error {
+        ChannelUninitialized
+            {
+                port_id: PortId,
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format_args!("channel {0} on chain {1} is not open",
+                    e.channel_id, e.chain_id)
+            },
 
-    #[error("connection {0} (underlying channel {1}) on chain {2} is not open")]
-    ConnectionNotOpen(ConnectionId, ChannelId, ChainId),
+        ChannelConnectionUninitialized
+            {
+                channel_id: ChannelId,
+                chain_id: ChainId,
+                counterparty: Counterparty
+            }
+            |e| {
+                format_args!("channel {} on chain {} has a connection with uninitialized counterparty {:?}",
+                    e.channel_id, e.chain_id, e.counterparty)
+            },
 
-    #[error("channel {0} on chain {1} has no connection hops specified")]
-    MissingConnectionHops(ChannelId, ChainId),
+        ConnectionNotOpen
+            {
+                connection_id: ConnectionId,
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format_args!("connection {0} (underlying channel {1}) on chain {2} is not open",
+                    e.connection_id, e.channel_id, e.chain_id)
+            },
 
-    #[error("query failed with error: {0}")]
-    QueryFailed(String),
+        MissingConnectionHops
+            {
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format_args!("channel {0} on chain {1} has no connection hops specified",
+                    e.channel_id, e.chain_id)
+            },
 
-    #[error("supervisor was not able to connect to any chains")]
-    NoChainsAvailable,
+        Relayer
+            [ RelayerError ]
+            |_| { "relayer error" },
 
-    #[error("failed to spawn chain runtime: {0}")]
-    FailedToSpawnChainRuntime(String),
+        NoChainsAvailable
+            |_| { "supervisor was not able to connect to any chains" },
+
+        Spawn
+            [ SpawnError ]
+            |_| { "supervisor was not able to connect to any chains" },
+
+        Worker
+            [ WorkerError ]
+            |_| { "worker error" },
+    }
 }

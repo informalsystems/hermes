@@ -8,7 +8,7 @@ use ibc::Height;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Serialize, Debug)]
@@ -52,7 +52,7 @@ impl QueryPacketCommitmentCmd {
                 Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
             )
             .map(|(bytes, _)| bytes)
-            .map_err(|e| Kind::Query.context(e))?;
+            .map_err(Error::relayer)?;
 
         if bytes.is_empty() {
             Ok("None".to_owned())

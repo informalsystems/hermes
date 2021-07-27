@@ -1,5 +1,4 @@
 use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
-use anomaly::BoxError;
 
 use ibc::{
     events::IbcEvent,
@@ -14,7 +13,7 @@ use ibc_relayer::{
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -82,7 +81,10 @@ impl Override<Config> for TxIcs20MsgTransferCmd {
 }
 
 impl TxIcs20MsgTransferCmd {
-    fn validate_options(&self, config: &Config) -> Result<TransferOptions, BoxError> {
+    fn validate_options(
+        &self,
+        config: &Config,
+    ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
         let src_chain_config = config
             .find_chain(&self.src_chain_id)
             .ok_or("missing src chain configuration")?;
@@ -197,8 +199,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
         // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =
-            build_and_send_transfer_messages(chains.src, chains.dst, opts)
-                .map_err(|e| Kind::Tx.context(e).into());
+            build_and_send_transfer_messages(chains.src, chains.dst, opts).map_err(Error::packet);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),

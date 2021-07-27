@@ -176,6 +176,14 @@ impl WorkerMap {
             .collect()
     }
 
+    /// List the [`WorkerHandle`]s associated with the given chain.
+    pub fn workers_for_chain(&self, chain_id: &ChainId) -> Vec<&WorkerHandle> {
+        self.workers
+            .iter()
+            .filter_map(|(o, h)| o.for_chain(chain_id).then(|| h))
+            .collect()
+    }
+
     /// Shutdown the worker associated with the given [`Object`].
     pub fn shutdown_worker(&mut self, object: &Object) {
         if let Some(handle) = self.workers.remove(object) {

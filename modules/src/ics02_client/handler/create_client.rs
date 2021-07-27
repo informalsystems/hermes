@@ -6,7 +6,7 @@ use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
 use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -31,7 +31,7 @@ pub fn process(
     // Construct this client's identifier
     let id_counter = ctx.client_counter();
     let client_id = ClientId::new(msg.client_state().client_type(), id_counter).map_err(|e| {
-        Kind::ClientIdentifierConstructor(msg.client_state().client_type(), id_counter).context(e)
+        Error::client_identifier_constructor(msg.client_state().client_type(), id_counter, e)
     })?;
 
     output.log(format!(
@@ -88,7 +88,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             MockClientState(MockHeader::new(height)).into(),
-            MockConsensusState(MockHeader::new(height)).into(),
+            MockConsensusState::new(MockHeader::new(height)).into(),
             signer,
         )
         .unwrap();
@@ -138,7 +138,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -152,7 +152,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height
                 }))
@@ -166,7 +166,7 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                MockConsensusState(MockHeader::new(Height {
+                MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 50,
                     ..height
                 }))
@@ -224,10 +224,7 @@ mod tests {
 
         let tm_client_state = AnyClientState::Tendermint(ClientState {
             chain_id: tm_header.chain_id.clone().into(),
-            trust_level: TrustThreshold {
-                numerator: 1,
-                denominator: 3,
-            },
+            trust_level: TrustThreshold::ONE_THIRD,
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),

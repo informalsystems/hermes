@@ -14,7 +14,7 @@ use tracing_subscriber::{
 
 use ibc_relayer::config::GlobalConfig;
 
-use crate::config;
+use crate::config::Error;
 
 /// Custom types to simplify the `Tracing` definition below
 type JsonFormatter = TracingFormatter<JsonFields, Format<Json, SystemTime>, StdWriter>;
@@ -111,12 +111,14 @@ fn build_tracing_filter(log_level: String) -> Result<EnvFilter, FrameworkError> 
     match EnvFilter::try_new(directive_raw.clone()) {
         Ok(out) => Ok(out),
         Err(e) => {
-            let our_err = config::Error::InvalidLogLevel(log_level, e.to_string());
             eprintln!(
                 "Unable to initialize Hermes from filter directive {:?}: {}",
                 directive_raw, e
             );
-            Err(FrameworkErrorKind::ConfigError.context(our_err).into())
+            let our_err = Error::invalid_log_level(log_level, e);
+            Err(FrameworkErrorKind::ConfigError
+                .context(format!("{}", our_err))
+                .into())
         }
     }
 }

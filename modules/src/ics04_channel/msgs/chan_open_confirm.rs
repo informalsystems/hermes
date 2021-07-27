@@ -1,4 +1,4 @@
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -7,7 +7,7 @@ use crate::tx_msg::Msg;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint_proto::Protobuf;
 
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 
@@ -63,7 +63,7 @@ impl Msg for MsgChannelOpenConfirm {
 impl Protobuf<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {}
 
 impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelOpenConfirm) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -73,21 +73,14 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
             None,
             raw_msg
                 .proof_height
-                .ok_or(Kind::MissingHeight)?
-                .try_into()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .ok_or_else(Error::missing_height)?
+                .into(),
         )
-        .map_err(|e| Kind::InvalidProof.context(e))?;
+        .map_err(Error::invalid_proof)?;
 
         Ok(MsgChannelOpenConfirm {
-            port_id: raw_msg
-                .port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: raw_msg
-                .channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
+            channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             proofs,
             signer: raw_msg.signer.into(),
         })

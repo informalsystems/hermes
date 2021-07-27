@@ -11,7 +11,7 @@ use tendermint_light_client::types::TrustThreshold;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
-use crate::error;
+use crate::error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
@@ -270,34 +270,31 @@ pub struct ChainConfig {
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
-pub fn load(path: impl AsRef<Path>) -> Result<Config, error::Error> {
-    let config_toml =
-        std::fs::read_to_string(&path).map_err(|e| error::Kind::ConfigIo.context(e))?;
+pub fn load(path: impl AsRef<Path>) -> Result<Config, Error> {
+    let config_toml = std::fs::read_to_string(&path).map_err(Error::config_io)?;
 
-    let config =
-        toml::from_str::<Config>(&config_toml[..]).map_err(|e| error::Kind::Config.context(e))?;
+    let config = toml::from_str::<Config>(&config_toml[..]).map_err(Error::config_decode)?;
 
     Ok(config)
 }
 
 /// Serialize the given `Config` as TOML to the given config file.
-pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error> {
+pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), Error> {
     let mut file = if path.as_ref().exists() {
         fs::OpenOptions::new().write(true).truncate(true).open(path)
     } else {
         File::create(path)
     }
-    .map_err(|e| error::Kind::Config.context(e))?;
+    .map_err(Error::config_io)?;
 
     store_writer(config, &mut file)
 }
 
 /// Serialize the given `Config` as TOML to the given writer.
-pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), error::Error> {
-    let toml_config =
-        toml::to_string_pretty(&config).map_err(|e| error::Kind::Config.context(e))?;
+pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), Error> {
+    let toml_config = toml::to_string_pretty(&config).map_err(Error::config_encode)?;
 
-    writeln!(writer, "{}", toml_config).map_err(|e| error::Kind::Config.context(e))?;
+    writeln!(writer, "{}", toml_config).map_err(Error::config_io)?;
 
     Ok(())
 }

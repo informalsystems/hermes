@@ -8,6 +8,9 @@ use crate::{chain::handle::ChainHandlePair, config::Config, object::Object, tele
 
 pub mod retry_strategy;
 
+mod error;
+pub use error::WorkerError;
+
 mod handle;
 pub use handle::WorkerHandle;
 
