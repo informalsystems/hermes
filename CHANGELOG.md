@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased
+
+### IMPROVMENTS
+
+Added CI to find invalid markdown links.
+
 ## v0.6.1
 *July 22nd, 2021*
 
