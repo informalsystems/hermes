@@ -80,10 +80,10 @@ fn run_query_channels(cmd: &QueryChannelsCmd) -> Result<(), Box<dyn std::error::
         let counterparty_chain_id = client_state.chain_id.clone();
 
         match &cmd.destination_chain {
-            Some(dst_chain) if dst_chain == &counterparty_chain_id => { /* proceed */ }
-            _ => {
+            Some(dst_chain_id) if dst_chain_id != &counterparty_chain_id => {
                 continue;
             }
+            _ => { /* proceed */ }
         }
 
         if !cmd.verbose {
