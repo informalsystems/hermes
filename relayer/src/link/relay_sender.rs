@@ -20,17 +20,23 @@ impl SubmitReply for RelaySummary {
     }
 }
 
+/// Captures the ability to submit messages to a chain.
 pub trait Submit {
     type Reply: SubmitReply;
 
     fn submit(target: &dyn ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError>;
 }
 
+
+/// Synchronous sender
 pub struct SyncSender;
 
 impl Submit for SyncSender {
     type Reply = RelaySummary;
 
+    // TODO: Switch from the `Chain::send_msgs` interface in this method
+    //  to use `Chain::submit_msgs` instead; implement waiting for block
+    //  commits directly here (instead of blocking in the chain runtime).
     fn submit(target: &dyn ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
         let tx_events = target.send_msgs(msgs)?;
         info!(
@@ -61,6 +67,8 @@ impl SubmitReply for AsyncReply {
     }
 }
 
+// TODO(Adi): Consider removing the senders and keep only a generic
+//     send/submit method.
 pub struct AsyncSender;
 
 impl Submit for AsyncSender {
