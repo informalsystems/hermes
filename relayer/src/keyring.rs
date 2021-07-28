@@ -17,7 +17,7 @@ use ripemd160::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use errors::{Error, Kind};
+use errors::Error;
 pub use pub_key::EncodedPubKey;
 
 pub mod errors;
@@ -82,19 +82,18 @@ impl KeyEntry {
 
         // Ensure that the public key in the key file and the one extracted from the mnemonic match.
         if keyfile_pubkey_bytes != derived_pubkey_bytes {
-            return Err(Kind::PublicKeyMismatch {
-                keyfile: keyfile_pubkey_bytes,
-                mnemonic: derived_pubkey_bytes,
-            }
-            .into());
+            Err(Error::public_key_mismatch(
+                keyfile_pubkey_bytes,
+                derived_pubkey_bytes,
+            ))
+        } else {
+            Ok(Self {
+                public_key: derived_pubkey,
+                private_key,
+                account: key_file.address,
+                address: keyfile_address_bytes,
+            })
         }
-
-        Ok(Self {
-            public_key: derived_pubkey,
-            private_key,
-            account: key_file.address,
-            address: keyfile_address_bytes,
-        })
     }
 }
 
@@ -124,17 +123,17 @@ impl KeyStore for Memory {
         self.keys
             .get(key_name)
             .cloned()
-            .ok_or_else(|| Kind::KeyNotFound.into())
+            .ok_or_else(Error::key_not_found)
     }
 
     fn add_key(&mut self, key_name: &str, key_entry: KeyEntry) -> Result<(), Error> {
         if self.keys.contains_key(key_name) {
-            return Err(Kind::ExistingKey.into());
+            Err(Error::key_already_exist())
+        } else {
+            self.keys.insert(key_name.to_string(), key_entry);
+
+            Ok(())
         }
-
-        self.keys.insert(key_name.to_string(), key_entry);
-
-        Ok(())
     }
 
     fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error> {
@@ -167,22 +166,19 @@ impl KeyStore for Test {
         key_file.set_extension(KEYSTORE_FILE_EXTENSION);
 
         if !key_file.as_path().exists() {
-            return Err(Kind::KeyStore
-                .context(format!("cannot find key file at '{}'", key_file.display()))
-                .into());
+            return Err(Error::key_file_not_found(format!("{}", key_file.display())));
         }
 
-        let file = File::open(&key_file).map_err(|_| {
-            Kind::KeyStore.context(format!("cannot open key file at '{}'", key_file.display()))
+        let file = File::open(&key_file).map_err(|e| {
+            Error::key_file_io(
+                key_file.display().to_string(),
+                "failed to open file".to_string(),
+                e,
+            )
         })?;
 
-        let key_entry = serde_json::from_reader(file).map_err(|e| {
-            Kind::KeyStore.context(format!(
-                "invalid key file at '{}': {}",
-                key_file.display(),
-                e
-            ))
-        })?;
+        let key_entry = serde_json::from_reader(file)
+            .map_err(|e| Error::key_file_decode(format!("{}", key_file.display()), e))?;
 
         Ok(key_entry)
     }
@@ -190,19 +186,26 @@ impl KeyStore for Test {
     fn add_key(&mut self, key_name: &str, key_entry: KeyEntry) -> Result<(), Error> {
         let mut filename = self.store.join(key_name);
         filename.set_extension(KEYSTORE_FILE_EXTENSION);
+        let file_path = filename.display().to_string();
 
-        let file = File::create(filename)
-            .map_err(|_| Kind::KeyStore.context("error creating the key file"))?;
+        let file = File::create(filename).map_err(|e| {
+            Error::key_file_io(file_path.clone(), "failed to create file".to_string(), e)
+        })?;
 
         serde_json::to_writer_pretty(file, &key_entry)
-            .map_err(|_| Kind::KeyStore.context("error writing the key file"))?;
+            .map_err(|e| Error::key_file_encode(file_path, e))?;
 
         Ok(())
     }
 
     fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error> {
-        let dir = fs::read_dir(&self.store)
-            .map_err(|e| Kind::KeyStore.context(format!("cannot list keys: {}", e)))?;
+        let dir = fs::read_dir(&self.store).map_err(|e| {
+            Error::key_file_io(
+                self.store.display().to_string(),
+                "failed to list keys".to_string(),
+                e,
+            )
+        })?;
 
         let ext = OsStr::new(KEYSTORE_FILE_EXTENSION);
 
@@ -235,13 +238,15 @@ impl KeyRing {
             Store::Memory => Ok(Self::Memory(Memory::new(account_prefix.to_string()))),
 
             Store::Test => {
-                let keys_folder = disk_store_path(chain_id.as_str()).map_err(|e| {
-                    Kind::KeyStore.context(format!("failed to compute keys folder path: {:?}", e))
-                })?;
+                let keys_folder = disk_store_path(chain_id.as_str())?;
 
                 // Create keys folder if it does not exist
                 fs::create_dir_all(&keys_folder).map_err(|e| {
-                    Kind::KeyStore.context(format!("failed to create keys folder: {:?}", e))
+                    Error::key_file_io(
+                        keys_folder.display().to_string(),
+                        "failed to create keys folder".to_string(),
+                        e,
+                    )
                 })?;
 
                 Ok(Self::Test(Test::new(
@@ -279,8 +284,7 @@ impl KeyRing {
         key_file_content: &str,
         hd_path: &HDPath,
     ) -> Result<KeyEntry, Error> {
-        let key_file: KeyFile =
-            serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
+        let key_file: KeyFile = serde_json::from_str(key_file_content).map_err(Error::encode)?;
 
         KeyEntry::from_key_file(key_file, hd_path)
     }
@@ -302,7 +306,7 @@ impl KeyRing {
 
         // Compute Bech32 account
         let account = bech32::encode(self.account_prefix(), address.to_base32(), Variant::Bech32)
-            .map_err(|e| Kind::Bech32Account.context(e))?;
+            .map_err(Error::bech32)?;
 
         Ok(KeyEntry {
             public_key,
@@ -317,9 +321,8 @@ impl KeyRing {
         let key = self.get_key(key_name)?;
 
         let private_key_bytes = key.private_key.private_key.to_bytes();
-        let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice()).map_err(|_| {
-            Kind::InvalidKey.context("could not build signing key from private key bytes")
-        })?;
+        let signing_key =
+            SigningKey::from_bytes(private_key_bytes.as_slice()).map_err(Error::invalid_key)?;
 
         let signature: Signature = signing_key.sign(&msg);
         Ok(signature.as_ref().to_vec())
@@ -339,13 +342,13 @@ fn private_key_from_mnemonic(
     hd_path: &StandardHDPath,
 ) -> Result<ExtendedPrivKey, Error> {
     let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
-        .map_err(|e| Kind::InvalidMnemonic.context(e))?;
+        .map_err(Error::invalid_mnemonic)?;
 
     let seed = Seed::new(&mnemonic, "");
 
     let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
         .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
-        .map_err(|e| Kind::PrivateKey.context(e))?;
+        .map_err(Error::private_key)?;
 
     Ok(private_key)
 }
@@ -371,14 +374,13 @@ fn decode_bech32(input: &str) -> Result<Vec<u8>, Error> {
 
     let bytes = bech32::decode(input)
         .and_then(|(_, data, _)| Vec::from_base32(&data))
-        .map_err(|e| Kind::Bech32Account.context(e))?;
+        .map_err(Error::bech32_account)?;
 
     Ok(bytes)
 }
 
 fn disk_store_path(folder_name: &str) -> Result<PathBuf, Error> {
-    let home = dirs_next::home_dir()
-        .ok_or_else(|| Kind::KeyStore.context("cannot retrieve home folder location"))?;
+    let home = dirs_next::home_dir().ok_or_else(Error::home_location_unavailable)?;
 
     let folder = Path::new(home.as_path())
         .join(KEYSTORE_DEFAULT_FOLDER)

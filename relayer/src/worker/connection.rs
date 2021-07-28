@@ -1,7 +1,6 @@
 use core::time::Duration;
 use std::thread;
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, warn};
 
@@ -12,6 +11,7 @@ use crate::{
     worker::retry_strategy,
 };
 
+use super::error::RunError;
 use super::WorkerCmd;
 
 pub struct ConnectionWorker {
@@ -39,7 +39,7 @@ impl ConnectionWorker {
     }
 
     /// Run the event loop for events associated with a [`Connection`].
-    pub(crate) fn run(self) -> Result<(), BoxError> {
+    pub(crate) fn run(self) -> Result<(), RunError> {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
 
@@ -68,7 +68,8 @@ impl ConnectionWorker {
                                     a_chain.clone(),
                                     b_chain.clone(),
                                     event.clone(),
-                                )?;
+                                )
+                                .map_err(RunError::connection)?;
 
                                 retry_with_index(
                                     retry_strategy::worker_default_strategy(),
@@ -93,7 +94,7 @@ impl ConnectionWorker {
                             current_height
                         );
 
-                        let height = current_height.decrement()?;
+                        let height = current_height.decrement().map_err(RunError::ics02)?;
 
                         let (mut handshake_connection, state) =
                             RelayConnection::restore_from_state(
@@ -101,7 +102,8 @@ impl ConnectionWorker {
                                 b_chain.clone(),
                                 self.connection.clone(),
                                 height,
-                            )?;
+                            )
+                            .map_err(RunError::connection)?;
 
                         retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                             handshake_connection.step_state(state, index)

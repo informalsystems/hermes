@@ -1,12 +1,13 @@
 use crate::ics04_channel::channel::validate_version;
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+
 use alloc::string::String;
 use alloc::string::ToString;
-use core::convert::{TryFrom, TryInto};
+use core::convert::TryFrom;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use tendermint_proto::Protobuf;
@@ -82,7 +83,7 @@ impl Msg for MsgChannelOpenAck {
 impl Protobuf<RawMsgChannelOpenAck> for MsgChannelOpenAck {}
 
 impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -92,25 +93,18 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
             None,
             raw_msg
                 .proof_height
-                .ok_or(Kind::MissingHeight)?
-                .try_into()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .ok_or_else(Error::missing_height)?
+                .into(),
         )
-        .map_err(|e| Kind::InvalidProof.context(e))?;
+        .map_err(Error::invalid_proof)?;
 
         Ok(MsgChannelOpenAck {
-            port_id: raw_msg
-                .port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: raw_msg
-                .channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
+            channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
             counterparty_channel_id: raw_msg
                 .counterparty_channel_id
                 .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+                .map_err(Error::identifier)?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
             signer: raw_msg.signer.into(),

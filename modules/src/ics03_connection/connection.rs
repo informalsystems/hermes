@@ -1,10 +1,8 @@
-use alloc::string::ToString;
-use alloc::vec::Vec;
-use anomaly::fail;
 use core::convert::{TryFrom, TryInto};
 use core::str::FromStr;
 use core::time::Duration;
 use core::u64;
+
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -13,7 +11,7 @@ use ibc_proto::ibc::core::connection::v1::{
     IdentifiedConnection as RawIdentifiedConnection,
 };
 
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error::Error;
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
@@ -46,7 +44,7 @@ impl IdentifiedConnectionEnd {
 impl Protobuf<RawIdentifiedConnection> for IdentifiedConnectionEnd {}
 
 impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn try_from(value: RawIdentifiedConnection) -> Result<Self, Self::Error> {
         let raw_connection_end = RawConnectionEnd {
@@ -58,7 +56,7 @@ impl TryFrom<RawIdentifiedConnection> for IdentifiedConnectionEnd {
         };
 
         Ok(IdentifiedConnectionEnd {
-            connection_id: value.id.parse().map_err(|_| Kind::IdentifierError)?,
+            connection_id: value.id.parse().map_err(Error::invalid_identifier)?,
             connection_end: raw_connection_end.try_into()?,
         })
     }
@@ -106,32 +104,28 @@ impl Default for ConnectionEnd {
 impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
         let state = value.state.try_into()?;
         if state == State::Uninitialized {
             return Ok(ConnectionEnd::default());
         }
         if value.client_id.is_empty() {
-            return Err(Kind::EmptyProtoConnectionEnd.into());
+            return Err(Error::empty_proto_connection_end());
         }
 
         Ok(Self::new(
             state,
-            value
-                .client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            value.client_id.parse().map_err(Error::invalid_identifier)?,
             value
                 .counterparty
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or_else(Error::missing_counterparty)?
                 .try_into()?,
             value
                 .versions
                 .into_iter()
                 .map(Version::try_from)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+                .collect::<Result<Vec<_>, _>>()?,
             Duration::from_nanos(value.delay_period),
         ))
     }
@@ -260,23 +254,20 @@ impl Default for Counterparty {
 // Converts from the wire format RawCounterparty. Typically used from the relayer side
 // during queries for response validation and to extract the Counterparty structure.
 impl TryFrom<RawCounterparty> for Counterparty {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
         let connection_id = Some(value.connection_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+            .map_err(Error::invalid_identifier)?;
         Ok(Counterparty::new(
-            value
-                .client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            value.client_id.parse().map_err(Error::invalid_identifier)?,
             connection_id,
             value
                 .prefix
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or_else(Error::missing_counterparty)?
                 .key_prefix
                 .into(),
         ))
@@ -347,15 +338,14 @@ impl State {
             Self::Open => "OPEN",
         }
     }
-
-    /// Parses the State out from a i32.
+    // Parses the State out from a i32.
     pub fn from_i32(s: i32) -> Result<Self, Error> {
         match s {
             0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            _ => fail!(Kind::InvalidState(s), s),
+            _ => Err(Error::invalid_state(s)),
         }
     }
 
@@ -379,14 +369,14 @@ impl State {
 }
 
 impl TryFrom<i32> for State {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            _ => Err(Kind::InvalidState(value).into()),
+            _ => Err(Error::invalid_state(value)),
         }
     }
 }

@@ -8,8 +8,8 @@ use core::time::Duration;
 use alloc::string::ToString;
 
 use chrono::{offset::Utc, DateTime, TimeZone};
+use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
-use thiserror::Error;
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 
@@ -127,9 +127,12 @@ impl Display for Timestamp {
     }
 }
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-#[error("Timestamp overflow when modifying with duration")]
-pub struct TimestampOverflowError;
+define_error! {
+    TimestampOverflowError {
+        TimestampOverflow
+            |_| { "Timestamp overflow when modifying with duration" }
+    }
+}
 
 impl Add<Duration> for Timestamp {
     type Output = Result<Timestamp, TimestampOverflowError>;
@@ -137,8 +140,8 @@ impl Add<Duration> for Timestamp {
     fn add(self, duration: Duration) -> Result<Timestamp, TimestampOverflowError> {
         match self.as_datetime() {
             Some(datetime) => {
-                let duration2 =
-                    chrono::Duration::from_std(duration).map_err(|_| TimestampOverflowError)?;
+                let duration2 = chrono::Duration::from_std(duration)
+                    .map_err(|_| TimestampOverflowError::timestamp_overflow())?;
                 Ok(Self::from_datetime(datetime + duration2))
             }
             None => Ok(self),
@@ -152,8 +155,8 @@ impl Sub<Duration> for Timestamp {
     fn sub(self, duration: Duration) -> Result<Timestamp, TimestampOverflowError> {
         match self.as_datetime() {
             Some(datetime) => {
-                let duration2 =
-                    chrono::Duration::from_std(duration).map_err(|_| TimestampOverflowError)?;
+                let duration2 = chrono::Duration::from_std(duration)
+                    .map_err(|_| TimestampOverflowError::timestamp_overflow())?;
                 Ok(Self::from_datetime(datetime - duration2))
             }
             None => Ok(self),
@@ -161,25 +164,25 @@ impl Sub<Duration> for Timestamp {
     }
 }
 
-pub type ParseTimestampError = anomaly::Error<ParseTimestampErrorKind>;
+define_error! {
+    ParseTimestampError {
+        ParseInt
+            [ TraceError<ParseIntError> ]
+            | _ | { "error parsing integer from string"},
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum ParseTimestampErrorKind {
-    #[error("Error parsing integer from string: {0}")]
-    ParseIntError(ParseIntError),
-
-    #[error("Error converting from u64 to i64: {0}")]
-    TryFromIntError(TryFromIntError),
+        TryFromInt
+            [ TraceError<TryFromIntError> ]
+            | _ | { "error converting from u64 to i64" },
+    }
 }
 
 impl FromStr for Timestamp {
     type Err = ParseTimestampError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let seconds = u64::from_str(s).map_err(ParseTimestampErrorKind::ParseIntError)?;
+        let seconds = u64::from_str(s).map_err(ParseTimestampError::parse_int)?;
 
-        Timestamp::from_nanoseconds(seconds)
-            .map_err(|err| ParseTimestampErrorKind::TryFromIntError(err).into())
+        Timestamp::from_nanoseconds(seconds).map_err(ParseTimestampError::try_from_int)
     }
 }
 

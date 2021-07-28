@@ -8,7 +8,6 @@ use prost_types::Any;
 use tracing::{debug, error, info, trace};
 
 use ibc::{
-    downcast,
     events::{IbcEvent, IbcEventType, PrettyEvents},
     ics04_channel::{
         channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
@@ -32,10 +31,11 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 
 use crate::chain::handle::ChainHandle;
-use crate::channel::{Channel, ChannelError};
+use crate::channel::error::ChannelError;
+use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
-use crate::link::error::LinkError;
+use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
 use crate::link::relay_summary::RelaySummary;
 
@@ -101,21 +101,15 @@ impl RelayPath {
     }
 
     pub fn src_channel_id(&self) -> Result<&ChannelId, LinkError> {
-        self.channel.src_channel_id().ok_or_else(|| {
-            LinkError::Failed(format!(
-                "channel_id on source chain '{}' is 'None'",
-                self.src_chain().id()
-            ))
-        })
+        self.channel
+            .src_channel_id()
+            .ok_or_else(|| LinkError::missing_channel_id(self.src_chain().id()))
     }
 
     pub fn dst_channel_id(&self) -> Result<&ChannelId, LinkError> {
-        self.channel.dst_channel_id().ok_or_else(|| {
-            LinkError::Failed(format!(
-                "channel_id on destination chain '{}' is 'None'",
-                self.dst_chain().id()
-            ))
-        })
+        self.channel
+            .dst_channel_id()
+            .ok_or_else(|| LinkError::missing_channel_id(self.dst_chain().id()))
     }
 
     pub fn channel(&self) -> &Channel {
@@ -123,43 +117,33 @@ impl RelayPath {
     }
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        Ok(self
-            .src_chain()
+        self.src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id()?, height)
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
+            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
-        Ok(self
-            .dst_chain()
+        self.dst_chain()
             .query_channel(self.dst_port_id(), self.dst_channel_id()?, height)
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?)
+            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn src_signer(&self) -> Result<Signer, LinkError> {
-        self.src_chain().get_signer().map_err(|e| {
-            LinkError::Failed(format!(
-                "could not retrieve signer from src chain {} with error: {}",
-                self.src_chain().id(),
-                e
-            ))
-        })
+        self.src_chain()
+            .get_signer()
+            .map_err(|e| LinkError::signer(self.src_chain().id(), e))
     }
 
     fn dst_signer(&self) -> Result<Signer, LinkError> {
-        self.dst_chain().get_signer().map_err(|e| {
-            LinkError::Failed(format!(
-                "could not retrieve signer from dst chain {} with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })
+        self.dst_chain()
+            .get_signer()
+            .map_err(|e| LinkError::signer(self.dst_chain().id(), e))
     }
 
     pub fn dst_latest_height(&self) -> Result<Height, LinkError> {
         self.dst_chain()
             .query_latest_height()
-            .map_err(|e| LinkError::QueryError(self.dst_chain().id(), e))
+            .map_err(|e| LinkError::query(self.dst_chain().id(), e))
     }
 
     fn unordered_channel(&self) -> bool {
@@ -174,14 +158,14 @@ impl RelayPath {
         let client = self.restore_dst_client();
         client
             .build_update_client(height)
-            .map_err(LinkError::ClientError)
+            .map_err(LinkError::client)
     }
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = self.restore_src_client();
         client
             .build_update_client(height)
-            .map_err(LinkError::ClientError)
+            .map_err(LinkError::client)
     }
 
     fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
@@ -189,7 +173,7 @@ impl RelayPath {
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
-            .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
+            .map_err(|e| LinkError::channel(ChannelError::channel_proof(e)))?;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
@@ -260,8 +244,7 @@ impl RelayPath {
                 return Ok(());
             }
         }
-
-        Err(LinkError::OldPacketClearingFailed)
+        Err(LinkError::old_packet_clearing_failed())
     }
 
     /// Clears any packets that were sent before `height`, either if the `clear_packets` flag
@@ -276,17 +259,9 @@ impl RelayPath {
             // Clearing may still happen: upon new blocks, when `force = true`.
             self.clear_packets = false;
 
-            let clear_height = if let Some(height) = height {
-                Some(height.decrement().map_err(|e| {
-                    LinkError::Failed(format!(
-                        "Cannot clear packets at height {}, because this height cannot be decremented: {}",
-                        height,
-                        e.to_string()
-                    ))
-                })?)
-            } else {
-                None
-            };
+            let clear_height = height
+                .map(|h| h.decrement().map_err(|e| LinkError::decrement_height(h, e)))
+                .transpose()?;
 
             info!(height = ?clear_height, "[{}] clearing pending packets", self);
 
@@ -481,9 +456,9 @@ impl RelayPath {
 
                     return Ok(summary);
                 }
-                Err(LinkError::SendError(ev)) => {
+                Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
                     // This error means we could retry
-                    error!("[{}] error {}", self, ev);
+                    error!("[{}] error {}", self, e.event);
                     if i + 1 == MAX_RETRIES {
                         error!(
                             "[{}] {}/{} retries exhausted. giving up",
@@ -606,7 +581,7 @@ impl RelayPath {
 
         let msgs = odata.assemble_msgs(self)?;
 
-        let tx_events = target.send_msgs(msgs)?;
+        let tx_events = target.send_msgs(msgs).map_err(LinkError::relayer)?;
         info!("[{}] result {}\n", self, PrettyEvents(&tx_events));
 
         let ev = tx_events
@@ -615,20 +590,21 @@ impl RelayPath {
             .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
         match ev {
-            Some(ev) => Err(LinkError::SendError(Box::new(ev))),
+            Some(ev) => Err(LinkError::send(ev)),
             None => Ok(RelaySummary::from_events(tx_events)),
         }
     }
 
     /// Checks if a sent packet has been received on destination.
     fn send_packet_received_on_dst(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let unreceived_packet =
-            self.dst_chain()
-                .query_unreceived_packets(QueryUnreceivedPacketsRequest {
-                    port_id: self.dst_port_id().to_string(),
-                    channel_id: self.dst_channel_id()?.to_string(),
-                    packet_commitment_sequences: vec![packet.sequence.into()],
-                })?;
+        let unreceived_packet = self
+            .dst_chain()
+            .query_unreceived_packets(QueryUnreceivedPacketsRequest {
+                port_id: self.dst_port_id().to_string(),
+                channel_id: self.dst_channel_id()?.to_string(),
+                packet_commitment_sequences: vec![packet.sequence.into()],
+            })
+            .map_err(LinkError::relayer)?;
 
         Ok(unreceived_packet.is_empty())
     }
@@ -636,13 +612,16 @@ impl RelayPath {
     /// Checks if a packet commitment has been cleared on source.
     /// The packet commitment is cleared when either an acknowledgment or a timeout is received on source.
     fn send_packet_commitment_cleared_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let (bytes, _) = self.src_chain().build_packet_proofs(
-            PacketMsgType::Recv,
-            self.src_port_id(),
-            self.src_channel_id()?,
-            packet.sequence,
-            Height::zero(),
-        )?;
+        let (bytes, _) = self
+            .src_chain()
+            .build_packet_proofs(
+                PacketMsgType::Recv,
+                self.src_port_id(),
+                self.src_channel_id()?,
+                packet.sequence,
+                Height::zero(),
+            )
+            .map_err(LinkError::relayer)?;
 
         Ok(bytes.is_empty())
     }
@@ -657,13 +636,14 @@ impl RelayPath {
     /// source chain of the packet, ie. the destination chain of the relay path
     /// that sends the acknowledgment.
     fn recv_packet_acknowledged_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
-        let unreceived_ack =
-            self.dst_chain()
-                .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
-                    port_id: self.dst_port_id().to_string(),
-                    channel_id: self.dst_channel_id()?.to_string(),
-                    packet_ack_sequences: vec![packet.sequence.into()],
-                })?;
+        let unreceived_ack = self
+            .dst_chain()
+            .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
+                port_id: self.dst_port_id().to_string(),
+                channel_id: self.dst_channel_id()?.to_string(),
+                packet_ack_sequences: vec![packet.sequence.into()],
+            })
+            .map_err(LinkError::relayer)?;
 
         Ok(unreceived_ack.is_empty())
     }
@@ -702,7 +682,10 @@ impl RelayPath {
                 i + 1, MAX_RETRIES,
             );
 
-            let dst_tx_events = self.dst_chain().send_msgs(dst_update)?;
+            let dst_tx_events = self
+                .dst_chain()
+                .send_msgs(dst_update)
+                .map_err(LinkError::relayer)?;
             info!("[{}] result {}\n", self, PrettyEvents(&dst_tx_events));
 
             dst_err_ev = dst_tx_events
@@ -714,12 +697,9 @@ impl RelayPath {
             }
         }
 
-        Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
-            format!(
-                "Failed to update client on destination {} with err: {}",
-                self.dst_chain().id(),
-                dst_err_ev.unwrap()
-            ),
+        Err(LinkError::client(ForeignClientError::chain_error_event(
+            self.dst_chain().id(),
+            dst_err_ev.unwrap(),
         )))
     }
 
@@ -743,7 +723,10 @@ impl RelayPath {
                 dst_chain_height,
             );
 
-            let src_tx_events = self.src_chain().send_msgs(src_update)?;
+            let src_tx_events = self
+                .src_chain()
+                .send_msgs(src_update)
+                .map_err(LinkError::relayer)?;
             info!("[{}] result {}\n", self, PrettyEvents(&src_tx_events));
 
             src_err_ev = src_tx_events
@@ -755,12 +738,9 @@ impl RelayPath {
             }
         }
 
-        Err(LinkError::ClientError(ForeignClientError::ClientUpdate(
-            format!(
-                "Failed to update client on source {} with err: {}",
-                self.src_chain().id(),
-                src_err_ev.unwrap()
-            ),
+        Err(LinkError::client(ForeignClientError::chain_error_event(
+            self.src_chain().id(),
+            src_err_ev.unwrap(),
         )))
     }
 
@@ -780,8 +760,10 @@ impl RelayPath {
             channel_id: src_channel_id.to_string(),
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
-        let (packet_commitments, src_response_height) =
-            self.src_chain().query_packet_commitments(pc_request)?;
+        let (packet_commitments, src_response_height) = self
+            .src_chain()
+            .query_packet_commitments(pc_request)
+            .map_err(LinkError::relayer)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -799,7 +781,8 @@ impl RelayPath {
 
         let sequences: Vec<Sequence> = self
             .dst_chain()
-            .query_unreceived_packets(request)?
+            .query_unreceived_packets(request)
+            .map_err(LinkError::relayer)?
             .into_iter()
             .map(From::from)
             .collect();
@@ -834,16 +817,22 @@ impl RelayPath {
             height: query_height,
         });
 
-        events_result = self.src_chain().query_txs(query)?;
+        events_result = self
+            .src_chain()
+            .query_txs(query)
+            .map_err(LinkError::relayer)?;
 
         let mut packet_sequences = vec![];
         for event in events_result.iter() {
-            let send_event = downcast!(event => IbcEvent::SendPacket)
-                .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
-            packet_sequences.push(send_event.packet.sequence);
-            if packet_sequences.len() > 10 {
-                // Enough to print the first 10
-                break;
+            match event {
+                IbcEvent::SendPacket(send_event) => {
+                    packet_sequences.push(send_event.packet.sequence);
+                    if packet_sequences.len() > 10 {
+                        // Enough to print the first 10
+                        break;
+                    }
+                }
+                _ => return Err(LinkError::unexpected_event(event.clone())),
             }
         }
         info!(
@@ -876,7 +865,7 @@ impl RelayPath {
         let (acks_on_source, src_response_height) = self
             .src_chain()
             .query_packet_acknowledgements(pc_request)
-            .map_err(|e| LinkError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -896,7 +885,7 @@ impl RelayPath {
         let sequences: Vec<Sequence> = self
             .dst_chain()
             .query_unreceived_acknowledgement(request)
-            .map_err(|e| LinkError::QueryError(self.dst_chain().id(), e))?
+            .map_err(|e| LinkError::query(self.dst_chain().id(), e))?
             .into_iter()
             .map(From::from)
             .collect();
@@ -933,16 +922,21 @@ impl RelayPath {
                 sequences,
                 height: query_height,
             }))
-            .map_err(|e| LinkError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
 
         let mut packet_sequences = vec![];
         for event in events_result.iter() {
-            let write_ack_event = downcast!(event => IbcEvent::WriteAcknowledgement)
-                .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
-            packet_sequences.push(write_ack_event.packet.sequence);
-            if packet_sequences.len() > 10 {
-                // Enough to print the first 10
-                break;
+            match event {
+                IbcEvent::WriteAcknowledgement(write_ack_event) => {
+                    packet_sequences.push(write_ack_event.packet.sequence);
+                    if packet_sequences.len() > 10 {
+                        // Enough to print the first 10
+                        break;
+                    }
+                }
+                _ => {
+                    return Err(LinkError::unexpected_event(event.clone()));
+                }
             }
         }
         info!("[{}] found unprocessed WriteAcknowledgement events for {:?} (first 10 shown here; total={})", self, packet_sequences, events_result.len());
@@ -1011,7 +1005,7 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::packet_proofs_constructor(self.src_chain().id(), e))?;
 
         let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), self.dst_signer()?);
 
@@ -1040,7 +1034,7 @@ impl RelayPath {
                 packet.sequence,
                 event.height,
             )
-            .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::packet_proofs_constructor(self.src_chain().id(), e))?;
 
         let msg = MsgAcknowledgement::new(
             packet,
@@ -1073,7 +1067,7 @@ impl RelayPath {
                     port_id: self.dst_port_id().to_string(),
                     channel_id: dst_channel_id.to_string(),
                 })
-                .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+                .map_err(|e| LinkError::query(self.dst_chain().id(), e))?;
             (PacketMsgType::TimeoutOrdered, next_seq)
         } else {
             (PacketMsgType::TimeoutUnordered, packet.sequence)
@@ -1088,7 +1082,7 @@ impl RelayPath {
                 next_sequence_received,
                 height,
             )
-            .map_err(|e| LinkError::PacketProofsConstructor(self.dst_chain().id(), e))?;
+            .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
         let msg = MsgTimeout::new(
             packet.clone(),
@@ -1121,7 +1115,7 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| LinkError::PacketProofsConstructor(self.dst_chain().id(), e))?;
+            .map_err(|e| LinkError::packet_proofs_constructor(self.dst_chain().id(), e))?;
 
         let msg = MsgTimeoutOnClose::new(
             packet.clone(),

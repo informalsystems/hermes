@@ -14,7 +14,7 @@ use ibc_relayer::chain::runtime::ChainRuntime;
 use ibc_relayer::chain::CosmosSdkChain;
 
 use crate::conclude::Output;
-use crate::error::Kind;
+use crate::error::Error;
 use crate::prelude::app_config;
 
 /// Query the events emitted by transaction
@@ -46,14 +46,11 @@ impl Runnable for QueryTxEventsCmd {
         let chain = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
 
         let res = Hash::from_str(self.hash.as_str())
-            .map_err(|e| {
-                Kind::CliArg(format!("could not parse '{}' into a valid hash", self.hash))
-                    .context(e)
-            })
+            .map_err(|e| Error::invalid_hash(self.hash.clone(), e))
             .and_then(|h| {
                 chain
                     .query_txs(QueryTxRequest::Transaction(QueryTxHash(h)))
-                    .map_err(|e| Kind::Query.context(e))
+                    .map_err(Error::relayer)
             });
 
         match res {

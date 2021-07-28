@@ -5,7 +5,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
 
 use crate::ics02_client::misbehaviour::AnyMisbehaviour;
-use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::error::Error;
 use crate::ics07_tendermint::header::Header;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
@@ -41,11 +41,11 @@ impl TryFrom<RawMisbehaviour> for Misbehaviour {
             client_id: Default::default(),
             header1: raw
                 .header_1
-                .ok_or_else(|| Kind::InvalidRawMisbehaviour.context("missing header1"))?
+                .ok_or_else(|| Error::invalid_raw_misbehaviour("missing header1".into()))?
                 .try_into()?,
             header2: raw
                 .header_2
-                .ok_or_else(|| Kind::InvalidRawMisbehaviour.context("missing header2"))?
+                .ok_or_else(|| Error::invalid_raw_misbehaviour("missing header2".into()))?
                 .try_into()?,
         })
     }

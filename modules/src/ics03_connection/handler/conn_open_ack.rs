@@ -4,7 +4,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error::Error;
 use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
@@ -44,16 +44,12 @@ pub(crate) fn process(
                 Ok(old_conn_end)
             } else {
                 // Old connection end is in incorrect state, propagate the error.
-                Err(Into::<Error>::into(Kind::ConnectionMismatch(
-                    msg.connection_id().clone(),
-                )))
+                Err(Error::connection_mismatch(msg.connection_id().clone()))
             }
         }
         None => {
             // No connection end exists for this conn. identifier. Impossible to continue handshake.
-            Err(Into::<Error>::into(Kind::UninitializedConnection(
-                msg.connection_id().clone(),
-            )))
+            Err(Error::uninitialized_connection(msg.connection_id().clone()))
         }
     }?;
 
@@ -108,7 +104,7 @@ mod tests {
 
     use crate::events::IbcEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-    use crate::ics03_connection::error::Kind;
+    use crate::ics03_connection::error;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -126,7 +122,7 @@ mod tests {
             ctx: MockContext,
             msg: ConnectionMsg,
             want_pass: bool,
-            error_kind: Option<Kind>,
+            match_error: Box<dyn FnOnce(error::Error)>,
         }
 
         let msg_ack =
@@ -184,14 +180,28 @@ mod tests {
                     .with_connection(conn_id.clone(), default_conn_end),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: true,
-                error_kind: None,
+                match_error: Box::new(|_| {
+                    panic!("should not have error")
+                }),
             },
             Test {
                 name: "Processing fails because the connection does not exist in the context".to_string(),
                 ctx: default_context.clone(),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
-                error_kind: Some(Kind::UninitializedConnection(conn_id.clone())),
+                match_error: {
+                    let connection_id = conn_id.clone();
+                    Box::new(move |e| {
+                        match e.detail() {
+                            error::ErrorDetail::UninitializedConnection(e) => {
+                                assert_eq!(e.connection_id, connection_id)
+                            }
+                            _ => {
+                                panic!("Expected UninitializedConnection error");
+                            }
+                        }
+                    })
+                },
             },
             Test {
                 name: "Processing fails due to connections mismatch (incorrect 'open' state)".to_string(),
@@ -201,7 +211,19 @@ mod tests {
                     .with_connection(conn_id.clone(), conn_end_open),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
-                error_kind: Some(Kind::ConnectionMismatch(conn_id.clone()))
+                match_error: {
+                    let connection_id = conn_id.clone();
+                    Box::new(move |e| {
+                        match e.detail() {
+                            error::ErrorDetail::ConnectionMismatch(e) => {
+                                assert_eq!(e.connection_id, connection_id);
+                            }
+                            _ => {
+                                panic!("Expected ConnectionMismatch error");
+                            }
+                        }
+                    })
+                },
             },
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
@@ -210,7 +232,17 @@ mod tests {
                     .with_connection(conn_id, conn_end_prefix),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
                 want_pass: false,
-                error_kind: Some(Kind::ConsensusStateVerificationFailure(proof_height))
+                match_error:
+                    Box::new(move |e| {
+                        match e.detail() {
+                            error::ErrorDetail::ConsensusStateVerificationFailure(e) => {
+                                assert_eq!(e.height, proof_height)
+                            }
+                            _ => {
+                                panic!("Expected ConsensusStateVerificationFailure error");
+                            }
+                        }
+                    }),
             },
             /*
             Test {
@@ -259,16 +291,7 @@ mod tests {
                     );
 
                     // Verify that the error kind matches
-                    if let Some(expected_kind) = test.error_kind {
-                        assert_eq!(
-                            &expected_kind,
-                            e.kind(),
-                            "conn_open_ack: failed for test: {}\nexpected error kind: {:?}\nfound: {:?}",
-                            test.name,
-                            expected_kind,
-                            e.kind()
-                        )
-                    }
+                    (test.match_error)(e);
                 }
             }
         }

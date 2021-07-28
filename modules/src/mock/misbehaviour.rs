@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Misbehaviour as RawMisbehaviour;
 
-use crate::ics02_client::error::{self, Error};
+use crate::ics02_client::error::Error;
 use crate::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::ics24_host::identifier::ClientId;
 use crate::mock::header::MockHeader;
@@ -41,11 +41,11 @@ impl TryFrom<RawMisbehaviour> for Misbehaviour {
             client_id: Default::default(),
             header1: raw
                 .header1
-                .ok_or_else(|| error::Kind::InvalidRawMisbehaviour.context("missing header1"))?
+                .ok_or_else(Error::missing_raw_misbehaviour)?
                 .try_into()?,
             header2: raw
                 .header2
-                .ok_or_else(|| error::Kind::InvalidRawMisbehaviour.context("missing header2"))?
+                .ok_or_else(Error::missing_raw_misbehaviour)?
                 .try_into()?,
         })
     }

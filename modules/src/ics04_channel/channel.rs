@@ -1,9 +1,9 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use anomaly::fail;
 use core::convert::{TryFrom, TryInto};
 use core::fmt;
 use core::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -14,10 +14,7 @@ use ibc_proto::ibc::core::channel::v1::{
 
 use crate::events::IbcEventType;
 use crate::ics02_client::height::Height;
-use crate::ics04_channel::{
-    error::{self, Error, Kind},
-    packet::Sequence,
-};
+use crate::ics04_channel::{error::Error, packet::Sequence};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -40,7 +37,7 @@ impl IdentifiedChannelEnd {
 impl Protobuf<RawIdentifiedChannel> for IdentifiedChannelEnd {}
 
 impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn try_from(value: RawIdentifiedChannel) -> Result<Self, Self::Error> {
         let raw_channel_end = RawChannel {
@@ -52,11 +49,8 @@ impl TryFrom<RawIdentifiedChannel> for IdentifiedChannelEnd {
         };
 
         Ok(IdentifiedChannelEnd {
-            port_id: value.port_id.parse().map_err(|_| Kind::IdentifierError)?,
-            channel_id: value
-                .channel_id
-                .parse()
-                .map_err(|_| Kind::IdentifierError)?,
+            port_id: value.port_id.parse().map_err(Error::identifier)?,
+            channel_id: value.channel_id.parse().map_err(Error::identifier)?,
             channel_end: raw_channel_end.try_into()?,
         })
     }
@@ -105,7 +99,7 @@ impl Default for ChannelEnd {
 impl Protobuf<RawChannel> for ChannelEnd {}
 
 impl TryFrom<RawChannel> for ChannelEnd {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         let chan_state: State = State::from_i32(value.state)?;
@@ -119,7 +113,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = value
             .counterparty
-            .ok_or(Kind::MissingCounterparty)?
+            .ok_or_else(Error::missing_counterparty)?
             .try_into()?;
 
         // Parse each item in connection_hops into a ConnectionId.
@@ -128,7 +122,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             .into_iter()
             .map(|conn_id| ConnectionId::from_str(conn_id.as_str()))
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+            .map_err(Error::identifier)?;
 
         let version = validate_version(value.version)?;
 
@@ -216,14 +210,13 @@ impl ChannelEnd {
 
     pub fn validate_basic(&self) -> Result<(), Error> {
         if self.connection_hops.len() != 1 {
-            return Err(
-                Kind::InvalidConnectionHopsLength(1, self.connection_hops.len())
-                    .context("validate channel")
-                    .into(),
-            );
+            return Err(Error::invalid_connection_hops_length(
+                1,
+                self.connection_hops.len(),
+            ));
         }
         if self.version().trim() == "" {
-            return Err(Kind::InvalidVersion.context("empty version string").into());
+            return Err(Error::empty_version());
         }
         self.counterparty().validate_basic()
     }
@@ -291,19 +284,16 @@ impl Counterparty {
 impl Protobuf<RawCounterparty> for Counterparty {}
 
 impl TryFrom<RawCounterparty> for Counterparty {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
         let channel_id = Some(value.channel_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+            .map_err(Error::identifier)?;
         Ok(Counterparty::new(
-            value
-                .port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            value.port_id.parse().map_err(Error::identifier)?,
             channel_id,
         ))
     }
@@ -355,7 +345,7 @@ impl Order {
             0 => Ok(Self::None),
             1 => Ok(Self::Unordered),
             2 => Ok(Self::Ordered),
-            _ => fail!(error::Kind::UnknownOrderType, nr),
+            _ => Err(Error::unknown_order_type(nr.to_string())),
         }
     }
 }
@@ -368,7 +358,7 @@ impl FromStr for Order {
             "uninitialized" => Ok(Self::None),
             "unordered" => Ok(Self::Unordered),
             "ordered" => Ok(Self::Ordered),
-            _ => fail!(error::Kind::UnknownOrderType, s),
+            _ => Err(Error::unknown_order_type(s.to_string())),
         }
     }
 }
@@ -394,7 +384,7 @@ impl State {
         }
     }
 
-    /// Parses the State out from a i32.
+    // Parses the State out from a i32.
     pub fn from_i32(s: i32) -> Result<Self, Error> {
         match s {
             0 => Ok(Self::Uninitialized),
@@ -402,7 +392,7 @@ impl State {
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
             4 => Ok(Self::Closed),
-            _ => fail!(error::Kind::UnknownState, s),
+            _ => Err(Error::unknown_state(s)),
         }
     }
 

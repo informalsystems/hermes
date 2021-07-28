@@ -12,7 +12,7 @@ use ibc_relayer::{
 };
 
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -84,14 +84,14 @@ impl Runnable for TxUpgradeChainCmd {
         let rt = Arc::new(TokioRuntime::new().unwrap());
 
         let src_chain_res = CosmosSdkChain::bootstrap(opts.src_chain_config.clone(), rt.clone())
-            .map_err(|e| Kind::Runtime.context(e));
+            .map_err(Error::relayer);
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let dst_chain_res = CosmosSdkChain::bootstrap(opts.dst_chain_config.clone(), rt)
-            .map_err(|e| Kind::Runtime.context(e));
+        let dst_chain_res =
+            CosmosSdkChain::bootstrap(opts.dst_chain_config.clone(), rt).map_err(Error::relayer);
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
             Err(e) => return Output::error(format!("{}", e)).exit(),
@@ -99,7 +99,7 @@ impl Runnable for TxUpgradeChainCmd {
 
         let res: Result<Vec<IbcEvent>, Error> =
             build_and_send_upgrade_chain_message(dst_chain, src_chain, &opts)
-                .map_err(|e| Kind::Tx.context(e).into());
+                .map_err(Error::upgrade_chain);
 
         match res {
             Ok(ev) => Output::success(ev).exit(),

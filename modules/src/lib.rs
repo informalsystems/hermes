@@ -39,7 +39,6 @@ pub mod query;
 pub mod signer;
 pub mod timestamp;
 pub mod tx_msg;
-pub mod utils;
 
 pub mod ics02_client;
 pub mod ics03_connection;

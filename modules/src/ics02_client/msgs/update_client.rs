@@ -6,7 +6,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
 use crate::ics02_client::header::AnyHeader;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::ClientId;
@@ -52,13 +52,13 @@ impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-        let raw_header = raw.header.ok_or(Kind::InvalidRawHeader)?;
+        let raw_header = raw.header.ok_or_else(Error::missing_raw_header)?;
 
         Ok(MsgUpdateAnyClient {
             client_id: raw
                 .client_id
                 .parse()
-                .map_err(|e| Kind::InvalidMsgUpdateClientId.context(e))?,
+                .map_err(Error::invalid_msg_update_client_id)?,
             header: AnyHeader::try_from(raw_header)?,
             signer: raw.signer.into(),
         })

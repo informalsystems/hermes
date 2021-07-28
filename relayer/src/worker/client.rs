@@ -1,6 +1,5 @@
 use std::{thread, time::Duration};
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, trace, warn};
 
@@ -8,12 +7,13 @@ use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 
 use crate::{
     chain::handle::ChainHandlePair,
-    foreign_client::{ForeignClient, ForeignClientError, MisbehaviourResults},
+    foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
     telemetry::Telemetry,
 };
 
+use super::error::RunError;
 use super::WorkerCmd;
 
 pub struct ClientWorker {
@@ -41,7 +41,7 @@ impl ClientWorker {
     }
 
     /// Run the event loop for events associated with a [`Client`].
-    pub fn run(self) -> Result<(), BoxError> {
+    pub fn run(self) -> Result<(), RunError> {
         let mut client = ForeignClient::restore(
             self.client.dst_client_id.clone(),
             self.chains.b.clone(),
@@ -70,12 +70,14 @@ impl ClientWorker {
                         )
                     };
                 }
-                Err(e @ ForeignClientError::ExpiredOrFrozen(..)) => {
-                    warn!("[{}] failed to refresh client: {}", client, e);
+                Err(e) => {
+                    if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
+                        warn!("failed to refresh client '{}': {}", client, e);
 
-                    // This worker has completed its job as the client cannot be refreshed any
-                    // further, and can therefore exit without an error.
-                    return Ok(());
+                        // This worker has completed its job as the client cannot be refreshed any
+                        // further, and can therefore exit without an error.
+                        return Ok(());
+                    }
                 }
                 _ => (),
             };

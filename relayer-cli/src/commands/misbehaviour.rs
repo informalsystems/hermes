@@ -1,11 +1,11 @@
-use abscissa_core::{config, error::BoxError, Command, Options, Runnable};
+use abscissa_core::{config, Command, Options, Runnable};
 use ibc::events::IbcEvent;
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::height::Height;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::event::monitor::UnwrapOrClone;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
+use std::ops::Deref;
 
 use crate::application::CliApp;
 use crate::cli_utils::spawn_chain_runtime;
@@ -46,7 +46,7 @@ pub fn monitor_misbehaviour(
     chain_id: &ChainId,
     client_id: &ClientId,
     config: &config::Reader<CliApp>,
-) -> Result<Option<IbcEvent>, BoxError> {
+) -> Result<Option<IbcEvent>, Box<dyn std::error::Error>> {
     let chain = spawn_chain_runtime(config, chain_id)
         .map_err(|e| format!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
 
@@ -57,10 +57,9 @@ pub fn monitor_misbehaviour(
 
     // process update client events
     while let Ok(event_batch) = subscription.recv() {
-        let event_batch = event_batch.unwrap_or_clone();
-        match event_batch {
+        match event_batch.deref() {
             Ok(event_batch) => {
-                for event in event_batch.events {
+                for event in &event_batch.events {
                     match event {
                         IbcEvent::UpdateClient(update) => {
                             debug!("{:?}", update);
@@ -68,7 +67,7 @@ pub fn monitor_misbehaviour(
                                 chain.clone(),
                                 config,
                                 update.client_id().clone(),
-                                Some(update),
+                                Some(update.clone()),
                             )?;
                         }
 
@@ -78,7 +77,7 @@ pub fn monitor_misbehaviour(
 
                         IbcEvent::ClientMisbehaviour(ref _misbehaviour) => {
                             // TODO - submit misbehaviour to the witnesses (our full node)
-                            return Ok(Some(event));
+                            return Ok(Some(event.clone()));
                         }
 
                         _ => {}
@@ -99,7 +98,7 @@ fn misbehaviour_handling(
     config: &config::Reader<CliApp>,
     client_id: ClientId,
     update: Option<UpdateClient>,
-) -> Result<(), BoxError> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let client_state = chain
         .query_client_state(&client_id, Height::zero())
         .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;

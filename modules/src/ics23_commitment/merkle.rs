@@ -10,12 +10,15 @@ use alloc::string::String;
 
 use alloc::vec::Vec;
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct EmptyPrefixError;
+
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
     mut path: Vec<String>,
-) -> Result<MerklePath, Box<dyn std::error::Error>> {
+) -> Result<MerklePath, EmptyPrefixError> {
     if prefix.is_empty() {
-        return Err("empty prefix".into());
+        return Err(EmptyPrefixError);
     }
 
     let mut result: Vec<String> = vec![format!("{:?}", prefix)];
@@ -87,7 +90,7 @@ pub fn convert_tm_to_ics_merkle_proof(tm_proof: &Proof) -> Result<RawMerkleProof
     for op in &tm_proof.ops {
         let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
         prost::Message::merge(&mut parsed, op.data.as_slice())
-            .map_err(Error::CommitmentProofDecodingFailed)?;
+            .map_err(Error::commitment_proof_decoding_failed)?;
 
         proofs.push(parsed);
     }

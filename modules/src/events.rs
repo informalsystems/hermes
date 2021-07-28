@@ -1,21 +1,67 @@
-use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap as HashMap;
-use alloc::format;
-use alloc::string::String;
-use alloc::vec::Vec;
-use anomaly::BoxError;
+use core::fmt;
+use flex_error::{define_error, TraceError};
+use prost::alloc::fmt::Formatter;
 use serde_derive::{Deserialize, Serialize};
 
+use crate::ics02_client::error as client_error;
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
+use crate::ics02_client::height::HeightError;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics03_connection::events::Attributes as ConnectionAttributes;
+use crate::ics04_channel::error as channel_error;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics04_channel::events::Attributes as ChannelAttributes;
-
+use crate::ics24_host::error::ValidationError;
+use crate::timestamp::ParseTimestampError;
 use crate::Height;
-use core::fmt;
-use prost::alloc::fmt::Formatter;
+
+define_error! {
+    Error {
+        Height
+            [ HeightError ]
+            | _ | { "error parsing height" },
+
+        Parse
+            [ ValidationError ]
+            | _ | { "parse error" },
+
+        Client
+            [ client_error::Error ]
+            | _ | { "ICS02 client error" },
+
+        Channel
+            [ channel_error::Error ]
+            | _ | { "channel error" },
+
+        Timestamp
+            [ ParseTimestampError ]
+            | _ | { "error parsing timestamp" },
+
+        MissingKey
+            { key: String }
+            | e | { format_args!("missing event key {}", e.key) },
+
+        Decode
+            [ TraceError<prost::DecodeError> ]
+            | _ | { "error decoding protobuf" },
+
+        SubtleEncoding
+            [ TraceError<subtle_encoding::Error> ]
+            | _ | { "error decoding hex" },
+
+        MissingActionString
+            | _ | { "Missing action string" },
+
+        IncorrectEventType
+            { event: String }
+            | e | {
+                format_args!("Incorrect Event Type {}",
+                    e.event)
+            },
+    }
+}
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -240,14 +286,28 @@ impl RawObject {
 pub fn extract_events(
     events: &HashMap<String, Vec<String>>,
     action_string: &str,
-) -> Result<(), BoxError> {
+) -> Result<(), Error> {
     if let Some(message_action) = events.get("message.action") {
         if message_action.contains(&action_string.to_owned()) {
             return Ok(());
         }
-        return Err("Missing action string".into());
+        return Err(Error::missing_action_string());
     }
-    Err("Incorrect Event Type".into())
+    Err(Error::incorrect_event_type(action_string.to_string()))
+}
+
+pub fn extract_attribute(object: &RawObject, key: &str) -> Result<String, Error> {
+    let value = object
+        .events
+        .get(key)
+        .ok_or_else(|| Error::missing_key(key.to_string()))?[object.idx]
+        .clone();
+
+    Ok(value)
+}
+
+pub fn maybe_extract_attribute(object: &RawObject, key: &str) -> Option<String> {
+    object.events.get(key).map(|tags| tags[object.idx].clone())
 }
 
 #[macro_export]
@@ -261,29 +321,11 @@ macro_rules! make_event {
             type Error = $crate::event::Error;
 
             fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
-                match $crate::events::extract_events(&result.events, $b) {
-                    Ok(()) => Ok($a {
-                        data: result.events.clone(),
-                    }),
-                    Err(e) => Err(e),
-                }
+                $crate::events::extract_events(&result.events, $b)?;
+                Ok($a {
+                    data: result.events.clone(),
+                })
             }
         }
-    };
-}
-
-#[macro_export]
-macro_rules! attribute {
-    ($a:ident, $b:literal) => {
-        $a.events.get($b).ok_or($b)?[$a.idx].parse()?
-    };
-}
-
-#[macro_export]
-macro_rules! some_attribute {
-    ($a:ident, $b:literal) => {
-        $a.events
-            .get($b)
-            .map_or_else(|| None, |tags| tags[$a.idx].parse().ok())
     };
 }

@@ -13,6 +13,11 @@ description = """
 """
 
 [features]
+default = ["std", "eyre_tracer"]
+std = [
+    "flex-error/std"
+]
+eyre_tracer = ["flex-error/eyre_tracer"]
 profiling = []
 telemetry = ["ibc-telemetry"]
 
@@ -22,7 +27,6 @@ ibc-proto     = { version = "0.9.0", path = "../proto" }
 ibc-telemetry = { version = "0.6.1", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
-anomaly = "0.2.0"
 async-trait = "0.1.50"
 humantime-serde = "1.0.0"
 serde = "1.0.125"
@@ -37,9 +41,9 @@ serde_json = { version = "1" }
 bytes = "1.0.0"
 prost = "0.7"
 prost-types = "0.7"
-futures = "0.3.14"
+futures = "0.3.16"
 crossbeam-channel = "0.5.1"
-k256 = { version = "0.9.5", features = ["ecdsa-core", "ecdsa", "sha256"]}
+k256 = { version = "0.9.6", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version = "=0.27", features = ["use-serde"] }
 tiny-bip39 = "0.8.0"
@@ -54,6 +58,10 @@ dirs-next = "2.0.0"
 dyn-clone = "1.0.3"
 retry = { version = "1.2.1", default-features = false }
 async-stream = "0.3.2"
+http = "0.2.4"
+flex-error = { version = "0.4.1", default-features = false }
+signature = "1.3.0"
+anyhow = "1.0.41"
 fraction = {version = "0.8.0", default-features = false }
 semver = "1.0"
 
