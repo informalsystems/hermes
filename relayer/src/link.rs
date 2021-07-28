@@ -17,7 +17,9 @@ mod operational_data;
 mod relay_path;
 mod relay_sender;
 mod relay_summary;
+mod tx_hashes;
 mod unconfirmed;
+use tx_hashes::TxHashes;
 
 // Re-export the telemetries summary
 pub use relay_summary::RelaySummary;

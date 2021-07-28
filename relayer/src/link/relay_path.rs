@@ -1217,12 +1217,8 @@ impl RelayPath {
             Outcome::TimedOut(_) => {
                 todo!()
             }
-            Outcome::Confirmed(e) => {
-                e
-            }
-            Outcome::None => {
-                RelaySummary::empty()
-            }
+            Outcome::Confirmed(e) => e,
+            Outcome::None => RelaySummary::empty(),
         }
     }
 

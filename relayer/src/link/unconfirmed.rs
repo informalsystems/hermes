@@ -5,11 +5,10 @@ use tracing::{debug, error, trace};
 use ibc::events::IbcEvent;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
-use crate::chain::handle::ChainHandle;
-use crate::event::tx_hash::TxHash;
-use crate::link::operational_data::OperationalData;
-use crate::link::relay_sender::AsyncReply;
-use crate::link::RelaySummary;
+use crate::{
+    chain::handle::ChainHandle,
+    link::{operational_data::OperationalData, relay_sender::AsyncReply, RelaySummary, TxHashes},
+};
 
 use tendermint::abci::transaction;
 
@@ -25,7 +24,7 @@ const TIMEOUT: Duration = Duration::from_secs(100);
 #[derive(Clone)]
 pub struct Unconfirmed {
     original_od: OperationalData,
-    tx_hashes: Vec<TxHash>,
+    tx_hashes: TxHashes,
     submit_time: Instant,
     target_chain: Box<dyn ChainHandle>,
 }
@@ -56,7 +55,7 @@ impl Mediator {
     pub fn insert(&mut self, r: AsyncReply, od: OperationalData, target: Box<dyn ChainHandle>) {
         let u = Unconfirmed {
             original_od: od,
-            tx_hashes: r.hashes().collect(),
+            tx_hashes: r.into(),
             submit_time: Instant::now(),
             target_chain: target,
         };
@@ -68,21 +67,21 @@ impl Mediator {
             if u.submit_time.elapsed() > TIMEOUT {
                 // This operational data should be re-submitted
                 error!(
-                    "[mediator->{}] timed out while confirming {:#?}",
+                    "[mediator->{}] timed out while confirming {}",
                     u.target_chain.id(),
                     u.tx_hashes
                 );
                 return Outcome::TimedOut(u.original_od);
             } else {
                 trace!(
-                    "[mediator->{}] trying to confirm {:#?} ",
+                    "[mediator->{}] trying to confirm {} ",
                     u.target_chain.id(),
                     u.tx_hashes
                 );
                 match self.do_confirm(u) {
                     DoConfirmOutcome::Unconfirmed(u) => {
                         trace!(
-                            "[mediator->{}] unconfirmed, will retry agin later to confirm {:#?} ",
+                            "[mediator->{}] unconfirmed, will retry agin later to confirm {} ",
                             u.target_chain.id(),
                             u.tx_hashes
                         );
@@ -90,7 +89,7 @@ impl Mediator {
                     }
                     DoConfirmOutcome::Confirmed(u, events) => {
                         debug!(
-                            "[mediator->{}] confirmed after {:#?}: {:#?} ",
+                            "[mediator->{}] confirmed after {:#?}: {} ",
                             u.target_chain.id(),
                             u.submit_time.elapsed(),
                             u.tx_hashes
@@ -109,8 +108,7 @@ impl Mediator {
         let mut events_accum = vec![];
 
         // Transform from `TxHash`es into `Hash`es
-        let hashes: Vec<transaction::Hash> =
-            u.tx_hashes.clone().into_iter().map(|h| h.into()).collect();
+        let hashes: Vec<transaction::Hash> = u.tx_hashes.clone().into();
 
         for h in hashes {
             let query_events = u
@@ -128,7 +126,7 @@ impl Mediator {
                 Err(e) => {
                     // We retry later on
                     error!(
-                        "[mediator->{}] error querying for tx hashes {:#?}: {}",
+                        "[mediator->{}] error querying for tx hashes {}: {}",
                         u.target_chain.id(),
                         u.tx_hashes,
                         e

@@ -7,7 +7,6 @@ use tracing::info;
 use ibc::events::{IbcEvent, PrettyEvents};
 
 use crate::chain::handle::ChainHandle;
-use crate::event::tx_hash::TxHash;
 use crate::link::error::LinkError;
 use crate::link::RelaySummary;
 
@@ -53,22 +52,12 @@ impl Submit for SyncSender {
 }
 
 pub struct AsyncReply {
-    responses: Vec<tx_sync::Response>,
+    pub responses: Vec<tx_sync::Response>,
 }
 
 impl SubmitReply for AsyncReply {
     fn empty() -> Self {
         Self { responses: vec![] }
-    }
-}
-
-impl AsyncReply {
-    pub fn extend(&mut self, other: AsyncReply) {
-        self.responses.extend(other.responses)
-    }
-
-    pub fn hashes(self) -> impl Iterator<Item = TxHash> {
-        self.responses.into_iter().map(|r| r.hash.into())
     }
 }
 
