@@ -97,7 +97,7 @@ impl Error {
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]

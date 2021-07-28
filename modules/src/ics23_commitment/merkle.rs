@@ -41,7 +41,7 @@ pub struct MerkleProof {
 //         #[derive(Clone, PartialEq, ::prost::Message)]
 //         pub struct MerkleProof {
 //             #[prost(message, optional, tag="1")]
-//             pub proof: ::std::option::Option<::tendermint_proto::crypto::ProofOps>,
+//             pub proof: ::core::option::Option<::tendermint_proto::crypto::ProofOps>,
 //         }
 //  - Vec<u8>: RawMerkleProof is not explicitly used but, serialized as Vec<u8>, it is
 //       included in all handshake messages that require proofs (i.e. all except the two `OpenInit`),

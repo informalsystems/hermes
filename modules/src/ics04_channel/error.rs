@@ -190,7 +190,7 @@ define_error! {
 
         InvalidStringAsSequence
             { value: String }
-            [ TraceError<std::num::ParseIntError> ]
+            [ TraceError<core::num::ParseIntError> ]
             | e | {
                 format_args!(
                     "String {0} cannot be converted to packet sequence",
@@ -245,7 +245,7 @@ define_error! {
             | _ | { "Receiving chain block timestamp >= packet timeout timestamp" },
 
         InvalidPacketTimestamp
-            [ TraceError<std::num::TryFromIntError> ]
+            [ TraceError<core::num::TryFromIntError> ]
             | _ | { "Invalid packet timeout timestamp value" },
 
         ErrorInvalidConsensusState

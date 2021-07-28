@@ -797,7 +797,7 @@ impl ForeignClient {
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
-        consensus_states.sort_by_key(|a| std::cmp::Reverse(a.height));
+        consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
         Ok(consensus_states)
     }
 

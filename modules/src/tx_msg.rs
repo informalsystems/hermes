@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use prost_types::Any;
 
 pub trait Msg: Clone {
-    type ValidationError: std::error::Error;
+    type ValidationError;
     type Raw: From<Self> + prost::Message;
 
     // TODO: Clarify what is this function supposed to do & its connection to ICS26 routing mod.

@@ -31,7 +31,7 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub frozen_height: Height,
     pub latest_height: Height,
-    // pub proof_specs: ::std::vec::Vec<super::super::super::super::ics23::ProofSpec>,
+    // pub proof_specs: ::core::vec::Vec<super::super::super::super::ics23::ProofSpec>,
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
 }
