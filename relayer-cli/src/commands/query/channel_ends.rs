@@ -38,12 +38,12 @@ pub struct QueryChannelEndsCmd {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChannelEnds {
-    channel_end: ChannelEnd,
-    connection_end: ConnectionEnd,
-    client_state: ClientState,
-    counterparty_channel_end: ChannelEnd,
-    counterparty_connection_end: ConnectionEnd,
-    counterparty_client_state: ClientState,
+    pub channel_end: ChannelEnd,
+    pub connection_end: ConnectionEnd,
+    pub client_state: ClientState,
+    pub counterparty_channel_end: ChannelEnd,
+    pub counterparty_connection_end: ConnectionEnd,
+    pub counterparty_client_state: ClientState,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
