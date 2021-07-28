@@ -27,7 +27,6 @@ pub trait Submit {
     fn submit(target: &dyn ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError>;
 }
 
-
 /// Synchronous sender
 pub struct SyncSender;
 

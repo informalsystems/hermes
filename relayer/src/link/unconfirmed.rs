@@ -13,6 +13,7 @@ use crate::{
 use tendermint::abci::transaction;
 
 const TIMEOUT: Duration = Duration::from_secs(100);
+const MIN_BACKOFF: Duration = Duration::from_secs(1);
 
 /// A wrapper over an [`OperationalData`] that is unconfirmed.
 /// Additionally holds all the necessary information
@@ -63,7 +64,14 @@ impl Mediator {
     }
 
     pub fn confirm_step(&mut self) -> Outcome {
-        if let Some(u) = self.unconfirmed.pop() {
+        if let Some(u) = self.pop() {
+            if !self.unconfirmed.is_empty() {
+                trace!(
+                    "[mediator] total unconfirmed left: {}",
+                    self.unconfirmed.len()
+                );
+            }
+
             if u.submit_time.elapsed() > TIMEOUT {
                 // This operational data should be re-submitted
                 error!(
@@ -81,7 +89,7 @@ impl Mediator {
                 match self.do_confirm(u) {
                     DoConfirmOutcome::Unconfirmed(u) => {
                         trace!(
-                            "[mediator->{}] unconfirmed, will retry agin later to confirm {} ",
+                            "[mediator->{}] remains unconfirmed, will retry again later: {} ",
                             u.target_chain.id(),
                             u.tx_hashes
                         );
@@ -137,5 +145,16 @@ impl Mediator {
         }
 
         DoConfirmOutcome::Confirmed(u, events_accum)
+    }
+
+    fn pop(&mut self) -> Option<Unconfirmed> {
+        if let Some(un) = self.unconfirmed.first() {
+            // Elapsed time should fulfil some basic minimum so that
+            // the relayer does not confirm too aggressively
+            if un.submit_time.elapsed() > MIN_BACKOFF {
+                return self.unconfirmed.pop();
+            }
+        }
+        None
     }
 }

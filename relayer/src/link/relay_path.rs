@@ -4,7 +4,7 @@ use std::{fmt, thread};
 
 use itertools::Itertools;
 use prost_types::Any;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, trace};
 
 use ibc::{
     downcast,
@@ -226,7 +226,6 @@ impl RelayPath {
         let mut result = vec![];
 
         for ewh in events.into_iter() {
-            warn!("\t[{}] filter relaying event? {}", self, ewh);
             match &ewh {
                 IbcEvent::SendPacket(send_packet_ev) => {
                     if src_channel_id == send_packet_ev.src_channel_id()
