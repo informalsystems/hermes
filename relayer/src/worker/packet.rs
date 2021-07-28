@@ -138,25 +138,21 @@ impl PacketWorker {
             }
         }
 
-        link.a_to_b
+        if let Err(e) = link
+            .a_to_b
             .refresh_schedule()
-            .and_then(|_| link.a_to_b.execute_schedule());
-
-        let confirmation_result =
-            link.a_to_b.handle_confirmations();
-
-        match confirmation_result {
-            Ok(summary) => RetryResult::Ok(Step::Success(summary)),
-            Err(e) => {
-                error!(
-                    path = %self.path.short_name(),
-                    "[{}] worker: schedule execution encountered error: {}",
-                    link.a_to_b, e
-                );
-
-                RetryResult::Retry(index)
-            }
+            .and_then(|_| link.a_to_b.execute_schedule())
+        {
+            error!(
+                "[{}] worker: schedule execution encountered error: {}",
+                link.a_to_b, e
+            );
+            return RetryResult::Retry(index);
         }
+
+        let confirmation_result = link.a_to_b.run_mediator();
+
+        RetryResult::Ok(Step::Success(confirmation_result))
     }
 
     /// Get a reference to the uni chan path worker's chains.

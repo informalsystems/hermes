@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::time::Instant;
 use std::{fmt, thread};
 
@@ -33,14 +33,13 @@ use ibc_proto::ibc::core::channel::v1::{
 use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelError};
 use crate::event::monitor::EventBatch;
-use crate::event::tx_hash::TxHash;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::LinkError;
 use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
-use crate::link::{relay_sender, unconfirmed};
 use crate::link::relay_sender::SubmitReply;
 use crate::link::relay_summary::RelaySummary;
 use crate::link::unconfirmed::Outcome;
+use crate::link::{relay_sender, unconfirmed};
 
 const MAX_RETRIES: usize = 5;
 
@@ -62,9 +61,10 @@ pub struct RelayPath {
     src_operational_data: Vec<OperationalData>,
     dst_operational_data: Vec<OperationalData>,
 
-    // The mediator stores operational data after the relayer sends it to
-    // a chain, until the chain confirms that it executed it successfully.
-    unconfirmed: unconfirmed::Mediator,
+    // The mediator stores unconfirmed operational data.
+    // The relaying path periodically invokes the mediator
+    // to confirm transactions.
+    mediator: unconfirmed::Mediator,
 }
 
 impl RelayPath {
@@ -74,7 +74,7 @@ impl RelayPath {
             clear_packets: true,
             src_operational_data: vec![],
             dst_operational_data: vec![],
-            unconfirmed: Default::default(),
+            mediator: Default::default(),
         }
     }
 
@@ -627,10 +627,10 @@ impl RelayPath {
 
     /// Returns the chain handle for the chain that is the
     /// target of the given [`OperationalData`].
-    fn infer_target_chain(&self, odata: &OperationalData) -> &Box<dyn ChainHandle> {
+    fn infer_target_chain(&self, odata: &OperationalData) -> Box<dyn ChainHandle> {
         match odata.target {
-            OperationalDataTarget::Source => self.src_chain(),
-            OperationalDataTarget::Destination => self.dst_chain(),
+            OperationalDataTarget::Source => self.src_chain().clone(),
+            OperationalDataTarget::Destination => self.dst_chain().clone(),
         }
     }
 
@@ -1196,28 +1196,34 @@ impl RelayPath {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
 
         for od in dst_ods {
-            let reply = self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
-            let target_chain = self.infer_target_chain(&od);
-            self.unconfirmed.insert(reply, od, target_chain);
+            let reply =
+                self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
+            let target_chain = self.infer_target_chain(&od).clone();
+            self.mediator.insert(reply, od, target_chain);
         }
 
         for od in src_ods {
-            let reply = self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
-            let target_chain = self.infer_target_chain(&od);
-            self.unconfirmed.insert(reply, od, target_chain);
+            let reply =
+                self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
+            let target_chain = self.infer_target_chain(&od).clone();
+            self.mediator.insert(reply, od, target_chain);
         }
 
         Ok(())
     }
 
-    pub fn handle_confirmations(&mut self) -> Result<RelaySummary, LinkError> {
-        match self.unconfirmed.confirm_step() {
-            Outcome::TimedOut(_) => { todo!() }
-            Outcome::Confirmed(_) => { todo!() }
-            Outcome::None => { todo!() }
-        };
-
-        Ok(RelaySummary::empty())
+    pub fn run_mediator(&mut self) -> RelaySummary {
+        match self.mediator.confirm_step() {
+            Outcome::TimedOut(_) => {
+                todo!()
+            }
+            Outcome::Confirmed(e) => {
+                e
+            }
+            Outcome::None => {
+                RelaySummary::empty()
+            }
+        }
     }
 
     /// Refreshes the scheduled batches.
