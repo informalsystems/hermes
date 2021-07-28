@@ -373,6 +373,17 @@ define_error! {
                     e.endpoint, e.chain_id, e.address)
             },
 
+        HealthCheckTxSizeOutOfBounds
+            {
+                chain_id: ChainId,
+                configured_bound: f64,
+                genesis_bound: u64,
+            }
+            |e| {
+                format!("Hermes health check failed for max_tx_size bound of chain id {}: Hermes configured with 'max_tx_size'={} which is over 90% of genesis block param '.max_bytes'={}",
+                    e.chain_id, e.configured_bound, e.genesis_bound)
+            },
+
         SdkModuleVersion
             {
                 chain_id: ChainId,

@@ -406,8 +406,8 @@ pub mod test_utils {
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
-            max_msg_num: None,
-            max_tx_size: None,
+            max_msg_num: Default::default(),
+            max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),

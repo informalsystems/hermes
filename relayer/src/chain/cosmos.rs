@@ -89,9 +89,6 @@ mod compatibility;
 const DEFAULT_MAX_GAS: u64 = 300_000;
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
-const DEFAULT_MAX_MSG_NUM: usize = 30;
-const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
-
 mod retry_strategy {
     use crate::util::retry::Fixed;
     use std::time::Duration;
@@ -115,18 +112,20 @@ pub struct CosmosSdkChain {
 
 impl CosmosSdkChain {
     /// Does multiple RPC calls to the full node, to check for
-    /// reachability and that some basic APIs are available.
+    /// reachability, some basic APIs are available, and that
+    /// Hermes configuration is appropriate.
     ///
     /// Currently this checks that:
     ///     - the node responds OK to `/health` RPC call;
     ///     - the node has transaction indexing enabled;
-    ///     - the SDK version is supported.
+    ///     - the SDK version is supported;
+    ///     - the configured `max_tx_size` is appropriate.
     ///
     /// Emits a log warning in case anything is amiss.
     /// Exits early if any health check fails, without doing any
     /// further checks.
     fn health_checkup(&self) {
-        async fn do_health_checkup(chain: &CosmosSdkChain) -> Result<(), Error> {
+        async fn do_health_checkup(chain: &CosmosSdkChain, max_tx_size: f64) -> Result<(), Error> {
             let chain_id = chain.id();
             let grpc_address = chain.grpc_addr.to_string();
             let rpc_address = chain.config.rpc_addr.to_string();
@@ -161,6 +160,7 @@ impl CosmosSdkChain {
                     )
                 })?;
 
+            // Construct a grpc client
             let mut client = ServiceClient::connect(chain.grpc_addr.clone())
                 .await
                 .map_err(|e| {
@@ -200,10 +200,28 @@ impl CosmosSdkChain {
                 ));
             }
 
+            // Check on the configured max_tx_size against genesis block max_bytes parameter
+            let a = chain.rpc_client.genesis().await.map_err(|e| {
+                Error::health_check_json_rpc(
+                    chain_id.clone(),
+                    rpc_address.clone(),
+                    "/genesis".to_string(),
+                    e,
+                )
+            })?;
+            let max_allowed = a.consensus_params.block.max_bytes as f64 * 0.9;
+            if max_tx_size >= max_allowed {
+                return Err(Error::health_check_tx_size_out_of_bounds(
+                    chain_id.clone(),
+                    max_tx_size,
+                    a.consensus_params.block.max_bytes,
+                ));
+            }
+
             Ok(())
         }
 
-        if let Err(e) = self.block_on(do_health_checkup(self)) {
+        if let Err(e) = self.block_on(do_health_checkup(self, self.max_tx_size() as f64)) {
             warn!("{}", e);
             warn!("some Hermes features may not work in this mode!");
         }
@@ -378,12 +396,12 @@ impl CosmosSdkChain {
 
     /// The maximum number of messages included in a transaction
     fn max_msg_num(&self) -> usize {
-        self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
+        self.config.max_msg_num.into()
     }
 
     /// The maximum size of any transaction sent by the relayer to this chain
     fn max_tx_size(&self) -> usize {
-        self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
+        self.config.max_tx_size.into()
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
