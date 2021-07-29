@@ -393,8 +393,8 @@ define_error! {
                 genesis_bound: u64,
             }
             |e| {
-                format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} is over {} of genesis block param .`max_size` = {}",
-                    e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION, e.genesis_bound)
+                format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} is greater than {}% of the genesis block param `max_size` = {}",
+                    e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION * 100.0, e.genesis_bound)
             },
 
         SdkModuleVersion
