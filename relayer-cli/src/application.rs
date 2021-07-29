@@ -150,7 +150,12 @@ impl Application for CliApp {
             .map(|path| self.load_config(&path))
             .transpose()
             .map_err(|err| {
-                eprintln!("The Hermes configuration file is invalid, reason: {}", err);
+                let path = self.config_path.clone().unwrap_or_default();
+                eprintln!(
+                    "The Hermes configuration file at path '{}' is invalid, reason: {}",
+                    path.to_string_lossy(),
+                    err
+                );
                 eprintln!(
                     "Please see the example configuration for detailed information about the \
                     supported configuration options: \
