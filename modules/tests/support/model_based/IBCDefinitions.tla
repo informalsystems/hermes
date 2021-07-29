@@ -32,17 +32,6 @@ AsSetInt(S) == S <: {Int}
 \* - - If x's block number is higher, x is higher.
 \* - - If x's block number is lower, x is lower.
 \* - - If x and y have the same revision and block number, the heights are equal.
-HeightCompare(a, b) ==
-    LET Ord(x, y) ==
-        CASE   x = y -> 0
-            [] x < y -> -1
-            [] x > y -> 1
-    IN
-        LET ord1 == Ord(a[1], b[1])
-            ord2 == Ord(a[2], b[2])
-        IN
-            IF ord1 = 0 THEN ord2 ELSE ord1
-
 HeightLT(a, b) ==
     \/ a[1] < b[1] 
     \/ (a[1] = b[1] /\ a[2] < b[2])
@@ -60,6 +49,15 @@ HeightGTE(a, b) ==
     \/ a[1] > b[1]
     \/ (a[1] = b[1] /\ a[2] > b[2])
     \/ a = b
+
+\* Checks if the block is higher but the revision is the same
+HigherBlock(a, b) ==
+    /\ a[1] = b[1]
+    /\ a[2] > b[2]
+
+\* Checks if the revision is higher
+HigherRevision(a, b) ==
+    /\ a[1] > b[1]
 
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x
 FindMaxHeight(S) == CHOOSE x \in S: \A y \in S: HeightLTE(y, x)
