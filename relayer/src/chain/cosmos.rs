@@ -212,8 +212,8 @@ impl CosmosSdkChain {
 
         if let Err(e) = self.block_on(do_health_checkup(self)) {
             warn!("Health checkup for chain '{}' failed", self.id());
-            warn!("Reason: {}", e);
-            warn!("Some Hermes features may not work in this mode!");
+            warn!("    Reason: {}", e);
+            warn!("    Some Hermes features may not work in this mode!");
         }
     }
 
@@ -245,8 +245,8 @@ impl CosmosSdkChain {
 
         if let Err(e) = do_validate_params(self) {
             warn!("Hermes might be misconfigured for chain '{}'", self.id());
-            warn!("Reason: {}", e);
-            warn!("Some Hermes features may not work in this mode!");
+            warn!("    Reason: {}", e);
+            warn!("    Some Hermes features may not work in this mode!");
         }
     }
 
