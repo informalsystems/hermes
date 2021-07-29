@@ -109,7 +109,7 @@ ConnectionActions ==
 
 Actions ==
     NoneActions \union
-    ClientActions \union
+    ClientActions \union 
     ConnectionActions
 
 \* set of possible action outcomes
@@ -117,11 +117,15 @@ ActionOutcomes == {
     "None",
     "ModelError",
     \* ICS02_CreateClient outcomes:
-    "icS02CreateOk",
+    "Ics02CreateOk",
     \* ICS02_UpdateClient outcomes:
     "Ics02UpdateOk",
     "Ics02ClientNotFound",
     "Ics02HeaderVerificationFailure",
+    \* ICS07_UpgradeClient outcomes:
+    "Ics07UpgradeOk",
+    "Ics07ClientNotFound",
+    "Ics07HeaderVerificationFailure",
     \* ICS03_ConnectionOpenInit outcomes:
     "Ics03ConnectionOpenInitOk",
     "Ics03MissingClient",
@@ -184,12 +188,20 @@ Chains == [
 
 (***************************** Specification *********************************)
 
-\* update chain height if outcome was ok
+\* update block height if outcome was ok
 UpdateBlockHeight(height, result, okOutcome) ==
     IF result.outcome = okOutcome THEN
         <<height[1], height[2] + 1>>
     ELSE
         height
+
+\* update revision height if outcome was ok
+UpdateRevisionHeight(height, result, okOutcome) ==
+    IF result.outcome = okOutcome THEN
+        <<height[1] + 1, 1>>
+    ELSE
+        height
+
 
 \* update connection proofs if outcome was ok
 UpdateConnectionProofs(connectionProofs, result, okOutcome) ==
@@ -218,6 +230,19 @@ UpdateClient(chainId, clientId, height) ==
     \* update the chain
     LET updatedChain == [chain EXCEPT
         !.height = UpdateBlockHeight(@, result, "Ics02UpdateOk"),
+        !.clients = result.clients
+    ] IN
+    \* update `chains`, set the `action` and its `actionOutcome`
+    /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
+    /\ action' = result.action
+    /\ actionOutcome' = result.outcome
+
+UpgradeClient(chainId, clientId, height) ==
+    LET chain == chains[chainId] IN
+    LET result == ICS07_UpgradeClient(chain, chainId, clientId, height) IN
+    \* update the chain
+    LET updatedChain == [chain EXCEPT
+        !.height = UpdateRevisionHeight(@, result, "Ics07UpgradeOk"),
         !.clients = result.clients
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
@@ -374,6 +399,13 @@ UpdateClientAction(chainId) ==
     \E height \in Heights:
         UpdateClient(chainId, clientId, height)
 
+UpgradeClientAction(chainId) ==
+    \* select a client to be updated (which may not exist)
+    \E clientId \in ClientIds:
+    \* select a height for the client to be updated
+    \E height \in Heights:
+        UpgradeClient(chainId, clientId, height)
+
 ConnectionOpenInitAction(chainId) ==
     \* select a client id
     \E clientId \in ClientIds:
@@ -500,9 +532,10 @@ Next ==
         \* perform action on chain if the model constant `MaxChainHeight` allows
         \* it
         \* The line below checks if chains[chainId].height < MaxHeight
-        IF HeightLT(chains[chainId].height, MaxHeight) THEN
+        IF chains[chainId].height[1] < MaxHeight[1] /\ chains[chainId].height[2] < MaxHeight[2] THEN
             \/ CreateClientAction(chainId)
             \/ UpdateClientAction(chainId)
+            \/ UpgradeClientAction(chainId)
             \/ ConnectionOpenInitAction(chainId)
             \/ ConnectionOpenTryAction(chainId)
             \/ ConnectionOpenAckAction(chainId)

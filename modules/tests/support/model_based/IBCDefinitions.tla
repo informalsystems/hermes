@@ -33,7 +33,7 @@ AsSetInt(S) == S <: {Int}
 \* - - If x's block number is lower, x is lower.
 \* - - If x and y have the same revision and block number, the heights are equal.
 HeightLT(a, b) ==
-    \/ a[1] < b[1] 
+    \/ a[1] < b[1]
     \/ (a[1] = b[1] /\ a[2] < b[2])
 
 HeightLTE(a, b) ==

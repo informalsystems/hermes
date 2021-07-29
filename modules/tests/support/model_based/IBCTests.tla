@@ -16,6 +16,16 @@ ICS02ClientNotFoundTest ==
 ICS02HeaderVerificationFailureTest ==
     /\ actionOutcome = "Ics02HeaderVerificationFailure"
 
+\* ICS07UpgradeClient tests
+Ics07UpgradeOkTest ==
+    /\ actionOutcome = "Ics07UpgradeOk"
+
+ICS07ClientNotFoundTest ==
+    /\ actionOutcome = "Ics07ClientNotFound"
+
+ICS07HeaderVerificationFailureTest ==
+    /\ actionOutcome = "Ics07HeaderVerificationFailure"
+
 \* ICS03ConnectionOpenInit tests
 ICS03ConnectionOpenInitOKTest ==
     /\ actionOutcome = "Ics03ConnectionOpenInitOk"
