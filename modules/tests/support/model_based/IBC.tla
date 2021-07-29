@@ -60,9 +60,17 @@ UpdateClientActions == [
     \* `header` contains simply a height
     header: Heights
 ] <: {ActionType}
+UpgradeClientActions == [
+    type: {"Ics07UpgradeClient"},
+    chainId: ChainIds,
+    clientId: ClientIds,
+    \* `header` contains simply a height
+    header: Heights
+] <: {ActionType}
 ClientActions ==
     CreateClientActions \union
-    UpdateClientActions
+    UpdateClientActions \union
+    UpgradeClientActions
 
 ConnectionOpenInitActions == [
     type: {"Ics03ConnectionOpenInit"},
@@ -119,7 +127,7 @@ ActionOutcomes == {
     \* ICS02_CreateClient outcomes:
     "Ics02CreateOk",
     \* ICS02_UpdateClient outcomes:
-    "Ics02UpdateOk",
+    "icS02UpdateOk",
     "Ics02ClientNotFound",
     "Ics02HeaderVerificationFailure",
     \* ICS07_UpgradeClient outcomes:

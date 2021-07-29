@@ -17,7 +17,7 @@ ICS02HeaderVerificationFailureTest ==
     /\ actionOutcome = "Ics02HeaderVerificationFailure"
 
 \* ICS07UpgradeClient tests
-Ics07UpgradeOkTest ==
+ICS07UpgradeOkTest ==
     /\ actionOutcome = "Ics07UpgradeOk"
 
 ICS07ClientNotFoundTest ==
