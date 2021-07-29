@@ -24,8 +24,6 @@ AsSetInt(S) == S <: {Int}
 (******************* END OF TYPE ANNOTATIONS FOR APALACHE ********************)
 
 (******************************** Utils **************************************)
-Max(S) == CHOOSE x \in S: \A y \in S: y <= x
-
 \* This is an implementation of the height comparison for Tendermint heights,
 \* which include a revision (client version) and a block height.
 \* - If height x's revision is higher than y's, x is higher.
@@ -44,6 +42,27 @@ HeightCompare(a, b) ==
             ord2 == Ord(a[2], b[2])
         IN
             IF ord1 = 0 THEN ord2 ELSE ord1
+
+HeightLT(a, b) ==
+    \/ a[1] < b[1] 
+    \/ (a[1] = b[1] /\ a[2] < b[2])
+
+HeightLTE(a, b) ==
+    \/ a[1] < b[1]
+    \/ (a[1] = b[1] /\ a[2] < b[2])
+    \/ a = b
+
+HeightGT(a, b) ==
+    \/ a[1] > b[1]
+    \/ (a[1] = b[1] /\ a[2] > b[2])
+
+HeightGTE(a, b) ==
+    \/ a[1] > b[1]
+    \/ (a[1] = b[1] /\ a[2] > b[2])
+    \/ a = b
+
+Max(S) == CHOOSE x \in S: \A y \in S: y <= x
+FindMaxHeight(S) == CHOOSE x \in S: \A y \in S: HeightLTE(y, x)
 
 (*****************************************************************************)
 

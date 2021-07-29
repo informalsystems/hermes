@@ -68,8 +68,8 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
     ELSE
         \* if the client exists, check its height
         LET client == ICS02_GetClient(chain.clients, clientId) IN
-        LET highestHeight == Max(client.heights) IN
-        IF highestHeight >= height THEN
+        LET highestHeight == FindMaxHeight(client.heights) IN
+        IF HeightGTE(highestHeight, height) THEN
             \* if the client's new height is not higher than the highest client
             \* height, then set an error outcome
             [

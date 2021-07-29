@@ -500,7 +500,7 @@ Next ==
         \* perform action on chain if the model constant `MaxChainHeight` allows
         \* it
         \* The line below checks if chains[chainId].height < MaxHeight
-        IF HeightCompare(chains[chainId].height, MaxHeight) = -1 THEN
+        IF HeightLT(chains[chainId].height, MaxHeight) THEN
             \/ CreateClientAction(chainId)
             \/ UpdateClientAction(chainId)
             \/ ConnectionOpenInitAction(chainId)
