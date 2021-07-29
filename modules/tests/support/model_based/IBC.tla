@@ -125,9 +125,9 @@ ActionOutcomes == {
     "None",
     "ModelError",
     \* ICS02_CreateClient outcomes:
-    "Ics02CreateOk",
+    "icS02CreateOk",
     \* ICS02_UpdateClient outcomes:
-    "icS02UpdateOk",
+    "Ics02UpdateOk",
     "Ics02ClientNotFound",
     "Ics02HeaderVerificationFailure",
     \* ICS07_UpgradeClient outcomes:
