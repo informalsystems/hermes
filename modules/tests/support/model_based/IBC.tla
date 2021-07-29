@@ -26,8 +26,8 @@ VARIABLE actionOutcome
 vars == <<chains, action, actionOutcome>>
 
 \* set of possible height tuples
-Heights == (1..MaxChainRevision) \X (1..MaxBlockHeight)
-MaxHeight == <<MaxChainRevision, MaxBlockHeight>>
+Heights == [ revision: (1..MaxChainRevision), block: (1..MaxBlockHeight) ]
+MaxHeight == [ revision |-> MaxChainRevision, block |-> MaxBlockHeight ]
 \* set of possible client identifiers
 ClientIds == 0..(MaxClientsPerChain - 1)
 \* set of possible connection identifiers
@@ -125,7 +125,7 @@ ActionOutcomes == {
     "None",
     "ModelError",
     \* ICS02_CreateClient outcomes:
-    "icS02CreateOk",
+    "Ics02CreateOk",
     \* ICS02_UpdateClient outcomes:
     "Ics02UpdateOk",
     "Ics02ClientNotFound",
@@ -199,14 +199,15 @@ Chains == [
 \* update block height if outcome was ok
 UpdateBlockHeight(height, result, okOutcome) ==
     IF result.outcome = okOutcome THEN
-        <<height[1], height[2] + 1>>
+        \* <<height[1], height[2] + 1>>
+        [ revision |-> height.revision, block |-> height.block + 1 ]
     ELSE
         height
 
 \* update revision height if outcome was ok
 UpdateRevisionHeight(height, result, okOutcome) ==
     IF result.outcome = okOutcome THEN
-        <<height[1] + 1, 1>>
+        [ revision |-> height.revision + 1, block |-> height.block ]
     ELSE
         height
 
@@ -523,7 +524,7 @@ Init ==
     ] IN
     \* create an empty chain
     LET emptyChain == [
-        height |-> <<1,1>>,
+        height |-> [ revision |-> 1, block |-> 1 ],
         clients |-> [clientId \in ClientIds |-> clientNone],
         clientIdCounter |-> 0,
         connections |-> [connectionId \in ConnectionIds |-> connectionNone],
@@ -540,7 +541,7 @@ Next ==
         \* perform action on chain if the model constant `MaxChainHeight` allows
         \* it
         \* The line below checks if chains[chainId].height < MaxHeight
-        IF chains[chainId].height[1] < MaxHeight[1] /\ chains[chainId].height[2] < MaxHeight[2] THEN
+        IF chains[chainId].height.revision < MaxHeight.revision /\ chains[chainId].height.block < MaxHeight.block THEN
             \/ CreateClientAction(chainId)
             \/ UpdateClientAction(chainId)
             \/ UpgradeClientAction(chainId)

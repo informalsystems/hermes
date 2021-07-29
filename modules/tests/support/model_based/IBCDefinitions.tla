@@ -12,7 +12,7 @@ ActionType == [
     clientState |-> Int,
     consensusState |-> Int,
     clientId |-> Int,
-    header |-> <<Int, Int>>,
+    header |-> Int,
     previousConnectionId |-> Int,
     counterpartyChainId |-> STRING,
     counterpartyClientId |-> Int,
@@ -33,31 +33,31 @@ AsSetInt(S) == S <: {Int}
 \* - - If x's block number is lower, x is lower.
 \* - - If x and y have the same revision and block number, the heights are equal.
 HeightLT(a, b) ==
-    \/ a[1] < b[1]
-    \/ (a[1] = b[1] /\ a[2] < b[2])
+    \/ a.revision < b.revision
+    \/ (a.revision = b.revision /\ a.block < b.block)
 
 HeightLTE(a, b) ==
-    \/ a[1] < b[1]
-    \/ (a[1] = b[1] /\ a[2] < b[2])
+    \/ a.revision < b.revision
+    \/ (a.revision = b.revision /\ a.block < b.block)
     \/ a = b
 
 HeightGT(a, b) ==
-    \/ a[1] > b[1]
-    \/ (a[1] = b[1] /\ a[2] > b[2])
+    \/ a.revision > b.revision
+    \/ (a.revision = b.revision /\ a.block > b.block)
 
 HeightGTE(a, b) ==
-    \/ a[1] > b[1]
-    \/ (a[1] = b[1] /\ a[2] > b[2])
+    \/ a.revision > b.revision
+    \/ (a.revision = b.revision /\ a.block > b.block)
     \/ a = b
 
 \* Checks if the block is higher but the revision is the same
 HigherBlock(a, b) ==
-    /\ a[1] = b[1]
-    /\ a[2] > b[2]
+    /\ a.revision = b.revision
+    /\ a.block > b.block
 
 \* Checks if the revision is higher
 HigherRevision(a, b) ==
-    /\ a[1] > b[1]
+    /\ a.revision > b.revision
 
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x
 FindMaxHeight(S) == CHOOSE x \in S: \A y \in S: HeightLTE(y, x)
