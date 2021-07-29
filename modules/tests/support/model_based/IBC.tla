@@ -5,8 +5,11 @@ EXTENDS ICS02, ICS03
 \* ids of existing chains
 CONSTANT ChainIds
 \* max height which chains can reach
-CONSTANT MaxChainHeight
-ASSUME MaxChainHeight >= 0
+CONSTANT MaxBlockHeight
+ASSUME MaxBlockHeight >= 0
+\* max revision which chains can reach
+CONSTANT MaxChainRevision
+ASSUME MaxChainRevision >= 0
 \* max number of client to be created per chain
 CONSTANT MaxClientsPerChain
 ASSUME MaxClientsPerChain >= 0
@@ -22,8 +25,9 @@ VARIABLE action
 VARIABLE actionOutcome
 vars == <<chains, action, actionOutcome>>
 
-\* set of possible chain heights
-Heights == 1..MaxChainHeight
+\* set of possible height tuples
+Heights == (1..MaxChainRevision) \X (1..MaxBlockHeight)
+MaxHeight == <<MaxChainRevision, MaxBlockHeight>>
 \* set of possible client identifiers
 ClientIds == 0..(MaxClientsPerChain - 1)
 \* set of possible connection identifiers
@@ -181,9 +185,9 @@ Chains == [
 (***************************** Specification *********************************)
 
 \* update chain height if outcome was ok
-UpdateChainHeight(height, result, okOutcome) ==
+UpdateBlockHeight(height, result, okOutcome) ==
     IF result.outcome = okOutcome THEN
-        height + 1
+        <<height[1], height[2] + 1>>
     ELSE
         height
 
@@ -199,7 +203,7 @@ CreateClient(chainId, height) ==
     LET result == ICS02_CreateClient(chain, chainId, height) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "Ics02CreateOk"),
+        !.height = UpdateBlockHeight(@, result, "Ics02CreateOk"),
         !.clients = result.clients,
         !.clientIdCounter = result.clientIdCounter
     ] IN
@@ -213,7 +217,7 @@ UpdateClient(chainId, clientId, height) ==
     LET result == ICS02_UpdateClient(chain, chainId, clientId, height) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "Ics02UpdateOk"),
+        !.height = UpdateBlockHeight(@, result, "Ics02UpdateOk"),
         !.clients = result.clients
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
@@ -237,7 +241,7 @@ ConnectionOpenInit(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "Ics03ConnectionOpenInitOk"),
+        !.height = UpdateBlockHeight(@, result, "Ics03ConnectionOpenInitOk"),
         !.connections = result.connections,
         !.connectionIdCounter = result.connectionIdCounter
     ] IN
@@ -275,7 +279,7 @@ ConnectionOpenTry(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "Ics03ConnectionOpenTryOk"),
+        !.height = UpdateBlockHeight(@, result, "Ics03ConnectionOpenTryOk"),
         !.connections = result.connections,
         !.connectionIdCounter = result.connectionIdCounter
     ] IN
@@ -309,7 +313,7 @@ ConnectionOpenAck(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "Ics03ConnectionOpenAckOk"),
+        !.height = UpdateBlockHeight(@, result, "Ics03ConnectionOpenAckOk"),
         !.connections = result.connections
     ] IN
     \* update the counterparty chain with a proof
@@ -342,7 +346,7 @@ ConnectionOpenConfirm(
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateChainHeight(@, result, "Ics03ConnectionOpenConfirmOk"),
+        !.height = UpdateBlockHeight(@, result, "Ics03ConnectionOpenConfirmOk"),
         !.connections = result.connections
     ] IN
     \* no need to update the counterparty chain with a proof (as in the other
@@ -479,7 +483,7 @@ Init ==
     ] IN
     \* create an empty chain
     LET emptyChain == [
-        height |-> 1,
+        height |-> <<1,1>>,
         clients |-> [clientId \in ClientIds |-> clientNone],
         clientIdCounter |-> 0,
         connections |-> [connectionId \in ConnectionIds |-> connectionNone],
@@ -495,7 +499,8 @@ Next ==
     \E chainId \in ChainIds:
         \* perform action on chain if the model constant `MaxChainHeight` allows
         \* it
-        IF chains[chainId].height < MaxChainHeight THEN
+        \* The line below checks if chains[chainId].height < MaxHeight
+        IF HeightCompare(chains[chainId].height, MaxHeight) = -1 THEN
             \/ CreateClientAction(chainId)
             \/ UpdateClientAction(chainId)
             \/ ConnectionOpenInitAction(chainId)
