@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## UNRELEASED
+
+### BUG FIXES
+
+- [ibc]
+  - Add Protobuf for Counterparty ([#1247])
+
 ## v0.6.1
 *July 22nd, 2021*
 
