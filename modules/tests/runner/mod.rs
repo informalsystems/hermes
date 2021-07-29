@@ -63,7 +63,7 @@ impl IbcTestRunner {
             max_history_size,
             Height::new(Self::revision(), initial_height),
         );
-        assert!(self.contexts.insert(chain_id, ctx).is_none());
+        self.contexts.insert(chain_id, ctx);
     }
 
     /// Returns a reference to the `MockContext` of a given `chain_id`.
@@ -452,7 +452,7 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> Result<(), String> {
-        let result = self.apply(step.action);
+        let result = self.apply(step.clone().action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::Ics02CreateOk => result.is_ok(),
