@@ -1,6 +1,8 @@
+use std::fmt::{Debug, Error, Formatter};
 use std::sync::Arc;
 
 use abscissa_core::{Options, Runnable};
+use serde::Serialize;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::channel::State;
@@ -27,7 +29,9 @@ pub struct QueryChannelsCmd {
     verbose: bool,
 }
 
-fn run_query_channels(cmd: &QueryChannelsCmd) -> Result<(), Box<dyn std::error::Error>> {
+fn run_query_channels(
+    cmd: &QueryChannelsCmd,
+) -> Result<QueryChannelsOutput, Box<dyn std::error::Error>> {
     debug!("Options: {:?}", cmd);
 
     let mut output = vec![];
@@ -146,20 +150,35 @@ fn run_query_channels(cmd: &QueryChannelsCmd) -> Result<(), Box<dyn std::error::
         }
     }
 
-    if !cmd.verbose {
-        Output::success(output).exit();
+    let output = if !cmd.verbose {
+        QueryChannelsOutput::Summary(output)
     } else {
-        Output::success(output_verbose).exit();
-    }
-
-    Ok(())
+        QueryChannelsOutput::Verbose(output_verbose)
+    };
+    Ok(output)
 }
 
 impl Runnable for QueryChannelsCmd {
     fn run(&self) {
         match run_query_channels(self) {
-            Ok(()) => {}
+            Ok(output) => Output::success(output).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+enum QueryChannelsOutput {
+    Verbose(Vec<ChannelEnds>),
+    Summary(Vec<PortChannelId>),
+}
+
+impl Debug for QueryChannelsOutput {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        match self {
+            QueryChannelsOutput::Verbose(output) => write!(f, "{:#?}", output),
+            QueryChannelsOutput::Summary(output) => write!(f, "{:#?}", output),
         }
     }
 }
