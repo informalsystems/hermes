@@ -511,7 +511,7 @@ impl Supervisor {
     /// If the removal had any effect, returns [`CmdEffect::ConfigChanged`] as
     /// subscriptions need to be reset to take into account the newly added chain.
     fn remove_chain(&mut self, id: &ChainId) -> CmdEffect {
-        if !self.config.read().expect("poisoned lock").has_chain(&id) {
+        if !self.config.read().expect("poisoned lock").has_chain(id) {
             info!(chain.id=%id, "skipping removal of non-existing chain");
             return CmdEffect::Nothing;
         }
@@ -526,10 +526,10 @@ impl Supervisor {
 
         debug!(chain.id=%id, "shutting down workers");
         let mut ctx = self.spawn_context(SpawnMode::Reload);
-        ctx.shutdown_workers_for_chain(&id);
+        ctx.shutdown_workers_for_chain(id);
 
         debug!(chain.id=%id, "shutting down chain runtime");
-        self.registry.shutdown(&id);
+        self.registry.shutdown(id);
 
         CmdEffect::ConfigChanged
     }

@@ -652,7 +652,7 @@ impl CosmosSdkChain {
                 for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
                     // If this transaction was not committed, determine whether it was because it failed
                     // or because it hasn't been committed yet.
-                    if empty_event_present(&events) {
+                    if empty_event_present(events) {
                         // If the transaction failed, replace the events with an error,
                         // so that we don't attempt to resolve the transaction later on.
                         if response.code.value() != 0 {
