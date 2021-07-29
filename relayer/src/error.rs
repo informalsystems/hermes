@@ -27,6 +27,7 @@ use ibc::{
     proofs::ProofError,
 };
 
+use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
 use crate::event::monitor;
 
 define_error! {
@@ -381,7 +382,7 @@ define_error! {
             }
             [ DisplayOnly<tendermint_rpc::error::Error> ]
             |e| {
-                format!("semantic config validation failed for endpoint {0} on the JSON-RPC interface of chain {1}:{2}",
+                format!("semantic config validation: failed to reach endpoint {0} on the JSON-RPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
             },
 
@@ -392,8 +393,8 @@ define_error! {
                 genesis_bound: u64,
             }
             |e| {
-                format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} which is over 90% of genesis block param .`max_size` = {}",
-                    e.chain_id, e.configured_bound, e.genesis_bound)
+                format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} is over {} of genesis block param .`max_size` = {}",
+                    e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION, e.genesis_bound)
             },
 
         SdkModuleVersion

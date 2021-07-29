@@ -94,7 +94,7 @@ const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
 /// Upper limit on the size of transactions submitted by Hermes, expressed as a
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
-const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
+pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 
 mod retry_strategy {
     use crate::util::retry::Fixed;
@@ -119,14 +119,12 @@ pub struct CosmosSdkChain {
 
 impl CosmosSdkChain {
     /// Does multiple RPC calls to the full node, to check for
-    /// reachability, some basic APIs are available, and that
-    /// Hermes configuration is appropriate.
+    /// reachability and some basic APIs are available.
     ///
     /// Currently this checks that:
     ///     - the node responds OK to `/health` RPC call;
     ///     - the node has transaction indexing enabled;
     ///     - the SDK version is supported;
-    ///     - the configured `max_tx_size` is appropriate.
     ///
     /// Emits a log warning in case anything is amiss.
     /// Exits early if any health check fails, without doing any
@@ -217,6 +215,14 @@ impl CosmosSdkChain {
         }
     }
 
+    /// Performs validation of chain-specific configuration
+    /// parameters against the chain's genesis configuration.
+    ///
+    /// Currently, validates the following:
+    ///     - the configured `max_tx_size` is appropriate.
+    ///
+    /// Emits a log warning in case any error is encountered and
+    /// exits early without doing subsequent validations.
     pub fn validate_params(&self) {
         fn do_validate_params(chain: &CosmosSdkChain) -> Result<(), Error> {
             // Check on the configured max_tx_size against genesis block max_bytes parameter
