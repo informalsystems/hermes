@@ -171,7 +171,7 @@ impl CosmosSdkChain {
             let mut client = ServiceClient::connect(chain.grpc_addr.clone())
                 .await
                 .map_err(|e| {
-                    Error::health_check_json_grpc_transport(
+                    Error::health_check_grpc_transport(
                         chain_id.clone(),
                         rpc_address.clone(),
                         "tendermint::ServiceClient".to_string(),
@@ -182,7 +182,7 @@ impl CosmosSdkChain {
             let request = tonic::Request::new(GetNodeInfoRequest {});
 
             let response = client.get_node_info(request).await.map_err(|e| {
-                Error::health_check_json_grpc_status(
+                Error::health_check_grpc_status(
                     chain_id.clone(),
                     rpc_address.clone(),
                     "tendermint::ServiceClient".to_string(),
@@ -221,7 +221,7 @@ impl CosmosSdkChain {
         fn do_validate_params(chain: &CosmosSdkChain) -> Result<(), Error> {
             // Check on the configured max_tx_size against genesis block max_bytes parameter
             let genesis = chain.block_on(chain.rpc_client.genesis()).map_err(|e| {
-                Error::health_check_json_rpc(
+                Error::config_validation_json_rpc(
                     chain.id().clone(),
                     chain.config.rpc_addr.to_string(),
                     "/genesis".to_string(),
@@ -233,7 +233,7 @@ impl CosmosSdkChain {
             let max_allowed = mul_ceil(genesis_max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
 
             if chain.max_tx_size() > max_allowed {
-                return Err(Error::tx_size_out_of_bounds(
+                return Err(Error::config_validation_tx_size_out_of_bounds(
                     chain.id().clone(),
                     chain.max_tx_size(),
                     genesis_max_bound,

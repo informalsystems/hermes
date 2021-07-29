@@ -334,11 +334,11 @@ define_error! {
             }
             [ DisplayOnly<tendermint_rpc::error::Error> ]
             |e| {
-                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}",
+                format!("health check failed for endpoint {0} on the JSON-RPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
             },
 
-        HealthCheckJsonGrpcTransport
+        HealthCheckGrpcTransport
             {
                 chain_id: ChainId,
                 address: String,
@@ -346,11 +346,11 @@ define_error! {
             }
             [ DisplayOnly<tonic::transport::Error> ]
             |e| {
-                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}",
+                format!("health check failed for endpoint {0} on the gRPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
             },
 
-        HealthCheckJsonGrpcStatus
+        HealthCheckGrpcStatus
             {
                 chain_id: ChainId,
                 address: String,
@@ -358,7 +358,7 @@ define_error! {
                 status: tonic::Status
             }
             |e| {
-                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; caused by: {3}",
+                format!("health check failed for endpoint {0} on the gRPC interface of chain {1}:{2}; caused by: {3}",
                     e.endpoint, e.chain_id, e.address, e.status)
             },
 
@@ -369,18 +369,30 @@ define_error! {
                 endpoint: String,
             }
             |e| {
-                format!("Hermes health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; the gRPC response contains no application version information",
+                format!("health check failed for endpoint {0} on the Json RPC interface of chain {1}:{2}; the gRPC response contains no application version information",
                     e.endpoint, e.chain_id, e.address)
             },
 
-        TxSizeOutOfBounds
+        ConfigValidationJsonRpc
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+            }
+            [ DisplayOnly<tendermint_rpc::error::Error> ]
+            |e| {
+                format!("semantic config validation failed for endpoint {0} on the JSON-RPC interface of chain {1}:{2}",
+                    e.endpoint, e.chain_id, e.address)
+            },
+
+        ConfigValidationTxSizeOutOfBounds
             {
                 chain_id: ChainId,
                 configured_bound: usize,
                 genesis_bound: u64,
             }
             |e| {
-                format!("Hermes health check failed for max_tx_size bound of chain id {}: Hermes configured with 'max_tx_size'={} which is over 90% of genesis block param '.max_bytes'={}",
+                format!("semantic config validation failed for option `max_tx_size` chain '{}', reason: `max_tx_size` = {} which is over 90% of genesis block param .`max_size` = {}",
                     e.chain_id, e.configured_bound, e.genesis_bound)
             },
 
