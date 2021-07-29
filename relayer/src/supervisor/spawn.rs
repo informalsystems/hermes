@@ -509,11 +509,11 @@ impl<'a> SpawnContext<'a> {
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
             let outstanding_packets =
-                !unreceived_packets(chain.as_ref(), counterparty_chain.as_ref(), channel.clone())?
+                !unreceived_packets(counterparty_chain.as_ref(), chain.as_ref(), channel.clone())?
                     .is_empty()
                     || !unreceived_acknowledgements(
-                        chain.as_ref(),
                         counterparty_chain.as_ref(),
+                        chain.as_ref(),
                         channel.clone(),
                     )?
                     .is_empty();
