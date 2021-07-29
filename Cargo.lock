@@ -1728,16 +1728,21 @@ dependencies = [
 
 [[package]]
 name = "modelator"
-version = "0.1.0"
-source = "git+https://github.com/informalsystems/modelator?rev=99f656fa8b3cf46a2aa0b6513e4e140d1778c4bd#99f656fa8b3cf46a2aa0b6513e4e140d1778c4bd"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ab4fd1c35db4a1c20a729d779b04d7d3f02a0091cec676d0f95755427a91a2e"
 dependencies = [
  "clap",
+ "hex",
  "nom",
  "serde",
  "serde_json",
+ "sha2",
+ "tempfile",
  "thiserror",
  "tracing",
  "tracing-subscriber 0.2.19",
+ "ureq",
 ]
 
 [[package]]
@@ -3609,6 +3614,22 @@ name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
+
+[[package]]
+name = "ureq"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2475a6781e9bc546e7b64f4013d2f4032c8c6a40fcffd7c6f4ee734a890972ab"
+dependencies = [
+ "base64",
+ "chunked_transfer",
+ "log",
+ "once_cell",
+ "rustls",
+ "url",
+ "webpki",
+ "webpki-roots",
+]
 
 [[package]]
 name = "url"
