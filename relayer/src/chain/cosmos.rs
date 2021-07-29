@@ -89,6 +89,8 @@ mod compatibility;
 const DEFAULT_MAX_GAS: u64 = 300_000;
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
+const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
+
 mod retry_strategy {
     use crate::util::retry::Fixed;
     use std::time::Duration;
@@ -223,7 +225,7 @@ impl CosmosSdkChain {
             })?;
 
             let genesis_max_bound = genesis.consensus_params.block.max_bytes;
-            let max_allowed = mul_ceil(genesis_max_bound, 0.9) as usize;
+            let max_allowed = mul_ceil(genesis_max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
 
             if chain.max_tx_size() > max_allowed {
                 return Err(Error::tx_size_out_of_bounds(
