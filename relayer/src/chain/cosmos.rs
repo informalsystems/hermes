@@ -86,9 +86,14 @@ use super::Chain;
 
 mod compatibility;
 
+/// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
+
+/// Fraction of the estimated gas to add to the gas limit when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
+/// Upper limit on the size of transactions submitted by Hermes, expressed as a
+/// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 
 mod retry_strategy {
