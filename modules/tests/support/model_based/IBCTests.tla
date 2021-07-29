@@ -43,8 +43,9 @@ ICS03InvalidConsensusHeightTest ==
 ICS03ConnectionNotFoundTest ==
     /\ actionOutcome = "Ics03ConnectionNotFound"
 
-ICS03ConnectionMismatchTest ==
-    /\ actionOutcome = "Ics03ConnectionMismatch"
+\* TODO: Never gets hit
+\* ICS03ConnectionMismatchTest ==
+\*     /\ actionOutcome = "Ics03ConnectionMismatch"
 
 ICS03MissingClientConsensusStateTest ==
     /\ actionOutcome = "Ics03MissingClientConsensusState"
@@ -54,15 +55,17 @@ ICS03MissingClientConsensusStateTest ==
 \* ICS03InvalidProofTest ==
 \*     /\ actionOutcome = "Ics03InvalidProof"
 
+\* TODO: Never gets hit
 \* ICS03ConnectionOpenAck tests
-ICS03ConnectionOpenAckOKTest ==
-    /\ actionOutcome = "Ics03ConnectionOpenAckOk"
+\* ICS03ConnectionOpenAckOKTest ==
+\*     /\ actionOutcome = "Ics03ConnectionOpenAckOk"
 
 ICS03UninitializedConnectionTest ==
     /\ actionOutcome = "Ics03UninitializedConnection"
 
+\* TODO: Never gets hit
 \* ICS03ConnectionOpenConfirm tests
-ICS03ConnectionOpenConfirmOKTest ==
-    /\ actionOutcome = "Ics03ConnectionOpenConfirmOk"
+\* ICS03ConnectionOpenConfirmOKTest ==
+\*     /\ actionOutcome = "Ics03ConnectionOpenConfirmOk"
 
 ===============================================================================
