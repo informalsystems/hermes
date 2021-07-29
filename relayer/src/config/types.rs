@@ -6,18 +6,17 @@
 use serde::de::Unexpected;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
-const DEFAULT_MAX_MSG_NUM: usize = 30;
-const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
-
-const BOUND_MAX_MSG_NUM: usize = 100;
-const BOUND_MAX_TX_SIZE: usize = 8 * 1048576; // 8 MBytes
-
 #[derive(Debug, Clone, Copy)]
 pub struct MaxMsgNum(usize);
 
+impl MaxMsgNum {
+    const DEFAULT: usize = 30;
+    const MAX_BOUND: usize = 100;
+}
+
 impl Default for MaxMsgNum {
     fn default() -> Self {
-        Self(DEFAULT_MAX_MSG_NUM)
+        Self(Self::DEFAULT)
     }
 }
 
@@ -28,10 +27,10 @@ impl<'de> Deserialize<'de> for MaxMsgNum {
     {
         let u = usize::deserialize(deserializer)?;
 
-        if u > BOUND_MAX_MSG_NUM {
+        if u > Self::MAX_BOUND {
             return Err(D::Error::invalid_value(
                 Unexpected::Unsigned(u as u64),
-                &format!("a usize less than {}", BOUND_MAX_MSG_NUM).as_str(),
+                &format!("a usize less than {}", Self::MAX_BOUND).as_str(),
             ));
         }
 
@@ -44,7 +43,7 @@ impl Serialize for MaxMsgNum {
     where
         S: Serializer,
     {
-        self.0.to_string().serialize(serializer)
+        self.0.serialize(serializer)
     }
 }
 
@@ -57,9 +56,14 @@ impl From<MaxMsgNum> for usize {
 #[derive(Debug, Clone, Copy)]
 pub struct MaxTxSize(usize);
 
+impl MaxTxSize {
+    const DEFAULT: usize = 2 * 1048576; // 2 MBytes
+    const MAX_BOUND: usize = 8 * 1048576; // 8 MBytes
+}
+
 impl Default for MaxTxSize {
     fn default() -> Self {
-        Self(DEFAULT_MAX_TX_SIZE)
+        Self(Self::DEFAULT)
     }
 }
 
@@ -70,10 +74,10 @@ impl<'de> Deserialize<'de> for MaxTxSize {
     {
         let u = usize::deserialize(deserializer)?;
 
-        if u > BOUND_MAX_TX_SIZE {
+        if u > Self::MAX_BOUND {
             return Err(D::Error::invalid_value(
                 Unexpected::Unsigned(u as u64),
-                &format!("a usize less than {}", BOUND_MAX_TX_SIZE).as_str(),
+                &format!("a usize less than {}", Self::MAX_BOUND).as_str(),
             ));
         }
 
@@ -86,7 +90,7 @@ impl Serialize for MaxTxSize {
     where
         S: Serializer,
     {
-        self.0.to_string().serialize(serializer)
+        self.0.serialize(serializer)
     }
 }
 

@@ -125,7 +125,7 @@ impl CosmosSdkChain {
     /// Exits early if any health check fails, without doing any
     /// further checks.
     fn health_checkup(&self) {
-        async fn do_health_checkup(chain: &CosmosSdkChain, max_tx_size: f64) -> Result<(), Error> {
+        async fn do_health_checkup(chain: &CosmosSdkChain) -> Result<(), Error> {
             let chain_id = chain.id();
             let grpc_address = chain.grpc_addr.to_string();
             let rpc_address = chain.config.rpc_addr.to_string();
@@ -200,30 +200,46 @@ impl CosmosSdkChain {
                 ));
             }
 
+            Ok(())
+        }
+
+        if let Err(e) = self.block_on(do_health_checkup(self)) {
+            warn!("Health checkup for chain '{}' failed", self.id());
+            warn!("Reason: {}", e);
+            warn!("Some Hermes features may not work in this mode!");
+        }
+    }
+
+    pub fn validate_params(&self) {
+        fn do_validate_params(chain: &CosmosSdkChain) -> Result<(), Error> {
             // Check on the configured max_tx_size against genesis block max_bytes parameter
-            let a = chain.rpc_client.genesis().await.map_err(|e| {
+            let genesis = chain.block_on(chain.rpc_client.genesis()).map_err(|e| {
                 Error::health_check_json_rpc(
-                    chain_id.clone(),
-                    rpc_address.clone(),
+                    chain.id().clone(),
+                    chain.config.rpc_addr.to_string(),
                     "/genesis".to_string(),
                     e,
                 )
             })?;
-            let max_allowed = a.consensus_params.block.max_bytes as f64 * 0.9;
-            if max_tx_size >= max_allowed {
-                return Err(Error::health_check_tx_size_out_of_bounds(
-                    chain_id.clone(),
-                    max_tx_size,
-                    a.consensus_params.block.max_bytes,
+
+            let genesis_max_bound = genesis.consensus_params.block.max_bytes;
+            let max_allowed = mul_ceil(genesis_max_bound, 0.9) as usize;
+
+            if chain.max_tx_size() > max_allowed {
+                return Err(Error::tx_size_out_of_bounds(
+                    chain.id().clone(),
+                    chain.max_tx_size(),
+                    genesis_max_bound,
                 ));
             }
 
             Ok(())
         }
 
-        if let Err(e) = self.block_on(do_health_checkup(self, self.max_tx_size() as f64)) {
-            warn!("{}", e);
-            warn!("some Hermes features may not work in this mode!");
+        if let Err(e) = do_validate_params(self) {
+            warn!("Hermes might be misconfigured for chain '{}'", self.id());
+            warn!("Reason: {}", e);
+            warn!("Some Hermes features may not work in this mode!");
         }
     }
 
@@ -695,6 +711,7 @@ impl Chain for CosmosSdkChain {
         };
 
         chain.health_checkup();
+        chain.validate_params();
 
         Ok(chain)
     }
@@ -1982,6 +1999,7 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     }
 }
 
+/// Multiply `a` with `f` and round to result up to the nearest integer.
 fn mul_ceil(a: u64, f: f64) -> u64 {
     use fraction::Fraction as F;
 

@@ -373,10 +373,10 @@ define_error! {
                     e.endpoint, e.chain_id, e.address)
             },
 
-        HealthCheckTxSizeOutOfBounds
+        TxSizeOutOfBounds
             {
                 chain_id: ChainId,
-                configured_bound: f64,
+                configured_bound: usize,
                 genesis_bound: u64,
             }
             |e| {
