@@ -12,7 +12,7 @@ ActionType == [
     clientState |-> Int,
     consensusState |-> Int,
     clientId |-> Int,
-    header |-> Int,
+    header |-> <<Int, Int>>,
     previousConnectionId |-> Int,
     counterpartyChainId |-> STRING,
     counterpartyClientId |-> Int,
