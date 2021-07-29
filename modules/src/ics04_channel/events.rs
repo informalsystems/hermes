@@ -163,22 +163,22 @@ pub struct Attributes {
 fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, Error> {
     Ok(Attributes {
         height: object.height,
-        port_id: extract_attribute(&object, &format!("{}.port_id", namespace))?
+        port_id: extract_attribute(object, &format!("{}.port_id", namespace))?
             .parse()
             .map_err(Error::parse)?,
-        channel_id: maybe_extract_attribute(&object, &format!("{}.channel_id", namespace))
+        channel_id: maybe_extract_attribute(object, &format!("{}.channel_id", namespace))
             .and_then(|v| v.parse().ok()),
-        connection_id: extract_attribute(&object, &format!("{}.connection_id", namespace))?
+        connection_id: extract_attribute(object, &format!("{}.connection_id", namespace))?
             .parse()
             .map_err(Error::parse)?,
         counterparty_port_id: extract_attribute(
-            &object,
+            object,
             &format!("{}.counterparty_port_id", namespace),
         )?
         .parse()
         .map_err(Error::parse)?,
         counterparty_channel_id: maybe_extract_attribute(
-            &object,
+            object,
             &format!("{}.counterparty_channel_id", namespace),
         )
         .and_then(|v| v.parse().ok()),

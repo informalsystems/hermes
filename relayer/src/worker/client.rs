@@ -108,7 +108,7 @@ impl ClientWorker {
 
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
-                        if self.detect_misbehaviour(&client, Some(update)) {
+                        if self.detect_misbehaviour(client, Some(update)) {
                             telemetry! {
                                 self.telemetry.ibc_client_misbehaviour(
                                     &self.client.dst_chain_id,
