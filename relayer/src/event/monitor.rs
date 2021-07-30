@@ -16,7 +16,7 @@ use tendermint_rpc::{
     error::Code,
     event::Event as RpcEvent,
     query::{EventType, Query},
-    Error as RpcError, Result as RpcResult, SubscriptionClient, WebSocketClient,
+    Error as RpcError, Result as RpcResult, SubscriptionClient, Url, WebSocketClient,
     WebSocketClientDriver,
 };
 
@@ -50,8 +50,8 @@ define_error! {
             |_| { "WebSocket driver failed" },
 
         ClientCreationFailed
-            [ TraceError<RpcError> ]
-            |_| { "failed to create WebSocket driver" },
+            { chain_id: ChainId, address: Url }
+            |e| { format!("failed to create WebSocket driver for chain {0} with address {1}", e.chain_id, e.address) },
 
         ClientTerminationFailed
             [ TraceError<tokio::task::JoinError> ]
@@ -144,7 +144,7 @@ pub struct EventMonitor {
     /// Channel where to receive commands
     rx_cmd: channel::Receiver<MonitorCmd>,
     /// Node Address
-    node_addr: tendermint_rpc::Url,
+    node_addr: Url,
     /// Queries
     event_queries: Vec<Query>,
     /// All subscriptions combined in a single stream
@@ -157,7 +157,7 @@ impl EventMonitor {
     /// Create an event monitor, and connect to a node
     pub fn new(
         chain_id: ChainId,
-        node_addr: tendermint_rpc::Url,
+        node_addr: Url,
         rt: Arc<TokioRuntime>,
     ) -> Result<(Self, EventReceiver, TxMonitorCmd)> {
         let (tx_batch, rx_batch) = channel::unbounded();
@@ -166,7 +166,7 @@ impl EventMonitor {
         let ws_addr = node_addr.clone();
         let (client, driver) = rt
             .block_on(async move { WebSocketClient::new(ws_addr).await })
-            .map_err(Error::client_creation_failed)?;
+            .map_err(|_| Error::client_creation_failed(chain_id.clone(), node_addr.clone()))?;
 
         let (tx_err, rx_err) = mpsc::unbounded_channel();
         let websocket_driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
@@ -240,7 +240,9 @@ impl EventMonitor {
         let (mut client, driver) = self
             .rt
             .block_on(WebSocketClient::new(self.node_addr.clone()))
-            .map_err(Error::client_creation_failed)?;
+            .map_err(|_| {
+                Error::client_creation_failed(self.chain_id.clone(), self.node_addr.clone())
+            })?;
 
         let mut driver_handle = self.rt.spawn(run_driver(driver, self.tx_err.clone()));
 

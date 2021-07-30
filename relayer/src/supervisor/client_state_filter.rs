@@ -101,15 +101,14 @@ impl FilterPolicy {
             .map_err(FilterError::spawn)?;
         let counterparty_client_id = connection.counterparty().client_id();
         let counterparty_client_state = counterparty_chain
-            .query_client_state(&counterparty_client_id, Height::zero())
+            .query_client_state(counterparty_client_id, Height::zero())
             .map_err(FilterError::relayer)?;
 
         // Control both clients, cache their results.
-        let client_permission =
-            self.control_client(chain_id, &connection.client_id(), &client_state);
+        let client_permission = self.control_client(chain_id, connection.client_id(), client_state);
         let counterparty_client_permission = self.control_client(
             &counterparty_chain_id,
-            &counterparty_client_id,
+            counterparty_client_id,
             &counterparty_client_state,
         );
         let permission = client_permission.and(&counterparty_client_permission);
@@ -252,7 +251,7 @@ impl FilterPolicy {
             .map_err(FilterError::relayer)?;
 
         let client_state = src_chain
-            .query_client_state(&connection_end.client_id(), Height::zero())
+            .query_client_state(connection_end.client_id(), Height::zero())
             .map_err(FilterError::relayer)?;
 
         self.control_connection_end_and_client(
@@ -285,11 +284,11 @@ impl FilterPolicy {
         }
 
         let src_chain = registry
-            .get_or_spawn(&chain_id)
+            .get_or_spawn(chain_id)
             .map_err(FilterError::spawn)?;
 
         let channel_end = src_chain
-            .query_channel(&port_id, &channel_id, Height::zero())
+            .query_channel(port_id, channel_id, Height::zero())
             .map_err(FilterError::relayer)?;
 
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
@@ -304,15 +303,15 @@ impl FilterPolicy {
             .map_err(FilterError::relayer)?;
 
         let client_state = src_chain
-            .query_client_state(&connection_end.client_id(), Height::zero())
+            .query_client_state(connection_end.client_id(), Height::zero())
             .map_err(FilterError::relayer)?;
 
         let permission = self.control_connection_end_and_client(
             registry,
-            &chain_id,
+            chain_id,
             &client_state,
             &connection_end,
-            &conn_id,
+            conn_id,
         )?;
 
         let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());

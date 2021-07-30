@@ -152,7 +152,7 @@ impl Worker {
 
     fn chains(&self) -> &ChainHandlePair {
         match self {
-            Self::Client(_, w) => &w.chains(),
+            Self::Client(_, w) => w.chains(),
             Self::Connection(_, w) => w.chains(),
             Self::Channel(_, w) => w.chains(),
             Self::Packet(_, w) => w.chains(),

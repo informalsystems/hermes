@@ -1,6 +1,8 @@
 //! Relayer configuration
 
 pub mod reload;
+pub mod types;
+
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::BTreeSet as HashSet;
 use core::{fmt, time::Duration};
@@ -12,6 +14,7 @@ use tendermint_light_client::types::TrustThreshold;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
+use crate::config::types::{MaxMsgNum, MaxTxSize};
 use crate::error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -255,8 +258,10 @@ pub struct ChainConfig {
     pub store_prefix: String,
     pub max_gas: Option<u64>,
     pub gas_adjustment: Option<f64>,
-    pub max_msg_num: Option<usize>,
-    pub max_tx_size: Option<usize>,
+    #[serde(default)]
+    pub max_msg_num: MaxMsgNum,
+    #[serde(default)]
+    pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
