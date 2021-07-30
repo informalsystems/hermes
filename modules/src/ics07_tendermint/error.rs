@@ -1,5 +1,5 @@
 use crate::Height;
-use tendermint::{account::Id, validator::Info};
+use tendermint::account::Id;
 use crate::ics24_host::error::ValidationError;
 use flex_error::{define_error, DisplayOnly, TraceError};
 
@@ -76,10 +76,10 @@ define_error! {
         MissingFrozenHeight
             | _ | { "missing frozen height" },
 
-        InvalidChainId
-            { raw_value: String }
-            [ ValidationError ]
-            | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
+        // InvalidChainId
+        //     { raw_value: String }
+        //     [ ValidationError ]
+        //     | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
 
         InvalidRawHeight
             | _ | { "invalid raw height" },
@@ -101,9 +101,9 @@ define_error! {
             | _ | { "decode error" },
         
         InsufficientVotingPower
-                [String]
-            | _ |{
-                format_args!("Insufficient overlap")
+            { reason: String}
+            |e|{
+                format_args!("Insufficient overlap {}", e.reason )
             },
 
         LowUpdateTimestamp
@@ -122,50 +122,42 @@ define_error! {
                 high: String
             }
             |e|{
-                format_args!("Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp{1}",e.low,e.high)
+                format_args!("Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp {1}",e.low,e.high)
             },
     
         InvalidHeaderHeight
-            {
-                height: Height
-            }
-                |e|{
-                    format_args!("Header height = {0} is invalid",e.height)
-                },
+            {height: Height}
+            |e|{
+                format_args!("Header height = {0} is invalid",e.height)
+            },
 
         LowUpdateHeight
             {
                 low: Height,
                 high: Height
-            }
-            |e|{
-                format_args!("Header height {0} must be at greater than current client height {1}",e.low,e.high)
+            }|e|{
+                format_args!("Header height {0} must be at greater than current client height {1}", e.low, e.high)
             },
     }
 }
 
-// define_error! {
-//      VerificationError {
-//         InvalidSignature {
-//             /// Signature as a byte array
-//             signature: Vec<u8>,
-//             /// Validator which provided the signature
-//             validator: Box<Info>,
-//             /// Bytes which were signed
-//             sign_bytes: Vec<u8>,
-//         }{
-//             | e |{format_args!("Couldn't verify signature 
-//             {0} with validator 
-//             {1} on sign_bytes 
-//             {2}"),e.signature, e.validator, e.sign_bytes}
-//         },
+define_error! {
+     VerificationError {
+
+        InvalidSignature 
+        | _ | { "Couldn't verify validator signature " },
     
-//         // /// Duplicate validator in commit signatures
-//         // #[error("duplicate validator with address {0}")]
-//         // DuplicateValidator(Id),
-    
-//         // /// Insufficient signers overlap
-//         // #[error("insufficient signers overlap {0} {1}")]
-//         // InsufficientOverlap(u64, u64),
-// }
-// }
+
+        DuplicateValidator
+        { id: Id}
+        |e| {
+            format_args!{"Duplicate validator in commit signatures with address {}", e.id}
+        },
+
+        InsufficientOverlap 
+        {q1: u64,  q2: u64}
+        |e| {
+            format_args!("Insufficient signers overlap between {0} and {1}", e.q1, e.q2)
+        }
+}
+}

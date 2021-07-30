@@ -23,7 +23,7 @@ pub trait ClientDef: Clone {
     type ClientState: ClientState;
     type ConsensusState: ConsensusState;
 
-    /// TODO
+    
     fn check_header_and_update_state(
         &self,
         ctx: &dyn ClientReader,
@@ -32,6 +32,7 @@ pub trait ClientDef: Clone {
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
+    /// TODO
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,

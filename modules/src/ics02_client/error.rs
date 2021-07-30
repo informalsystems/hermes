@@ -11,6 +11,7 @@ use tendermint::hash::Hash;
 
 use flex_error::{define_error, TraceError};
 
+
 define_error! {
     Error {
         UnknownClientType
@@ -169,6 +170,12 @@ define_error! {
                 format_args!("mismatch between client and arguments types, expected: {0:?}",
                     e.client_type)
             },
+        
+        InsufficientVotingPower
+            { reason: String}
+            |e|{
+                format_args!("Insufficient overlap {}", e.reason )
+            },
 
         RawClientAndConsensusStateTypesMismatch
             {
@@ -196,30 +203,60 @@ define_error! {
                 client_height: Height,
             }
             | e | {
-                format_args!("upgraded client height {0} must be at greater than current client height {1}",
+                format_args!("upgraded client height {} must be at greater than current client height {}",
                     e.upgraded_height, e.client_height)
             },
 
+            InvalidConsensusStateTimestamp
+            {
+                time1: Timestamp,
+                time2: Timestamp,
+            }  
+            | e |{
+                format_args!("Timestamp none or {} and now {}", e.time1, e.time2)
+            },
 
-    // #[error("Timestamp none or {0} and now {1}")]
-    // InvalidConsensusStateTimestamp(Timestamp, Timestamp),
+            NotEnoughTrustedValsSigned 
+                {reason :String}
+                | e |{
+                    format_args!("Not enough trust because insufficient validators overlap: {}", e.reason)
+                },
 
-    // /// Not enough trust because insufficient validators overlap
-    // #[error("not enough trust because insufficient validators overlap: {0}")]
-    // NotEnoughTrustedValsSigned(String),
+            InvalidValidatorSet
+              {
+                    hash1: Hash,
+                    hash2: Hash,
+                }
+                | e | {
+                    format_args!("Invalid validator set: header_validators_hash={} validators_hash={}", e.hash1, e.hash2)
+                },
 
-    // /// Hash mismatch for the validator set
-    // #[error("invalid validator set: header_validators_hash={0} validators_hash={1}")]
-    // InvalidValidatorSet(Hash, Hash),
+            ClientStateNotWithinTrustPeriod
+                {
+                    latest_time:Timestamp,
+                    update_time: Timestamp,
+                }
+                | e | {
+                    format_args!("State not withing trusting period: expires_at={} now={}",e.latest_time, e.update_time)
+                },
+            
+            HeaderNotWithinTrustPeriod 
+            {
+                latest_time:Timestamp,
+                update_time: Timestamp,
+            }
+            | e | {
+                format_args!("Header not withing trusting period: expires_at={0} now={1}",e.latest_time, e.update_time)
+            },
 
-    // #[error("not withing trusting period: expires_at={0} now={1}")]
-    // ClientStateNotWithinTrustPeriod(Timestamp, Timestamp),
-
-    // #[error("header not withing trusting period: expires_at={0} now={1}")]
-    // HeaderNotWithinTrustPeriod(Timestamp, Timestamp),
-
-    // #[error("Header revision {0} and client state revision {1} should coincide")]
-    // MismatchedRevisions(u64, u64),
+            MismatchedRevisions
+            {
+                current_revision:u64,
+                update_revision: u64,
+            }
+            | e | {
+                format_args!("Header revision {0} and client state revision {1} should coincide",e.current_revision, e.update_revision)
+            },
      
     }
 

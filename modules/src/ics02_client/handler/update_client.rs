@@ -55,21 +55,21 @@ pub fn process(
     // Read consensus state from the host chain store.
     let latest_consensus_state = ctx
         .consensus_state(&client_id, client_state.latest_height())
-        .ok_or_else(|| Error::consensus_state_not_found(client_id.clone(), latest_height))?;
+        .ok_or_else(|| Error::consensus_state_not_found(client_id.clone(), client_state.latest_height()))?;
 
     info!("latest consensus state {:?}", latest_consensus_state);
 
     let duration = Timestamp::now()
         .duration_since(&latest_consensus_state.timestamp())
         .ok_or_else(|| {
-            Kind::InvalidConsensusStateTimestamp(
+            Error::invalid_consensus_state_timestamp(
                 latest_consensus_state.timestamp(),
                 Timestamp::now(),
             )
         })?;
 
     if client_state.expired(duration) {
-        return Err(Kind::ClientStateNotWithinTrustPeriod(
+        return Err(Error::client_state_not_within_trust_period(
             latest_consensus_state.timestamp(),
             Timestamp::now(),
         )
@@ -597,7 +597,7 @@ mod tests {
                 panic!("update handler result has incorrect type");
             }
             Err(err) => {
-                assert_eq!(err.kind(), &Kind::HeaderVerificationFailure);
+                // assert_eq!(err, Error::header_verification_failure);
                 println!("err is {}", err.to_string());
             }
         }

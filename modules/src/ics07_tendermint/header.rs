@@ -85,16 +85,16 @@ pub fn monotonicity_checks(
     client_state: ClientState,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if client_state.latest_height() >= header.height() {
-        return Err(Kind::LowUpdateHeight(header.height(), client_state.latest_height).into());
+        return Err(Error::low_update_height(header.height(), client_state.latest_height).into());
     }
 
     if header.height().is_zero() {
-        return Err(Kind::InvalidHeaderHeight(header.height()).into());
+        return Err(Error::invalid_header_height(header.height()).into());
     }
 
     //check header timestamp is increasing
     if latest_consensus_state.timestamp >= header.signed_header.header().time {
-        return Err(Kind::HeaderTimestampOutsideTrustingTime(
+        return Err(Error::header_timestamp_outside_trusting_time(
             header.signed_header.header().time.as_rfc3339(),
             latest_consensus_state.timestamp.as_rfc3339(),
         )
@@ -109,7 +109,7 @@ pub fn monotonicity_checks(
         .sub(client_state.trusting_period)
         >= latest_consensus_state.timestamp
     {
-        return Err(Kind::LowUpdateTimestamp(
+        return Err(Error::low_update_timestamp(
             header.signed_header.header().time.as_rfc3339(),
             latest_consensus_state.timestamp.as_rfc3339(),
         )
@@ -159,7 +159,7 @@ pub fn voting_power_in(
     for (signature, vote) in non_absent_votes {
         // Ensure we only count a validator's power once
         if seen_validators.contains(&vote.validator_address) {
-            return Err(VerificationError::DuplicateValidator(vote.validator_address).into());
+            return Err(VerificationError::duplicate_validator(vote.validator_address).into());
         } else {
             seen_validators.insert(vote.validator_address);
         }
@@ -183,12 +183,7 @@ pub fn voting_power_in(
             .is_err()
         {
             //continue;
-            return Err((VerificationError::InvalidSignature {
-                signature: signed_vote.signature().to_bytes(),
-                validator: Box::new(validator),
-                sign_bytes,
-            })
-            .into());
+            return Err(VerificationError::invalid_signature().into());
         }
 
         // If the vote is neither absent nor nil, tally its power
@@ -203,7 +198,7 @@ pub fn voting_power_in(
         }
     }
 
-    Err(VerificationError::InsufficientOverlap(tallied_voting_power, total_voting_power).into())
+    Err(VerificationError::insufficient_overlap(tallied_voting_power, total_voting_power).into())
 }
 
 /// Compute the total voting power in a validator set

@@ -7,6 +7,7 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::Error;
 use crate::ics07_tendermint::error::Error as TendermintError;
+//use crate::ics07_tendermint::error::VerificationError;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::packet::Sequence;
@@ -22,6 +23,7 @@ use crate::Height;
 use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint::validator::Set;
 
+//Box<dyn std::error::Error>
 use crate::downcast;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -117,7 +119,7 @@ impl ClientDef for TendermintClient {
                 &header.validator_set,
                 TrustThresholdFraction::TWO_THIRDS,
             ) {
-                return Err(TendermintError::insufficient_voting_power(e.to_string()).into());
+                return Err(Error::insufficient_voting_power(e.to_string()).into());
             }
         } else {
             //Non-adjacent
@@ -139,7 +141,7 @@ impl ClientDef for TendermintClient {
                 &header.validator_set,
                 TrustThresholdFraction::TWO_THIRDS,
             ) {
-                return Err(Error::insufficient_voting_power(e.to_string()).into());
+                return Err(TendermintError::insufficient_voting_power(e.to_string()).into());
             };
         }
 
