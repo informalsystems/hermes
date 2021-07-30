@@ -17,7 +17,11 @@ description = """
 name = "hermes"
 
 [features]
-default   = ["telemetry"]
+default   = ["telemetry", "std", "eyre_tracer"]
+std = [
+    "flex-error/std"
+]
+eyre_tracer = ["flex-error/eyre_tracer"]
 profiling = ["ibc-relayer/profiling"]
 telemetry = ["ibc-relayer/telemetry", "ibc-telemetry"]
 
@@ -27,14 +31,12 @@ ibc-relayer   = { version = "0.6.1", path = "../relayer" }
 ibc-proto     = { version = "0.9.0", path = "../proto" }
 ibc-telemetry = { version = "0.6.1", path = "../telemetry", optional = true }
 
-anomaly = "0.2.0"
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
-thiserror = "1"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.26"
 tracing-subscriber = "0.2.19"
-futures = "0.3.14"
+futures = "0.3.16"
 toml = "0.5.8"
 serde_derive = "1.0.116"
 serde_json = "1"
@@ -47,6 +49,7 @@ subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.1"
 atty = "0.2.14"
+flex-error = { version = "0.4.1", default-features = false }
 signal-hook = "0.3.9"
 
 [dependencies.tendermint-proto]

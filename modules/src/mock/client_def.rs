@@ -4,6 +4,7 @@ use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::context::ClientReader;
+use crate::ics02_client::error::Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::packet::Sequence;
@@ -29,11 +30,12 @@ impl ClientDef for MockClient {
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
         if client_state.latest_height() >= header.height() {
-            return Err(
-                "received header height is lower than (or equal to) client latest height".into(),
-            );
+            return Err(Error::low_header_height(
+                header.height(),
+                client_state.latest_height(),
+            ));
         }
         Ok((MockClientState(header), MockConsensusState::new(header)))
     }
@@ -47,7 +49,7 @@ impl ClientDef for MockClient {
         client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         let client_prefixed_path = Path::ClientConsensusState {
             client_id: client_id.clone(),
             epoch: height.revision_number,
@@ -55,7 +57,8 @@ impl ClientDef for MockClient {
         }
         .to_string();
 
-        let _path = apply_prefix(prefix, vec![client_prefixed_path])?;
+        let _path =
+            apply_prefix(prefix, vec![client_prefixed_path]).map_err(Error::empty_prefix)?;
 
         // TODO - add ctx to all client verification functions
         // let cs = ctx.fetch_self_consensus_state(height);
@@ -73,7 +76,7 @@ impl ClientDef for MockClient {
         _proof: &CommitmentProofBytes,
         _connection_id: Option<&ConnectionId>,
         _expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         Ok(())
     }
 
@@ -86,7 +89,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _expected_channel_end: &ChannelEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         Ok(())
     }
 
@@ -99,7 +102,7 @@ impl ClientDef for MockClient {
         _client_id: &ClientId,
         _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         Ok(())
     }
 
@@ -112,7 +115,7 @@ impl ClientDef for MockClient {
         _channel_id: &ChannelId,
         _seq: &Sequence,
         _data: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         Ok(())
     }
 
@@ -125,7 +128,7 @@ impl ClientDef for MockClient {
         _channel_id: &ChannelId,
         _seq: &Sequence,
         _data: Vec<u8>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         Ok(())
     }
 
@@ -137,7 +140,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         Ok(())
     }
 
@@ -149,7 +152,7 @@ impl ClientDef for MockClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         Ok(())
     }
     fn verify_upgrade_and_update_state(
@@ -158,7 +161,7 @@ impl ClientDef for MockClient {
         consensus_state: &Self::ConsensusState,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
         Ok((*client_state, consensus_state.clone()))
     }
 }

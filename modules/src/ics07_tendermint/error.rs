@@ -1,88 +1,171 @@
 use crate::Height;
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
-use crate::ics24_host::error::ValidationKind;
 use tendermint::{account::Id, validator::Info};
+use crate::ics24_host::error::ValidationError;
+use flex_error::{define_error, DisplayOnly, TraceError};
 
-pub type Error = anomaly::Error<Kind>;
+define_error! {
+    Error {
+        InvalidTrustingPeriod
+            { reason: String }
+            | _ | { "invalid trusting period" },
 
-#[derive(Clone, Debug, Error)]
-pub enum Kind {
-    #[error("invalid trusting period")]
-    InvalidTrustingPeriod,
+        InvalidUnboundingPeriod
+            { reason: String }
+            | _ | { "invalid unbonding period" },
 
-    #[error("invalid client state trust threshold")]
-    InvalidTrustThreshold,
+        InvalidAddress
+            | _ | { "invalid address" },
 
-    #[error("invalid unbonding period")]
-    InvalidUnboundingPeriod,
+        InvalidHeader
+            { reason: String }
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | _ | { "invalid header, failed basic validation" },
 
-    #[error("invalid address")]
-    InvalidAddress,
+        InvalidTrustThreshold
+            { reason: String }
+            | e | {
+                format_args!("invalid client state trust threshold: {}",
+                    e.reason)
+            },
 
-    #[error("invalid header, failed basic validation")]
-    InvalidHeader,
+        MissingSignedHeader
+            | _ | { "missing signed header" },
 
-    #[error("validation error")]
-    ValidationError,
+        Validation
+            { reason: String }
+            | _ | { "invalid header, failed basic validation" },
 
-    #[error("invalid raw client state")]
-    InvalidRawClientState,
+        InvalidRawClientState
+            { reason: String }
+            | _ | { "invalid raw client state" },
 
-    #[error("invalid chain identifier: raw value {0} with underlying validation error: {1}")]
-    InvalidChainId(String, ValidationKind),
+        MissingValidatorSet
+            | _ | { "missing validator set" },
 
-    #[error("invalid raw height")]
-    InvalidRawHeight,
+        MissingTrustedValidatorSet
+            | _ | { "missing trusted validator set" },
 
-    #[error("invalid raw client consensus state")]
-    InvalidRawConsensusState,
+        MissingTrustedHeight
+            | _ | { "missing trusted height" },
 
-    #[error("invalid raw header")]
-    InvalidRawHeader,
+        MissingTrustingPeriod
+            | _ | { "missing trusting period" },
 
-    #[error("invalid raw misbehaviour")]
-    InvalidRawMisbehaviour,
+        MissingUnbondingPeriod
+            | _ | { "missing unbonding period" },
 
-    #[error(" hearder timestamp {0} must be at greater than current client consensus state timestamp {1}")]
-    LowUpdateTimestamp(String, String),
+        InvalidChainIdentifier
+            [ ValidationError ]
+            | _ | { "Invalid chain identifier" },
 
-    #[error(
-        "Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp{1}"
-    )]
-    HeaderTimestampOutsideTrustingTime(String, String),
+        NegativeTrustingPeriod
+            | _ | { "negative trusting period" },
 
-    #[error(" hearder height = {0} is invalid")]
-    InvalidHeaderHeight(Height),
+        NegativeUnbondingPeriod
+            | _ | { "negative unbonding period" },
 
-    #[error(" hearder height {0} must be at greater than current client height {1}")]
-    LowUpdateHeight(Height, Height),
-}
+        MissingMaxClockDrift
+            | _ | { "missing max clock drift" },
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        NegativeMaxClockDrift
+            | _ | {  "negative max clock drift" },
+
+        MissingLatestHeight
+            | _ | { "missing latest height" },
+
+        MissingFrozenHeight
+            | _ | { "missing frozen height" },
+
+        InvalidChainId
+            { raw_value: String }
+            [ ValidationError ]
+            | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
+
+        InvalidRawHeight
+            | _ | { "invalid raw height" },
+
+        InvalidRawConsensusState
+            { reason: String }
+            | _ | { "invalid raw client consensus state" },
+
+        InvalidRawHeader
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | _ | { "invalid raw header" },
+
+        InvalidRawMisbehaviour
+            { reason: String }
+            | _ | { "invalid raw misbehaviour" },
+
+        Decode
+            [ TraceError<prost::DecodeError> ]
+            | _ | { "decode error" },
+        
+        InsufficientVotingPower
+                [String]
+            | _ |{
+                format_args!("Insufficient overlap")
+            },
+
+        LowUpdateTimestamp
+        {
+            low:String, 
+            high: String
+        }
+            |e|{
+                format_args!("Hearder timestamp {0} must be at 
+                greater than current client consensus state timestamp {1}",e.low,e.high)
+            },
+
+        HeaderTimestampOutsideTrustingTime
+            {
+                low:String, 
+                high: String
+            }
+            |e|{
+                format_args!("Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp{1}",e.low,e.high)
+            },
+    
+        InvalidHeaderHeight
+            {
+                height: Height
+            }
+                |e|{
+                    format_args!("Header height = {0} is invalid",e.height)
+                },
+
+        LowUpdateHeight
+            {
+                low: Height,
+                high: Height
+            }
+            |e|{
+                format_args!("Header height {0} must be at greater than current client height {1}",e.low,e.high)
+            },
     }
 }
 
-#[derive(Clone, Debug, Error)]
-pub enum VerificationError {
-    #[error("Couldn't verify signature `{signature:?}` with validator `{validator:?}` on sign_bytes `{sign_bytes:?}`")]
-    InvalidSignature {
-        /// Signature as a byte array
-        signature: Vec<u8>,
-        /// Validator which provided the signature
-        validator: Box<Info>,
-        /// Bytes which were signed
-        sign_bytes: Vec<u8>,
-    },
-
-    /// Duplicate validator in commit signatures
-    #[error("duplicate validator with address {0}")]
-    DuplicateValidator(Id),
-
-    /// Insufficient signers overlap
-    #[error("insufficient signers overlap {0} {1}")]
-    InsufficientOverlap(u64, u64),
-}
+// define_error! {
+//      VerificationError {
+//         InvalidSignature {
+//             /// Signature as a byte array
+//             signature: Vec<u8>,
+//             /// Validator which provided the signature
+//             validator: Box<Info>,
+//             /// Bytes which were signed
+//             sign_bytes: Vec<u8>,
+//         }{
+//             | e |{format_args!("Couldn't verify signature 
+//             {0} with validator 
+//             {1} on sign_bytes 
+//             {2}"),e.signature, e.validator, e.sign_bytes}
+//         },
+    
+//         // /// Duplicate validator in commit signatures
+//         // #[error("duplicate validator with address {0}")]
+//         // DuplicateValidator(Id),
+    
+//         // /// Insufficient signers overlap
+//         // #[error("insufficient signers overlap {0} {1}")]
+//         // InsufficientOverlap(u64, u64),
+// }
+// }

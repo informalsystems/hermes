@@ -5,7 +5,8 @@ use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::Kind;
+use crate::ics02_client::error::Error;
+use crate::ics07_tendermint::error::Error as TendermintError;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::packet::Sequence;
@@ -46,7 +47,7 @@ impl ClientDef for TendermintClient {
             let consensus_state = downcast!(
                 cs => AnyConsensusState::Tendermint
             )
-            .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+            .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
             if consensus_state != ConsensusState::from(header.clone()) {
                 //freeze the client and return the installed consensus state
@@ -65,9 +66,9 @@ impl ClientDef for TendermintClient {
                 Some(cs) => downcast!(
                     cs => AnyConsensusState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?,
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?,
                 None => {
-                    return Err(Kind::ConsensusStateNotFound(
+                    return Err(Error::consensus_state_not_found(
                         client_id.clone(),
                         client_state.latest_height,
                     )
@@ -79,7 +80,7 @@ impl ClientDef for TendermintClient {
 
         // check that the versions of the client state and the header match
         if client_state.latest_height.revision_number != header.height().revision_number {
-            return Err(Kind::MismatchedRevisions(
+            return Err(Error::mismatched_revisions(
                 client_state.latest_height.revision_number,
                 header.height().revision_number,
             )
@@ -90,9 +91,9 @@ impl ClientDef for TendermintClient {
             Some(ts) => downcast!(
                 ts => AnyConsensusState::Tendermint
             )
-            .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?,
+            .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?,
             None => {
-                return Err(Kind::ConsensusStateNotFound(client_id, header.trusted_height).into())
+                return Err(Error::consensus_state_not_found(client_id, header.trusted_height).into())
             }
         };
 
@@ -102,7 +103,7 @@ impl ClientDef for TendermintClient {
             // check that the header's trusted validator set is
             // the next_validator_set of the trusted consensus state
             if Set::hash(&header.validator_set) != trusted_consensus_state.next_validators_hash {
-                return Err(Kind::InvalidValidatorSet(
+                return Err(Error::invalid_validator_set(
                     trusted_consensus_state.next_validators_hash,
                     Set::hash(&header.validator_set),
                 )
@@ -116,7 +117,7 @@ impl ClientDef for TendermintClient {
                 &header.validator_set,
                 TrustThresholdFraction::TWO_THIRDS,
             ) {
-                return Err(Kind::InsufficientVotingPower(e.to_string()).into());
+                return Err(TendermintError::insufficient_voting_power(e.to_string()).into());
             }
         } else {
             //Non-adjacent
@@ -128,7 +129,7 @@ impl ClientDef for TendermintClient {
                 &header.trusted_validator_set,
                 TrustThresholdFraction::default(),
             ) {
-                return Err(Kind::NotEnoughTrustedValsSigned(e.to_string()).into());
+                return Err(Error::not_enough_trusted_vals_signed(e.to_string()).into());
             };
 
             // check that the validators that sign the commit of the untrusted header
@@ -138,7 +139,7 @@ impl ClientDef for TendermintClient {
                 &header.validator_set,
                 TrustThresholdFraction::TWO_THIRDS,
             ) {
-                return Err(Kind::InsufficientVotingPower(e.to_string()).into());
+                return Err(Error::insufficient_voting_power(e.to_string()).into());
             };
         }
 
@@ -157,7 +158,7 @@ impl ClientDef for TendermintClient {
         _client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -169,7 +170,7 @@ impl ClientDef for TendermintClient {
         _proof: &CommitmentProofBytes,
         _connection_id: Option<&ConnectionId>,
         _expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -182,7 +183,7 @@ impl ClientDef for TendermintClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _expected_channel_end: &ChannelEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -195,7 +196,7 @@ impl ClientDef for TendermintClient {
         _client_id: &ClientId,
         _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         unimplemented!()
     }
 
@@ -208,7 +209,7 @@ impl ClientDef for TendermintClient {
         _channel_id: &ChannelId,
         _seq: &Sequence,
         _data: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -221,7 +222,7 @@ impl ClientDef for TendermintClient {
         _channel_id: &ChannelId,
         _seq: &Sequence,
         _data: Vec<u8>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -233,7 +234,7 @@ impl ClientDef for TendermintClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -245,7 +246,7 @@ impl ClientDef for TendermintClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -255,7 +256,7 @@ impl ClientDef for TendermintClient {
         _consensus_state: &Self::ConsensusState,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
         todo!()
     }
 }

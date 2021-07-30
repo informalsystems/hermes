@@ -4,8 +4,8 @@ use crate::downcast;
 use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::Error;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::Kind;
 use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
@@ -30,7 +30,7 @@ pub trait ClientDef: Clone {
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>>;
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
     fn verify_upgrade_and_update_state(
         &self,
@@ -38,7 +38,7 @@ pub trait ClientDef: Clone {
         consensus_state: &Self::ConsensusState,
         proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>>;
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
     /// Verification functions as specified in:
     /// <https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics>
@@ -57,7 +57,7 @@ pub trait ClientDef: Clone {
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Error>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
     fn verify_connection_state(
@@ -68,7 +68,7 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         connection_id: Option<&ConnectionId>,
         expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Error>;
 
     /// Verify a `proof` that a channel state matches that of the input `channel_end`.
     #[allow(clippy::too_many_arguments)]
@@ -81,7 +81,7 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         expected_channel_end: &ChannelEnd,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Error>;
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
     #[allow(clippy::too_many_arguments)]
@@ -94,7 +94,7 @@ pub trait ClientDef: Clone {
         client_id: &ClientId,
         proof: &CommitmentProofBytes,
         client_state: &AnyClientState,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has been commited.
     #[allow(clippy::too_many_arguments)]
@@ -107,7 +107,7 @@ pub trait ClientDef: Clone {
         channel_id: &ChannelId,
         seq: &Sequence,
         commitment: String,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has been commited.
     #[allow(clippy::too_many_arguments)]
@@ -120,7 +120,7 @@ pub trait ClientDef: Clone {
         channel_id: &ChannelId,
         seq: &Sequence,
         ack: Vec<u8>,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Error>;
 
     /// Verify a `proof` that of the next_seq_received.
     #[allow(clippy::too_many_arguments)]
@@ -132,7 +132,7 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has not been received.
     #[allow(clippy::too_many_arguments)]
@@ -144,7 +144,7 @@ pub trait ClientDef: Clone {
         port_id: &PortId,
         channel_id: &ChannelId,
         seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Error>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -179,14 +179,14 @@ impl ClientDef for AnyClient {
         client_id: ClientId,
         client_state: AnyClientState,
         header: AnyHeader,
-    ) -> Result<(AnyClientState, AnyConsensusState), Box<dyn std::error::Error>> {
+    ) -> Result<(AnyClientState, AnyConsensusState), Error> {
         match self {
             Self::Tendermint(client) => {
                 let (client_state, header) = downcast!(
                     client_state => AnyClientState::Tendermint,
                     header => AnyHeader::Tendermint,
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 let (new_state, new_consensus) =
                     client.check_header_and_update_state(ctx, client_id, client_state, header)?;
@@ -203,7 +203,7 @@ impl ClientDef for AnyClient {
                     client_state => AnyClientState::Mock,
                     header => AnyHeader::Mock,
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 let (new_state, new_consensus) =
                     client.check_header_and_update_state(ctx, client_id, client_state, header)?;
@@ -225,13 +225,13 @@ impl ClientDef for AnyClient {
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_client_consensus_state(
                     client_state,
@@ -249,7 +249,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_client_consensus_state(
                     client_state,
@@ -272,11 +272,11 @@ impl ClientDef for AnyClient {
         proof: &CommitmentProofBytes,
         connection_id: Option<&ConnectionId>,
         expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_connection_state(
                     client_state,
@@ -291,7 +291,7 @@ impl ClientDef for AnyClient {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Mock)
-                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_connection_state(
                     client_state,
@@ -314,11 +314,11 @@ impl ClientDef for AnyClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         expected_channel_end: &ChannelEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_channel_state(
                     client_state,
@@ -334,7 +334,7 @@ impl ClientDef for AnyClient {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Mock)
-                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                    .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_channel_state(
                     client_state,
@@ -358,13 +358,13 @@ impl ClientDef for AnyClient {
         client_id: &ClientId,
         proof: &CommitmentProofBytes,
         client_state_on_counterparty: &AnyClientState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_client_full_state(
                     client_state,
@@ -382,7 +382,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_client_full_state(
                     client_state,
@@ -405,13 +405,13 @@ impl ClientDef for AnyClient {
         channel_id: &ChannelId,
         seq: &Sequence,
         commitment: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_packet_data(
                     client_state,
@@ -429,7 +429,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_packet_data(
                     client_state,
@@ -453,13 +453,13 @@ impl ClientDef for AnyClient {
         channel_id: &ChannelId,
         seq: &Sequence,
         ack: Vec<u8>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_packet_acknowledgement(
                     client_state,
@@ -477,7 +477,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_packet_acknowledgement(
                     client_state,
@@ -500,13 +500,13 @@ impl ClientDef for AnyClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_next_sequence_recv(
                     client_state,
@@ -523,7 +523,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_next_sequence_recv(
                     client_state,
@@ -544,13 +544,13 @@ impl ClientDef for AnyClient {
         port_id: &PortId,
         channel_id: &ChannelId,
         seq: &Sequence,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 client.verify_packet_receipt_absence(
                     client_state,
@@ -567,7 +567,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 client.verify_packet_receipt_absence(
                     client_state,
@@ -587,14 +587,14 @@ impl ClientDef for AnyClient {
         consensus_state: &Self::ConsensusState,
         proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
         match self {
             Self::Tendermint(client) => {
                 let (client_state, consensus_state) = downcast!(
                     client_state => AnyClientState::Tendermint,
                     consensus_state => AnyConsensusState::Tendermint,
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
                 let (new_state, new_consensus) = client.verify_upgrade_and_update_state(
                     client_state,
@@ -615,7 +615,7 @@ impl ClientDef for AnyClient {
                     client_state => AnyClientState::Mock,
                     consensus_state => AnyConsensusState::Mock,
                 )
-                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
                 let (new_state, new_consensus) = client.verify_upgrade_and_update_state(
                     client_state,

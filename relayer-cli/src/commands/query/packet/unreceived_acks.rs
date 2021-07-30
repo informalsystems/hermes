@@ -9,7 +9,7 @@ use ibc_relayer::chain::counterparty::channel_connection_client;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 /// This command does the following:
@@ -42,7 +42,7 @@ impl QueryUnreceivedAcknowledgementCmd {
 
         let channel_connection_client =
             channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id)
-                .map_err(|e| Kind::Query.context(e))?;
+                .map_err(Error::supervisor)?;
 
         let channel = channel_connection_client.channel;
         debug!(
@@ -54,12 +54,7 @@ impl QueryUnreceivedAcknowledgementCmd {
             .counterparty()
             .channel_id
             .as_ref()
-            .ok_or_else(|| {
-                Kind::Query.context(format!(
-                    "the channel {:?} has no counterparty channel id",
-                    channel
-                ))
-            })?
+            .ok_or_else(|| Error::missing_counterparty_channel_id(channel.clone()))?
             .to_string();
 
         let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
@@ -74,7 +69,7 @@ impl QueryUnreceivedAcknowledgementCmd {
 
         let sequences: Vec<u64> = counterparty_chain
             .query_packet_acknowledgements(acks_request)
-            .map_err(|e| Kind::Query.context(e))
+            .map_err(Error::relayer)
             // extract the sequences
             .map(|(packet_state, _)| packet_state.into_iter().map(|v| v.sequence).collect())?;
 
@@ -86,7 +81,7 @@ impl QueryUnreceivedAcknowledgementCmd {
 
         chain
             .query_unreceived_acknowledgement(request)
-            .map_err(|e| Kind::Query.context(e).into())
+            .map_err(Error::relayer)
     }
 }
 

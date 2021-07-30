@@ -1,44 +1,46 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
+use crate::ics04_channel::error as channel_error;
+use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use flex_error::define_error;
 
-pub type Error = anomaly::Error<Kind>;
+define_error! {
+    Error {
+        UnknowMessageTypeUrl
+            { url: String }
+            | e | { format_args!("unrecognized ICS-20 transfer message type URL {0}", e.url) },
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
-    #[error("unrecognized ICS-20 transfer message type URL {0}")]
-    UnknownMessageTypeUrl(String),
+        Ics04Channel
+            [ channel_error::Error ]
+            |_ | { "Ics04 channel error" },
 
-    #[error("error raised by message handler")]
-    HandlerRaisedError,
+        SequenceSendNotFound
+            { port_id: PortId, channel_id: ChannelId }
+            | e | { format_args!("sending sequence number not found for port {0} and channel {1}", e.port_id, e.channel_id) },
 
-    #[error("sending sequence number not found for port {0} and channel {1}")]
-    SequenceSendNotFound(PortId, ChannelId),
+        ChannelNotFound
+            { port_id: PortId, channel_id: ChannelId }
+            | e | { format_args!("sending sequence number not found for port {0} and channel {1}", e.port_id, e.channel_id) },
 
-    #[error("missing channel for port_id {0} and channel_id {1} ")]
-    ChannelNotFound(PortId, ChannelId),
+        DestinationChannelNotFound
+            { port_id: PortId, channel_id: ChannelId }
+            | e | { format_args!("destination channel not found in the counterparty of port_id {0} and channel_id {1} ", e.port_id, e.channel_id) },
 
-    #[error(
-        "destination channel not found in the counterparty of port_id {0} and channel_id {1} "
-    )]
-    DestinationChannelNotFound(PortId, ChannelId),
+        InvalidPortId
+            { context: String }
+            [ ValidationError ]
+            | _ | { "invalid port identifier" },
 
-    #[error("invalid port identifier")]
-    InvalidPortId(String),
+        InvalidChannelId
+            { context: String }
+            [ ValidationError ]
+            | _ | { "invalid channel identifier" },
 
-    #[error("invalid channel identifier")]
-    InvalidChannelId(String),
+        InvalidPacketTimeoutHeight
+            { context: String }
+            | _ | { "invalid packet timeout height value" },
 
-    #[error("invalid packet timeout height value")]
-    InvalidPacketTimeoutHeight(String),
-
-    #[error("invalid packet timeout timestamp value")]
-    InvalidPacketTimeoutTimestamp(u64),
-}
-
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        InvalidPacketTimeoutTimestamp
+            { timestamp: u64 }
+            | _ | { "invalid packet timeout timestamp value" },
     }
 }

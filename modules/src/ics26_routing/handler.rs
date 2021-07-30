@@ -7,7 +7,7 @@ use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics04_channel::handler::channel_dispatch as ics4_msg_dispatcher;
 use crate::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
 use crate::ics26_routing::context::Ics26Context;
-use crate::ics26_routing::error::{Error, Kind};
+use crate::ics26_routing::error::Error;
 use crate::ics26_routing::msgs::Ics26Envelope::{
     self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
 };
@@ -16,8 +16,6 @@ use crate::{events::IbcEvent, handler::HandlerOutput};
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
 /// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-///
-/// See <https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics>
 pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
 where
     Ctx: Ics26Context,
@@ -57,12 +55,11 @@ where
 {
     let output = match msg {
         Ics2Msg(msg) => {
-            let handler_output =
-                ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output = ics2_msg_dispatcher(ctx, msg).map_err(Error::ics02_client)?;
 
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics02_client)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -71,12 +68,11 @@ where
         }
 
         Ics3Msg(msg) => {
-            let handler_output =
-                ics3_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output = ics3_msg_dispatcher(ctx, msg).map_err(Error::ics03_connection)?;
 
             // Apply any results to the host chain store.
             ctx.store_connection_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics03_connection)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -85,12 +81,11 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let handler_output =
-                ics4_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output = ics4_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -100,11 +95,11 @@ where
 
         Ics20Msg(msg) => {
             let handler_output =
-                ics20_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+                ics20_msg_dispatcher(ctx, msg).map_err(Error::ics20_fungible_token_transfer)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -113,12 +108,12 @@ where
         }
 
         Ics4PacketMsg(msg) => {
-            let handler_output = ics04_packet_msg_dispatcher(ctx, msg)
-                .map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output =
+                ics04_packet_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)

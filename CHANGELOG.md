@@ -1,8 +1,4 @@
-# Changelog
-
-## Unreleased
-
-> Nothing yet
+# CHANGELOG
 
 ## v0.6.1
 *July 22nd, 2021*

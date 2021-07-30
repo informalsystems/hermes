@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
@@ -12,7 +13,6 @@ use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::error::Kind as ClientKind;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
@@ -133,9 +133,7 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
     type Error = Error;
 
     fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
-        let raw_header = raw
-            .header
-            .ok_or_else(|| ClientKind::InvalidRawConsensusState.context("missing header"))?;
+        let raw_header = raw.header.ok_or_else(Error::missing_raw_consensus_state)?;
 
         Ok(Self {
             header: MockHeader::try_from(raw_header)?,
@@ -162,6 +160,8 @@ impl From<MockConsensusState> for AnyConsensusState {
 }
 
 impl ConsensusState for MockConsensusState {
+    type Error = Infallible;
+
     fn client_type(&self) -> ClientType {
         ClientType::Mock
     }
@@ -170,7 +170,7 @@ impl ConsensusState for MockConsensusState {
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn validate_basic(&self) -> Result<(), Infallible> {
         Ok(())
     }
 
