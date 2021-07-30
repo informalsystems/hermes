@@ -33,31 +33,31 @@ AsSetInt(S) == S <: {Int}
 \* - - If x's block number is lower, x is lower.
 \* - - If x and y have the same revision and block number, the heights are equal.
 HeightLT(a, b) ==
-    \/ a.revision < b.revision
-    \/ (a.revision = b.revision /\ a.block < b.block)
+    \/ a.revision_number < b.revision_number
+    \/ (a.revision_number = b.revision_number /\ a.revision_height < b.revision_height)
 
 HeightLTE(a, b) ==
-    \/ a.revision < b.revision
-    \/ (a.revision = b.revision /\ a.block < b.block)
+    \/ a.revision_number < b.revision_number
+    \/ (a.revision_number = b.revision_number /\ a.revision_height < b.revision_height)
     \/ a = b
 
 HeightGT(a, b) ==
-    \/ a.revision > b.revision
-    \/ (a.revision = b.revision /\ a.block > b.block)
+    \/ a.revision_number > b.revision_number
+    \/ (a.revision_number = b.revision_number /\ a.revision_height > b.revision_height)
 
 HeightGTE(a, b) ==
-    \/ a.revision > b.revision
-    \/ (a.revision = b.revision /\ a.block > b.block)
+    \/ a.revision_number > b.revision_number
+    \/ (a.revision_number = b.revision_number /\ a.revision_height > b.revision_height)
     \/ a = b
 
 \* Checks if the block is higher but the revision is the same
-HigherBlock(a, b) ==
-    /\ a.revision = b.revision
-    /\ a.block > b.block
+HigherRevisionHeight(a, b) ==
+    /\ a.revision_number = b.revision_number
+    /\ a.revision_height > b.revision_height
 
 \* Checks if the revision is higher
-HigherRevision(a, b) ==
-    /\ a.revision > b.revision
+HigherRevisionNumber(a, b) ==
+    /\ a.revision_number > b.revision_number
 
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x
 FindMaxHeight(S) == CHOOSE x \in S: \A y \in S: HeightLTE(y, x)

@@ -12,6 +12,7 @@ use ibc::ics02_client::error as client_error;
 use ibc::ics02_client::header::AnyHeader;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
 use ibc::ics03_connection::connection::{Counterparty, State as ConnectionState};
 use ibc::ics03_connection::error as connection_error;
@@ -37,6 +38,9 @@ use ibc::signer::Signer;
 use ibc::timestamp::ZERO_DURATION;
 use ibc::Height;
 use step::{Action, ActionOutcome, Chain, Step};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use tracing::field::debug;
+use std::convert::TryFrom;
 
 #[derive(Debug, Clone)]
 pub struct IbcTestRunner {
@@ -53,7 +57,7 @@ impl IbcTestRunner {
 
     /// Create a `MockContext` for a given `chain_id`.
     /// Panic if a context for `chain_id` already exists.
-    pub fn init_chain_context(&mut self, chain_id: String, initial_height: u64) {
+    pub fn init_chain_context(&mut self, chain_id: String, initial_height: Height) {
         let chain_id = Self::chain_id(chain_id);
         // never GC blocks
         let max_history_size = usize::MAX;
@@ -61,7 +65,7 @@ impl IbcTestRunner {
             chain_id.clone(),
             HostType::Mock,
             max_history_size,
-            Height::new(Self::revision(), initial_height),
+            initial_height,
         );
         self.contexts.insert(chain_id, ctx);
     }
@@ -142,23 +146,23 @@ impl IbcTestRunner {
         ConnectionId::new(connection_id)
     }
 
-    pub fn height(height: u64) -> Height {
-        Height::new(Self::revision(), height)
+    pub fn height(height: Height) -> Height {
+        Height::new(height.revision_number, height.revision_height)
     }
 
-    fn mock_header(height: u64) -> MockHeader {
+    fn mock_header(height: Height) -> MockHeader {
         MockHeader::new(Self::height(height))
     }
 
-    pub fn header(height: u64) -> AnyHeader {
+    pub fn header(height: Height) -> AnyHeader {
         AnyHeader::Mock(Self::mock_header(height))
     }
 
-    pub fn client_state(height: u64) -> AnyClientState {
+    pub fn client_state(height: Height) -> AnyClientState {
         AnyClientState::Mock(MockClientState(Self::mock_header(height)))
     }
 
-    pub fn consensus_state(height: u64) -> AnyConsensusState {
+    pub fn consensus_state(height: Height) -> AnyConsensusState {
         AnyConsensusState::Mock(MockConsensusState::new(Self::mock_header(height)))
     }
 
@@ -185,14 +189,14 @@ impl IbcTestRunner {
         vec![0].into()
     }
 
-    pub fn consensus_proof(height: u64) -> ConsensusProof {
+    pub fn consensus_proof(height: Height) -> ConsensusProof {
         let consensus_proof = Self::commitment_proof_bytes();
         let consensus_height = Self::height(height);
         ConsensusProof::new(consensus_proof, consensus_height)
             .expect("it should be possible to create the consensus proof")
     }
 
-    pub fn proofs(height: u64) -> Proofs {
+    pub fn proofs(height: Height) -> Proofs {
         let object_proof = Self::commitment_proof_bytes();
         let client_proof = None;
         let consensus_proof = Some(Self::consensus_proof(height));
@@ -218,7 +222,7 @@ impl IbcTestRunner {
         chains.into_iter().all(|(chain_id, chain)| {
             let ctx = self.chain_context(chain_id);
             // check that heights match
-            let heights_match = ctx.query_latest_height() == Self::height(chain.height);
+            let heights_match = ctx.query_latest_height() == chain.height;
 
             // check that clients match
             let clients_match = chain.clients.into_iter().all(|(client_id, client)| {
@@ -231,7 +235,7 @@ impl IbcTestRunner {
                         // heights in the model), then the highest one should
                         // match the height in the client state
                         client_state.is_some()
-                            && client_state.unwrap().latest_height() == Self::height(*max_height)
+                            && client_state.unwrap().latest_height() == *max_height
                     }
                     None => {
                         // if the model doesn't have any consensus states
@@ -245,7 +249,7 @@ impl IbcTestRunner {
                 //       only existing consensus states are those in that also
                 //       exist in the model)
                 let consensus_states_match = client.heights.into_iter().all(|height| {
-                    ctx.consensus_state(&Self::client_id(client_id), Self::height(height))
+                    ctx.consensus_state(&Self::client_id(client_id), height)
                         .is_some()
                 });
 
@@ -332,6 +336,32 @@ impl IbcTestRunner {
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: Self::client_id(client_id),
                     header: Self::header(header),
+                    signer: Self::signer(),
+                }));
+                ctx.deliver(msg)
+            }
+            Action::Ics07UpgradeClient {
+                chain_id,
+                client_id,
+                header,
+            } => {
+                println!("In upgrade tests");
+                // get chain's context
+                let ctx = self.chain_context_mut(chain_id);
+        
+                let buf: Vec<u8> = Vec::new();
+                let buf2: Vec<u8> = Vec::new();
+        
+                let c_bytes = CommitmentProofBytes::from(buf);
+                let cs_bytes = CommitmentProofBytes::from(buf2);
+
+                // create ICS26 message and deliver it
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient {
+                    client_id: Self::client_id(client_id),
+                    client_state: MockClientState(MockHeader::new(Height::new(1, 26))).into(),
+                    consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26))).into(),
+                    proof_upgrade_client: MerkleProof::try_from(c_bytes).unwrap(),
+                    proof_upgrade_consensus_state: MerkleProof::try_from(cs_bytes).unwrap(),
                     signer: Self::signer(),
                 }));
                 ctx.deliver(msg)
@@ -452,11 +482,13 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> Result<(), String> {
+        dbg!("STEP", step.clone());
         let result = self.apply(step.clone().action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::Ics02CreateOk => result.is_ok(),
             ActionOutcome::Ics02UpdateOk => result.is_ok(),
+            ActionOutcome::Ics07UpgradeOk => result.is_ok(),
             ActionOutcome::Ics02ClientNotFound => matches!(
                 Self::extract_ics02_error_kind(result),
                 client_error::ErrorDetail::ClientNotFound(_)

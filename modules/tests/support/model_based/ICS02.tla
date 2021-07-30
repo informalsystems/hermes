@@ -69,9 +69,9 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
         \* if the client exists, check its height
         LET client == ICS02_GetClient(chain.clients, clientId) IN
         LET highestHeight == FindMaxHeight(client.heights) IN
-        IF ~HigherBlock(height, highestHeight) THEN
-            \* if the client's new height is not at the same revision and a higher
-            \* block number than the highest client height, then set an error outcome
+        IF ~HigherRevisionHeight(height, highestHeight) THEN
+            \* if the client's new height is not at the same revision number and a higher
+            \* block height than the highest client height, then set an error outcome
             [
                 clients |-> chain.clients,
                 action |-> action_,
@@ -113,7 +113,7 @@ ICS07_UpgradeClient(chain, chainId, clientId, height) ==
         \* if the client exists, check its height
         LET client == ICS02_GetClient(chain.clients, clientId) IN
         LET highestHeight == FindMaxHeight(client.heights) IN
-        IF ~HigherRevision(height, highestHeight) THEN
+        IF ~HigherRevisionNumber(height, highestHeight) THEN
             \* if the client's new height is not at a higher revision than the highest client
             \* height, then set an error outcome
             [
