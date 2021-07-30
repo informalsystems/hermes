@@ -7,7 +7,7 @@ use ibc_relayer::{
     config::Config,
 };
 
-use crate::error::{Error, Kind};
+use crate::error::Error;
 
 #[derive(Clone, Debug)]
 /// Pair of chain handles that are used by most CLIs.
@@ -42,12 +42,10 @@ pub fn spawn_chain_runtime(
     let chain_config = config
         .find_chain(chain_id)
         .cloned()
-        .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))
-        .map_err(|e| Kind::Config.context(e))?;
+        .ok_or_else(|| Error::missing_config(chain_id.clone()))?;
 
     let rt = Arc::new(TokioRuntime::new().unwrap());
-    let handle = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt)
-        .map_err(|e| Kind::Runtime.context(e))?;
+    let handle = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt).map_err(Error::relayer)?;
 
     Ok(handle)
 }

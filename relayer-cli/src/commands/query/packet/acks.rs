@@ -7,7 +7,7 @@ use ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsRequest;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Serialize, Debug)]
@@ -45,7 +45,7 @@ impl QueryPacketAcknowledgementsCmd {
         // Transform the list fo raw packet state into the list of sequence numbers
         chain
             .query_packet_acknowledgements(grpc_request)
-            .map_err(|e| Kind::Query.context(e).into())
+            .map_err(Error::relayer)
             .map(|(packet, height)| PacketSeqs {
                 seqs: packet.iter().map(|p| p.sequence).collect(),
                 height,

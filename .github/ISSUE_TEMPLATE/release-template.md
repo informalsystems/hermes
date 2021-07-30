@@ -15,7 +15,7 @@ v                     without deliberation
 
 ⚡
 
-- [ ] Create new release section in [CHANGELOG](./CHANGELOG.md) and move "unreleased" items into this section.
+- [ ] Create a new release in the changelog, using [`unclog`](https://github.com/informalsystems/unclog).
 - [ ] Bump all crate versions to the new version.
 - [ ] Reassign unfinished issues of previous milestone to the next milestone.
 - [ ] Update Cargo.lock file (if re-publishing `ibc-relayer-cli`)

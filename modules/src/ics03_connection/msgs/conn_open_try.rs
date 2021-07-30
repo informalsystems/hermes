@@ -10,7 +10,7 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnecti
 
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::Counterparty;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error::Error;
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -100,22 +100,20 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+            .map_err(Error::invalid_identifier)?;
 
         let consensus_height = msg
             .consensus_height
-            .ok_or(Kind::MissingConsensusHeight)?
-            .try_into() // Cast from the raw height type into the domain type.
-            .map_err(|e| Kind::InvalidProof.context(e))?;
+            .ok_or_else(Error::missing_consensus_height)?
+            .into();
 
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
-            .map_err(|e| Kind::InvalidProof.context(e))?;
+            .map_err(Error::invalid_proof)?;
 
         let proof_height = msg
             .proof_height
-            .ok_or(Kind::MissingProofHeight)?
-            .try_into()
-            .map_err(|e| Kind::InvalidProof.context(e))?;
+            .ok_or_else(Error::missing_proof_height)?
+            .into();
 
         let client_proof = Some(msg.proof_client)
             .filter(|x| !x.is_empty())
@@ -125,29 +123,23 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             .counterparty_versions
             .into_iter()
             .map(Version::try_from)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| Kind::InvalidVersion.context(e))?;
+            .collect::<Result<Vec<_>, _>>()?;
 
         if counterparty_versions.is_empty() {
-            return Err(Kind::EmptyVersions
-                .context("empty counterparty versions in try message".to_string())
-                .into());
+            return Err(Error::empty_versions());
         }
 
         Ok(Self {
             previous_connection_id,
-            client_id: msg
-                .client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_id: msg.client_id.parse().map_err(Error::invalid_identifier)?,
             client_state: msg
                 .client_state
                 .map(AnyClientState::try_from)
                 .transpose()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .map_err(Error::ics02_client)?,
             counterparty: msg
                 .counterparty
-                .ok_or(Kind::MissingCounterparty)?
+                .ok_or_else(Error::missing_counterparty)?
                 .try_into()?,
             counterparty_versions,
             proofs: Proofs::new(
@@ -157,7 +149,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 None,
                 proof_height,
             )
-            .map_err(|e| Kind::InvalidProof.context(e))?,
+            .map_err(Error::invalid_proof)?,
             delay_period: Duration::from_nanos(msg.delay_period),
             signer: msg.signer.into(),
         })

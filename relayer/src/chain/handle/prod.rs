@@ -35,11 +35,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
-use crate::{
-    connection::ConnectionMsgType,
-    error::{Error, Kind},
-    keyring::KeyEntry,
-};
+use crate::{connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
 
@@ -68,11 +64,9 @@ impl ProdChainHandle {
         let (sender, receiver) = reply_channel();
         let input = f(sender);
 
-        self.runtime_sender
-            .send(input)
-            .map_err(|e| Kind::Channel.context(e))?;
+        self.runtime_sender.send(input).map_err(Error::send)?;
 
-        receiver.recv().map_err(|e| Kind::Channel.context(e))?
+        receiver.recv().map_err(Error::channel_receive)?
     }
 }
 
