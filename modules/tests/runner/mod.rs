@@ -52,7 +52,6 @@ impl IbcTestRunner {
     }
 
     /// Create a `MockContext` for a given `chain_id`.
-    /// Panic if a context for `chain_id` already exists.
     pub fn init_chain_context(&mut self, chain_id: String, initial_height: u64) {
         let chain_id = Self::chain_id(chain_id);
         // never GC blocks
