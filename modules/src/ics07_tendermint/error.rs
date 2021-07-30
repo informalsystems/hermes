@@ -1,7 +1,7 @@
-use crate::Height;
-use tendermint::account::Id;
 use crate::ics24_host::error::ValidationError;
+use crate::Height;
 use flex_error::{define_error, DisplayOnly, TraceError};
+use tendermint::account::Id;
 
 define_error! {
     Error {
@@ -76,10 +76,10 @@ define_error! {
         MissingFrozenHeight
             | _ | { "missing frozen height" },
 
-        // InvalidChainId
-        //     { raw_value: String }
-        //     [ ValidationError ]
-        //     | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
+        InvalidChainId
+            { raw_value: String }
+            [ ValidationError ]
+            | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
 
         InvalidRawHeight
             | _ | { "invalid raw height" },
@@ -99,7 +99,7 @@ define_error! {
         Decode
             [ TraceError<prost::DecodeError> ]
             | _ | { "decode error" },
-        
+
         InsufficientVotingPower
             { reason: String}
             |e|{
@@ -108,23 +108,23 @@ define_error! {
 
         LowUpdateTimestamp
         {
-            low:String, 
+            low:String,
             high: String
         }
             |e|{
-                format_args!("Hearder timestamp {0} must be at 
+                format_args!("Hearder timestamp {0} must be at
                 greater than current client consensus state timestamp {1}",e.low,e.high)
             },
 
         HeaderTimestampOutsideTrustingTime
             {
-                low:String, 
+                low:String,
                 high: String
             }
             |e|{
                 format_args!("Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp {1}",e.low,e.high)
             },
-    
+
         InvalidHeaderHeight
             {height: Height}
             |e|{
@@ -144,9 +144,9 @@ define_error! {
 define_error! {
      VerificationError {
 
-        InvalidSignature 
+        InvalidSignature
         | _ | { "Couldn't verify validator signature " },
-    
+
 
         DuplicateValidator
         { id: Id}
@@ -154,7 +154,7 @@ define_error! {
             format_args!{"Duplicate validator in commit signatures with address {}", e.id}
         },
 
-        InsufficientOverlap 
+        InsufficientOverlap
         {q1: u64,  q2: u64}
         |e| {
             format_args!("Insufficient signers overlap between {0} and {1}", e.q1, e.q2)

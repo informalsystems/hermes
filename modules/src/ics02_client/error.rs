@@ -6,11 +6,10 @@ use crate::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
 use crate::Height;
 use std::num::TryFromIntError;
-use tendermint_proto::Error as TendermintError;
 use tendermint::hash::Hash;
+use tendermint_proto::Error as TendermintError;
 
 use flex_error::{define_error, TraceError};
-
 
 define_error! {
     Error {
@@ -170,7 +169,7 @@ define_error! {
                 format_args!("mismatch between client and arguments types, expected: {0:?}",
                     e.client_type)
             },
-        
+
         InsufficientVotingPower
             { reason: String}
             |e|{
@@ -211,12 +210,12 @@ define_error! {
             {
                 time1: Timestamp,
                 time2: Timestamp,
-            }  
+            }
             | e |{
                 format_args!("Timestamp none or {} and now {}", e.time1, e.time2)
             },
 
-            NotEnoughTrustedValsSigned 
+            NotEnoughTrustedValsSigned
                 {reason :String}
                 | e |{
                     format_args!("Not enough trust because insufficient validators overlap: {}", e.reason)
@@ -239,8 +238,8 @@ define_error! {
                 | e | {
                     format_args!("State not withing trusting period: expires_at={} now={}",e.latest_time, e.update_time)
                 },
-            
-            HeaderNotWithinTrustPeriod 
+
+            HeaderNotWithinTrustPeriod
             {
                 latest_time:Timestamp,
                 update_time: Timestamp,
@@ -257,7 +256,7 @@ define_error! {
             | e | {
                 format_args!("Header revision {0} and client state revision {1} should coincide",e.current_revision, e.update_revision)
             },
-     
+
     }
 
 }

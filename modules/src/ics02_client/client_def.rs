@@ -4,8 +4,8 @@ use crate::downcast;
 use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::Error;
 use crate::ics02_client::context::ClientReader;
+use crate::ics02_client::error::Error;
 use crate::ics02_client::header::{AnyHeader, Header};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
@@ -23,7 +23,6 @@ pub trait ClientDef: Clone {
     type ClientState: ClientState;
     type ConsensusState: ConsensusState;
 
-    
     fn check_header_and_update_state(
         &self,
         ctx: &dyn ClientReader,

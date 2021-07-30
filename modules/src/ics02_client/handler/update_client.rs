@@ -55,7 +55,9 @@ pub fn process(
     // Read consensus state from the host chain store.
     let latest_consensus_state = ctx
         .consensus_state(&client_id, client_state.latest_height())
-        .ok_or_else(|| Error::consensus_state_not_found(client_id.clone(), client_state.latest_height()))?;
+        .ok_or_else(|| {
+            Error::consensus_state_not_found(client_id.clone(), client_state.latest_height())
+        })?;
 
     info!("latest consensus state {:?}", latest_consensus_state);
 

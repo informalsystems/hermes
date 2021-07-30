@@ -95,7 +95,9 @@ impl ClientDef for TendermintClient {
             )
             .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?,
             None => {
-                return Err(Error::consensus_state_not_found(client_id, header.trusted_height).into())
+                return Err(
+                    Error::consensus_state_not_found(client_id, header.trusted_height).into(),
+                )
             }
         };
 
