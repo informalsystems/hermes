@@ -25,6 +25,7 @@ pub fn process(
     ctx: &dyn ClientReader,
     msg: MsgUpgradeAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
+    dbg!("PROCESS");
     let mut output = HandlerOutput::builder();
     let MsgUpgradeAnyClient { client_id, .. } = msg;
 
@@ -38,6 +39,11 @@ pub fn process(
     }
 
     let upgrade_client_state = msg.client_state.clone();
+
+    dbg!(
+        client_state.latest_height(),
+        upgrade_client_state.latest_height()
+    );
 
     if client_state.latest_height() >= upgrade_client_state.latest_height() {
         return Err(Error::low_upgrade_height(
