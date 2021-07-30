@@ -55,7 +55,7 @@ impl MockHeader {
     pub fn new(height: Height) -> Self {
         Self {
             height,
-            timestamp: Default::default(),
+            timestamp: Timestamp::now(),
         }
     }
 
@@ -96,14 +96,14 @@ mod tests {
 
     #[test]
     fn encode_any() {
-        let header = MockHeader::new(Height::new(1, 10));
+        let header = MockHeader::new(Height::new(1, 10)).with_timestamp(Timestamp::none());
         let bytes = header.wrap_any().encode_vec().unwrap();
 
         assert_eq!(
             &bytes,
             &[
                 10, 16, 47, 105, 98, 99, 46, 109, 111, 99, 107, 46, 72, 101, 97, 100, 101, 114, 18,
-                6, 10, 4, 8, 1, 16, 10,
+                6, 10, 4, 8, 1, 16, 10
             ]
         );
     }

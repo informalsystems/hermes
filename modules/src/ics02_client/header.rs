@@ -10,6 +10,7 @@ use crate::ics07_tendermint::header::Header as TendermintHeader;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
 use crate::Height;
+//use crate::timestamp::Timestamp;
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
@@ -55,6 +56,14 @@ impl Header for AnyHeader {
         }
     }
 
+    // fn timestamp(&self) -> Timestamp {
+    //     match self {
+    //         Self::Tendermint(header) => header.timestamp,
+
+    //         #[cfg(any(test, feature = "mocks"))]
+    //         Self::Mock(header) => header.timestamp,
+    //     }
+    // }
     fn wrap_any(self) -> AnyHeader {
         self
     }
