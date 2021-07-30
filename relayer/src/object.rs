@@ -305,10 +305,8 @@ impl Object {
             )
         })?;
 
-        let dst_chain_id =
-            counterparty_chain_from_connection(src_chain, &connection_id).map_err(|_| {
-                "destination chain id not found during conn open handshake step".to_string()
-            })?;
+        let dst_chain_id = counterparty_chain_from_connection(src_chain, connection_id)
+            .map_err(ObjectError::supervisor)?;
 
         Ok(Connection {
             dst_chain_id,
@@ -328,14 +326,8 @@ impl Object {
             .ok_or_else(|| format!("channel_id missing in event attributes'{:?}'", attributes))?;
 
         let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id()).map_err(
-                |err| {
-                    format!(
-                        "cannot identify destination chain from event attributes {:?}: {}",
-                        attributes, err
-                    )
-                },
-            )?;
+            counterparty_chain_from_channel(src_chain, channel_id, attributes.port_id())
+                .map_err(ObjectError::supervisor)?;
 
         Ok(Channel {
             dst_chain_id,
@@ -356,14 +348,8 @@ impl Object {
             .ok_or_else(|| format!("channel_id missing in event attributes'{:?}'", attributes))?;
 
         let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id()).map_err(
-                |err| {
-                    format!(
-                        "cannot identify destination chain from event attributes {:?}: {}",
-                        attributes, err
-                    )
-                },
-            )?;
+            counterparty_chain_from_channel(src_chain, channel_id, attributes.port_id())
+                .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
             dst_chain_id,
@@ -435,9 +421,9 @@ impl Object {
     pub fn for_close_init_channel(
         e: &CloseInit,
         src_chain: &dyn ChainHandle,
-    ) -> Result<Self, BoxError> {
-        let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, e.channel_id(), &e.port_id())?;
+    ) -> Result<Self, ObjectError> {
+        let dst_chain_id = counterparty_chain_from_channel(src_chain, e.channel_id(), e.port_id())
+            .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
             dst_chain_id,

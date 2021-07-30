@@ -424,7 +424,7 @@ impl Channel {
             // Continue loop if query error
             let a_channel = channel
                 .src_chain()
-                .query_channel(&channel.src_port_id(), src_channel_id, Height::zero())
+                .query_channel(channel.src_port_id(), src_channel_id, Height::zero())
                 .map_err(|e| {
                     ChannelError::HandshakeFinalize(
                         channel.src_port_id().clone(),
@@ -436,7 +436,7 @@ impl Channel {
 
             let b_channel = channel
                 .dst_chain()
-                .query_channel(&channel.dst_port_id(), dst_channel_id, Height::zero())
+                .query_channel(channel.dst_port_id(), dst_channel_id, Height::zero())
                 .map_err(|e| {
                     ChannelError::HandshakeFinalize(
                         channel.dst_port_id().clone(),

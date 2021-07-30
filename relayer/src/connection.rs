@@ -403,11 +403,11 @@ impl Connection {
                 .ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
 
             // Continue loop if query error
-            let a_connection = a_chain.query_connection(&src_connection_id, Height::zero());
+            let a_connection = a_chain.query_connection(src_connection_id, Height::zero());
             if a_connection.is_err() {
                 continue;
             }
-            let b_connection = b_chain.query_connection(&dst_connection_id, Height::zero());
+            let b_connection = b_chain.query_connection(dst_connection_id, Height::zero());
             if b_connection.is_err() {
                 continue;
             }
@@ -465,13 +465,8 @@ impl Connection {
 
         let connection_end = self
             .src_chain()
-            .query_connection(&connection_id, Height::zero())
-            .map_err(|_| {
-                ConnectionError::Failed(format!(
-                    "failed to query the connection for {}",
-                    connection_id
-                ))
-            })?;
+            .query_connection(connection_id, Height::zero())
+            .map_err(|e| ConnectionError::connection_query(connection_id.clone(), e))?;
 
         let connection = IdentifiedConnectionEnd {
             connection_end,
