@@ -1,6 +1,6 @@
 mod runner;
 
-use modelator::{ModelChecker, TestError, run_tla_steps};
+use modelator::{run_tla_steps, ModelChecker, TestError};
 use runner::IbcTestRunner;
 
 #[test]
