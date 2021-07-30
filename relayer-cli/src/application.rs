@@ -148,7 +148,22 @@ impl Application for CliApp {
 
         let config = config_path
             .map(|path| self.load_config(&path))
-            .transpose()?
+            .transpose()
+            .map_err(|err| {
+                let path = self.config_path.clone().unwrap_or_default();
+                eprintln!(
+                    "The Hermes configuration file at path '{}' is invalid, reason: {}",
+                    path.to_string_lossy(),
+                    err
+                );
+                eprintln!(
+                    "Please see the example configuration for detailed information about the \
+                    supported configuration options: \
+                    https://github.com/informalsystems/ibc-rs/blob/master/config.toml"
+                );
+                std::process::exit(1);
+            })
+            .expect("invalid config")
             .unwrap_or_default();
 
         // Update the `json_output` flag used by `conclude::Output`

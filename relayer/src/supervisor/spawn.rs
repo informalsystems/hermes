@@ -173,7 +173,7 @@ impl<'a> SpawnContext<'a> {
             if chain_id == &id {
                 continue;
             }
-            self.spawn_workers_from_chain_to_chain(&id, &chain_id);
+            self.spawn_workers_from_chain_to_chain(&id, chain_id);
         }
     }
 
@@ -363,7 +363,7 @@ impl<'a> SpawnContext<'a> {
         for channel in connection_channels {
             let channel_id = channel.channel_id.clone();
 
-            match self.spawn_workers_for_channel(chain.clone(), &client, &connection, channel) {
+            match self.spawn_workers_for_channel(chain.clone(), client, &connection, channel) {
                 Ok(()) => debug!(
                     "done spawning workers for chain {} and channel {}",
                     chain.id(),
@@ -477,7 +477,7 @@ impl<'a> SpawnContext<'a> {
             .map_err(SupervisorError::spawn)?;
 
         let counterparty_channel =
-            channel_on_destination(&channel, &connection, counterparty_chain.as_ref())?;
+            channel_on_destination(&channel, connection, counterparty_chain.as_ref())?;
 
         let chan_state_src = channel.channel_end.state;
         let chan_state_dst = counterparty_channel

@@ -86,11 +86,15 @@ use super::Chain;
 
 mod compatibility;
 
+/// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
+
+/// Fraction of the estimated gas to add to the gas limit when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
-const DEFAULT_MAX_MSG_NUM: usize = 30;
-const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
+/// Upper limit on the size of transactions submitted by Hermes, expressed as a
+/// fraction of the maximum block size defined in the Tendermint core consensus parameters.
+pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 
 mod retry_strategy {
     use crate::util::retry::Fixed;
@@ -115,12 +119,12 @@ pub struct CosmosSdkChain {
 
 impl CosmosSdkChain {
     /// Does multiple RPC calls to the full node, to check for
-    /// reachability and that some basic APIs are available.
+    /// reachability and some basic APIs are available.
     ///
     /// Currently this checks that:
     ///     - the node responds OK to `/health` RPC call;
     ///     - the node has transaction indexing enabled;
-    ///     - the SDK version is supported.
+    ///     - the SDK version is supported;
     ///
     /// Emits a log warning in case anything is amiss.
     /// Exits early if any health check fails, without doing any
@@ -161,10 +165,11 @@ impl CosmosSdkChain {
                     )
                 })?;
 
+            // Construct a grpc client
             let mut client = ServiceClient::connect(chain.grpc_addr.clone())
                 .await
                 .map_err(|e| {
-                    Error::health_check_json_grpc_transport(
+                    Error::health_check_grpc_transport(
                         chain_id.clone(),
                         rpc_address.clone(),
                         "tendermint::ServiceClient".to_string(),
@@ -175,7 +180,7 @@ impl CosmosSdkChain {
             let request = tonic::Request::new(GetNodeInfoRequest {});
 
             let response = client.get_node_info(request).await.map_err(|e| {
-                Error::health_check_json_grpc_status(
+                Error::health_check_grpc_status(
                     chain_id.clone(),
                     rpc_address.clone(),
                     "tendermint::ServiceClient".to_string(),
@@ -204,8 +209,50 @@ impl CosmosSdkChain {
         }
 
         if let Err(e) = self.block_on(do_health_checkup(self)) {
-            warn!("{}", e);
-            warn!("some Hermes features may not work in this mode!");
+            warn!("Health checkup for chain '{}' failed", self.id());
+            warn!("    Reason: {}", e);
+            warn!("    Some Hermes features may not work in this mode!");
+        }
+    }
+
+    /// Performs validation of chain-specific configuration
+    /// parameters against the chain's genesis configuration.
+    ///
+    /// Currently, validates the following:
+    ///     - the configured `max_tx_size` is appropriate.
+    ///
+    /// Emits a log warning in case any error is encountered and
+    /// exits early without doing subsequent validations.
+    pub fn validate_params(&self) {
+        fn do_validate_params(chain: &CosmosSdkChain) -> Result<(), Error> {
+            // Check on the configured max_tx_size against genesis block max_bytes parameter
+            let genesis = chain.block_on(chain.rpc_client.genesis()).map_err(|e| {
+                Error::config_validation_json_rpc(
+                    chain.id().clone(),
+                    chain.config.rpc_addr.to_string(),
+                    "/genesis".to_string(),
+                    e,
+                )
+            })?;
+
+            let genesis_max_bound = genesis.consensus_params.block.max_bytes;
+            let max_allowed = mul_ceil(genesis_max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
+
+            if chain.max_tx_size() > max_allowed {
+                return Err(Error::config_validation_tx_size_out_of_bounds(
+                    chain.id().clone(),
+                    chain.max_tx_size(),
+                    genesis_max_bound,
+                ));
+            }
+
+            Ok(())
+        }
+
+        if let Err(e) = do_validate_params(self) {
+            warn!("Hermes might be misconfigured for chain '{}'", self.id());
+            warn!("    Reason: {}", e);
+            warn!("    Some Hermes features may not work in this mode!");
         }
     }
 
@@ -378,12 +425,12 @@ impl CosmosSdkChain {
 
     /// The maximum number of messages included in a transaction
     fn max_msg_num(&self) -> usize {
-        self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
+        self.config.max_msg_num.into()
     }
 
     /// The maximum size of any transaction sent by the relayer to this chain
     fn max_tx_size(&self) -> usize {
-        self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
+        self.config.max_tx_size.into()
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
@@ -605,7 +652,7 @@ impl CosmosSdkChain {
                 for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
                     // If this transaction was not committed, determine whether it was because it failed
                     // or because it hasn't been committed yet.
-                    if empty_event_present(&events) {
+                    if empty_event_present(events) {
                         // If the transaction failed, replace the events with an error,
                         // so that we don't attempt to resolve the transaction later on.
                         if response.code.value() != 0 {
@@ -677,6 +724,7 @@ impl Chain for CosmosSdkChain {
         };
 
         chain.health_checkup();
+        chain.validate_params();
 
         Ok(chain)
     }
@@ -1964,6 +2012,7 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     }
 }
 
+/// Multiply `a` with `f` and round to result up to the nearest integer.
 fn mul_ceil(a: u64, f: f64) -> u64 {
     use fraction::Fraction as F;
 

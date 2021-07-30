@@ -226,7 +226,7 @@ impl TxUpgradeClientsCmd {
         src_chain: Box<dyn ChainHandle>,
         dst_chain_id: &ChainId,
     ) -> UpgradeClientsForChainResult {
-        let dst_chain = spawn_chain_runtime(&config, dst_chain_id)?;
+        let dst_chain = spawn_chain_runtime(config, dst_chain_id)?;
 
         let req = QueryClientStatesRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
