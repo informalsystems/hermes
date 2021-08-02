@@ -1,4 +1,4 @@
-This minor release of Hermes re-enables the `upgrade client`,
+This minor release of Hermes re-enables the `upgrade client`, `upgrade clients`,
 `tx raw upgrade-clients`, and `tx raw upgrade-chain`, and otherwise
 contains a few bug fixes and internal improvements.
 
