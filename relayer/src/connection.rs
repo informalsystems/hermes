@@ -191,18 +191,14 @@ define_error! {
 }
 
 #[derive(Clone, Debug)]
-pub struct ConnectionSide {
-    pub(crate) chain: Box<dyn ChainHandle>,
+pub struct ConnectionSide<Chain: ChainHandle> {
+    pub(crate) chain: Chain,
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
 }
 
-impl ConnectionSide {
-    pub fn new(
-        chain: Box<dyn ChainHandle>,
-        client_id: ClientId,
-        connection_id: Option<ConnectionId>,
-    ) -> Self {
+impl<Chain: ChainHandle> ConnectionSide<Chain> {
+    pub fn new(chain: Chain, client_id: ClientId, connection_id: Option<ConnectionId>) -> Self {
         Self {
             chain,
             client_id,
@@ -214,7 +210,7 @@ impl ConnectionSide {
     }
 }
 
-impl Serialize for ConnectionSide {
+impl<Chain: ChainHandle> Serialize for ConnectionSide<Chain> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -235,18 +231,18 @@ impl Serialize for ConnectionSide {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Connection {
+pub struct Connection<Chain: ChainHandle> {
     pub delay_period: Duration,
-    pub a_side: ConnectionSide,
-    pub b_side: ConnectionSide,
+    pub a_side: ConnectionSide<Chain>,
+    pub b_side: ConnectionSide<Chain>,
 }
 
-impl Connection {
+impl<Chain: ChainHandle> Connection<Chain> {
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
     pub fn new(
-        a_client: ForeignClient,
-        b_client: ForeignClient,
+        a_client: ForeignClient<Chain>,
+        b_client: ForeignClient<Chain>,
         delay_period: Duration,
     ) -> Result<Self, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
@@ -275,10 +271,10 @@ impl Connection {
         Ok(c)
     }
     pub fn restore_from_event(
-        chain: Box<dyn ChainHandle>,
-        counterparty_chain: Box<dyn ChainHandle>,
+        chain: Chain,
+        counterparty_chain: Chain,
         connection_open_event: IbcEvent,
-    ) -> Result<Connection, ConnectionError> {
+    ) -> Result<Connection<Chain>, ConnectionError> {
         let connection_event_attributes = connection_open_event
             .connection_attributes()
             .ok_or_else(|| ConnectionError::invalid_event(connection_open_event.clone()))?;
@@ -307,11 +303,11 @@ impl Connection {
     /// Recreates a 'Connection' object from the worker's object built from chain state scanning.
     /// The connection must exist on chain.
     pub fn restore_from_state(
-        chain: Box<dyn ChainHandle>,
-        counterparty_chain: Box<dyn ChainHandle>,
+        chain: Chain,
+        counterparty_chain: Chain,
         connection: WorkerConnectionObject,
         height: Height,
-    ) -> Result<(Connection, State), ConnectionError> {
+    ) -> Result<(Connection<Chain>, State), ConnectionError> {
         let a_connection = chain
             .query_connection(&connection.src_connection_id, height)
             .map_err(ConnectionError::relayer)?;
@@ -367,10 +363,10 @@ impl Connection {
     }
 
     pub fn find(
-        a_client: ForeignClient,
-        b_client: ForeignClient,
+        a_client: ForeignClient<Chain>,
+        b_client: ForeignClient<Chain>,
         conn_end_a: &IdentifiedConnectionEnd,
-    ) -> Result<Connection, ConnectionError> {
+    ) -> Result<Connection<Chain>, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
         // Validate the connection end
@@ -421,8 +417,8 @@ impl Connection {
 
     // Verifies that the two clients are mutually consistent, i.e., they serve the same two chains.
     fn validate_clients(
-        a_client: &ForeignClient,
-        b_client: &ForeignClient,
+        a_client: &ForeignClient<Chain>,
+        b_client: &ForeignClient<Chain>,
     ) -> Result<(), ConnectionError> {
         if a_client.src_chain().id() != b_client.dst_chain().id() {
             return Err(ConnectionError::chain_id_mismatch(
@@ -441,11 +437,11 @@ impl Connection {
         Ok(())
     }
 
-    pub fn src_chain(&self) -> Box<dyn ChainHandle> {
+    pub fn src_chain(&self) -> Chain {
         self.a_side.chain.clone()
     }
 
-    pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
+    pub fn dst_chain(&self) -> Chain {
         self.b_side.chain.clone()
     }
 
@@ -465,7 +461,7 @@ impl Connection {
         self.b_side.connection_id()
     }
 
-    pub fn flipped(&self) -> Connection {
+    pub fn flipped(&self) -> Connection<Chain> {
         Connection {
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
@@ -593,7 +589,7 @@ impl Connection {
             connection_id: connection_id.clone(),
         };
 
-        connection_state_on_destination(connection, self.dst_chain().as_ref())
+        connection_state_on_destination(connection, &self.dst_chain())
             .map_err(ConnectionError::supervisor)
     }
 
@@ -1074,7 +1070,7 @@ impl Connection {
         }
     }
 
-    fn restore_src_client(&self) -> ForeignClient {
+    fn restore_src_client(&self) -> ForeignClient<Chain> {
         ForeignClient::restore(
             self.src_client_id().clone(),
             self.src_chain().clone(),
@@ -1082,7 +1078,7 @@ impl Connection {
         )
     }
 
-    fn restore_dst_client(&self) -> ForeignClient {
+    fn restore_dst_client(&self) -> ForeignClient<Chain> {
         ForeignClient::restore(
             self.dst_client_id().clone(),
             self.dst_chain().clone(),

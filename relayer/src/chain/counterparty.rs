@@ -20,7 +20,7 @@ use crate::supervisor::Error;
 use super::handle::ChainHandle;
 
 pub fn counterparty_chain_from_connection(
-    src_chain: &dyn ChainHandle,
+    src_chain: &impl ChainHandle,
     src_connection_id: &ConnectionId,
 ) -> Result<ChainId, Error> {
     let connection_end = src_chain
@@ -42,7 +42,7 @@ pub fn counterparty_chain_from_connection(
 fn connection_on_destination(
     connection_id_on_source: &ConnectionId,
     counterparty_client_id: &ClientId,
-    counterparty_chain: &dyn ChainHandle,
+    counterparty_chain: &impl ChainHandle,
 ) -> Result<Option<ConnectionEnd>, Error> {
     let req = QueryClientConnectionsRequest {
         client_id: counterparty_client_id.to_string(),
@@ -69,7 +69,7 @@ fn connection_on_destination(
 
 pub fn connection_state_on_destination(
     connection: IdentifiedConnectionEnd,
-    counterparty_chain: &dyn ChainHandle,
+    counterparty_chain: &impl ChainHandle,
 ) -> Result<ConnectionState, Error> {
     if let Some(remote_connection_id) = connection.connection_end.counterparty().connection_id() {
         let connection_end = counterparty_chain
@@ -119,7 +119,7 @@ impl ChannelConnectionClient {
 /// Returns the [`ChannelConnectionClient`] associated with the
 /// provided port and channel id.
 pub fn channel_connection_client(
-    chain: &dyn ChainHandle,
+    chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
@@ -165,7 +165,7 @@ pub fn channel_connection_client(
 }
 
 pub fn counterparty_chain_from_channel(
-    src_chain: &dyn ChainHandle,
+    src_chain: &impl ChainHandle,
     src_channel_id: &ChannelId,
     src_port_id: &PortId,
 ) -> Result<ChainId, Error> {
@@ -176,7 +176,7 @@ pub fn counterparty_chain_from_channel(
 fn fetch_channel_on_destination(
     port_id: &PortId,
     channel_id: &ChannelId,
-    counterparty_chain: &dyn ChainHandle,
+    counterparty_chain: &impl ChainHandle,
     remote_connection_id: &ConnectionId,
 ) -> Result<Option<ChannelEnd>, Error> {
     let req = QueryConnectionChannelsRequest {
@@ -202,7 +202,7 @@ fn fetch_channel_on_destination(
 pub fn channel_state_on_destination(
     channel: &IdentifiedChannelEnd,
     connection: &IdentifiedConnectionEnd,
-    counterparty_chain: &dyn ChainHandle,
+    counterparty_chain: &impl ChainHandle,
 ) -> Result<State, Error> {
     let remote_channel = channel_on_destination(channel, connection, counterparty_chain)?;
     Ok(remote_channel.map_or_else(
@@ -214,7 +214,7 @@ pub fn channel_state_on_destination(
 pub fn channel_on_destination(
     channel: &IdentifiedChannelEnd,
     connection: &IdentifiedConnectionEnd,
-    counterparty_chain: &dyn ChainHandle,
+    counterparty_chain: &impl ChainHandle,
 ) -> Result<Option<ChannelEnd>, Error> {
     if let Some(remote_channel_id) = channel.channel_end.remote.channel_id() {
         let counterparty = counterparty_chain
@@ -243,7 +243,7 @@ pub fn channel_on_destination(
 /// expected counterparty.
 /// Returns `Ok` if the counterparty matches, and `Err` otherwise.
 pub fn check_channel_counterparty(
-    target_chain: Box<dyn ChainHandle>,
+    target_chain: impl ChainHandle,
     target_pchan: &PortChannelId,
     expected: &PortChannelId,
 ) -> Result<(), ChannelError> {

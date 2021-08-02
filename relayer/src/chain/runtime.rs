@@ -53,7 +53,7 @@ use crate::{
 };
 
 use super::{
-    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
+    handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     Chain,
 };
 
@@ -92,10 +92,10 @@ pub struct ChainRuntime<C: Chain> {
 
 impl<C: Chain + Send + 'static> ChainRuntime<C> {
     /// Spawns a new runtime for a specific Chain implementation.
-    pub fn spawn(
+    pub fn spawn<Handle: ChainHandle>(
         config: ChainConfig,
         rt: Arc<TokioRuntime>,
-    ) -> Result<Box<dyn ChainHandle>, Error> {
+    ) -> Result<Handle, Error> {
         // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
 
@@ -112,17 +112,17 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     /// Initializes a runtime for a given chain, and spawns the associated thread
-    fn init(
+    fn init<Handle: ChainHandle>(
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: EventReceiver,
         tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
-    ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
+    ) -> (Handle, thread::JoinHandle<()>) {
         let chain_runtime = Self::new(chain, light_client, event_receiver, tx_monitor_cmd, rt);
 
         // Get a handle to the runtime
-        let handle = chain_runtime.handle();
+        let handle: Handle = chain_runtime.handle();
 
         // Spawn the runtime & return
         let id = handle.id();
@@ -157,11 +157,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         }
     }
 
-    pub fn handle(&self) -> Box<dyn ChainHandle> {
-        let chain_id = self.chain.id().clone();
+    pub fn handle<Handle: ChainHandle>(&self) -> Handle {
+        let chain_id = Chain::id(&self.chain).clone();
         let sender = self.request_sender.clone();
 
-        Box::new(ProdChainHandle::new(chain_id, sender))
+        Handle::new(chain_id, sender)
     }
 
     fn run(mut self) -> Result<(), Error> {

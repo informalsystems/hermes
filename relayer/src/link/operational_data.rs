@@ -7,6 +7,7 @@ use tracing::{info, warn};
 use ibc::events::IbcEvent;
 use ibc::Height;
 
+use crate::chain::handle::ChainHandle;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
@@ -66,7 +67,10 @@ impl OperationalData {
 
     /// Returns all the messages in this operational data, plus prepending the client update message
     /// if necessary.
-    pub fn assemble_msgs(&self, relay_path: &RelayPath) -> Result<Vec<Any>, LinkError> {
+    pub fn assemble_msgs<Chain: ChainHandle>(
+        &self,
+        relay_path: &RelayPath<Chain>,
+    ) -> Result<Vec<Any>, LinkError> {
         if self.batch.is_empty() {
             warn!("assemble_msgs() method call on an empty OperationalData!");
             return Ok(vec![]);

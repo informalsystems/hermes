@@ -47,16 +47,15 @@ use self::spawn::SpawnMode;
 
 type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
-type BoxHandle = Box<dyn ChainHandle>;
 
 pub type RwArc<T> = Arc<RwLock<T>>;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
 /// worker, based on the [`Object`] associated with each event.
-pub struct Supervisor {
+pub struct Supervisor<Chain: ChainHandle> {
     config: RwArc<Config>,
-    registry: Registry,
+    registry: Registry<Chain>,
     workers: WorkerMap,
 
     cmd_rx: Receiver<SupervisorCmd>,
@@ -67,7 +66,7 @@ pub struct Supervisor {
     telemetry: Telemetry,
 }
 
-impl Supervisor {
+impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn new(config: RwArc<Config>, telemetry: Telemetry) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
@@ -177,7 +176,7 @@ impl Supervisor {
     /// and maps each [`IbcEvent`] to their corresponding [`Object`].
     pub fn collect_events(
         &self,
-        src_chain: &dyn ChainHandle,
+        src_chain: &impl ChainHandle,
         batch: &EventBatch,
     ) -> CollectedEvents {
         let mut collected = CollectedEvents::new(batch.height, batch.chain_id.clone());
@@ -341,7 +340,7 @@ impl Supervisor {
     }
 
     /// Create a new `SpawnContext` for spawning workers.
-    fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_> {
+    fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_, Chain> {
         SpawnContext::new(
             &self.config,
             &mut self.registry,
@@ -391,7 +390,7 @@ impl Supervisor {
     }
 
     /// Subscribe to the events emitted by the chains the supervisor is connected to.
-    fn init_subscriptions(&mut self) -> Result<Vec<(BoxHandle, Subscription)>, Error> {
+    fn init_subscriptions(&mut self) -> Result<Vec<(Chain, Subscription)>, Error> {
         let chains = &self.config.read().expect("poisoned lock").chains;
 
         let mut subscriptions = Vec::with_capacity(chains.len());
@@ -559,7 +558,7 @@ impl Supervisor {
 
     /// Process the given batch if it does not contain any errors,
     /// output the errors on the console otherwise.
-    fn handle_batch(&mut self, chain: Box<dyn ChainHandle>, batch: ArcBatch) {
+    fn handle_batch(&mut self, chain: Chain, batch: ArcBatch) {
         let chain_id = chain.id();
 
         match batch.deref() {
@@ -585,17 +584,13 @@ impl Supervisor {
     }
 
     /// Process a batch of events received from a chain.
-    fn process_batch(
-        &mut self,
-        src_chain: Box<dyn ChainHandle>,
-        batch: &EventBatch,
-    ) -> Result<(), Error> {
+    fn process_batch(&mut self, src_chain: Chain, batch: &EventBatch) -> Result<(), Error> {
         assert_eq!(src_chain.id(), batch.chain_id);
 
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
-        let mut collected = self.collect_events(src_chain.clone().as_ref(), batch);
+        let mut collected = self.collect_events(&src_chain, batch);
 
         for (object, events) in collected.per_object.drain() {
             if !self.relay_on_object(&src_chain.id(), &object) {

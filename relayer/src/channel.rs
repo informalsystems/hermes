@@ -67,22 +67,22 @@ pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> C
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct ChannelSide {
-    pub chain: Box<dyn ChainHandle>,
+pub struct ChannelSide<Chain: ChainHandle> {
+    pub chain: Chain,
     client_id: ClientId,
     connection_id: ConnectionId,
     port_id: PortId,
     channel_id: Option<ChannelId>,
 }
 
-impl ChannelSide {
+impl<Chain: ChainHandle> ChannelSide<Chain> {
     pub fn new(
-        chain: Box<dyn ChainHandle>,
+        chain: Chain,
         client_id: ClientId,
         connection_id: ConnectionId,
         port_id: PortId,
         channel_id: Option<ChannelId>,
-    ) -> ChannelSide {
+    ) -> ChannelSide<Chain> {
         Self {
             chain,
             client_id,
@@ -114,19 +114,19 @@ impl ChannelSide {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Channel {
+pub struct Channel<Chain: ChainHandle> {
     pub ordering: Order,
-    pub a_side: ChannelSide,
-    pub b_side: ChannelSide,
+    pub a_side: ChannelSide<Chain>,
+    pub b_side: ChannelSide<Chain>,
     pub connection_delay: Duration,
     pub version: Option<String>,
 }
 
-impl Channel {
+impl<Chain: ChainHandle> Channel<Chain> {
     /// Creates a new channel on top of the existing connection. If the channel is not already
     /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
     pub fn new(
-        connection: Connection,
+        connection: Connection<Chain>,
         ordering: Order,
         a_port: PortId,
         b_port: PortId,
@@ -172,10 +172,10 @@ impl Channel {
     }
 
     pub fn restore_from_event(
-        chain: Box<dyn ChainHandle>,
-        counterparty_chain: Box<dyn ChainHandle>,
+        chain: Chain,
+        counterparty_chain: Chain,
         channel_open_event: IbcEvent,
-    ) -> Result<Channel, ChannelError> {
+    ) -> Result<Channel<Chain>, ChannelError> {
         let channel_event_attributes = channel_open_event
             .channel_attributes()
             .ok_or_else(|| ChannelError::invalid_event(channel_open_event.clone()))?;
@@ -227,11 +227,11 @@ impl Channel {
     /// Recreates a 'Channel' object from the worker's object built from chain state scanning.
     /// The channel must exist on chain and its connection must be initialized on both chains.
     pub fn restore_from_state(
-        chain: Box<dyn ChainHandle>,
-        counterparty_chain: Box<dyn ChainHandle>,
+        chain: Chain,
+        counterparty_chain: Chain,
         channel: WorkerChannelObject,
         height: Height,
-    ) -> Result<(Channel, State), ChannelError> {
+    ) -> Result<(Channel<Chain>, State), ChannelError> {
         let a_channel = chain
             .query_channel(&channel.src_port_id, &channel.src_channel_id, height)
             .map_err(ChannelError::relayer)?;
@@ -302,11 +302,11 @@ impl Channel {
         Ok((handshake_channel, a_channel.state))
     }
 
-    pub fn src_chain(&self) -> &Box<dyn ChainHandle> {
+    pub fn src_chain(&self) -> &Chain {
         &self.a_side.chain
     }
 
-    pub fn dst_chain(&self) -> &Box<dyn ChainHandle> {
+    pub fn dst_chain(&self) -> &Chain {
         &self.b_side.chain
     }
 
@@ -342,7 +342,7 @@ impl Channel {
         self.b_side.channel_id()
     }
 
-    pub fn flipped(&self) -> Channel {
+    pub fn flipped(&self) -> Channel<Chain> {
         Channel {
             ordering: self.ordering,
             a_side: self.b_side.clone(),
@@ -425,7 +425,9 @@ impl Channel {
     ///     - Rpc problems (a query or submitting a tx failed).
     /// In both `Err` cases, there should be retry calling this method.
     fn do_chan_open_finalize(&self) -> Result<(), ChannelError> {
-        fn query_channel_states(channel: &Channel) -> Result<(State, State), ChannelError> {
+        fn query_channel_states<Chain: ChainHandle>(
+            channel: &Channel<Chain>,
+        ) -> Result<(State, State), ChannelError> {
             let src_channel_id = channel
                 .src_channel_id()
                 .ok_or_else(ChannelError::missing_local_channel_id)?;
@@ -467,7 +469,11 @@ impl Channel {
             Ok((*a_channel.state(), *b_channel.state()))
         }
 
-        fn expect_channel_states(ctx: &Channel, a1: State, b1: State) -> Result<(), ChannelError> {
+        fn expect_channel_states<Chain: ChainHandle>(
+            ctx: &Channel<Chain>,
+            a1: State,
+            b1: State,
+        ) -> Result<(), ChannelError> {
             let (a2, b2) = query_channel_states(ctx)?;
 
             if (a1, b1) == (a2, b2) {
@@ -583,13 +589,13 @@ impl Channel {
             .ok_or_else(ChannelError::missing_local_channel_id)?;
 
         let channel_deps =
-            channel_connection_client(self.src_chain().as_ref(), self.src_port_id(), channel_id)
+            channel_connection_client(self.src_chain(), self.src_port_id(), channel_id)
                 .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))?;
 
         channel_state_on_destination(
             &channel_deps.channel,
             &channel_deps.connection,
-            self.dst_chain().as_ref(),
+            self.dst_chain(),
         )
         .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
     }
@@ -931,7 +937,9 @@ impl Channel {
     }
 
     pub fn build_chan_open_ack_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        fn do_build_chan_open_ack_and_send(channel: &Channel) -> Result<IbcEvent, ChannelError> {
+        fn do_build_chan_open_ack_and_send<Chain: ChainHandle>(
+            channel: &Channel<Chain>,
+        ) -> Result<IbcEvent, ChannelError> {
             let dst_msgs = channel.build_chan_open_ack()?;
 
             let events = channel
@@ -1025,8 +1033,8 @@ impl Channel {
     }
 
     pub fn build_chan_open_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        fn do_build_chan_open_confirm_and_send(
-            channel: &Channel,
+        fn do_build_chan_open_confirm_and_send<Chain: ChainHandle>(
+            channel: &Channel<Chain>,
         ) -> Result<IbcEvent, ChannelError> {
             let dst_msgs = channel.build_chan_open_confirm()?;
 

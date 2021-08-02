@@ -64,9 +64,9 @@ pub struct TransferOptions {
     pub number_msgs: usize,
 }
 
-pub fn build_and_send_transfer_messages(
-    packet_src_chain: Box<dyn ChainHandle>, // the chain whose account is debited
-    packet_dst_chain: Box<dyn ChainHandle>, // the chain whose account eventually gets credited
+pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
+    packet_src_chain: Chain, // the chain whose account is debited
+    packet_dst_chain: Chain, // the chain whose account eventually gets credited
     opts: TransferOptions,
 ) -> Result<Vec<IbcEvent>, PacketError> {
     let receiver = match &opts.receiver {

@@ -26,12 +26,12 @@ pub struct LinkParameters {
     pub src_channel_id: ChannelId,
 }
 
-pub struct Link {
-    pub a_to_b: RelayPath,
+pub struct Link<Chain: ChainHandle> {
+    pub a_to_b: RelayPath<Chain>,
 }
 
-impl Link {
-    pub fn new(channel: Channel) -> Self {
+impl<Chain: ChainHandle> Link<Chain> {
+    pub fn new(channel: Channel<Chain>) -> Self {
         Self {
             a_to_b: RelayPath::new(channel),
         }
@@ -68,10 +68,10 @@ impl Link {
     }
 
     pub fn new_from_opts(
-        a_chain: Box<dyn ChainHandle>,
-        b_chain: Box<dyn ChainHandle>,
+        a_chain: Chain,
+        b_chain: Chain,
         opts: LinkParameters,
-    ) -> Result<Link, LinkError> {
+    ) -> Result<Link<Chain>, LinkError> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
         let a_channel = a_chain

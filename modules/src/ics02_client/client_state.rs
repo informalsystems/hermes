@@ -21,7 +21,6 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
-#[dyn_clonable::clonable]
 pub trait ClientState: Clone + std::fmt::Debug + Send + Sync {
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).

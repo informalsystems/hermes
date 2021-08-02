@@ -6,26 +6,28 @@ use tracing::{debug, info, warn};
 use crate::connection::Connection as RelayConnection;
 use crate::telemetry::Telemetry;
 use crate::{
-    chain::handle::ChainHandlePair, object::Connection, util::retry::retry_with_index,
+    chain::handle::{ChainHandle, ChainHandlePair},
+    object::Connection,
+    util::retry::retry_with_index,
     worker::retry_strategy,
 };
 
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub struct ConnectionWorker {
+pub struct ConnectionWorker<Chain: ChainHandle> {
     connection: Connection,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<Chain>,
     cmd_rx: Receiver<WorkerCmd>,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
 }
 
-impl ConnectionWorker {
+impl<Chain: ChainHandle> ConnectionWorker<Chain> {
     pub fn new(
         connection: Connection,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<Chain>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
     ) -> Self {
@@ -133,7 +135,7 @@ impl ConnectionWorker {
     }
 
     /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<Chain> {
         &self.chains
     }
 

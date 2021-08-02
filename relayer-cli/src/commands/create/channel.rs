@@ -5,6 +5,7 @@ use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;

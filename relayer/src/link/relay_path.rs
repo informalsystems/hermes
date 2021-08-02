@@ -40,8 +40,8 @@ use crate::link::relay_summary::RelaySummary;
 
 const MAX_RETRIES: usize = 5;
 
-pub struct RelayPath {
-    channel: Channel,
+pub struct RelayPath<Chain: ChainHandle> {
+    channel: Channel<Chain>,
     // Marks whether this path has already cleared pending packets.
     // Packets should be cleared once (at startup), then this
     // flag turns to `false`.
@@ -55,8 +55,8 @@ pub struct RelayPath {
     dst_operational_data: Vec<OperationalData>,
 }
 
-impl RelayPath {
-    pub fn new(channel: Channel) -> Self {
+impl<Chain: ChainHandle> RelayPath<Chain> {
+    pub fn new(channel: Channel<Chain>) -> Self {
         Self {
             channel,
             clear_packets: true,
@@ -65,13 +65,11 @@ impl RelayPath {
         }
     }
 
-    #[allow(clippy::borrowed_box)]
-    pub fn src_chain(&self) -> &Box<dyn ChainHandle> {
+    pub fn src_chain(&self) -> &Chain {
         self.channel.src_chain()
     }
 
-    #[allow(clippy::borrowed_box)]
-    pub fn dst_chain(&self) -> &Box<dyn ChainHandle> {
+    pub fn dst_chain(&self) -> &Chain {
         self.channel.dst_chain()
     }
 
@@ -111,7 +109,7 @@ impl RelayPath {
             .ok_or_else(|| LinkError::missing_channel_id(self.dst_chain().id()))
     }
 
-    pub fn channel(&self) -> &Channel {
+    pub fn channel(&self) -> &Channel<Chain> {
         &self.channel
     }
 
@@ -1394,7 +1392,7 @@ impl RelayPath {
         }
     }
 
-    fn restore_src_client(&self) -> ForeignClient {
+    fn restore_src_client(&self) -> ForeignClient<Chain> {
         ForeignClient::restore(
             self.src_client_id().clone(),
             self.src_chain().clone(),
@@ -1402,7 +1400,7 @@ impl RelayPath {
         )
     }
 
-    fn restore_dst_client(&self) -> ForeignClient {
+    fn restore_dst_client(&self) -> ForeignClient<Chain> {
         ForeignClient::restore(
             self.dst_client_id().clone(),
             self.dst_chain().clone(),
@@ -1411,7 +1409,7 @@ impl RelayPath {
     }
 }
 
-impl fmt::Display for RelayPath {
+impl<Chain: ChainHandle> fmt::Display for RelayPath<Chain> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let channel_id = self
             .src_channel_id()

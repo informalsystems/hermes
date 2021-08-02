@@ -36,18 +36,18 @@ pub enum SpawnMode {
 }
 
 /// A context for spawning workers within the [`crate::supervisor::Supervisor`].
-pub struct SpawnContext<'a> {
+pub struct SpawnContext<'a, Chain: ChainHandle> {
     config: &'a RwArc<Config>,
-    registry: &'a mut Registry,
+    registry: &'a mut Registry<Chain>,
     workers: &'a mut WorkerMap,
     client_state_filter: &'a mut FilterPolicy,
     mode: SpawnMode,
 }
 
-impl<'a> SpawnContext<'a> {
+impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
     pub fn new(
         config: &'a RwArc<Config>,
-        registry: &'a mut Registry,
+        registry: &'a mut Registry<Chain>,
         client_state_filter: &'a mut FilterPolicy,
         workers: &'a mut WorkerMap,
         mode: SpawnMode,
@@ -177,11 +177,7 @@ impl<'a> SpawnContext<'a> {
         }
     }
 
-    pub fn spawn_workers_for_client(
-        &mut self,
-        chain: Box<dyn ChainHandle>,
-        client: IdentifiedAnyClientState,
-    ) {
+    pub fn spawn_workers_for_client(&mut self, chain: Chain, client: IdentifiedAnyClientState) {
         // Potentially ignore the client
         if self.client_filter_enabled()
             && matches!(
@@ -245,7 +241,7 @@ impl<'a> SpawnContext<'a> {
 
     pub fn spawn_workers_for_connection(
         &mut self,
-        chain: Box<dyn ChainHandle>,
+        chain: Chain,
         client: &IdentifiedAnyClientState,
         connection_id: ConnectionId,
     ) {
@@ -389,12 +385,12 @@ impl<'a> SpawnContext<'a> {
             .get_or_spawn(&client.client_state.chain_id())
             .map_err(Error::spawn)?;
 
-        connection_state_on_destination(connection, counterparty_chain.as_ref())
+        connection_state_on_destination(connection, &counterparty_chain)
     }
 
     fn spawn_connection_workers(
         &mut self,
-        chain: Box<dyn ChainHandle>,
+        chain: Chain,
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<(), Error> {
@@ -411,7 +407,7 @@ impl<'a> SpawnContext<'a> {
 
         let conn_state_src = connection.connection_end.state;
         let conn_state_dst =
-            connection_state_on_destination(connection.clone(), counterparty_chain.as_ref())?;
+            connection_state_on_destination(connection.clone(), &counterparty_chain)?;
 
         debug!(
             "connection {} on chain {} is: {:?}, state on dest. chain ({}) is: {:?}",
@@ -460,7 +456,7 @@ impl<'a> SpawnContext<'a> {
     /// Spawns all the [`Worker`]s that will handle a given channel for a given source chain.
     pub fn spawn_workers_for_channel(
         &mut self,
-        chain: Box<dyn ChainHandle>,
+        chain: Chain,
         client: &IdentifiedAnyClientState,
         connection: &IdentifiedConnectionEnd,
         channel: IdentifiedChannelEnd,
@@ -477,7 +473,7 @@ impl<'a> SpawnContext<'a> {
             .map_err(SupervisorError::spawn)?;
 
         let counterparty_channel =
-            channel_on_destination(&channel, connection, counterparty_chain.as_ref())?;
+            channel_on_destination(&channel, connection, &counterparty_chain)?;
 
         let chan_state_src = channel.channel_end.state;
         let chan_state_dst = counterparty_channel
@@ -495,7 +491,7 @@ impl<'a> SpawnContext<'a> {
 
         if chan_state_src.is_open()
             && chan_state_dst.is_open()
-            && self.relay_packets_on_channel(chain.as_ref(), &channel)
+            && self.relay_packets_on_channel(&chain, &channel)
         {
             // spawn the client worker
             let client_object = Object::Client(Client {
@@ -556,7 +552,7 @@ impl<'a> SpawnContext<'a> {
 
     fn relay_packets_on_channel(
         &mut self,
-        chain: &dyn ChainHandle,
+        chain: &impl ChainHandle,
         channel: &IdentifiedChannelEnd,
     ) -> bool {
         let config = self.config.read().expect("poisoned lock");

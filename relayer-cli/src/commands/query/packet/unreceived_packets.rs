@@ -8,6 +8,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::chain::counterparty::channel_connection_client;
+use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
@@ -49,7 +50,7 @@ impl QueryUnreceivedPacketsCmd {
         let chain = spawn_chain_runtime(&*config, &self.chain_id)?;
 
         let channel_connection_client =
-            channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id)
+            channel_connection_client(&chain, &self.port_id, &self.channel_id)
                 .map_err(Error::supervisor)?;
 
         let channel = channel_connection_client.channel;

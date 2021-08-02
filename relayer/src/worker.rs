@@ -4,7 +4,12 @@ use crossbeam_channel::Sender;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info};
 
-use crate::{chain::handle::ChainHandlePair, config::Config, object::Object, telemetry::Telemetry};
+use crate::{
+    chain::handle::{ChainHandle, ChainHandlePair},
+    config::Config,
+    object::Object,
+    telemetry::Telemetry,
+};
 
 pub mod retry_strategy;
 
@@ -58,23 +63,23 @@ pub enum WorkerMsg {
 }
 
 /// A worker processes batches of events associated with a given [`Object`].
-pub enum Worker {
-    Client(WorkerId, ClientWorker),
-    Connection(WorkerId, ConnectionWorker),
-    Channel(WorkerId, ChannelWorker),
-    Packet(WorkerId, PacketWorker),
+pub enum Worker<Chain: ChainHandle> {
+    Client(WorkerId, ClientWorker<Chain>),
+    Connection(WorkerId, ConnectionWorker<Chain>),
+    Channel(WorkerId, ChannelWorker<Chain>),
+    Packet(WorkerId, PacketWorker<Chain>),
 }
 
-impl fmt::Display for Worker {
+impl<Chain: ChainHandle + 'static> fmt::Display for Worker<Chain> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{} <-> {}]", self.chains().a.id(), self.chains().b.id(),)
     }
 }
 
-impl Worker {
+impl<Chain: ChainHandle + 'static> Worker<Chain> {
     /// Spawn a worker which relays events pertaining to an [`Object`] between two `chains`.
     pub fn spawn(
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<Chain>,
         id: WorkerId,
         object: Object,
         msg_tx: Sender<WorkerMsg>,
@@ -150,7 +155,7 @@ impl Worker {
         }
     }
 
-    fn chains(&self) -> &ChainHandlePair {
+    fn chains(&self) -> &ChainHandlePair<Chain> {
         match self {
             Self::Client(_, w) => w.chains(),
             Self::Connection(_, w) => w.chains(),
