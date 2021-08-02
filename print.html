@@ -6,8 +6,6 @@
         <title>Hermes (IBC Relayer CLI) Documentation</title>
         <meta name="robots" content="noindex" />
         <!-- Custom HTML head -->
-        
-
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -86,7 +84,6 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                
                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
@@ -2960,7 +2957,7 @@ Success: Channel {
 <p>Hermes can send transactions triggered by IBC events. It currently handles channel handshake and packet events:</p>
 <ul>
 <li><a href="commands/relaying/./packets.html#packet-relaying">packets messages only</a></li>
-<li><a href="commands/relaying/channel.html#channel-handshake-relaying">channel and packet messages</a></li>
+<li><a href="commands/relaying/./handshakes.html">channel and packet messages</a></li>
 </ul>
 <h2 id="the-start-command"><a class="header" href="#the-start-command">The <code>start</code> Command</a></h2>
 <p>The <code>start</code> command can be used to start hermes in IBC event listen mode.</p>
@@ -3013,7 +3010,7 @@ based on these events, packets that are then sent either to the <code>source</co
 <h2 id="packet-delay"><a class="header" href="#packet-delay">Packet Delay</a></h2>
 <p>If the relay path is using a non-zero delay connection, then <code>hermes</code> will delay all packet transactions. The delay is relative to the submission time for the client update at the height required by the packet proof.
 The delay is used to prevent light client attacks and ensures that misbehavior detection finalizes before the transaction is submitted.
-For more information on the misbehavior detector see <a href="commands/relaying/../../misbehaviour/index.html#monitoring-misbehaviour-and-evidence-submission">the misbehaviour section</a>.</p>
+For more information on the misbehavior detector see <a href="commands/relaying/../misbehaviour/index.html#monitoring-misbehaviour-and-evidence-submission">the misbehaviour section</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="relaying-of-handshake-messages"><a class="header" href="#relaying-of-handshake-messages">Relaying of Handshake Messages</a></h1>
 <p>This section describes the configuration and commands that can be used to start the relayer and relay both handshake and packets
 for connections and channels.</p>
