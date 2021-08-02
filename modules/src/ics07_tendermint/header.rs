@@ -9,6 +9,7 @@ use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use crate::ics07_tendermint::error::VerificationError;
+use crate::timestamp::Timestamp;
 use tendermint::block::{Commit, CommitSig};
 use tendermint::trust_threshold::TrustThreshold;
 use tendermint::trust_threshold::TrustThresholdFraction;
@@ -83,13 +84,16 @@ pub fn monotonicity_checks(
     latest_consensus_state: ConsensusState,
     header: Header,
     client_state: ClientState,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Error> {
     if client_state.latest_height() >= header.height() {
-        return Err(Error::low_update_height(header.height(), client_state.latest_height).into());
+        return Err(Error::low_update_height(
+            header.height(),
+            client_state.latest_height,
+        ));
     }
 
     if header.height().is_zero() {
-        return Err(Error::invalid_header_height(header.height()).into());
+        return Err(Error::invalid_header_height(header.height()));
     }
 
     //check header timestamp is increasing
@@ -97,8 +101,7 @@ pub fn monotonicity_checks(
         return Err(Error::header_timestamp_outside_trusting_time(
             header.signed_header.header().time.as_rfc3339(),
             latest_consensus_state.timestamp.as_rfc3339(),
-        )
-        .into());
+        ));
     };
 
     // check that the header is not outside the trusting period
@@ -112,19 +115,16 @@ pub fn monotonicity_checks(
         return Err(Error::low_update_timestamp(
             header.signed_header.header().time.as_rfc3339(),
             latest_consensus_state.timestamp.as_rfc3339(),
-        )
-        .into());
+        ));
     };
 
     // check monotonicity of header height vs trusted height.
     // unclear needed
     if header.trusted_height >= header.height() {
-        return Err(format!(
-            "non monotonic height update w.r.t trusted header {}, {:?}",
+        return Err(Error::invalid_trusted_header_height(
             header.trusted_height,
-            header.height()
-        )
-        .into());
+            header.height(),
+        ));
     };
 
     Ok(())
@@ -252,6 +252,10 @@ impl crate::ics02_client::header::Header for Header {
 
     fn height(&self) -> Height {
         self.height()
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        self.time().into()
     }
 
     fn wrap_any(self) -> AnyHeader {

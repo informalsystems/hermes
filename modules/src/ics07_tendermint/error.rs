@@ -2,6 +2,7 @@ use crate::ics24_host::error::ValidationError;
 use crate::Height;
 use flex_error::{define_error, DisplayOnly, TraceError};
 use tendermint::account::Id;
+use tendermint::hash::Hash;
 
 define_error! {
     Error {
@@ -125,19 +126,52 @@ define_error! {
                 format_args!("Header timestamp {0} is outside the trusting period w.r.t. consenus state timestamp {1}",e.low,e.high)
             },
 
+
         InvalidHeaderHeight
             {height: Height}
             |e|{
                 format_args!("Header height = {0} is invalid",e.height)
             },
 
+        InvalidTrustedHeaderHeight
+        {trusted_header_height: Height,
+         height_header: Height}
+        |e|{
+            format_args!("The header height is {0} and it is lower than the trusted header height, which is {1} ",e.height_header, e.trusted_header_height)
+        },
+
         LowUpdateHeight
             {
                 low: Height,
                 high: Height
             }|e|{
-                format_args!("Header height {0} must be at greater than current client height {1}", e.low, e.high)
+                format_args!("The header height is {0} and it must be at greater than the current client height which is {1}", e.low, e.high)
             },
+
+        MismatchedRevisions
+        {
+            current_revision: u64,
+            update_revision: u64,
+        }
+        | e | {
+            format_args!("The header's revision height, which is {0}, and the update's revision height, which is {1}, should coincide ", e.current_revision, e.update_revision)
+        },
+
+        InvalidValidatorSet
+        {
+              hash1: Hash,
+              hash2: Hash,
+          }
+          | e | {
+              format_args!("Invalid validator set: header_validators_hash={} and validators_hash={}", e.hash1, e.hash2)
+          },
+
+        NotEnoughTrustedValsSigned
+        {reason: String}
+        | e |{
+            format_args!("Not enough trust because insufficient validators overlap: {}", e.reason)
+        },
+
     }
 }
 

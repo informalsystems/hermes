@@ -6,7 +6,6 @@ use crate::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
 use crate::Height;
 use std::num::TryFromIntError;
-use tendermint::hash::Hash;
 use tendermint_proto::Error as TendermintError;
 
 use flex_error::{define_error, TraceError};
@@ -215,29 +214,7 @@ define_error! {
                 format_args!("Timestamp none or {} and now {}", e.time1, e.time2)
             },
 
-            NotEnoughTrustedValsSigned
-                {reason :String}
-                | e |{
-                    format_args!("Not enough trust because insufficient validators overlap: {}", e.reason)
-                },
 
-            InvalidValidatorSet
-              {
-                    hash1: Hash,
-                    hash2: Hash,
-                }
-                | e | {
-                    format_args!("Invalid validator set: header_validators_hash={} validators_hash={}", e.hash1, e.hash2)
-                },
-
-            ClientStateNotWithinTrustPeriod
-                {
-                    latest_time:Timestamp,
-                    update_time: Timestamp,
-                }
-                | e | {
-                    format_args!("State not withing trusting period: expires_at={} now={}",e.latest_time, e.update_time)
-                },
 
             HeaderNotWithinTrustPeriod
             {
@@ -248,15 +225,15 @@ define_error! {
                 format_args!("Header not withing trusting period: expires_at={0} now={1}",e.latest_time, e.update_time)
             },
 
-            MismatchedRevisions
-            {
-                current_revision:u64,
-                update_revision: u64,
-            }
-            | e | {
-                format_args!("Header revision {0} and client state revision {1} should coincide",e.current_revision, e.update_revision)
-            },
+            TendermintHandlerError
+            { err: Ics07Error }
+            | e | { format_args!("Tendermint-specific handler error: {}",e.err) },
 
     }
+}
 
+impl From<Ics07Error> for Error {
+    fn from(e: Ics07Error) -> Error {
+        Error::tendermint_handler_error(e)
+    }
 }

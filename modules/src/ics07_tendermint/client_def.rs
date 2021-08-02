@@ -5,8 +5,8 @@ use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::Error;
-use crate::ics07_tendermint::error::Error as TendermintError;
+use crate::ics02_client::error::Error as Ics02Error;
+use crate::ics07_tendermint::error::Error;
 //use crate::ics07_tendermint::error::VerificationError;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
@@ -40,7 +40,7 @@ impl ClientDef for TendermintClient {
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
         // check if a consensus state is already installed; if so it should
         // match the untrusted header.
 
@@ -49,7 +49,7 @@ impl ClientDef for TendermintClient {
             let consensus_state = downcast!(
                 cs => AnyConsensusState::Tendermint
             )
-            .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
+            .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
             if consensus_state != ConsensusState::from(header.clone()) {
                 //freeze the client and return the installed consensus state
@@ -68,17 +68,17 @@ impl ClientDef for TendermintClient {
                 Some(cs) => downcast!(
                     cs => AnyConsensusState::Tendermint
                 )
-                .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?,
+                .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))?,
                 None => {
-                    return Err(Error::consensus_state_not_found(
+                    return Err(Ics02Error::consensus_state_not_found(
                         client_id.clone(),
                         client_state.latest_height,
-                    )
-                    .into());
+                    ));
                 }
             };
 
-        monotonicity_checks(latest_consensus_state, header.clone(), client_state.clone())?;
+        monotonicity_checks(latest_consensus_state, header.clone(), client_state.clone())
+            .map_err(Ics02Error::tendermint_handler_error)?;
 
         // check that the versions of the client state and the header match
         if client_state.latest_height.revision_number != header.height().revision_number {
@@ -93,11 +93,12 @@ impl ClientDef for TendermintClient {
             Some(ts) => downcast!(
                 ts => AnyConsensusState::Tendermint
             )
-            .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?,
+            .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))?,
             None => {
-                return Err(
-                    Error::consensus_state_not_found(client_id, header.trusted_height).into(),
-                )
+                return Err(Ics02Error::consensus_state_not_found(
+                    client_id,
+                    header.trusted_height,
+                ))
             }
         };
 
@@ -143,7 +144,7 @@ impl ClientDef for TendermintClient {
                 &header.validator_set,
                 TrustThresholdFraction::TWO_THIRDS,
             ) {
-                return Err(TendermintError::insufficient_voting_power(e.to_string()).into());
+                return Err(Error::insufficient_voting_power(e.to_string()).into());
             };
         }
 
@@ -162,7 +163,7 @@ impl ClientDef for TendermintClient {
         _client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Ics02Error> {
         todo!()
     }
 
@@ -174,7 +175,7 @@ impl ClientDef for TendermintClient {
         _proof: &CommitmentProofBytes,
         _connection_id: Option<&ConnectionId>,
         _expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Ics02Error> {
         todo!()
     }
 
@@ -187,7 +188,7 @@ impl ClientDef for TendermintClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _expected_channel_end: &ChannelEnd,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Ics02Error> {
         todo!()
     }
 
@@ -200,7 +201,7 @@ impl ClientDef for TendermintClient {
         _client_id: &ClientId,
         _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Ics02Error> {
         unimplemented!()
     }
 
@@ -213,7 +214,7 @@ impl ClientDef for TendermintClient {
         _channel_id: &ChannelId,
         _seq: &Sequence,
         _data: String,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Ics02Error> {
         todo!()
     }
 
@@ -226,7 +227,7 @@ impl ClientDef for TendermintClient {
         _channel_id: &ChannelId,
         _seq: &Sequence,
         _data: Vec<u8>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Ics02Error> {
         todo!()
     }
 
@@ -238,7 +239,7 @@ impl ClientDef for TendermintClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Ics02Error> {
         todo!()
     }
 
@@ -250,7 +251,7 @@ impl ClientDef for TendermintClient {
         _port_id: &PortId,
         _channel_id: &ChannelId,
         _seq: &Sequence,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Ics02Error> {
         todo!()
     }
 
@@ -260,7 +261,7 @@ impl ClientDef for TendermintClient {
         _consensus_state: &Self::ConsensusState,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
         todo!()
     }
 }

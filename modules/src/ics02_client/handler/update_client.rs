@@ -11,6 +11,7 @@ use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
+use crate::ics02_client::header::Header;
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
@@ -49,7 +50,7 @@ pub fn process(
         .ok_or_else(|| Error::client_not_found(client_id.clone()))?;
 
     if client_state.is_frozen() {
-        return Err(Error::client_frozen(client_id).into());
+        return Err(Error::client_frozen(client_id));
     }
 
     // Read consensus state from the host chain store.
@@ -66,16 +67,15 @@ pub fn process(
         .ok_or_else(|| {
             Error::invalid_consensus_state_timestamp(
                 latest_consensus_state.timestamp(),
-                Timestamp::now(),
+                header.timestamp(),
             )
         })?;
 
     if client_state.expired(duration) {
-        return Err(Error::client_state_not_within_trust_period(
+        return Err(Error::header_not_within_trust_period(
             latest_consensus_state.timestamp(),
-            Timestamp::now(),
-        )
-        .into());
+            header.timestamp(),
+        ));
     }
 
     // Use client_state to validate the new header against the latest consensus_state.
