@@ -128,9 +128,9 @@ fn make_supervisor<Chain: ChainHandle + 'static>(
 }
 
 #[cfg(not(feature = "telemetry"))]
-fn make_supervisor(
+fn make_supervisor<Chain: ChainHandle + 'static>(
     config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
     if config.read().expect("poisoned lock").telemetry.enabled {
         warn!(
             "telemetry enabled in the config but Hermes was built without telemetry support, \
