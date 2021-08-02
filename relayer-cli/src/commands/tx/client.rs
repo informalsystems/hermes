@@ -247,7 +247,7 @@ impl TxUpgradeClientsCmd {
         dst_chain: Chain,
         src_chain: Chain,
     ) -> Result<Vec<IbcEvent>, Error> {
-        let client = ForeignClient::restore(client_id, dst_chain.clone(), src_chain.clone());
+        let client = ForeignClient::restore(client_id, dst_chain, src_chain);
         client.upgrade().map_err(Error::foreign_client)
     }
 }

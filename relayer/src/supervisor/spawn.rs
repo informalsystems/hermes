@@ -437,8 +437,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
 
             self.workers
                 .spawn(
-                    chain.clone(),
-                    counterparty_chain.clone(),
+                    chain,
+                    counterparty_chain,
                     &connection_object,
                     &self.config.read().expect("poisoned lock"),
                 )
@@ -519,8 +519,8 @@ impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
 
             self.workers
                 .spawn(
-                    chain.clone(),
-                    counterparty_chain.clone(),
+                    chain,
+                    counterparty_chain,
                     &path_object,
                     &self.config.read().expect("poisoned lock"),
                 )

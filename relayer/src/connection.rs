@@ -322,7 +322,7 @@ impl<Chain: ChainHandle> Connection<Chain> {
         let mut handshake_connection = Connection {
             delay_period,
             a_side: ConnectionSide::new(
-                chain.clone(),
+                chain,
                 client_id.clone(),
                 Some(connection.src_connection_id.clone()),
             ),
@@ -402,12 +402,12 @@ impl<Chain: ChainHandle> Connection<Chain> {
             delay_period: conn_end_a.end().delay_period(),
             a_side: ConnectionSide {
                 chain: a_client.dst_chain.clone(),
-                client_id: a_client.id.clone(),
+                client_id: a_client.id,
                 connection_id: Some(conn_end_a.id().clone()),
             },
             b_side: ConnectionSide {
                 chain: b_client.dst_chain.clone(),
-                client_id: b_client.id.clone(),
+                client_id: b_client.id,
                 connection_id: Some(b_conn_id),
             },
         };
@@ -1073,16 +1073,16 @@ impl<Chain: ChainHandle> Connection<Chain> {
     fn restore_src_client(&self) -> ForeignClient<Chain> {
         ForeignClient::restore(
             self.src_client_id().clone(),
-            self.src_chain().clone(),
-            self.dst_chain().clone(),
+            self.src_chain(),
+            self.dst_chain(),
         )
     }
 
     fn restore_dst_client(&self) -> ForeignClient<Chain> {
         ForeignClient::restore(
             self.dst_client_id().clone(),
-            self.dst_chain().clone(),
-            self.src_chain().clone(),
+            self.dst_chain(),
+            self.src_chain(),
         )
     }
 }

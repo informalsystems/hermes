@@ -90,7 +90,7 @@ impl CreateChannelCommand {
 
         let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
             .unwrap_or_else(exit_with_unrecoverable_error);
-        let client_b = ForeignClient::new(chains.dst.clone(), chains.src.clone())
+        let client_b = ForeignClient::new(chains.dst.clone(), chains.src)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.

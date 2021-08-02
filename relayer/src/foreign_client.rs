@@ -259,8 +259,8 @@ impl<Chain: ChainHandle> ForeignClient<Chain> {
 
         let mut client = ForeignClient {
             id: ClientId::default(),
-            dst_chain: dst_chain.clone(),
-            src_chain: src_chain.clone(),
+            dst_chain,
+            src_chain,
         };
 
         client.create()?;
@@ -300,7 +300,7 @@ impl<Chain: ChainHandle> ForeignClient<Chain> {
                     // TODO: Any additional checks?
                     Ok(ForeignClient::restore(
                         client_id.clone(),
-                        host_chain.clone(),
+                        host_chain,
                         expected_target_chain,
                     ))
                 }
@@ -1140,8 +1140,7 @@ mod test {
         let a_client =
             ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
-        let b_client =
-            ForeignClient::restore(ClientId::default(), b_chain.clone(), a_chain.clone());
+        let b_client = ForeignClient::restore(ClientId::default(), b_chain, a_chain);
 
         // Create the client on chain a
         let res = a_client.build_create_client_and_send();
@@ -1189,7 +1188,7 @@ mod test {
         );
 
         // Remember b's height.
-        let b_height_start = b_chain.clone().query_latest_height().unwrap();
+        let b_height_start = b_chain.query_latest_height().unwrap();
 
         // Create a client on chain a
         let res = a_client.create();

@@ -132,7 +132,7 @@ impl<Chain: ChainHandle> Channel<Chain> {
         b_port: PortId,
         version: Option<String>,
     ) -> Result<Self, ChannelError> {
-        let b_side_chain = connection.dst_chain().clone();
+        let b_side_chain = connection.dst_chain();
         let version = version.unwrap_or(
             b_side_chain
                 .module_version(&a_port)
@@ -149,14 +149,14 @@ impl<Chain: ChainHandle> Channel<Chain> {
         let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
-                connection.src_chain().clone(),
+                connection.src_chain(),
                 connection.src_client_id().clone(),
                 src_connection_id.clone(),
                 a_port,
                 Default::default(),
             ),
             b_side: ChannelSide::new(
-                connection.dst_chain().clone(),
+                connection.dst_chain(),
                 connection.dst_client_id().clone(),
                 dst_connection_id.clone(),
                 b_port,
@@ -204,14 +204,14 @@ impl<Chain: ChainHandle> Channel<Chain> {
             // message from channel query.
             ordering: Default::default(),
             a_side: ChannelSide::new(
-                chain.clone(),
+                chain,
                 connection.client_id().clone(),
                 connection_id,
                 port_id,
                 channel_id,
             ),
             b_side: ChannelSide::new(
-                counterparty_chain.clone(),
+                counterparty_chain,
                 connection.counterparty().client_id().clone(),
                 counterparty_connection_id.clone(),
                 channel_event_attributes.counterparty_port_id.clone(),
