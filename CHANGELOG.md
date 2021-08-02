@@ -1,6 +1,26 @@
-# Changelog
+# CHANGELOG
 
-## UNRELEASED
+## v0.6.1
+*July 22nd, 2021*
+
+This minor release mainly improves the reliability of the relayer
+by ensuring that pending packets are cleared on start,
+and that Hermes can recover from the WebSocket subscriptions
+being closed under its feet by Tendermint.
+
+Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
+
+> **WARNING:** Due to a regression ([#1229]), the `upgrade client`,
+> `tx raw upgrade-clients`, and `tx raw upgrade-chain` commands have
+> been temporarily disabled in this version.
+> These commands will be re-enabled in the next version.
+
+### FEATURES
+
+- [ibc]
+  - Enable `pub` access to verification methods of ICS 03 & 04 ([#1198])
+  - Add `ics26_routing::handler::decode` function ([#1194])
+  - Add a pseudo root to `MockConsensusState` ([#1215])
 
 ### IMPROVEMENTS
 
@@ -14,12 +34,25 @@
   - Fix stack overflow in `MockHeader` implementation ([#1192])
   - Align `as_str` and `from_str` behavior in `ClientType` ([#1192])
 
+- [ibc-relayer]
+  - Ensure pending packets are cleared on start ([#1200])
+  - Recover from missed RPC events after WebSocket subscription is closed by Tendermint ([#1196])
+
+
 [#1094]: https://github.com/informalsystems/ibc-rs/issues/1094
 [#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
 [#1192]: https://github.com/informalsystems/ibc-rs/issues/1192
+[#1194]: https://github.com/informalsystems/ibc-rs/issues/1194
+[#1196]: https://github.com/informalsystems/ibc-rs/issues/1196
+[#1198]: https://github.com/informalsystems/ibc-rs/issues/1198
+[#1200]: https://github.com/informalsystems/ibc-rs/issues/1200
+[#1215]: https://github.com/informalsystems/ibc-rs/issues/1215
+[#1229]: https://github.com/informalsystems/ibc-rs/issues/1229
+
 
 ## v0.6.0
 *July 12th, 2021*
+
 
 Many thanks to Fraccaroli Gianmarco (@Fraccaman) for helping us improve the
 reliability of Hermes ([#697]).

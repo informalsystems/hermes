@@ -20,8 +20,6 @@ fn version() -> String {
         if let Some(git) = GitHandle::new() {
             println!("cargo:rustc-rerun-if-changed=.git/HEAD");
             vers.push('+');
-            vers.push_str(&git.branch());
-            vers.push('-');
             vers.push_str(&git.last_commit_hash());
             if git.is_dirty() {
                 vers.push_str("-dirty");
@@ -52,24 +50,6 @@ mod git {
             } else {
                 None
             }
-        }
-
-        // Returns the current branch as a string - if the branch name has a '/' returns part after
-        // the last '/'
-        pub fn branch(&self) -> String {
-            let branch = Self::command(&["rev-parse", "--abbrev-ref", "HEAD"]);
-            let branch_str = String::from_utf8_lossy(&branch.stdout);
-            branch_str
-                .contains('/')
-                .then(|| {
-                    branch_str
-                        .split('/')
-                        .collect::<Vec<&str>>()
-                        .last()
-                        .unwrap()
-                        .to_string()
-                })
-                .unwrap_or_else(|| branch_str.into())
         }
 
         // Returns the short hash of the last git commit

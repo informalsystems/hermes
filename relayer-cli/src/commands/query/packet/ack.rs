@@ -7,7 +7,7 @@ use ibc::Height;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -44,7 +44,7 @@ impl QueryPacketAcknowledgmentCmd {
                 self.sequence,
                 Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
             )
-            .map_err(|e| Kind::Query.context(e).into())
+            .map_err(Error::relayer)
             .map(|(b, _)| b)
             .map(|bytes| {
                 Hex::upper_case()

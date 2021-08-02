@@ -8,7 +8,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anomaly::fail;
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
 use itertools::Itertools;
@@ -73,7 +72,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::config::{ChainConfig, GasPrice};
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver};
 use crate::keyring::{KeyEntry, KeyRing, Store};
 use crate::light_client::tendermint::LightClient as TmLightClient;
@@ -85,11 +84,15 @@ use super::Chain;
 
 mod compatibility;
 
+/// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
+
+/// Fraction of the estimated gas to add to the gas limit when submitting a transaction.
 const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 
-const DEFAULT_MAX_MSG_NUM: usize = 30;
-const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
+/// Upper limit on the size of transactions submitted by Hermes, expressed as a
+/// fraction of the maximum block size defined in the Tendermint core consensus parameters.
+pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 
 mod retry_strategy {
     use crate::util::retry::Fixed;
@@ -114,12 +117,12 @@ pub struct CosmosSdkChain {
 
 impl CosmosSdkChain {
     /// Does multiple RPC calls to the full node, to check for
-    /// reachability and that some basic APIs are available.
+    /// reachability and some basic APIs are available.
     ///
     /// Currently this checks that:
     ///     - the node responds OK to `/health` RPC call;
     ///     - the node has transaction indexing enabled;
-    ///     - the SDK version is supported.
+    ///     - the SDK version is supported;
     ///
     /// Emits a log warning in case anything is amiss.
     /// Exits early if any health check fails, without doing any
@@ -131,16 +134,14 @@ impl CosmosSdkChain {
             let rpc_address = chain.config.rpc_addr.to_string();
 
             // Checkup on the self-reported health endpoint
-            chain
-                .rpc_client
-                .health()
-                .await
-                .map_err(|e| Kind::HealthCheckJsonRpc {
-                    chain_id: chain_id.clone(),
-                    address: rpc_address.clone(),
-                    endpoint: "/health".to_string(),
-                    cause: e,
-                })?;
+            chain.rpc_client.health().await.map_err(|e| {
+                Error::health_check_json_rpc(
+                    chain_id.clone(),
+                    rpc_address.clone(),
+                    "/health".to_string(),
+                    e,
+                )
+            })?;
 
             // Checkup on transaction indexing
             chain
@@ -153,66 +154,103 @@ impl CosmosSdkChain {
                     Order::Ascending,
                 )
                 .await
-                .map_err(|e| Kind::HealthCheckJsonRpc {
-                    chain_id: chain_id.clone(),
-                    address: rpc_address.clone(),
-                    endpoint: "/tx_search".to_string(),
-                    cause: e,
+                .map_err(|e| {
+                    Error::health_check_json_rpc(
+                        chain_id.clone(),
+                        rpc_address.clone(),
+                        "/tx_search".to_string(),
+                        e,
+                    )
                 })?;
 
+            // Construct a grpc client
             let mut client = ServiceClient::connect(chain.grpc_addr.clone())
                 .await
                 .map_err(|e| {
-                    // Failed to create the gRPC client to call into `/node_info`.
-                    Kind::HealthCheckGrpc {
-                        chain_id: chain_id.clone(),
-                        address: grpc_address.clone(),
-                        endpoint: "tendermint::ServiceClient".to_string(),
-                        cause: e.to_string(),
-                    }
+                    Error::health_check_grpc_transport(
+                        chain_id.clone(),
+                        rpc_address.clone(),
+                        "tendermint::ServiceClient".to_string(),
+                        e,
+                    )
                 })?;
 
             let request = tonic::Request::new(GetNodeInfoRequest {});
 
-            let response =
-                client
-                    .get_node_info(request)
-                    .await
-                    .map_err(|e| Kind::HealthCheckGrpc {
-                        chain_id: chain_id.clone(),
-                        address: grpc_address.clone(),
-                        endpoint: "tendermint::GetNodeInfoRequest".to_string(),
-                        cause: e.to_string(),
-                    })?;
+            let response = client.get_node_info(request).await.map_err(|e| {
+                Error::health_check_grpc_status(
+                    chain_id.clone(),
+                    rpc_address.clone(),
+                    "tendermint::ServiceClient".to_string(),
+                    e,
+                )
+            })?;
 
-            let version =
-                response
-                    .into_inner()
-                    .application_version
-                    .ok_or_else(|| Kind::HealthCheckGrpc {
-                        chain_id: chain_id.clone(),
-                        address: grpc_address.clone(),
-                        endpoint: "tendermint::GetNodeInfoRequest".to_string(),
-                        cause: "the gRPC response contains no application version information"
-                            .to_string(),
-                    })?;
+            let version = response.into_inner().application_version.ok_or_else(|| {
+                Error::health_check_invalid_version(
+                    chain_id.clone(),
+                    rpc_address.clone(),
+                    "tendermint::GetNodeInfoRequest".to_string(),
+                )
+            })?;
 
             // Checkup on the underlying SDK version
             if let Some(diagnostic) = compatibility::run_diagnostic(version) {
-                return Err(Kind::SdkModuleVersion {
-                    chain_id: chain_id.clone(),
-                    address: grpc_address.clone(),
-                    cause: diagnostic.to_string(),
-                }
-                .into());
+                return Err(Error::sdk_module_version(
+                    chain_id.clone(),
+                    grpc_address.clone(),
+                    diagnostic.to_string(),
+                ));
             }
 
             Ok(())
         }
 
         if let Err(e) = self.block_on(do_health_checkup(self)) {
-            warn!("{}", e);
-            warn!("some Hermes features may not work in this mode!");
+            warn!("Health checkup for chain '{}' failed", self.id());
+            warn!("    Reason: {}", e);
+            warn!("    Some Hermes features may not work in this mode!");
+        }
+    }
+
+    /// Performs validation of chain-specific configuration
+    /// parameters against the chain's genesis configuration.
+    ///
+    /// Currently, validates the following:
+    ///     - the configured `max_tx_size` is appropriate.
+    ///
+    /// Emits a log warning in case any error is encountered and
+    /// exits early without doing subsequent validations.
+    pub fn validate_params(&self) {
+        fn do_validate_params(chain: &CosmosSdkChain) -> Result<(), Error> {
+            // Check on the configured max_tx_size against genesis block max_bytes parameter
+            let genesis = chain.block_on(chain.rpc_client.genesis()).map_err(|e| {
+                Error::config_validation_json_rpc(
+                    chain.id().clone(),
+                    chain.config.rpc_addr.to_string(),
+                    "/genesis".to_string(),
+                    e,
+                )
+            })?;
+
+            let genesis_max_bound = genesis.consensus_params.block.max_bytes;
+            let max_allowed = mul_ceil(genesis_max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
+
+            if chain.max_tx_size() > max_allowed {
+                return Err(Error::config_validation_tx_size_out_of_bounds(
+                    chain.id().clone(),
+                    chain.max_tx_size(),
+                    genesis_max_bound,
+                ));
+            }
+
+            Ok(())
+        }
+
+        if let Err(e) = do_validate_params(self) {
+            warn!("Hermes might be misconfigured for chain '{}'", self.id());
+            warn!("    Reason: {}", e);
+            warn!("    Some Hermes features may not work in this mode!");
         }
     }
 
@@ -226,21 +264,21 @@ impl CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
 
         let response = self
             .block_on(client.params(request))
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_status)?;
 
         let res = response
             .into_inner()
             .params
-            .ok_or_else(|| Kind::Grpc.context("none staking params".to_string()))?
+            .ok_or_else(|| Error::grpc_response_param("none staking params".to_string()))?
             .unbonding_time
-            .ok_or_else(|| Kind::Grpc.context("none unbonding time".to_string()))?;
+            .ok_or_else(|| Error::grpc_response_param("none unbonding time".to_string()))?;
 
         Ok(Duration::new(res.seconds as u64, res.nanos as u32))
     }
@@ -260,7 +298,7 @@ impl CosmosSdkChain {
 
         Ok(self
             .block_on(self.rpc_client().genesis())
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?
             .consensus_params)
     }
 
@@ -305,12 +343,11 @@ impl CosmosSdkChain {
             });
 
         if estimated_gas > self.max_gas() {
-            return Err(Kind::TxSimulateGasEstimateExceeded {
-                chain_id: self.id().clone(),
+            return Err(Error::tx_simulate_gas_estimate_exceeded(
+                self.id().clone(),
                 estimated_gas,
-                max_gas: self.max_gas(),
-            }
-            .into());
+                self.max_gas(),
+            ));
         }
 
         let adjusted_fee = self.fee_with_gas(estimated_gas);
@@ -336,9 +373,7 @@ impl CosmosSdkChain {
         let mut tx_bytes = Vec::new();
         prost::Message::encode(&tx_raw, &mut tx_bytes).unwrap();
 
-        let response = self
-            .block_on(broadcast_tx_sync(self, tx_bytes))
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+        let response = self.block_on(broadcast_tx_sync(self, tx_bytes))?;
 
         debug!("[{}] send_tx: broadcast_tx_sync: {:?}", self.id(), response);
 
@@ -386,12 +421,12 @@ impl CosmosSdkChain {
 
     /// The maximum number of messages included in a transaction
     fn max_msg_num(&self) -> usize {
-        self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
+        self.config.max_msg_num.into()
     }
 
     /// The maximum size of any transaction sent by the relayer to this chain
     fn max_tx_size(&self) -> usize {
-        self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
+        self.config.max_tx_size.into()
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
@@ -399,13 +434,10 @@ impl CosmosSdkChain {
 
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
 
-        let height =
-            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+        let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
         if !data.is_provable() & prove {
-            return Err(Kind::Store
-                .context("requested proof for a path in the privateStore")
-                .into());
+            return Err(Error::private_store());
         }
 
         let response = self.block_on(abci_query(self, path, data.to_string(), height, prove))?;
@@ -427,11 +459,10 @@ impl CosmosSdkChain {
         data: ClientUpgradePath,
         height: Height,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let prev_height =
-            Height::try_from(height.value() - 1).map_err(|e| Kind::InvalidHeight.context(e))?;
+        let prev_height = Height::try_from(height.value() - 1).map_err(Error::invalid_height)?;
 
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).unwrap();
-        let response = self.block_on(abci_query(
+        let response: QueryResponse = self.block_on(abci_query(
             self,
             path,
             Path::Upgrade(data).to_string(),
@@ -439,7 +470,7 @@ impl CosmosSdkChain {
             true,
         ))?;
 
-        let proof = response.proof.ok_or(Kind::EmptyResponseProof)?;
+        let proof = response.proof.ok_or_else(Error::empty_response_proof)?;
 
         Ok((response.value, proof))
     }
@@ -460,22 +491,21 @@ impl CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(req);
         let response = self
             .block_on(client.simulate(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         Ok(response)
     }
 
     fn key(&self) -> Result<KeyEntry, Error> {
-        Ok(self
-            .keybase()
+        self.keybase()
             .get_key(&self.config.key_name)
-            .map_err(|e| Kind::KeyBase.context(e))?)
+            .map_err(Error::key_base)
     }
 
     fn key_bytes(&self, key: &KeyEntry) -> Result<Vec<u8>, Error> {
@@ -492,9 +522,7 @@ impl CosmosSdkChain {
 
     fn account(&mut self) -> Result<&mut BaseAccount, Error> {
         if self.account == None {
-            let account = self
-                .block_on(query_account(self, self.key()?.account))
-                .map_err(|e| Kind::Grpc.context(e))?;
+            let account = self.block_on(query_account(self, self.key()?.account))?;
 
             debug!(
                 sequence = %account.sequence,
@@ -583,7 +611,7 @@ impl CosmosSdkChain {
         let signed = self
             .keybase
             .sign_msg(&self.config.key_name, signdoc_buf)
-            .map_err(|e| Kind::KeyBase.context(e))?;
+            .map_err(Error::key_base)?;
 
         Ok(signed)
     }
@@ -627,7 +655,7 @@ impl CosmosSdkChain {
                 for TxSyncResult { response, events } in tx_sync_results.iter_mut() {
                     // If this transaction was not committed, determine whether it was because it failed
                     // or because it hasn't been committed yet.
-                    if empty_event_present(&events) {
+                    if empty_event_present(events) {
                         // If the transaction failed, replace the events with an error,
                         // so that we don't attempt to resolve the transaction later on.
                         if response.code.value() != 0 {
@@ -657,12 +685,7 @@ impl CosmosSdkChain {
             // All transactions confirmed
             Ok(()) => Ok(tx_sync_results),
             // Did not find confirmation
-            Err(_) => Err(Kind::TxNoConfirmation(format!(
-                "from chain {} for hash(es) {}",
-                self.id(),
-                hashes
-            ))
-            .into()),
+            Err(_) => Err(Error::tx_no_confirmation()),
         }
     }
 }
@@ -685,14 +708,14 @@ impl Chain for CosmosSdkChain {
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
-            .map_err(|e| Kind::Rpc(config.rpc_addr.clone()).context(e))?;
+            .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         // Initialize key store and load key
         let keybase = KeyRing::new(Store::Test, &config.account_prefix, &config.id)
-            .map_err(|e| Kind::KeyBase.context(e))?;
+            .map_err(Error::key_base)?;
 
-        let grpc_addr =
-            Uri::from_str(&config.grpc_addr.to_string()).map_err(|e| Kind::Grpc.context(e))?;
+        let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
+            .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 
         let chain = Self {
             config,
@@ -704,6 +727,7 @@ impl Chain for CosmosSdkChain {
         };
 
         chain.health_checkup();
+        chain.validate_params();
 
         Ok(chain)
     }
@@ -717,7 +741,7 @@ impl Chain for CosmosSdkChain {
             .rt
             .block_on(self.rpc_client.status())
             .map(|s| s.node_info.id)
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         let light_client = TmLightClient::from_config(&self.config, peer_id)?;
 
@@ -735,9 +759,9 @@ impl Chain for CosmosSdkChain {
             self.config.websocket_addr.clone(),
             rt,
         )
-        .map_err(Kind::EventMonitor)?;
+        .map_err(Error::event_monitor)?;
 
-        event_monitor.subscribe().map_err(Kind::EventMonitor)?;
+        event_monitor.subscribe().map_err(Error::event_monitor)?;
 
         thread::spawn(move || event_monitor.run());
 
@@ -825,7 +849,7 @@ impl Chain for CosmosSdkChain {
         let key = self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(|e| Kind::KeyBase.context(e))?;
+            .map_err(Error::key_base)?;
 
         let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
         Ok(Signer::new(bech32))
@@ -839,7 +863,7 @@ impl Chain for CosmosSdkChain {
         let key = self
             .keybase()
             .get_key(&self.config.key_name)
-            .map_err(|e| Kind::KeyBase.context(e))?;
+            .map_err(Error::key_base)?;
 
         Ok(key)
     }
@@ -859,15 +883,13 @@ impl Chain for CosmosSdkChain {
 
         let status = self
             .block_on(self.rpc_client().status())
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         if status.sync_info.catching_up {
-            fail!(
-                Kind::LightClient(self.config.rpc_addr.to_string()),
-                "node at {} running chain {} not caught up",
-                self.config().rpc_addr,
-                self.config().id,
-            );
+            return Err(Error::chain_not_caught_up(
+                self.config.rpc_addr.to_string(),
+                self.config().id.clone(),
+            ));
         }
 
         Ok(ICSHeight {
@@ -888,12 +910,12 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
         let response = self
             .block_on(client.client_states(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         // Deserialize into domain type
@@ -922,15 +944,9 @@ impl Chain for CosmosSdkChain {
 
         let client_state = self
             .query(ClientStatePath(client_id.clone()), height, false)
-            .map_err(|e| Kind::Query("client state".into()).context(e))
-            .and_then(|v| {
-                AnyClientState::decode_vec(&v.value)
-                    .map_err(|e| Kind::Query("client state".into()).context(e))
-            })?;
-        let client_state =
-            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
-                Kind::Query("client state".into()).context("unexpected client state type")
-            })?;
+            .and_then(|v| AnyClientState::decode_vec(&v.value).map_err(Error::decode))?;
+        let client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
+            .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
         Ok(client_state)
     }
 
@@ -941,23 +957,18 @@ impl Chain for CosmosSdkChain {
         crate::time!("query_upgraded_client_state");
 
         // Query for the value and the proof.
-        let tm_height =
-            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+        let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
         let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
             ClientUpgradePath::UpgradedClientState(height.revision_height),
             tm_height,
         )?;
 
         let client_state = AnyClientState::decode_vec(&upgraded_client_state_raw)
-            .map_err(|e| Kind::ConversionFromAny.context(e))?;
+            .map_err(Error::conversion_from_any)?;
+
         let client_type = client_state.client_type();
-        let tm_client_state =
-            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
-                Kind::ClientTypeMismatch {
-                    expected: ClientType::Tendermint,
-                    got: client_type,
-                }
-            })?;
+        let tm_client_state = downcast!(client_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Error::client_type_mismatch(ClientType::Tendermint, client_type))?;
 
         Ok((tm_client_state, proof))
     }
@@ -968,8 +979,7 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         crate::time!("query_upgraded_consensus_state");
 
-        let tm_height =
-            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+        let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
         // Fetch the consensus state and its proof.
         let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
@@ -978,13 +988,12 @@ impl Chain for CosmosSdkChain {
         )?;
 
         let consensus_state = AnyConsensusState::decode_vec(&upgraded_consensus_state_raw)
-            .map_err(|e| Kind::ConversionFromAny.context(e))?;
+            .map_err(Error::conversion_from_any)?;
 
         let cs_client_type = consensus_state.client_type();
         let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| Kind::ConsensusStateTypeMismatch {
-                expected: ClientType::Tendermint,
-                got: cs_client_type,
+            .ok_or_else(|| {
+                Error::consensus_state_type_mismatch(ClientType::Tendermint, cs_client_type)
             })?;
 
         Ok((tm_consensus_state, proof))
@@ -1003,12 +1012,12 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
         let response = self
             .block_on(client.consensus_states(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         let mut consensus_states: Vec<AnyConsensusStateWithHeight> = response
@@ -1047,14 +1056,14 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let response = match self.block_on(client.client_connections(request)) {
             Ok(res) => res.into_inner(),
             Err(e) if e.code() == tonic::Code::NotFound => return Ok(vec![]),
-            Err(e) => return Err(Kind::Grpc.context(e).into()),
+            Err(e) => return Err(Error::grpc_status(e)),
         };
 
         // TODO: add warnings for any identifiers that fail to parse (below).
@@ -1081,13 +1090,13 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let response = self
             .block_on(client.connections(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         // TODO: add warnings for any identifiers that fail to parse (below).
@@ -1118,7 +1127,7 @@ impl Chain for CosmosSdkChain {
             let mut client =
                 connection::query_client::QueryClient::connect(chain.grpc_addr.clone())
                     .await
-                    .map_err(|e| Kind::Grpc.context(e))?;
+                    .map_err(Error::grpc_transport)?;
 
             let mut request = connection::QueryConnectionRequest {
                 connection_id: connection_id.to_string(),
@@ -1126,7 +1135,7 @@ impl Chain for CosmosSdkChain {
             .into_request();
 
             let height_param = MetadataValue::from_str(&height.revision_height.to_string())
-                .map_err(|e| Kind::Grpc.context(e))?;
+                .map_err(Error::invalid_metadata)?;
 
             request
                 .metadata_mut()
@@ -1134,17 +1143,15 @@ impl Chain for CosmosSdkChain {
 
             let response = client.connection(request).await.map_err(|e| {
                 if e.code() == tonic::Code::NotFound {
-                    Kind::ConnectionNotFound(connection_id.clone()).into()
+                    Error::connection_not_found(connection_id.clone())
                 } else {
-                    Kind::Grpc.context(e)
+                    Error::grpc_status(e)
                 }
             })?;
 
             match response.into_inner().connection {
                 Some(raw_connection) => {
-                    let connection_end = raw_connection
-                        .try_into()
-                        .map_err(|e| Kind::Grpc.context(e))?;
+                    let connection_end = raw_connection.try_into().map_err(Error::ics03)?;
 
                     Ok(connection_end)
                 }
@@ -1153,7 +1160,7 @@ impl Chain for CosmosSdkChain {
                     // the NotFound error code. Nevertheless even if the call is successful,
                     // the connection field may not be present, because in protobuf3
                     // everything is optional.
-                    Err(Kind::ConnectionNotFound(connection_id.clone()).into())
+                    Err(Error::connection_not_found(connection_id.clone()))
                 }
             }
         }
@@ -1173,13 +1180,13 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let response = self
             .block_on(client.connection_channels(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         // TODO: add warnings for any identifiers that fail to parse (below).
@@ -1205,13 +1212,13 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let response = self
             .block_on(client.channels(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         let channels = response
@@ -1233,9 +1240,7 @@ impl Chain for CosmosSdkChain {
             height,
             false,
         )?;
-        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| {
-            Kind::Query(format!("port '{}' & channel '{}'", port_id, channel_id)).context(e)
-        })?;
+        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok(channel_end)
     }
@@ -1252,13 +1257,13 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let response = self
             .block_on(client.channel_client_state(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         let client_state: Option<IdentifiedAnyClientState> = response
@@ -1281,22 +1286,21 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let response = self
             .block_on(client.packet_commitments(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         let pc = response.commitments;
 
         let height = response
             .height
-            .ok_or_else(|| Kind::Grpc.context("missing height in response"))?
-            .try_into()
-            .map_err(|_| Kind::Grpc.context("invalid height in response"))?;
+            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
+            .into();
 
         Ok((pc, height))
     }
@@ -1314,13 +1318,13 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let mut response = self
             .block_on(client.unreceived_packets(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         response.sequences.sort_unstable();
@@ -1340,22 +1344,21 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let response = self
             .block_on(client.packet_acknowledgements(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         let pc = response.acknowledgements;
 
         let height = response
             .height
-            .ok_or_else(|| Kind::Grpc.context("missing height in response"))?
-            .try_into()
-            .map_err(|_| Kind::Grpc.context("invalid height in response"))?;
+            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
+            .into();
 
         Ok((pc, height))
     }
@@ -1373,13 +1376,13 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let mut response = self
             .block_on(client.unreceived_acks(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         response.sequences.sort_unstable();
@@ -1398,13 +1401,13 @@ impl Chain for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request);
 
         let response = self
             .block_on(client.next_sequence_receive(request))
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner();
 
         Ok(Sequence::from(response.next_sequence_receive))
@@ -1440,7 +1443,7 @@ impl Chain for CosmosSdkChain {
                             1, // get only the first Tx matching the query
                             Order::Ascending,
                         ))
-                        .map_err(|e| Kind::Grpc.context(e))?;
+                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
                     assert!(
                         response.txs.len() <= 1,
@@ -1480,7 +1483,7 @@ impl Chain for CosmosSdkChain {
                         1, // get only the first Tx matching the query
                         Order::Ascending,
                     ))
-                    .map_err(|e| Kind::Grpc.context(e))?;
+                    .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
                 if response.txs.is_empty() {
                     return Ok(vec![]);
@@ -1507,7 +1510,7 @@ impl Chain for CosmosSdkChain {
                         1, // get only the first Tx matching the query
                         Order::Ascending,
                     ))
-                    .map_err(|e| Kind::Grpc.context(e))?;
+                    .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
                 if response.txs.is_empty() {
                     Ok(vec![])
@@ -1526,23 +1529,16 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("proven_client_state");
 
-        let res = self
-            .query(ClientStatePath(client_id.clone()), height, true)
-            .map_err(|e| Kind::Query("client state".into()).context(e))?;
+        let res = self.query(ClientStatePath(client_id.clone()), height, true)?;
 
-        let client_state = AnyClientState::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("client state".into()).context(e))?;
+        let client_state = AnyClientState::decode_vec(&res.value).map_err(Error::decode)?;
 
-        let client_state =
-            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
-                Kind::Query("client state".into()).context("unexpected client state type")
-            })?;
+        let client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
+            .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
 
         Ok((
             client_state,
-            res.proof.ok_or_else(|| {
-                Kind::Query("client state".into()).context("empty proof".to_string())
-            })?,
+            res.proof.ok_or_else(Error::empty_response_proof)?,
         ))
     }
 
@@ -1554,31 +1550,25 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         crate::time!("proven_client_consensus");
 
-        let res = self
-            .query(
-                ClientConsensusPath {
-                    client_id: client_id.clone(),
-                    epoch: consensus_height.revision_number,
-                    height: consensus_height.revision_height,
-                },
-                height,
-                true,
-            )
-            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
+        let res = self.query(
+            ClientConsensusPath {
+                client_id: client_id.clone(),
+                epoch: consensus_height.revision_number,
+                height: consensus_height.revision_height,
+            },
+            height,
+            true,
+        )?;
 
-        let consensus_state = AnyConsensusState::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
+        let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
 
-        let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| {
-                Kind::Query("client consensus".into()).context("unexpected client consensus type")
-            })?;
+        let consensus_state =
+            downcast!(consensus_state.clone() => AnyConsensusState::Tendermint)
+                .ok_or_else(|| Error::client_state_type(format!("{:?}", consensus_state)))?;
 
         Ok((
             consensus_state,
-            res.proof.ok_or_else(|| {
-                Kind::Query("client consensus".into()).context("empty proof".to_string())
-            })?,
+            res.proof.ok_or_else(Error::empty_response_proof)?,
         ))
     }
 
@@ -1587,17 +1577,12 @@ impl Chain for CosmosSdkChain {
         connection_id: &ConnectionId,
         height: ICSHeight,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        let res = self
-            .query(Path::Connections(connection_id.clone()), height, true)
-            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
-        let connection_end = ConnectionEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
+        let res = self.query(Path::Connections(connection_id.clone()), height, true)?;
+        let connection_end = ConnectionEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok((
             connection_end,
-            res.proof.ok_or_else(|| {
-                Kind::Query("proven connection".into()).context("empty proof".to_string())
-            })?,
+            res.proof.ok_or_else(Error::empty_response_proof)?,
         ))
     }
 
@@ -1607,22 +1592,17 @@ impl Chain for CosmosSdkChain {
         channel_id: &ChannelId,
         height: ICSHeight,
     ) -> Result<(ChannelEnd, MerkleProof), Error> {
-        let res = self
-            .query(
-                Path::ChannelEnds(port_id.clone(), channel_id.clone()),
-                height,
-                true,
-            )
-            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
+        let res = self.query(
+            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            height,
+            true,
+        )?;
 
-        let channel_end = ChannelEnd::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
+        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
 
         Ok((
             channel_end,
-            res.proof.ok_or_else(|| {
-                Kind::Query("proven channel".into()).context("empty proof".to_string())
-            })?,
+            res.proof.ok_or_else(Error::empty_response_proof)?,
         ))
     }
 
@@ -1661,22 +1641,18 @@ impl Chain for CosmosSdkChain {
             },
         };
 
-        let res = self
-            .query(data, height, true)
-            .map_err(|e| Kind::Query(packet_type.to_string()).context(e))?;
+        let res = self.query(data, height, true)?;
 
-        let commitment_proof_bytes = res.proof.ok_or_else(|| {
-            Kind::Query(packet_type.to_string()).context("empty proof".to_string())
-        })?;
+        let commitment_proof_bytes = res.proof.ok_or_else(Error::empty_response_proof)?;
 
         Ok((res.value, commitment_proof_bytes))
     }
 
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
-        Ok(ClientState::new(
+        ClientState::new(
             self.id().clone(),
-            self.config.trust_threshold,
+            self.config.trust_threshold.into(),
             self.config.trusting_period,
             self.unbonding_period()?,
             self.config.clock_drift,
@@ -1688,7 +1664,7 @@ impl Chain for CosmosSdkChain {
                 after_misbehaviour: true,
             },
         )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
+        .map_err(Error::ics07)
     }
 
     fn build_consensus_state(
@@ -1872,25 +1848,23 @@ async fn abci_query(
         .rpc_client()
         .abci_query(Some(path), data.into_bytes(), height, prove)
         .await
-        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
+        .map_err(|e| Error::rpc(chain.config.rpc_addr.clone(), e))?;
 
     if !response.code.is_ok() {
         // Fail with response log.
-        return Err(Kind::Rpc(chain.config.rpc_addr.clone())
-            .context(response.log.to_string())
-            .into());
+        return Err(Error::abci_query(response));
     }
 
     if prove && response.proof.is_none() {
         // Fail due to empty proof
-        return Err(Kind::EmptyResponseProof.into());
+        return Err(Error::empty_response_proof());
     }
 
     let proof = response
         .proof
         .map(|p| convert_tm_to_ics_merkle_proof(&p))
         .transpose()
-        .map_err(Kind::Ics023)?;
+        .map_err(Error::ics23)?;
 
     let response = QueryResponse {
         value: response.value,
@@ -1902,15 +1876,12 @@ async fn abci_query(
 }
 
 /// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
-async fn broadcast_tx_sync(
-    chain: &CosmosSdkChain,
-    data: Vec<u8>,
-) -> Result<Response, anomaly::Error<Kind>> {
+async fn broadcast_tx_sync(chain: &CosmosSdkChain, data: Vec<u8>) -> Result<Response, Error> {
     let response = chain
         .rpc_client()
         .broadcast_tx_sync(data.into())
         .await
-        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
+        .map_err(|e| Error::rpc(chain.config.rpc_addr.clone(), e))?;
 
     Ok(response)
 }
@@ -1921,7 +1892,7 @@ async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAc
         chain.grpc_addr.clone(),
     )
     .await
-    .map_err(|e| Kind::Grpc.context(e))?;
+    .map_err(Error::grpc_transport)?;
 
     let request = tonic::Request::new(QueryAccountRequest { address });
 
@@ -1929,24 +1900,24 @@ async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAc
 
     let base_account = BaseAccount::decode(
         response
-            .map_err(|e| Kind::Grpc.context(e))?
+            .map_err(Error::grpc_status)?
             .into_inner()
             .account
             .unwrap()
             .value
             .as_slice(),
     )
-    .map_err(|e| Kind::Grpc.context(e))?;
+    .map_err(|e| Error::protobuf_decode("BaseAccount".to_string(), e))?;
 
     Ok(base_account)
 }
 
 fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, Error> {
-    let account =
-        AccountId::from_str(address).map_err(|_| Kind::InvalidKeyAddress(address.to_string()))?;
+    let account = AccountId::from_str(address)
+        .map_err(|e| Error::invalid_key_address(address.to_string(), e))?;
 
     let encoded = bech32::encode(account_prefix, account.to_base32(), Variant::Bech32)
-        .map_err(Kind::Bech32Encoding)?;
+        .map_err(Error::bech32_encoding)?;
 
     Ok(encoded)
 }
@@ -2006,6 +1977,7 @@ fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {
     }
 }
 
+/// Multiply `a` with `f` and round to result up to the nearest integer.
 fn mul_ceil(a: u64, f: f64) -> u64 {
     use fraction::Fraction as F;
 

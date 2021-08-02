@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use abscissa_core::{Command, Options, Runnable};
-use anomaly::BoxError;
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -92,7 +91,7 @@ pub fn restore_key(
     key_name: &str,
     hdpath: &HDPath,
     config: &ChainConfig,
-) -> Result<KeyEntry, BoxError> {
+) -> Result<KeyEntry, Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     let key_entry = keyring.key_from_mnemonic(mnemonic, hdpath)?;
 

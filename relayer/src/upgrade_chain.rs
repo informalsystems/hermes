@@ -2,9 +2,8 @@
 
 use std::time::Duration;
 
+use flex_error::define_error;
 use prost_types::Any;
-use thiserror::Error;
-use tracing::error;
 
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::height::Height;
@@ -18,18 +17,32 @@ use crate::chain::{Chain, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
 
-#[derive(Debug, Error)]
-pub enum UpgradeChainError {
-    #[error("failed with underlying cause: {0}")]
-    Failed(String),
+define_error! {
+    UpgradeChainError {
+        Query
+            [ Error ]
+            |_| { "error during a query" },
 
-    #[error("key error with underlying cause: {0}")]
-    KeyError(Error),
+        Key
+            [ Error ]
+            |_| { "key error" },
 
-    #[error(
-        "failed during a transaction submission step to chain id {0} with underlying error: {1}"
-    )]
-    SubmitError(ChainId, Error),
+        Submit
+            { chain_id: ChainId }
+            [ Error ]
+            |e| {
+                format!("failed while submitting the Transfer message to chain {0}",
+                    e.chain_id)
+            },
+
+        TxResponse
+            { event: String }
+            |e| {
+                format!("tx response event consists of an error: {}",
+                    e.event)
+            },
+
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -51,12 +64,12 @@ pub fn build_and_send_ibc_upgrade_proposal(
 ) -> Result<Vec<IbcEvent>, UpgradeChainError> {
     let upgrade_height = dst_chain
         .query_latest_height()
-        .map_err(|e| UpgradeChainError::Failed(e.to_string()))?
+        .map_err(UpgradeChainError::query)?
         .add(opts.height_offset);
 
     let client_state = src_chain
         .query_client_state(&opts.src_client_id, Height::zero())
-        .map_err(|e| UpgradeChainError::Failed(e.to_string()))?;
+        .map_err(UpgradeChainError::query)?;
 
     // Retain the old unbonding period in case the user did not specify a new one
     let upgraded_unbonding_period = opts
@@ -89,9 +102,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     };
 
     // build the msg submit proposal
-    let proposer = dst_chain
-        .get_signer()
-        .map_err(UpgradeChainError::KeyError)?;
+    let proposer = dst_chain.get_signer().map_err(UpgradeChainError::key)?;
 
     let coins = ibc_proto::cosmos::base::v1beta1::Coin {
         denom: "stake".to_string(),
@@ -113,7 +124,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
 
     let events = dst_chain
         .send_msgs(vec![any_msg])
-        .map_err(|e| UpgradeChainError::SubmitError(dst_chain.id().clone(), e))?;
+        .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events.iter().find_map(|event| match event {
@@ -123,6 +134,6 @@ pub fn build_and_send_ibc_upgrade_proposal(
 
     match result {
         None => Ok(events),
-        Some(reason) => Err(UpgradeChainError::Failed(reason)),
+        Some(reason) => Err(UpgradeChainError::tx_response(reason)),
     }
 }

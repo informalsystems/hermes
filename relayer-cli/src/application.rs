@@ -8,11 +8,12 @@ use abscissa_core::{
     component::Component,
     config, Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
+use ibc_relayer::config::Config;
 
 use crate::{
     commands::CliCmd,
     components::{JsonTracing, PrettyTracing},
-    config::{validate_config, Config},
+    config::validate_config,
     entry::EntryPoint,
 };
 
@@ -125,8 +126,9 @@ impl Application for CliApp {
         // Configure components
         self.state.components.after_config(&config)?;
 
-        validate_config(&config)
-            .map_err(|validation_err| FrameworkErrorKind::ConfigError.context(validation_err))?;
+        validate_config(&config).map_err(|validation_err| {
+            FrameworkErrorKind::ConfigError.context(format!("{}", validation_err))
+        })?;
 
         self.config = Some(config);
 
@@ -146,7 +148,22 @@ impl Application for CliApp {
 
         let config = config_path
             .map(|path| self.load_config(&path))
-            .transpose()?
+            .transpose()
+            .map_err(|err| {
+                let path = self.config_path.clone().unwrap_or_default();
+                eprintln!(
+                    "The Hermes configuration file at path '{}' is invalid, reason: {}",
+                    path.to_string_lossy(),
+                    err
+                );
+                eprintln!(
+                    "Please see the example configuration for detailed information about the \
+                    supported configuration options: \
+                    https://github.com/informalsystems/ibc-rs/blob/master/config.toml"
+                );
+                std::process::exit(1);
+            })
+            .expect("invalid config")
             .unwrap_or_default();
 
         // Update the `json_output` flag used by `conclude::Output`

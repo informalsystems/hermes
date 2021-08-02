@@ -4,16 +4,15 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics24_host::error::ValidationKind;
+use crate::ics24_host::error::ValidationError;
 
-use super::error::ValidationError;
 use super::validate::*;
 
 /// This type is subject to future changes.
 ///
 /// TODO: ChainId validation is not standardized yet.
 ///       `is_epoch_format` will most likely be replaced by validate_chain_id()-style function.
-///       See: https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283.
+///       See: <https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283>.
 ///
 /// Also, contrast with tendermint-rs `ChainId` type.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -130,10 +129,10 @@ impl Default for ChainId {
 }
 
 impl TryFrom<String> for ChainId {
-    type Error = ValidationKind;
+    type Error = ValidationError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::from_str(value.as_str()).map_err(|e| e.kind().clone())
+        Self::from_str(value.as_str())
     }
 }
 

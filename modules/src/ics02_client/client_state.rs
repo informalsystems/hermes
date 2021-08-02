@@ -4,13 +4,13 @@ use std::time::Duration;
 
 use prost_types::Any;
 use serde::{Deserialize, Serialize};
-use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
+use crate::ics02_client::trust_threshold::TrustThreshold;
 use crate::ics07_tendermint::client_state;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChainId, ClientId};
@@ -59,7 +59,7 @@ impl AnyClientState {
         }
     }
 
-    pub fn trust_threshold(&self) -> Option<TrustThresholdFraction> {
+    pub fn trust_threshold(&self) -> Option<TrustThreshold> {
         match self {
             AnyClientState::Tendermint(state) => Some(state.trust_level),
 
@@ -103,20 +103,19 @@ impl TryFrom<Any> for AnyClientState {
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            "" => Err(Kind::EmptyClientStateResponse.into()),
+            "" => Err(Error::empty_client_state_response()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 client_state::ClientState::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
+                    .map_err(Error::decode_raw_client_state)?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
-                MockClientState::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
+                MockClientState::decode_vec(&raw.value).map_err(Error::decode_raw_client_state)?,
             )),
 
-            _ => Err(Kind::UnknownClientStateType(raw.type_url).into()),
+            _ => Err(Error::unknown_client_state_type(raw.type_url)),
         }
     }
 }
@@ -197,11 +196,11 @@ impl TryFrom<IdentifiedClientState> for IdentifiedAnyClientState {
     fn try_from(raw: IdentifiedClientState) -> Result<Self, Self::Error> {
         Ok(IdentifiedAnyClientState {
             client_id: raw.client_id.parse().map_err(|e: ValidationError| {
-                Kind::InvalidRawClientId(raw.client_id.clone(), e.kind().clone())
+                Error::invalid_raw_client_id(raw.client_id.clone(), e)
             })?,
             client_state: raw
                 .client_state
-                .ok_or_else(|| Kind::InvalidRawClientState.context("missing client state"))?
+                .ok_or_else(Error::missing_raw_client_state)?
                 .try_into()?,
         })
     }

@@ -1,15 +1,15 @@
 use std::convert::TryFrom;
-
-use prost_types::Any;
-use serde_derive::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
+use std::ops::Deref;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::{Error, Kind};
-use crate::ics07_tendermint::header::Header as TendermintHeader;
+use crate::ics02_client::error::Error;
+use crate::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
 use crate::Height;
+use prost_types::Any;
+use serde_derive::{Deserialize, Serialize};
+use tendermint_proto::Protobuf;
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
@@ -65,20 +65,20 @@ impl Protobuf<Any> for AnyHeader {}
 impl TryFrom<Any> for AnyHeader {
     type Error = Error;
 
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
+    fn try_from(raw: Any) -> Result<Self, Error> {
         match raw.type_url.as_str() {
-            TENDERMINT_HEADER_TYPE_URL => Ok(AnyHeader::Tendermint(
-                TendermintHeader::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawHeader.context(e))?,
-            )),
+            TENDERMINT_HEADER_TYPE_URL => {
+                let val = decode_header(raw.value.deref()).map_err(Error::tendermint)?;
+
+                Ok(AnyHeader::Tendermint(val))
+            }
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                MockHeader::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+                MockHeader::decode_vec(&raw.value).map_err(Error::invalid_raw_header)?,
             )),
 
-            _ => Err(Kind::UnknownHeaderType(raw.type_url).into()),
+            _ => Err(Error::unknown_header_type(raw.type_url)),
         }
     }
 }

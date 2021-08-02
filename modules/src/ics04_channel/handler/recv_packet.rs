@@ -4,7 +4,7 @@ use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::{Counterparty, Order, State};
 use crate::ics04_channel::context::ChannelReader;
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::Error;
 use crate::ics04_channel::events::ReceivePacket;
 use crate::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
@@ -32,18 +32,17 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
             packet.destination_channel.clone(),
         ))
         .ok_or_else(|| {
-            Kind::ChannelNotFound(
+            Error::channel_not_found(
                 packet.destination_port.clone(),
                 packet.destination_channel.clone(),
             )
         })?;
 
     if !dest_channel_end.state_matches(&State::Open) {
-        return Err(Kind::InvalidChannelState(
+        return Err(Error::invalid_channel_state(
             packet.source_channel.clone(),
             dest_channel_end.state,
-        )
-        .into());
+        ));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
@@ -54,19 +53,20 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     );
 
     if !dest_channel_end.counterparty_matches(&counterparty) {
-        return Err(Kind::InvalidPacketCounterparty(
+        return Err(Error::invalid_packet_counterparty(
             packet.source_port.clone(),
             packet.source_channel.clone(),
-        )
-        .into());
+        ));
     }
 
     let connection_end = ctx
         .connection_end(&dest_channel_end.connection_hops()[0])
-        .ok_or_else(|| Kind::MissingConnection(dest_channel_end.connection_hops()[0].clone()))?;
+        .ok_or_else(|| Error::missing_connection(dest_channel_end.connection_hops()[0].clone()))?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
-        return Err(Kind::ConnectionNotOpen(dest_channel_end.connection_hops()[0].clone()).into());
+        return Err(Error::connection_not_open(
+            dest_channel_end.connection_hops()[0].clone(),
+        ));
     }
 
     let client_id = connection_end.client_id().clone();
@@ -74,13 +74,16 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     // Check if packet height is newer than the height of the local host chain
     let latest_height = ctx.host_height();
     if (!packet.timeout_height.is_zero()) && (packet.timeout_height <= latest_height) {
-        return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
+        return Err(Error::low_packet_height(
+            latest_height,
+            packet.timeout_height,
+        ));
     }
 
     // Check if packet timestamp is newer than the local host chain timestamp
     let latest_timestamp = ctx.host_timestamp();
     if let Expiry::Expired = latest_timestamp.check_expiry(&packet.timeout_timestamp) {
-        return Err(Kind::LowPacketTimestamp.into());
+        return Err(Error::low_packet_timestamp());
     }
 
     verify_packet_recv_proofs(ctx, packet, client_id, &msg.proofs)?;
@@ -88,10 +91,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
         let next_seq_recv = ctx
             .get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel.clone()))
-            .ok_or(Kind::MissingNextRecvSeq)?;
+            .ok_or_else(Error::missing_next_recv_seq)?;
 
         if packet.sequence != next_seq_recv {
-            return Err(Kind::InvalidPacketSequence(packet.sequence, next_seq_recv).into());
+            return Err(Error::invalid_packet_sequence(
+                packet.sequence,
+                next_seq_recv,
+            ));
         }
 
         PacketResult::Recv(RecvPacketResult {
@@ -109,7 +115,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
         ));
 
         match packet_rec {
-            Some(_receipt) => return Err(Kind::PacketAlreadyReceived(packet.sequence).into()),
+            Some(_receipt) => return Err(Error::packet_already_received(packet.sequence)),
             None => {
                 // store a receipt that does not contain any data
                 PacketResult::Recv(RecvPacketResult {
