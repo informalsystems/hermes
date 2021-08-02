@@ -73,7 +73,7 @@ with the changes described below.
 
 #### Added inline documentation for all options.
 
-Please have a look around the [config.toml](./config.toml) directly.
+Please have a look around the [config.toml](https://github.com/informalsystems/ibc-rs/blob/v0.6.0/config.toml) directly.
 
 #### Added a packet filtering mechanism based on channel/port identifiers
 
