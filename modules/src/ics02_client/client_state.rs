@@ -102,20 +102,13 @@ impl TryFrom<Any> for AnyClientState {
     type Error = Error;
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
-        eprintln!("trying to convert from {:#?}", raw.type_url);
         match raw.type_url.as_str() {
             "" => Err(Error::empty_client_state_response()),
 
-            TENDERMINT_CLIENT_STATE_TYPE_URL => {
-                eprintln!("trying to convert from TM TYPE");
-                return Ok(AnyClientState::Tendermint(
+            TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 client_state::ClientState::decode_vec(&raw.value)
-                    .map_err( |e|{
-                        eprintln!("found error :( {:?}", e);
-
-                        Error::decode_raw_client_state(e) })?,
-                ));
-            }
+                    .map_err(Error::decode_raw_client_state)?,
+            )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(

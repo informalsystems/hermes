@@ -52,8 +52,10 @@ impl TrustThreshold {
     /// is in the range`[0, 1)`.
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
         // The two parameters cannot yield a fraction that is bigger or equal to 1
-        if (numerator > denominator) || (denominator == 0 && numerator != 0) ||
-            (numerator == denominator && numerator != 0) {
+        if (numerator > denominator)
+            || (denominator == 0 && numerator != 0)
+            || (numerator == denominator && numerator != 0)
+        {
             return Err(Error::invalid_trust_threshold(numerator, denominator));
         }
 
