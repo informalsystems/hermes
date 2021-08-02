@@ -51,7 +51,7 @@ pub fn build_and_send_upgrade_chain_message(
     src_chain: CosmosSdkChain,     // the chain supplying a client state
     opts: &UpdatePlanOptions,
 ) -> Result<Vec<IbcEvent>, UpgradeChainError> {
-    // build a proposal Plan    // build a proposal Plan
+    // build a proposal Plan
     let upgrade_height = dst_chain
         .query_latest_height()
         .unwrap()

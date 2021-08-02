@@ -56,7 +56,7 @@ define_error! {
         FailedTrustThresholdConversion
             { numerator: u64, denominator: u64 }
             [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
-            | e | { format_args!("failed to build Tendermint-domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
+            | e | { format_args!("failed to build Tendermint domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
 
         UnknownClientStateType
             { client_state_type: String }
