@@ -4,13 +4,13 @@ use std::time::Duration;
 
 use prost_types::Any;
 use serde::{Deserialize, Serialize};
-use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
+use crate::ics02_client::trust_threshold::TrustThreshold;
 use crate::ics07_tendermint::client_state;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChainId, ClientId};
@@ -59,7 +59,7 @@ impl AnyClientState {
         }
     }
 
-    pub fn trust_threshold(&self) -> Option<TrustThresholdFraction> {
+    pub fn trust_threshold(&self) -> Option<TrustThreshold> {
         match self {
             AnyClientState::Tendermint(state) => Some(state.trust_level),
 
@@ -102,13 +102,20 @@ impl TryFrom<Any> for AnyClientState {
     type Error = Error;
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
+        eprintln!("trying to convert from {:#?}", raw.type_url);
         match raw.type_url.as_str() {
             "" => Err(Error::empty_client_state_response()),
 
-            TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
+            TENDERMINT_CLIENT_STATE_TYPE_URL => {
+                eprintln!("trying to convert from TM TYPE");
+                return Ok(AnyClientState::Tendermint(
                 client_state::ClientState::decode_vec(&raw.value)
-                    .map_err(Error::decode_raw_client_state)?,
-            )),
+                    .map_err( |e|{
+                        eprintln!("found error :( {:?}", e);
+
+                        Error::decode_raw_client_state(e) })?,
+                ));
+            }
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(

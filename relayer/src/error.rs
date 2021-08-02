@@ -103,6 +103,10 @@ define_error! {
             [ TraceError<LightClientError> ]
             |e| { format!("Light client error for RPC address {0}", e.address) },
 
+        LightClientState
+            [ client_error::Error ]
+            |_| { "Light client encountered error due to client state".to_string() },
+
         LightClientIo
             { address: String }
             [ TraceError<LightClientIoError> ]
@@ -127,6 +131,10 @@ define_error! {
 
         EmptyUpgradedClientState
             |_| { "The upgrade plan specifies no upgraded client state" },
+
+        InvalidUpgradedClientState
+            [ client_error::Error ]
+            |e| { format!("the upgrade plan specifies an invalid upgraded client state: {}", e.source) },
 
         EmptyResponseValue
             |_| { "Empty response value" },
@@ -239,7 +247,7 @@ define_error! {
 
         Ics02
             [ client_error::Error ]
-            |_| { "ICS 02 error" },
+            |e| { format!("ICS 02 error: {}", e.source) },
 
         Ics03
             [ connection_error::Error ]

@@ -47,11 +47,11 @@ pub struct UpdatePlanOptions {
 }
 
 pub fn build_and_send_upgrade_chain_message(
-    mut dst_chain: CosmosSdkChain, // the chain whose account is debited
-    src_chain: CosmosSdkChain,     // the chain where the transfer is sent
+    mut dst_chain: CosmosSdkChain, // the chain undergoing upgrade
+    src_chain: CosmosSdkChain,     // the chain supplying a client state
     opts: &UpdatePlanOptions,
 ) -> Result<Vec<IbcEvent>, UpgradeChainError> {
-    // build a proposal Plan
+    // build a proposal Plan    // build a proposal Plan
     let upgrade_height = dst_chain
         .query_latest_height()
         .unwrap()
