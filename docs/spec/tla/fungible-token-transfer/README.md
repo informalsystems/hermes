@@ -26,7 +26,7 @@ modules](#helper-modules).
 
 In the model we assume that the [`setup()`](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#port--channel-setup) function has been called
 before. The [channel handshake
-functions]((https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#channel-lifecycle-management))
+functions](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-020-fungible-token-transfer#channel-lifecycle-management)
 are also considered being already executed. Our
 model starts from a state where the channel handshake has completed
 successfully. 
@@ -55,7 +55,7 @@ This module captures the functions
 specifying packet flow and handling from [ICS
 04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics). 
 
-#### [Bank.tla](bank.tla) 
+#### [Bank.tla](Bank.tla) 
 The bank module encodes functions defined by the Cosmos bank
   application. 
   
