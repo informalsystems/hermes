@@ -138,7 +138,7 @@ impl KeyStore for Memory {
     }
 
     fn remove_key(&mut self, key_name: &str) -> Result<(), Error> {
-        self.keys.remove(key_name).ok_or(Kind::KeyNotFound)?;
+        self.keys.remove(key_name).ok_or(Error::key_not_found)?;
         Ok(())
     }
 
@@ -208,9 +208,8 @@ impl KeyStore for Test {
         let mut filename = self.store.join(key_name);
         filename.set_extension(KEYSTORE_FILE_EXTENSION);
 
-        fs::remove_file(filename.clone()).map_err(|_| {
-            Kind::KeyStore.context(format!("cannot find key file at '{}'", filename.display()))
-        })?;
+        fs::remove_file(filename.clone())
+            .map_err(|e| Error::remove_io_fail(filename.display().to_string(), e))?;
 
         Ok(())
     }

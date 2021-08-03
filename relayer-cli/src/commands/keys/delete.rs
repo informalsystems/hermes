@@ -1,5 +1,4 @@
 use abscissa_core::{Command, Options, Runnable};
-use anomaly::BoxError;
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -23,7 +22,7 @@ pub struct KeysDeleteCmd {
 }
 
 impl KeysDeleteCmd {
-    fn options(&self, config: &Config) -> Result<KeysDeleteOptions<'_>, BoxError> {
+    fn options(&self, config: &Config) -> Result<KeysDeleteOptions<'_>, Box<dyn std::error::Error>> {
         let chain_config = config
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
@@ -89,13 +88,13 @@ impl Runnable for KeysDeleteCmd {
     }
 }
 
-pub fn delete_key(config: &ChainConfig, key_name: &str) -> Result<(), BoxError> {
+pub fn delete_key(config: &ChainConfig, key_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     keyring.remove_key(key_name)?;
     Ok(())
 }
 
-pub fn delete_all_keys(config: &ChainConfig) -> Result<(), BoxError> {
+pub fn delete_all_keys(config: &ChainConfig) -> Result<(), Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     let keys = keyring.keys()?;
     for key in keys {
