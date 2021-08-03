@@ -1,10 +1,10 @@
 use alloc::collections::BTreeMap as HashMap;
 
 use flex_error::define_error;
-use tendermint_light_client::types::TrustThreshold;
 use tracing::{debug, trace};
 
 use ibc::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::ics02_client::trust_threshold::TrustThreshold;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::error::Error as ChannelError;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};

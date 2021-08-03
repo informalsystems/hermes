@@ -5,13 +5,13 @@ use core::time::Duration;
 use alloc::string::ToString;
 use prost_types::Any;
 use serde::{Deserialize, Serialize};
-use tendermint::trust_threshold::TrustThresholdFraction;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
+use crate::ics02_client::trust_threshold::TrustThreshold;
 use crate::ics07_tendermint::client_state;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChainId, ClientId};
@@ -60,7 +60,7 @@ impl AnyClientState {
         }
     }
 
-    pub fn trust_threshold(&self) -> Option<TrustThresholdFraction> {
+    pub fn trust_threshold(&self) -> Option<TrustThreshold> {
         match self {
             AnyClientState::Tendermint(state) => Some(state.trust_level),
 
