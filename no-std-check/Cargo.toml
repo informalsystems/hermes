@@ -6,7 +6,7 @@ edition = "2018"
 [dependencies]
 # ibc = { path = "../modules" }
 ibc-proto = { path = "../proto" }
-flex-error = { version = "0.3.0", default-features = false }
+flex-error = { version = "0.4.2", default-features = false }
 
 [profile.dev]
 panic = "abort"

@@ -36,6 +36,8 @@ serde = { version = "1", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.26"
 tracing-subscriber = "0.2.19"
+eyre = "0.6.5"
+color-eyre = "0.5"
 futures = "0.3.16"
 toml = "0.5.8"
 serde_derive = "1.0.116"
@@ -49,7 +51,7 @@ subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 itertools = "0.10.1"
 atty = "0.2.14"
-flex-error = { version = "0.4.1", default-features = false }
+flex-error = { version = "0.4.2", default-features = false }
 signal-hook = "0.3.9"
 
 [dependencies.tendermint-proto]
