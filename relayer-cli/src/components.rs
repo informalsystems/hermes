@@ -1,6 +1,7 @@
 use std::io;
 
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
+use itertools::Itertools;
 use tracing_subscriber::{
     fmt::{
         format::{DefaultFields, Format, Full, Json, JsonFields},
@@ -94,31 +95,37 @@ fn enable_ansi() -> bool {
     atty::is(atty::Stream::Stdout) && atty::is(atty::Stream::Stderr)
 }
 
+const HERMES_LOG: &str = "HERMES_LOG";
+
 /// Builds a tracing filter based on the input `log_level`.
 /// Enables tracing exclusively for the relayer crates.
 /// Returns error if the filter failed to build.
 fn build_tracing_filter(log_level: String) -> Result<EnvFilter, FrameworkError> {
+    if let Ok(log_filter) = std::env::var(HERMES_LOG) {
+        eprintln!(
+            "Using tracing filter set in {} env var: {}",
+            HERMES_LOG, log_filter
+        );
+
+        return Ok(EnvFilter::new(log_filter));
+    }
+
     let target_crates = ["ibc_relayer", "ibc_relayer_cli"];
 
-    // SAFETY: unwrap() below works as long as `target_crates` is not empty.
     let directive_raw = target_crates
         .iter()
         .map(|&c| format!("{}={}", c, log_level))
-        .reduce(|a, b| format!("{},{}", a, b))
-        .unwrap();
+        .join(",");
 
     // Build the filter directive
-    match EnvFilter::try_new(directive_raw.clone()) {
-        Ok(out) => Ok(out),
-        Err(e) => {
-            eprintln!(
-                "Unable to initialize Hermes from filter directive {:?}: {}",
-                directive_raw, e
-            );
-            let our_err = Error::invalid_log_level(log_level, e);
-            Err(FrameworkErrorKind::ConfigError
-                .context(format!("{}", our_err))
-                .into())
-        }
-    }
+    EnvFilter::try_new(&directive_raw).map_err(|e| {
+        eprintln!(
+            "Unable to initialize Hermes from filter directive {:?}: {}",
+            directive_raw, e
+        );
+
+        FrameworkErrorKind::ConfigError
+            .context(Error::invalid_log_level(log_level, e))
+            .into()
+    })
 }
