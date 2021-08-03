@@ -12,7 +12,7 @@ use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
 use crate::link::relay_path::RelayPath;
 
-mod error;
+pub mod error;
 mod operational_data;
 mod relay_path;
 mod relay_summary;
@@ -45,12 +45,7 @@ impl Link {
             .src_chain()
             .query_channel(self.a_to_b.src_port_id(), a_channel_id, Height::default())
             .map_err(|e| {
-                LinkError::Failed(format!(
-                    "channel {} does not exist on chain {}; context={}",
-                    a_channel_id,
-                    self.a_to_b.src_chain().id(),
-                    e
-                ))
+                LinkError::channel_not_found(a_channel_id.clone(), self.a_to_b.src_chain().id(), e)
             })?;
 
         let b_channel_id = self.a_to_b.dst_channel_id()?;
@@ -60,12 +55,7 @@ impl Link {
             .dst_chain()
             .query_channel(self.a_to_b.dst_port_id(), b_channel_id, Height::default())
             .map_err(|e| {
-                LinkError::Failed(format!(
-                    "channel {} does not exist on chain {}; context={}",
-                    b_channel_id,
-                    self.a_to_b.dst_chain().id(),
-                    e
-                ))
+                LinkError::channel_not_found(b_channel_id.clone(), self.a_to_b.dst_chain().id(), e)
             })?;
 
         if a_channel.state_matches(&ChannelState::Closed)
@@ -86,38 +76,28 @@ impl Link {
         let a_channel_id = &opts.src_channel_id;
         let a_channel = a_chain
             .query_channel(&opts.src_port_id, a_channel_id, Height::default())
-            .map_err(|e| {
-                LinkError::Failed(format!(
-                    "channel {} does not exist on chain {}; context={}",
-                    a_channel_id.clone(),
-                    a_chain.id(),
-                    e
-                ))
-            })?;
+            .map_err(|e| LinkError::channel_not_found(a_channel_id.clone(), a_chain.id(), e))?;
 
         if !a_channel.state_matches(&ChannelState::Open)
             && !a_channel.state_matches(&ChannelState::Closed)
         {
-            return Err(LinkError::ConstructorFailed(
+            return Err(LinkError::invalid_channel_state(
                 a_channel_id.clone(),
-                opts.src_port_id,
                 a_chain.id(),
             ));
         }
 
-        let b_channel_id = a_channel.counterparty().channel_id.clone().ok_or_else(|| {
-            LinkError::Failed(format!(
-                "counterparty channel id not found for {}",
-                a_channel_id
-            ))
-        })?;
+        let b_channel_id = a_channel
+            .counterparty()
+            .channel_id
+            .clone()
+            .ok_or_else(|| LinkError::counterparty_channel_not_found(a_channel_id.clone()))?;
 
         if a_channel.connection_hops().is_empty() {
-            return Err(LinkError::Failed(format!(
-                "channel {} on chain {} has no connection hops",
+            return Err(LinkError::no_connection_hop(
                 a_channel_id.clone(),
-                a_chain.id()
-            )));
+                a_chain.id(),
+            ));
         }
 
         // Check that the counterparty details on the destination chain matches the source chain
@@ -132,18 +112,19 @@ impl Link {
                 port_id: opts.src_port_id.clone(),
             },
         )
-        .map_err(LinkError::Initialization)?;
+        .map_err(LinkError::initialization)?;
 
         // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
-        let a_connection = a_chain.query_connection(&a_connection_id, Height::zero())?;
+        let a_connection = a_chain
+            .query_connection(&a_connection_id, Height::zero())
+            .map_err(LinkError::relayer)?;
 
         if !a_connection.state_matches(&ConnectionState::Open) {
-            return Err(LinkError::Failed(format!(
-                "connection for channel {} on chain {} not in open state",
+            return Err(LinkError::channel_not_opened(
                 a_channel_id.clone(),
-                a_chain.id()
-            )));
+                a_chain.id(),
+            ));
         }
 
         let channel = Channel {

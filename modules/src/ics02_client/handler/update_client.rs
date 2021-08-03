@@ -6,7 +6,7 @@ use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
 use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -36,25 +36,25 @@ pub fn process(
     // Read client type from the host chain store. The client should already exist.
     let client_type = ctx
         .client_type(&client_id)
-        .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
+        .ok_or_else(|| Error::client_not_found(client_id.clone()))?;
 
     let client_def = AnyClient::from_client_type(client_type);
 
     // Read client state from the host chain store.
     let client_state = ctx
         .client_state(&client_id)
-        .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
+        .ok_or_else(|| Error::client_not_found(client_id.clone()))?;
 
     let latest_height = client_state.latest_height();
     ctx.consensus_state(&client_id, latest_height)
-        .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), latest_height))?;
+        .ok_or_else(|| Error::consensus_state_not_found(client_id.clone(), latest_height))?;
 
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.
     let (new_client_state, new_consensus_state) = client_def
         .check_header_and_update_state(client_state, header)
-        .map_err(|e| Kind::HeaderVerificationFailure.context(e.to_string()))?;
+        .map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
     let result = ClientResult::Update(Result {
         client_id: client_id.clone(),
@@ -79,7 +79,7 @@ mod tests {
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_state::AnyClientState;
-    use crate::ics02_client::error::Kind;
+    use crate::ics02_client::error::{Error, ErrorDetail};
     use crate::ics02_client::handler::dispatch;
     use crate::ics02_client::handler::ClientResult::Update;
     use crate::ics02_client::header::Header;
@@ -154,11 +154,11 @@ mod tests {
         let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
-            Ok(_) => {
-                panic!("unexpected success (expected error)");
+            Err(Error(ErrorDetail::ClientNotFound(e), _)) => {
+                assert_eq!(e.client_id, msg.client_id);
             }
-            Err(err) => {
-                assert_eq!(err.kind(), &Kind::ClientNotFound(msg.client_id));
+            _ => {
+                panic!("expected ClientNotFound error, instead got {:?}", output)
             }
         }
     }
