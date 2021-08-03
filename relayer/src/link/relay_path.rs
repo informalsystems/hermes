@@ -40,8 +40,8 @@ use crate::link::relay_summary::RelaySummary;
 
 const MAX_RETRIES: usize = 5;
 
-pub struct RelayPath<Chain: ChainHandle> {
-    channel: Channel<Chain>,
+pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
+    channel: Channel<ChainA, ChainB>,
     // Marks whether this path has already cleared pending packets.
     // Packets should be cleared once (at startup), then this
     // flag turns to `false`.
@@ -55,8 +55,8 @@ pub struct RelayPath<Chain: ChainHandle> {
     dst_operational_data: Vec<OperationalData>,
 }
 
-impl<Chain: ChainHandle> RelayPath<Chain> {
-    pub fn new(channel: Channel<Chain>) -> Self {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
+    pub fn new(channel: Channel<ChainA, ChainB>) -> Self {
         Self {
             channel,
             clear_packets: true,
@@ -65,11 +65,11 @@ impl<Chain: ChainHandle> RelayPath<Chain> {
         }
     }
 
-    pub fn src_chain(&self) -> &Chain {
+    pub fn src_chain(&self) -> &ChainA {
         self.channel.src_chain()
     }
 
-    pub fn dst_chain(&self) -> &Chain {
+    pub fn dst_chain(&self) -> &ChainB {
         self.channel.dst_chain()
     }
 
@@ -109,7 +109,7 @@ impl<Chain: ChainHandle> RelayPath<Chain> {
             .ok_or_else(|| LinkError::missing_channel_id(self.dst_chain().id()))
     }
 
-    pub fn channel(&self) -> &Channel<Chain> {
+    pub fn channel(&self) -> &Channel<ChainA, ChainB> {
         &self.channel
     }
 
@@ -571,14 +571,19 @@ impl<Chain: ChainHandle> RelayPath<Chain> {
             return Ok(RelaySummary::empty());
         }
 
-        let target = match odata.target {
-            OperationalDataTarget::Source => self.src_chain(),
-            OperationalDataTarget::Destination => self.dst_chain(),
-        };
-
         let msgs = odata.assemble_msgs(self)?;
 
-        let tx_events = target.send_msgs(msgs).map_err(LinkError::relayer)?;
+        let tx_events = match odata.target {
+            OperationalDataTarget::Source => self
+                .src_chain()
+                .send_msgs(msgs)
+                .map_err(LinkError::relayer)?,
+            OperationalDataTarget::Destination => self
+                .dst_chain()
+                .send_msgs(msgs)
+                .map_err(LinkError::relayer)?,
+        };
+
         info!("[{}] result {}\n", self, PrettyEvents(&tx_events));
 
         let ev = tx_events
@@ -1392,7 +1397,7 @@ impl<Chain: ChainHandle> RelayPath<Chain> {
         }
     }
 
-    fn restore_src_client(&self) -> ForeignClient<Chain> {
+    fn restore_src_client(&self) -> ForeignClient<ChainA, ChainB> {
         ForeignClient::restore(
             self.src_client_id().clone(),
             self.src_chain().clone(),
@@ -1400,7 +1405,7 @@ impl<Chain: ChainHandle> RelayPath<Chain> {
         )
     }
 
-    fn restore_dst_client(&self) -> ForeignClient<Chain> {
+    fn restore_dst_client(&self) -> ForeignClient<ChainB, ChainA> {
         ForeignClient::restore(
             self.dst_client_id().clone(),
             self.dst_chain().clone(),
@@ -1409,7 +1414,7 @@ impl<Chain: ChainHandle> RelayPath<Chain> {
     }
 }
 
-impl<Chain: ChainHandle> fmt::Display for RelayPath<Chain> {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> fmt::Display for RelayPath<ChainA, ChainB> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let channel_id = self
             .src_channel_id()

@@ -16,19 +16,19 @@ use crate::{
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub struct ClientWorker<Chain: ChainHandle> {
+pub struct ClientWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     client: Client,
-    chains: ChainHandlePair<Chain>,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
 }
 
-impl<Chain: ChainHandle> ClientWorker<Chain> {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
     pub fn new(
         client: Client,
-        chains: ChainHandlePair<Chain>,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
     ) -> Self {
@@ -97,7 +97,7 @@ impl<Chain: ChainHandle> ClientWorker<Chain> {
         Ok(())
     }
 
-    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient<Chain>) -> Next {
+    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient<ChainB, ChainA>) -> Next {
         match cmd {
             WorkerCmd::IbcEvents { batch } => {
                 trace!("[{}] worker received batch: {:?}", client, batch);
@@ -132,7 +132,7 @@ impl<Chain: ChainHandle> ClientWorker<Chain> {
 
     fn detect_misbehaviour(
         &self,
-        client: &ForeignClient<Chain>,
+        client: &ForeignClient<ChainB, ChainA>,
         update: Option<UpdateClient>,
     ) -> bool {
         match client.detect_misbehaviour_and_submit_evidence(update) {
@@ -154,7 +154,7 @@ impl<Chain: ChainHandle> ClientWorker<Chain> {
     }
 
     /// Get a reference to the client worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair<Chain> {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

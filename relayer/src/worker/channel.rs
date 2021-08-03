@@ -15,19 +15,19 @@ use crate::{
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub struct ChannelWorker<Chain: ChainHandle> {
+pub struct ChannelWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel,
-    chains: ChainHandlePair<Chain>,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
 }
 
-impl<Chain: ChainHandle> ChannelWorker<Chain> {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ChannelWorker<ChainA, ChainB> {
     pub fn new(
         channel: Channel,
-        chains: ChainHandlePair<Chain>,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
     ) -> Self {
@@ -128,7 +128,7 @@ impl<Chain: ChainHandle> ChannelWorker<Chain> {
     }
 
     /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair<Chain> {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

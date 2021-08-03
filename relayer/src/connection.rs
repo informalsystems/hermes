@@ -231,18 +231,18 @@ impl<Chain: ChainHandle> Serialize for ConnectionSide<Chain> {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Connection<Chain: ChainHandle> {
+pub struct Connection<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub delay_period: Duration,
-    pub a_side: ConnectionSide<Chain>,
-    pub b_side: ConnectionSide<Chain>,
+    pub a_side: ConnectionSide<ChainA>,
+    pub b_side: ConnectionSide<ChainB>,
 }
 
-impl<Chain: ChainHandle> Connection<Chain> {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
     pub fn new(
-        a_client: ForeignClient<Chain>,
-        b_client: ForeignClient<Chain>,
+        a_client: ForeignClient<ChainA, ChainB>,
+        b_client: ForeignClient<ChainB, ChainA>,
         delay_period: Duration,
     ) -> Result<Self, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
@@ -271,10 +271,10 @@ impl<Chain: ChainHandle> Connection<Chain> {
         Ok(c)
     }
     pub fn restore_from_event(
-        chain: Chain,
-        counterparty_chain: Chain,
+        chain: ChainA,
+        counterparty_chain: ChainB,
         connection_open_event: IbcEvent,
-    ) -> Result<Connection<Chain>, ConnectionError> {
+    ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         let connection_event_attributes = connection_open_event
             .connection_attributes()
             .ok_or_else(|| ConnectionError::invalid_event(connection_open_event.clone()))?;
@@ -303,11 +303,11 @@ impl<Chain: ChainHandle> Connection<Chain> {
     /// Recreates a 'Connection' object from the worker's object built from chain state scanning.
     /// The connection must exist on chain.
     pub fn restore_from_state(
-        chain: Chain,
-        counterparty_chain: Chain,
+        chain: ChainA,
+        counterparty_chain: ChainB,
         connection: WorkerConnectionObject,
         height: Height,
-    ) -> Result<(Connection<Chain>, State), ConnectionError> {
+    ) -> Result<(Connection<ChainA, ChainB>, State), ConnectionError> {
         let a_connection = chain
             .query_connection(&connection.src_connection_id, height)
             .map_err(ConnectionError::relayer)?;
@@ -363,10 +363,10 @@ impl<Chain: ChainHandle> Connection<Chain> {
     }
 
     pub fn find(
-        a_client: ForeignClient<Chain>,
-        b_client: ForeignClient<Chain>,
+        a_client: ForeignClient<ChainA, ChainB>,
+        b_client: ForeignClient<ChainB, ChainA>,
         conn_end_a: &IdentifiedConnectionEnd,
-    ) -> Result<Connection<Chain>, ConnectionError> {
+    ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
         // Validate the connection end
@@ -417,8 +417,8 @@ impl<Chain: ChainHandle> Connection<Chain> {
 
     // Verifies that the two clients are mutually consistent, i.e., they serve the same two chains.
     fn validate_clients(
-        a_client: &ForeignClient<Chain>,
-        b_client: &ForeignClient<Chain>,
+        a_client: &ForeignClient<ChainA, ChainB>,
+        b_client: &ForeignClient<ChainB, ChainA>,
     ) -> Result<(), ConnectionError> {
         if a_client.src_chain().id() != b_client.dst_chain().id() {
             return Err(ConnectionError::chain_id_mismatch(
@@ -437,11 +437,11 @@ impl<Chain: ChainHandle> Connection<Chain> {
         Ok(())
     }
 
-    pub fn src_chain(&self) -> Chain {
+    pub fn src_chain(&self) -> ChainA {
         self.a_side.chain.clone()
     }
 
-    pub fn dst_chain(&self) -> Chain {
+    pub fn dst_chain(&self) -> ChainB {
         self.b_side.chain.clone()
     }
 
@@ -461,7 +461,7 @@ impl<Chain: ChainHandle> Connection<Chain> {
         self.b_side.connection_id()
     }
 
-    pub fn flipped(&self) -> Connection<Chain> {
+    pub fn flipped(&self) -> Connection<ChainB, ChainA> {
         Connection {
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
@@ -1070,7 +1070,7 @@ impl<Chain: ChainHandle> Connection<Chain> {
         }
     }
 
-    fn restore_src_client(&self) -> ForeignClient<Chain> {
+    fn restore_src_client(&self) -> ForeignClient<ChainA, ChainB> {
         ForeignClient::restore(
             self.src_client_id().clone(),
             self.src_chain(),
@@ -1078,7 +1078,7 @@ impl<Chain: ChainHandle> Connection<Chain> {
         )
     }
 
-    fn restore_dst_client(&self) -> ForeignClient<Chain> {
+    fn restore_dst_client(&self) -> ForeignClient<ChainB, ChainA> {
         ForeignClient::restore(
             self.dst_client_id().clone(),
             self.dst_chain(),

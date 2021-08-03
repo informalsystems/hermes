@@ -63,23 +63,25 @@ pub enum WorkerMsg {
 }
 
 /// A worker processes batches of events associated with a given [`Object`].
-pub enum Worker<Chain: ChainHandle> {
-    Client(WorkerId, ClientWorker<Chain>),
-    Connection(WorkerId, ConnectionWorker<Chain>),
-    Channel(WorkerId, ChannelWorker<Chain>),
-    Packet(WorkerId, PacketWorker<Chain>),
+pub enum Worker<ChainA: ChainHandle, ChainB: ChainHandle> {
+    Client(WorkerId, ClientWorker<ChainA, ChainB>),
+    Connection(WorkerId, ConnectionWorker<ChainA, ChainB>),
+    Channel(WorkerId, ChannelWorker<ChainA, ChainB>),
+    Packet(WorkerId, PacketWorker<ChainA, ChainB>),
 }
 
-impl<Chain: ChainHandle + 'static> fmt::Display for Worker<Chain> {
+impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> fmt::Display
+    for Worker<ChainA, ChainB>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{} <-> {}]", self.chains().a.id(), self.chains().b.id(),)
     }
 }
 
-impl<Chain: ChainHandle + 'static> Worker<Chain> {
+impl<ChainA: ChainHandle + 'static, ChainB: ChainHandle + 'static> Worker<ChainA, ChainB> {
     /// Spawn a worker which relays events pertaining to an [`Object`] between two `chains`.
     pub fn spawn(
-        chains: ChainHandlePair<Chain>,
+        chains: ChainHandlePair<ChainA, ChainB>,
         id: WorkerId,
         object: Object,
         msg_tx: Sender<WorkerMsg>,
@@ -155,7 +157,7 @@ impl<Chain: ChainHandle + 'static> Worker<Chain> {
         }
     }
 
-    fn chains(&self) -> &ChainHandlePair<Chain> {
+    fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         match self {
             Self::Client(_, w) => w.chains(),
             Self::Connection(_, w) => w.chains(),

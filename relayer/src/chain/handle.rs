@@ -55,22 +55,22 @@ mod prod;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
-pub struct ChainHandlePair<Chain: ChainHandle> {
-    pub a: Chain,
-    pub b: Chain,
+pub struct ChainHandlePair<ChainA: ChainHandle, ChainB: ChainHandle> {
+    pub a: ChainA,
+    pub b: ChainB,
 }
 
-impl<Chain: ChainHandle> ChainHandlePair<Chain> {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ChainHandlePair<ChainA, ChainB> {
     /// Swap the two handles.
-    pub fn swap(self) -> Self {
-        Self {
+    pub fn swap(self) -> ChainHandlePair<ChainB, ChainA> {
+        ChainHandlePair {
             a: self.b,
             b: self.a,
         }
     }
 }
 
-impl<Chain: ChainHandle> Debug for ChainHandlePair<Chain> {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> Debug for ChainHandlePair<ChainA, ChainB> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ChainHandlePair")
             .field("a", &self.a.id())
