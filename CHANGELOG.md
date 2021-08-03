@@ -152,7 +152,6 @@ The full list of changes is described below.
   - Added basic channel filter ([#1140])
   - Added `query channel ends` CLI command ([#1062])
   - Added a health checkup mechanism for Hermes ([#697, #1057])
-  - Added `keys delete` CLI command ([#1065])
 
 ### IMPROVEMENTS
 
@@ -172,7 +171,6 @@ The full list of changes is described below.
 [#600]: https://github.com/informalsystems/ibc-rs/issues/600
 [#697]: https://github.com/informalsystems/ibc-rs/issues/697
 [#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
-[#1065]: https://github.com/informalsystems/ibc-rs/issues/1065
 [#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
 [#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
 [#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
