@@ -101,7 +101,6 @@ define_error! {
                     e.file_path)
             },
 
-
         InvalidHdPath
             {
                 path: String,

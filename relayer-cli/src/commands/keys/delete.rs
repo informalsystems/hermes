@@ -22,7 +22,10 @@ pub struct KeysDeleteCmd {
 }
 
 impl KeysDeleteCmd {
-    fn options(&self, config: &Config) -> Result<KeysDeleteOptions<'_>, Box<dyn std::error::Error>> {
+    fn options(
+        &self,
+        config: &Config,
+    ) -> Result<KeysDeleteOptions<'_>, Box<dyn std::error::Error>> {
         let chain_config = config
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
