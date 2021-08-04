@@ -138,7 +138,7 @@ impl KeyStore for Memory {
     }
 
     fn remove_key(&mut self, key_name: &str) -> Result<(), Error> {
-        self.keys.remove(key_name).ok_or(Error::key_not_found())?;
+        self.keys.remove(key_name).ok_or(Error::key_not_found)?;
         Ok(())
     }
 
