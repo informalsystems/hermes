@@ -233,6 +233,28 @@ To use a different key name, specify the <code>--name</code> option when invokin
 <pre><code>hermes -c config.toml keys restore [CHAINID] -m &quot;[MNEMONIC]&quot; -n [KEY_NAME]
 </code></pre>
 </blockquote>
+<h3 id="delete-keys"><a class="header" href="#delete-keys">Delete keys</a></h3>
+<p>In order to delete the private keys added to chains use the <code>keys delete</code> command</p>
+<pre><code class="language-shell">USAGE:
+    hermes keys delete &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Delete key(s) from a configured chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+
+FLAGS:
+    -n, --name NAME           name of the key
+    -a, --all                 delete all keys
+</code></pre>
+<h4 id="delete-private-keys-that-was-previously-added-to-a-chain"><a class="header" href="#delete-private-keys-that-was-previously-added-to-a-chain">Delete private keys that was previously added to a chain</a></h4>
+<p>To delete a single private key by name:</p>
+<pre><code class="language-shell">hermes -c config.toml keys delete [CHAIN_ID] -n [KEY_NAME]
+</code></pre>
+<p>Alternatively, to delete all private keys added to a chain:</p>
+<pre><code class="language-shell">hermes -c config.toml keys delete [CHAIN_ID] -a
+</code></pre>
 <h3 id="list-keys"><a class="header" href="#list-keys">List keys</a></h3>
 <p>In order to list the private keys added to chains use the <code>keys list</code> command</p>
 <pre><code class="language-shell">USAGE:
