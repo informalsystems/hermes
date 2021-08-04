@@ -27,7 +27,7 @@ pub struct PageRequest {
     /// is set.
     #[prost(bool, tag = "4")]
     pub count_total: bool,
-    /// reverse is set to true indicates that, results to be returned in the descending order.
+    /// reverse is set to true if results are to be returned in the descending order.
     #[prost(bool, tag = "5")]
     pub reverse: bool,
 }
