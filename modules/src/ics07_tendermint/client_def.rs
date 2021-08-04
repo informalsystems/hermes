@@ -62,7 +62,7 @@ impl ClientDef for TendermintClient {
         _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
-        _connection_id: Option<&ConnectionId>,
+        _connection_id: Option<ConnectionId>,
         _expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
         todo!()

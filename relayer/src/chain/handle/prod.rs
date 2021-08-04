@@ -11,6 +11,7 @@ use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
+use ibc::tagged::Tagged;
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
@@ -103,41 +104,49 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Key { reply_to })
     }
 
-    fn module_version(&self, port_id: &PortId) -> Result<String, Error> {
+    fn module_version(&self, port_id: Tagged<Self, PortId>) -> Result<String, Error> {
         self.send(|reply_to| ChainRequest::ModuleVersion {
-            port_id: port_id.clone(),
+            port_id: port_id.untag(),
             reply_to,
         })
     }
 
-    fn query_latest_height(&self) -> Result<Height, Error> {
-        self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
+    fn query_latest_height(&self) -> Result<Tagged<Self, Height>, Error> {
+        let height = self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })?;
+        Ok(Tagged::new(height))
     }
 
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
-    ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-        self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })
+    ) -> Result<Vec<Tagged<Self, IdentifiedAnyClientState>>, Error> {
+        let states = self.send(|reply_to| ChainRequest::QueryClients { request, reply_to })?;
+
+        Ok(states.into_iter().map(Tagged::new).collect())
     }
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| ChainRequest::QueryClientState {
-            client_id: client_id.clone(),
-            height,
+        client_id: Tagged<Self, ClientId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, AnyClientState>, Error> {
+        let state = self.send(|reply_to| ChainRequest::QueryClientState {
+            client_id: client_id.untag(),
+            height: height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok(Tagged::new(state))
     }
 
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error> {
-        self.send(|reply_to| ChainRequest::QueryClientConnections { request, reply_to })
+    ) -> Result<Vec<Tagged<Self, ConnectionId>>, Error> {
+        let connection_ids =
+            self.send(|reply_to| ChainRequest::QueryClientConnections { request, reply_to })?;
+
+        Ok(connection_ids.into_iter().map(Tagged::new).collect())
     }
 
     fn query_consensus_states(
@@ -149,30 +158,42 @@ impl ChainHandle for ProdChainHandle {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
-    ) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| ChainRequest::QueryConsensusState {
-            client_id,
-            consensus_height,
-            query_height,
+        client_id: Tagged<Self, ClientId>,
+        consensus_height: Tagged<Self, Height>,
+        query_height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, AnyConsensusState>, Error> {
+        let state = self.send(|reply_to| ChainRequest::QueryConsensusState {
+            client_id: client_id.untag(),
+            consensus_height: consensus_height.untag(),
+            query_height: query_height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok(Tagged::new(state))
     }
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::QueryUpgradedClientState { height, reply_to })
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, AnyClientState>, MerkleProof), Error> {
+        let (state, proof) = self.send(|reply_to| ChainRequest::QueryUpgradedClientState {
+            height: height.untag(),
+            reply_to,
+        })?;
+
+        Ok((Tagged::new(state), proof))
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState { height, reply_to })
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, AnyConsensusState>, MerkleProof), Error> {
+        let (state, proof) = self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState {
+            height: height.untag(),
+            reply_to,
+        })?;
+
+        Ok((Tagged::new(state), proof))
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -185,143 +206,178 @@ impl ChainHandle for ProdChainHandle {
 
     fn query_connection(
         &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error> {
-        self.send(|reply_to| ChainRequest::QueryConnection {
-            connection_id: connection_id.clone(),
-            height,
+        connection_id: Tagged<Self, ConnectionId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, ConnectionEnd>, Error> {
+        let connection_end = self.send(|reply_to| ChainRequest::QueryConnection {
+            connection_id: connection_id.untag(),
+            height: height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok(Tagged::new(connection_end))
     }
 
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-        self.send(|reply_to| ChainRequest::QueryConnections { request, reply_to })
+    ) -> Result<Vec<Tagged<Self, IdentifiedConnectionEnd>>, Error> {
+        let connection_ends =
+            self.send(|reply_to| ChainRequest::QueryConnections { request, reply_to })?;
+
+        Ok(connection_ends.into_iter().map(Tagged::new).collect())
     }
 
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        self.send(|reply_to| ChainRequest::QueryConnectionChannels { request, reply_to })
+    ) -> Result<Vec<Tagged<Self, IdentifiedChannelEnd>>, Error> {
+        let channel_ends =
+            self.send(|reply_to| ChainRequest::QueryConnectionChannels { request, reply_to })?;
+
+        Ok(channel_ends.into_iter().map(Tagged::new).collect())
     }
 
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error> {
-        self.send(|reply_to| ChainRequest::QueryNextSequenceReceive { request, reply_to })
+    ) -> Result<Tagged<Self, Sequence>, Error> {
+        let sequence =
+            self.send(|reply_to| ChainRequest::QueryNextSequenceReceive { request, reply_to })?;
+
+        Ok(Tagged::new(sequence))
     }
 
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
-    ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })
+    ) -> Result<Vec<Tagged<Self, IdentifiedChannelEnd>>, Error> {
+        let channel_ends =
+            self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })?;
+
+        Ok(channel_ends.into_iter().map(Tagged::new).collect())
     }
 
     fn query_channel(
         &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error> {
-        self.send(|reply_to| ChainRequest::QueryChannel {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            height,
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, ChannelEnd>, Error> {
+        let channel_end = self.send(|reply_to| ChainRequest::QueryChannel {
+            port_id: port_id.untag(),
+            channel_id: channel_id.untag(),
+            height: height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok(Tagged::new(channel_end))
     }
 
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
-    ) -> Result<Option<IdentifiedAnyClientState>, Error> {
-        self.send(|reply_to| ChainRequest::QueryChannelClientState { request, reply_to })
+    ) -> Result<Option<Tagged<Self, IdentifiedAnyClientState>>, Error> {
+        let m_state =
+            self.send(|reply_to| ChainRequest::QueryChannelClientState { request, reply_to })?;
+
+        Ok(m_state.map(Tagged::new))
     }
 
     fn proven_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenClientState {
-            client_id: client_id.clone(),
-            height,
+        client_id: Tagged<Self, ClientId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, AnyClientState>, MerkleProof), Error> {
+        let (state, proof) = self.send(|reply_to| ChainRequest::ProvenClientState {
+            client_id: client_id.untag(),
+            height: height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok((Tagged::new(state), proof))
     }
 
     fn proven_connection(
         &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenConnection {
-            connection_id: connection_id.clone(),
-            height,
+        connection_id: Tagged<Self, ConnectionId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, ConnectionEnd>, MerkleProof), Error> {
+        let (connection_end, proof) = self.send(|reply_to| ChainRequest::ProvenConnection {
+            connection_id: connection_id.untag(),
+            height: height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok((Tagged::new(connection_end), proof))
     }
 
     fn proven_client_consensus(
         &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenClientConsensus {
-            client_id: client_id.clone(),
-            consensus_height,
-            height,
+        client_id: Tagged<Self, ClientId>,
+        consensus_height: Tagged<Self, Height>,
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, AnyConsensusState>, MerkleProof), Error> {
+        let (state, proof) = self.send(|reply_to| ChainRequest::ProvenClientConsensus {
+            client_id: client_id.untag(),
+            consensus_height: consensus_height.untag(),
+            height: height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok((Tagged::new(state), proof))
     }
 
     fn build_header(
         &self,
-        trusted_height: Height,
-        target_height: Height,
-        client_state: AnyClientState,
+        trusted_height: Tagged<Self, Height>,
+        target_height: Tagged<Self, Height>,
+        client_state: Tagged<Self, AnyClientState>,
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
         self.send(|reply_to| ChainRequest::BuildHeader {
-            trusted_height,
-            target_height,
-            client_state,
+            trusted_height: trusted_height.untag(),
+            target_height: target_height.untag(),
+            client_state: client_state.untag(),
             reply_to,
         })
     }
 
-    fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error> {
-        self.send(|reply_to| ChainRequest::BuildClientState { height, reply_to })
+    fn build_client_state(
+        &self,
+        height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, AnyClientState>, Error> {
+        let state = self.send(|reply_to| ChainRequest::BuildClientState {
+            height: height.untag(),
+            reply_to,
+        })?;
+
+        Ok(Tagged::new(state))
     }
 
     fn build_consensus_state(
         &self,
-        trusted: Height,
-        target: Height,
-        client_state: AnyClientState,
-    ) -> Result<AnyConsensusState, Error> {
-        self.send(|reply_to| ChainRequest::BuildConsensusState {
-            trusted,
-            target,
-            client_state,
+        trusted: Tagged<Self, Height>,
+        target: Tagged<Self, Height>,
+        client_state: Tagged<Self, AnyClientState>,
+    ) -> Result<Tagged<Self, AnyConsensusState>, Error> {
+        let state = self.send(|reply_to| ChainRequest::BuildConsensusState {
+            trusted: trusted.untag(),
+            target: target.untag(),
+            client_state: client_state.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok(Tagged::new(state))
     }
 
     fn check_misbehaviour(
         &self,
-        update_event: UpdateClient,
-        client_state: AnyClientState,
+        update_event: Tagged<Self, UpdateClient>,
+        client_state: Tagged<Self, AnyClientState>,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
         self.send(|reply_to| ChainRequest::BuildMisbehaviour {
-            client_state,
-            update_event,
+            client_state: client_state.untag(),
+            update_event: update_event.untag(),
             reply_to,
         })
     }
@@ -329,31 +385,34 @@ impl ChainHandle for ProdChainHandle {
     fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
-        connection_id: &ConnectionId,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(Option<AnyClientState>, Proofs), Error> {
-        self.send(
-            |reply_to| ChainRequest::BuildConnectionProofsAndClientState {
-                message_type,
-                connection_id: connection_id.clone(),
-                client_id: client_id.clone(),
-                height,
-                reply_to,
-            },
-        )
+        connection_id: Tagged<Self, ConnectionId>,
+        client_id: Tagged<Self, ClientId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<(Option<Tagged<Self, AnyClientState>>, Proofs), Error> {
+        let (m_state, proof) =
+            self.send(
+                |reply_to| ChainRequest::BuildConnectionProofsAndClientState {
+                    message_type,
+                    connection_id: connection_id.untag(),
+                    client_id: client_id.untag(),
+                    height: height.untag(),
+                    reply_to,
+                },
+            )?;
+
+        Ok((m_state.map(Tagged::new), proof))
     }
 
     fn build_channel_proofs(
         &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        height: Tagged<Self, Height>,
     ) -> Result<Proofs, Error> {
         self.send(|reply_to| ChainRequest::BuildChannelProofs {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            height,
+            port_id: port_id.untag(),
+            channel_id: channel_id.untag(),
+            height: height.untag(),
             reply_to,
         })
     }
@@ -361,17 +420,17 @@ impl ChainHandle for ProdChainHandle {
     fn build_packet_proofs(
         &self,
         packet_type: PacketMsgType,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
-        height: Height,
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        sequence: Tagged<Self, Sequence>,
+        height: Tagged<Self, Height>,
     ) -> Result<(Vec<u8>, Proofs), Error> {
         self.send(|reply_to| ChainRequest::BuildPacketProofs {
             packet_type,
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            sequence,
-            height,
+            port_id: port_id.untag(),
+            channel_id: channel_id.untag(),
+            sequence: sequence.untag(),
+            height: height.untag(),
             reply_to,
         })
     }
@@ -379,8 +438,11 @@ impl ChainHandle for ProdChainHandle {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketCommitments { request, reply_to })
+    ) -> Result<(Vec<PacketState>, Tagged<Self, Height>), Error> {
+        let (states, height) =
+            self.send(|reply_to| ChainRequest::QueryPacketCommitments { request, reply_to })?;
+
+        Ok((states, Tagged::new(height)))
     }
 
     fn query_unreceived_packets(
@@ -393,8 +455,11 @@ impl ChainHandle for ProdChainHandle {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })
+    ) -> Result<(Vec<PacketState>, Tagged<Self, Height>), Error> {
+        let (states, height) =
+            self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })?;
+
+        Ok((states, Tagged::new(height)))
     }
 
     fn query_unreceived_acknowledgement(

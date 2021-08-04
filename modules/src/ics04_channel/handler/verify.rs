@@ -49,7 +49,7 @@ pub fn verify_channel_proofs(
             connection_end.counterparty().prefix(),
             proofs.object_proof(),
             channel_end.counterparty().port_id(),
-            channel_end.counterparty().channel_id().unwrap(),
+            &channel_end.counterparty().channel_id().unwrap(),
             expected_chan,
         )
         .map_err(Error::verify_channel_failed)

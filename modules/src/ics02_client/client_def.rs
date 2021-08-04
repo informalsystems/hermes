@@ -63,7 +63,7 @@ pub trait ClientDef: Clone {
         height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
-        connection_id: Option<&ConnectionId>,
+        connection_id: Option<ConnectionId>,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error>;
 
@@ -265,7 +265,7 @@ impl ClientDef for AnyClient {
         height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
-        connection_id: Option<&ConnectionId>,
+        connection_id: Option<ConnectionId>,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
         match self {

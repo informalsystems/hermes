@@ -1,7 +1,6 @@
 #![allow(clippy::borrowed_box)]
 
 use prost_types::Any;
-use serde::Serialize;
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
 
@@ -14,6 +13,7 @@ use ibc::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use ibc::tagged::Tagged;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
@@ -66,22 +66,22 @@ pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> C
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct ChannelSide<Chain: ChainHandle> {
     pub chain: Chain,
-    client_id: ClientId,
-    connection_id: ConnectionId,
-    port_id: PortId,
-    channel_id: Option<ChannelId>,
+    client_id: Tagged<Chain, ClientId>,
+    connection_id: Tagged<Chain, ConnectionId>,
+    port_id: Tagged<Chain, PortId>,
+    channel_id: Option<Tagged<Chain, ChannelId>>,
 }
 
 impl<Chain: ChainHandle> ChannelSide<Chain> {
     pub fn new(
         chain: Chain,
-        client_id: ClientId,
-        connection_id: ConnectionId,
-        port_id: PortId,
-        channel_id: Option<ChannelId>,
+        client_id: Tagged<Chain, ClientId>,
+        connection_id: Tagged<Chain, ConnectionId>,
+        port_id: Tagged<Chain, PortId>,
+        channel_id: Option<Tagged<Chain, ChannelId>>,
     ) -> ChannelSide<Chain> {
         Self {
             chain,
@@ -96,24 +96,24 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
         self.chain.id()
     }
 
-    pub fn client_id(&self) -> &ClientId {
-        &self.client_id
+    pub fn client_id(&self) -> Tagged<Chain, ClientId> {
+        self.client_id.clone()
     }
 
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
+    pub fn connection_id(&self) -> Tagged<Chain, ConnectionId> {
+        self.connection_id.clone()
     }
 
-    pub fn port_id(&self) -> &PortId {
-        &self.port_id
+    pub fn port_id(&self) -> Tagged<Chain, PortId> {
+        self.port_id.clone()
     }
 
-    pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.channel_id.as_ref()
+    pub fn channel_id(&self) -> Option<Tagged<Chain, ChannelId>> {
+        self.channel_id.clone()
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub ordering: Order,
     pub a_side: ChannelSide<ChainA>,
@@ -128,14 +128,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn new(
         connection: Connection<ChainA, ChainB>,
         ordering: Order,
-        a_port: PortId,
-        b_port: PortId,
+        a_port: Tagged<ChainB, PortId>,
+        b_port: Tagged<ChainA, PortId>,
         version: Option<String>,
     ) -> Result<Self, ChannelError> {
         let b_side_chain = connection.dst_chain();
         let version = version.unwrap_or(
             b_side_chain
-                .module_version(&a_port)
+                .module_version(a_port)
                 .map_err(|e| ChannelError::query(b_side_chain.id(), e))?,
         );
 

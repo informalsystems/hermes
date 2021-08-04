@@ -35,6 +35,7 @@ pub mod macros;
 pub mod proofs;
 pub mod query;
 pub mod signer;
+pub mod tagged;
 pub mod timestamp;
 pub mod tx_msg;
 

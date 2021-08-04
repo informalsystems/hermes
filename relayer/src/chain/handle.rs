@@ -8,6 +8,7 @@ use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
+use ibc::tagged::Tagged;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
@@ -320,25 +321,25 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 
-    fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
+    fn module_version(&self, port_id: Tagged<Self, PortId>) -> Result<String, Error>;
 
-    fn query_latest_height(&self) -> Result<Height, Error>;
+    fn query_latest_height(&self) -> Result<Tagged<Self, Height>, Error>;
 
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
-    ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
+    ) -> Result<Vec<Tagged<Self, IdentifiedAnyClientState>>, Error>;
 
     fn query_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<AnyClientState, Error>;
+        client_id: Tagged<Self, ClientId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, AnyClientState>, Error>;
 
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
-    ) -> Result<Vec<ConnectionId>, Error>;
+    ) -> Result<Vec<Tagged<Self, ConnectionId>>, Error>;
 
     fn query_consensus_states(
         &self,
@@ -347,20 +348,20 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn query_consensus_state(
         &self,
-        client_id: ClientId,
-        consensus_height: Height,
-        query_height: Height,
-    ) -> Result<AnyConsensusState, Error>;
+        client_id: Tagged<Self, ClientId>,
+        consensus_height: Tagged<Self, Height>,
+        query_height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, AnyConsensusState>, Error>;
 
     fn query_upgraded_client_state(
         &self,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error>;
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, AnyClientState>, MerkleProof), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, AnyConsensusState>, MerkleProof), Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
@@ -368,113 +369,116 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     fn query_connection(
         &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<ConnectionEnd, Error>;
+        connection_id: Tagged<Self, ConnectionId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, ConnectionEnd>, Error>;
 
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
+    ) -> Result<Vec<Tagged<Self, IdentifiedConnectionEnd>>, Error>;
 
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
+    ) -> Result<Vec<Tagged<Self, IdentifiedChannelEnd>>, Error>;
 
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error>;
+    ) -> Result<Tagged<Self, Sequence>, Error>;
 
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
-    ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
+    ) -> Result<Vec<Tagged<Self, IdentifiedChannelEnd>>, Error>;
 
     fn query_channel(
         &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
-    ) -> Result<ChannelEnd, Error>;
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, ChannelEnd>, Error>;
 
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
-    ) -> Result<Option<IdentifiedAnyClientState>, Error>;
+    ) -> Result<Option<Tagged<Self, IdentifiedAnyClientState>>, Error>;
 
     fn proven_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error>;
+        client_id: Tagged<Self, ClientId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, AnyClientState>, MerkleProof), Error>;
 
     fn proven_connection(
         &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error>;
+        connection_id: Tagged<Self, ConnectionId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, ConnectionEnd>, MerkleProof), Error>;
 
     fn proven_client_consensus(
         &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
+        client_id: Tagged<Self, ClientId>,
+        consensus_height: Tagged<Self, Height>,
+        height: Tagged<Self, Height>,
+    ) -> Result<(Tagged<Self, AnyConsensusState>, MerkleProof), Error>;
 
     fn build_header(
         &self,
-        trusted_height: Height,
-        target_height: Height,
-        client_state: AnyClientState,
+        trusted_height: Tagged<Self, Height>,
+        target_height: Tagged<Self, Height>,
+        client_state: Tagged<Self, AnyClientState>,
     ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
 
     /// Constructs a client state at the given height
-    fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error>;
+    fn build_client_state(
+        &self,
+        height: Tagged<Self, Height>,
+    ) -> Result<Tagged<Self, AnyClientState>, Error>;
 
     /// Constructs a consensus state at the given height
     fn build_consensus_state(
         &self,
-        trusted: Height,
-        target: Height,
-        client_state: AnyClientState,
-    ) -> Result<AnyConsensusState, Error>;
+        trusted: Tagged<Self, Height>,
+        target: Tagged<Self, Height>,
+        client_state: Tagged<Self, AnyClientState>,
+    ) -> Result<Tagged<Self, AnyConsensusState>, Error>;
 
     fn check_misbehaviour(
         &self,
-        update: UpdateClient,
-        client_state: AnyClientState,
+        update: Tagged<Self, UpdateClient>,
+        client_state: Tagged<Self, AnyClientState>,
     ) -> Result<Option<MisbehaviourEvidence>, Error>;
 
     fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
-        connection_id: &ConnectionId,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(Option<AnyClientState>, Proofs), Error>;
+        connection_id: Tagged<Self, ConnectionId>,
+        client_id: Tagged<Self, ClientId>,
+        height: Tagged<Self, Height>,
+    ) -> Result<(Option<Tagged<Self, AnyClientState>>, Proofs), Error>;
 
     fn build_channel_proofs(
         &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        height: Height,
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        height: Tagged<Self, Height>,
     ) -> Result<Proofs, Error>;
 
     fn build_packet_proofs(
         &self,
         packet_type: PacketMsgType,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: Sequence,
-        height: Height,
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        sequence: Tagged<Self, Sequence>,
+        height: Tagged<Self, Height>,
     ) -> Result<(Vec<u8>, Proofs), Error>;
 
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error>;
+    ) -> Result<(Vec<PacketState>, Tagged<Self, Height>), Error>;
 
     fn query_unreceived_packets(
         &self,
@@ -484,7 +488,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Height), Error>;
+    ) -> Result<(Vec<PacketState>, Tagged<Self, Height>), Error>;
 
     fn query_unreceived_acknowledgement(
         &self,

@@ -9,6 +9,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
+use crate::tagged::Tagged;
 use crate::ics02_client::error::Error;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -33,6 +34,10 @@ impl Height {
             revision_number: 0,
             revision_height: 0,
         }
+    }
+
+    pub fn tagged_zero<Tag>() -> Tagged<Tag, Height> {
+        Tagged::new(Height::zero())
     }
 
     pub fn is_zero(&self) -> bool {

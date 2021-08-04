@@ -1,12 +1,14 @@
 use std::time::Instant;
 use std::{fmt, thread, time::Duration};
 
+use flex_error::define_error;
 use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace, warn};
 
+use crate::chain::handle::ChainHandle;
 use crate::error::Error as RelayerError;
-use flex_error::define_error;
+
 use ibc::downcast;
 use ibc::events::{IbcEvent, IbcEventType};
 use ibc::ics02_client::client_consensus::{
@@ -23,12 +25,11 @@ use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::query::QueryTxRequest;
+use ibc::tagged::Tagged;
 use ibc::timestamp::Timestamp;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::QueryConsensusStatesRequest;
-
-use crate::chain::handle::ChainHandle;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
@@ -290,7 +291,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn find(
         expected_target_chain: SrcChain,
         host_chain: DstChain,
-        client_id: &ClientId,
+        client_id: Tagged<DstChain, ClientId>,
     ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         let height = Height::new(expected_target_chain.id().version(), 0);
 

@@ -282,8 +282,7 @@ impl IbcTestRunner {
                                 connection_end.counterparty().connection_id()
                                     == connection
                                         .counterparty_connection_id
-                                        .map(Self::connection_id)
-                                        .as_ref();
+                                        .map(Self::connection_id);
 
                             states_match
                                 && client_ids

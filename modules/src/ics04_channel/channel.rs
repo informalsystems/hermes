@@ -270,8 +270,8 @@ impl Counterparty {
         &self.port_id
     }
 
-    pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.channel_id.as_ref()
+    pub fn channel_id(&self) -> Option<ChannelId> {
+        self.channel_id.clone()
     }
 
     pub fn validate_basic(&self) -> Result<(), Error> {

@@ -309,8 +309,8 @@ impl Counterparty {
     }
 
     /// Getter for connection id.
-    pub fn connection_id(&self) -> Option<&ConnectionId> {
-        self.connection_id.as_ref()
+    pub fn connection_id(&self) -> Option<ConnectionId> {
+        self.connection_id.clone()
     }
 
     pub fn prefix(&self) -> &CommitmentPrefix {

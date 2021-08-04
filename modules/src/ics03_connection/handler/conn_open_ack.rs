@@ -35,7 +35,7 @@ pub(crate) fn process(
             let counterparty_matches = if let Some(counterparty_connection_id) =
                 old_conn_end.counterparty().connection_id()
             {
-                &msg.counterparty_connection_id == counterparty_connection_id
+                msg.counterparty_connection_id == counterparty_connection_id
             } else {
                 true
             };
