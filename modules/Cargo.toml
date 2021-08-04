@@ -40,7 +40,7 @@ dyn-clonable = "0.9.0"
 regex = "1"
 subtle-encoding = "0.5"
 sha2 = { version = "0.9.3", optional = true }
-flex-error = { version = "0.4.1", default-features = false }
+flex-error = { version = "0.4.2", default-features = false }
 
 [dependencies.tendermint]
 version = "=0.21.0"
