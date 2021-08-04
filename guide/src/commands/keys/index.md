@@ -134,6 +134,39 @@ Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 > hermes -c config.toml keys restore [CHAINID] -m "[MNEMONIC]" -n [KEY_NAME]
 > ```
 
+### Delete keys
+
+In order to delete the private keys added to chains use the `keys delete` command
+
+```shell
+USAGE:
+    hermes keys delete <OPTIONS>
+
+DESCRIPTION:
+    Delete key(s) from a configured chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+
+FLAGS:
+    -n, --name NAME           name of the key
+    -a, --all                 delete all keys
+```
+
+#### Delete private keys that was previously added to a chain
+
+To delete a single private key by name:
+
+```shell
+hermes -c config.toml keys delete [CHAIN_ID] -n [KEY_NAME]
+```
+
+Alternatively, to delete all private keys added to a chain:
+
+```shell
+hermes -c config.toml keys delete [CHAIN_ID] -a
+```
+
 ### List keys
 
 In order to list the private keys added to chains use the `keys list` command
