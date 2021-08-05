@@ -122,8 +122,8 @@ define_error! {
             }
             [ RelayerError ]
             |e| {
-                format_args!("failed while trying to upgrade client id {0} for chain {1}: {2}",
-                    e.client_id, e.chain_id, e.description)
+                format_args!("failed while trying to upgrade client id {0} for chain {1}: {2}: {3}",
+                    e.client_id, e.chain_id, e.description, e.source)
             },
 
         ClientEventQuery

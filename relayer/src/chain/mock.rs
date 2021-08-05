@@ -299,7 +299,7 @@ impl Chain for MockChain {
     fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
         let client_state = TendermintClientState::new(
             self.id().clone(),
-            self.config.trust_threshold,
+            self.config.trust_threshold.into(),
             self.config.trusting_period,
             self.config.trusting_period.add(Duration::from_secs(1000)),
             Duration::from_millis(3000),
