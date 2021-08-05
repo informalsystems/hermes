@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::ChainConfig,
     rest::request::{Request, VersionInfo},
@@ -68,11 +71,13 @@ fn version() {
 
 #[test]
 fn get_chains() {
-    let expected = r#"{"Ok":["mock-0"]}"#;
+    let chain_id = ChainId::from_str("mock-0").unwrap();
+    let result: Result<_, ()> = Ok(vec![chain_id.clone()]);
+    let expected = serde_json::to_string(&result).unwrap();
 
-    run_test(19102, "/chain", expected, |req| match req {
+    run_test(19102, "/chain", &expected, |req| match req {
         Request::GetChains { reply_to } => {
-            reply_to.send(Ok(vec!["mock-0".parse().unwrap()])).unwrap();
+            reply_to.send(Ok(vec![chain_id])).unwrap();
             TestResult::Success
         }
         req => TestResult::WrongRequest(req),
