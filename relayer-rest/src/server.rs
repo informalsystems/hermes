@@ -10,18 +10,33 @@ use crate::{
     Config,
 };
 
-pub fn spawn(config: Config) -> (thread::JoinHandle<()>, channel::Receiver<Request>) {
-    let (request_sender, request_receiver) = channel::unbounded::<Request>();
+pub struct ServerHandle {
+    join_handle: thread::JoinHandle<()>,
+    tx_stop: std::sync::mpsc::Sender<()>,
+}
+
+impl ServerHandle {
+    pub fn join(self) -> std::thread::Result<()> {
+        self.join_handle.join()
+    }
+
+    pub fn stop(&self) {
+        self.tx_stop.send(()).unwrap();
+    }
+}
+
+pub fn spawn(config: Config) -> (ServerHandle, channel::Receiver<Request>) {
+    let (req_tx, req_rx) = channel::unbounded::<Request>();
+
     info!("[rest] starting REST API server at {}", config.address);
-    (
-        thread::spawn(move || run(config, request_sender)),
-        request_receiver,
-    )
+    let handle = run(config, req_tx);
+
+    (handle, req_rx)
 }
 
 #[allow(clippy::manual_strip)]
-fn run(config: Config, sender: channel::Sender<Request>) {
-    rouille::start_server(config.address, move |request| {
+fn run(config: Config, sender: channel::Sender<Request>) -> ServerHandle {
+    let server = rouille::Server::new(config.address, move |request| {
         router!(request,
             (GET) (/) => {
                 trace!("[rest/server] GET /");
@@ -48,5 +63,13 @@ fn run(config: Config, sender: channel::Sender<Request>) {
 
             _ => rouille::Response::empty_404(),
         )
-    });
+    })
+    .unwrap();
+
+    let (join_handle, tx_stop) = server.stoppable();
+
+    ServerHandle {
+        join_handle,
+        tx_stop,
+    }
 }

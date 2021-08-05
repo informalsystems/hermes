@@ -11,7 +11,7 @@ pub fn reply_channel<T>() -> (ReplySender<T>, ReplyReceiver<T>) {
     crossbeam_channel::bounded(1)
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct VersionInfo {
     pub name: String,
     pub version: String,
