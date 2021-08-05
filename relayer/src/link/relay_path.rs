@@ -40,7 +40,11 @@ use crate::link::relay_summary::RelaySummary;
 
 const MAX_RETRIES: usize = 5;
 
-pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub struct RelayPath<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     channel: Channel<ChainA, ChainB>,
     // Marks whether this path has already cleared pending packets.
     // Packets should be cleared once (at startup), then this
@@ -55,7 +59,11 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     dst_operational_data: Vec<OperationalData>,
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
+impl<ChainA, ChainB> RelayPath<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     pub fn new(channel: Channel<ChainA, ChainB>) -> Self {
         Self {
             channel,
@@ -1414,7 +1422,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> fmt::Display for RelayPath<ChainA, ChainB> {
+impl<ChainA, ChainB> fmt::Display for RelayPath<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let channel_id = self
             .src_channel_id()

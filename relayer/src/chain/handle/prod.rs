@@ -11,7 +11,7 @@ use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
-use ibc::tagged::Tagged;
+use ibc::tagged::{DualTagged, Tagged};
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
@@ -72,7 +72,7 @@ impl ProdChainHandle {
     }
 }
 
-impl ChainHandle for ProdChainHandle {
+impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
         Self::new(chain_id, sender)
     }
@@ -208,14 +208,14 @@ impl ChainHandle for ProdChainHandle {
         &self,
         connection_id: Tagged<Self, ConnectionId>,
         height: Tagged<Self, Height>,
-    ) -> Result<Tagged<Self, ConnectionEnd>, Error> {
+    ) -> Result<DualTagged<Self, Counterparty, ConnectionEnd>, Error> {
         let connection_end = self.send(|reply_to| ChainRequest::QueryConnection {
             connection_id: connection_id.untag(),
             height: height.untag(),
             reply_to,
         })?;
 
-        Ok(Tagged::new(connection_end))
+        Ok(DualTagged::new(connection_end))
     }
 
     fn query_connections(
@@ -231,11 +231,11 @@ impl ChainHandle for ProdChainHandle {
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<Tagged<Self, IdentifiedChannelEnd>>, Error> {
+    ) -> Result<Vec<DualTagged<Self, Counterparty, IdentifiedChannelEnd>>, Error> {
         let channel_ends =
             self.send(|reply_to| ChainRequest::QueryConnectionChannels { request, reply_to })?;
 
-        Ok(channel_ends.into_iter().map(Tagged::new).collect())
+        Ok(channel_ends.into_iter().map(DualTagged::new).collect())
     }
 
     fn query_next_sequence_receive(
@@ -263,7 +263,7 @@ impl ChainHandle for ProdChainHandle {
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
         height: Tagged<Self, Height>,
-    ) -> Result<Tagged<Self, ChannelEnd>, Error> {
+    ) -> Result<DualTagged<Self, Counterparty, ChannelEnd>, Error> {
         let channel_end = self.send(|reply_to| ChainRequest::QueryChannel {
             port_id: port_id.untag(),
             channel_id: channel_id.untag(),
@@ -271,7 +271,7 @@ impl ChainHandle for ProdChainHandle {
             reply_to,
         })?;
 
-        Ok(Tagged::new(channel_end))
+        Ok(DualTagged::new(channel_end))
     }
 
     fn query_channel_client_state(
@@ -479,6 +479,6 @@ impl Serialize for ProdChainHandle {
     where
         S: Serializer,
     {
-        self.id().serialize(serializer)
+        self.chain_id.serialize(serializer)
     }
 }

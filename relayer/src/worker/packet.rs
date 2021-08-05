@@ -22,7 +22,11 @@ enum Step {
 }
 
 #[derive(Debug)]
-pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub struct PacketWorker<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     path: Packet,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
@@ -30,7 +34,11 @@ pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     clear_packets_interval: u64,
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
+impl<ChainA, ChainB> PacketWorker<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     pub fn new(
         path: Packet,
         chains: ChainHandlePair<ChainA, ChainB>,

@@ -67,10 +67,14 @@ impl OperationalData {
 
     /// Returns all the messages in this operational data, plus prepending the client update message
     /// if necessary.
-    pub fn assemble_msgs<ChainA: ChainHandle, ChainB: ChainHandle>(
+    pub fn assemble_msgs<ChainA, ChainB>(
         &self,
         relay_path: &RelayPath<ChainA, ChainB>,
-    ) -> Result<Vec<Any>, LinkError> {
+    ) -> Result<Vec<Any>, LinkError>
+    where
+        ChainA: ChainHandle<ChainB>,
+        ChainB: ChainHandle<ChainA>,
+    {
         if self.batch.is_empty() {
             warn!("assemble_msgs() method call on an empty OperationalData!");
             return Ok(vec![]);

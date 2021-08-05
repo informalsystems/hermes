@@ -214,7 +214,11 @@ define_error! {
 }
 
 #[derive(Clone, Debug)]
-pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
+pub struct ForeignClient<DstChain, SrcChain>
+where
+    DstChain: ChainHandle<SrcChain>,
+    SrcChain: ChainHandle<DstChain>,
+{
     /// The identifier of this client. The host chain determines this id upon client creation,
     /// so we may be using the default value temporarily.
     pub id: ClientId,
@@ -233,8 +237,10 @@ pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
 /// where the first chain identifier is for the source
 /// chain, and the second chain identifier is the
 /// destination (which hosts the client) chain.
-impl<DstChain: ChainHandle, SrcChain: ChainHandle> fmt::Display
-    for ForeignClient<DstChain, SrcChain>
+impl<DstChain, SrcChain> fmt::Display for ForeignClient<DstChain, SrcChain>
+where
+    DstChain: ChainHandle<SrcChain>,
+    SrcChain: ChainHandle<DstChain>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -247,7 +253,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> fmt::Display
     }
 }
 
-impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcChain> {
+impl<DstChain, SrcChain> ForeignClient<DstChain, SrcChain>
+where
+    DstChain: ChainHandle<SrcChain>,
+    SrcChain: ChainHandle<DstChain>,
+{
     /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
     /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.

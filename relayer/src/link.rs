@@ -26,11 +26,19 @@ pub struct LinkParameters {
     pub src_channel_id: ChannelId,
 }
 
-pub struct Link<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub struct Link<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     pub a_to_b: RelayPath<ChainA, ChainB>,
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
+impl<ChainA, ChainB> Link<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     pub fn new(channel: Channel<ChainA, ChainB>) -> Self {
         Self {
             a_to_b: RelayPath::new(channel),

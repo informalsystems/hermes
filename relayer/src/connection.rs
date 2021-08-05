@@ -1,3 +1,4 @@
+use core::marker::PhantomData;
 use std::time::Duration;
 
 use crate::chain::counterparty::connection_state_on_destination;
@@ -19,6 +20,7 @@ use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::tagged::Tagged;
 use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 
@@ -191,26 +193,37 @@ define_error! {
 }
 
 #[derive(Clone, Debug)]
-pub struct ConnectionSide<Chain: ChainHandle> {
+pub struct ConnectionSide<Chain, CounterpartyChain>
+where
+    Chain: ChainHandle<CounterpartyChain>,
+{
     pub(crate) chain: Chain,
-    client_id: ClientId,
-    connection_id: Option<ConnectionId>,
+    client_id: Tagged<Chain, ClientId>,
+    connection_id: Option<Tagged<Chain, ConnectionId>>,
+    phantom: PhantomData<CounterpartyChain>,
 }
 
-impl<Chain: ChainHandle> ConnectionSide<Chain> {
+impl<Chain, CounterpartyChain> ConnectionSide<Chain, CounterpartyChain>
+where
+    Chain: ChainHandle<CounterpartyChain>,
+{
     pub fn new(chain: Chain, client_id: ClientId, connection_id: Option<ConnectionId>) -> Self {
         Self {
             chain,
             client_id,
             connection_id,
+            phantom: PhantomData,
         }
     }
-    pub fn connection_id(&self) -> Option<&ConnectionId> {
-        self.connection_id.as_ref()
+    pub fn connection_id(&self) -> Option<Tagged<Chain, ConnectionId>> {
+        self.connection_id.clone()
     }
 }
 
-impl<Chain: ChainHandle> Serialize for ConnectionSide<Chain> {
+impl<Chain, CounterpartyChain> Serialize for ConnectionSide<Chain, CounterpartyChain>
+where
+    Chain: ChainHandle<CounterpartyChain>,
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -231,13 +244,21 @@ impl<Chain: ChainHandle> Serialize for ConnectionSide<Chain> {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Connection<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub struct Connection<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     pub delay_period: Duration,
-    pub a_side: ConnectionSide<ChainA>,
-    pub b_side: ConnectionSide<ChainB>,
+    pub a_side: ConnectionSide<ChainA, ChainB>,
+    pub b_side: ConnectionSide<ChainB, ChainA>,
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
+impl<ChainA, ChainB> Connection<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
     pub fn new(
@@ -270,6 +291,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         Ok(c)
     }
+
     pub fn restore_from_event(
         chain: ChainA,
         counterparty_chain: ChainB,
@@ -365,7 +387,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn find(
         a_client: ForeignClient<ChainA, ChainB>,
         b_client: ForeignClient<ChainB, ChainA>,
-        conn_end_a: &IdentifiedConnectionEnd,
+        conn_end_a: Tagged<ChainA, IdentifiedConnectionEnd>,
     ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
@@ -400,16 +422,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let c = Connection {
             delay_period: conn_end_a.end().delay_period(),
-            a_side: ConnectionSide {
-                chain: a_client.dst_chain.clone(),
-                client_id: a_client.id,
-                connection_id: Some(conn_end_a.id().clone()),
-            },
-            b_side: ConnectionSide {
-                chain: b_client.dst_chain.clone(),
-                client_id: b_client.id,
-                connection_id: Some(b_conn_id),
-            },
+            a_side: ConnectionSide::new(
+                a_client.dst_chain.clone(),
+                a_client.id,
+                Some(conn_end_a.id().clone()),
+            ),
+            b_side: ConnectionSide::new(b_client.dst_chain.clone(), b_client.id, Some(b_conn_id)),
         };
 
         Ok(c)
@@ -445,19 +463,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         self.b_side.chain.clone()
     }
 
-    pub fn src_client_id(&self) -> &ClientId {
+    pub fn src_client_id(&self) -> Tagged<ChainA, ClientId> {
         &self.a_side.client_id
     }
 
-    pub fn dst_client_id(&self) -> &ClientId {
+    pub fn dst_client_id(&self) -> Tagged<ChainB, ClientId> {
         &self.b_side.client_id
     }
 
-    pub fn src_connection_id(&self) -> Option<&ConnectionId> {
+    pub fn src_connection_id(&self) -> Option<Tagged<ChainA, ConnectionId>> {
         self.a_side.connection_id()
     }
 
-    pub fn dst_connection_id(&self) -> Option<&ConnectionId> {
+    pub fn dst_connection_id(&self) -> Option<Tagged<ChainB, ConnectionId>> {
         self.b_side.connection_id()
     }
 

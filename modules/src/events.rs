@@ -240,21 +240,21 @@ impl IbcEvent {
         }
     }
 
-    pub fn channel_attributes(&self) -> Option<&ChannelAttributes> {
+    pub fn channel_attributes(&self) -> Option<ChannelAttributes> {
         match self {
-            IbcEvent::OpenInitChannel(ev) => Some(ev.attributes()),
-            IbcEvent::OpenTryChannel(ev) => Some(ev.attributes()),
-            IbcEvent::OpenAckChannel(ev) => Some(ev.attributes()),
-            IbcEvent::OpenConfirmChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenInitChannel(ev) => Some(ev.attributes().clone()),
+            IbcEvent::OpenTryChannel(ev) => Some(ev.attributes().clone()),
+            IbcEvent::OpenAckChannel(ev) => Some(ev.attributes().clone()),
+            IbcEvent::OpenConfirmChannel(ev) => Some(ev.attributes().clone()),
             _ => None,
         }
     }
-    pub fn connection_attributes(&self) -> Option<&ConnectionAttributes> {
+    pub fn connection_attributes(&self) -> Option<ConnectionAttributes> {
         match self {
-            IbcEvent::OpenInitConnection(ev) => Some(ev.attributes()),
-            IbcEvent::OpenTryConnection(ev) => Some(ev.attributes()),
-            IbcEvent::OpenAckConnection(ev) => Some(ev.attributes()),
-            IbcEvent::OpenConfirmConnection(ev) => Some(ev.attributes()),
+            IbcEvent::OpenInitConnection(ev) => Some(ev.attributes().clone()),
+            IbcEvent::OpenTryConnection(ev) => Some(ev.attributes().clone()),
+            IbcEvent::OpenAckConnection(ev) => Some(ev.attributes().clone()),
+            IbcEvent::OpenConfirmConnection(ev) => Some(ev.attributes().clone()),
             _ => None,
         }
     }

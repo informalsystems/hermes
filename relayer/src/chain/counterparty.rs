@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
-use ibc::tagged::Tagged;
+use ibc::tagged::{DualTagged, Tagged};
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
     ics03_connection::connection::{
@@ -40,11 +40,14 @@ pub fn counterparty_chain_from_connection<Chain: ChainHandle>(
     Ok(client_state.value().chain_id())
 }
 
-fn connection_on_destination<Chain: ChainHandle>(
+fn connection_on_destination<Chain, CounterpartyChain>(
     connection_id_on_source: Tagged<Chain, ConnectionId>,
     counterparty_client_id: Tagged<Chain, ClientId>,
     counterparty_chain: &Chain,
-) -> Result<Option<Tagged<Chain, ConnectionEnd>>, Error> {
+) -> Result<Option<DualTagged<Chain, CounterpartyChain, ConnectionEnd>>, Error>
+where
+    Chain: ChainHandle<CounterpartyChain>,
+{
     let req = QueryClientConnectionsRequest {
         client_id: counterparty_client_id.to_string(),
     };
@@ -84,7 +87,7 @@ pub fn connection_state_on_destination<Chain: ChainHandle>(
             .query_connection(remote_connection_id, Height::tagged_zero())
             .map_err(Error::relayer)?;
 
-        Ok(connection_end.map_into(|c| c.state))
+        Ok(connection_end.map(|c| c.state))
     } else {
         // The remote connection id (used on `counterparty_chain`) is unknown.
         // Try to retrieve this id by looking at client connections.
@@ -194,12 +197,15 @@ pub fn counterparty_chain_from_channel<Chain: ChainHandle>(
         .map(|c| c.value().client.client_state.chain_id())
 }
 
-fn fetch_channel_on_destination<Chain: ChainHandle>(
+fn fetch_channel_on_destination<Chain, Counterparty>(
     port_id: Tagged<Chain, PortId>,
     channel_id: Tagged<Chain, ChannelId>,
     counterparty_chain: &Chain,
     remote_connection_id: Tagged<Chain, ConnectionId>,
-) -> Result<Option<Tagged<Chain, ChannelEnd>>, Error> {
+) -> Result<Option<DualTagged<Chain, Counterparty, ChannelEnd>>, Error>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     let req = QueryConnectionChannelsRequest {
         connection: remote_connection_id.to_string(),
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
@@ -218,7 +224,7 @@ fn fetch_channel_on_destination<Chain: ChainHandle>(
 
         if let Some(local_channel_id) = m_local_channel_id {
             if local_channel_id == channel_id && local_channel_end_port_id == port_id {
-                return Ok(Some(counterparty_channel.map_into(|c| c.channel_end)));
+                return Ok(Some(counterparty_channel.dual_map_into(|c| c.channel_end)));
             }
         }
     }
@@ -240,11 +246,14 @@ pub fn channel_state_on_destination<Chain: ChainHandle>(
     Ok(state)
 }
 
-pub fn channel_on_destination<Chain: ChainHandle>(
+pub fn channel_on_destination<Chain, Counterparty>(
     channel: Tagged<Chain, IdentifiedChannelEnd>,
     connection: Tagged<Chain, IdentifiedConnectionEnd>,
     counterparty_chain: &Chain,
-) -> Result<Option<Tagged<Chain, ChannelEnd>>, Error> {
+) -> Result<Option<DualTagged<Chain, Counterparty, ChannelEnd>>, Error>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     let m_remote_channel_id = channel
         .map(|c| c.channel_end.remote.channel_id())
         .transpose();

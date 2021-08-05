@@ -8,7 +8,7 @@ use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
-use ibc::tagged::Tagged;
+use ibc::tagged::{DualTagged, Tagged};
 use ibc::{
     events::IbcEvent,
     ics02_client::{
@@ -56,12 +56,20 @@ mod prod;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
-pub struct ChainHandlePair<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub struct ChainHandlePair<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     pub a: ChainA,
     pub b: ChainB,
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> ChainHandlePair<ChainA, ChainB> {
+impl<ChainA, ChainB> ChainHandlePair<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     /// Swap the two handles.
     pub fn swap(self) -> ChainHandlePair<ChainB, ChainA> {
         ChainHandlePair {
@@ -71,7 +79,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ChainHandlePair<ChainA, ChainB> {
     }
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> Debug for ChainHandlePair<ChainA, ChainB> {
+impl<ChainA, ChainB> Debug for ChainHandlePair<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ChainHandlePair")
             .field("a", &self.a.id())
@@ -301,7 +313,7 @@ pub enum ChainRequest {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
+pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + Debug {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self;
 
     /// Get the [`ChainId`] of this chain.
@@ -371,7 +383,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
         &self,
         connection_id: Tagged<Self, ConnectionId>,
         height: Tagged<Self, Height>,
-    ) -> Result<Tagged<Self, ConnectionEnd>, Error>;
+    ) -> Result<DualTagged<Self, Counterparty, ConnectionEnd>, Error>;
 
     fn query_connections(
         &self,
@@ -381,7 +393,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<Tagged<Self, IdentifiedChannelEnd>>, Error>;
+    ) -> Result<Vec<DualTagged<Self, Counterparty, IdentifiedChannelEnd>>, Error>;
 
     fn query_next_sequence_receive(
         &self,
@@ -398,7 +410,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
         height: Tagged<Self, Height>,
-    ) -> Result<Tagged<Self, ChannelEnd>, Error>;
+    ) -> Result<DualTagged<Self, Counterparty, ChannelEnd>, Error>;
 
     fn query_channel_client_state(
         &self,

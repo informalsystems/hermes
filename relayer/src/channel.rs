@@ -1,5 +1,6 @@
 #![allow(clippy::borrowed_box)]
 
+use core::marker::PhantomData;
 use prost_types::Any;
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
@@ -13,7 +14,7 @@ use ibc::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::tagged::Tagged;
+use ibc::tagged::{DualTagged, Tagged};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
@@ -67,28 +68,36 @@ pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> C
 }
 
 #[derive(Clone, Debug)]
-pub struct ChannelSide<Chain: ChainHandle> {
+pub struct ChannelSide<Chain, CounterpartyChain>
+where
+    Chain: ChainHandle<CounterpartyChain>,
+{
     pub chain: Chain,
     client_id: Tagged<Chain, ClientId>,
     connection_id: Tagged<Chain, ConnectionId>,
     port_id: Tagged<Chain, PortId>,
     channel_id: Option<Tagged<Chain, ChannelId>>,
+    phantom: PhantomData<CounterpartyChain>,
 }
 
-impl<Chain: ChainHandle> ChannelSide<Chain> {
+impl<Chain, CounterpartyChain> ChannelSide<Chain, CounterpartyChain>
+where
+    Chain: ChainHandle<CounterpartyChain>,
+{
     pub fn new(
         chain: Chain,
         client_id: Tagged<Chain, ClientId>,
         connection_id: Tagged<Chain, ConnectionId>,
         port_id: Tagged<Chain, PortId>,
         channel_id: Option<Tagged<Chain, ChannelId>>,
-    ) -> ChannelSide<Chain> {
+    ) -> ChannelSide<Chain, CounterpartyChain> {
         Self {
             chain,
             client_id,
             connection_id,
             port_id,
             channel_id,
+            phantom: PhantomData,
         }
     }
 
@@ -114,28 +123,36 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub struct Channel<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     pub ordering: Order,
-    pub a_side: ChannelSide<ChainA>,
-    pub b_side: ChannelSide<ChainB>,
+    pub a_side: ChannelSide<ChainA, ChainB>,
+    pub b_side: ChannelSide<ChainB, ChainA>,
     pub connection_delay: Duration,
     pub version: Option<String>,
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
+impl<ChainA, ChainB> Channel<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     /// Creates a new channel on top of the existing connection. If the channel is not already
     /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
     pub fn new(
         connection: Connection<ChainA, ChainB>,
         ordering: Order,
-        a_port: Tagged<ChainB, PortId>,
-        b_port: Tagged<ChainA, PortId>,
+        a_port: Tagged<ChainA, PortId>,
+        b_port: Tagged<ChainB, PortId>,
         version: Option<String>,
     ) -> Result<Self, ChannelError> {
         let b_side_chain = connection.dst_chain();
         let version = version.unwrap_or(
             b_side_chain
-                .module_version(a_port)
+                .module_version(b_port)
                 .map_err(|e| ChannelError::query(b_side_chain.id(), e))?,
         );
 
@@ -174,29 +191,40 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn restore_from_event(
         chain: ChainA,
         counterparty_chain: ChainB,
-        channel_open_event: IbcEvent,
+        channel_open_event: DualTagged<ChainA, ChainB, IbcEvent>,
     ) -> Result<Channel<ChainA, ChainB>, ChannelError> {
         let channel_event_attributes = channel_open_event
-            .channel_attributes()
-            .ok_or_else(|| ChannelError::invalid_event(channel_open_event.clone()))?;
+            .dual_map(|e| e.channel_attributes().clone())
+            .transpose()
+            .ok_or_else(|| ChannelError::invalid_event(channel_open_event.untag()))?;
 
-        let port_id = channel_event_attributes.port_id.clone();
-        let channel_id = channel_event_attributes.channel_id.clone();
+        let port_id = channel_event_attributes.map(|a| a.port_id.clone());
+        let channel_id = channel_event_attributes
+            .map(|a| a.channel_id.clone())
+            .transpose();
 
-        let version = counterparty_chain
-            .module_version(&port_id)
-            .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
+        let connection_id = channel_event_attributes.map(|a| a.connection_id.clone());
 
-        let connection_id = channel_event_attributes.connection_id.clone();
         let connection = chain
-            .query_connection(&connection_id, Height::zero())
+            .query_connection(connection_id, Height::tagged_zero())
             .map_err(ChannelError::relayer)?;
 
-        let connection_counterparty = connection.counterparty();
+        let connection_counterparty = connection.map_flipped(|c| c.counterparty().clone());
 
         let counterparty_connection_id = connection_counterparty
-            .connection_id()
+            .map(|c| c.connection_id().clone())
+            .transpose()
             .ok_or_else(ChannelError::missing_counterparty_connection)?;
+
+        let counterparty_port_id = channel_event_attributes.map_flipped(|a| a.counterparty_port_id);
+
+        let counterparty_channel_id = channel_event_attributes
+            .map_flipped(|a| a.counterparty_channel_id)
+            .transpose();
+
+        let version = counterparty_chain
+            .module_version(counterparty_port_id)
+            .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
 
         Ok(Channel {
             // The event does not include the channel ordering.
@@ -205,19 +233,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ordering: Default::default(),
             a_side: ChannelSide::new(
                 chain,
-                connection.client_id().clone(),
+                connection.map(|c| c.client_id().clone()),
                 connection_id,
                 port_id,
                 channel_id,
             ),
             b_side: ChannelSide::new(
                 counterparty_chain,
-                connection.counterparty().client_id().clone(),
+                connection_counterparty.map(|c| c.client_id().clone()),
                 counterparty_connection_id.clone(),
-                channel_event_attributes.counterparty_port_id.clone(),
-                channel_event_attributes.counterparty_channel_id.clone(),
+                counterparty_port_id,
+                counterparty_channel_id,
             ),
-            connection_delay: connection.delay_period(),
+            connection_delay: connection.value().delay_period(),
             // The event does not include the version.
             // The message handlers `build_chan_open..` determine the version from channel query.
             version: Some(version),
@@ -229,77 +257,92 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn restore_from_state(
         chain: ChainA,
         counterparty_chain: ChainB,
-        channel: WorkerChannelObject,
-        height: Height,
+        channel: Tagged<ChainA, WorkerChannelObject>,
+        height: Tagged<ChainA, Height>,
     ) -> Result<(Channel<ChainA, ChainB>, State), ChannelError> {
+        let src_port_id = channel.map(|c| c.src_port_id.clone());
+        let src_channel_id = channel.map(|c| c.src_channel_id.clone());
+
         let a_channel = chain
-            .query_channel(&channel.src_port_id, &channel.src_channel_id, height)
+            .query_channel(src_port_id, src_channel_id, height)
             .map_err(ChannelError::relayer)?;
 
-        let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
-            ChannelError::supervisor(SupervisorError::missing_connection_hops(
-                channel.src_channel_id.clone(),
-                chain.id(),
-            ))
-        })?;
-
-        let a_connection = chain
-            .query_connection(a_connection_id, Height::zero())
-            .map_err(ChannelError::relayer)?;
-
-        let b_connection_id = a_connection
-            .counterparty()
-            .connection_id()
-            .cloned()
+        let a_connection_id = a_channel
+            .map(|c| c.connection_hops().first().map(Clone::clone))
+            .transpose()
             .ok_or_else(|| {
-                ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
-                    channel.src_channel_id.clone(),
+                ChannelError::supervisor(SupervisorError::missing_connection_hops(
+                    channel.untag().src_channel_id,
                     chain.id(),
-                    a_connection.counterparty().clone(),
                 ))
             })?;
 
+        let a_connection = chain
+            .query_connection(a_connection_id, Height::tagged_zero())
+            .map_err(ChannelError::relayer)?;
+
+        let b_connection = a_connection.map_flipped(|c| c.counterparty().clone());
+
+        let b_connection_id = b_connection
+            .map(|c| c.connection_id().clone())
+            .transpose()
+            .ok_or_else(|| {
+                ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
+                    src_channel_id.untag(),
+                    chain.id(),
+                    b_connection.untag(),
+                ))
+            })?;
+
+        let b_channel = a_channel.map_flipped(|c| c.remote.clone());
+
         let mut handshake_channel = Channel {
-            ordering: *a_channel.ordering(),
+            ordering: *a_channel.value().ordering(),
             a_side: ChannelSide::new(
                 chain.clone(),
-                a_connection.client_id().clone(),
+                a_connection.map(|c| c.client_id().clone()),
                 a_connection_id.clone(),
-                channel.src_port_id.clone(),
-                Some(channel.src_channel_id.clone()),
+                channel.map(|c| c.src_port_id.clone()),
+                Some(channel.map(|c| c.src_channel_id.clone())),
             ),
             b_side: ChannelSide::new(
                 counterparty_chain.clone(),
-                a_connection.counterparty().client_id().clone(),
+                b_connection.map(|c| c.client_id().clone()),
                 b_connection_id.clone(),
-                a_channel.remote.port_id.clone(),
-                a_channel.remote.channel_id.clone(),
+                b_channel.map(|c| c.port_id.clone()),
+                b_channel.map(|c| c.channel_id.clone()).transpose(),
             ),
-            connection_delay: a_connection.delay_period(),
-            version: Some(a_channel.version.clone()),
+            connection_delay: a_connection.value().delay_period(),
+            version: Some(a_channel.value().version.clone()),
         };
 
-        if a_channel.state_matches(&State::Init) && a_channel.remote.channel_id.is_none() {
+        if a_channel.value().state_matches(&State::Init) && b_channel.value().channel_id.is_none() {
             let req = QueryConnectionChannelsRequest {
                 connection: b_connection_id.to_string(),
                 pagination: ibc_proto::cosmos::base::query::pagination::all(),
             };
 
-            let channels: Vec<IdentifiedChannelEnd> = counterparty_chain
+            let b_channels = counterparty_chain
                 .query_connection_channels(req)
                 .map_err(ChannelError::relayer)?;
 
-            for chan in channels {
-                if let Some(remote_channel_id) = chan.channel_end.remote.channel_id() {
-                    if remote_channel_id == &channel.src_channel_id {
-                        handshake_channel.b_side.channel_id = Some(chan.channel_id);
+            for b_channel in b_channels {
+                let a_channel = b_channel.map_flipped(|c| c.channel_end.remote.clone());
+
+                let b_channel_id = b_channel.map(|c| c.channel_id);
+
+                let m_a_channel_id = a_channel.map(|c| c.channel_id).transpose();
+
+                if let Some(a_channel_id) = m_a_channel_id {
+                    if a_channel_id == src_channel_id {
+                        handshake_channel.b_side.channel_id = Some(b_channel_id);
                         break;
                     }
                 }
             }
         }
 
-        Ok((handshake_channel, a_channel.state))
+        Ok((handshake_channel, a_channel.untag().state))
     }
 
     pub fn src_chain(&self) -> &ChainA {
@@ -310,35 +353,35 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         &self.b_side.chain
     }
 
-    pub fn src_client_id(&self) -> &ClientId {
-        &self.a_side.client_id
+    pub fn src_client_id(&self) -> Tagged<ChainA, ClientId> {
+        self.a_side.client_id.clone()
     }
 
-    pub fn dst_client_id(&self) -> &ClientId {
-        &self.b_side.client_id
+    pub fn dst_client_id(&self) -> Tagged<ChainB, ClientId> {
+        self.b_side.client_id.clone()
     }
 
-    pub fn src_connection_id(&self) -> &ConnectionId {
-        &self.a_side.connection_id
+    pub fn src_connection_id(&self) -> Tagged<ChainA, ConnectionId> {
+        self.a_side.connection_id.clone()
     }
 
-    pub fn dst_connection_id(&self) -> &ConnectionId {
-        &self.b_side.connection_id
+    pub fn dst_connection_id(&self) -> Tagged<ChainB, ConnectionId> {
+        self.b_side.connection_id.clone()
     }
 
-    pub fn src_port_id(&self) -> &PortId {
-        &self.a_side.port_id
+    pub fn src_port_id(&self) -> Tagged<ChainA, PortId> {
+        self.a_side.port_id.clone()
     }
 
-    pub fn dst_port_id(&self) -> &PortId {
-        &self.b_side.port_id
+    pub fn dst_port_id(&self) -> Tagged<ChainB, PortId> {
+        self.b_side.port_id.clone()
     }
 
-    pub fn src_channel_id(&self) -> Option<&ChannelId> {
+    pub fn src_channel_id(&self) -> Option<Tagged<ChainA, ChannelId>> {
         self.a_side.channel_id()
     }
 
-    pub fn dst_channel_id(&self) -> Option<&ChannelId> {
+    pub fn dst_channel_id(&self) -> Option<Tagged<ChainB, ChannelId>> {
         self.b_side.channel_id()
     }
 
@@ -425,9 +468,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     ///     - Rpc problems (a query or submitting a tx failed).
     /// In both `Err` cases, there should be retry calling this method.
     fn do_chan_open_finalize(&self) -> Result<(), ChannelError> {
-        fn query_channel_states<ChainA: ChainHandle, ChainB: ChainHandle>(
+        fn query_channel_states<ChainA, ChainB>(
             channel: &Channel<ChainA, ChainB>,
-        ) -> Result<(State, State), ChannelError> {
+        ) -> Result<(State, State), ChannelError>
+        where
+            ChainA: ChainHandle<ChainB>,
+            ChainB: ChainHandle<ChainA>,
+        {
             let src_channel_id = channel
                 .src_channel_id()
                 .ok_or_else(ChannelError::missing_local_channel_id)?;
@@ -469,11 +516,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             Ok((*a_channel.state(), *b_channel.state()))
         }
 
-        fn expect_channel_states<ChainA: ChainHandle, ChainB: ChainHandle>(
+        fn expect_channel_states<ChainA, ChainB>(
             ctx: &Channel<ChainA, ChainB>,
             a1: State,
             b1: State,
-        ) -> Result<(), ChannelError> {
+        ) -> Result<(), ChannelError>
+        where
+            ChainA: ChainHandle<ChainB>,
+            ChainB: ChainHandle<ChainA>,
+        {
             let (a2, b2) = query_channel_states(ctx)?;
 
             if (a1, b1) == (a2, b2) {
@@ -937,9 +988,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn build_chan_open_ack_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        fn do_build_chan_open_ack_and_send<ChainA: ChainHandle, ChainB: ChainHandle>(
+        fn do_build_chan_open_ack_and_send<ChainA, ChainB>(
             channel: &Channel<ChainA, ChainB>,
-        ) -> Result<IbcEvent, ChannelError> {
+        ) -> Result<IbcEvent, ChannelError>
+        where
+            ChainA: ChainHandle<ChainB>,
+            ChainB: ChainHandle<ChainA>,
+        {
             let dst_msgs = channel.build_chan_open_ack()?;
 
             let events = channel
@@ -1033,9 +1088,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn build_chan_open_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        fn do_build_chan_open_confirm_and_send<ChainA: ChainHandle, ChainB: ChainHandle>(
+        fn do_build_chan_open_confirm_and_send<ChainA, ChainB>(
             channel: &Channel<ChainA, ChainB>,
-        ) -> Result<IbcEvent, ChannelError> {
+        ) -> Result<IbcEvent, ChannelError>
+        where
+            ChainA: ChainHandle<ChainB>,
+            ChainB: ChainHandle<ChainA>,
+        {
             let dst_msgs = channel.build_chan_open_confirm()?;
 
             let events = channel

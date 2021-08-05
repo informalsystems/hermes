@@ -9,8 +9,8 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
-use crate::tagged::Tagged;
 use crate::ics02_client::error::Error;
+use crate::tagged::Tagged;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {

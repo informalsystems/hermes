@@ -15,7 +15,11 @@ use crate::{
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub struct ConnectionWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
+pub struct ConnectionWorker<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     connection: Connection,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
@@ -24,7 +28,11 @@ pub struct ConnectionWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     telemetry: Telemetry,
 }
 
-impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectionWorker<ChainA, ChainB> {
+impl<ChainA, ChainB> ConnectionWorker<ChainA, ChainB>
+where
+    ChainA: ChainHandle<ChainB>,
+    ChainB: ChainHandle<ChainA>,
+{
     pub fn new(
         connection: Connection,
         chains: ChainHandlePair<ChainA, ChainB>,
