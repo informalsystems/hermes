@@ -52,14 +52,12 @@ pub fn process(
 
     let client_def = AnyClient::from_client_type(client_type);
 
-    let (new_client_state, new_consensus_state) = client_def
-        .verify_upgrade_and_update_state(
-            &upgrade_client_state,
-            &msg.consensus_state,
-            msg.proof_upgrade_client.clone(),
-            msg.proof_upgrade_consensus_state,
-        )
-        .map_err(Error::upgrade_verification_failed)?;
+    let (new_client_state, new_consensus_state) = client_def.verify_upgrade_and_update_state(
+        &upgrade_client_state,
+        &msg.consensus_state,
+        msg.proof_upgrade_client.clone(),
+        msg.proof_upgrade_consensus_state,
+    )?;
 
     // Not implemented yet: https://github.com/informalsystems/ibc-rs/issues/722
     // todo!()

@@ -343,7 +343,7 @@ impl Object {
             .as_ref()
             .ok_or_else(|| ObjectError::missing_connection_id(e.clone()))?;
 
-        let dst_chain_id = counterparty_chain_from_connection(src_chain, &connection_id)
+        let dst_chain_id = counterparty_chain_from_connection(src_chain, connection_id)
             .map_err(ObjectError::supervisor)?;
 
         Ok(Connection {
@@ -364,7 +364,7 @@ impl Object {
             .ok_or_else(|| ObjectError::missing_channel_id(attributes.clone()))?;
 
         let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id())
+            counterparty_chain_from_channel(src_chain, channel_id, attributes.port_id())
                 .map_err(ObjectError::supervisor)?;
 
         Ok(Channel {
@@ -386,7 +386,7 @@ impl Object {
             .ok_or_else(|| ObjectError::missing_channel_id(attributes.clone()))?;
 
         let dst_chain_id =
-            counterparty_chain_from_channel(src_chain, channel_id, &attributes.port_id())
+            counterparty_chain_from_channel(src_chain, channel_id, attributes.port_id())
                 .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
@@ -466,7 +466,7 @@ impl Object {
         e: &CloseInit,
         src_chain: &dyn ChainHandle,
     ) -> Result<Self, ObjectError> {
-        let dst_chain_id = counterparty_chain_from_channel(src_chain, e.channel_id(), &e.port_id())
+        let dst_chain_id = counterparty_chain_from_channel(src_chain, e.channel_id(), e.port_id())
             .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {

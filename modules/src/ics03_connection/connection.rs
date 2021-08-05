@@ -251,6 +251,8 @@ impl Default for Counterparty {
     }
 }
 
+impl Protobuf<RawCounterparty> for Counterparty {}
+
 // Converts from the wire format RawCounterparty. Typically used from the relayer side
 // during queries for response validation and to extract the Counterparty structure.
 impl TryFrom<RawCounterparty> for Counterparty {

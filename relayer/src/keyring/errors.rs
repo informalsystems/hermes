@@ -91,8 +91,15 @@ define_error! {
         HomeLocationUnavailable
             |_| { "home location is unavailable" },
 
-        KeyStore
-            |_| { "key store error" },
+        RemoveIoFail
+            {
+                file_path: String,
+            }
+            [ TraceError<IoError> ]
+            |e| {
+                format!("I/O error while removing key file at location '{}'",
+                    e.file_path)
+            },
 
         InvalidHdPath
             {
