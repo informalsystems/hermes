@@ -10,7 +10,7 @@ use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
-use ibc_relayer::chain::{Chain, CosmosSdkChain};
+use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::prelude::*;

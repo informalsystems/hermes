@@ -82,7 +82,7 @@ use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
 
-use super::Chain;
+use super::ChainEndpoint;
 
 mod compatibility;
 
@@ -697,11 +697,12 @@ fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
         .all(|r| !empty_event_present(&r.events))
 }
 
-impl Chain for CosmosSdkChain {
+impl ChainEndpoint for CosmosSdkChain {
     type LightBlock = TMLightBlock;
     type Header = TmHeader;
     type ConsensusState = TMConsensusState;
     type ClientState = ClientState;
+    type LightClient = TmLightClient;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
@@ -729,7 +730,7 @@ impl Chain for CosmosSdkChain {
         Ok(chain)
     }
 
-    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
+    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
         use tendermint_light_client::types::PeerId;
 
         crate::time!("init_light_client");
@@ -742,7 +743,7 @@ impl Chain for CosmosSdkChain {
 
         let light_client = TmLightClient::from_config(&self.config, peer_id)?;
 
-        Ok(Box::new(light_client))
+        Ok(light_client)
     }
 
     fn init_event_monitor(
@@ -1716,7 +1717,7 @@ impl Chain for CosmosSdkChain {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-        light_client: &mut dyn LightClient<Self>,
+        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 

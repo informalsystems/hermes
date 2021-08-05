@@ -22,10 +22,10 @@ pub struct ChainHandlePair<Chain: ChainHandle = ProdChainHandle> {
     pub dst: Chain,
 }
 
-impl ChainHandlePair<ProdChainHandle> {
+impl<Chain: ChainHandle> ChainHandlePair<Chain> {
     /// Spawn the source and destination chain runtime from the configuration and chain identifiers,
     /// and return the pair of associated handles.
-    pub fn spawn(
+    pub fn spawn_generic(
         config: &Config,
         src_chain_id: &ChainId,
         dst_chain_id: &ChainId,
@@ -34,6 +34,16 @@ impl ChainHandlePair<ProdChainHandle> {
         let dst = spawn_chain_runtime_generic(config, dst_chain_id)?;
 
         Ok(ChainHandlePair { src, dst })
+    }
+}
+
+impl ChainHandlePair<ProdChainHandle> {
+    pub fn spawn(
+        config: &Config,
+        src_chain_id: &ChainId,
+        dst_chain_id: &ChainId,
+    ) -> Result<Self, Error> {
+        Self::spawn_generic(config, src_chain_id, dst_chain_id)
     }
 }
 
