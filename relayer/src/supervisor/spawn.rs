@@ -508,15 +508,29 @@ impl<'a> SpawnContext<'a> {
                 )
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
-            let outstanding_packets =
-                !unreceived_packets(counterparty_chain.as_ref(), chain.as_ref(), channel.clone())?
-                    .is_empty()
-                    || !unreceived_acknowledgements(
-                        counterparty_chain.as_ref(),
-                        chain.as_ref(),
-                        channel.clone(),
-                    )?
-                    .is_empty();
+            let counterparty_channel = IdentifiedChannelEnd::new(
+                channel.channel_end.counterparty().port_id.clone(),
+                channel
+                    .channel_end
+                    .counterparty()
+                    .channel_id
+                    .clone()
+                    .unwrap(),
+                counterparty_channel.unwrap(), // safe because chan_state_dst is Open
+            );
+
+            let outstanding_packets = !unreceived_packets(
+                counterparty_chain.as_ref(),
+                chain.as_ref(),
+                counterparty_channel.clone(),
+            )?
+            .is_empty()
+                || !unreceived_acknowledgements(
+                    counterparty_chain.as_ref(),
+                    chain.as_ref(),
+                    counterparty_channel.clone(),
+                )?
+                .is_empty();
 
             if outstanding_packets {
                 // create the Packet object and spawn worker
