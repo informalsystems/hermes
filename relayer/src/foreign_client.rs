@@ -221,7 +221,7 @@ where
 {
     /// The identifier of this client. The host chain determines this id upon client creation,
     /// so we may be using the default value temporarily.
-    pub id: ClientId,
+    pub id: Tagged<DstChain, ClientId>,
 
     /// A handle to the chain hosting this client, i.e., destination chain.
     pub dst_chain: DstChain,
@@ -282,7 +282,7 @@ where
     }
 
     pub fn restore(
-        id: ClientId,
+        id: Tagged<DstChain, ClientId>,
         dst_chain: DstChain,
         src_chain: SrcChain,
     ) -> ForeignClient<DstChain, SrcChain> {

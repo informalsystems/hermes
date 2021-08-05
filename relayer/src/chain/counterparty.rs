@@ -130,11 +130,14 @@ impl ChannelConnectionClient {
 
 /// Returns the [`ChannelConnectionClient`] associated with the
 /// provided port and channel id.
-pub fn channel_connection_client<Chain: ChainHandle>(
+pub fn channel_connection_client<Chain, Counterparty>(
     chain: &Chain,
     port_id: Tagged<Chain, PortId>,
     channel_id: Tagged<Chain, ChannelId>,
-) -> Result<Tagged<Chain, ChannelConnectionClient>, Error> {
+) -> Result<DualTagged<Chain, Counterparty, ChannelConnectionClient>, Error>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     let channel_end = chain
         .query_channel(port_id, channel_id, Height::tagged_zero())
         .map_err(Error::relayer)?;
@@ -183,7 +186,7 @@ pub fn channel_connection_client<Chain: ChainHandle>(
     let channel =
         IdentifiedChannelEnd::new(port_id.untag(), channel_id.untag(), channel_end.untag());
 
-    Ok(Tagged::new(ChannelConnectionClient::new(
+    Ok(DualTagged::new(ChannelConnectionClient::new(
         channel, connection, client,
     )))
 }
@@ -198,8 +201,8 @@ pub fn counterparty_chain_from_channel<Chain: ChainHandle>(
 }
 
 fn fetch_channel_on_destination<Chain, Counterparty>(
-    port_id: Tagged<Chain, PortId>,
-    channel_id: Tagged<Chain, ChannelId>,
+    port_id: Tagged<Counterparty, PortId>,
+    channel_id: Tagged<Counterparty, ChannelId>,
     counterparty_chain: &Chain,
     remote_connection_id: Tagged<Chain, ConnectionId>,
 ) -> Result<Option<DualTagged<Chain, Counterparty, ChannelEnd>>, Error>
@@ -216,7 +219,7 @@ where
         .map_err(Error::relayer)?;
 
     for counterparty_channel in counterparty_channels.into_iter() {
-        let local_channel_end = counterparty_channel.map(|c| c.channel_end.remote);
+        let local_channel_end = counterparty_channel.map_flipped(|c| c.channel_end.remote);
 
         let m_local_channel_id = local_channel_end.map(|c| c.channel_id()).transpose();
 
@@ -232,11 +235,14 @@ where
     Ok(None)
 }
 
-pub fn channel_state_on_destination<Chain: ChainHandle>(
-    channel: Tagged<Chain, IdentifiedChannelEnd>,
-    connection: Tagged<Chain, IdentifiedConnectionEnd>,
+pub fn channel_state_on_destination<Chain, Counterparty>(
+    channel: DualTagged<Counterparty, Chain, IdentifiedChannelEnd>,
+    connection: DualTagged<Counterparty, Chain, IdentifiedConnectionEnd>,
     counterparty_chain: &Chain,
-) -> Result<Tagged<Chain, State>, Error> {
+) -> Result<Tagged<Chain, State>, Error>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     let remote_channel = channel_on_destination(channel, connection, counterparty_chain)?;
 
     let state = remote_channel
@@ -247,19 +253,25 @@ pub fn channel_state_on_destination<Chain: ChainHandle>(
 }
 
 pub fn channel_on_destination<Chain, Counterparty>(
-    channel: Tagged<Chain, IdentifiedChannelEnd>,
-    connection: Tagged<Chain, IdentifiedConnectionEnd>,
+    channel: DualTagged<Counterparty, Chain, IdentifiedChannelEnd>,
+    connection: DualTagged<Counterparty, Chain, IdentifiedConnectionEnd>,
     counterparty_chain: &Chain,
 ) -> Result<Option<DualTagged<Chain, Counterparty, ChannelEnd>>, Error>
 where
     Chain: ChainHandle<Counterparty>,
 {
-    let m_remote_channel_id = channel
-        .map(|c| c.channel_end.remote.channel_id())
+    let remote_channel = channel.map_flipped(|c| c.channel_end.remote.clone());
+
+    let remote_connection = connection.map_flipped(|c| c.connection_end.counterparty().clone());
+
+    let m_remote_channel_id = remote_channel.map(|c| c.channel_id().clone()).transpose();
+
+    let m_remote_connection_id = remote_connection
+        .map(|c| c.connection_id.clone())
         .transpose();
 
     if let Some(remote_channel_id) = m_remote_channel_id {
-        let remote_channel_port_id = channel.map(|c| c.channel_end.remote.port_id().clone());
+        let remote_channel_port_id = remote_channel.map(|c| c.port_id().clone());
 
         let counterparty = counterparty_chain
             .query_channel(
@@ -271,11 +283,7 @@ where
 
         Ok(Some(counterparty))
     } else {
-        let counterparty_connection_id = connection
-            .map(|c| c.end().counterparty().connection_id())
-            .transpose();
-
-        if let Some(remote_connection_id) = counterparty_connection_id {
+        if let Some(remote_connection_id) = m_remote_connection_id {
             fetch_channel_on_destination(
                 channel.map(|c| c.port_id.clone()),
                 channel.map(|c| c.channel_id.clone()),

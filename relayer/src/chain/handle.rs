@@ -327,7 +327,10 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
 
     /// Send the given `msgs` to the chain, packaged as one or more transactions,
     /// and return the list of events emitted by the chain after the transaction was committed.
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error>;
+    fn send_msgs(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<Tagged<Self, IbcEvent>>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
 

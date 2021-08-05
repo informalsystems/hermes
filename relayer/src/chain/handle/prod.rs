@@ -89,11 +89,16 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Subscribe { reply_to })
     }
 
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error> {
-        self.send(|reply_to| ChainRequest::SendMsgs {
+    fn send_msgs(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<Tagged<Self, IbcEvent>>, Error> {
+        let events = self.send(|reply_to| ChainRequest::SendMsgs {
             proto_msgs,
             reply_to,
-        })
+        })?;
+
+        Ok(events.into_iter().map(Tagged::new).collect())
     }
 
     fn get_signer(&self) -> Result<Signer, Error> {

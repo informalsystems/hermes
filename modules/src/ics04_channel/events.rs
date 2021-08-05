@@ -214,8 +214,8 @@ impl OpenInit {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+    pub fn channel_id(&self) -> Option<ChannelId> {
+        self.0.channel_id.clone()
     }
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
@@ -254,8 +254,8 @@ impl OpenTry {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+    pub fn channel_id(&self) -> Option<ChannelId> {
+        self.0.channel_id.clone()
     }
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
@@ -294,8 +294,8 @@ impl OpenAck {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+    pub fn channel_id(&self) -> Option<ChannelId> {
+        self.0.channel_id.clone()
     }
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
@@ -338,8 +338,8 @@ impl OpenConfirm {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.0.channel_id.as_ref()
+    pub fn channel_id(&self) -> Option<ChannelId> {
+        self.0.channel_id.clone()
     }
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
