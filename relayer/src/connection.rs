@@ -12,15 +12,15 @@ use tracing::{error, warn};
 
 use ibc::events::IbcEvent;
 use ibc::ics02_client::height::Height;
-use ibc::ics03_connection::connection::{
-    ConnectionEnd, Counterparty, IdentifiedConnectionEnd, State,
-};
+use ibc::ics03_connection::connection::{self, State};
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use ibc::ics03_connection::version::Version;
+use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc::tagged::Tagged;
+use ibc::tagged::{DualTagged, Tagged};
 use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 
@@ -45,7 +45,7 @@ define_error! {
             |_| { "failed due to missing local channel id" },
 
         MissingCounterpartyConnectionIdField
-            { counterparty: Counterparty }
+            { counterparty: connection::Counterparty }
             |e| {
                 format!("the connection end has no connection id field in the counterparty: {:?}",
                     e.counterparty)
@@ -201,6 +201,117 @@ where
     client_id: Tagged<Chain, ClientId>,
     connection_id: Option<Tagged<Chain, ConnectionId>>,
     phantom: PhantomData<CounterpartyChain>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConnectionEnd<ChainA, ChainB>(pub DualTagged<ChainA, ChainB, connection::ConnectionEnd>);
+
+#[derive(Debug, Clone)]
+pub struct IdentifiedConnectionEnd<ChainA, ChainB>(
+    pub DualTagged<ChainA, ChainB, connection::IdentifiedConnectionEnd>,
+);
+
+#[derive(Debug, Clone)]
+pub struct Counterparty<Chain>(pub Tagged<Chain, connection::Counterparty>);
+
+impl<ChainA, ChainB> ConnectionEnd<ChainA, ChainB> {
+    pub fn new(
+        state: Tagged<ChainA, State>,
+        client_id: Tagged<ChainA, ClientId>,
+        counterparty: Counterparty<ChainB>,
+        versions: Vec<Version>,
+        delay_period: Duration,
+    ) -> Self {
+        Self(DualTagged::new(connection::ConnectionEnd::new(
+            state.untag(),
+            client_id.untag(),
+            counterparty.0.untag(),
+            versions,
+            delay_period,
+        )))
+    }
+
+    pub fn tag(connection: connection::ConnectionEnd) -> Self {
+        Self(DualTagged::new(connection))
+    }
+
+    pub fn state(&self) -> Tagged<ChainA, State> {
+        self.0.map(|c| c.state.clone())
+    }
+
+    pub fn client_id(&self) -> Tagged<ChainA, ClientId> {
+        self.0.map(|c| c.client_id().clone())
+    }
+
+    pub fn counterparty(&self) -> Counterparty<ChainB> {
+        Counterparty(self.0.map_flipped(|c| c.counterparty().clone()))
+    }
+
+    pub fn versions(&self) -> Vec<Version> {
+        self.0.value().versions()
+    }
+
+    pub fn delay_period(&self) -> Duration {
+        self.0.value().delay_period().clone()
+    }
+}
+
+impl<ChainA, ChainB> IdentifiedConnectionEnd<ChainA, ChainB> {
+    pub fn new(
+        connection_id: Tagged<ChainA, ConnectionId>,
+        connection_end: ConnectionEnd<ChainA, ChainB>,
+    ) -> Self {
+        Self(DualTagged::new(connection::IdentifiedConnectionEnd::new(
+            connection_id.untag(),
+            connection_end.0.untag(),
+        )))
+    }
+
+    pub fn tag(connection: connection::IdentifiedConnectionEnd) -> Self {
+        Self(DualTagged::new(connection))
+    }
+
+    pub fn connection_id(&self) -> Tagged<ChainA, ConnectionId> {
+        self.0.map(|c| c.connection_id.clone())
+    }
+
+    pub fn connection_end(&self) -> ConnectionEnd<ChainA, ChainB> {
+        ConnectionEnd(self.0.dual_map(|c| c.connection_end.clone()))
+    }
+
+    pub fn counterparty(&self) -> Counterparty<ChainB> {
+        self.connection_end().counterparty()
+    }
+}
+
+impl<Chain> Counterparty<Chain> {
+    pub fn new(
+        client_id: Tagged<Chain, ClientId>,
+        connection_id: Option<Tagged<Chain, ConnectionId>>,
+        prefix: Tagged<Chain, CommitmentPrefix>,
+    ) -> Self {
+        Self(Tagged::new(connection::Counterparty::new(
+            client_id.untag(),
+            connection_id.map(Tagged::untag),
+            prefix.untag(),
+        )))
+    }
+
+    pub fn tag(counterparty: connection::Counterparty) -> Self {
+        Self(Tagged::new(counterparty))
+    }
+
+    pub fn client_id(&self) -> Tagged<Chain, ClientId> {
+        self.0.map(|c| c.client_id().clone())
+    }
+
+    pub fn connection_id(&self) -> Option<Tagged<Chain, ConnectionId>> {
+        self.0.map(|c| c.connection_id().clone()).transpose()
+    }
+
+    pub fn commitment_prefix(&self) -> Tagged<Chain, CommitmentPrefix> {
+        self.0.map(|c| c.commitment_prefix().clone())
+    }
 }
 
 impl<Chain, CounterpartyChain> ConnectionSide<Chain, CounterpartyChain>
@@ -387,7 +498,7 @@ where
     pub fn find(
         a_client: ForeignClient<ChainA, ChainB>,
         b_client: ForeignClient<ChainB, ChainA>,
-        conn_end_a: Tagged<ChainA, IdentifiedConnectionEnd>,
+        conn_end_a: IdentifiedConnectionEnd<ChainA, ChainB>,
     ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
@@ -602,10 +713,7 @@ where
             .query_connection(connection_id, Height::zero())
             .map_err(|e| ConnectionError::connection_query(connection_id.clone(), e))?;
 
-        let connection = IdentifiedConnectionEnd {
-            connection_end,
-            connection_id: connection_id.clone(),
-        };
+        let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
 
         connection_state_on_destination(connection, &self.dst_chain())
             .map_err(ConnectionError::supervisor)
@@ -655,7 +763,7 @@ where
     fn validated_expected_connection(
         &self,
         msg_type: ConnectionMsgType,
-    ) -> Result<ConnectionEnd, ConnectionError> {
+    ) -> Result<ConnectionEnd<ChainA, ChainB>, ConnectionError> {
         let dst_connection_id = self
             .dst_connection_id()
             .ok_or_else(ConnectionError::missing_counterparty_connection_id)?;
@@ -1124,10 +1232,10 @@ pub enum ConnectionMsgType {
     OpenConfirm,
 }
 
-fn check_destination_connection_state(
-    connection_id: ConnectionId,
-    existing_connection: ConnectionEnd,
-    expected_connection: ConnectionEnd,
+fn check_destination_connection_state<Chain, Counterparty>(
+    connection_id: Tagged<Chain, ConnectionId>,
+    existing_connection: ConnectionEnd<Chain, Counterparty>,
+    expected_connection: ConnectionEnd<Chain, Counterparty>,
 ) -> Result<(), ConnectionError> {
     let good_client_ids = existing_connection.client_id() == expected_connection.client_id()
         && existing_connection.counterparty().client_id()

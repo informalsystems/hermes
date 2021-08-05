@@ -4,7 +4,6 @@ use std::{
 };
 
 use crossbeam_channel as channel;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
@@ -18,7 +17,7 @@ use ibc::{
         header::AnyHeader,
         misbehaviour::MisbehaviourEvidence,
     },
-    ics03_connection::{connection::ConnectionEnd, version::Version},
+    ics03_connection::{connection, version::Version},
     ics04_channel::{
         channel::{ChannelEnd, IdentifiedChannelEnd},
         packet::{PacketMsgType, Sequence},
@@ -46,7 +45,7 @@ use ibc_proto::ibc::core::{
 pub use prod::ProdChainHandle;
 
 use crate::{
-    connection::ConnectionMsgType,
+    connection::{ConnectionEnd, ConnectionMsgType, IdentifiedConnectionEnd},
     error::Error,
     event::monitor::{EventBatch, Result as MonitorResult},
     keyring::KeyEntry,
@@ -217,12 +216,12 @@ pub enum ChainRequest {
     QueryConnection {
         connection_id: ConnectionId,
         height: Height,
-        reply_to: ReplyTo<ConnectionEnd>,
+        reply_to: ReplyTo<connection::ConnectionEnd>,
     },
 
     QueryConnections {
         request: QueryConnectionsRequest,
-        reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
+        reply_to: ReplyTo<Vec<connection::IdentifiedConnectionEnd>>,
     },
 
     QueryConnectionChannels {
@@ -261,7 +260,7 @@ pub enum ChainRequest {
     ProvenConnection {
         connection_id: ConnectionId,
         height: Height,
-        reply_to: ReplyTo<(ConnectionEnd, MerkleProof)>,
+        reply_to: ReplyTo<(connection::ConnectionEnd, MerkleProof)>,
     },
 
     ProvenClientConsensus {
@@ -386,12 +385,12 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         &self,
         connection_id: Tagged<Self, ConnectionId>,
         height: Tagged<Self, Height>,
-    ) -> Result<DualTagged<Self, Counterparty, ConnectionEnd>, Error>;
+    ) -> Result<ConnectionEnd<Self, Counterparty>, Error>;
 
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<Tagged<Self, IdentifiedConnectionEnd>>, Error>;
+    ) -> Result<Vec<IdentifiedConnectionEnd<Self, Counterparty>>, Error>;
 
     fn query_connection_channels(
         &self,
@@ -430,7 +429,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         &self,
         connection_id: Tagged<Self, ConnectionId>,
         height: Tagged<Self, Height>,
-    ) -> Result<(Tagged<Self, ConnectionEnd>, MerkleProof), Error>;
+    ) -> Result<(ConnectionEnd<Self, Counterparty>, MerkleProof), Error>;
 
     fn proven_client_consensus(
         &self,

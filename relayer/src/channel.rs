@@ -6,7 +6,7 @@ use std::time::Duration;
 use tracing::{debug, error, info, warn};
 
 use ibc::events::IbcEvent;
-use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State};
+use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
 use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
 use ibc::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
@@ -209,11 +209,10 @@ where
             .query_connection(connection_id, Height::tagged_zero())
             .map_err(ChannelError::relayer)?;
 
-        let connection_counterparty = connection.map_flipped(|c| c.counterparty().clone());
+        let connection_counterparty = connection.counterparty();
 
         let counterparty_connection_id = connection_counterparty
-            .map(|c| c.connection_id().clone())
-            .transpose()
+            .connection_id()
             .ok_or_else(ChannelError::missing_counterparty_connection)?;
 
         let counterparty_port_id = channel_event_attributes.map_flipped(|a| a.counterparty_port_id);
@@ -233,19 +232,19 @@ where
             ordering: Default::default(),
             a_side: ChannelSide::new(
                 chain,
-                connection.map(|c| c.client_id().clone()),
+                connection.client_id(),
                 connection_id,
                 port_id,
                 channel_id,
             ),
             b_side: ChannelSide::new(
                 counterparty_chain,
-                connection_counterparty.map(|c| c.client_id().clone()),
+                connection_counterparty.client_id(),
                 counterparty_connection_id.clone(),
                 counterparty_port_id,
                 counterparty_channel_id,
             ),
-            connection_delay: connection.value().delay_period(),
+            connection_delay: connection.delay_period(),
             // The event does not include the version.
             // The message handlers `build_chan_open..` determine the version from channel query.
             version: Some(version),
@@ -281,18 +280,15 @@ where
             .query_connection(a_connection_id, Height::tagged_zero())
             .map_err(ChannelError::relayer)?;
 
-        let b_connection = a_connection.map_flipped(|c| c.counterparty().clone());
+        let b_connection = a_connection.counterparty();
 
-        let b_connection_id = b_connection
-            .map(|c| c.connection_id().clone())
-            .transpose()
-            .ok_or_else(|| {
-                ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
-                    src_channel_id.untag(),
-                    chain.id(),
-                    b_connection.untag(),
-                ))
-            })?;
+        let b_connection_id = b_connection.connection_id().ok_or_else(|| {
+            ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
+                src_channel_id.untag(),
+                chain.id(),
+                b_connection.0.untag(),
+            ))
+        })?;
 
         let b_channel = a_channel.map_flipped(|c| c.remote.clone());
 
@@ -300,19 +296,19 @@ where
             ordering: *a_channel.value().ordering(),
             a_side: ChannelSide::new(
                 chain.clone(),
-                a_connection.map(|c| c.client_id().clone()),
+                a_connection.client_id(),
                 a_connection_id.clone(),
                 channel.map(|c| c.src_port_id.clone()),
                 Some(channel.map(|c| c.src_channel_id.clone())),
             ),
             b_side: ChannelSide::new(
                 counterparty_chain.clone(),
-                b_connection.map(|c| c.client_id().clone()),
+                b_connection.client_id(),
                 b_connection_id.clone(),
                 b_channel.map(|c| c.port_id.clone()),
                 b_channel.map(|c| c.channel_id.clone()).transpose(),
             ),
-            connection_delay: a_connection.value().delay_period(),
+            connection_delay: a_connection.delay_period(),
             version: Some(a_channel.value().version.clone()),
         };
 

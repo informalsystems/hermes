@@ -7,7 +7,6 @@ use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWi
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
-use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
@@ -15,7 +14,6 @@ use ibc::tagged::{DualTagged, Tagged};
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
-    ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
     ics04_channel::channel::ChannelEnd,
     ics23_commitment::commitment::CommitmentPrefix,
@@ -37,7 +35,9 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
-use crate::{connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
+use crate::connection::{ConnectionEnd, ConnectionMsgType, IdentifiedConnectionEnd};
+use crate::error::Error;
+use crate::keyring::KeyEntry;
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
 
@@ -213,24 +213,29 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         &self,
         connection_id: Tagged<Self, ConnectionId>,
         height: Tagged<Self, Height>,
-    ) -> Result<DualTagged<Self, Counterparty, ConnectionEnd>, Error> {
+    ) -> Result<ConnectionEnd<Self, Counterparty>, Error> {
         let connection_end = self.send(|reply_to| ChainRequest::QueryConnection {
             connection_id: connection_id.untag(),
             height: height.untag(),
             reply_to,
         })?;
 
-        Ok(DualTagged::new(connection_end))
+        Ok(ConnectionEnd::tag(connection_end))
     }
 
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
-    ) -> Result<Vec<Tagged<Self, IdentifiedConnectionEnd>>, Error> {
+    ) -> Result<Vec<IdentifiedConnectionEnd<Self, Counterparty>>, Error> {
         let connection_ends =
             self.send(|reply_to| ChainRequest::QueryConnections { request, reply_to })?;
 
-        Ok(connection_ends.into_iter().map(Tagged::new).collect())
+        let tagged = connection_ends
+            .into_iter()
+            .map(IdentifiedConnectionEnd::tag)
+            .collect();
+
+        Ok(tagged)
     }
 
     fn query_connection_channels(
@@ -307,14 +312,14 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         &self,
         connection_id: Tagged<Self, ConnectionId>,
         height: Tagged<Self, Height>,
-    ) -> Result<(Tagged<Self, ConnectionEnd>, MerkleProof), Error> {
+    ) -> Result<(ConnectionEnd<Self, Counterparty>, MerkleProof), Error> {
         let (connection_end, proof) = self.send(|reply_to| ChainRequest::ProvenConnection {
             connection_id: connection_id.untag(),
             height: height.untag(),
             reply_to,
         })?;
 
-        Ok((Tagged::new(connection_end), proof))
+        Ok((ConnectionEnd::tag(connection_end), proof))
     }
 
     fn proven_client_consensus(
