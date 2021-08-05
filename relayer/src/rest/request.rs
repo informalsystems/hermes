@@ -36,9 +36,4 @@ pub enum Request {
         chain_id: ChainId,
         reply_to: ReplySender<ChainConfig>,
     },
-    //
-    // AddChain {
-    //     chain_config: ChainConfig,
-    //     reply_to: ReplySender<()>,
-    // },
 }

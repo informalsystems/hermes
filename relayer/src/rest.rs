@@ -2,7 +2,7 @@ use crossbeam_channel::TryRecvError;
 use tracing::{debug, error};
 
 use crate::{
-    config::{ChainConfig, Config},
+    config::Config,
     rest::request::ReplySender,
     rest::request::{Request, VersionInfo},
     supervisor::dump_state::SupervisorState,
@@ -30,7 +30,6 @@ pub type Receiver = crossbeam_channel::Receiver<Request>;
 //  implement `/reload` for supporting a broader range of functionality
 //  e.g., adjusting chain config, removing chains, etc.
 pub enum Command {
-    AddChain(ChainConfig, ReplySender<()>),
     DumpState(ReplySender<SupervisorState>),
 }
 
@@ -78,13 +77,7 @@ pub fn process_incoming_requests(config: &Config, channel: &Receiver) -> Option<
             Request::State { reply_to } => {
                 debug!("[rest/supervisor] State");
                 return Some(Command::DumpState(reply_to));
-            } // Request::AddChain {
-              //     chain_config,
-              //     reply_to,
-              // } => {
-              //     debug!("[rest/supervisor] AddChain {:#?}", chain_config);
-              //     return Some(Command::AddChain(chain_config, reply_to));
-              // }
+            }
         },
         Err(e) => {
             if !matches!(e, TryRecvError::Empty) {

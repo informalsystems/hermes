@@ -6,7 +6,7 @@ use tracing::{info, trace};
 use ibc_relayer::rest::request::Request;
 
 use crate::{
-    handle::{add_chain, all_chain_ids, assemble_version_info, chain_config, supervisor_state},
+    handle::{all_chain_ids, assemble_version_info, chain_config, supervisor_state},
     Config,
 };
 
@@ -44,11 +44,6 @@ fn run(config: Config, sender: channel::Sender<Request>) {
             (GET) (/state) => {
                 trace!("[rest/server] GET /state");
                 rouille::Response::json(&supervisor_state(&sender).map_err(|e| e.0))
-            },
-
-            (POST) (/chain) => {
-                trace!("[rest/server] POST /chain");
-                rouille::Response::json(&add_chain(&sender, request).map_err(|e| e.0))
             },
 
             _ => rouille::Response::empty_404(),

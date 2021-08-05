@@ -581,12 +581,8 @@ impl Supervisor {
         }
     }
 
-    // TODO(Adi): The `self` ref may need to be mutable here.
     fn handle_rest_command(&self, m: rest::Command) {
         match m {
-            rest::Command::AddChain(_cfg, _reply) => {
-                unimplemented!()
-            }
             rest::Command::DumpState(reply) => {
                 let state = self.state();
                 reply.send(Ok(state)).unwrap_or_else(|e| {

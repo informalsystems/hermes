@@ -59,27 +59,6 @@ pub fn chain_config(
     }
 }
 
-pub fn add_chain(
-    _sender: &channel::Sender<Request>,
-    request: &rouille::Request,
-) -> Result<(), RestApiError> {
-    let _chain_config: ChainConfig = rouille::input::json_input(request).map_err(|e| {
-        error!(
-            "[rest-server] failed while parsing new chain config into JSON: {}",
-            e
-        );
-        RestApiError::invalid_chain_config(e.to_string())
-    })?;
-
-    // submit_request(&sender, |reply_to| Request::AddChain {
-    //     chain_config,
-    //     reply_to,
-    // })
-
-    // This feature is not implemented yet
-    Err(RestApiError::unimplemented())
-}
-
 pub fn supervisor_state(
     sender: &channel::Sender<Request>,
 ) -> Result<SupervisorState, RestApiError> {
