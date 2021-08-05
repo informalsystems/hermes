@@ -1507,6 +1507,7 @@ dependencies = [
  "ibc",
  "ibc-relayer",
  "rouille",
+ "serde",
  "serde_json",
  "toml",
  "tracing",

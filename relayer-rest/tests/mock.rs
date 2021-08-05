@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use serde::Serialize;
+
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::ChainConfig,
@@ -14,8 +16,9 @@ pub enum TestResult {
     WrongRequest(Request),
 }
 
-fn run_test<F>(port: u16, path: &str, expected: &str, handler: F)
+fn run_test<R, F>(port: u16, path: &str, expected: R, handler: F)
 where
+    R: Serialize,
     F: FnOnce(Request) -> TestResult + Send + 'static,
 {
     let config = Config {
@@ -38,7 +41,8 @@ where
         .into_string()
         .unwrap();
 
-    assert_eq!(response.as_str(), expected);
+    let expected_json = serde_json::to_string(&expected).unwrap();
+    assert_eq!(response, expected_json);
 
     handle.stop();
     handle.join().unwrap();
@@ -56,10 +60,9 @@ fn version() {
         version: "0.1.0".to_string(),
     };
 
-    let versions = vec![version.clone(), rest_api_version];
-    let expected = serde_json::to_string(&versions).unwrap();
+    let result = vec![version.clone(), rest_api_version];
 
-    run_test(19101, "/", &expected, |req| match req {
+    run_test(19101, "/", result, |req| match req {
         Request::Version { reply_to } => {
             reply_to.send(Ok(version)).unwrap();
 
@@ -73,9 +76,8 @@ fn version() {
 fn get_chains() {
     let chain_id = ChainId::from_str("mock-0").unwrap();
     let result: Result<_, ()> = Ok(vec![chain_id.clone()]);
-    let expected = serde_json::to_string(&result).unwrap();
 
-    run_test(19102, "/chain", &expected, |req| match req {
+    run_test(19102, "/chain", result, |req| match req {
         Request::GetChains { reply_to } => {
             reply_to.send(Ok(vec![chain_id])).unwrap();
             TestResult::Success
@@ -107,9 +109,8 @@ trust_threshold = { numerator = '1', denominator = '3' }
 fn get_chain() {
     let config: ChainConfig = toml::de::from_str(MOCK_CHAIN_CONFIG).unwrap();
     let result: Result<_, ()> = Ok(config.clone());
-    let expected = serde_json::to_string(&result).unwrap();
 
-    run_test(19103, "/chain/mock-0", &expected, |req| match req {
+    run_test(19103, "/chain/mock-0", result, |req| match req {
         Request::GetChain { chain_id, reply_to } if chain_id.to_string().as_str() == "mock-0" => {
             reply_to.send(Ok(config)).unwrap();
             TestResult::Success
@@ -122,9 +123,8 @@ fn get_chain() {
 fn state() {
     let state = SupervisorState::new(vec!["mock-0".parse().unwrap()], std::iter::empty());
     let result: Result<_, ()> = Ok(state.clone());
-    let expected = serde_json::to_string(&result).unwrap();
 
-    run_test(19104, "/state", &expected, |req| match req {
+    run_test(19104, "/state", result, |req| match req {
         Request::State { reply_to } => {
             reply_to.send(Ok(state)).unwrap();
             TestResult::Success
