@@ -213,16 +213,16 @@ define_error! {
 }
 
 #[derive(Clone, Debug)]
-pub struct ForeignClient<Host: ChainHandle, Guest: ChainHandle> {
+pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
     /// The identifier of this client. The host chain determines this id upon client creation,
     /// so we may be using the default value temporarily.
     pub id: ClientId,
 
     /// A handle to the chain hosting this client, i.e., destination chain.
-    pub dst_chain: Host,
+    pub dst_chain: DstChain,
 
     /// A handle to the chain whose headers this client is verifying, aka the source chain.
-    pub src_chain: Guest,
+    pub src_chain: SrcChain,
 }
 
 /// Used in Output messages.
@@ -232,7 +232,9 @@ pub struct ForeignClient<Host: ChainHandle, Guest: ChainHandle> {
 /// where the first chain identifier is for the source
 /// chain, and the second chain identifier is the
 /// destination (which hosts the client) chain.
-impl<Host: ChainHandle, Guest: ChainHandle> fmt::Display for ForeignClient<Host, Guest> {
+impl<DstChain: ChainHandle, SrcChain: ChainHandle> fmt::Display
+    for ForeignClient<DstChain, SrcChain>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -244,14 +246,14 @@ impl<Host: ChainHandle, Guest: ChainHandle> fmt::Display for ForeignClient<Host,
     }
 }
 
-impl<Host: ChainHandle, Guest: ChainHandle> ForeignClient<Host, Guest> {
+impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcChain> {
     /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
     /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
     pub fn new(
-        dst_chain: Host,
-        src_chain: Guest,
-    ) -> Result<ForeignClient<Host, Guest>, ForeignClientError> {
+        dst_chain: DstChain,
+        src_chain: SrcChain,
+    ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         // Sanity check
         if src_chain.id().eq(&dst_chain.id()) {
             return Err(ForeignClientError::same_chain_id(src_chain.id()));
@@ -268,7 +270,11 @@ impl<Host: ChainHandle, Guest: ChainHandle> ForeignClient<Host, Guest> {
         Ok(client)
     }
 
-    pub fn restore(id: ClientId, dst_chain: Host, src_chain: Guest) -> ForeignClient<Host, Guest> {
+    pub fn restore(
+        id: ClientId,
+        dst_chain: DstChain,
+        src_chain: SrcChain,
+    ) -> ForeignClient<DstChain, SrcChain> {
         ForeignClient {
             id,
             dst_chain,
@@ -282,10 +288,10 @@ impl<Host: ChainHandle, Guest: ChainHandle> ForeignClient<Host, Guest> {
     /// verifying) is consistent with `expected_target_chain`, and if so, return a new
     /// `ForeignClient` representing this client.
     pub fn find(
-        expected_target_chain: Guest,
-        host_chain: Host,
+        expected_target_chain: SrcChain,
+        host_chain: DstChain,
         client_id: &ClientId,
-    ) -> Result<ForeignClient<Host, Guest>, ForeignClientError> {
+    ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         let height = Height::new(expected_target_chain.id().version(), 0);
 
         match host_chain.query_client_state(client_id, height) {
@@ -396,12 +402,12 @@ impl<Host: ChainHandle, Guest: ChainHandle> ForeignClient<Host, Guest> {
     }
 
     /// Returns a handle to the chain hosting this client.
-    pub fn dst_chain(&self) -> Host {
+    pub fn dst_chain(&self) -> DstChain {
         self.dst_chain.clone()
     }
 
     /// Returns a handle to the chain whose headers this client is sourcing (the source chain).
-    pub fn src_chain(&self) -> Guest {
+    pub fn src_chain(&self) -> SrcChain {
         self.src_chain.clone()
     }
 
