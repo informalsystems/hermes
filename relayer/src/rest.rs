@@ -25,6 +25,10 @@ pub const VER: &str = env!(
 pub type Receiver = crossbeam_channel::Receiver<Request>;
 
 // TODO: Unify this enum with `SupervisorCmd`
+//  We won't unify yet as it is possible we will never implement
+//  REST API `/chain` adding endpoint; instead of `/chain` we might
+//  implement `/reload` for supporting a broader range of functionality
+//  e.g., adjusting chain config, removing chains, etc.
 pub enum Command {
     AddChain(ChainConfig, ReplySender<()>),
     DumpState(ReplySender<SupervisorState>),

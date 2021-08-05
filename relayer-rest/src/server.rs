@@ -19,7 +19,6 @@ pub fn spawn(config: Config) -> (thread::JoinHandle<()>, channel::Receiver<Reque
     )
 }
 
-// TODO(Adi): remove unwraps, or double-check that `rouille` can recover from panics
 #[allow(clippy::manual_strip)]
 fn run(config: Config, sender: channel::Sender<Request>) {
     rouille::start_server(config.address, move |request| {

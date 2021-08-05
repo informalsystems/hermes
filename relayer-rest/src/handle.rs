@@ -46,7 +46,7 @@ where
 }
 
 pub fn all_chain_ids(sender: &channel::Sender<Request>) -> Result<Vec<ChainId>, RestApiError> {
-    submit_request(&sender, |reply_to| Request::GetChains { reply_to })
+    submit_request(sender, |reply_to| Request::GetChains { reply_to })
 }
 
 pub fn chain_config(
@@ -54,9 +54,7 @@ pub fn chain_config(
     chain_id: &str,
 ) -> Result<ChainConfig, RestApiError> {
     match ChainId::from_str(chain_id) {
-        Ok(chain_id) => {
-            submit_request(&sender, |reply_to| Request::GetChain { chain_id, reply_to })
-        }
+        Ok(chain_id) => submit_request(sender, |reply_to| Request::GetChain { chain_id, reply_to }),
         Err(e) => Err(RestApiError::invalid_chain_id(chain_id.to_string(), e)),
     }
 }
@@ -65,7 +63,7 @@ pub fn add_chain(
     _sender: &channel::Sender<Request>,
     request: &rouille::Request,
 ) -> Result<(), RestApiError> {
-    let _chain_config: ChainConfig = rouille::input::json_input(&request).map_err(|e| {
+    let _chain_config: ChainConfig = rouille::input::json_input(request).map_err(|e| {
         error!(
             "[rest-server] failed while parsing new chain config into JSON: {}",
             e
@@ -85,12 +83,12 @@ pub fn add_chain(
 pub fn supervisor_state(
     sender: &channel::Sender<Request>,
 ) -> Result<SupervisorState, RestApiError> {
-    submit_request(&sender, |reply_to| Request::State { reply_to })
+    submit_request(sender, |reply_to| Request::State { reply_to })
 }
 
 pub fn assemble_version_info(sender: &channel::Sender<Request>) -> Vec<VersionInfo> {
     // Fetch the relayer library version
-    let lib_version = submit_request(&sender, |reply_to| Request::Version { reply_to })
+    let lib_version = submit_request(sender, |reply_to| Request::Version { reply_to })
         .map_err(|e| {
             error!(
                 "[rest-server] failed while fetching relayer lib version info: {}",
