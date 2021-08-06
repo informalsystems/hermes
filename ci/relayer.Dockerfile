@@ -1,13 +1,13 @@
 #####################################################
 ####                 Relayer image               ####
 #####################################################
-FROM ubuntu:20.04
+FROM ubuntu:21.04
 LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE
 
-# Add Python 3
-RUN apt-get update -y && apt-get install python3 python3-toml -y
+# Add Python 3 and Ping and Telnet (for testing)
+RUN apt-get update -y && apt-get install python3 python3-toml iputils-ping telnet -y
 
 # Copy relayer executable
 COPY ./hermes /usr/bin/hermes

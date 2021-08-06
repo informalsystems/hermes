@@ -165,6 +165,9 @@ Removing network ibc-rs_relaynet
 
 The repository stores the files used to configure and build the chains for the containers. For example, the files for a `gaia` chain release `v5.0.0` can be seen [here](./chains/gaia)
 
+> Note: Please ensure you have gaiad installed on your machine and it matches the version that you're trying to upgrade.
+> You can check but running `gaiad version` in your machine
+
 If you need to generate configuration files for a new gaia release and new containers, please follow the steps below:
 
 1. Move into the `ci` folder
