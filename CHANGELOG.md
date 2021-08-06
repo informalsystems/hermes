@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## __Unreleased__
+
+### BUG FIXES
+- [gm] Fix silent exit when requirements are missing
+
+[#1261]: https://github.com/informalsystems/ibc-rs/issues/1261
+
 ## v0.6.2
 
 This minor release of Hermes re-enables the `upgrade client`, `upgrade clients`,
