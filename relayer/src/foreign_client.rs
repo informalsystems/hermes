@@ -271,7 +271,7 @@ where
         }
 
         let mut client = ForeignClient {
-            id: ClientId::default(),
+            id: Tagged::new(ClientId::default()),
             dst_chain,
             src_chain,
         };
@@ -557,7 +557,7 @@ where
     pub fn build_update_client(
         &self,
         target_height: Height,
-    ) -> Result<Vec<Any>, ForeignClientError> {
+    ) -> Result<Vec<Tagged<DstChain, Any>>, ForeignClientError> {
         self.build_update_client_with_trusted(target_height, Height::zero())
     }
 
@@ -567,7 +567,7 @@ where
         &self,
         target_height: Height,
         trusted_height: Height,
-    ) -> Result<Vec<Any>, ForeignClientError> {
+    ) -> Result<Vec<Tagged<DstChain, Any>>, ForeignClientError> {
         // Wait for source chain to reach `target_height`
         while self.src_chain().query_latest_height().map_err(|e| {
             ForeignClientError::client_create(

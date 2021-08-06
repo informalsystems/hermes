@@ -2,6 +2,7 @@ use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::PortId;
 use crate::signer::Signer;
+use crate::tagged::{DualTagged, Tagged};
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
@@ -28,6 +29,14 @@ impl MsgChannelOpenInit {
             channel,
             signer,
         }
+    }
+
+    pub fn tagged_new<Chain, Counterparty>(
+        port_id: Tagged<Chain, PortId>,
+        channel: DualTagged<Chain, Counterparty, ChannelEnd>,
+        signer: Signer,
+    ) -> Tagged<Chain, MsgChannelOpenInit> {
+        Tagged::new(Self::new(port_id.untag(), channel.untag(), signer))
     }
 
     /// Getter: borrow the `port_id` from this message.

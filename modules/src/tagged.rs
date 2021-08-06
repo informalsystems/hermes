@@ -80,6 +80,12 @@ impl<Tag, Value: Clone> Clone for Tagged<Tag, Value> {
     }
 }
 
+impl<Tag, Value: Default> Default for Tagged<Tag, Value> {
+    fn default() -> Self {
+        Self::new(Value::default())
+    }
+}
+
 impl<Tag, Value: Debug> Debug for Tagged<Tag, Value> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Debug::fmt(self.value(), f)

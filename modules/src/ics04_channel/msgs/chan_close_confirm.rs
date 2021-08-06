@@ -8,6 +8,7 @@ use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseConfirm";
@@ -32,6 +33,20 @@ impl MsgChannelCloseConfirm {
             proofs,
             signer,
         }
+    }
+
+    pub fn tagged_new<Chain>(
+        port_id: Tagged<Chain, PortId>,
+        channel_id: Tagged<Chain, ChannelId>,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(
+            port_id.untag(),
+            channel_id.untag(),
+            proofs,
+            signer,
+        ))
     }
 
     /// Getter: borrow the `port_id` from this message.

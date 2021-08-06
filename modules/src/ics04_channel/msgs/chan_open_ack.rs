@@ -3,6 +3,7 @@ use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
@@ -42,6 +43,24 @@ impl MsgChannelOpenAck {
             proofs,
             signer,
         }
+    }
+
+    pub fn tagged_new<Chain, Counterparty>(
+        port_id: Tagged<Chain, PortId>,
+        channel_id: Tagged<Chain, ChannelId>,
+        counterparty_channel_id: Tagged<Counterparty, ChannelId>,
+        counterparty_version: String,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(
+            port_id.untag(),
+            channel_id.untag(),
+            counterparty_channel_id.untag(),
+            counterparty_version,
+            proofs,
+            signer,
+        ))
     }
 
     /// Getter: borrow the `port_id` from this message.

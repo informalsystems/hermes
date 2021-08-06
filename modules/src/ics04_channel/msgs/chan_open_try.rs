@@ -4,6 +4,7 @@ use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
+use crate::tagged::{DualTagged, Tagged};
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
@@ -44,6 +45,24 @@ impl MsgChannelOpenTry {
             proofs,
             signer,
         }
+    }
+
+    pub fn new_tagged<Chain, Counterparty>(
+        port_id: Tagged<Chain, PortId>,
+        previous_channel_id: Option<Tagged<Chain, ChannelId>>,
+        channel: DualTagged<Chain, Counterparty, ChannelEnd>,
+        counterparty_version: String,
+        proofs: Proofs,
+        signer: Signer,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(
+            port_id.untag(),
+            previous_channel_id.map(Tagged::untag),
+            channel.untag(),
+            counterparty_version,
+            proofs,
+            signer,
+        ))
     }
 
     /// Getter: borrow the `port_id` from this message.

@@ -7,15 +7,13 @@ use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWi
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
-use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
-use ibc::tagged::{DualTagged, Tagged};
+use ibc::tagged::Tagged;
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
     ics03_connection::version::Version,
-    ics04_channel::channel::ChannelEnd,
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::ChainId,
     ics24_host::identifier::ChannelId,
@@ -35,6 +33,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
+use crate::channel::{ChannelEnd, IdentifiedChannelEnd};
 use crate::connection::{ConnectionEnd, ConnectionMsgType, IdentifiedConnectionEnd};
 use crate::error::Error;
 use crate::keyring::KeyEntry;
@@ -91,8 +90,9 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
 
     fn send_msgs(
         &self,
-        proto_msgs: Vec<prost_types::Any>,
+        proto_msgs: Vec<Tagged<Self, prost_types::Any>>,
     ) -> Result<Vec<Tagged<Self, IbcEvent>>, Error> {
+        let proto_msgs = proto_msgs.into_iter().map(Tagged::untag).collect();
         let events = self.send(|reply_to| ChainRequest::SendMsgs {
             proto_msgs,
             reply_to,
@@ -241,11 +241,14 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<DualTagged<Self, Counterparty, IdentifiedChannelEnd>>, Error> {
+    ) -> Result<Vec<IdentifiedChannelEnd<Self, Counterparty>>, Error> {
         let channel_ends =
             self.send(|reply_to| ChainRequest::QueryConnectionChannels { request, reply_to })?;
 
-        Ok(channel_ends.into_iter().map(DualTagged::new).collect())
+        Ok(channel_ends
+            .into_iter()
+            .map(IdentifiedChannelEnd::tag)
+            .collect())
     }
 
     fn query_next_sequence_receive(
@@ -261,11 +264,14 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
-    ) -> Result<Vec<Tagged<Self, IdentifiedChannelEnd>>, Error> {
+    ) -> Result<Vec<IdentifiedChannelEnd<Self, Counterparty>>, Error> {
         let channel_ends =
             self.send(|reply_to| ChainRequest::QueryChannels { request, reply_to })?;
 
-        Ok(channel_ends.into_iter().map(Tagged::new).collect())
+        Ok(channel_ends
+            .into_iter()
+            .map(IdentifiedChannelEnd::tag)
+            .collect())
     }
 
     fn query_channel(
@@ -273,7 +279,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
         height: Tagged<Self, Height>,
-    ) -> Result<DualTagged<Self, Counterparty, ChannelEnd>, Error> {
+    ) -> Result<ChannelEnd<Self, Counterparty>, Error> {
         let channel_end = self.send(|reply_to| ChainRequest::QueryChannel {
             port_id: port_id.untag(),
             channel_id: channel_id.untag(),
@@ -281,7 +287,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
             reply_to,
         })?;
 
-        Ok(DualTagged::new(channel_end))
+        Ok(ChannelEnd::tag(channel_end))
     }
 
     fn query_channel_client_state(

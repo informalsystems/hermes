@@ -310,7 +310,7 @@ impl<Chain> Counterparty<Chain> {
     }
 
     pub fn commitment_prefix(&self) -> Tagged<Chain, CommitmentPrefix> {
-        self.0.map(|c| c.commitment_prefix().clone())
+        self.0.map(|c| c.prefix().clone())
     }
 }
 
@@ -318,7 +318,11 @@ impl<Chain, CounterpartyChain> ConnectionSide<Chain, CounterpartyChain>
 where
     Chain: ChainHandle<CounterpartyChain>,
 {
-    pub fn new(chain: Chain, client_id: ClientId, connection_id: Option<ConnectionId>) -> Self {
+    pub fn new(
+        chain: Chain,
+        client_id: Tagged<Chain, ClientId>,
+        connection_id: Option<Tagged<Chain, ConnectionId>>,
+    ) -> Self {
         Self {
             chain,
             client_id,
@@ -346,8 +350,8 @@ where
         }
 
         let value = ConnectionSide {
-            client_id: &self.client_id,
-            connection_id: &self.connection_id,
+            client_id: self.client_id.value(),
+            connection_id: &self.connection_id.map(Tagged::untag),
         };
 
         value.serialize(serializer)

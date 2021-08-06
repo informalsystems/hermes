@@ -3,11 +3,10 @@ use std::{
     sync::Arc,
 };
 
-use crossbeam_channel as channel;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
-use ibc::tagged::{DualTagged, Tagged};
+use ibc::tagged::Tagged;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
@@ -19,7 +18,7 @@ use ibc::{
     },
     ics03_connection::{connection, version::Version},
     ics04_channel::{
-        channel::{ChannelEnd, IdentifiedChannelEnd},
+        channel,
         packet::{PacketMsgType, Sequence},
     },
     ics23_commitment::commitment::CommitmentPrefix,
@@ -45,6 +44,7 @@ use ibc_proto::ibc::core::{
 pub use prod::ProdChainHandle;
 
 use crate::{
+    channel::{ChannelEnd, IdentifiedChannelEnd},
     connection::{ConnectionEnd, ConnectionMsgType, IdentifiedConnectionEnd},
     error::Error,
     event::monitor::{EventBatch, Result as MonitorResult},
@@ -91,13 +91,13 @@ where
     }
 }
 
-pub type Subscription = channel::Receiver<Arc<MonitorResult<EventBatch>>>;
+pub type Subscription = crossbeam_channel::Receiver<Arc<MonitorResult<EventBatch>>>;
 
-pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
-pub type Reply<T> = channel::Receiver<Result<T, Error>>;
+pub type ReplyTo<T> = crossbeam_channel::Sender<Result<T, Error>>;
+pub type Reply<T> = crossbeam_channel::Receiver<Result<T, Error>>;
 
 pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
-    channel::bounded(1)
+    crossbeam_channel::bounded(1)
 }
 
 /// Requests that a `ChainHandle` may send to a `ChainRuntime`.
@@ -226,19 +226,19 @@ pub enum ChainRequest {
 
     QueryConnectionChannels {
         request: QueryConnectionChannelsRequest,
-        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+        reply_to: ReplyTo<Vec<channel::IdentifiedChannelEnd>>,
     },
 
     QueryChannels {
         request: QueryChannelsRequest,
-        reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
+        reply_to: ReplyTo<Vec<channel::IdentifiedChannelEnd>>,
     },
 
     QueryChannel {
         port_id: PortId,
         channel_id: ChannelId,
         height: Height,
-        reply_to: ReplyTo<ChannelEnd>,
+        reply_to: ReplyTo<channel::ChannelEnd>,
     },
 
     QueryChannelClientState {
@@ -313,7 +313,7 @@ pub enum ChainRequest {
 }
 
 pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + Debug {
-    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self;
+    fn new(chain_id: ChainId, sender: crossbeam_channel::Sender<ChainRequest>) -> Self;
 
     /// Get the [`ChainId`] of this chain.
     fn id(&self) -> ChainId;
@@ -328,7 +328,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
     /// and return the list of events emitted by the chain after the transaction was committed.
     fn send_msgs(
         &self,
-        proto_msgs: Vec<prost_types::Any>,
+        proto_msgs: Vec<Tagged<Self, prost_types::Any>>,
     ) -> Result<Vec<Tagged<Self, IbcEvent>>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
@@ -395,7 +395,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<DualTagged<Self, Counterparty, IdentifiedChannelEnd>>, Error>;
+    ) -> Result<Vec<IdentifiedChannelEnd<Self, Counterparty>>, Error>;
 
     fn query_next_sequence_receive(
         &self,
@@ -405,14 +405,14 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
-    ) -> Result<Vec<Tagged<Self, IdentifiedChannelEnd>>, Error>;
+    ) -> Result<Vec<IdentifiedChannelEnd<Self, Counterparty>>, Error>;
 
     fn query_channel(
         &self,
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
         height: Tagged<Self, Height>,
-    ) -> Result<DualTagged<Self, Counterparty, ChannelEnd>, Error>;
+    ) -> Result<ChannelEnd<Self, Counterparty>, Error>;
 
     fn query_channel_client_state(
         &self,
