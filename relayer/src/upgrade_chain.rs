@@ -90,8 +90,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
             name: opts.upgrade_plan_name.clone(),
             height: upgrade_height.revision_height as i64,
             info: "".to_string(),
-            time: None,                  // deprecated
-            upgraded_client_state: None, // deprecated
+            ..Default::default() // deprecated fields - time & upgraded_client_state
         }),
     };
 
