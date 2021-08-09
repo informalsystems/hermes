@@ -61,7 +61,7 @@ pub struct Supervisor {
 
     cmd_rx: Receiver<SupervisorCmd>,
     worker_msg_rx: Receiver<WorkerMsg>,
-    rest_request_rx: Option<rest::Receiver>,
+    rest_rx: Option<rest::Receiver>,
     client_state_filter: FilterPolicy,
 
     #[allow(dead_code)]
@@ -88,7 +88,7 @@ impl Supervisor {
             workers,
             cmd_rx,
             worker_msg_rx,
-            rest_request_rx: rest_receiver,
+            rest_rx,
             client_state_filter,
             telemetry,
         };
@@ -573,15 +573,15 @@ impl Supervisor {
     }
 
     fn handle_rest_requests(&self) {
-        if let Some(rest_receiver) = &self.rest_request_rx {
-            let config = &self.config.read().expect("poisoned lock");
-            if let Some(command) = rest::process_incoming_requests(config, rest_receiver) {
-                self.handle_rest_command(command);
+        if let Some(rest_rx) = &self.rest_rx {
+            let config = self.config.read().expect("poisoned lock");
+            if let Some(cmd) = rest::process_incoming_requests(&config, rest_rx) {
+                self.handle_rest_cmd(cmd);
             }
         }
     }
 
-    fn handle_rest_command(&self, m: rest::Command) {
+    fn handle_rest_cmd(&self, m: rest::Command) {
         match m {
             rest::Command::DumpState(reply) => {
                 let state = self.state();
