@@ -1,8 +1,8 @@
 use ibc::ics03_connection::connection::State as ConnectionState;
+use ibc::Height;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use ibc::Height;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Step {
@@ -123,7 +123,11 @@ pub enum ActionOutcome {
     Ics02UpdateOk,
     Ics02ClientNotFound,
     Ics02HeaderVerificationFailure,
+
     Ics07UpgradeOk,
+    Ics07ClientNotFound,
+    Ics07HeaderVerificationFailure,
+
     Ics03ConnectionOpenInitOk,
     Ics03MissingClient,
     Ics03ConnectionOpenTryOk,

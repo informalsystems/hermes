@@ -83,6 +83,7 @@ impl IbcTestRunner {
     /// Panic if the context for `chain_id` is not found.
     pub fn chain_context_mut(&mut self, chain_id: String, height: Height) -> &mut MockContext {
         let chain_id_struct = Self::chain_id(chain_id.clone(), height);
+        dbg!(chain_id_struct.clone(), self.clone().contexts);
         self.contexts
             .get_mut(&chain_id_struct)
             .expect("chain context should have been initialized")
@@ -348,7 +349,9 @@ impl IbcTestRunner {
                 header,
             } => {
                 let modified_header = Height {
-                    revision_number: header.revision_number - 1,
+                    // NOTE: Since the TLA+ model does not have any provision to upgrade the actual chain (just the client), the revision number will never be
+                    // anything other than 1. If we do add upgrading of the actual chain revision to the model, this will probably fail.
+                    revision_number: 1,
                     ..header
                 };
 
@@ -488,17 +491,26 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> Result<(), String> {
+        dbg!(step.clone());
         let result = self.apply(step.clone().action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::Ics02CreateOk => result.is_ok(),
             ActionOutcome::Ics02UpdateOk => result.is_ok(),
-            ActionOutcome::Ics07UpgradeOk => result.is_ok(),
             ActionOutcome::Ics02ClientNotFound => matches!(
                 Self::extract_ics02_error_kind(result),
                 client_error::ErrorDetail::ClientNotFound(_)
             ),
             ActionOutcome::Ics02HeaderVerificationFailure => matches!(
+                Self::extract_ics02_error_kind(result),
+                client_error::ErrorDetail::HeaderVerificationFailure(_)
+            ),
+            ActionOutcome::Ics07UpgradeOk => result.is_ok(),
+            ActionOutcome::Ics07ClientNotFound => matches!(
+                Self::extract_ics02_error_kind(result),
+                client_error::ErrorDetail::ClientNotFound(_)
+            ),
+            ActionOutcome::Ics07HeaderVerificationFailure => matches!(
                 Self::extract_ics02_error_kind(result),
                 client_error::ErrorDetail::HeaderVerificationFailure(_)
             ),
