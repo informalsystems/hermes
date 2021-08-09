@@ -251,7 +251,7 @@ UpgradeClient(chainId, clientId, height) ==
     LET result == ICS07_UpgradeClient(chain, chainId, clientId, height) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateRevisionNumber(@, result, "Ics07UpgradeOk"),
+        !.height = UpdateRevisionHeight(@, result, "Ics07UpgradeOk"),
         !.clients = result.clients
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
