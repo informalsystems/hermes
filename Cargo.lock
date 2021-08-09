@@ -1505,7 +1505,7 @@ dependencies = [
  "crossbeam-channel 0.5.1",
  "ibc",
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.16.0",
  "opentelemetry-prometheus",
  "prometheus",
  "rouille",
@@ -1977,10 +1977,22 @@ version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff27b33e30432e7b9854936693ca103d8591b0501f7ae9f633de48cda3bf2a67"
 dependencies = [
- "async-trait",
- "crossbeam-channel 0.5.1",
  "dashmap",
  "fnv",
+ "futures",
+ "js-sys",
+ "lazy_static",
+ "thiserror",
+]
+
+[[package]]
+name = "opentelemetry"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1cf9b1c4e9a6c4de793c632496fa490bdc0e1eea73f0c91394f7b6990935d22"
+dependencies = [
+ "async-trait",
+ "crossbeam-channel 0.5.1",
  "futures",
  "js-sys",
  "lazy_static",
@@ -1996,7 +2008,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e06ddda4790151e8b494f9bb32720fce23722d7f395f81383b9b2934bb6356a0"
 dependencies = [
- "opentelemetry",
+ "opentelemetry 0.15.0",
  "prometheus",
  "protobuf",
 ]
