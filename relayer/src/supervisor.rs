@@ -72,7 +72,7 @@ impl Supervisor {
     /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
     pub fn new(
         config: RwArc<Config>,
-        rest_receiver: Option<rest::Receiver>,
+        rest_rx: Option<rest::Receiver>,
         telemetry: Telemetry,
     ) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
