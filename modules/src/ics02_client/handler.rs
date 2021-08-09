@@ -21,7 +21,6 @@ pub fn dispatch<Ctx>(ctx: &Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientRe
 where
     Ctx: ClientReader,
 {
-    dbg!("DISPATCH");
     match msg {
         ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),
         ClientMsg::UpdateClient(msg) => update_client::process(ctx, msg),

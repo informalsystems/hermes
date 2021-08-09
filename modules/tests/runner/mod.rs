@@ -74,13 +74,6 @@ impl IbcTestRunner {
     /// Panic if the context for `chain_id` is not found.
     pub fn chain_context(&self, chain_id: String, height: Height) -> &MockContext {
         let chain_id_struct = Self::chain_id(chain_id.clone(), height);
-        dbg!(
-            "chain_context",
-            chain_id.clone(),
-            height,
-            chain_id_struct.clone(),
-            self.clone().contexts.keys()
-        );
         self.contexts
             .get(&chain_id_struct)
             .expect("chain context should have been initialized")
@@ -90,7 +83,6 @@ impl IbcTestRunner {
     /// Panic if the context for `chain_id` is not found.
     pub fn chain_context_mut(&mut self, chain_id: String, height: Height) -> &mut MockContext {
         let chain_id_struct = Self::chain_id(chain_id.clone(), height);
-        // dbg!("chain_context_mut", chain_id.clone(), height, chain_id_struct.clone(), self.clone().contexts.keys());
         self.contexts
             .get_mut(&chain_id_struct)
             .expect("chain context should have been initialized")
@@ -360,8 +352,6 @@ impl IbcTestRunner {
                     ..header
                 };
 
-                dbg!("In upgrade tests", header, modified_header);
-
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id, modified_header);
 
@@ -389,7 +379,6 @@ impl IbcTestRunner {
                 counterparty_client_id,
             } => {
                 // get chain's context
-                // TODO_JNT: The height here is definitely suspect
                 let ctx = self.chain_context_mut(chain_id, Height::default());
 
                 // create ICS26 message and deliver it
@@ -443,7 +432,6 @@ impl IbcTestRunner {
                 counterparty_connection_id,
             } => {
                 // get chain's context
-                // TODO_JNT: The height here is definitely suspect
                 let ctx = self.chain_context_mut(chain_id, Height::default());
 
                 // create ICS26 message and deliver it
@@ -500,21 +488,12 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> Result<(), String> {
-        dbg!("STEP", step.clone());
         let result = self.apply(step.clone().action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::Ics02CreateOk => result.is_ok(),
             ActionOutcome::Ics02UpdateOk => result.is_ok(),
-            ActionOutcome::Ics07UpgradeOk => {
-                let ok = result.is_ok();
-                if ok {
-                    dbg!(result.unwrap());
-                    true
-                } else {
-                    false
-                }
-            }
+            ActionOutcome::Ics07UpgradeOk => result.is_ok(),
             ActionOutcome::Ics02ClientNotFound => matches!(
                 Self::extract_ics02_error_kind(result),
                 client_error::ErrorDetail::ClientNotFound(_)
@@ -556,9 +535,9 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
             ),
             ActionOutcome::Ics03ConnectionOpenConfirmOk => result.is_ok(),
         };
+
         // also check the state of chains
-        if outcome_matches && self.validate_chains() {
-            // TODO_JNT: this needs to be commented back in and pass. the issue is that the chain is stored in a map with the revision as part of the key. a new chain will need to be created in this map, or the key changed. TBD && self.check_chain_states(step.chains) {
+        if outcome_matches && self.validate_chains() && self.check_chain_states(step.chains) {
             Ok(())
         } else {
             Err("next_step did not conclude successfully".into())
