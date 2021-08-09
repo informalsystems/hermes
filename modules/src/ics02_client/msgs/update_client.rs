@@ -11,6 +11,7 @@ use crate::ics02_client::header::AnyHeader;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 
 pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
@@ -30,6 +31,14 @@ impl MsgUpdateAnyClient {
             header,
             signer,
         }
+    }
+
+    pub fn tagged_new<Chain>(
+        client_id: Tagged<Chain, ClientId>,
+        header: Tagged<Chain, AnyHeader>,
+        signer: Signer,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(client_id.untag(), header.untag(), signer))
     }
 }
 

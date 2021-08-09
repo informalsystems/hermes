@@ -25,7 +25,7 @@ use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::query::QueryTxRequest;
-use ibc::tagged::Tagged;
+use ibc::tagged::{DualTagged, Tagged};
 use ibc::timestamp::Timestamp;
 use ibc::tx_msg::Msg;
 use ibc::Height;
@@ -532,13 +532,15 @@ where
                 )
             })?;
 
+        let src_height = client_state.map_flipped(|c| c.latest_height());
+
         let last_update_time = self
-            .consensus_state(client_state.map(|c| c.latest_height()))?
+            .consensus_state(src_height)?
             .map_into(|s| s.timestamp());
 
         let refresh_window = client_state.map(|s| s.refresh_period()).transpose();
 
-        let elapsed = Timestamp::now().duration_since(&last_update_time);
+        let elapsed = Timestamp::now().duration_since(last_update_time.value());
 
         if client_state.value().is_frozen()
             || client_state.value().expired(elapsed.unwrap_or_default())
@@ -609,24 +611,28 @@ where
             // Get highest height smaller than target height
             cs_heights
                 .into_iter()
-                .find(|h| h < target_height.value())
+                .find(|h| h < &target_height)
                 .ok_or_else(|| {
                     ForeignClientError::missing_smaller_trusted_height(
                         self.dst_chain().id().untag(),
                         target_height.untag(),
                     )
-                    // ))
                 })?
         } else {
             cs_heights
                 .into_iter()
+                // Find consensus state heights on DstChain that is the same as trusted height for SrcChain
                 .find(|h| h == &trusted_height)
                 .ok_or_else(|| {
-                    ForeignClientError::missing_trusted_height(self.dst_chain().id(), target_height)
+                    ForeignClientError::missing_trusted_height(
+                        self.dst_chain().id().untag(),
+                        target_height.untag(),
+                    )
                 })?
         };
 
-        if trusted_height >= target_height {
+        // if trusted height on SrcChain is GTE target height of client on DstChain
+        if trusted_height.value() >= target_height.value() {
             warn!(
                 "[{}] skipping update: trusted height ({}) >= chain target height ({})",
                 self, trusted_height, target_height
@@ -639,7 +645,7 @@ where
             .build_header(trusted_height, target_height, client_state)
             .map_err(|e| {
                 ForeignClientError::client_update(
-                    self.src_chain.id(),
+                    self.src_chain.id().untag(),
                     "failed building header with error".to_string(),
                     e,
                 )
@@ -647,7 +653,7 @@ where
 
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ForeignClientError::client_update(
-                self.dst_chain.id(),
+                self.dst_chain.id().untag(),
                 "failed getting signer for dst chain".to_string(),
                 e,
             )
@@ -659,16 +665,12 @@ where
             debug!(
                 "[{}] MsgUpdateAnyClient for intermediate height {}",
                 self,
-                header.height(),
+                header.untag().height(),
             );
 
             msgs.push(
-                MsgUpdateAnyClient {
-                    header,
-                    client_id: self.id.clone(),
-                    signer: signer.clone(),
-                }
-                .to_any(),
+                MsgUpdateAnyClient::tagged_new(self.id(), header, signer.clone())
+                    .map_into(Msg::to_any),
             );
         }
 
@@ -676,34 +678,31 @@ where
             "[{}] MsgUpdateAnyClient from trusted height {} to target height {}",
             self,
             trusted_height,
-            header.height(),
+            header.untag().height(),
         );
 
         msgs.push(
-            MsgUpdateAnyClient {
-                header,
-                signer,
-                client_id: self.id.clone(),
-            }
-            .to_any(),
+            MsgUpdateAnyClient::tagged_new(self.id.clone(), header, signer).map_into(Msg::to_any),
         );
 
         Ok(msgs)
     }
 
-    pub fn build_latest_update_client_and_send(&self) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        self.build_update_client_and_send(Height::zero(), Height::zero())
+    pub fn build_latest_update_client_and_send(
+        &self,
+    ) -> Result<Vec<Tagged<DstChain, IbcEvent>>, ForeignClientError> {
+        self.build_update_client_and_send(Height::tagged_zero(), Height::tagged_zero())
     }
 
     pub fn build_update_client_and_send(
         &self,
-        height: Height,
-        trusted_height: Height,
-    ) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        let h = if height == Height::zero() {
+        height: Tagged<SrcChain, Height>,
+        trusted_height: Tagged<SrcChain, Height>,
+    ) -> Result<Vec<Tagged<DstChain, IbcEvent>>, ForeignClientError> {
+        let h = if height.value().is_zero() {
             self.src_chain.query_latest_height().map_err(|e| {
                 ForeignClientError::client_update(
-                    self.src_chain.id(),
+                    self.src_chain.id().untag(),
                     "failed while querying src chain ({}) for latest height".to_string(),
                     e,
                 )
@@ -715,15 +714,15 @@ where
         let new_msgs = self.build_update_client_with_trusted(h, trusted_height)?;
         if new_msgs.is_empty() {
             return Err(ForeignClientError::client_already_up_to_date(
-                self.id.clone(),
-                self.src_chain.id(),
-                h,
+                self.id().untag(),
+                self.src_chain.id().untag(),
+                h.untag(),
             ));
         }
 
         let events = self.dst_chain().send_msgs(new_msgs).map_err(|e| {
             ForeignClientError::client_update(
-                self.dst_chain.id(),
+                self.dst_chain.id().untag(),
                 "failed sending message to dst chain".to_string(),
                 e,
             )
@@ -752,7 +751,7 @@ where
         let request = QueryClientEventRequest {
             height: Height::zero(),
             event_id: IbcEventType::UpdateClient,
-            client_id: self.id.clone(),
+            client_id: self.id().untag(),
             consensus_height,
         };
 
@@ -764,8 +763,8 @@ where
                 .query_txs(QueryTxRequest::Client(request.clone()))
                 .map_err(|e| {
                     ForeignClientError::client_event_query(
-                        self.id().clone(),
-                        self.dst_chain.id(),
+                        self.id().untag(),
+                        self.dst_chain.id().untag(),
                         consensus_height,
                         e,
                     )
@@ -798,8 +797,8 @@ where
         let event = events[0].clone();
         let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
             ForeignClientError::unexpected_event(
-                self.id().clone(),
-                self.dst_chain.id(),
+                self.id().untag(),
+                self.dst_chain.id().untag(),
                 event.to_json(),
             )
         })?;
@@ -811,7 +810,8 @@ where
     /// installed by the `CreateClient` operation.
     fn consensus_states(
         &self,
-    ) -> Result<Vec<Tagged<DstChain, AnyConsensusStateWithHeight>>, ForeignClientError> {
+    ) -> Result<Vec<DualTagged<DstChain, SrcChain, AnyConsensusStateWithHeight>>, ForeignClientError>
+    {
         let mut consensus_states = self
             .dst_chain
             .query_consensus_states(QueryConsensusStatesRequest {
@@ -819,22 +819,23 @@ where
                 pagination: ibc_proto::cosmos::base::query::pagination::all(),
             })
             .map_err(|e| {
-                ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
+                ForeignClientError::client_query(self.id().untag(), self.src_chain.id().untag(), e)
             })?;
         consensus_states.sort_by_key(|a| std::cmp::Reverse(a.height));
-        Ok(consensus_states)
+
+        Ok(consensus_states.into_iter().map(DualTagged::new).collect())
     }
 
     /// Returns the consensus state at `height` or error if not found.
     fn consensus_state(
         &self,
-        height: Tagged<DstChain, Height>,
-    ) -> Result<Tagged<DstChain, AnyConsensusState>, ForeignClientError> {
+        height: Tagged<SrcChain, Height>,
+    ) -> Result<DualTagged<DstChain, SrcChain, AnyConsensusState>, ForeignClientError> {
         let res = self
             .dst_chain
-            .query_consensus_state(self.id.clone(), height, Height::zero())
+            .query_consensus_state(self.id.clone(), height, Height::tagged_zero())
             .map_err(|e| {
-                ForeignClientError::client_query(self.id.clone(), self.dst_chain.id(), e)
+                ForeignClientError::client_query(self.id().untag(), self.dst_chain.id().untag(), e)
             })?;
 
         Ok(res)
@@ -842,11 +843,13 @@ where
 
     /// Retrieves all consensus heights for this client sorted in descending
     /// order.
-    fn consensus_state_heights(&self) -> Result<Vec<Tagged<DstChain, Height>>, ForeignClientError> {
-        let consensus_state_heights: Vec<Height> = self
+    fn consensus_state_heights(&self) -> Result<Vec<Tagged<SrcChain, Height>>, ForeignClientError> {
+        let consensus_state_heights = self
             .consensus_states()?
-            .iter()
-            .map(|cs| cs.height)
+            .into_iter()
+            // Changing the tag from DstChain to SrcChain, as the height corresponds
+            // to the SrcChain's height.
+            .map(|cs| cs.map_flipped(|s| s.height.clone()))
             .collect();
 
         Ok(consensus_state_heights)
@@ -895,7 +898,7 @@ where
         // Get the latest client state on destination.
         let client_state = self
             .dst_chain()
-            .query_client_state(&self.id, Height::zero())
+            .query_client_state(self.id(), Height::tagged_zero())
             .map_err(|e| {
                 ForeignClientError::misbehaviour(
                     format!("failed querying client state on dst chain {}", self.id),

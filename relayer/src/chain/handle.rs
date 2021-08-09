@@ -6,7 +6,7 @@ use std::{
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
-use ibc::tagged::Tagged;
+use ibc::tagged::{DualTagged, Tagged};
 use ibc::{
     events::IbcEvent,
     ics02_client::{
@@ -348,7 +348,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         &self,
         client_id: Tagged<Self, ClientId>,
         height: Tagged<Self, Height>,
-    ) -> Result<Tagged<Self, AnyClientState>, Error>;
+    ) -> Result<DualTagged<Self, Counterparty, AnyClientState>, Error>;
 
     fn query_client_connections(
         &self,
@@ -363,9 +363,9 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
     fn query_consensus_state(
         &self,
         client_id: Tagged<Self, ClientId>,
-        consensus_height: Tagged<Self, Height>,
+        consensus_height: Tagged<Counterparty, Height>,
         query_height: Tagged<Self, Height>,
-    ) -> Result<Tagged<Self, AnyConsensusState>, Error>;
+    ) -> Result<DualTagged<Self, Counterparty, AnyConsensusState>, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -442,8 +442,14 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         &self,
         trusted_height: Tagged<Self, Height>,
         target_height: Tagged<Self, Height>,
-        client_state: Tagged<Self, AnyClientState>,
-    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
+        client_state: DualTagged<Counterparty, Self, AnyClientState>,
+    ) -> Result<
+        (
+            Tagged<Counterparty, AnyHeader>,
+            Vec<Tagged<Counterparty, AnyHeader>>,
+        ),
+        Error,
+    >;
 
     /// Constructs a client state at the given height
     fn build_client_state(

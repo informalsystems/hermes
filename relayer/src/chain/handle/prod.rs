@@ -9,7 +9,7 @@ use ibc::ics02_client::events::UpdateClient;
 use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
-use ibc::tagged::Tagged;
+use ibc::tagged::{DualTagged, Tagged};
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
@@ -134,14 +134,14 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         &self,
         client_id: Tagged<Self, ClientId>,
         height: Tagged<Self, Height>,
-    ) -> Result<Tagged<Self, AnyClientState>, Error> {
+    ) -> Result<DualTagged<Self, Counterparty, AnyClientState>, Error> {
         let state = self.send(|reply_to| ChainRequest::QueryClientState {
             client_id: client_id.untag(),
             height: height.untag(),
             reply_to,
         })?;
 
-        Ok(Tagged::new(state))
+        Ok(DualTagged::new(state))
     }
 
     fn query_client_connections(
@@ -164,9 +164,9 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
     fn query_consensus_state(
         &self,
         client_id: Tagged<Self, ClientId>,
-        consensus_height: Tagged<Self, Height>,
+        consensus_height: Tagged<Counterparty, Height>,
         query_height: Tagged<Self, Height>,
-    ) -> Result<Tagged<Self, AnyConsensusState>, Error> {
+    ) -> Result<DualTagged<Self, Counterparty, AnyConsensusState>, Error> {
         let state = self.send(|reply_to| ChainRequest::QueryConsensusState {
             client_id: client_id.untag(),
             consensus_height: consensus_height.untag(),
@@ -174,7 +174,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
             reply_to,
         })?;
 
-        Ok(Tagged::new(state))
+        Ok(DualTagged::new(state))
     }
 
     fn query_upgraded_client_state(
@@ -352,14 +352,25 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         &self,
         trusted_height: Tagged<Self, Height>,
         target_height: Tagged<Self, Height>,
-        client_state: Tagged<Self, AnyClientState>,
-    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
-        self.send(|reply_to| ChainRequest::BuildHeader {
+        client_state: DualTagged<Counterparty, Self, AnyClientState>,
+    ) -> Result<
+        (
+            Tagged<Counterparty, AnyHeader>,
+            Vec<Tagged<Counterparty, AnyHeader>>,
+        ),
+        Error,
+    > {
+        let (header, headers) = self.send(|reply_to| ChainRequest::BuildHeader {
             trusted_height: trusted_height.untag(),
             target_height: target_height.untag(),
             client_state: client_state.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok((
+            Tagged::new(header),
+            headers.into_iter().map(Tagged::new).collect(),
+        ))
     }
 
     fn build_client_state(
