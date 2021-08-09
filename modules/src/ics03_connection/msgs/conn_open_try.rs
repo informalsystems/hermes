@@ -16,6 +16,7 @@ use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 use crate::Height;
 
@@ -37,6 +38,53 @@ pub struct MsgConnectionOpenTry {
 }
 
 impl MsgConnectionOpenTry {
+    pub fn new(
+        previous_connection_id: Option<ConnectionId>,
+        client_id: ClientId,
+        client_state: Option<AnyClientState>,
+        counterparty: Counterparty,
+        counterparty_versions: Vec<Version>,
+        proofs: Proofs,
+        delay_period: Duration,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            previous_connection_id,
+            client_id,
+            client_state,
+            counterparty,
+            counterparty_versions,
+            proofs,
+            delay_period,
+            signer,
+        }
+    }
+
+    pub fn tagged_new<ChainA, ChainB>(
+        previous_connection_id: Option<Tagged<ChainA, ConnectionId>>,
+        client_id: Tagged<ChainA, ClientId>,
+        client_state: Option<Tagged<ChainB, AnyClientState>>,
+        counterparty: Tagged<ChainB, Counterparty>,
+        counterparty_versions: Vec<Tagged<ChainB, Version>>,
+        proofs: Tagged<ChainB, Proofs>,
+        delay_period: Duration,
+        signer: Signer,
+    ) -> Tagged<ChainA, Self> {
+        Tagged::new(Self::new(
+            previous_connection_id.map(Tagged::untag),
+            client_id.untag(),
+            client_state.map(Tagged::untag),
+            counterparty.untag(),
+            counterparty_versions
+                .into_iter()
+                .map(Tagged::untag)
+                .collect(),
+            proofs.untag(),
+            delay_period,
+            signer,
+        ))
+    }
+
     /// Getter for accessing the previous connection identifier of this message.
     pub fn previous_connection_id(&self) -> &Option<ConnectionId> {
         &self.previous_connection_id

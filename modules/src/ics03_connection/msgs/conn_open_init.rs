@@ -9,6 +9,7 @@ use crate::ics03_connection::error::Error;
 use crate::ics03_connection::version::Version;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
@@ -26,6 +27,38 @@ pub struct MsgConnectionOpenInit {
 }
 
 impl MsgConnectionOpenInit {
+    pub fn new(
+        client_id: ClientId,
+        counterparty: Counterparty,
+        version: Version,
+        delay_period: Duration,
+        signer: Signer,
+    ) -> Self {
+        MsgConnectionOpenInit {
+            client_id,
+            counterparty,
+            version,
+            delay_period,
+            signer,
+        }
+    }
+
+    pub fn tagged_new<ChainA, ChainB>(
+        client_id: Tagged<ChainA, ClientId>,
+        counterparty: Tagged<ChainB, Counterparty>,
+        version: Tagged<ChainA, Version>,
+        delay_period: Duration,
+        signer: Signer,
+    ) -> Tagged<ChainA, Self> {
+        Tagged::new(Self::new(
+            client_id.untag(),
+            counterparty.untag(),
+            version.untag(),
+            delay_period,
+            signer,
+        ))
+    }
+
     /// Getter: borrow the `client_id` from this message.
     pub fn client_id(&self) -> &ClientId {
         &self.client_id

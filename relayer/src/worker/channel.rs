@@ -20,7 +20,7 @@ where
     ChainA: ChainHandle<ChainB>,
     ChainB: ChainHandle<ChainA>,
 {
-    channel: Channel,
+    channel: Channel<ChainA, ChainB>,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
 
@@ -34,7 +34,7 @@ where
     ChainB: ChainHandle<ChainA>,
 {
     pub fn new(
-        channel: Channel,
+        channel: Channel<ChainA, ChainB>,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
@@ -141,7 +141,7 @@ where
     }
 
     /// Get a reference to the client worker's object.
-    pub fn object(&self) -> &Channel {
+    pub fn object(&self) -> &Channel<ChainA, ChainB> {
         &self.channel
     }
 }

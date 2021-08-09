@@ -34,16 +34,16 @@ impl MsgChannelOpenConfirm {
         }
     }
 
-    pub fn tagged_new<Chain>(
+    pub fn tagged_new<Chain, Counterparty>(
         port_id: Tagged<Chain, PortId>,
         channel_id: Tagged<Chain, ChannelId>,
-        proofs: Proofs,
+        proofs: Tagged<Counterparty, Proofs>,
         signer: Signer,
     ) -> Tagged<Chain, Self> {
         Tagged::new(Self::new(
             port_id.untag(),
             channel_id.untag(),
-            proofs,
+            proofs.untag(),
             signer,
         ))
     }

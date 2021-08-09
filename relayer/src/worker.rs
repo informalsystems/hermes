@@ -58,8 +58,8 @@ impl fmt::Display for WorkerId {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum WorkerMsg {
-    Stopped(WorkerId, Object),
+pub enum WorkerMsg<Chain, Counterparty> {
+    Stopped(WorkerId, Object<Chain, Counterparty>),
 }
 
 /// A worker processes batches of events associated with a given [`Object`].
@@ -93,11 +93,11 @@ where
     pub fn spawn(
         chains: ChainHandlePair<ChainA, ChainB>,
         id: WorkerId,
-        object: Object,
-        msg_tx: Sender<WorkerMsg>,
+        object: Object<ChainA, ChainB>,
+        msg_tx: Sender<WorkerMsg<ChainA, ChainB>>,
         telemetry: Telemetry,
         config: &Config,
-    ) -> WorkerHandle {
+    ) -> WorkerHandle<ChainA, ChainB> {
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
 
         debug!("spawning worker for object {}", object.short_name(),);
@@ -132,7 +132,7 @@ where
     }
 
     /// Run the worker event loop.
-    fn run(self, msg_tx: Sender<WorkerMsg>) {
+    fn run(self, msg_tx: Sender<WorkerMsg<ChainA, ChainB>>) {
         let id = self.id();
         let object = self.object();
         let name = format!("{}#{}", object.short_name(), id);
@@ -176,7 +176,7 @@ where
         }
     }
 
-    fn object(&self) -> Object {
+    fn object(&self) -> Object<ChainA, ChainB> {
         match self {
             Worker::Client(_, w) => w.object().clone().into(),
             Worker::Connection(_, w) => w.object().clone().into(),

@@ -12,6 +12,7 @@ use tracing::{debug, error, info, trace, warn};
 use ibc::{
     events::IbcEvent,
     ics24_host::identifier::{ChainId, ChannelId, PortId},
+    tagged::Tagged,
     Height,
 };
 
@@ -53,22 +54,31 @@ pub type RwArc<T> = Arc<RwLock<T>>;
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
 /// worker, based on the [`Object`] associated with each event.
-pub struct Supervisor<Chain: ChainHandle> {
+pub struct Supervisor<Chain, Counterparty>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     config: RwArc<Config>,
-    registry: Registry<Chain>,
-    workers: WorkerMap,
+    registry: Registry<Chain, Counterparty>,
+    workers: WorkerMap<Chain, Counterparty>,
 
-    cmd_rx: Receiver<SupervisorCmd>,
-    worker_msg_rx: Receiver<WorkerMsg>,
+    cmd_rx: Receiver<SupervisorCmd<Chain, Counterparty>>,
+    worker_msg_rx: Receiver<WorkerMsg<Chain, Counterparty>>,
     client_state_filter: FilterPolicy,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
 }
 
-impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
+impl<Chain, Counterparty> Supervisor<Chain, Counterparty>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn new(config: RwArc<Config>, telemetry: Telemetry) -> (Self, Sender<SupervisorCmd>) {
+    pub fn new(
+        config: RwArc<Config>,
+        telemetry: Telemetry,
+    ) -> (Self, Sender<SupervisorCmd<Chain, Counterparty>>) {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
@@ -121,7 +131,11 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             .packets_on_channel_allowed(chain_id, port_id, channel_id)
     }
 
-    fn relay_on_object(&mut self, chain_id: &ChainId, object: &Object) -> bool {
+    fn relay_on_object(
+        &mut self,
+        chain_id: &ChainId,
+        object: &Object<Chain, Counterparty>,
+    ) -> bool {
         // No filter is enabled, bail fast.
         if !self.channel_filter_enabled() && !self.client_filter_enabled() {
             return true;
@@ -176,9 +190,9 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// and maps each [`IbcEvent`] to their corresponding [`Object`].
     pub fn collect_events(
         &self,
-        src_chain: &impl ChainHandle,
+        src_chain: &Chain,
         batch: &EventBatch,
-    ) -> CollectedEvents {
+    ) -> CollectedEvents<Chain, Counterparty> {
         let mut collected = CollectedEvents::new(batch.height, batch.chain_id.clone());
 
         let handshake_enabled = self
@@ -213,7 +227,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
                     let object = event
                         .connection_attributes()
-                        .map(|attr| Object::connection_from_conn_open_events(attr, src_chain));
+                        .map(|attr| Object::connection_from_conn_open_events(&attr, src_chain));
 
                     if let Some(Ok(object)) = object {
                         collected
@@ -230,7 +244,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
                     let object = event
                         .channel_attributes()
-                        .map(|attr| Object::channel_from_chan_open_events(attr, src_chain));
+                        .map(|attr| Object::channel_from_chan_open_events(&attr, src_chain));
 
                     if let Some(Ok(object)) = object {
                         collected
@@ -340,7 +354,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     }
 
     /// Create a new `SpawnContext` for spawning workers.
-    fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_, Chain> {
+    fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_, Chain, Counterparty> {
         SpawnContext::new(
             &self.config,
             &mut self.registry,
@@ -429,7 +443,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     ///
     /// Returns an [`CmdEffect`] which instructs the caller as to
     /// whether or not the event subscriptions needs to be reset or not.
-    fn handle_cmd(&mut self, cmd: SupervisorCmd) -> CmdEffect {
+    fn handle_cmd(&mut self, cmd: SupervisorCmd<Chain, Counterparty>) -> CmdEffect {
         match cmd {
             SupervisorCmd::UpdateConfig(update) => self.update_config(update),
             SupervisorCmd::DumpState(reply_to) => self.dump_state(reply_to),
@@ -438,7 +452,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
-    fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
+    fn dump_state(&self, reply_to: Sender<SupervisorState<Chain, Counterparty>>) -> CmdEffect {
         let chains = self.registry.chains().map(|c| c.id()).collect_vec();
         let state = SupervisorState::new(chains, self.workers.objects());
         let _ = reply_to.try_send(state);
@@ -548,7 +562,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     }
 
     /// Process the given [`WorkerMsg`] sent by a worker.
-    fn handle_worker_msg(&mut self, msg: WorkerMsg) {
+    fn handle_worker_msg(&mut self, msg: WorkerMsg<Chain, Counterparty>) {
         match msg {
             WorkerMsg::Stopped(id, object) => {
                 self.workers.remove_stopped(id, object);
@@ -650,18 +664,18 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
 
 /// Describes the result of [`collect_events`].
 #[derive(Clone, Debug)]
-pub struct CollectedEvents {
+pub struct CollectedEvents<Chain, Counterparty> {
     /// The height at which these events were emitted from the chain.
-    pub height: Height,
+    pub height: Tagged<Chain, Height>,
     /// The chain from which the events were emitted.
-    pub chain_id: ChainId,
+    pub chain_id: Tagged<Chain, ChainId>,
     /// [`NewBlock`] event collected from the [`EventBatch`].
-    pub new_block: Option<IbcEvent>,
+    pub new_block: Option<Tagged<Chain, IbcEvent>>,
     /// Mapping between [`Object`]s and their associated [`IbcEvent`]s.
-    pub per_object: HashMap<Object, Vec<IbcEvent>>,
+    pub per_object: HashMap<Object<Chain, Counterparty>, Vec<IbcEvent>>,
 }
 
-impl CollectedEvents {
+impl<Chain, Counterparty> CollectedEvents<Chain, Counterparty> {
     pub fn new(height: Height, chain_id: ChainId) -> Self {
         Self {
             height,

@@ -145,7 +145,7 @@ where
         return Err(Error::channel_uninitialized(
             port_id.untag(),
             channel_id.untag(),
-            chain.id(),
+            chain.id().untag(),
         ));
     }
 
@@ -153,7 +153,9 @@ where
         .connection_hops()
         .first()
         .map(Clone::clone)
-        .ok_or_else(|| Error::missing_connection_hops(channel_id.value().clone(), chain.id()))?;
+        .ok_or_else(|| {
+            Error::missing_connection_hops(channel_id.value().clone(), chain.id().value().clone())
+        })?;
 
     let connection_end = chain
         .query_connection(connection_id, Height::tagged_zero())
@@ -163,7 +165,7 @@ where
         return Err(Error::connection_not_open(
             connection_id.untag(),
             channel_id.untag(),
-            chain.id(),
+            chain.id().untag(),
         ));
     }
 
@@ -300,7 +302,7 @@ pub fn check_channel_counterparty<Chain: ChainHandle>(
             target_pchan.map(|c| c.channel_id.clone()),
             Height::tagged_zero(),
         )
-        .map_err(|e| ChannelError::query(target_chain.id(), e))?;
+        .map_err(|e| ChannelError::query(target_chain.id().value().clone(), e))?;
 
     let counterparty = channel_end_dst.counterparty();
     let m_actual_port_channel_id = counterparty
@@ -317,7 +319,7 @@ pub fn check_channel_counterparty<Chain: ChainHandle>(
         Some(actual_port_channel_id) => {
             if actual_port_channel_id != expected {
                 return Err(ChannelError::mismatch_channel_ends(
-                    target_chain.id(),
+                    target_chain.id().untag(),
                     target_pchan.untag(),
                     expected.untag(),
                     actual_port_channel_id.untag(),
@@ -331,7 +333,7 @@ pub fn check_channel_counterparty<Chain: ChainHandle>(
                 target_chain.id()
             );
             return Err(ChannelError::incomplete_channel_state(
-                target_chain.id(),
+                target_chain.id().untag(),
                 target_pchan.untag(),
             ));
         }

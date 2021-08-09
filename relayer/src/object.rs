@@ -3,11 +3,14 @@ use serde::{Deserialize, Serialize};
 
 use ibc::{
     ics02_client::{client_state::ClientState, events::UpdateClient},
-    ics03_connection::events::Attributes as ConnectionAttributes,
+    ics03_connection::events::{
+        Attributes as ConnectionAttributes, TaggedAttributes as TaggedConnectionAttributes,
+    },
     ics04_channel::events::{
         Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
     },
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    tagged::Tagged,
     Height,
 };
 
@@ -23,42 +26,44 @@ use crate::supervisor::Error as SupervisorError;
 
 /// Client
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct Client {
+pub struct Client<DstChain, SrcChain> {
     /// Destination chain identifier.
     /// This is the chain hosting the client.
-    pub dst_chain_id: ChainId,
+    pub dst_chain_id: Tagged<DstChain, ChainId>,
 
     /// Client identifier (allocated on the destination chain `dst_chain_id`).
-    pub dst_client_id: ClientId,
+    pub dst_client_id: Tagged<DstChain, ClientId>,
 
     /// Source chain identifier.
     /// This is the chain whose headers the client worker is verifying.
-    pub src_chain_id: ChainId,
+    pub src_chain_id: Tagged<SrcChain, ChainId>,
 }
 
-impl Client {
+impl<DstChain, SrcChain> Client<DstChain, SrcChain> {
     pub fn short_name(&self) -> String {
         format!(
             "client::{}->{}:{}",
-            self.src_chain_id, self.dst_chain_id, self.dst_client_id
+            self.value().src_chain_id,
+            self.value().dst_chain_id,
+            self.value().dst_client_id
         )
     }
 }
 
 /// Connection
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct Connection {
+pub struct Connection<DstChain, SrcChain> {
     /// Destination chain identifier.
-    pub dst_chain_id: ChainId,
+    pub dst_chain_id: Tagged<DstChain, ChainId>,
 
     /// Source chain identifier.
-    pub src_chain_id: ChainId,
+    pub src_chain_id: Tagged<SrcChain, ChainId>,
 
     /// Source connection identifier.
-    pub src_connection_id: ConnectionId,
+    pub src_connection_id: Tagged<SrcChain, ConnectionId>,
 }
 
-impl Connection {
+impl<DstChain, SrcChain> Connection<DstChain, SrcChain> {
     pub fn short_name(&self) -> String {
         format!(
             "connection::{}:{} -> {}",
@@ -69,63 +74,63 @@ impl Connection {
 
 /// Channel
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct Channel {
+pub struct Channel<DstChain, SrcChain> {
     /// Destination chain identifier.
-    pub dst_chain_id: ChainId,
+    pub dst_chain_id: Tagged<DstChain, ChainId>,
 
     /// Source chain identifier.
-    pub src_chain_id: ChainId,
+    pub src_chain_id: Tagged<SrcChain, ChainId>,
 
     /// Source channel identifier.
-    pub src_channel_id: ChannelId,
+    pub src_channel_id: Tagged<SrcChain, ChannelId>,
 
     /// Source port identifier.
-    pub src_port_id: PortId,
+    pub src_port_id: Tagged<SrcChain, PortId>,
 }
 
-impl Channel {
+impl<DstChain, SrcChain> Channel<DstChain, SrcChain> {
     pub fn short_name(&self) -> String {
         format!(
             "channel::{}/{}:{} -> {}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
-    pub fn src_port_id(&self) -> &PortId {
+    pub fn src_port_id(&self) -> Tagged<SrcChain, PortId> {
         &self.src_port_id
     }
-    pub fn src_channel_id(&self) -> &ChannelId {
+    pub fn src_channel_id(&self) -> Tagged<SrcChain, ChannelId> {
         &self.src_channel_id
     }
 }
 
 /// A packet worker between a source and destination chain, and a specific channel and port.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct Packet {
+pub struct Packet<DstChain, SrcChain> {
     /// Destination chain identifier.
-    pub dst_chain_id: ChainId,
+    pub dst_chain_id: Tagged<DstChain, ChainId>,
 
     /// Source chain identifier.
-    pub src_chain_id: ChainId,
+    pub src_chain_id: Tagged<SrcChain, ChainId>,
 
     /// Source channel identifier.
-    pub src_channel_id: ChannelId,
+    pub src_channel_id: Tagged<SrcChain, ChannelId>,
 
     /// Source port identifier.
-    pub src_port_id: PortId,
+    pub src_port_id: Tagged<SrcChain, PortId>,
 }
 
-impl Packet {
+impl<DstChain, SrcChain> Packet<DstChain, SrcChain> {
     pub fn short_name(&self) -> String {
         format!(
             "packet::{}/{}:{}->{}",
             self.src_channel_id, self.src_port_id, self.src_chain_id, self.dst_chain_id,
         )
     }
-    pub fn src_port_id(&self) -> &PortId {
-        &self.src_port_id
+    pub fn src_port_id(&self) -> Tagged<SrcChain, PortId> {
+        self.src_port_id.clone()
     }
-    pub fn src_channel_id(&self) -> &ChannelId {
-        &self.src_channel_id
+    pub fn src_channel_id(&self) -> Tagged<SrcChain, ChannelId> {
+        self.src_channel_id.clone()
     }
 }
 
@@ -137,15 +142,15 @@ impl Packet {
 /// for processing.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "type")]
-pub enum Object {
+pub enum Object<DstChain, SrcChain> {
     /// See [`Client`].
-    Client(Client),
+    Client(Client<DstChain, SrcChain>),
     /// See [`Connection`].
-    Connection(Connection),
+    Connection(Connection<DstChain, SrcChain>),
     /// See [`Channel`].
-    Channel(Channel),
+    Channel(Channel<DstChain, SrcChain>),
     /// See [`Packet`].
-    Packet(Packet),
+    Packet(Packet<DstChain, SrcChain>),
 }
 
 define_error! {
@@ -184,26 +189,26 @@ define_error! {
     }
 }
 
-impl Object {
+impl<DstChain, SrcChain> Object<DstChain, SrcChain> {
     /// Returns `true` if this [`Object`] is for a [`Worker`] which is interested
     /// in new block events originating from the chain with the given [`ChainId`].
     /// Returns `false` otherwise.
-    pub fn notify_new_block(&self, src_chain_id: &ChainId) -> bool {
+    pub fn notify_new_block(&self, src_chain_id: Tagged<SrcChain, ChainId>) -> bool {
         match self {
             Object::Client(_) => false,
-            Object::Connection(c) => &c.src_chain_id == src_chain_id,
-            Object::Channel(c) => &c.src_chain_id == src_chain_id,
-            Object::Packet(p) => &p.src_chain_id == src_chain_id,
+            Object::Connection(c) => c.src_chain_id() == src_chain_id,
+            Object::Channel(c) => c.src_chain_id() == src_chain_id,
+            Object::Packet(p) => p.src_chain_id() == src_chain_id,
         }
     }
 
     /// Returns whether or not this object pertains to the given chain.
     pub fn for_chain(&self, chain_id: &ChainId) -> bool {
         match self {
-            Object::Client(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
-            Object::Connection(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
-            Object::Channel(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
-            Object::Packet(p) => &p.src_chain_id == chain_id || &p.dst_chain_id == chain_id,
+            Object::Client(c) => c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
+            Object::Connection(c) => c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
+            Object::Channel(c) => c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
+            Object::Packet(p) => p.src_chain_id == chain_id || &p.dst_chain_id == chain_id,
         }
     }
 
@@ -227,46 +232,46 @@ pub enum ObjectType {
     Packet,
 }
 
-impl From<Client> for Object {
-    fn from(c: Client) -> Self {
+impl<DstChain, SrcChain> From<Client<DstChain, SrcChain>> for Object<DstChain, SrcChain> {
+    fn from(c: Client<DstChain, SrcChain>) -> Self {
         Self::Client(c)
     }
 }
 
-impl From<Connection> for Object {
-    fn from(c: Connection) -> Self {
+impl<DstChain, SrcChain> From<Connection<DstChain, SrcChain>> for Object<DstChain, SrcChain> {
+    fn from(c: Connection<DstChain, SrcChain>) -> Self {
         Self::Connection(c)
     }
 }
 
-impl From<Channel> for Object {
-    fn from(c: Channel) -> Self {
+impl<DstChain, SrcChain> From<Channel<DstChain, SrcChain>> for Object<DstChain, SrcChain> {
+    fn from(c: Channel<DstChain, SrcChain>) -> Self {
         Self::Channel(c)
     }
 }
 
-impl From<Packet> for Object {
-    fn from(p: Packet) -> Self {
+impl<DstChain, SrcChain> From<Packet<DstChain, SrcChain>> for Object<DstChain, SrcChain> {
+    fn from(p: Packet<DstChain, SrcChain>) -> Self {
         Self::Packet(p)
     }
 }
 
-impl Object {
-    pub fn src_chain_id(&self) -> &ChainId {
+impl<DstChain, SrcChain> Object<DstChain, SrcChain> {
+    pub fn src_chain_id(&self) -> Tagged<SrcChain, ChainId> {
         match self {
-            Self::Client(ref client) => &client.src_chain_id,
-            Self::Connection(ref connection) => &connection.src_chain_id,
-            Self::Channel(ref channel) => &channel.src_chain_id,
-            Self::Packet(ref path) => &path.src_chain_id,
+            Self::Client(ref client) => client.src_chain_id(),
+            Self::Connection(ref connection) => connection.src_chain_id(),
+            Self::Channel(ref channel) => channel.src_chain_id(),
+            Self::Packet(ref path) => path.src_chain_id(),
         }
     }
 
-    pub fn dst_chain_id(&self) -> &ChainId {
+    pub fn dst_chain_id(&self) -> Tagged<DstChain, ChainId> {
         match self {
-            Self::Client(ref client) => &client.dst_chain_id,
-            Self::Connection(ref connection) => &connection.dst_chain_id,
-            Self::Channel(ref channel) => &channel.dst_chain_id,
-            Self::Packet(ref path) => &path.dst_chain_id,
+            Self::Client(ref client) => client.dst_chain_id(),
+            Self::Connection(ref connection) => connection.dst_chain_id(),
+            Self::Channel(ref channel) => channel.dst_chain_id(),
+            Self::Packet(ref path) => path.dst_chain_id(),
         }
     }
 
@@ -278,12 +283,15 @@ impl Object {
             Self::Packet(ref path) => path.short_name(),
         }
     }
+}
 
+impl<DstChain, SrcChain> Object<DstChain, SrcChain>
+where
+    DstChain: ChainHandle<SrcChain>,
+    SrcChain: ChainHandle<DstChain>,
+{
     /// Build the object associated with the given [`UpdateClient`] event.
-    pub fn for_update_client(
-        e: &UpdateClient,
-        dst_chain: &impl ChainHandle,
-    ) -> Result<Self, ObjectError> {
+    pub fn for_update_client(e: &UpdateClient, dst_chain: &DstChain) -> Result<Self, ObjectError> {
         let client_state = dst_chain
             .query_client_state(e.client_id(), Height::zero())
             .map_err(ObjectError::relayer)?;
@@ -307,8 +315,8 @@ impl Object {
 
     /// Build the client object associated with the given channel event attributes.
     pub fn client_from_chan_open_events(
-        e: &Attributes,           // The attributes of the emitted event
-        chain: &impl ChainHandle, // The chain which emitted the event
+        e: &Attributes,   // The attributes of the emitted event
+        chain: &DstChain, // The chain which emitted the event
     ) -> Result<Self, ObjectError> {
         let channel_id = e
             .channel_id()
@@ -335,8 +343,8 @@ impl Object {
 
     /// Build the Connection object associated with the given [`Open`] connection event.
     pub fn connection_from_conn_open_events(
-        e: &ConnectionAttributes,
-        src_chain: &impl ChainHandle,
+        e: &TaggedConnectionAttributes<DstChain, SrcChain>,
+        src_chain: &DstChain,
     ) -> Result<Self, ObjectError> {
         let connection_id = e
             .connection_id
@@ -357,7 +365,7 @@ impl Object {
     /// Build the Channel object associated with the given [`Open`] channel event.
     pub fn channel_from_chan_open_events(
         attributes: &Attributes,
-        src_chain: &impl ChainHandle,
+        src_chain: &DstChain,
     ) -> Result<Self, ObjectError> {
         let channel_id = attributes
             .channel_id()
@@ -379,7 +387,7 @@ impl Object {
     /// Build the Packet object associated with the given [`Open`] channel event.
     pub fn packet_from_chan_open_events(
         attributes: &Attributes,
-        src_chain: &impl ChainHandle,
+        src_chain: &DstChain,
     ) -> Result<Self, ObjectError> {
         let channel_id = attributes
             .channel_id()
@@ -399,10 +407,7 @@ impl Object {
     }
 
     /// Build the object associated with the given [`SendPacket`] event.
-    pub fn for_send_packet(
-        e: &SendPacket,
-        src_chain: &impl ChainHandle,
-    ) -> Result<Self, ObjectError> {
+    pub fn for_send_packet(e: &SendPacket, src_chain: &DstChain) -> Result<Self, ObjectError> {
         let dst_chain_id = counterparty_chain_from_channel(
             src_chain,
             &e.packet.source_channel,
@@ -422,7 +427,7 @@ impl Object {
     /// Build the object associated with the given [`WriteAcknowledgement`] event.
     pub fn for_write_ack(
         e: &WriteAcknowledgement,
-        src_chain: &impl ChainHandle,
+        src_chain: &DstChain,
     ) -> Result<Self, ObjectError> {
         let dst_chain_id = counterparty_chain_from_channel(
             src_chain,
@@ -443,7 +448,7 @@ impl Object {
     /// Build the object associated with the given [`TimeoutPacket`] event.
     pub fn for_timeout_packet(
         e: &TimeoutPacket,
-        src_chain: &impl ChainHandle,
+        src_chain: &DstChain,
     ) -> Result<Self, ObjectError> {
         let dst_chain_id = counterparty_chain_from_channel(
             src_chain,
@@ -464,7 +469,7 @@ impl Object {
     /// Build the object associated with the given [`CloseInit`] event.
     pub fn for_close_init_channel(
         e: &CloseInit,
-        src_chain: &impl ChainHandle,
+        src_chain: &DstChain,
     ) -> Result<Self, ObjectError> {
         let dst_chain_id = counterparty_chain_from_channel(src_chain, e.channel_id(), e.port_id())
             .map_err(ObjectError::supervisor)?;

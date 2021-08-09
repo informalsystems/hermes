@@ -13,9 +13,9 @@ pub enum ConfigUpdate {
 }
 
 #[derive(Clone, Debug)]
-pub enum SupervisorCmd {
+pub enum SupervisorCmd<Chain, Counterparty> {
     UpdateConfig(ConfigUpdate),
-    DumpState(Sender<SupervisorState>),
+    DumpState(Sender<SupervisorState<Chain, Counterparty>>),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

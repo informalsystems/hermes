@@ -74,14 +74,17 @@ impl FilterPolicy {
     ///
     /// May encounter errors caused by failed queries. Any such error
     /// is propagated and nothing is cached.
-    pub fn control_connection_end_and_client<Chain: ChainHandle>(
+    pub fn control_connection_end_and_client<Chain, Counterparty>(
         &mut self,
-        registry: &mut Registry<Chain>,
+        registry: &mut Registry<Chain, Counterparty>,
         chain_id: &ChainId, // Chain hosting the client & connection
         client_state: &AnyClientState,
         connection: &ConnectionEnd,
         connection_id: &ConnectionId,
-    ) -> Result<Permission, FilterError> {
+    ) -> Result<Permission, FilterError>
+    where
+        Chain: ChainHandle<Counterparty>,
+    {
         let identifier = CacheKey::Connection(chain_id.clone(), connection_id.clone());
 
         trace!(
@@ -183,11 +186,14 @@ impl FilterPolicy {
         permission
     }
 
-    pub fn control_client_object<Chain: ChainHandle>(
+    pub fn control_client_object<Chain, Counterparty>(
         &mut self,
-        registry: &mut Registry<Chain>,
-        obj: &object::Client,
-    ) -> Result<Permission, FilterError> {
+        registry: &mut Registry<Chain, Counterparty>,
+        obj: &object::Client<Chain, Counterparty>,
+    ) -> Result<Permission, FilterError>
+    where
+        Chain: ChainHandle<Counterparty>,
+    {
         let identifier = CacheKey::Client(obj.dst_chain_id.clone(), obj.dst_client_id.clone());
 
         trace!(
@@ -218,11 +224,14 @@ impl FilterPolicy {
         Ok(self.control_client(&obj.dst_chain_id, &obj.dst_client_id, &client_state))
     }
 
-    pub fn control_conn_object<Chain: ChainHandle>(
+    pub fn control_conn_object<Chain, Counterparty>(
         &mut self,
-        registry: &mut Registry<Chain>,
-        obj: &object::Connection,
-    ) -> Result<Permission, FilterError> {
+        registry: &mut Registry<Chain, Counterparty>,
+        obj: &object::Connection<Chain, Counterparty>,
+    ) -> Result<Permission, FilterError>
+    where
+        Chain: ChainHandle<Counterparty>,
+    {
         let identifier =
             CacheKey::Connection(obj.src_chain_id.clone(), obj.src_connection_id.clone());
 
@@ -264,13 +273,16 @@ impl FilterPolicy {
         )
     }
 
-    fn control_channel<Chain: ChainHandle>(
+    fn control_channel<Chain, Counterparty>(
         &mut self,
-        registry: &mut Registry<Chain>,
+        registry: &mut Registry<Chain, Counterparty>,
         chain_id: &ChainId,
         port_id: &PortId,
         channel_id: &ChannelId,
-    ) -> Result<Permission, FilterError> {
+    ) -> Result<Permission, FilterError>
+    where
+        Chain: ChainHandle<Counterparty>,
+    {
         let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
 
         trace!(
@@ -327,11 +339,14 @@ impl FilterPolicy {
         Ok(permission)
     }
 
-    pub fn control_chan_object<Chain: ChainHandle>(
+    pub fn control_chan_object<Chain, Counterparty>(
         &mut self,
-        registry: &mut Registry<Chain>,
-        obj: &object::Channel,
-    ) -> Result<Permission, FilterError> {
+        registry: &mut Registry<Chain, Counterparty>,
+        obj: &object::Channel<Chain, Counterparty>,
+    ) -> Result<Permission, FilterError>
+    where
+        Chain: ChainHandle<Counterparty>,
+    {
         self.control_channel(
             registry,
             &obj.src_chain_id,
@@ -340,11 +355,14 @@ impl FilterPolicy {
         )
     }
 
-    pub fn control_packet_object<Chain: ChainHandle>(
+    pub fn control_packet_object<Chain, Counterparty>(
         &mut self,
-        registry: &mut Registry<Chain>,
-        obj: &object::Packet,
-    ) -> Result<Permission, FilterError> {
+        registry: &mut Registry<Chain, Counterparty>,
+        obj: &object::Packet<Chain, Counterparty>,
+    ) -> Result<Permission, FilterError>
+    where
+        Chain: ChainHandle<Counterparty>,
+    {
         self.control_channel(
             registry,
             &obj.src_chain_id,

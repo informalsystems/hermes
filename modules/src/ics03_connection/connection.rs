@@ -16,6 +16,7 @@ use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::tagged::Tagged;
 use crate::timestamp::ZERO_DURATION;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -301,6 +302,18 @@ impl Counterparty {
             connection_id,
             prefix,
         }
+    }
+
+    pub fn tagged_new<Chain>(
+        client_id: Tagged<Chain, ClientId>,
+        connection_id: Option<Tagged<Chain, ConnectionId>>,
+        prefix: Tagged<Chain, CommitmentPrefix>,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(
+            client_id.untag(),
+            connection_id.map(Tagged::untag),
+            prefix.untag(),
+        ))
     }
 
     /// Getter for the client id.

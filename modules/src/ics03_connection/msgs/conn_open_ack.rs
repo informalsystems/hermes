@@ -11,6 +11,7 @@ use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 use crate::Height;
 
@@ -28,6 +29,42 @@ pub struct MsgConnectionOpenAck {
 }
 
 impl MsgConnectionOpenAck {
+    pub fn new(
+        connection_id: ConnectionId,
+        counterparty_connection_id: ConnectionId,
+        client_state: Option<AnyClientState>,
+        proofs: Proofs,
+        version: Version,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            connection_id,
+            counterparty_connection_id,
+            client_state,
+            proofs,
+            version,
+            signer,
+        }
+    }
+
+    pub fn tagged_new<Chain, Counterparty>(
+        connection_id: Tagged<Chain, ConnectionId>,
+        counterparty_connection_id: Tagged<Counterparty, ConnectionId>,
+        client_state: Option<Tagged<Counterparty, AnyClientState>>,
+        proofs: Tagged<Counterparty, Proofs>,
+        version: Tagged<Counterparty, Version>,
+        signer: Signer,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(
+            connection_id.untag(),
+            counterparty_connection_id.untag(),
+            client_state.map(Tagged::untag),
+            proofs.untag(),
+            version.untag(),
+            signer,
+        ))
+    }
+
     /// Getter for accessing the connection identifier of this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id

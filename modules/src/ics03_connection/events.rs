@@ -2,6 +2,7 @@
 use crate::events::{extract_attribute, maybe_extract_attribute, Error, IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::tagged::{DualTagged, Tagged};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -65,6 +66,32 @@ pub struct Attributes {
     pub client_id: ClientId,
     pub counterparty_connection_id: Option<ConnectionId>,
     pub counterparty_client_id: ClientId,
+}
+
+pub struct TaggedAttributes<ChainA, ChainB>(pub DualTagged<ChainA, ChainB, Attributes>);
+
+impl<ChainA, ChainB> TaggedAttributes<ChainA, ChainB> {
+    pub fn height(&self) -> Tagged<ChainA, Height> {
+        self.0.map(|c| c.height)
+    }
+
+    pub fn connection_id(&self) -> Option<Tagged<ChainA, ConnectionId>> {
+        self.0.map(|c| c.connection_id.clone()).transpose()
+    }
+
+    pub fn client_id(&self) -> Tagged<ChainA, ClientId> {
+        self.0.map(|c| c.client_id.clone())
+    }
+
+    pub fn counterparty_connection_id(&self) -> Option<Tagged<ChainB, ConnectionId>> {
+        self.0
+            .map_flipped(|c| c.counterparty_connection_id.clone())
+            .transpose()
+    }
+
+    pub fn counterparty_client_id(&self) -> Tagged<ChainB, ClientId> {
+        self.0.map_flipped(|c| c.counterparty_client_id.clone())
+    }
 }
 
 fn extract_attributes(object: &RawObject, namespace: &str) -> Result<Attributes, Error> {

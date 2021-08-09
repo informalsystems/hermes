@@ -52,7 +52,7 @@ impl MsgChannelOpenTry {
         previous_channel_id: Option<Tagged<Chain, ChannelId>>,
         channel: DualTagged<Chain, Counterparty, ChannelEnd>,
         counterparty_version: String,
-        proofs: Proofs,
+        proofs: Tagged<Counterparty, Proofs>,
         signer: Signer,
     ) -> Tagged<Chain, Self> {
         Tagged::new(Self::new(
@@ -60,7 +60,7 @@ impl MsgChannelOpenTry {
             previous_channel_id.map(Tagged::untag),
             channel.untag(),
             counterparty_version,
-            proofs,
+            proofs.untag(),
             signer,
         ))
     }

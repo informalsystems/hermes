@@ -14,6 +14,7 @@ use crate::ics02_client::error::Error;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 
 pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
@@ -28,6 +29,7 @@ pub struct MsgUpgradeAnyClient {
     pub proof_upgrade_consensus_state: RawMerkleProof,
     pub signer: Signer,
 }
+
 impl MsgUpgradeAnyClient {
     pub fn new(
         client_id: ClientId,
@@ -45,6 +47,24 @@ impl MsgUpgradeAnyClient {
             proof_upgrade_consensus_state,
             signer,
         }
+    }
+
+    pub fn tagged_new<Chain, Counterparty>(
+        client_id: Tagged<Chain, ClientId>,
+        client_state: Tagged<Counterparty, AnyClientState>,
+        consensus_state: Tagged<Counterparty, AnyConsensusState>,
+        proof_upgrade_client: Tagged<Counterparty, RawMerkleProof>,
+        proof_upgrade_consensus_state: Tagged<Counterparty, RawMerkleProof>,
+        signer: Signer,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(
+            client_id.untag(),
+            client_state.untag(),
+            consensus_state.untag(),
+            proof_upgrade_client.untag(),
+            proof_upgrade_consensus_state.untag(),
+            signer,
+        ))
     }
 }
 

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crossbeam_channel::Sender;
 
 use ibc::ics24_host::identifier::ChainId;
+use ibc::tagged::Tagged;
 use tracing::{debug, trace, warn};
 
 use crate::{
@@ -17,17 +18,20 @@ use super::{Worker, WorkerHandle, WorkerId, WorkerMsg};
 
 /// Manage the lifecycle of [`Worker`]s associated with [`Object`]s.
 #[derive(Debug)]
-pub struct WorkerMap {
-    workers: HashMap<Object, WorkerHandle>,
+pub struct WorkerMap<Chain, Counterparty> {
+    workers: HashMap<Object<Chain, Counterparty>, WorkerHandle<Chain, Counterparty>>,
     latest_worker_id: WorkerId,
-    msg_tx: Sender<WorkerMsg>,
+    msg_tx: Sender<WorkerMsg<Chain, Counterparty>>,
     telemetry: Telemetry,
 }
 
-impl WorkerMap {
+impl<Chain, Counterparty> WorkerMap<Chain, Counterparty>
+where
+    Chain: ChainHandle<Counterparty> + 'static,
+{
     /// Create a new worker map, which will spawn workers with
     /// the given channel for sending messages back to the [`Supervisor`].
-    pub fn new(msg_tx: Sender<WorkerMsg>, telemetry: Telemetry) -> Self {
+    pub fn new(msg_tx: Sender<WorkerMsg<Chain, Counterparty>>, telemetry: Telemetry) -> Self {
         Self {
             workers: HashMap::new(),
             latest_worker_id: WorkerId::new(0),
@@ -37,13 +41,13 @@ impl WorkerMap {
     }
 
     /// Returns `true` if there is a spawned [`Worker`] associated with the given [`Object`].
-    pub fn contains(&self, object: &Object) -> bool {
+    pub fn contains(&self, object: &Object<Chain, Counterparty>) -> bool {
         self.workers.contains_key(object)
     }
 
     /// Remove the [`Worker`] associated with the given [`Object`] from
     /// the map and wait for its thread to terminate.
-    pub fn remove_stopped(&mut self, id: WorkerId, object: Object) -> bool {
+    pub fn remove_stopped(&mut self, id: WorkerId, object: Object<Chain, Counterparty>) -> bool {
         match self.workers.remove(&object) {
             Some(handle) if handle.id() == id => {
                 telemetry!(self.telemetry.worker(metric_type(&object), -1));
@@ -91,10 +95,10 @@ impl WorkerMap {
     /// See: [`Object::notify_new_block`]
     pub fn to_notify<'a>(
         &'a self,
-        src_chain_id: &'a ChainId,
-    ) -> impl Iterator<Item = &'a WorkerHandle> {
+        src_chain_id: Tagged<Counterparty, ChainId>,
+    ) -> impl Iterator<Item = &'a WorkerHandle<Chain, Counterparty>> {
         self.workers.iter().filter_map(move |(o, w)| {
-            if o.notify_new_block(src_chain_id) {
+            if o.notify_new_block(src_chain_id.clone()) {
                 Some(w)
             } else {
                 None
@@ -106,13 +110,13 @@ impl WorkerMap {
     /// with the given [`Object`].
     ///
     /// This function will spawn a new [`Worker`] if one does not exists already.
-    pub fn get_or_spawn<Chain: ChainHandle + 'static>(
+    pub fn get_or_spawn(
         &mut self,
-        object: Object,
+        object: Object<Chain, Counterparty>,
         src: Chain,
         dst: Chain,
         config: &Config,
-    ) -> &WorkerHandle {
+    ) -> &WorkerHandle<Chain, Counterparty> {
         if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
@@ -124,11 +128,11 @@ impl WorkerMap {
     /// Spawn a new [`Worker`], only if one does not exists already.
     ///
     /// Returns whether or not the worker was actually spawned.
-    pub fn spawn<Chain: ChainHandle + 'static>(
+    pub fn spawn(
         &mut self,
         src: Chain,
         dst: Chain,
-        object: &Object,
+        object: &Object<Chain, Counterparty>,
         config: &Config,
     ) -> bool {
         if !self.workers.contains_key(object) {
@@ -141,13 +145,13 @@ impl WorkerMap {
     }
 
     /// Force spawn a worker for the given [`Object`].
-    fn spawn_worker<Chain: ChainHandle + 'static>(
+    fn spawn_worker(
         &mut self,
         src: Chain,
         dst: Chain,
-        object: &Object,
+        object: &Object<Chain, Counterparty>,
         config: &Config,
-    ) -> WorkerHandle {
+    ) -> WorkerHandle<Chain, Counterparty> {
         telemetry!(self.telemetry.worker(metric_type(object), 1));
 
         Worker::spawn(
@@ -168,7 +172,7 @@ impl WorkerMap {
 
     /// List the [`Object`]s for which there is an associated worker
     /// for the given chain.
-    pub fn objects_for_chain(&self, chain_id: &ChainId) -> Vec<Object> {
+    pub fn objects_for_chain(&self, chain_id: &ChainId) -> Vec<Object<Chain, Counterparty>> {
         self.workers
             .keys()
             .filter(|o| o.for_chain(chain_id))
@@ -177,7 +181,7 @@ impl WorkerMap {
     }
 
     /// List the [`WorkerHandle`]s associated with the given chain.
-    pub fn workers_for_chain(&self, chain_id: &ChainId) -> Vec<&WorkerHandle> {
+    pub fn workers_for_chain(&self, chain_id: &ChainId) -> Vec<&WorkerHandle<Chain, Counterparty>> {
         self.workers
             .iter()
             .filter_map(|(o, h)| o.for_chain(chain_id).then(|| h))
@@ -185,7 +189,7 @@ impl WorkerMap {
     }
 
     /// Shutdown the worker associated with the given [`Object`].
-    pub fn shutdown_worker(&mut self, object: &Object) {
+    pub fn shutdown_worker(&mut self, object: &Object<Chain, Counterparty>) {
         if let Some(handle) = self.workers.remove(object) {
             telemetry!(self.telemetry.worker(metric_type(object), -1));
 
@@ -202,7 +206,7 @@ impl WorkerMap {
     }
 
     /// Get an iterator over the worker map's objects.
-    pub fn objects(&self) -> impl Iterator<Item = (WorkerId, &Object)> {
+    pub fn objects(&self) -> impl Iterator<Item = (WorkerId, &Object<Chain, Counterparty>)> {
         self.workers
             .iter()
             .map(|(object, handle)| (handle.id(), object))
@@ -210,7 +214,9 @@ impl WorkerMap {
 }
 
 #[cfg(feature = "telemetry")]
-fn metric_type(o: &Object) -> ibc_telemetry::state::WorkerType {
+fn metric_type<Chain, Counterparty>(
+    o: &Object<Chain, Counterparty>,
+) -> ibc_telemetry::state::WorkerType {
     use ibc_telemetry::state::WorkerType::*;
     match o {
         Object::Client(_) => Client,

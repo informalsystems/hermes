@@ -11,28 +11,32 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct WorkerDesc {
+pub struct WorkerDesc<Chain, Counterparty> {
     pub id: WorkerId,
-    pub object: Object,
+    pub object: Object<Chain, Counterparty>,
 }
 
-impl WorkerDesc {
-    pub fn new(id: WorkerId, object: Object) -> Self {
+impl<Chain, Counterparty> WorkerDesc<Chain, Counterparty> {
+    pub fn new(id: WorkerId, object: Object<Chain, Counterparty>) -> Self {
         Self { id, object }
     }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct SupervisorState {
+pub struct SupervisorState<Chain, Counterparty> {
     pub chains: Vec<ChainId>,
-    pub workers: BTreeMap<ObjectType, Vec<WorkerDesc>>,
+    pub workers: BTreeMap<ObjectType, Vec<WorkerDesc<Chain, Counterparty>>>,
 }
 
-impl SupervisorState {
+impl<Chain, Counterparty> SupervisorState<Chain, Counterparty> {
     pub fn new<'a>(
         mut chains: Vec<ChainId>,
-        workers: impl Iterator<Item = (WorkerId, &'a Object)>,
-    ) -> Self {
+        workers: impl Iterator<Item = (WorkerId, &'a Object<Chain, Counterparty>)>,
+    ) -> Self
+    where
+        Chain: 'a,
+        Counterparty: 'a,
+    {
         chains.sort();
 
         let workers = workers
@@ -52,7 +56,7 @@ impl SupervisorState {
     }
 }
 
-impl fmt::Display for SupervisorState {
+impl<Chain, Counterparty> fmt::Display for SupervisorState<Chain, Counterparty> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f)?;
         writeln!(f, "* Chains: {}", self.chains.iter().join(", "))?;

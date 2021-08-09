@@ -316,7 +316,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
     fn new(chain_id: ChainId, sender: crossbeam_channel::Sender<ChainRequest>) -> Self;
 
     /// Get the [`ChainId`] of this chain.
-    fn id(&self) -> ChainId;
+    fn id(&self) -> Tagged<Self, ChainId>;
 
     /// Shutdown the chain runtime.
     fn shutdown(&self) -> Result<(), Error>;
@@ -370,16 +370,16 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
     fn query_upgraded_client_state(
         &self,
         height: Tagged<Self, Height>,
-    ) -> Result<(Tagged<Self, AnyClientState>, MerkleProof), Error>;
+    ) -> Result<(Tagged<Self, AnyClientState>, Tagged<Self, MerkleProof>), Error>;
 
     fn query_upgraded_consensus_state(
         &self,
         height: Tagged<Self, Height>,
-    ) -> Result<(Tagged<Self, AnyConsensusState>, MerkleProof), Error>;
+    ) -> Result<(Tagged<Self, AnyConsensusState>, Tagged<Self, MerkleProof>), Error>;
 
-    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
+    fn query_commitment_prefix(&self) -> Result<Tagged<Self, CommitmentPrefix>, Error>;
 
-    fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
+    fn query_compatible_versions(&self) -> Result<Vec<Tagged<Self, Version>>, Error>;
 
     fn query_connection(
         &self,
@@ -471,14 +471,14 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         connection_id: Tagged<Self, ConnectionId>,
         client_id: Tagged<Self, ClientId>,
         height: Tagged<Self, Height>,
-    ) -> Result<(Option<Tagged<Self, AnyClientState>>, Proofs), Error>;
+    ) -> Result<(Option<Tagged<Self, AnyClientState>>, Tagged<Self, Proofs>), Error>;
 
     fn build_channel_proofs(
         &self,
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
         height: Tagged<Self, Height>,
-    ) -> Result<Proofs, Error>;
+    ) -> Result<Tagged<Self, Proofs>, Error>;
 
     fn build_packet_proofs(
         &self,

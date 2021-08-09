@@ -229,7 +229,7 @@ where
         }
     }
 
-    pub fn chain_id(&self) -> ChainId {
+    pub fn chain_id(&self) -> Tagged<Chain, ChainId> {
         self.chain.id()
     }
 
@@ -283,27 +283,27 @@ where
         let version = version.unwrap_or(
             b_side_chain
                 .module_version(b_port)
-                .map_err(|e| ChannelError::query(b_side_chain.id(), e))?,
+                .map_err(|e| ChannelError::query(b_side_chain.id().value().clone(), e))?,
         );
 
-        let src_connection_id = connection
-            .src_connection_id()
-            .ok_or_else(|| ChannelError::missing_local_connection(connection.src_chain().id()))?;
-        let dst_connection_id = connection
-            .dst_connection_id()
-            .ok_or_else(|| ChannelError::missing_local_connection(connection.dst_chain().id()))?;
+        let src_connection_id = connection.src_connection_id().ok_or_else(|| {
+            ChannelError::missing_local_connection(connection.src_chain().id().value().clone())
+        })?;
+        let dst_connection_id = connection.dst_connection_id().ok_or_else(|| {
+            ChannelError::missing_local_connection(connection.dst_chain().id().value().clone())
+        })?;
 
         let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
-                connection.src_chain(),
+                connection.src_chain().clone(),
                 connection.src_client_id().clone(),
                 src_connection_id.clone(),
                 a_port,
                 Default::default(),
             ),
             b_side: ChannelSide::new(
-                connection.dst_chain(),
+                connection.dst_chain().clone(),
                 connection.dst_client_id().clone(),
                 dst_connection_id.clone(),
                 b_port,
@@ -353,7 +353,7 @@ where
 
         let version = counterparty_chain
             .module_version(counterparty_port_id)
-            .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
+            .map_err(|e| ChannelError::query(counterparty_chain.id().untag(), e))?;
 
         Ok(Channel {
             // The event does not include the channel ordering.
@@ -386,11 +386,11 @@ where
     pub fn restore_from_state(
         chain: ChainA,
         counterparty_chain: ChainB,
-        channel: Tagged<ChainA, WorkerChannelObject>,
+        channel: WorkerChannelObject<ChainB, ChainA>,
         height: Tagged<ChainA, Height>,
     ) -> Result<(Channel<ChainA, ChainB>, State), ChannelError> {
-        let src_port_id = channel.map(|c| c.src_port_id.clone());
-        let src_channel_id = channel.map(|c| c.src_channel_id.clone());
+        let src_port_id = channel.src_port_id();
+        let src_channel_id = channel.src_channel_id();
 
         let a_channel = chain
             .query_channel(src_port_id, src_channel_id, height)
@@ -402,8 +402,8 @@ where
             .map(Clone::clone)
             .ok_or_else(|| {
                 ChannelError::supervisor(SupervisorError::missing_connection_hops(
-                    channel.untag().src_channel_id,
-                    chain.id(),
+                    src_channel_id.untag(),
+                    chain.id().untag(),
                 ))
             })?;
 
@@ -416,7 +416,7 @@ where
         let b_connection_id = b_connection.connection_id().ok_or_else(|| {
             ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
                 src_channel_id.untag(),
-                chain.id(),
+                chain.id().untag(),
                 b_connection.0.untag(),
             ))
         })?;
@@ -429,8 +429,8 @@ where
                 chain.clone(),
                 a_connection.client_id(),
                 a_connection_id.clone(),
-                channel.map(|c| c.src_port_id.clone()),
-                Some(channel.map(|c| c.src_channel_id.clone())),
+                src_port_id,
+                Some(src_channel_id),
             ),
             b_side: ChannelSide::new(
                 counterparty_chain.clone(),
@@ -624,7 +624,7 @@ where
                     ChannelError::handshake_finalize(
                         channel.src_port_id().value().clone(),
                         src_channel_id.value().clone(),
-                        channel.src_chain().id(),
+                        channel.src_chain().id().untag(),
                         e,
                     )
                 })?;
@@ -636,7 +636,7 @@ where
                     ChannelError::handshake_finalize(
                         channel.dst_port_id().value().clone(),
                         dst_channel_id.value().clone(),
-                        channel.dst_chain().id(),
+                        channel.dst_chain().id().untag(),
                         e,
                     )
                 })?;
@@ -825,7 +825,7 @@ where
 
     pub fn build_update_client_on_dst(
         &self,
-        height: Height,
+        height: Tagged<ChainA, Height>,
     ) -> Result<Vec<Tagged<ChainB, Any>>, ChannelError> {
         let client = ForeignClient::restore(
             self.dst_client_id().clone(),
@@ -836,7 +836,7 @@ where
         client.build_update_client(height).map_err(|e| {
             ChannelError::client_operation(
                 self.dst_client_id().value().clone(),
-                self.dst_chain().id(),
+                self.dst_chain().id().untag(),
                 e,
             )
         })
@@ -850,7 +850,7 @@ where
         Ok(self.version.clone().unwrap_or(
             self.dst_chain()
                 .module_version(self.dst_port_id())
-                .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?,
+                .map_err(|e| ChannelError::query(self.dst_chain().id().untag(), e))?,
         ))
     }
 
@@ -860,7 +860,7 @@ where
         Ok(self.version.clone().unwrap_or(
             self.src_chain()
                 .module_version(self.src_port_id())
-                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?,
+                .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?,
         ))
     }
 
@@ -868,7 +868,7 @@ where
         let signer = self
             .dst_chain()
             .get_signer()
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id().untag(), e))?;
 
         let counterparty = Counterparty::new(self.src_port_id(), None);
 
@@ -892,7 +892,7 @@ where
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::submit(self.dst_chain().id().untag(), e))?;
 
         for event in events {
             match event.value() {
@@ -947,7 +947,7 @@ where
         let dst_channel = self
             .dst_chain()
             .query_channel(self.dst_port_id(), dst_channel_id, Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id().untag(), e))?;
 
         // Check if a channel is expected to exist on destination chain
         // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
@@ -974,16 +974,16 @@ where
         let src_channel = self
             .src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?;
 
         let dst_channel = src_channel.counterparty();
         let dst_port_id = dst_channel.port_id();
 
         if dst_port_id != self.dst_port_id() {
             return Err(ChannelError::mismatch_port(
-                self.dst_chain().id(),
+                self.dst_chain().id().untag(),
                 self.dst_port_id().value().clone(),
-                self.src_chain().id(),
+                self.src_chain().id().untag(),
                 dst_port_id.untag(),
                 src_channel_id.value().clone(),
             ));
@@ -992,12 +992,12 @@ where
         // Connection must exist on destination
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id().untag(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?;
 
         let proofs = self
             .src_chain()
@@ -1005,7 +1005,7 @@ where
             .map_err(ChannelError::channel_proof)?;
 
         // Build message(s) to update client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proofs.map(|p| p.height()))?;
 
         let counterparty = Counterparty::new(self.src_port_id(), self.src_channel_id());
 
@@ -1021,7 +1021,7 @@ where
         let signer = self
             .dst_chain()
             .get_signer()
-            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id().untag(), e))?;
 
         let dst_channel = src_channel.counterparty();
 
@@ -1051,7 +1051,7 @@ where
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::submit(self.dst_chain().id().untag(), e))?;
 
         for event in events {
             match event.value() {
@@ -1085,17 +1085,17 @@ where
         // Channel must exist on source
         self.src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id().untag(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?;
 
         let proofs = self
             .src_chain()
@@ -1103,13 +1103,13 @@ where
             .map_err(ChannelError::channel_proof)?;
 
         // Build message(s) to update client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proofs.map(|p| p.height()))?;
 
         // Get signer
         let signer = self
             .dst_chain()
             .get_signer()
-            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id().untag(), e))?;
 
         // Build the domain type message
         let new_msg = MsgChannelOpenAck::tagged_new(
@@ -1138,7 +1138,7 @@ where
             let events = channel
                 .dst_chain()
                 .send_msgs(dst_msgs)
-                .map_err(|e| ChannelError::submit(channel.dst_chain().id(), e))?;
+                .map_err(|e| ChannelError::submit(channel.dst_chain().id().untag(), e))?;
 
             // Find the relevant event for channel open ack
             for event in events {
@@ -1183,17 +1183,17 @@ where
         // Channel must exist on source
         self.src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id().untag(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?;
 
         let proofs = self
             .src_chain()
@@ -1201,13 +1201,13 @@ where
             .map_err(ChannelError::channel_proof)?;
 
         // Build message(s) to update client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proofs.map(|p| p.height()))?;
 
         // Get signer
         let signer = self
             .dst_chain()
             .get_signer()
-            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id().untag(), e))?;
 
         // Build the domain type message
         let new_msg =
@@ -1232,7 +1232,7 @@ where
             let events = channel
                 .dst_chain()
                 .send_msgs(dst_msgs)
-                .map_err(|e| ChannelError::submit(channel.dst_chain().id(), e))?;
+                .map_err(|e| ChannelError::submit(channel.dst_chain().id().untag(), e))?;
 
             for event in events {
                 match event.value() {
@@ -1267,12 +1267,12 @@ where
         // Channel must exist on destination
         self.dst_chain()
             .query_channel(self.dst_port_id(), dst_channel_id, Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id().untag(), e))?;
 
         let signer = self
             .dst_chain()
             .get_signer()
-            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id().untag(), e))?;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseInit::tagged_new(self.dst_port_id(), dst_channel_id, signer);
@@ -1286,7 +1286,7 @@ where
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::submit(self.dst_chain().id().untag(), e))?;
 
         // Find the relevant event for channel close init
         for event in events {
@@ -1320,17 +1320,17 @@ where
         // Channel must exist on source
         self.src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::tagged_zero())
-            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id().untag(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id().untag(), e))?;
 
         let proofs = self
             .src_chain()
@@ -1338,13 +1338,13 @@ where
             .map_err(ChannelError::channel_proof)?;
 
         // Build message(s) to update client on destination
-        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+        let mut msgs = self.build_update_client_on_dst(proofs.map(|p| p.height()))?;
 
         // Get signer
         let signer = self
             .dst_chain()
             .get_signer()
-            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id().untag(), e))?;
 
         // Build the domain type message
         let new_msg =
@@ -1362,7 +1362,7 @@ where
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::submit(self.dst_chain().id().untag(), e))?;
 
         // Find the relevant event for channel close confirm
         for event in events {

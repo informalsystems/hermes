@@ -36,20 +36,26 @@ pub enum SpawnMode {
 }
 
 /// A context for spawning workers within the [`crate::supervisor::Supervisor`].
-pub struct SpawnContext<'a, Chain: ChainHandle> {
+pub struct SpawnContext<'a, Chain, Counterparty>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     config: &'a RwArc<Config>,
-    registry: &'a mut Registry<Chain>,
-    workers: &'a mut WorkerMap,
+    registry: &'a mut Registry<Chain, Counterparty>,
+    workers: &'a mut WorkerMap<Chain, Counterparty>,
     client_state_filter: &'a mut FilterPolicy,
     mode: SpawnMode,
 }
 
-impl<'a, Chain: ChainHandle + 'static> SpawnContext<'a, Chain> {
+impl<'a, Chain, Counterparty> SpawnContext<'a, Chain, Counterparty>
+where
+    Chain: ChainHandle<Counterparty> + 'static,
+{
     pub fn new(
         config: &'a RwArc<Config>,
-        registry: &'a mut Registry<Chain>,
+        registry: &'a mut Registry<Chain, Counterparty>,
         client_state_filter: &'a mut FilterPolicy,
-        workers: &'a mut WorkerMap,
+        workers: &'a mut WorkerMap<Chain, Counterparty>,
         mode: SpawnMode,
     ) -> Self {
         Self {

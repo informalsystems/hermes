@@ -76,8 +76,8 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         Self::new(chain_id, sender)
     }
 
-    fn id(&self) -> ChainId {
-        self.chain_id.clone()
+    fn id(&self) -> Tagged<Self, ChainId> {
+        Tagged::new(self.chain_id.clone())
     }
 
     fn shutdown(&self) -> Result<(), Error> {
@@ -180,33 +180,37 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
     fn query_upgraded_client_state(
         &self,
         height: Tagged<Self, Height>,
-    ) -> Result<(Tagged<Self, AnyClientState>, MerkleProof), Error> {
+    ) -> Result<(Tagged<Self, AnyClientState>, Tagged<Self, MerkleProof>), Error> {
         let (state, proof) = self.send(|reply_to| ChainRequest::QueryUpgradedClientState {
             height: height.untag(),
             reply_to,
         })?;
 
-        Ok((Tagged::new(state), proof))
+        Ok((Tagged::new(state), Tagged::new(proof)))
     }
 
     fn query_upgraded_consensus_state(
         &self,
         height: Tagged<Self, Height>,
-    ) -> Result<(Tagged<Self, AnyConsensusState>, MerkleProof), Error> {
+    ) -> Result<(Tagged<Self, AnyConsensusState>, Tagged<Self, MerkleProof>), Error> {
         let (state, proof) = self.send(|reply_to| ChainRequest::QueryUpgradedConsensusState {
             height: height.untag(),
             reply_to,
         })?;
 
-        Ok((Tagged::new(state), proof))
+        Ok((Tagged::new(state), Tagged::new(proof)))
     }
 
-    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        self.send(|reply_to| ChainRequest::QueryCommitmentPrefix { reply_to })
+    fn query_commitment_prefix(&self) -> Result<Tagged<Self, CommitmentPrefix>, Error> {
+        let prefix = self.send(|reply_to| ChainRequest::QueryCommitmentPrefix { reply_to })?;
+
+        Ok(Tagged::new(prefix))
     }
 
-    fn query_compatible_versions(&self) -> Result<Vec<Version>, Error> {
-        self.send(|reply_to| ChainRequest::QueryCompatibleVersions { reply_to })
+    fn query_compatible_versions(&self) -> Result<Vec<Tagged<Self, Version>>, Error> {
+        let versions = self.send(|reply_to| ChainRequest::QueryCompatibleVersions { reply_to })?;
+
+        Ok(versions.into_iter().map(Tagged::new).collect())
     }
 
     fn query_connection(
@@ -404,7 +408,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         connection_id: Tagged<Self, ConnectionId>,
         client_id: Tagged<Self, ClientId>,
         height: Tagged<Self, Height>,
-    ) -> Result<(Option<Tagged<Self, AnyClientState>>, Proofs), Error> {
+    ) -> Result<(Option<Tagged<Self, AnyClientState>>, Tagged<Self, Proofs>), Error> {
         let (m_state, proof) =
             self.send(
                 |reply_to| ChainRequest::BuildConnectionProofsAndClientState {
@@ -416,7 +420,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
                 },
             )?;
 
-        Ok((m_state.map(Tagged::new), proof))
+        Ok((m_state.map(Tagged::new), Tagged::new(proof)))
     }
 
     fn build_channel_proofs(
@@ -424,13 +428,15 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
         height: Tagged<Self, Height>,
-    ) -> Result<Proofs, Error> {
-        self.send(|reply_to| ChainRequest::BuildChannelProofs {
+    ) -> Result<Tagged<Self, Proofs>, Error> {
+        let proofs = self.send(|reply_to| ChainRequest::BuildChannelProofs {
             port_id: port_id.untag(),
             channel_id: channel_id.untag(),
             height: height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok(Tagged::new(proofs))
     }
 
     fn build_packet_proofs(

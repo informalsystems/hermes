@@ -10,6 +10,7 @@ use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::error::Error;
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 
 pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
@@ -39,6 +40,18 @@ impl MsgCreateAnyClient {
             consensus_state,
             signer,
         })
+    }
+
+    pub fn tagged_new<Chain, Counterparty>(
+        client_state: Tagged<Chain, AnyClientState>,
+        consensus_state: Tagged<Chain, AnyConsensusState>,
+        signer: Signer,
+    ) -> Result<Tagged<Counterparty, Self>, Error> {
+        Ok(Tagged::new(Self::new(
+            client_state.untag(),
+            consensus_state.untag(),
+            signer,
+        )?))
     }
 
     pub fn client_state(&self) -> AnyClientState {

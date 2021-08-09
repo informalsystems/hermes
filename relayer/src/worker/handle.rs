@@ -16,14 +16,14 @@ use super::error::WorkerError;
 use super::{WorkerCmd, WorkerId};
 
 /// Handle to a [`Worker`], for sending [`WorkerCmd`]s to it.
-pub struct WorkerHandle {
+pub struct WorkerHandle<Chain, Counterparty> {
     id: WorkerId,
-    object: Object,
+    object: Object<Chain, Counterparty>,
     tx: Sender<WorkerCmd>,
     thread_handle: JoinHandle<()>,
 }
 
-impl fmt::Debug for WorkerHandle {
+impl<Chain, Counterparty> fmt::Debug for WorkerHandle<Chain, Counterparty> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("WorkerHandle")
             .field("id", &self.id)
@@ -32,10 +32,10 @@ impl fmt::Debug for WorkerHandle {
     }
 }
 
-impl WorkerHandle {
+impl<Chain, Counterparty> WorkerHandle<Chain, Counterparty> {
     pub fn new(
         id: WorkerId,
-        object: Object,
+        object: Object<Chain, Counterparty>,
         tx: Sender<WorkerCmd>,
         thread_handle: JoinHandle<()>,
     ) -> Self {
@@ -98,7 +98,7 @@ impl WorkerHandle {
     }
 
     /// Get a reference to the worker's object.
-    pub fn object(&self) -> &Object {
+    pub fn object(&self) -> &Object<Chain, Counterparty> {
         &self.object
     }
 }

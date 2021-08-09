@@ -8,6 +8,7 @@ use crate::ics03_connection::error::Error;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
+use crate::tagged::Tagged;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenConfirm";
@@ -23,6 +24,22 @@ pub struct MsgConnectionOpenConfirm {
 }
 
 impl MsgConnectionOpenConfirm {
+    pub fn new(connection_id: ConnectionId, proofs: Proofs, signer: Signer) -> Self {
+        Self {
+            connection_id,
+            proofs,
+            signer,
+        }
+    }
+
+    pub fn tagged_new<Chain, Counterparty>(
+        connection_id: Tagged<Chain, ConnectionId>,
+        proofs: Tagged<Counterparty, Proofs>,
+        signer: Signer,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(connection_id.untag(), proofs.untag(), signer))
+    }
+
     /// Getter for accessing the connection identifier of this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id

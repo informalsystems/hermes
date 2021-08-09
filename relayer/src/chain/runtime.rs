@@ -95,10 +95,13 @@ where
     Endpoint: ChainEndpoint + Send + 'static,
 {
     /// Spawns a new runtime for a specific Chain implementation.
-    pub fn spawn<Handle: ChainHandle>(
+    pub fn spawn<Chain, Counterparty>(
         config: ChainConfig,
         rt: Arc<TokioRuntime>,
-    ) -> Result<Handle, Error> {
+    ) -> Result<Chain, Error>
+    where
+        Chain: ChainHandle<Counterparty> + 'static,
+    {
         // Similar to `from_config`.
         let chain = Endpoint::bootstrap(config, rt.clone())?;
 
@@ -115,17 +118,20 @@ where
     }
 
     /// Initializes a runtime for a given chain, and spawns the associated thread
-    fn init<Handle: ChainHandle>(
+    fn init<Chain, Counterparty>(
         chain: Endpoint,
         light_client: Endpoint::LightClient,
         event_receiver: EventReceiver,
         tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
-    ) -> (Handle, thread::JoinHandle<()>) {
+    ) -> (Chain, thread::JoinHandle<()>)
+    where
+        Chain: ChainHandle<Counterparty> + 'static,
+    {
         let chain_runtime = Self::new(chain, light_client, event_receiver, tx_monitor_cmd, rt);
 
         // Get a handle to the runtime
-        let handle: Handle = chain_runtime.handle();
+        let handle: Chain = chain_runtime.handle();
 
         // Spawn the runtime & return
         let id = handle.id();
@@ -160,11 +166,14 @@ where
         }
     }
 
-    pub fn handle<Handle: ChainHandle>(&self) -> Handle {
+    pub fn handle<Chain, Counterparty>(&self) -> Chain
+    where
+        Chain: ChainHandle<Counterparty>,
+    {
         let chain_id = ChainEndpoint::id(&self.chain).clone();
         let sender = self.request_sender.clone();
 
-        Handle::new(chain_id, sender)
+        Chain::new(chain_id, sender)
     }
 
     fn run(mut self) -> Result<(), Error> {

@@ -34,13 +34,13 @@ pub enum Error {
 /// Facility for reloading the relayer configuration.
 /// See [`ConfigReload::reload`].
 #[derive(Clone, Debug)]
-pub struct ConfigReload {
+pub struct ConfigReload<Chain, Counterparty> {
     path: PathBuf,
     current: Arc<RwLock<Config>>,
-    tx_cmd: Sender<SupervisorCmd>,
+    tx_cmd: Sender<SupervisorCmd<Chain, Counterparty>>,
 }
 
-impl ConfigReload {
+impl<Chain, Counterparty> ConfigReload<Chain, Counterparty> {
     /// Constructs a new [`ConfigReload`] value, by specifying
     /// the path to the configuration file to reload,
     /// the current configuration and a channel through which
@@ -49,7 +49,7 @@ impl ConfigReload {
     pub fn new(
         path: impl Into<PathBuf>,
         current: Arc<RwLock<Config>>,
-        tx_cmd: Sender<SupervisorCmd>,
+        tx_cmd: Sender<SupervisorCmd<Chain, Counterparty>>,
     ) -> Self {
         Self {
             path: path.into(),

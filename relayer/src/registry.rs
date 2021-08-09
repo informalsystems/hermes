@@ -1,5 +1,6 @@
 //! Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 
+use core::marker::PhantomData;
 use std::{collections::HashMap, sync::Arc};
 
 use flex_error::define_error;
@@ -18,10 +19,14 @@ use crate::{
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
-pub struct Registry<Chain: ChainHandle> {
+pub struct Registry<Chain, Counterparty>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     config: RwArc<Config>,
     handles: HashMap<ChainId, Chain>,
     rt: Arc<TokioRuntime>,
+    phantom: PhantomData<Counterparty>,
 }
 
 define_error! {
@@ -42,13 +47,17 @@ define_error! {
     }
 }
 
-impl<Chain: ChainHandle> Registry<Chain> {
+impl<Chain, Counterparty> Registry<Chain, Counterparty>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     /// Construct a new [`Registry`] using the provided [`Config`]
     pub fn new(config: RwArc<Config>) -> Self {
         Self {
             config,
             handles: HashMap::new(),
             rt: Arc::new(TokioRuntime::new().unwrap()),
+            phantom: PhantomData,
         }
     }
 
