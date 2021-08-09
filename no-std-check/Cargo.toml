@@ -14,7 +14,7 @@ sp-runtime = {default-features = false, version = '3.0.0', optional = true }
 sp-std = {default-features = false, version = '3.0.0', optional = true }
 
 # Dependencies that support no_std
-flex-error = { version = "0.4.1", default-features = false }
+flex-error = { version = "0.4.2", default-features = false }
 prost = { version = "0.7", default-features = false }
 prost-types = { version = "0.7", default-features = false }
 chrono = { version = "0.4.19", default-features = false }

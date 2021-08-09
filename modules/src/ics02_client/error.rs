@@ -7,7 +7,7 @@ use crate::Height;
 use std::num::TryFromIntError;
 use tendermint_proto::Error as TendermintError;
 
-use flex_error::{define_error, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
 
 define_error! {
     Error {
@@ -48,6 +48,15 @@ define_error! {
         HeaderVerificationFailure
             { reason: String }
             | e | { format_args!("header verification failed with reason: {}", e.reason) },
+
+        InvalidTrustThreshold
+            { numerator: u64, denominator: u64 }
+            | e | { format_args!("failed to build trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
+
+        FailedTrustThresholdConversion
+            { numerator: u64, denominator: u64 }
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | e | { format_args!("failed to build Tendermint domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
 
         UnknownClientStateType
             { client_state_type: String }
