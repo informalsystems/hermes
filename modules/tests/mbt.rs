@@ -1,6 +1,6 @@
 mod runner;
 
-use modelator::{ModelChecker, TestError, run_tla_steps, traces};
+use modelator::{run_tla_steps, ModelChecker, TestError};
 use runner::IbcTestRunner;
 
 #[test]
@@ -18,7 +18,7 @@ fn run_tests() -> Result<(), TestError> {
     let tla_config_file = "tests/support/model_based/IBCTests.cfg";
     let mut opts = modelator::Options::default();
     opts.model_checker_options.model_checker = ModelChecker::Tlc;
-    // println!("trace: {:#?}", traces(tla_tests_file, tla_config_file, &opts));
+
     let mut runner = IbcTestRunner::new();
     run_tla_steps(tla_tests_file, tla_config_file, &opts, &mut runner)?;
     Ok(())

@@ -40,7 +40,6 @@ use ibc::Height;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use std::convert::TryFrom;
 use step::{Action, ActionOutcome, Chain, Step};
-use tracing::field::debug;
 
 #[derive(Debug, Clone)]
 pub struct IbcTestRunner {
@@ -212,11 +211,6 @@ impl IbcTestRunner {
         .expect("it should be possible to create the proofs")
     }
 
-    /// Check that chain heights match the ones in the model.
-    pub fn validate_chains(&self) -> bool {
-        self.contexts.values().all(|ctx| ctx.validate().is_ok())
-    }
-
     /// Check that chain states match the ones in the model.
     pub fn check_chain_states(&self, chains: HashMap<String, Chain>) -> bool {
         chains.into_iter().all(|(chain_id, chain)| {
@@ -345,13 +339,6 @@ impl IbcTestRunner {
                 client_id,
                 header,
             } => {
-                let modified_header = Height {
-                    // NOTE: Since the TLA+ model does not have any provision to upgrade the actual chain (just the client), the revision number will never be
-                    // anything other than 1. If we do add upgrading of the actual chain revision to the model, this will probably fail.
-                    revision_number: 1,
-                    ..header
-                };
-
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id);
 
