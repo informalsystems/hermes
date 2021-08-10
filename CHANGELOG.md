@@ -36,6 +36,7 @@ handle errors ([#1158])
 
 [#1245]: https://github.com/informalsystems/ibc-rs/issues/1245
 
+
 ## v0.6.1
 *July 22nd, 2021*
 
