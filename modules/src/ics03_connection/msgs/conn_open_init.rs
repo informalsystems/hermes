@@ -48,14 +48,14 @@ impl MsgConnectionOpenInit {
         counterparty: Tagged<ChainB, Counterparty>,
         version: Tagged<ChainA, Version>,
         delay_period: Duration,
-        signer: Signer,
+        signer: Tagged<ChainA, Signer>,
     ) -> Tagged<ChainA, Self> {
         Tagged::new(Self::new(
             client_id.untag(),
             counterparty.untag(),
             version.untag(),
             delay_period,
-            signer,
+            signer.untag(),
         ))
     }
 

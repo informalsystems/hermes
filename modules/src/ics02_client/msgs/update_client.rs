@@ -36,9 +36,9 @@ impl MsgUpdateAnyClient {
     pub fn tagged_new<Chain>(
         client_id: Tagged<Chain, ClientId>,
         header: Tagged<Chain, AnyHeader>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
-        Tagged::new(Self::new(client_id.untag(), header.untag(), signer))
+        Tagged::new(Self::new(client_id.untag(), header.untag(), signer.untag()))
     }
 }
 

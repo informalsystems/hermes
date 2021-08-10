@@ -10,7 +10,7 @@ use ibc::tagged::Tagged;
 use ibc::{
     events::{IbcEvent, IbcEventType, PrettyEvents},
     ics04_channel::{
-        channel::{ChannelEnd, Order, QueryPacketEventDataRequest, State as ChannelState},
+        channel::{Order, QueryPacketEventDataRequest, State as ChannelState},
         events::{SendPacket, WriteAcknowledgement},
         msgs::{
             acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
@@ -32,7 +32,7 @@ use ibc_proto::ibc::core::channel::v1::{
 
 use crate::chain::handle::ChainHandle;
 use crate::channel::error::ChannelError;
-use crate::channel::Channel;
+use crate::channel::{Channel, ChannelEnd};
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
@@ -90,66 +90,72 @@ where
         self.channel.dst_client_id()
     }
 
-    pub fn src_connection_id(&self) -> &ConnectionId {
+    pub fn src_connection_id(&self) -> Tagged<ChainA, ConnectionId> {
         self.channel.src_connection_id()
     }
 
-    pub fn dst_connection_id(&self) -> &ConnectionId {
+    pub fn dst_connection_id(&self) -> Tagged<ChainB, ConnectionId> {
         self.channel.dst_connection_id()
     }
 
-    pub fn src_port_id(&self) -> &PortId {
+    pub fn src_port_id(&self) -> Tagged<ChainA, PortId> {
         self.channel.src_port_id()
     }
 
-    pub fn dst_port_id(&self) -> &PortId {
+    pub fn dst_port_id(&self) -> Tagged<ChainB, PortId> {
         self.channel.dst_port_id()
     }
 
-    pub fn src_channel_id(&self) -> Result<&ChannelId, LinkError> {
+    pub fn src_channel_id(&self) -> Result<Tagged<ChainA, ChannelId>, LinkError> {
         self.channel
             .src_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(self.src_chain().id()))
+            .ok_or_else(|| LinkError::missing_channel_id(self.src_chain().id().untag()))
     }
 
-    pub fn dst_channel_id(&self) -> Result<&ChannelId, LinkError> {
+    pub fn dst_channel_id(&self) -> Result<Tagged<ChainB, ChannelId>, LinkError> {
         self.channel
             .dst_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(self.dst_chain().id()))
+            .ok_or_else(|| LinkError::missing_channel_id(self.dst_chain().id().untag()))
     }
 
     pub fn channel(&self) -> &Channel<ChainA, ChainB> {
         &self.channel
     }
 
-    fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
+    fn src_channel(
+        &self,
+        height: Tagged<ChainA, Height>,
+    ) -> Result<ChannelEnd<ChainA, ChainB>, LinkError> {
         self.src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id()?, height)
-            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
+            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id().untag(), e)))
     }
 
-    fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
+    fn dst_channel(
+        &self,
+        height: Tagged<ChainB, Height>,
+    ) -> Result<ChannelEnd<ChainB, ChainA>, LinkError> {
         self.dst_chain()
             .query_channel(self.dst_port_id(), self.dst_channel_id()?, height)
-            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
+            .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id().untag(), e)))
     }
 
-    fn src_signer(&self) -> Result<Signer, LinkError> {
+    fn src_signer(&self) -> Result<Tagged<ChainA, Signer>, LinkError> {
         self.src_chain()
             .get_signer()
-            .map_err(|e| LinkError::signer(self.src_chain().id(), e))
+            .map_err(|e| LinkError::signer(self.src_chain().id().untag(), e))
     }
 
-    fn dst_signer(&self) -> Result<Signer, LinkError> {
+    fn dst_signer(&self) -> Result<Tagged<ChainB, Signer>, LinkError> {
         self.dst_chain()
             .get_signer()
-            .map_err(|e| LinkError::signer(self.dst_chain().id(), e))
+            .map_err(|e| LinkError::signer(self.dst_chain().id().untag(), e))
     }
 
-    pub fn dst_latest_height(&self) -> Result<Height, LinkError> {
+    pub fn dst_latest_height(&self) -> Result<Tagged<ChainB, Height>, LinkError> {
         self.dst_chain()
             .query_latest_height()
-            .map_err(|e| LinkError::query(self.dst_chain().id(), e))
+            .map_err(|e| LinkError::query(self.dst_chain().id().untag(), e))
     }
 
     fn unordered_channel(&self) -> bool {
@@ -160,36 +166,47 @@ where
         self.channel.ordering == Order::Ordered
     }
 
-    pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
+    pub fn build_update_client_on_dst(
+        &self,
+        height: Tagged<ChainA, Height>,
+    ) -> Result<Vec<Tagged<ChainB, Any>>, LinkError> {
         let client = self.restore_dst_client();
         client
             .build_update_client(height)
             .map_err(LinkError::client)
     }
 
-    pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
+    pub fn build_update_client_on_src(
+        &self,
+        height: Tagged<ChainB, Height>,
+    ) -> Result<Vec<Tagged<ChainA, Any>>, LinkError> {
         let client = self.restore_src_client();
         client
             .build_update_client(height)
             .map_err(LinkError::client)
     }
 
-    fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
+    fn build_chan_close_confirm_from_event(
+        &self,
+        event: Tagged<ChainA, IbcEvent>,
+    ) -> Result<Tagged<ChainA, Any>, LinkError> {
         let src_channel_id = self.src_channel_id()?;
+        let event_height = event.map(|e| e.height());
+
         let proofs = self
             .src_chain()
-            .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
+            .build_channel_proofs(self.src_port_id(), src_channel_id, event_height)
             .map_err(|e| LinkError::channel(ChannelError::channel_proof(e)))?;
 
         // Build the domain type message
-        let new_msg = MsgChannelCloseConfirm {
-            port_id: self.dst_port_id().clone(),
-            channel_id: src_channel_id.clone(),
+        let new_msg = MsgChannelCloseConfirm::tagged_new(
+            self.src_port_id(),
+            src_channel_id,
             proofs,
-            signer: self.dst_signer()?,
-        };
+            self.src_signer()?,
+        );
 
-        Ok(new_msg.to_any())
+        Ok(new_msg.map_into(Msg::to_any))
     }
 
     // Determines if the events received are relevant and should be processed.

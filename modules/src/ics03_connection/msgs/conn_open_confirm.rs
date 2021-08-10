@@ -35,9 +35,9 @@ impl MsgConnectionOpenConfirm {
     pub fn tagged_new<Chain, Counterparty>(
         connection_id: Tagged<Chain, ConnectionId>,
         proofs: Tagged<Counterparty, Proofs>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
-        Tagged::new(Self::new(connection_id.untag(), proofs.untag(), signer))
+        Tagged::new(Self::new(connection_id.untag(), proofs.untag(), signer.untag()))
     }
 
     /// Getter for accessing the connection identifier of this message.

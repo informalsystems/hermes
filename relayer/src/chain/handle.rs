@@ -331,7 +331,7 @@ pub trait ChainHandle<Counterparty>: Clone + Send + Sync + Serialize + Debug + '
         proto_msgs: Vec<Tagged<Self, prost_types::Any>>,
     ) -> Result<Tagged<Self, Vec<IbcEvent>>, Error>;
 
-    fn get_signer(&self) -> Result<Signer, Error>;
+    fn get_signer(&self) -> Result<Tagged<Self, Signer>, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
 

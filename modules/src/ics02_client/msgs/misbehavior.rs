@@ -40,12 +40,12 @@ impl MsgSubmitAnyMisbehaviour {
     pub fn tagged_new<Chain>(
         client_id: Tagged<Chain, ClientId>,
         misbehaviour: Tagged<Chain, AnyMisbehaviour>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
         Tagged::new(Self::new(
             client_id.untag(),
             misbehaviour.untag(),
-            signer
+            signer.untag()
         ))
     }
 }

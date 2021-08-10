@@ -5,6 +5,7 @@ use prost_types::Any;
 use tracing::{info, warn};
 
 use ibc::events::IbcEvent;
+use ibc::tagged::Tagged;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
@@ -93,13 +94,18 @@ impl OperationalData {
 
             // Fetch the client update message. Vector may be empty if the client already has the header
             // for the requested height.
-            let mut client_update_opt = match self.target {
-                OperationalDataTarget::Source => {
-                    relay_path.build_update_client_on_src(update_height)?
-                }
-                OperationalDataTarget::Destination => {
-                    relay_path.build_update_client_on_dst(update_height)?
-                }
+            // FIXME: The events returned are untagged and therefore unsafe to handle
+            let mut client_update_opt: Vec<Any> = match self.target {
+                OperationalDataTarget::Source => relay_path
+                    .build_update_client_on_src(Tagged::new(update_height))?
+                    .into_iter()
+                    .map(Tagged::untag)
+                    .collect(),
+                OperationalDataTarget::Destination => relay_path
+                    .build_update_client_on_dst(Tagged::new(update_height))?
+                    .into_iter()
+                    .map(Tagged::untag)
+                    .collect(),
             };
 
             if let Some(client_update) = client_update_opt.pop() {

@@ -45,12 +45,12 @@ impl MsgCreateAnyClient {
     pub fn tagged_new<Chain, Counterparty>(
         client_state: Tagged<Chain, AnyClientState>,
         consensus_state: Tagged<Chain, AnyConsensusState>,
-        signer: Signer,
+        signer: Tagged<Counterparty, Signer>,
     ) -> Result<Tagged<Counterparty, Self>, Error> {
         Ok(Tagged::new(Self::new(
             client_state.untag(),
             consensus_state.untag(),
-            signer,
+            signer.untag(),
         )?))
     }
 

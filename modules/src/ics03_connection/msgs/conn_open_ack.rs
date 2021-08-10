@@ -53,7 +53,7 @@ impl MsgConnectionOpenAck {
         client_state: Option<TaggedClientState<Counterparty, Chain>>,
         proofs: Tagged<Counterparty, Proofs>,
         version: Tagged<Counterparty, Version>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
         Tagged::new(Self::new(
             connection_id.untag(),
@@ -61,7 +61,7 @@ impl MsgConnectionOpenAck {
             client_state.map(TaggedClientState::untag),
             proofs.untag(),
             version.untag(),
-            signer,
+            signer.untag(),
         ))
     }
 

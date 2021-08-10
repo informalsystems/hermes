@@ -249,8 +249,7 @@ impl<ChainA, ChainB> ConnectionEnd<ChainA, ChainB> {
     }
 
     pub fn versions(&self) -> Vec<Tagged<ChainA, Version>> {
-        self.0
-            .value()
+        self.value()
             .versions()
             .into_iter()
             .map(Tagged::new)
@@ -258,15 +257,19 @@ impl<ChainA, ChainB> ConnectionEnd<ChainA, ChainB> {
     }
 
     pub fn delay_period(&self) -> Duration {
-        self.0.value().delay_period().clone()
+        self.value().delay_period().clone()
     }
 
     pub fn state_matches(&self, other: Tagged<ChainA, State>) -> bool {
-        self.0.value().state_matches(other.value())
+        self.value().state_matches(other.value())
     }
 
     pub fn client_id_matches(&self, other: Tagged<ChainA, ClientId>) -> bool {
-        self.0.value().client_id_matches(other.value())
+        self.value().client_id_matches(other.value())
+    }
+
+    pub fn value(&self) -> &connection::ConnectionEnd {
+        self.0.value()
     }
 }
 

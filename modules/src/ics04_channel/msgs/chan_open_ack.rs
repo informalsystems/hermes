@@ -51,7 +51,7 @@ impl MsgChannelOpenAck {
         counterparty_channel_id: Tagged<Counterparty, ChannelId>,
         counterparty_version: String,
         proofs: Tagged<Counterparty, Proofs>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
         Tagged::new(Self::new(
             port_id.untag(),
@@ -59,7 +59,7 @@ impl MsgChannelOpenAck {
             counterparty_channel_id.untag(),
             counterparty_version,
             proofs.untag(),
-            signer,
+            signer.untag(),
         ))
     }
 

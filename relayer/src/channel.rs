@@ -272,7 +272,7 @@ where
 {
     /// Creates a new channel on top of the existing connection. If the channel is not already
     /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
-    pub fn new(
+    pub fn create(
         connection: Connection<ChainA, ChainB>,
         ordering: Order,
         a_port: Tagged<ChainA, PortId>,

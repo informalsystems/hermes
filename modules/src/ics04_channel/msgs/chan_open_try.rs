@@ -53,7 +53,7 @@ impl MsgChannelOpenTry {
         channel: DualTagged<Chain, Counterparty, ChannelEnd>,
         counterparty_version: String,
         proofs: Tagged<Counterparty, Proofs>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
         Tagged::new(Self::new(
             port_id.untag(),
@@ -61,7 +61,7 @@ impl MsgChannelOpenTry {
             channel.untag(),
             counterparty_version,
             proofs.untag(),
-            signer,
+            signer.untag(),
         ))
     }
 

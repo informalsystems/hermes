@@ -34,9 +34,9 @@ impl MsgChannelOpenInit {
     pub fn tagged_new<Chain, Counterparty>(
         port_id: Tagged<Chain, PortId>,
         channel: DualTagged<Chain, Counterparty, ChannelEnd>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, MsgChannelOpenInit> {
-        Tagged::new(Self::new(port_id.untag(), channel.untag(), signer))
+        Tagged::new(Self::new(port_id.untag(), channel.untag(), signer.untag()))
     }
 
     /// Getter: borrow the `port_id` from this message.

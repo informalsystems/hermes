@@ -68,7 +68,7 @@ impl MsgConnectionOpenTry {
         counterparty_versions: Vec<Tagged<ChainB, Version>>,
         proofs: Tagged<ChainB, Proofs>,
         delay_period: Duration,
-        signer: Signer,
+        signer: Tagged<ChainA, Signer>,
     ) -> Tagged<ChainA, Self> {
         Tagged::new(Self::new(
             previous_connection_id.map(Tagged::untag),
@@ -81,7 +81,7 @@ impl MsgConnectionOpenTry {
                 .collect(),
             proofs.untag(),
             delay_period,
-            signer,
+            signer.untag(),
         ))
     }
 

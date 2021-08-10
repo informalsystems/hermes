@@ -3,6 +3,7 @@ use ibc::{
     ics03_connection::connection::State as ConnectionState,
     ics04_channel::channel::State as ChannelState,
     ics24_host::identifier::{ChannelId, PortChannelId, PortId},
+    tagged::Tagged,
     Height,
 };
 
@@ -57,7 +58,11 @@ where
                 Height::tagged_zero(),
             )
             .map_err(|e| {
-                LinkError::channel_not_found(a_channel_id.clone(), self.a_to_b.src_chain().id(), e)
+                LinkError::channel_not_found(
+                    a_channel_id.untag(),
+                    self.a_to_b.src_chain().id().untag(),
+                    e,
+                )
             })?;
 
         let b_channel_id = self.a_to_b.dst_channel_id()?;
@@ -65,13 +70,21 @@ where
         let b_channel = self
             .a_to_b
             .dst_chain()
-            .query_channel(self.a_to_b.dst_port_id(), b_channel_id, Height::default())
+            .query_channel(
+                self.a_to_b.dst_port_id(),
+                b_channel_id,
+                Height::tagged_zero(),
+            )
             .map_err(|e| {
-                LinkError::channel_not_found(b_channel_id.clone(), self.a_to_b.dst_chain().id(), e)
+                LinkError::channel_not_found(
+                    b_channel_id.untag(),
+                    self.a_to_b.dst_chain().id().untag(),
+                    e,
+                )
             })?;
 
-        if a_channel.state_matches(&ChannelState::Closed)
-            && b_channel.state_matches(&ChannelState::Closed)
+        if a_channel.value().state_matches(&ChannelState::Closed)
+            && b_channel.value().state_matches(&ChannelState::Closed)
         {
             Ok(true)
         } else {
@@ -82,60 +95,57 @@ where
     pub fn new_from_opts(
         a_chain: ChainA,
         b_chain: ChainB,
-        opts: LinkParameters,
+        opts: Tagged<ChainA, LinkParameters>,
     ) -> Result<Link<ChainA, ChainB>, LinkError> {
         // Check that the packet's channel on source chain is Open
-        let a_channel_id = &opts.src_channel_id;
-        let a_channel = a_chain
-            .query_channel(&opts.src_port_id, a_channel_id, Height::default())
-            .map_err(|e| LinkError::channel_not_found(a_channel_id.clone(), a_chain.id(), e))?;
+        let a_channel_id = opts.map(|o| o.src_channel_id);
+        let a_port_id = opts.map(|o| o.src_port_id);
 
-        if !a_channel.state_matches(&ChannelState::Open)
-            && !a_channel.state_matches(&ChannelState::Closed)
+        let a_channel = a_chain
+            .query_channel(a_port_id, a_channel_id, Height::tagged_zero())
+            .map_err(|e| {
+                LinkError::channel_not_found(a_channel_id.untag(), a_chain.id().untag(), e)
+            })?;
+
+        if !a_channel.value().state_matches(&ChannelState::Open)
+            && !a_channel.value().state_matches(&ChannelState::Closed)
         {
             return Err(LinkError::invalid_channel_state(
-                a_channel_id.clone(),
-                a_chain.id(),
+                a_channel_id.untag(),
+                a_chain.id().untag(),
             ));
         }
 
         let b_channel_id = a_channel
             .counterparty()
-            .channel_id
-            .clone()
-            .ok_or_else(|| LinkError::counterparty_channel_not_found(a_channel_id.clone()))?;
+            .channel_id()
+            .ok_or_else(|| LinkError::counterparty_channel_not_found(a_channel_id.untag()))?;
 
         if a_channel.connection_hops().is_empty() {
             return Err(LinkError::no_connection_hop(
-                a_channel_id.clone(),
-                a_chain.id(),
+                a_channel_id.untag(),
+                a_chain.id().untag(),
             ));
         }
 
         // Check that the counterparty details on the destination chain matches the source chain
         check_channel_counterparty(
-            b_chain.clone(),
-            &PortChannelId {
-                channel_id: b_channel_id.clone(),
-                port_id: a_channel.counterparty().port_id.clone(),
-            },
-            &PortChannelId {
-                channel_id: a_channel_id.clone(),
-                port_id: opts.src_port_id.clone(),
-            },
+            &b_chain,
+            PortChannelId::tagged_new(b_channel_id.clone(), a_channel.counterparty().port_id()),
+            PortChannelId::tagged_new(a_channel_id.clone(), a_port_id.clone()),
         )
         .map_err(LinkError::initialization)?;
 
         // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
         let a_connection = a_chain
-            .query_connection(&a_connection_id, Height::zero())
+            .query_connection(a_connection_id, Height::tagged_zero())
             .map_err(LinkError::relayer)?;
 
-        if !a_connection.state_matches(&ConnectionState::Open) {
+        if !a_connection.value().state_matches(&ConnectionState::Open) {
             return Err(LinkError::channel_not_opened(
-                a_channel_id.clone(),
-                a_chain.id(),
+                a_channel_id.untag(),
+                a_chain.id().untag(),
             ));
         }
 
@@ -145,14 +155,14 @@ where
                 a_chain,
                 a_connection.client_id().clone(),
                 a_connection_id,
-                opts.src_port_id.clone(),
-                Some(opts.src_channel_id.clone()),
+                a_port_id.clone(),
+                Some(a_channel_id.clone()),
             ),
             b_side: ChannelSide::new(
                 b_chain,
-                a_connection.counterparty().client_id().clone(),
-                a_connection.counterparty().connection_id().unwrap().clone(),
-                a_channel.counterparty().port_id.clone(),
+                a_connection.counterparty().client_id(),
+                a_connection.counterparty().connection_id().unwrap(),
+                a_channel.counterparty().port_id().clone(),
                 Some(b_channel_id),
             ),
             connection_delay: a_connection.delay_period(),

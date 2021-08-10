@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::error::ValidationError;
+use crate::tagged::Tagged;
 
 use super::validate::*;
 
@@ -389,6 +390,29 @@ impl PartialEq<str> for ChannelId {
 pub struct PortChannelId {
     pub channel_id: ChannelId,
     pub port_id: PortId,
+}
+
+impl PortChannelId {
+    pub fn new(
+        channel_id: ChannelId,
+        port_id: PortId,
+    ) -> Self
+    {
+        Self {
+            channel_id, port_id
+        }
+    }
+
+    pub fn tagged_new<Chain>(
+        channel_id: Tagged<Chain, ChannelId>,
+        port_id: Tagged<Chain, PortId>,
+    ) -> Tagged<Chain, Self>
+    {
+        Tagged::new(Self::new(
+            channel_id.untag(),
+            port_id.untag()
+        ))
+    }
 }
 
 impl std::fmt::Display for PortChannelId {

@@ -39,13 +39,13 @@ impl MsgChannelCloseConfirm {
         port_id: Tagged<Chain, PortId>,
         channel_id: Tagged<Chain, ChannelId>,
         proofs: Tagged<Counterparty, Proofs>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
         Tagged::new(Self::new(
             port_id.untag(),
             channel_id.untag(),
             proofs.untag(),
-            signer,
+            signer.untag(),
         ))
     }
 

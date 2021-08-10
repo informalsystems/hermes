@@ -103,8 +103,10 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         Ok(Tagged::new(events))
     }
 
-    fn get_signer(&self) -> Result<Signer, Error> {
-        self.send(|reply_to| ChainRequest::Signer { reply_to })
+    fn get_signer(&self) -> Result<Tagged<Self, Signer>, Error> {
+        let signer = self.send(|reply_to| ChainRequest::Signer { reply_to })?;
+
+        Ok(Tagged::new(signer))
     }
 
     fn get_key(&self) -> Result<KeyEntry, Error> {

@@ -55,7 +55,7 @@ impl MsgUpgradeAnyClient {
         consensus_state: Tagged<Counterparty, AnyConsensusState>,
         proof_upgrade_client: Tagged<Counterparty, RawMerkleProof>,
         proof_upgrade_consensus_state: Tagged<Counterparty, RawMerkleProof>,
-        signer: Signer,
+        signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
         Tagged::new(Self::new(
             client_id.untag(),
@@ -63,7 +63,7 @@ impl MsgUpgradeAnyClient {
             consensus_state.untag(),
             proof_upgrade_client.untag(),
             proof_upgrade_consensus_state.untag(),
-            signer,
+            signer.untag(),
         ))
     }
 }
