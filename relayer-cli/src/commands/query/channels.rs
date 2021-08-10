@@ -1,14 +1,14 @@
 use std::fmt::{Debug, Error, Formatter};
 
 use abscissa_core::{Options, Runnable};
-use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::Height;
 use serde::Serialize;
 
-use ibc::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics04_channel::channel::{ChannelEnd, State};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
+use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::registry::Registry;
 
 use crate::commands::query::channel_ends::ChannelEnds;
@@ -79,32 +79,23 @@ fn run_query_channels(
             })?
             .clone();
 
-        let connection_end = chain.query_connection(&connection_id, chain_height)?;
-        let client_id = connection_end.client_id().clone();
-        let client_state = chain.query_client_state(&client_id, chain_height)?;
-        let counterparty_chain_id = client_state.chain_id();
-
-        if let Some(dst_chain_id) = &cmd.destination_chain {
-            if dst_chain_id != &counterparty_chain_id {
-                continue;
-            }
-        }
-
         if cmd.verbose {
             let channel_ends = query_channel_ends(
                 &mut registry,
+                chain.as_ref(),
+                cmd.destination_chain.as_ref(),
                 channel_end,
-                connection_end,
-                client_state,
                 connection_id,
                 chain_id,
-                counterparty_chain_id,
                 port_id,
                 channel_id,
                 chain_height,
-            )?;
+            );
 
-            output.push_verbose(channel_ends);
+            match channel_ends {
+                Ok(channel_ends) => output.push_verbose(channel_ends),
+                Err(e) => error!("failed to query channel ends: {}", e),
+            }
         } else {
             output.push_summary(PortChannelId {
                 channel_id,
@@ -119,16 +110,30 @@ fn run_query_channels(
 #[allow(clippy::too_many_arguments)]
 fn query_channel_ends(
     registry: &mut Registry,
+    chain: &dyn ChainHandle,
+    destination_chain: Option<&ChainId>,
     channel_end: ChannelEnd,
-    connection_end: ConnectionEnd,
-    client_state: AnyClientState,
     connection_id: ConnectionId,
     chain_id: ChainId,
-    counterparty_chain_id: ChainId,
     port_id: PortId,
     channel_id: ChannelId,
     chain_height: Height,
 ) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
+    let connection_end = chain.query_connection(&connection_id, chain_height)?;
+    let client_id = connection_end.client_id().clone();
+    let client_state = chain.query_client_state(&client_id, chain_height)?;
+    let counterparty_chain_id = client_state.chain_id();
+
+    if let Some(dst_chain_id) = destination_chain {
+        if dst_chain_id != &counterparty_chain_id {
+            return Err(format!(
+                "mismatch between supplied destination chain ({}) and counterparty chain ({})",
+                dst_chain_id, counterparty_chain_id
+            )
+            .into());
+        }
+    }
+
     let channel_counterparty = channel_end.counterparty().clone();
     let connection_counterparty = connection_end.counterparty().clone();
     let counterparty_client_id = connection_counterparty.client_id().clone();
