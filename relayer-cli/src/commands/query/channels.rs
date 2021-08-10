@@ -1,11 +1,13 @@
 use std::fmt::{Debug, Error, Formatter};
 
 use abscissa_core::{Options, Runnable};
+use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::Height;
 use serde::Serialize;
 
-use ibc::ics02_client::client_state::ClientState;
-use ibc::ics04_channel::channel::State;
-use ibc::ics24_host::identifier::{ChainId, PortChannelId};
+use ibc::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::ics04_channel::channel::{ChannelEnd, State};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
 use ibc_relayer::registry::Registry;
 
@@ -33,8 +35,11 @@ fn run_query_channels(
 ) -> Result<QueryChannelsOutput, Box<dyn std::error::Error>> {
     debug!("Options: {:?}", cmd);
 
-    let mut output = vec![];
-    let mut output_verbose = vec![];
+    let mut output = if cmd.verbose {
+        QueryChannelsOutput::verbose()
+    } else {
+        QueryChannelsOutput::summary()
+    };
 
     let config = app_config();
     let chain_id = cmd.chain_id.clone();
@@ -46,6 +51,7 @@ fn run_query_channels(
     let req = QueryChannelsRequest {
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
     };
+
     let identified_channels = chain.query_channels(req)?;
 
     for identified_channel in identified_channels {
@@ -78,72 +84,97 @@ fn run_query_channels(
         let client_state = chain.query_client_state(&client_id, chain_height)?;
         let counterparty_chain_id = client_state.chain_id();
 
-        match &cmd.destination_chain {
-            Some(dst_chain_id) if dst_chain_id != &counterparty_chain_id => {
+        if let Some(dst_chain_id) = &cmd.destination_chain {
+            if dst_chain_id != &counterparty_chain_id {
                 continue;
             }
-            _ => { /* proceed */ }
         }
 
-        if !cmd.verbose {
-            output.push(PortChannelId {
-                channel_id,
-                port_id,
-            });
-        } else {
-            let channel_counterparty = channel_end.counterparty().clone();
-            let connection_counterparty = connection_end.counterparty().clone();
-            let counterparty_client_id = connection_counterparty.client_id().clone();
-
-            let counterparty_connection_id = connection_counterparty.connection_id.ok_or_else(|| {
-                format!(
-                    "connection end for {} on chain {} @ {:?} does not have counterparty connection id: {:?}",
-                    connection_id,
-                    chain_id,
-                    chain_height,
-                    connection_end
-                )
-            })?;
-
-            let counterparty_port_id = channel_counterparty.port_id().clone();
-
-            let counterparty_channel_id = channel_counterparty.channel_id.ok_or_else(|| {
-                format!(
-                    "channel end for {}/{} on chain {} @ {:?} does not have counterparty channel id: {:?}",
-                    port_id, channel_id, chain_id, chain_height, channel_end
-                )
-            })?;
-
-            let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
-            let counterparty_chain_height = counterparty_chain.query_latest_height()?;
-            let counterparty_connection_end = counterparty_chain
-                .query_connection(&counterparty_connection_id, counterparty_chain_height)?;
-            let counterparty_client_state = counterparty_chain
-                .query_client_state(&counterparty_client_id, counterparty_chain_height)?;
-            let counterparty_channel_end = counterparty_chain.query_channel(
-                &counterparty_port_id,
-                &counterparty_channel_id,
-                counterparty_chain_height,
-            )?;
-
-            output_verbose.push(ChannelEnds {
+        if cmd.verbose {
+            let channel_ends = query_channel_ends(
+                &mut registry,
                 channel_end,
                 connection_end,
                 client_state,
+                connection_id,
+                chain_id,
+                counterparty_chain_id,
+                port_id,
+                channel_id,
+                chain_height,
+            )?;
 
-                counterparty_channel_end,
-                counterparty_connection_end,
-                counterparty_client_state,
+            output.push_verbose(channel_ends);
+        } else {
+            output.push_summary(PortChannelId {
+                channel_id,
+                port_id,
             });
         }
     }
 
-    let output = if !cmd.verbose {
-        QueryChannelsOutput::Summary(output)
-    } else {
-        QueryChannelsOutput::Verbose(output_verbose)
-    };
     Ok(output)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn query_channel_ends(
+    registry: &mut Registry,
+    channel_end: ChannelEnd,
+    connection_end: ConnectionEnd,
+    client_state: AnyClientState,
+    connection_id: ConnectionId,
+    chain_id: ChainId,
+    counterparty_chain_id: ChainId,
+    port_id: PortId,
+    channel_id: ChannelId,
+    chain_height: Height,
+) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
+    let channel_counterparty = channel_end.counterparty().clone();
+    let connection_counterparty = connection_end.counterparty().clone();
+    let counterparty_client_id = connection_counterparty.client_id().clone();
+
+    let counterparty_connection_id = connection_counterparty.connection_id.ok_or_else(|| {
+        format!(
+            "connection end for {} on chain {} @ {:?} does not have counterparty connection id: {:?}",
+            connection_id,
+            chain_id,
+            chain_height,
+            connection_end
+        )
+    })?;
+
+    let counterparty_port_id = channel_counterparty.port_id().clone();
+
+    let counterparty_channel_id = channel_counterparty.channel_id.ok_or_else(|| {
+        format!(
+            "channel end for {}/{} on chain {} @ {:?} does not have counterparty channel id: {:?}",
+            port_id, channel_id, chain_id, chain_height, channel_end
+        )
+    })?;
+
+    let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
+    let counterparty_chain_height = counterparty_chain.query_latest_height()?;
+
+    let counterparty_connection_end = counterparty_chain
+        .query_connection(&counterparty_connection_id, counterparty_chain_height)?;
+
+    let counterparty_client_state = counterparty_chain
+        .query_client_state(&counterparty_client_id, counterparty_chain_height)?;
+
+    let counterparty_channel_end = counterparty_chain.query_channel(
+        &counterparty_port_id,
+        &counterparty_channel_id,
+        counterparty_chain_height,
+    )?;
+
+    Ok(ChannelEnds {
+        channel_end,
+        connection_end,
+        client_state,
+        counterparty_channel_end,
+        counterparty_connection_end,
+        counterparty_client_state,
+    })
 }
 
 impl Runnable for QueryChannelsCmd {
@@ -160,6 +191,36 @@ impl Runnable for QueryChannelsCmd {
 enum QueryChannelsOutput {
     Verbose(Vec<ChannelEnds>),
     Summary(Vec<PortChannelId>),
+}
+
+impl QueryChannelsOutput {
+    fn verbose() -> Self {
+        Self::Verbose(Vec::new())
+    }
+
+    fn summary() -> Self {
+        Self::Summary(Vec::new())
+    }
+
+    fn push_verbose(&mut self, ce: ChannelEnds) {
+        assert!(matches!(self, Self::Verbose(_)));
+
+        if let Self::Verbose(ref mut ces) = self {
+            ces.push(ce);
+        } else {
+            unreachable!();
+        }
+    }
+
+    fn push_summary(&mut self, pc: PortChannelId) {
+        assert!(matches!(self, Self::Summary(_)));
+
+        if let Self::Summary(ref mut pcs) = self {
+            pcs.push(pc);
+        } else {
+            unreachable!();
+        }
+    }
 }
 
 impl Debug for QueryChannelsOutput {
