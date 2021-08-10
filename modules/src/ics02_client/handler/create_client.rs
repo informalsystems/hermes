@@ -61,8 +61,6 @@ mod tests {
     use std::time::Duration;
     use test_env_log::test;
 
-    use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
-
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_consensus::AnyConsensusState;
@@ -71,6 +69,7 @@ mod tests {
     use crate::ics02_client::handler::{dispatch, ClientResult};
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
+    use crate::ics02_client::trust_threshold::TrustThreshold;
     use crate::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::ics24_host::identifier::ClientId;

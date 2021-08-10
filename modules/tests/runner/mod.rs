@@ -124,10 +124,6 @@ impl IbcTestRunner {
         ChainId::new(chain_id, height.revision_number)
     }
 
-    // pub fn revision() -> u64 {
-    //     0
-    // }
-
     pub fn version() -> Version {
         Version::default()
     }
@@ -475,7 +471,7 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> Result<(), String> {
-        let result = self.apply(step.clone().action);
+        let result = self.apply(step.action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::Ics02CreateOk => result.is_ok(),

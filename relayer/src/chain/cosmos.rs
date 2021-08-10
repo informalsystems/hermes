@@ -972,8 +972,8 @@ impl Chain for CosmosSdkChain {
             .ok_or_else(Error::empty_response_value)?
             .upgraded_client_state
             .ok_or_else(Error::empty_upgraded_client_state)?;
-        let client_state =
-            AnyClientState::try_from(upgraded_client_state_raw).map_err(Error::ics02)?;
+        let client_state = AnyClientState::try_from(upgraded_client_state_raw)
+            .map_err(Error::invalid_upgraded_client_state)?;
 
         // TODO: Better error kinds here.
         let tm_client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
@@ -1687,7 +1687,7 @@ impl Chain for CosmosSdkChain {
         // Build the client state.
         ClientState::new(
             self.id().clone(),
-            self.config.trust_threshold,
+            self.config.trust_threshold.into(),
             self.config.trusting_period,
             self.unbonding_period()?,
             self.config.clock_drift,

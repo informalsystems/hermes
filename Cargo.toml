@@ -4,6 +4,7 @@ members = [
     "modules",
     "relayer",
     "relayer-cli",
+    "relayer-rest",
     "telemetry",
     "proto",
 ]
