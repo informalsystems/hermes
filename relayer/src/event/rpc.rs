@@ -112,6 +112,7 @@ pub fn build_event(mut object: RawObject) -> Result<IbcEvent, EventError> {
         // TODO: This need to be sorted out
         "transfer"
         | ibc::application::ics20_fungible_token_transfer::msgs::transfer::TYPE_URL
+        | ibc::application::ICS27_BANK_SEND_TYPE_URL
         | ibc::application::ICS27_SEND_TYPE_URL
         | ibc::application::ICS27_REGISTER_TYPE_URL => {
             object.action = "send_packet".to_string();
