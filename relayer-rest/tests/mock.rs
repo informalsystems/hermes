@@ -21,9 +21,7 @@ where
     R: Serialize,
     F: FnOnce(Request) -> TestResult + Send + 'static,
 {
-    let config = Config {
-        address: format!("127.0.0.1:{}", port),
-    };
+    let config = Config::new("127.0.0.1".to_string(), port);
 
     let (handle, rx) = spawn(config);
 

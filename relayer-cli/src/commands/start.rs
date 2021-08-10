@@ -103,10 +103,9 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
 
 fn make_rest_receiver(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
     let rest = config.read().expect("poisoned lock").rest.clone();
+
     if rest.enabled {
-        let rest_config = ibc_relayer_rest::Config {
-            address: format!("{}:{}", rest.host, rest.port),
-        };
+        let rest_config = ibc_relayer_rest::Config::new(rest.host, rest.port);
         let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
         Some(rest_receiver)
     } else {

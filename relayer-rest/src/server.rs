@@ -28,7 +28,7 @@ impl ServerHandle {
 pub fn spawn(config: Config) -> (ServerHandle, channel::Receiver<Request>) {
     let (req_tx, req_rx) = channel::unbounded::<Request>();
 
-    info!("[rest] starting REST API server at {}", config.address);
+    info!("[rest] starting REST API server at {}", config);
     let handle = run(config, req_tx);
 
     (handle, req_rx)
@@ -36,7 +36,7 @@ pub fn spawn(config: Config) -> (ServerHandle, channel::Receiver<Request>) {
 
 #[allow(clippy::manual_strip)]
 fn run(config: Config, sender: channel::Sender<Request>) -> ServerHandle {
-    let server = rouille::Server::new(config.address, move |request| {
+    let server = rouille::Server::new(config.address(), move |request| {
         router!(request,
             (GET) (/) => {
                 trace!("[rest/server] GET /");
