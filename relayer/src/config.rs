@@ -110,6 +110,8 @@ pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
     #[serde(default)]
+    pub rest: RESTConfig,
+    #[serde(default)]
     pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
@@ -206,8 +208,6 @@ impl fmt::Display for LogLevel {
 #[serde(default, deny_unknown_fields)]
 pub struct GlobalConfig {
     pub strategy: Strategy,
-    /// REST interface address
-    pub rest_addr: Option<String>,
     pub log_level: LogLevel,
     #[serde(default = "default::filter")]
     pub filter: bool,
@@ -219,7 +219,6 @@ impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
             strategy: Strategy::default(),
-            rest_addr: None,
             log_level: LogLevel::default(),
             filter: default::filter(),
             clear_packets_interval: default::clear_packets_interval(),
@@ -241,6 +240,24 @@ impl Default for TelemetryConfig {
             enabled: false,
             host: "127.0.0.1".to_string(),
             port: 3001,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RESTConfig {
+    pub enabled: bool,
+    pub host: String,
+    pub port: u16,
+}
+
+impl Default for RESTConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            host: "127.0.0.1".to_string(),
+            port: 3000,
         }
     }
 }

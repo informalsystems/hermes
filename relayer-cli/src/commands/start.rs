@@ -102,22 +102,17 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
 }
 
 fn make_rest_receiver(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
-    let rest_receiver = match &config.read().expect("poisoned lock").global.rest_addr {
-        None => {
-            info!("[rest] address not configured, REST server disabled");
-            None
-        }
-        Some(address) => {
-            let rest_config = ibc_relayer_rest::Config {
-                address: address.clone(),
-            };
-
-            let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
-            Some(rest_receiver)
-        }
-    };
-
-    rest_receiver
+    let rest = config.read().expect("poisoned lock").rest.clone();
+    if rest.enabled {
+        let rest_config = ibc_relayer_rest::Config {
+            address: format!("{}:{}", rest.host, rest.port),
+        };
+        let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
+        Some(rest_receiver)
+    } else {
+        info!("[rest] address not configured, REST server disabled");
+        None
+    }
 }
 
 #[cfg(feature = "telemetry")]
