@@ -1,14 +1,13 @@
 use std::fmt::{Debug, Error, Formatter};
-use std::sync::Arc;
 
 use abscissa_core::{Options, Runnable};
 use serde::Serialize;
-use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics04_channel::channel::State;
 use ibc::ics24_host::identifier::{ChainId, PortChannelId};
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
-use ibc_relayer::chain::{Chain, CosmosSdkChain};
+use ibc_relayer::registry::Registry;
 
 use crate::commands::query::channel_ends::ChannelEnds;
 use crate::conclude::Output;
@@ -40,12 +39,8 @@ fn run_query_channels(
     let config = app_config();
     let chain_id = cmd.chain_id.clone();
 
-    let chain_config = config
-        .find_chain(&chain_id)
-        .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
-
-    let rt = Arc::new(TokioRuntime::new()?);
-    let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt.clone())?;
+    let mut registry = Registry::from_owned((*config).clone());
+    let chain = registry.get_or_spawn(&cmd.chain_id)?;
     let chain_height = chain.query_latest_height()?;
 
     let req = QueryChannelsRequest {
@@ -81,7 +76,7 @@ fn run_query_channels(
         let connection_end = chain.query_connection(&connection_id, chain_height)?;
         let client_id = connection_end.client_id().clone();
         let client_state = chain.query_client_state(&client_id, chain_height)?;
-        let counterparty_chain_id = client_state.chain_id.clone();
+        let counterparty_chain_id = client_state.chain_id();
 
         match &cmd.destination_chain {
             Some(dst_chain_id) if dst_chain_id != &counterparty_chain_id => {
@@ -119,14 +114,7 @@ fn run_query_channels(
                 )
             })?;
 
-            let chain_config_b = config.find_chain(&counterparty_chain_id).ok_or_else(|| {
-                format!(
-                    "counterparty chain '{}' not found in configuration file",
-                    counterparty_chain_id
-                )
-            })?;
-
-            let counterparty_chain = CosmosSdkChain::bootstrap(chain_config_b.clone(), rt.clone())?;
+            let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
             let counterparty_chain_height = counterparty_chain.query_latest_height()?;
             let counterparty_connection_end = counterparty_chain
                 .query_connection(&counterparty_connection_id, counterparty_chain_height)?;

@@ -1,16 +1,13 @@
-use std::sync::Arc;
-
 use abscissa_core::{Command, Options, Runnable};
 use serde::{Deserialize, Serialize};
-use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, State};
-use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
-use ibc_relayer::chain::{Chain, CosmosSdkChain};
+use ibc_relayer::registry::Registry;
 
 use crate::conclude::Output;
 use crate::prelude::*;
@@ -40,10 +37,10 @@ pub struct QueryChannelEndsCmd {
 pub struct ChannelEnds {
     pub channel_end: ChannelEnd,
     pub connection_end: ConnectionEnd,
-    pub client_state: ClientState,
+    pub client_state: AnyClientState,
     pub counterparty_channel_end: ChannelEnd,
     pub counterparty_connection_end: ConnectionEnd,
-    pub counterparty_client_state: ClientState,
+    pub counterparty_client_state: AnyClientState,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -70,12 +67,8 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
     let port_id = cmd.port_id.clone();
     let channel_id = cmd.channel_id.clone();
 
-    let chain_config = config
-        .find_chain(&chain_id)
-        .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
-
-    let rt = Arc::new(TokioRuntime::new()?);
-    let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt.clone())?;
+    let mut registry = Registry::from_owned((*config).clone());
+    let chain = registry.get_or_spawn(&chain_id)?;
 
     let chain_height = match cmd.height {
         Some(height) => Height::new(chain.id().version(), height),
@@ -132,17 +125,8 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
         )
     })?;
 
-    let counterparty_chain_id = client_state.chain_id.clone();
-
-    let chain_config_b = config.find_chain(&counterparty_chain_id).ok_or_else(|| {
-        format!(
-            "counterparty chain '{}' not found in configuration file",
-            counterparty_chain_id
-        )
-    })?;
-
-    let counterparty_chain = CosmosSdkChain::bootstrap(chain_config_b.clone(), rt)?;
-
+    let counterparty_chain_id = client_state.chain_id();
+    let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height = counterparty_chain.query_latest_height()?;
 
     let counterparty_connection_end = counterparty_chain
