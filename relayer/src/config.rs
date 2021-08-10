@@ -1,6 +1,7 @@
 //! Relayer configuration
 
 pub mod reload;
+pub mod types;
 
 use std::collections::{HashMap, HashSet};
 use std::{fmt, fs, fs::File, io::Write, path::Path, time::Duration};
@@ -11,6 +12,7 @@ use tendermint_light_client::types::TrustThreshold;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
+use crate::config::types::{MaxMsgNum, MaxTxSize};
 use crate::error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -107,6 +109,8 @@ pub mod default {
 pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
+    #[serde(default)]
+    pub rest: RestConfig,
     #[serde(default)]
     pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
@@ -242,6 +246,24 @@ impl Default for TelemetryConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+pub struct RestConfig {
+    pub enabled: bool,
+    pub host: String,
+    pub port: u16,
+}
+
+impl Default for RestConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            host: "127.0.0.1".to_string(),
+            port: 3000,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     pub id: ChainId,
     pub rpc_addr: tendermint_rpc::Url,
@@ -254,8 +276,10 @@ pub struct ChainConfig {
     pub store_prefix: String,
     pub max_gas: Option<u64>,
     pub gas_adjustment: Option<f64>,
-    pub max_msg_num: Option<usize>,
-    pub max_tx_size: Option<usize>,
+    #[serde(default)]
+    pub max_msg_num: MaxMsgNum,
+    #[serde(default)]
+    pub max_tx_size: MaxTxSize,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]

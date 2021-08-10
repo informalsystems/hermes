@@ -6,6 +6,7 @@
 use ibc_relayer_cli::application::APPLICATION;
 
 /// Boot Cli
-fn main() {
+fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
     abscissa_core::boot(&APPLICATION);
 }

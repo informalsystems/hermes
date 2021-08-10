@@ -299,7 +299,7 @@ impl Chain for MockChain {
     fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
         let client_state = TendermintClientState::new(
             self.id().clone(),
-            self.config.trust_threshold,
+            self.config.trust_threshold.into(),
             self.config.trusting_period,
             self.config.trusting_period.add(Duration::from_secs(1000)),
             Duration::from_millis(3000),
@@ -406,8 +406,8 @@ pub mod test_utils {
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
-            max_msg_num: None,
-            max_tx_size: None,
+            max_msg_num: Default::default(),
+            max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),

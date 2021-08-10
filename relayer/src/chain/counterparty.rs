@@ -24,12 +24,12 @@ pub fn counterparty_chain_from_connection(
     src_connection_id: &ConnectionId,
 ) -> Result<ChainId, Error> {
     let connection_end = src_chain
-        .query_connection(&src_connection_id, Height::zero())
+        .query_connection(src_connection_id, Height::zero())
         .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
     let client_state = src_chain
-        .query_client_state(&client_id, Height::zero())
+        .query_client_state(client_id, Height::zero())
         .map_err(Error::relayer)?;
 
     trace!(

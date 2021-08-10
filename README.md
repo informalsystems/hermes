@@ -25,7 +25,7 @@ This project comprises primarily four crates:
 
 See the table below for more details.
 
-Includes [TLA+ specifications](/docs/spec).
+Includes [TLA+ specifications](docs/spec).
 
 | Crate name    |   Type   |     Version       | Docs   |
 |:-------------:|:------:|:-------------:|:-----:|
