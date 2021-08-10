@@ -45,7 +45,7 @@ use tracing::field::debug;
 #[derive(Debug, Clone)]
 pub struct IbcTestRunner {
     // mapping from chain identifier to its context
-    contexts: HashMap<ChainId, MockContext>,
+    contexts: HashMap<String, MockContext>,
 }
 
 impl IbcTestRunner {
@@ -58,11 +58,11 @@ impl IbcTestRunner {
     /// Create a `MockContext` for a given `chain_id`.
     /// Panic if a context for `chain_id` already exists.
     pub fn init_chain_context(&mut self, chain_id: String, initial_height: Height) {
-        let chain_id = Self::chain_id(chain_id, initial_height);
+        let chain_id_struct = Self::chain_id(chain_id.clone(), initial_height);
         // never GC blocks
         let max_history_size = usize::MAX;
         let ctx = MockContext::new(
-            chain_id.clone(),
+            chain_id_struct.clone(),
             HostType::Mock,
             max_history_size,
             initial_height,
@@ -72,20 +72,17 @@ impl IbcTestRunner {
 
     /// Returns a reference to the `MockContext` of a given `chain_id`.
     /// Panic if the context for `chain_id` is not found.
-    pub fn chain_context(&self, chain_id: String, height: Height) -> &MockContext {
-        let chain_id_struct = Self::chain_id(chain_id.clone(), height);
+    pub fn chain_context(&self, chain_id: String) -> &MockContext {
         self.contexts
-            .get(&chain_id_struct)
+            .get(&chain_id)
             .expect("chain context should have been initialized")
     }
 
     /// Returns a mutable reference to the `MockContext` of a given `chain_id`.
     /// Panic if the context for `chain_id` is not found.
-    pub fn chain_context_mut(&mut self, chain_id: String, height: Height) -> &mut MockContext {
-        let chain_id_struct = Self::chain_id(chain_id.clone(), height);
-        dbg!(chain_id_struct.clone(), self.clone().contexts);
+    pub fn chain_context_mut(&mut self, chain_id: String) -> &mut MockContext {
         self.contexts
-            .get_mut(&chain_id_struct)
+            .get_mut(&chain_id)
             .expect("chain context should have been initialized")
     }
 
@@ -223,7 +220,7 @@ impl IbcTestRunner {
     /// Check that chain states match the ones in the model.
     pub fn check_chain_states(&self, chains: HashMap<String, Chain>) -> bool {
         chains.into_iter().all(|(chain_id, chain)| {
-            let ctx = self.chain_context(chain_id, chain.height);
+            let ctx = self.chain_context(chain_id);
             // check that heights match
             let heights_match = ctx.query_latest_height() == chain.height;
 
@@ -317,7 +314,7 @@ impl IbcTestRunner {
                 consensus_state,
             } => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id, consensus_state);
+                let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
@@ -333,7 +330,7 @@ impl IbcTestRunner {
                 header,
             } => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id, header);
+                let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
@@ -356,7 +353,7 @@ impl IbcTestRunner {
                 };
 
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id, modified_header);
+                let ctx = self.chain_context_mut(chain_id);
 
                 let buf: Vec<u8> = Vec::new();
                 let buf2: Vec<u8> = Vec::new();
@@ -382,7 +379,7 @@ impl IbcTestRunner {
                 counterparty_client_id,
             } => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id, Height::default());
+                let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenInit(
@@ -406,7 +403,7 @@ impl IbcTestRunner {
                 counterparty_connection_id,
             } => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id, client_state);
+                let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
@@ -435,7 +432,7 @@ impl IbcTestRunner {
                 counterparty_connection_id,
             } => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id, Height::default());
+                let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
@@ -459,7 +456,7 @@ impl IbcTestRunner {
                 counterparty_connection_id: _,
             } => {
                 // get chain's context
-                let ctx = self.chain_context_mut(chain_id, client_state);
+                let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(
@@ -491,7 +488,6 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
     }
 
     fn next_step(&mut self, step: Step) -> Result<(), String> {
-        dbg!(step.clone());
         let result = self.apply(step.clone().action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
@@ -501,19 +497,23 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
                 Self::extract_ics02_error_kind(result),
                 client_error::ErrorDetail::ClientNotFound(_)
             ),
-            ActionOutcome::Ics02HeaderVerificationFailure => matches!(
-                Self::extract_ics02_error_kind(result),
-                client_error::ErrorDetail::HeaderVerificationFailure(_)
-            ),
+            ActionOutcome::Ics02HeaderVerificationFailure => {
+                matches!(
+                    Self::extract_ics02_error_kind(result),
+                    client_error::ErrorDetail::HeaderVerificationFailure(_)
+                )
+            }
             ActionOutcome::Ics07UpgradeOk => result.is_ok(),
             ActionOutcome::Ics07ClientNotFound => matches!(
                 Self::extract_ics02_error_kind(result),
                 client_error::ErrorDetail::ClientNotFound(_)
             ),
-            ActionOutcome::Ics07HeaderVerificationFailure => matches!(
-                Self::extract_ics02_error_kind(result),
-                client_error::ErrorDetail::HeaderVerificationFailure(_)
-            ),
+            ActionOutcome::Ics07HeaderVerificationFailure => {
+                matches!(
+                    Self::extract_ics02_error_kind(result),
+                    client_error::ErrorDetail::LowUpgradeHeight(_)
+                )
+            }
             ActionOutcome::Ics03ConnectionOpenInitOk => result.is_ok(),
             ActionOutcome::Ics03MissingClient => matches!(
                 Self::extract_ics03_error_kind(result),
@@ -548,11 +548,19 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
             ActionOutcome::Ics03ConnectionOpenConfirmOk => result.is_ok(),
         };
 
-        // also check the state of chains
-        if outcome_matches && self.validate_chains() && self.check_chain_states(step.chains) {
-            Ok(())
-        } else {
-            Err("next_step did not conclude successfully".into())
+        // Validate chains
+        for ctx in self.contexts.values() {
+            ctx.validate()?
         }
+
+        if !outcome_matches {
+            return Err("Action outcome did not match expected".into());
+        }
+
+        if !self.check_chain_states(step.chains) {
+            return Err("Chain states do not match".into());
+        }
+
+        Ok(())
     }
 }
