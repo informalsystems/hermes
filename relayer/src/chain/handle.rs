@@ -6,13 +6,13 @@ use std::{
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use serde::Serialize;
 
-use ibc::tagged::{DualTagged, Tagged};
+use ibc::tagged::Tagged;
 use ibc::{
     events::IbcEvent,
     ics02_client::{
         client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
-        client_state::{AnyClientState, IdentifiedAnyClientState},
-        events::UpdateClient,
+        client_state::{AnyClientState, IdentifiedAnyClientState, TaggedClientState},
+        events::{TaggedUpdateClient, UpdateClient},
         header::AnyHeader,
         misbehaviour::MisbehaviourEvidence,
     },
@@ -312,7 +312,7 @@ pub enum ChainRequest {
     },
 }
 
-pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + Debug {
+pub trait ChainHandle<Counterparty>: Clone + Send + Sync + Serialize + Debug + 'static {
     fn new(chain_id: ChainId, sender: crossbeam_channel::Sender<ChainRequest>) -> Self;
 
     /// Get the [`ChainId`] of this chain.
@@ -329,7 +329,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
     fn send_msgs(
         &self,
         proto_msgs: Vec<Tagged<Self, prost_types::Any>>,
-    ) -> Result<Vec<Tagged<Self, IbcEvent>>, Error>;
+    ) -> Result<Tagged<Self, Vec<IbcEvent>>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
 
@@ -348,7 +348,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         &self,
         client_id: Tagged<Self, ClientId>,
         height: Tagged<Self, Height>,
-    ) -> Result<DualTagged<Self, Counterparty, AnyClientState>, Error>;
+    ) -> Result<TaggedClientState<Self, Counterparty>, Error>;
 
     fn query_client_connections(
         &self,
@@ -365,7 +365,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         client_id: Tagged<Self, ClientId>,
         consensus_height: Tagged<Counterparty, Height>,
         query_height: Tagged<Self, Height>,
-    ) -> Result<DualTagged<Self, Counterparty, AnyConsensusState>, Error>;
+    ) -> Result<Tagged<Self, AnyConsensusState>, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -442,7 +442,7 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         &self,
         trusted_height: Tagged<Self, Height>,
         target_height: Tagged<Self, Height>,
-        client_state: DualTagged<Counterparty, Self, AnyClientState>,
+        client_state: TaggedClientState<Counterparty, Self>,
     ) -> Result<
         (
             Tagged<Counterparty, AnyHeader>,
@@ -467,9 +467,9 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
 
     fn check_misbehaviour(
         &self,
-        update: Tagged<Self, UpdateClient>,
-        client_state: Tagged<Self, AnyClientState>,
-    ) -> Result<Option<MisbehaviourEvidence>, Error>;
+        update: TaggedUpdateClient<Counterparty, Self>,
+        client_state: TaggedClientState<Counterparty, Self>,
+    ) -> Result<Option<Tagged<Counterparty, MisbehaviourEvidence>>, Error>;
 
     fn build_connection_proofs_and_client_state(
         &self,
@@ -477,7 +477,13 @@ pub trait ChainHandle<Counterparty = Self>: Clone + Send + Sync + Serialize + De
         connection_id: Tagged<Self, ConnectionId>,
         client_id: Tagged<Self, ClientId>,
         height: Tagged<Self, Height>,
-    ) -> Result<(Option<Tagged<Self, AnyClientState>>, Tagged<Self, Proofs>), Error>;
+    ) -> Result<
+        (
+            Option<TaggedClientState<Self, Counterparty>>,
+            Tagged<Self, Proofs>,
+        ),
+        Error,
+    >;
 
     fn build_channel_proofs(
         &self,

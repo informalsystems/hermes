@@ -16,7 +16,7 @@ use ibc::ics02_client::client_consensus::{
 };
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::error::Error as ClientError;
-use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::events::TaggedUpdateClient;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -307,7 +307,7 @@ where
 
         match host_chain.query_client_state(client_id, height) {
             Ok(cs) => {
-                if &cs.value().chain_id() != expected_target_chain.id().value() {
+                if cs.chain_id() != expected_target_chain.id() {
                     Err(ForeignClientError::mismatch_chain_id(
                         client_id.untag(),
                         expected_target_chain.id().untag(),
@@ -330,7 +330,7 @@ where
         }
     }
 
-    pub fn upgrade(&self) -> Result<Vec<Tagged<DstChain, IbcEvent>>, ForeignClientError> {
+    pub fn upgrade(&self) -> Result<Tagged<DstChain, Vec<IbcEvent>>, ForeignClientError> {
         // Fetch the latest height of the source chain.
         let src_height = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::client_upgrade(
@@ -496,8 +496,8 @@ where
             )
         })?;
 
-        assert!(!res.is_empty());
-        Ok(res[0].clone())
+        assert!(!res.value().is_empty());
+        Ok(res.map_into(|v| v[0]))
     }
 
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
@@ -520,7 +520,7 @@ where
 
     pub fn refresh(
         &mut self,
-    ) -> Result<Option<Vec<Tagged<DstChain, IbcEvent>>>, ForeignClientError> {
+    ) -> Result<Option<Tagged<DstChain, Vec<IbcEvent>>>, ForeignClientError> {
         let client_state = self
             .dst_chain
             .query_client_state(self.id(), Height::tagged_zero())
@@ -532,13 +532,13 @@ where
                 )
             })?;
 
-        let src_height = client_state.map_flipped(|c| c.latest_height());
+        let src_height = client_state.latest_height();
 
         let last_update_time = self
             .consensus_state(src_height)?
             .map_into(|s| s.timestamp());
 
-        let refresh_window = client_state.map(|s| s.refresh_period()).transpose();
+        let refresh_window = client_state.refresh_period();
 
         let elapsed = Timestamp::now().duration_since(last_update_time.value());
 
@@ -690,7 +690,7 @@ where
 
     pub fn build_latest_update_client_and_send(
         &self,
-    ) -> Result<Vec<Tagged<DstChain, IbcEvent>>, ForeignClientError> {
+    ) -> Result<Tagged<DstChain, Vec<IbcEvent>>, ForeignClientError> {
         self.build_update_client_and_send(Height::tagged_zero(), Height::tagged_zero())
     }
 
@@ -698,7 +698,7 @@ where
         &self,
         height: Tagged<SrcChain, Height>,
         trusted_height: Tagged<SrcChain, Height>,
-    ) -> Result<Vec<Tagged<DstChain, IbcEvent>>, ForeignClientError> {
+    ) -> Result<Tagged<DstChain, Vec<IbcEvent>>, ForeignClientError> {
         let h = if height.value().is_zero() {
             self.src_chain.query_latest_height().map_err(|e| {
                 ForeignClientError::client_update(
@@ -746,13 +746,13 @@ where
     /// on the full node. To handle this the query is retried a few times.
     pub fn update_client_event(
         &self,
-        consensus_height: Height,
-    ) -> Result<Option<UpdateClient>, ForeignClientError> {
+        consensus_height: Tagged<SrcChain, Height>,
+    ) -> Result<Option<TaggedUpdateClient<DstChain, SrcChain>>, ForeignClientError> {
         let request = QueryClientEventRequest {
             height: Height::zero(),
             event_id: IbcEventType::UpdateClient,
             client_id: self.id().untag(),
-            consensus_height,
+            consensus_height: consensus_height.untag(),
         };
 
         let mut events = vec![];
@@ -765,7 +765,7 @@ where
                     ForeignClientError::client_event_query(
                         self.id().untag(),
                         self.dst_chain.id().untag(),
-                        consensus_height,
+                        consensus_height.untag(),
                         e,
                     )
                 });
@@ -802,7 +802,7 @@ where
                 event.to_json(),
             )
         })?;
-        Ok(Some(update))
+        Ok(Some(TaggedUpdateClient::tag(update)))
     }
 
     /// Retrieves all consensus states for this client and sorts them in descending height
@@ -830,7 +830,7 @@ where
     fn consensus_state(
         &self,
         height: Tagged<SrcChain, Height>,
-    ) -> Result<DualTagged<DstChain, SrcChain, AnyConsensusState>, ForeignClientError> {
+    ) -> Result<Tagged<DstChain, AnyConsensusState>, ForeignClientError> {
         let res = self
             .dst_chain
             .query_consensus_state(self.id.clone(), height, Height::tagged_zero())
@@ -891,8 +891,8 @@ where
     ///
     pub fn detect_misbehaviour(
         &self,
-        mut update: Option<UpdateClient>,
-    ) -> Result<Option<MisbehaviourEvidence>, ForeignClientError> {
+        mut update: Option<TaggedUpdateClient<DstChain, SrcChain>>,
+    ) -> Result<Option<Tagged<DstChain, MisbehaviourEvidence>>, ForeignClientError> {
         thread::sleep(Duration::from_millis(100));
 
         // Get the latest client state on destination.
@@ -912,9 +912,10 @@ where
         // For chains that do support pruning, it is possible that the last consensus state
         // was installed by an `UpdateClient` and an event and header will be found.
         let consensus_state_heights = self.consensus_state_heights()?;
+
         let ch = match update {
-            Some(ref u) => u.consensus_height(),
-            None => Height::zero(),
+            Some(u) => u.consensus_height(),
+            None => Tagged::new(Height::zero()),
         };
 
         debug!(
@@ -934,9 +935,9 @@ where
         let start_time = Instant::now();
         for target_height in consensus_state_heights {
             // Start with specified update event or the one for latest consensus height
-            let update_event = if let Some(ref event) = update {
+            let update_event = if let Some(event) = update {
                 // we are here only on the first iteration when called with `Some` update event
-                event.clone()
+                event
             } else if let Some(event) = self.update_client_event(target_height)? {
                 // we are here either on the first iteration with `None` initial update event or
                 // subsequent iterations
@@ -947,9 +948,11 @@ where
                 break;
             };
 
+            let event_consensus_height = update_event.consensus_height();
+
             // Skip over heights higher than the update event one.
             // This can happen if a client update happened with a lower height than latest.
-            if target_height > update_event.consensus_height() {
+            if target_height > event_consensus_height {
                 continue;
             }
 
@@ -959,13 +962,13 @@ where
             // - an `update_event` was specified and we should eventually find a consensus state
             //   at that height
             // We break here in case we got a bogus event.
-            if target_height < update_event.consensus_height() {
+            if target_height < event_consensus_height {
                 break;
             }
 
             // No header in events, cannot run misbehavior.
             // May happen on chains running older SDKs (e.g., Akash)
-            if update_event.header.is_none() {
+            if update_event.value().header.is_none() {
                 return Err(ForeignClientError::misbehaviour_exit(
                     "no header in update client events".to_string(),
                 ));
@@ -976,13 +979,13 @@ where
             // a header for the event height cannot be retrieved from the witness.
             let misbehavior = self
                 .src_chain
-                .check_misbehaviour(update_event.clone(), client_state.clone())
+                .check_misbehaviour(update_event, client_state)
                 .map_err(|e| {
                     ForeignClientError::misbehaviour(
                         format!(
                             "failed to check misbehaviour for {} at consensus height {}",
-                            update_event.client_id(),
-                            update_event.consensus_height(),
+                            update_event.value().client_id(),
+                            update_event.value().consensus_height(),
                         ),
                         e,
                     )
@@ -1015,8 +1018,8 @@ where
 
     fn submit_evidence(
         &self,
-        evidence: MisbehaviourEvidence,
-    ) -> Result<Vec<IbcEvent>, ForeignClientError> {
+        evidence: Tagged<DstChain, MisbehaviourEvidence>,
+    ) -> Result<Tagged<DstChain, Vec<IbcEvent>>, ForeignClientError> {
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ForeignClientError::misbehaviour(
                 format!(
@@ -1027,26 +1030,24 @@ where
             )
         })?;
 
+        let supporting_headers = evidence.map(|e| e.supporting_headers);
+
         let mut msgs = vec![];
 
-        for header in evidence.supporting_headers {
+        for header in supporting_headers.into_iter() {
             msgs.push(
-                MsgUpdateAnyClient {
-                    header,
-                    client_id: self.id.clone(),
-                    signer: signer.clone(),
-                }
-                .to_any(),
+                MsgUpdateAnyClient::tagged_new(self.id(), header, signer.clone())
+                    .map_into(Msg::to_any),
             );
         }
 
         msgs.push(
-            MsgSubmitAnyMisbehaviour {
-                misbehaviour: evidence.misbehaviour,
-                client_id: self.id.clone(),
+            MsgSubmitAnyMisbehaviour::tagged_new(
+                self.id(),
+                evidence.map(|e| e.misbehaviour),
                 signer,
-            }
-            .to_any(),
+            )
+            .map_into(Msg::to_any),
         );
 
         let events = self.dst_chain().send_msgs(msgs).map_err(|e| {
@@ -1064,16 +1065,17 @@ where
 
     pub fn detect_misbehaviour_and_submit_evidence(
         &self,
-        update_event: Option<UpdateClient>,
-    ) -> MisbehaviourResults {
+        update_event: Option<TaggedUpdateClient<DstChain, SrcChain>>,
+    ) -> Tagged<DstChain, MisbehaviourResults> {
         // check evidence of misbehaviour for all updates or one
-        let result = match self.detect_misbehaviour(update_event.clone()) {
+        let result = match self.detect_misbehaviour(update_event) {
             Err(e) => Err(e),
-            Ok(None) => Ok(vec![]), // no evidence found
+            Ok(None) => Ok(Tagged::new(vec![])), // no evidence found
             Ok(Some(detected)) => {
                 error!(
                     "[{}] MISBEHAVIOUR DETECTED {}, sending evidence",
-                    self, detected.misbehaviour
+                    self,
+                    detected.value().misbehaviour
                 );
 
                 self.submit_evidence(detected)
@@ -1089,17 +1091,17 @@ where
                     "[{}] misbehaviour checking is being disabled: {:?}",
                     self, s
                 );
-                MisbehaviourResults::CannotExecute
+                Tagged::new(MisbehaviourResults::CannotExecute)
             }
             Ok(misbehaviour_detection_result) => {
-                if !misbehaviour_detection_result.is_empty() {
+                if !misbehaviour_detection_result.value().is_empty() {
                     info!(
                         "[{}] evidence submission result {:?}",
                         self, misbehaviour_detection_result
                     );
-                    MisbehaviourResults::EvidenceSubmitted(misbehaviour_detection_result)
+                    misbehaviour_detection_result.map_into(MisbehaviourResults::EvidenceSubmitted)
                 } else {
-                    MisbehaviourResults::ValidClient
+                    Tagged::new(MisbehaviourResults::ValidClient)
                 }
             }
             Err(e) => match e.detail() {
@@ -1108,14 +1110,14 @@ where
                         "[{}] misbehaviour checking is being disabled: {:?}",
                         self, s
                     );
-                    MisbehaviourResults::CannotExecute
+                    Tagged::new(MisbehaviourResults::CannotExecute)
                 }
                 _ => {
                     if update_event.is_some() {
-                        MisbehaviourResults::CannotExecute
+                        Tagged::new(MisbehaviourResults::CannotExecute)
                     } else {
                         warn!("[{}] misbehaviour checking result {:?}", self, e);
-                        MisbehaviourResults::ValidClient
+                        Tagged::new(MisbehaviourResults::ValidClient)
                     }
                 }
             },
@@ -1154,6 +1156,7 @@ mod test {
 
     use ibc::events::IbcEvent;
     use ibc::ics24_host::identifier::ClientId;
+    use ibc::tagged::Tagged;
     use ibc::Height;
 
     use crate::chain::handle::{ChainHandle, ProdChainHandle};
@@ -1165,253 +1168,303 @@ mod test {
     /// Basic test for the `build_create_client_and_send` method.
     #[test]
     fn create_client_and_send_method() {
-        let a_cfg = get_basic_chain_config("chain_a");
-        let b_cfg = get_basic_chain_config("chain_b");
+        fn test<ChainA, ChainB>()
+        where
+            ChainA: ChainHandle<ChainB> + 'static,
+            ChainB: ChainHandle<ChainA> + 'static,
+        {
+            let a_cfg = get_basic_chain_config("chain_a");
+            let b_cfg = get_basic_chain_config("chain_b");
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
-        let a_client =
-            ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
+            let rt = Arc::new(TokioRuntime::new().unwrap());
+            let a_chain =
+                ChainRuntime::<MockChain>::spawn::<ChainA, ChainB>(a_cfg, rt.clone()).unwrap();
+            let b_chain = ChainRuntime::<MockChain>::spawn::<ChainB, ChainA>(b_cfg, rt).unwrap();
+            let a_client = ForeignClient::restore(
+                Tagged::new(ClientId::default()),
+                a_chain.clone(),
+                b_chain.clone(),
+            );
 
-        let b_client = ForeignClient::restore(ClientId::default(), b_chain, a_chain);
+            let b_client =
+                ForeignClient::restore(Tagged::new(ClientId::default()), b_chain, a_chain);
 
-        // Create the client on chain a
-        let res = a_client.build_create_client_and_send();
-        assert!(
-            res.is_ok(),
-            "build_create_client_and_send failed (chain a) with error {:?}",
-            res
-        );
-        assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
+            // Create the client on chain a
+            let res = a_client.build_create_client_and_send();
+            assert!(
+                res.is_ok(),
+                "build_create_client_and_send failed (chain a) with error {:?}",
+                res
+            );
+            assert!(matches!(res.unwrap().untag(), IbcEvent::CreateClient(_)));
 
-        // Create the client on chain b
-        let res = b_client.build_create_client_and_send();
-        assert!(
-            res.is_ok(),
-            "build_create_client_and_send failed (chain b) with error {:?}",
-            res
-        );
-        assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
+            // Create the client on chain b
+            let res = b_client.build_create_client_and_send();
+            assert!(
+                res.is_ok(),
+                "build_create_client_and_send failed (chain b) with error {:?}",
+                res
+            );
+            assert!(matches!(res.unwrap().untag(), IbcEvent::CreateClient(_)));
+        }
+
+        test::<ProdChainHandle, ProdChainHandle>()
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.
     #[test]
     fn update_client_and_send_method() {
-        let a_cfg = get_basic_chain_config("chain_a");
-        let b_cfg = get_basic_chain_config("chain_b");
-        let a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
+        fn test<ChainA, ChainB>()
+        where
+            ChainA: ChainHandle<ChainB> + 'static,
+            ChainB: ChainHandle<ChainA> + 'static,
+        {
+            let a_cfg = get_basic_chain_config("chain_a");
+            let b_cfg = get_basic_chain_config("chain_b");
+            let a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
 
-        // The number of ping-pong iterations
-        let num_iterations = 3;
+            // The number of ping-pong iterations
+            let num_iterations = 3;
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
-        let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
+            let rt = Arc::new(TokioRuntime::new().unwrap());
+            let a_chain =
+                ChainRuntime::<MockChain>::spawn::<ChainA, ChainB>(a_cfg, rt.clone()).unwrap();
 
-        let mut b_client =
-            ForeignClient::restore(ClientId::default(), b_chain.clone(), a_chain.clone());
+            let b_chain = ChainRuntime::<MockChain>::spawn::<ChainB, ChainA>(b_cfg, rt).unwrap();
 
-        // This action should fail because no client exists (yet)
-        let res = a_client.build_latest_update_client_and_send();
-        assert!(
-            res.is_err(),
-            "build_update_client_and_send was supposed to fail (no client existed)"
-        );
+            let mut a_client =
+                ForeignClient::restore(Tagged::new(a_client_id), a_chain.clone(), b_chain.clone());
 
-        // Remember b's height.
-        let b_height_start = b_chain.query_latest_height().unwrap();
+            let mut b_client = ForeignClient::restore(
+                Tagged::new(ClientId::default()),
+                b_chain.clone(),
+                a_chain.clone(),
+            );
 
-        // Create a client on chain a
-        let res = a_client.create();
-        assert!(
-            res.is_ok(),
-            "build_create_client_and_send failed (chain a) with error {:?}",
-            res
-        );
-
-        // TODO: optionally add return events from `create` and assert on the event type, e.g.:
-        //      assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
-        //      let a_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
-
-        // This should fail because the client on chain a already has the latest headers. Chain b,
-        // the source chain for the client on a, is at the same height where it was when the client
-        // was created, so an update should fail here.
-        let res = a_client.build_latest_update_client_and_send();
-        assert!(
-            res.is_err(),
-            "build_update_client_and_send was supposed to fail",
-        );
-
-        // Remember b's height.
-        let b_height_last = b_chain.query_latest_height().unwrap();
-        assert_eq!(b_height_last, b_height_start);
-
-        // Create a client on chain b
-        let res = b_client.create();
-        assert!(
-            res.is_ok(),
-            "build_create_client_and_send failed (chain b) with error {:?}",
-            res
-        );
-        // TODO: assert return events
-        //  assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
-
-        // Chain b should have advanced
-        let mut b_height_last = b_chain.query_latest_height().unwrap();
-        assert_eq!(b_height_last, b_height_start.increment());
-
-        // Remember the current height of chain a
-        let mut a_height_last = a_chain.query_latest_height().unwrap();
-
-        // Now we can update both clients -- a ping pong, similar to ICS18 `client_update_ping_pong`
-        for _i in 1..num_iterations {
+            // This action should fail because no client exists (yet)
             let res = a_client.build_latest_update_client_and_send();
+            assert!(
+                res.is_err(),
+                "build_update_client_and_send was supposed to fail (no client existed)"
+            );
 
+            // Remember b's height.
+            let b_height_start = b_chain.query_latest_height().unwrap();
+
+            // Create a client on chain a
+            let res = a_client.create();
             assert!(
                 res.is_ok(),
-                "build_update_client_and_send failed (chain a) with error: {:?}",
+                "build_create_client_and_send failed (chain a) with error {:?}",
                 res
             );
 
-            let res = res.unwrap();
-            assert!(matches!(res.last(), Some(IbcEvent::UpdateClient(_))));
+            // TODO: optionally add return events from `create` and assert on the event type, e.g.:
+            //      assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
+            //      let a_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
 
-            let a_height_current = a_chain.query_latest_height().unwrap();
-            a_height_last = a_height_last.increment();
-            assert_eq!(
-                a_height_last, a_height_current,
-                "after client update, chain a did not advance"
+            // This should fail because the client on chain a already has the latest headers. Chain b,
+            // the source chain for the client on a, is at the same height where it was when the client
+            // was created, so an update should fail here.
+            let res = a_client.build_latest_update_client_and_send();
+            assert!(
+                res.is_err(),
+                "build_update_client_and_send was supposed to fail",
             );
 
-            // And also update the client on chain b.
-            let res = b_client.build_latest_update_client_and_send();
+            // Remember b's height.
+            let b_height_last = b_chain.query_latest_height().unwrap();
+            assert_eq!(b_height_last, b_height_start);
+
+            // Create a client on chain b
+            let res = b_client.create();
             assert!(
                 res.is_ok(),
-                "build_update_client_and_send failed (chain b) with error: {:?}",
+                "build_create_client_and_send failed (chain b) with error {:?}",
                 res
             );
+            // TODO: assert return events
+            //  assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
 
-            let res = res.unwrap();
-            assert!(matches!(res.last(), Some(IbcEvent::UpdateClient(_))));
+            // Chain b should have advanced
+            let mut b_height_last = b_chain.query_latest_height().unwrap();
+            assert_eq!(b_height_last, b_height_start.map_into(|h| h.increment()));
 
-            let b_height_current = b_chain.query_latest_height().unwrap();
-            b_height_last = b_height_last.increment();
-            assert_eq!(
-                b_height_last, b_height_current,
-                "after client update, chain b did not advance"
-            );
+            // Remember the current height of chain a
+            let mut a_height_last = a_chain.query_latest_height().unwrap();
+
+            // Now we can update both clients -- a ping pong, similar to ICS18 `client_update_ping_pong`
+            for _i in 1..num_iterations {
+                let res = a_client.build_latest_update_client_and_send();
+
+                assert!(
+                    res.is_ok(),
+                    "build_update_client_and_send failed (chain a) with error: {:?}",
+                    res
+                );
+
+                let res = res.unwrap();
+                assert!(matches!(
+                    res.untag().last(),
+                    Some(IbcEvent::UpdateClient(_))
+                ));
+
+                let a_height_current = a_chain.query_latest_height().unwrap();
+                a_height_last = a_height_last.map(|h| h.increment());
+                assert_eq!(
+                    a_height_last, a_height_current,
+                    "after client update, chain a did not advance"
+                );
+
+                // And also update the client on chain b.
+                let res = b_client.build_latest_update_client_and_send();
+                assert!(
+                    res.is_ok(),
+                    "build_update_client_and_send failed (chain b) with error: {:?}",
+                    res
+                );
+
+                let res = res.unwrap();
+                assert!(matches!(
+                    res.untag().last(),
+                    Some(IbcEvent::UpdateClient(_))
+                ));
+
+                let b_height_current = b_chain.query_latest_height().unwrap();
+                b_height_last = b_height_last.map_into(|h| h.increment());
+                assert_eq!(
+                    b_height_last, b_height_current,
+                    "after client update, chain b did not advance"
+                );
+            }
         }
+
+        test::<ProdChainHandle, ProdChainHandle>()
     }
 
     /// Tests for `ForeignClient::new()`.
     #[test]
     fn foreign_client_create() {
-        let a_cfg = get_basic_chain_config("chain_a");
-        let b_cfg = get_basic_chain_config("chain_b");
+        fn test<ChainA, ChainB>()
+        where
+            ChainA: ChainHandle<ChainB>,
+            ChainB: ChainHandle<ChainA>,
+        {
+            let a_cfg = get_basic_chain_config("chain_a");
+            let b_cfg = get_basic_chain_config("chain_b");
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            let rt = Arc::new(TokioRuntime::new().unwrap());
+            let a_chain =
+                ChainRuntime::<MockChain>::spawn::<ChainA, ChainB>(a_cfg, rt.clone()).unwrap();
 
-        // Instantiate the foreign clients on the two chains.
-        let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
-        assert!(
-            res_client_on_a.is_ok(),
-            "Client creation (on chain a) failed with error: {:?}",
-            res_client_on_a
-        );
+            let b_chain = ChainRuntime::<MockChain>::spawn::<ChainB, ChainA>(b_cfg, rt).unwrap();
 
-        let client_on_a = res_client_on_a.unwrap();
-        let a_client = client_on_a.id;
+            // Instantiate the foreign clients on the two chains.
+            let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
+            assert!(
+                res_client_on_a.is_ok(),
+                "Client creation (on chain a) failed with error: {:?}",
+                res_client_on_a
+            );
 
-        let res_client_on_b = ForeignClient::new(b_chain.clone(), a_chain.clone());
-        assert!(
-            res_client_on_b.is_ok(),
-            "Client creation (on chain a) failed with error: {:?}",
-            res_client_on_b
-        );
-        let client_on_b = res_client_on_b.unwrap();
-        let b_client = client_on_b.id;
+            let client_on_a = res_client_on_a.unwrap();
+            let a_client = client_on_a.id;
 
-        // Now that the clients exists, we should be able to query its state
-        let b_client_state = b_chain.query_client_state(&b_client, Height::default());
-        assert!(
-            b_client_state.is_ok(),
-            "Client query (on chain b) failed with error: {:?}",
-            b_client_state
-        );
+            let res_client_on_b = ForeignClient::new(b_chain.clone(), a_chain.clone());
+            assert!(
+                res_client_on_b.is_ok(),
+                "Client creation (on chain a) failed with error: {:?}",
+                res_client_on_b
+            );
+            let client_on_b = res_client_on_b.unwrap();
+            let b_client = client_on_b.id;
 
-        let a_client_state = a_chain.query_client_state(&a_client, Height::default());
-        assert!(
-            a_client_state.is_ok(),
-            "Client query (on chain a) failed with error: {:?}",
-            a_client_state
-        );
+            // Now that the clients exists, we should be able to query its state
+            let b_client_state = b_chain.query_client_state(b_client, Height::tagged_zero());
+            assert!(
+                b_client_state.is_ok(),
+                "Client query (on chain b) failed with error: {:?}",
+                b_client_state
+            );
+
+            let a_client_state = a_chain.query_client_state(a_client, Height::tagged_zero());
+            assert!(
+                a_client_state.is_ok(),
+                "Client query (on chain a) failed with error: {:?}",
+                a_client_state
+            );
+        }
+
+        test::<ProdChainHandle, ProdChainHandle>()
     }
 
     /// Tests for `ForeignClient::update()`.
     #[test]
     fn foreign_client_update() {
-        let a_cfg = get_basic_chain_config("chain_a");
-        let b_cfg = get_basic_chain_config("chain_b");
-        let mut _a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
-        let mut _b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
+        fn test<ChainA, ChainB>()
+        where
+            ChainA: ChainHandle<ChainB>,
+            ChainB: ChainHandle<ChainA>,
+        {
+            let a_cfg = get_basic_chain_config("chain_a");
+            let b_cfg = get_basic_chain_config("chain_b");
+            let mut _a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
+            let mut _b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain =
-            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
+            let rt = Arc::new(TokioRuntime::new().unwrap());
+            let a_chain =
+                ChainRuntime::<MockChain>::spawn::<ChainA, ChainB>(a_cfg, rt.clone()).unwrap();
 
-        // Instantiate the foreign clients on the two chains.
-        let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());
-        assert!(
-            client_on_a_res.is_ok(),
-            "Client creation (on chain a) failed with error: {:?}",
-            client_on_a_res
-        );
-        let client_on_a = client_on_a_res.unwrap();
+            let b_chain = ChainRuntime::<MockChain>::spawn::<ChainB, ChainA>(b_cfg, rt).unwrap();
 
-        let client_on_b_res = ForeignClient::new(b_chain.clone(), a_chain.clone());
-        assert!(
-            client_on_b_res.is_ok(),
-            "Client creation (on chain a) failed with error: {:?}",
-            client_on_b_res
-        );
-        let client_on_b = client_on_b_res.unwrap();
-
-        let num_iterations = 5;
-
-        let mut b_height_start = b_chain.query_latest_height().unwrap();
-        let mut a_height_start = a_chain.query_latest_height().unwrap();
-
-        // Update each client
-        for _i in 1..num_iterations {
-            let res = client_on_a.update();
-            assert!(res.is_ok(), "Client update for chain a failed {:?}", res);
-
-            // Basic check that the height of the chain advanced
-            let a_height_current = a_chain.query_latest_height().unwrap();
-            a_height_start = a_height_start.increment();
-            assert_eq!(
-                a_height_start, a_height_current,
-                "after client update, chain a did not advance"
+            // Instantiate the foreign clients on the two chains.
+            let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());
+            assert!(
+                client_on_a_res.is_ok(),
+                "Client creation (on chain a) failed with error: {:?}",
+                client_on_a_res
             );
+            let client_on_a = client_on_a_res.unwrap();
 
-            let res = client_on_b.update();
-            assert!(res.is_ok(), "Client update for chain b failed {:?}", res);
-
-            // Basic check that the height of the chain advanced
-            let b_height_current = b_chain.query_latest_height().unwrap();
-            b_height_start = b_height_start.increment();
-            assert_eq!(
-                b_height_start, b_height_current,
-                "after client update, chain b did not advance"
+            let client_on_b_res = ForeignClient::new(b_chain.clone(), a_chain.clone());
+            assert!(
+                client_on_b_res.is_ok(),
+                "Client creation (on chain a) failed with error: {:?}",
+                client_on_b_res
             );
+            let client_on_b = client_on_b_res.unwrap();
+
+            let num_iterations = 5;
+
+            let mut b_height_start = b_chain.query_latest_height().unwrap();
+            let mut a_height_start = a_chain.query_latest_height().unwrap();
+
+            // Update each client
+            for _i in 1..num_iterations {
+                let res = client_on_a.update();
+                assert!(res.is_ok(), "Client update for chain a failed {:?}", res);
+
+                // Basic check that the height of the chain advanced
+                let a_height_current = a_chain.query_latest_height().unwrap();
+                a_height_start = a_height_start.map(Height::increment);
+                assert_eq!(
+                    a_height_start, a_height_current,
+                    "after client update, chain a did not advance"
+                );
+
+                let res = client_on_b.update();
+                assert!(res.is_ok(), "Client update for chain b failed {:?}", res);
+
+                // Basic check that the height of the chain advanced
+                let b_height_current = b_chain.query_latest_height().unwrap();
+                b_height_start = b_height_start.map(Height::increment);
+                assert_eq!(
+                    b_height_start, b_height_current,
+                    "after client update, chain b did not advance"
+                );
+            }
         }
+
+        test::<ProdChainHandle, ProdChainHandle>()
     }
 }

@@ -51,7 +51,11 @@ where
         let a_channel = self
             .a_to_b
             .src_chain()
-            .query_channel(self.a_to_b.src_port_id(), a_channel_id, Height::default())
+            .query_channel(
+                self.a_to_b.src_port_id(),
+                a_channel_id,
+                Height::tagged_zero(),
+            )
             .map_err(|e| {
                 LinkError::channel_not_found(a_channel_id.clone(), self.a_to_b.src_chain().id(), e)
             })?;

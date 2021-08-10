@@ -4,12 +4,14 @@ use crossbeam_channel as channel;
 use serde::{Serialize, Serializer};
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
-use ibc::ics02_client::events::UpdateClient;
+use ibc::ics02_client::client_state::{
+    AnyClientState, IdentifiedAnyClientState, TaggedClientState,
+};
+use ibc::ics02_client::events::TaggedUpdateClient;
 use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::query::QueryTxRequest;
-use ibc::tagged::{DualTagged, Tagged};
+use ibc::tagged::Tagged;
 use ibc::{
     events::IbcEvent,
     ics02_client::header::AnyHeader,
@@ -91,14 +93,14 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
     fn send_msgs(
         &self,
         proto_msgs: Vec<Tagged<Self, prost_types::Any>>,
-    ) -> Result<Vec<Tagged<Self, IbcEvent>>, Error> {
+    ) -> Result<Tagged<Self, Vec<IbcEvent>>, Error> {
         let proto_msgs = proto_msgs.into_iter().map(Tagged::untag).collect();
         let events = self.send(|reply_to| ChainRequest::SendMsgs {
             proto_msgs,
             reply_to,
         })?;
 
-        Ok(events.into_iter().map(Tagged::new).collect())
+        Ok(Tagged::new(events))
     }
 
     fn get_signer(&self) -> Result<Signer, Error> {
@@ -134,14 +136,14 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         &self,
         client_id: Tagged<Self, ClientId>,
         height: Tagged<Self, Height>,
-    ) -> Result<DualTagged<Self, Counterparty, AnyClientState>, Error> {
+    ) -> Result<TaggedClientState<Self, Counterparty>, Error> {
         let state = self.send(|reply_to| ChainRequest::QueryClientState {
             client_id: client_id.untag(),
             height: height.untag(),
             reply_to,
         })?;
 
-        Ok(DualTagged::new(state))
+        Ok(TaggedClientState::tag(state))
     }
 
     fn query_client_connections(
@@ -166,7 +168,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         client_id: Tagged<Self, ClientId>,
         consensus_height: Tagged<Counterparty, Height>,
         query_height: Tagged<Self, Height>,
-    ) -> Result<DualTagged<Self, Counterparty, AnyConsensusState>, Error> {
+    ) -> Result<Tagged<Self, AnyConsensusState>, Error> {
         let state = self.send(|reply_to| ChainRequest::QueryConsensusState {
             client_id: client_id.untag(),
             consensus_height: consensus_height.untag(),
@@ -174,7 +176,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
             reply_to,
         })?;
 
-        Ok(DualTagged::new(state))
+        Ok(Tagged::new(state))
     }
 
     fn query_upgraded_client_state(
@@ -352,7 +354,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         &self,
         trusted_height: Tagged<Self, Height>,
         target_height: Tagged<Self, Height>,
-        client_state: DualTagged<Counterparty, Self, AnyClientState>,
+        client_state: TaggedClientState<Counterparty, Self>,
     ) -> Result<
         (
             Tagged<Counterparty, AnyHeader>,
@@ -363,7 +365,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         let (header, headers) = self.send(|reply_to| ChainRequest::BuildHeader {
             trusted_height: trusted_height.untag(),
             target_height: target_height.untag(),
-            client_state: client_state.untag(),
+            client_state: client_state.0.untag(),
             reply_to,
         })?;
 
@@ -403,14 +405,16 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
 
     fn check_misbehaviour(
         &self,
-        update_event: Tagged<Self, UpdateClient>,
-        client_state: Tagged<Self, AnyClientState>,
-    ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        self.send(|reply_to| ChainRequest::BuildMisbehaviour {
-            client_state: client_state.untag(),
+        update_event: TaggedUpdateClient<Counterparty, Self>,
+        client_state: TaggedClientState<Counterparty, Self>,
+    ) -> Result<Option<Tagged<Counterparty, MisbehaviourEvidence>>, Error> {
+        let res = self.send(|reply_to| ChainRequest::BuildMisbehaviour {
+            client_state: client_state.0.untag(),
             update_event: update_event.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok(res.map(Tagged::new))
     }
 
     fn build_connection_proofs_and_client_state(
@@ -419,7 +423,13 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         connection_id: Tagged<Self, ConnectionId>,
         client_id: Tagged<Self, ClientId>,
         height: Tagged<Self, Height>,
-    ) -> Result<(Option<Tagged<Self, AnyClientState>>, Tagged<Self, Proofs>), Error> {
+    ) -> Result<
+        (
+            Option<TaggedClientState<Self, Counterparty>>,
+            Tagged<Self, Proofs>,
+        ),
+        Error,
+    > {
         let (m_state, proof) =
             self.send(
                 |reply_to| ChainRequest::BuildConnectionProofsAndClientState {
@@ -431,7 +441,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
                 },
             )?;
 
-        Ok((m_state.map(Tagged::new), Tagged::new(proof)))
+        Ok((m_state.map(TaggedClientState::tag), Tagged::new(proof)))
     }
 
     fn build_channel_proofs(

@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-use crate::ics02_client::client_state::AnyClientState;
+use crate::ics02_client::client_state::{AnyClientState, TaggedClientState};
 use crate::ics03_connection::error::Error;
 use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
@@ -50,7 +50,7 @@ impl MsgConnectionOpenAck {
     pub fn tagged_new<Chain, Counterparty>(
         connection_id: Tagged<Chain, ConnectionId>,
         counterparty_connection_id: Tagged<Counterparty, ConnectionId>,
-        client_state: Option<Tagged<Counterparty, AnyClientState>>,
+        client_state: Option<TaggedClientState<Counterparty, Chain>>,
         proofs: Tagged<Counterparty, Proofs>,
         version: Tagged<Counterparty, Version>,
         signer: Signer,
@@ -58,7 +58,7 @@ impl MsgConnectionOpenAck {
         Tagged::new(Self::new(
             connection_id.untag(),
             counterparty_connection_id.untag(),
-            client_state.map(Tagged::untag),
+            client_state.map(TaggedClientState::untag),
             proofs.untag(),
             version.untag(),
             signer,

@@ -9,6 +9,7 @@ use crate::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
+use crate::tagged::Tagged;
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgSubmitMisbehaviour";
 
@@ -21,6 +22,32 @@ pub struct MsgSubmitAnyMisbehaviour {
     pub misbehaviour: AnyMisbehaviour,
     /// signer address
     pub signer: Signer,
+}
+
+impl MsgSubmitAnyMisbehaviour {
+    pub fn new(
+        client_id: ClientId,
+        misbehaviour: AnyMisbehaviour,
+        signer: Signer,
+    ) -> Self {
+        Self {
+            client_id,
+            misbehaviour,
+            signer
+        }
+    }
+
+    pub fn tagged_new<Chain>(
+        client_id: Tagged<Chain, ClientId>,
+        misbehaviour: Tagged<Chain, AnyMisbehaviour>,
+        signer: Signer,
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(
+            client_id.untag(),
+            misbehaviour.untag(),
+            signer
+        ))
+    }
 }
 
 impl Msg for MsgSubmitAnyMisbehaviour {

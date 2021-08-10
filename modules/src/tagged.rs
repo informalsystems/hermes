@@ -1,6 +1,7 @@
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt::{self, Debug, Display};
 use core::marker::PhantomData;
+use core::iter::{Iterator, IntoIterator};
 
 pub struct Tagged<Tag, Value>(pub Value, pub PhantomData<Tag>);
 
@@ -61,6 +62,12 @@ impl<Tag1, Tag2, Value> DualTagged<Tag1, Tag2, Value> {
         DualTagged::new(mapper(self.0))
     }
 }
+
+// impl <Tag, Value> Iterator for TaggedVec<Tag, Value> {
+//     type Item = Tagged<Tag, Value>;
+
+
+// }
 
 impl<Tag, Value> Tagged<Tag, Option<Value>> {
     pub fn transpose(self) -> Option<Tagged<Tag, Value>> {
@@ -165,5 +172,27 @@ impl<Tag1, Tag2, Value: PartialOrd> PartialOrd for DualTagged<Tag1, Tag2, Value>
 impl<Tag1, Tag2, Value: Ord> Ord for DualTagged<Tag1, Tag2, Value> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.value().cmp(other.value())
+    }
+}
+
+pub struct TaggedIterator<Tag, It>(Tagged<Tag, It>);
+
+impl <Tag, It: Iterator> Iterator for TaggedIterator<Tag, It>
+{
+    type Item = Tagged<Tag, It::Item>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.0.next().map(Tagged::new)
+    }
+}
+
+impl <Tag, Value: IntoIterator> IntoIterator for Tagged<Tag, Value>
+{
+    type Item = Tagged<Tag, Value::Item>;
+
+    type IntoIter = TaggedIterator<Tag, Value::IntoIter>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        TaggedIterator(self.map_into(|v| v.into_iter()))
     }
 }

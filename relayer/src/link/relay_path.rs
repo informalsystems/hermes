@@ -6,6 +6,7 @@ use itertools::Itertools;
 use prost_types::Any;
 use tracing::{debug, error, info, trace};
 
+use ibc::tagged::Tagged;
 use ibc::{
     events::{IbcEvent, IbcEventType, PrettyEvents},
     ics04_channel::{
@@ -81,11 +82,11 @@ where
         self.channel.dst_chain()
     }
 
-    pub fn src_client_id(&self) -> &ClientId {
+    pub fn src_client_id(&self) -> Tagged<ChainA, ClientId> {
         self.channel.src_client_id()
     }
 
-    pub fn dst_client_id(&self) -> &ClientId {
+    pub fn dst_client_id(&self) -> Tagged<ChainB, ClientId> {
         self.channel.dst_client_id()
     }
 

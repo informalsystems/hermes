@@ -8,7 +8,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-use crate::ics02_client::client_state::AnyClientState;
+use crate::ics02_client::client_state::{AnyClientState, TaggedClientState};
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::Error;
 use crate::ics03_connection::version::Version;
@@ -63,7 +63,7 @@ impl MsgConnectionOpenTry {
     pub fn tagged_new<ChainA, ChainB>(
         previous_connection_id: Option<Tagged<ChainA, ConnectionId>>,
         client_id: Tagged<ChainA, ClientId>,
-        client_state: Option<Tagged<ChainB, AnyClientState>>,
+        client_state: Option<TaggedClientState<ChainB, ChainA>>,
         counterparty: Tagged<ChainB, Counterparty>,
         counterparty_versions: Vec<Tagged<ChainB, Version>>,
         proofs: Tagged<ChainB, Proofs>,
@@ -73,7 +73,7 @@ impl MsgConnectionOpenTry {
         Tagged::new(Self::new(
             previous_connection_id.map(Tagged::untag),
             client_id.untag(),
-            client_state.map(Tagged::untag),
+            client_state.map(|s| s.0.untag()),
             counterparty.untag(),
             counterparty_versions
                 .into_iter()

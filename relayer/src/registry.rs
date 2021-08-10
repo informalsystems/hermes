@@ -113,11 +113,14 @@ where
 
 /// Spawns a chain runtime from the configuration and given a chain identifier.
 /// Returns the corresponding handle if successful.
-pub fn spawn_chain_runtime<Chain: ChainHandle>(
+pub fn spawn_chain_runtime<Chain, Counterparty>(
     config: &RwArc<Config>,
     chain_id: &ChainId,
     rt: Arc<TokioRuntime>,
-) -> Result<Chain, SpawnError> {
+) -> Result<Chain, SpawnError>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     let chain_config = config
         .read()
         .expect("poisoned lock")

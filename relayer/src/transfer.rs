@@ -64,11 +64,14 @@ pub struct TransferOptions {
     pub number_msgs: usize,
 }
 
-pub fn build_and_send_transfer_messages<Chain: ChainHandle>(
-    packet_src_chain: Chain, // the chain whose account is debited
-    packet_dst_chain: Chain, // the chain whose account eventually gets credited
+pub fn build_and_send_transfer_messages<DstChain, SrcChain>(
+    packet_src_chain: SrcChain, // the chain whose account is debited
+    packet_dst_chain: DstChain, // the chain whose account eventually gets credited
     opts: TransferOptions,
-) -> Result<Vec<IbcEvent>, PacketError> {
+) -> Result<Vec<IbcEvent>, PacketError>
+where
+    DstChain: ChainHandle<SrcChain>,
+{
     let receiver = match &opts.receiver {
         None => packet_dst_chain.get_signer(),
         Some(r) => Ok(r.clone().into()),

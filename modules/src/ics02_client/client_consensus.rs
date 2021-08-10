@@ -17,6 +17,7 @@ use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
+use crate::tagged::DualTagged;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
@@ -50,6 +51,9 @@ pub enum AnyConsensusState {
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockConsensusState),
 }
+
+pub struct TaggedConsensusState<DstChain, SrcChain>(
+    pub DualTagged<DstChain, SrcChain, AnyConsensusState>);
 
 impl AnyConsensusState {
     pub fn timestamp(&self) -> Timestamp {

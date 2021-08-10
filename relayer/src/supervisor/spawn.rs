@@ -556,11 +556,7 @@ where
         Ok(())
     }
 
-    fn relay_packets_on_channel(
-        &mut self,
-        chain: &impl ChainHandle,
-        channel: &IdentifiedChannelEnd,
-    ) -> bool {
+    fn relay_packets_on_channel(&mut self, chain: &Chain, channel: &IdentifiedChannelEnd) -> bool {
         let config = self.config.read().expect("poisoned lock");
         config.packets_on_channel_allowed(&chain.id(), &channel.port_id, &channel.channel_id)
     }

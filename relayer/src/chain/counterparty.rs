@@ -18,10 +18,13 @@ use crate::supervisor::Error;
 
 use super::handle::ChainHandle;
 
-pub fn counterparty_chain_from_connection<Chain: ChainHandle>(
+pub fn counterparty_chain_from_connection<Chain, Counterparty>(
     src_chain: &Chain,
     src_connection_id: Tagged<Chain, ConnectionId>,
-) -> Result<ChainId, Error> {
+) -> Result<Tagged<Counterparty, ChainId>, Error>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     let connection_end = src_chain
         .query_connection(src_connection_id, Height::tagged_zero())
         .map_err(Error::relayer)?;
@@ -33,9 +36,9 @@ pub fn counterparty_chain_from_connection<Chain: ChainHandle>(
 
     trace!(
         chain_id=%src_chain.id(), connection_id=%src_connection_id,
-        "counterparty chain: {}", client_state.value().chain_id()
+        "counterparty chain: {}", client_state.chain_id()
     );
-    Ok(client_state.value().chain_id())
+    Ok(client_state.chain_id())
 }
 
 fn connection_on_destination<Chain, Counterparty>(
@@ -175,7 +178,7 @@ where
         .query_client_state(client_id, Height::tagged_zero())
         .map_err(Error::relayer)?;
 
-    let client = IdentifiedAnyClientState::new(client_id.untag(), client_state.untag());
+    let client = IdentifiedAnyClientState::new(client_id.untag(), client_state.0.untag());
 
     let connection = IdentifiedConnectionEnd::new(connection_id, connection_end);
 
@@ -184,11 +187,14 @@ where
     Ok(ChannelConnectionClient::new(channel, connection, client))
 }
 
-pub fn counterparty_chain_from_channel<Chain: ChainHandle>(
+pub fn counterparty_chain_from_channel<Chain, Counterparty>(
     src_chain: &Chain,
     src_channel_id: Tagged<Chain, ChannelId>,
     src_port_id: Tagged<Chain, PortId>,
-) -> Result<ChainId, Error> {
+) -> Result<ChainId, Error>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     let client = channel_connection_client(src_chain, src_port_id, src_channel_id)?;
     Ok(client.client.client_state.chain_id())
 }
@@ -291,11 +297,14 @@ where
 /// that the counterparty field on that channel end matches an
 /// expected counterparty.
 /// Returns `Ok` if the counterparty matches, and `Err` otherwise.
-pub fn check_channel_counterparty<Chain: ChainHandle>(
+pub fn check_channel_counterparty<Chain, Counterparty>(
     target_chain: &Chain,
     target_pchan: Tagged<Chain, PortChannelId>,
-    expected: Tagged<Chain, PortChannelId>,
-) -> Result<(), ChannelError> {
+    expected: Tagged<Counterparty, PortChannelId>,
+) -> Result<(), ChannelError>
+where
+    Chain: ChainHandle<Counterparty>,
+{
     let channel_end_dst = target_chain
         .query_channel(
             target_pchan.map(|c| c.port_id.clone()),

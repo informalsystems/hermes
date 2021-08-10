@@ -17,6 +17,7 @@ use crate::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
 use crate::Height;
+use crate::tagged::{Tagged, DualTagged};
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
@@ -47,6 +48,10 @@ pub enum AnyClientState {
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockClientState),
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TaggedClientState<DstChain, SrcChain>(
+    pub DualTagged<DstChain, SrcChain, AnyClientState>);
 
 impl AnyClientState {
     pub fn latest_height(&self) -> Height {
@@ -92,6 +97,52 @@ impl AnyClientState {
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
+    }
+}
+
+impl <DstChain, SrcChain>
+    TaggedClientState<DstChain, SrcChain>
+{
+    pub fn tag(state: AnyClientState) -> Self {
+        Self(DualTagged::new(state))
+    }
+
+    pub fn chain_id(&self) -> Tagged<SrcChain, ChainId> {
+        self.0.map_flipped(|s| s.chain_id())
+    }
+
+    pub fn latest_height(&self) -> Tagged<SrcChain, Height> {
+        self.0.map_flipped(|s| s.latest_height())
+    }
+
+    pub fn trust_threshold(&self) -> Option<Tagged<DstChain, TrustThreshold>> {
+        self.0
+            .map(|s| s.trust_threshold())
+            .transpose()
+    }
+
+    pub fn client_type(&self) -> Tagged<DstChain, ClientType> {
+        self.0
+            .map(|s| s.client_type())
+    }
+
+    pub fn refresh_period(&self) -> Option<Tagged<DstChain, Duration>> {
+        self.0
+            .map(|s| s.refresh_period())
+            .transpose()
+    }
+
+    pub fn expired(&self, elapsed_since_latest: Duration) -> Tagged<DstChain, bool> {
+        self.0
+            .map(|s| s.expired(elapsed_since_latest))
+    }
+
+    pub fn value(&self) -> &AnyClientState {
+        self.0.value()
+    }
+
+    pub fn untag(self) -> AnyClientState {
+        self.0.untag()
     }
 }
 

@@ -11,6 +11,7 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
+use crate::tagged::{Tagged, DualTagged};
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
@@ -201,10 +202,14 @@ pub struct UpdateClient {
     pub header: Option<AnyHeader>,
 }
 
+pub struct TaggedUpdateClient<Chain, Counterparty>(
+    pub DualTagged<Chain, Counterparty, UpdateClient>);
+
 impl UpdateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.common.client_id
     }
+
     pub fn client_type(&self) -> ClientType {
         self.common.client_type
     }
@@ -219,6 +224,36 @@ impl UpdateClient {
 
     pub fn consensus_height(&self) -> Height {
         self.common.consensus_height
+    }
+}
+
+impl <Chain, Counterparty> TaggedUpdateClient<Chain, Counterparty> {
+    pub fn tag(c: UpdateClient) -> Self {
+        Self(DualTagged::new(c))
+    }
+
+    pub fn client_id(&self) -> Tagged<Chain, ClientId> {
+        self.0.map(|c| c.client_id().clone())
+    }
+
+    pub fn client_type(&self) -> Tagged<Chain, ClientType> {
+        self.0.map(|c| c.client_type())
+    }
+
+    pub fn height(&self) -> Tagged<Counterparty, Height> {
+        self.0.map_flipped(|c| c.height())
+    }
+
+    pub fn consensus_height(&self) -> Tagged<Counterparty, Height> {
+        self.0.map_flipped(|c| c.consensus_height())
+    }
+
+    pub fn untag(self) -> UpdateClient {
+        self.0.untag()
+    }
+
+    pub fn value(&self) -> &UpdateClient {
+        self.0.value()
     }
 }
 
