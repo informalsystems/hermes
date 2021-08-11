@@ -527,7 +527,7 @@ impl<'a> SpawnContext<'a> {
                 || !unreceived_acknowledgements(
                     counterparty_chain.as_ref(),
                     chain.as_ref(),
-                    counterparty_channel.clone(),
+                    counterparty_channel,
                 )?
                 .is_empty();
 

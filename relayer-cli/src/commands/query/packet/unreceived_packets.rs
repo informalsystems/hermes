@@ -49,7 +49,7 @@ impl QueryUnreceivedPacketsCmd {
         );
 
         unreceived_packets(chains.src.as_ref(), chains.dst.as_ref(), channel)
-            .map_err(Error::relayer)
+            .map_err(Error::supervisor)
     }
 }
 

@@ -298,12 +298,7 @@ pub fn unreceived_packets(
         .counterparty()
         .channel_id
         .as_ref()
-        .ok_or_else(|| {
-            Error::QueryFailed(format!(
-                "the channel {:?} has no counterparty channel id",
-                channel
-            ))
-        })?;
+        .ok_or_else(Error::missing_counterparty_channel_id)?;
 
     let (_, sequences, _) = unreceived_packets_sequences(
         counterparty_chain,
@@ -334,7 +329,7 @@ pub(crate) fn unreceived_packets_sequences(
 
     let (commitments, src_response_height) = src_chain
         .query_packet_commitments(commitments_request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+        .map_err(Error::relayer)?;
 
     let commit_sequences: Vec<u64> = commitments.into_iter().map(|v| v.sequence).collect();
     if commit_sequences.is_empty() {
@@ -349,7 +344,7 @@ pub(crate) fn unreceived_packets_sequences(
 
     let sequences = dst_chain
         .query_unreceived_packets(request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+        .map_err(Error::relayer)?;
 
     Ok((commit_sequences, sequences, src_response_height))
 }
@@ -364,12 +359,7 @@ pub fn unreceived_acknowledgements(
         .counterparty()
         .channel_id
         .as_ref()
-        .ok_or_else(|| {
-            Error::QueryFailed(format!(
-                "the channel {:?} has no counterparty channel id",
-                channel
-            ))
-        })?;
+        .ok_or_else(Error::missing_counterparty_channel_id)?;
 
     let (_, sequences, _) = unreceived_acknowledgements_sequences(
         counterparty_chain,
@@ -400,7 +390,7 @@ pub(crate) fn unreceived_acknowledgements_sequences(
 
     let (acks, src_response_height) = src_chain
         .query_packet_acknowledgements(acks_request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+        .map_err(Error::relayer)?;
 
     let mut acked_sequences: Vec<u64> = acks.into_iter().map(|v| v.sequence).collect();
     if acked_sequences.is_empty() {
@@ -417,7 +407,7 @@ pub(crate) fn unreceived_acknowledgements_sequences(
 
     let sequences = dst_chain
         .query_unreceived_acknowledgement(request)
-        .map_err(|e| Error::QueryFailed(format!("{}", e)))?;
+        .map_err(Error::relayer)?;
 
     Ok((acked_sequences, sequences, src_response_height))
 }

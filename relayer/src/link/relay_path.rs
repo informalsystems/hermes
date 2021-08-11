@@ -764,7 +764,7 @@ impl RelayPath {
             dst_channel_id,
             self.dst_port_id(),
         )
-        .map_err(LinkError::relayer)?;
+        .map_err(LinkError::supervisor)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -847,7 +847,7 @@ impl RelayPath {
                 dst_channel_id,
                 self.dst_port_id(),
             )
-            .map_err(LinkError::relayer)?;
+            .map_err(LinkError::supervisor)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
