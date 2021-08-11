@@ -37,7 +37,7 @@ use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{
-    OperationPayload, OperationalData, OperationalDataTarget, TransitMessage,
+    DstOperationPayload, OperationalData, OperationalDataTarget, SrcOperationPayload,
 };
 use crate::link::relay_summary::RelaySummary;
 
@@ -57,9 +57,9 @@ where
     // These vectors of operational data are ordered decreasingly by their age, with element at
     // position `0` being the oldest.
     // The operational data targeting the source chain comprises mostly timeout packet messages.
-    src_operational_data: Vec<OperationPayload<ChainA, ChainB>>,
+    src_operational_data: Vec<SrcOperationPayload<ChainA, ChainB>>,
     // The operational data targeting the destination chain comprises mostly RecvPacket and Ack msgs.
-    dst_operational_data: Vec<OperationPayload<ChainB, ChainA>>,
+    dst_operational_data: Vec<DstOperationPayload<ChainA, ChainB>>,
 }
 
 impl<ChainA, ChainB> RelayPath<ChainA, ChainB>
@@ -343,8 +343,8 @@ where
         input: Vec<Tagged<ChainA, IbcEvent>>,
     ) -> Result<
         (
-            Option<OperationPayload<ChainA, ChainB>>,
-            Option<OperationPayload<ChainB, ChainA>>,
+            Option<SrcOperationPayload<ChainA, ChainB>>,
+            Option<DstOperationPayload<ChainA, ChainB>>,
         ),
         LinkError,
     > {
@@ -362,9 +362,9 @@ where
 
         let dst_height = self.dst_latest_height()?;
         // Operational data targeting the source chain (e.g., Timeout packets)
-        let mut src_od = OperationPayload::new(dst_height);
+        let mut src_od = SrcOperationPayload::new(dst_height);
         // Operational data targeting the destination chain (e.g., SendPacket messages)
-        let mut dst_od = OperationPayload::new(src_height);
+        let mut dst_od = DstOperationPayload::new(src_height);
 
         for event in input {
             debug!("[{}] {} => {}", self, self.src_chain().id(), event);
@@ -433,7 +433,7 @@ where
                     event
                 );
 
-                dst_od.batch.push(TransitMessage::new(event, msg));
+                dst_od.batch.push((event, msg));
             }
 
             // Collect timeout messages, to be sent to the source chain
@@ -448,7 +448,7 @@ where
                         msg.value().type_url,
                         event
                     );
-                    src_od.batch.push(TransitMessage::new(event, msg));
+                    src_od.batch.push((event, msg));
                 }
             }
         }
@@ -480,10 +480,10 @@ where
             info!(
                 "[{}] relay op. data of {} msgs(s) to {} (height {}), delayed by: {:?} [try {}/{}]",
                 self,
-                odata.batch.len(),
-                odata.target,
-                odata.proofs_height.increment(),
-                odata.scheduled_time.elapsed(),
+                odata.batch_len(),
+                odata.target(),
+                odata.untagged_height().increment(),
+                odata.scheduled_time().elapsed(),
                 i + 1,
                 MAX_RETRIES
             );
@@ -541,7 +541,7 @@ where
         info!(
             "[{}] failed. Regenerate operational data from {} events",
             self,
-            initial_odata.events().len()
+            initial_odata.batch_len()
         );
 
         // Retry by re-generating the operational data using the initial events
@@ -558,41 +558,47 @@ where
         };
 
         if let Some(src_od) = src_opt {
-            if src_od.target == initial_odata.target {
-                // Our target is the _source_ chain, retry these messages
-                info!("[{}] will retry with op data {}", self, src_od);
-                return Some(src_od);
-            } else {
-                // Our target is the _destination_ chain, the data in `src_od` contains
-                // potentially new timeout messages that have to be handled separately.
-                if let Err(e) = self.schedule_operational_data(src_od) {
-                    error!(
-                        "[{}] failed to schedule newly-generated operational data from \
-                    initial data: {} with error {}, discarding this op. data",
-                        self, initial_odata, e
-                    );
-                    return None;
+            match initial_odata {
+                OperationalData::Src(_) => {
+                    // Our target is the _source_ chain, retry these messages
+                    info!("[{}] will retry with op data {}", self, src_od);
+                    return Some(OperationalData::Src(src_od));
+                }
+                OperationalData::Dst(_) => {
+                    // Our target is the _destination_ chain, the data in `src_od` contains
+                    // potentially new timeout messages that have to be handled separately.
+                    if let Err(e) = self.schedule_operational_data(OperationalData::Src(src_od)) {
+                        error!(
+                            "[{}] failed to schedule newly-generated operational data from \
+                        initial data: {} with error {}, discarding this op. data",
+                            self, initial_odata, e
+                        );
+                        return None;
+                    }
                 }
             }
         }
 
         if let Some(dst_od) = dst_opt {
-            if dst_od.target == initial_odata.target {
-                // Our target is the _destination_ chain, retry these messages
-                info!("[{}] will retry with op data {}", self, dst_od);
-                return Some(dst_od);
-            } else {
-                // Our target is the _source_ chain, but `dst_od` has new messages
-                // intended for the destination chain, this should never be the case
-                error!(
-                    "[{}] generated new messages for destination chain while handling \
-                    failed events targeting the source chain!",
-                    self
-                );
+            match initial_odata {
+                OperationalData::Src(_) => {
+                    // Our target is the _source_ chain, but `dst_od` has new messages
+                    // intended for the destination chain, this should never be the case
+                    error!(
+                        "[{}] generated new messages for destination chain while handling \
+                        failed events targeting the source chain!",
+                        self
+                    );
+                }
+                OperationalData::Dst(_) => {
+                    // Our target is the _destination_ chain, retry these messages
+                    info!("[{}] will retry with op data {}", self, dst_od);
+                    return Some(OperationalData::Dst(dst_od));
+                }
             }
         } else {
             // There is no message intended for the destination chain
-            if initial_odata.target == OperationalDataTarget::Destination {
+            if initial_odata.target() == OperationalDataTarget::Destination {
                 info!("[{}] exhausted all events from this operational data", self);
                 return None;
             }
@@ -609,22 +615,30 @@ where
         &mut self,
         odata: OperationalData<ChainA, ChainB>,
     ) -> Result<RelaySummary, LinkError> {
-        if odata.batch.is_empty() {
+        if odata.is_empty_batch() {
             error!("[{}] ignoring empty operational data!", self);
             return Ok(RelaySummary::empty());
         }
 
-        let msgs = odata.assemble_msgs(self)?;
+        // let msgs = odata.assemble_msgs(self)?;
 
-        let tx_events = match odata.target {
-            OperationalDataTarget::Source => self
-                .src_chain()
-                .send_msgs(msgs)
-                .map_err(LinkError::relayer)?,
-            OperationalDataTarget::Destination => self
-                .dst_chain()
-                .send_msgs(msgs)
-                .map_err(LinkError::relayer)?,
+        let tx_events = match odata {
+            OperationalData::Src(data) => {
+                let messages = data.assemble_msgs(self)?;
+                let events = self
+                    .src_chain()
+                    .send_msgs(messages)
+                    .map_err(LinkError::relayer)?;
+                events.untag()
+            }
+            OperationalData::Dst(data) => {
+                let messages = data.assemble_msgs(self)?;
+                let events = self
+                    .dst_chain()
+                    .send_msgs(messages)
+                    .map_err(LinkError::relayer)?;
+                events.untag()
+            }
         };
 
         info!("[{}] result {}\n", self, PrettyEvents(&tx_events));

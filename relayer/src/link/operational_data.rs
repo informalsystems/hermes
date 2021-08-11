@@ -27,14 +27,6 @@ impl fmt::Display for OperationalDataTarget {
     }
 }
 
-/// A packet messages that is prepared for sending to a chain, but has not been sent yet.
-/// Comprises both the proto-encoded packet message, alongside the event which generated it.
-#[derive(Clone)]
-pub struct TransitMessage<Chain> {
-    pub event: Tagged<Chain, IbcEvent>,
-    pub msg: Tagged<Chain, Any>,
-}
-
 /// Holds all the necessary information for handling a set of in-transit messages.
 ///
 /// Each `OperationalData` item is uniquely identified by the combination of two attributes:
@@ -46,20 +38,6 @@ pub struct TransitMessage<Chain> {
 pub enum OperationalData<SrcChain, DstChain> {
     Src(SrcOperationPayload<SrcChain, DstChain>),
     Dst(DstOperationPayload<SrcChain, DstChain>),
-}
-
-pub enum AssembledMessages<SrcChain, DstChain> {
-    Src(Vec<Tagged<SrcChain, Any>>),
-    Dst(Vec<Tagged<DstChain, Any>>),
-}
-
-#[derive(Clone)]
-pub struct OperationPayload<Chain, Counterparty> {
-    pub proofs_height: Tagged<Counterparty, Height>,
-    pub batch: Vec<TransitMessage<Chain>>,
-    /// Stores the time when the clients on the target chain has been updated, i.e., when this data
-    /// was scheduled. Necessary for packet delays.
-    pub scheduled_time: Instant,
 }
 
 #[derive(Clone)]
@@ -116,39 +94,6 @@ impl<SrcChain, DstChain> DstOperationPayload<SrcChain, DstChain> {
     }
 }
 
-impl<Chain, Counterparty> OperationPayload<Chain, Counterparty> {
-    pub fn new(proofs_height: Tagged<Counterparty, Height>) -> Self {
-        OperationPayload {
-            proofs_height,
-            batch: vec![],
-            scheduled_time: Instant::now(),
-        }
-    }
-
-    pub fn batch_events(&self) -> Vec<Tagged<Chain, IbcEvent>> {
-        self.batch.iter().map(|gm| gm.event).collect()
-    }
-
-    pub fn batch_messages(&self) -> Vec<Tagged<Chain, Any>> {
-        self.batch.iter().map(|gm| gm.msg).collect()
-    }
-}
-
-impl<Chain> TransitMessage<Chain> {
-    pub fn new(event: Tagged<Chain, IbcEvent>, msg: Tagged<Chain, Any>) -> Self {
-        Self { event, msg }
-    }
-}
-
-impl<SrcChain, DstChain> AssembledMessages<SrcChain, DstChain> {
-    pub fn len(&self) -> usize {
-        match self {
-            Self::Src(messages) => messages.len(),
-            Self::Dst(messages) => messages.len(),
-        }
-    }
-}
-
 impl<SrcChain, DstChain> OperationalData<SrcChain, DstChain> {
     pub fn new_src(proofs_height: Tagged<DstChain, Height>) -> Self {
         OperationalData::Src(SrcOperationPayload::new(proofs_height))
@@ -178,9 +123,30 @@ impl<SrcChain, DstChain> OperationalData<SrcChain, DstChain> {
             Self::Dst(data) => data.batch.is_empty(),
         }
     }
+
+    pub fn untagged_height(&self) -> Height {
+        match self {
+            Self::Src(data) => data.proofs_height.value().clone(),
+            Self::Dst(data) => data.proofs_height.value().clone(),
+        }
+    }
+
+    pub fn scheduled_time(&self) -> Instant {
+        match self {
+            Self::Src(data) => data.scheduled_time.clone(),
+            Self::Dst(data) => data.scheduled_time.clone(),
+        }
+    }
+
+    pub fn events(&self) -> Vec<Tagged<SrcChain, IbcEvent>> {
+        match self {
+            Self::Src(data) => data.batch_events(),
+            Self::Dst(data) => data.batch_events(),
+        }
+    }
 }
 
-impl<SrcChain, DstChain> OperationalData<SrcChain, DstChain>
+impl<SrcChain, DstChain> SrcOperationPayload<SrcChain, DstChain>
 where
     SrcChain: ChainHandle<DstChain>,
     DstChain: ChainHandle<SrcChain>,
@@ -190,84 +156,81 @@ where
     pub fn assemble_msgs(
         &self,
         relay_path: &RelayPath<SrcChain, DstChain>,
-    ) -> Result<AssembledMessages<SrcChain, DstChain>, LinkError> {
-        let messages = match self {
-            Self::Src(data) => {
-                let mut batch_messages = data.batch_messages();
+    ) -> Result<Vec<Tagged<SrcChain, Any>>, LinkError> {
+        let mut batch_messages = self.batch_messages();
 
-                if batch_messages.is_empty() {
-                    warn!("assemble_msgs() method call on an empty OperationalData!");
-                    return Ok(AssembledMessages::Src(batch_messages));
-                }
+        if batch_messages.is_empty() {
+            warn!("assemble_msgs() method call on an empty OperationalData!");
+            return Ok(batch_messages);
+        }
 
-                // For zero delay we prepend the client update msgs.
-                if relay_path.zero_delay() {
-                    let update_height = data.proofs_height.map(|h| h.increment());
+        // For zero delay we prepend the client update msgs.
+        if relay_path.zero_delay() {
+            let update_height = self.proofs_height.map(|h| h.increment());
 
-                    info!(
-                        "[{}] prepending {} client update @ height {}",
-                        relay_path,
-                        self.target(),
-                        update_height
-                    );
+            info!(
+                "[{}] prepending Source client update @ height {}",
+                relay_path, update_height
+            );
 
-                    let update_events = relay_path.build_update_client_on_src(update_height)?;
+            let update_events = relay_path.build_update_client_on_src(update_height)?;
 
-                    if let Some(client_update) = update_events.pop() {
-                        batch_messages.push(client_update);
-                    }
-                }
-
-                AssembledMessages::Src(batch_messages)
+            if let Some(client_update) = update_events.pop() {
+                batch_messages.push(client_update);
             }
-            Self::Dst(data) => {
-                let mut batch_messages = data.batch_messages();
-
-                if batch_messages.is_empty() {
-                    warn!("assemble_msgs() method call on an empty OperationalData!");
-                    return Ok(AssembledMessages::Dst(batch_messages));
-                }
-
-                // For zero delay we prepend the client update msgs.
-                if relay_path.zero_delay() {
-                    let update_height = data.proofs_height.map(|h| h.increment());
-
-                    info!(
-                        "[{}] prepending {} client update @ height {}",
-                        relay_path,
-                        self.target(),
-                        update_height
-                    );
-
-                    let update_events = relay_path.build_update_client_on_dst(update_height)?;
-
-                    if let Some(client_update) = update_events.pop() {
-                        batch_messages.push(client_update);
-                    }
-                }
-
-                AssembledMessages::Dst(batch_messages)
-            }
-        };
+        }
 
         info!(
             "[{}] assembled batch of {} message(s)",
             relay_path,
-            messages.len()
+            batch_messages.len()
         );
 
-        Ok(messages)
+        Ok(batch_messages)
     }
 }
 
-impl<Chain, Counterparty> fmt::Display for OperationPayload<Chain, Counterparty> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "@{}; {} event(s) & msg(s) in batch",
-            self.proofs_height,
-            self.batch.len(),
-        )
+impl<SrcChain, DstChain> DstOperationPayload<SrcChain, DstChain>
+where
+    SrcChain: ChainHandle<DstChain>,
+    DstChain: ChainHandle<SrcChain>,
+{
+    /// Returns all the messages in this operational data, plus prepending the client update message
+    /// if necessary.
+    pub fn assemble_msgs(
+        &self,
+        relay_path: &RelayPath<SrcChain, DstChain>,
+    ) -> Result<Vec<Tagged<DstChain, Any>>, LinkError> {
+        let mut batch_messages = self.batch_messages();
+
+        if batch_messages.is_empty() {
+            warn!("assemble_msgs() method call on an empty OperationalData!");
+            return Ok(batch_messages);
+        }
+
+        // For zero delay we prepend the client update msgs.
+        if relay_path.zero_delay() {
+            let update_height = self.proofs_height.map(|h| h.increment());
+
+            info!(
+                "[{}] prepending Destination client update @ height {}",
+                relay_path, update_height
+            );
+
+            let update_events = relay_path.build_update_client_on_dst(update_height)?;
+
+            if let Some(client_update) = update_events.pop() {
+                batch_messages.push(client_update);
+            }
+        }
+
+        info!(
+            "[{}] assembled batch of {} message(s)",
+            relay_path,
+            batch_messages.len()
+        );
+
+        Ok(batch_messages)
     }
 }
 
