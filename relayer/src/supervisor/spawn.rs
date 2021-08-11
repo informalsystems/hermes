@@ -28,6 +28,7 @@ use crate::{
 };
 
 use super::{Error, RwArc};
+use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum SpawnMode {
@@ -314,11 +315,6 @@ impl<'a> SpawnContext<'a> {
             return;
         }
 
-        let connection = IdentifiedConnectionEnd {
-            connection_id: connection_id.clone(),
-            connection_end: connection_end.clone(),
-        };
-
         match self.counterparty_connection_state(client.clone(), connection.clone()) {
             Err(e) => {
                 debug!("error with counterparty: reason {}", e);
@@ -357,8 +353,6 @@ impl<'a> SpawnContext<'a> {
                 return;
             }
         };
-
-        let connection = IdentifiedConnectionEnd::new(connection_id, connection_end);
 
         for channel in connection_channels {
             let channel_id = channel.channel_id.clone();
@@ -424,7 +418,7 @@ impl<'a> SpawnContext<'a> {
 
         if conn_state_src.is_open() && conn_state_dst.is_open() {
             debug!(
-                "connection {} on chain {} is already open, not spawning Client worker",
+                "connection {} on chain {} is already open, not spawning Connection worker",
                 connection.connection_id,
                 chain.id()
             );
@@ -482,7 +476,7 @@ impl<'a> SpawnContext<'a> {
         let chan_state_src = channel.channel_end.state;
         let chan_state_dst = counterparty_channel
             .as_ref()
-            .map_or(ChannelState::Uninitialized, |c| c.state);
+            .map_or(ChannelState::Uninitialized, |c| c.channel_end.state);
 
         debug!(
             "channel {} on chain {} is: {}; state on dest. chain ({}) is: {}",
@@ -513,22 +507,48 @@ impl<'a> SpawnContext<'a> {
                 )
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
-            // create the Packet object and spawn worker
-            let path_object = Object::Packet(Packet {
-                dst_chain_id: counterparty_chain.id(),
-                src_chain_id: chain.id(),
-                src_channel_id: channel.channel_id,
-                src_port_id: channel.port_id,
-            });
+            // Safe to unwrap because the inner channel end has state open
+            let counterparty_channel = counterparty_channel.unwrap();
 
-            self.workers
-                .spawn(
-                    chain.clone(),
-                    counterparty_chain.clone(),
-                    &path_object,
-                    &self.config.read().expect("poisoned lock"),
+            let has_packets = || -> bool {
+                !unreceived_packets(
+                    counterparty_chain.as_ref(),
+                    chain.as_ref(),
+                    counterparty_channel.clone(),
                 )
-                .then(|| debug!("spawned Path worker: {}", path_object.short_name()));
+                .unwrap_or_default()
+                .is_empty()
+            };
+
+            let has_acks = || -> bool {
+                !unreceived_acknowledgements(
+                    counterparty_chain.as_ref(),
+                    chain.as_ref(),
+                    counterparty_channel.clone(),
+                )
+                .unwrap_or_default()
+                .is_empty()
+            };
+
+            // If there are any outstanding packets or acks to send, spawn the worker
+            if has_packets() || has_acks() {
+                // create the Packet object and spawn worker
+                let path_object = Object::Packet(Packet {
+                    dst_chain_id: counterparty_chain.id(),
+                    src_chain_id: chain.id(),
+                    src_channel_id: channel.channel_id,
+                    src_port_id: channel.port_id,
+                });
+
+                self.workers
+                    .spawn(
+                        chain.clone(),
+                        counterparty_chain.clone(),
+                        &path_object,
+                        &self.config.read().expect("poisoned lock"),
+                    )
+                    .then(|| debug!("spawned Packet worker: {}", path_object.short_name()));
+            }
         } else if !chan_state_dst.is_open()
             && chan_state_dst.less_or_equal_progress(chan_state_src)
             && handshake_enabled
