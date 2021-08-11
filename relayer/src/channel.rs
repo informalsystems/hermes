@@ -135,7 +135,7 @@ impl Channel {
         let b_side_chain = connection.dst_chain().clone();
         let version = version.unwrap_or(
             b_side_chain
-                .module_version(&a_port)
+                .module_version(&b_port)
                 .map_err(|e| ChannelError::query(b_side_chain.id(), e))?,
         );
 
@@ -184,7 +184,7 @@ impl Channel {
         let channel_id = channel_event_attributes.channel_id.clone();
 
         let version = counterparty_chain
-            .module_version(&port_id)
+            .module_version(&channel_event_attributes.counterparty_port_id)
             .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
 
         let connection_id = channel_event_attributes.connection_id.clone();
