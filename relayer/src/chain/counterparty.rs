@@ -8,7 +8,7 @@ use ibc::{
     ics03_connection::connection::{
         ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
     },
-    ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
+    ics04_channel::channel::{IdentifiedChannelEnd, State},
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     Height,
 };
@@ -179,7 +179,7 @@ fn fetch_channel_on_destination(
     channel_id: &ChannelId,
     counterparty_chain: &dyn ChainHandle,
     remote_connection_id: &ConnectionId,
-) -> Result<Option<ChannelEnd>, Error> {
+) -> Result<Option<IdentifiedChannelEnd>, Error> {
     let req = QueryConnectionChannelsRequest {
         connection: remote_connection_id.to_string(),
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
@@ -193,7 +193,7 @@ fn fetch_channel_on_destination(
         let local_channel_end = &counterparty_channel.channel_end.remote;
         if let Some(local_channel_id) = local_channel_end.channel_id() {
             if local_channel_id == channel_id && local_channel_end.port_id() == port_id {
-                return Ok(Some(counterparty_channel.channel_end));
+                return Ok(Some(counterparty_channel));
             }
         }
     }
@@ -208,7 +208,7 @@ pub fn channel_state_on_destination(
     let remote_channel = channel_on_destination(channel, connection, counterparty_chain)?;
     Ok(remote_channel.map_or_else(
         || State::Uninitialized,
-        |remote_channel| remote_channel.state,
+        |remote_channel| remote_channel.channel_end.state,
     ))
 }
 
@@ -216,14 +216,19 @@ pub fn channel_on_destination(
     channel: &IdentifiedChannelEnd,
     connection: &IdentifiedConnectionEnd,
     counterparty_chain: &dyn ChainHandle,
-) -> Result<Option<ChannelEnd>, Error> {
-    if let Some(remote_channel_id) = channel.channel_end.remote.channel_id() {
+) -> Result<Option<IdentifiedChannelEnd>, Error> {
+    if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
         let counterparty = counterparty_chain
             .query_channel(
-                channel.channel_end.remote.port_id(),
+                channel.channel_end.counterparty().port_id(),
                 remote_channel_id,
                 Height::zero(),
             )
+            .map(|c| IdentifiedChannelEnd {
+                port_id: channel.channel_end.counterparty().port_id().clone(),
+                channel_id: remote_channel_id.clone(),
+                channel_end: c,
+            })
             .map_err(Error::relayer)?;
 
         Ok(Some(counterparty))

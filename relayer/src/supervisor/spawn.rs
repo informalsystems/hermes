@@ -476,7 +476,7 @@ impl<'a> SpawnContext<'a> {
         let chan_state_src = channel.channel_end.state;
         let chan_state_dst = counterparty_channel
             .as_ref()
-            .map_or(ChannelState::Uninitialized, |c| c.state);
+            .map_or(ChannelState::Uninitialized, |c| c.channel_end.state);
 
         debug!(
             "channel {} on chain {} is: {}; state on dest. chain ({}) is: {}",
@@ -507,16 +507,8 @@ impl<'a> SpawnContext<'a> {
                 )
                 .then(|| debug!("spawned Client worker: {}", client_object.short_name()));
 
-            let counterparty_channel = IdentifiedChannelEnd::new(
-                channel.channel_end.counterparty().port_id.clone(),
-                channel
-                    .channel_end
-                    .counterparty()
-                    .channel_id
-                    .clone()
-                    .unwrap(),
-                counterparty_channel.unwrap(), // safe because chan_state_dst is Open
-            );
+            // Safe to unwrap because the inner channel end has state open
+            let counterparty_channel = counterparty_channel.unwrap();
 
             let has_packets = !unreceived_packets(
                 counterparty_chain.as_ref(),
