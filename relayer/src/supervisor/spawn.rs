@@ -518,20 +518,21 @@ impl<'a> SpawnContext<'a> {
                 counterparty_channel.unwrap(), // safe because chan_state_dst is Open
             );
 
-            let outstanding_packets = !unreceived_packets(
+            let has_packets = !unreceived_packets(
                 counterparty_chain.as_ref(),
                 chain.as_ref(),
                 counterparty_channel.clone(),
             )?
-            .is_empty()
-                || !unreceived_acknowledgements(
-                    counterparty_chain.as_ref(),
-                    chain.as_ref(),
-                    counterparty_channel,
-                )?
-                .is_empty();
+            .is_empty();
+            let has_acks = !unreceived_acknowledgements(
+                counterparty_chain.as_ref(),
+                chain.as_ref(),
+                counterparty_channel,
+            )?
+            .is_empty();
 
-            if outstanding_packets {
+            // If there are any outstanding packets or acks to send, spawn the worker
+            if has_packets || has_acks {
                 // create the Packet object and spawn worker
                 let path_object = Object::Packet(Packet {
                     dst_chain_id: counterparty_chain.id(),
