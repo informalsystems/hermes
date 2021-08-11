@@ -179,7 +179,7 @@ impl RelayPath {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: src_channel_id.clone(),
+            channel_id: self.dst_channel_id()?.clone(),
             proofs,
             signer: self.dst_signer()?,
         };
