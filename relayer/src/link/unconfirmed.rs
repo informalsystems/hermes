@@ -148,7 +148,7 @@ impl Mediator {
     }
 
     fn pop(&mut self) -> Option<Unconfirmed> {
-        if let Some(un) = self.unconfirmed.first() {
+        if let Some(un) = self.unconfirmed.last() {
             // Elapsed time should fulfil some basic minimum so that
             // the relayer does not confirm too aggressively
             if un.submit_time.elapsed() > MIN_BACKOFF {
