@@ -6,7 +6,7 @@ use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
 use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -31,7 +31,7 @@ pub fn process(
     // Construct this client's identifier
     let id_counter = ctx.client_counter();
     let client_id = ClientId::new(msg.client_state().client_type(), id_counter).map_err(|e| {
-        Kind::ClientIdentifierConstructor(msg.client_state().client_type(), id_counter).context(e)
+        Error::client_identifier_constructor(msg.client_state().client_type(), id_counter, e)
     })?;
 
     output.log(format!(
@@ -61,8 +61,6 @@ mod tests {
     use std::time::Duration;
     use test_env_log::test;
 
-    use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
-
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_consensus::AnyConsensusState;
@@ -71,6 +69,7 @@ mod tests {
     use crate::ics02_client::handler::{dispatch, ClientResult};
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
+    use crate::ics02_client::trust_threshold::TrustThreshold;
     use crate::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::ics24_host::identifier::ClientId;

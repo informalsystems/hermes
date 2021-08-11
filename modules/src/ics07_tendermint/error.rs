@@ -1,51 +1,102 @@
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+use crate::ics24_host::error::ValidationError;
+use flex_error::{define_error, DisplayOnly, TraceError};
 
-use crate::ics24_host::error::ValidationKind;
+define_error! {
+    Error {
+        InvalidTrustingPeriod
+            { reason: String }
+            | _ | { "invalid trusting period" },
 
-pub type Error = anomaly::Error<Kind>;
+        InvalidUnboundingPeriod
+            { reason: String }
+            | _ | { "invalid unbonding period" },
 
-#[derive(Clone, Debug, Error)]
-pub enum Kind {
-    #[error("invalid trusting period")]
-    InvalidTrustingPeriod,
+        InvalidAddress
+            | _ | { "invalid address" },
 
-    #[error("invalid client state trust threshold")]
-    InvalidTrustThreshold,
+        InvalidHeader
+            { reason: String }
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | _ | { "invalid header, failed basic validation" },
 
-    #[error("invalid unbonding period")]
-    InvalidUnboundingPeriod,
+        InvalidTrustThreshold
+            { reason: String }
+            | e | {
+                format_args!("invalid client state trust threshold: {}",
+                    e.reason)
+            },
 
-    #[error("invalid address")]
-    InvalidAddress,
+        MissingSignedHeader
+            | _ | { "missing signed header" },
 
-    #[error("invalid header, failed basic validation")]
-    InvalidHeader,
+        Validation
+            { reason: String }
+            | _ | { "invalid header, failed basic validation" },
 
-    #[error("validation error")]
-    ValidationError,
+        InvalidRawClientState
+            { reason: String }
+            | _ | { "invalid raw client state" },
 
-    #[error("invalid raw client state")]
-    InvalidRawClientState,
+        MissingValidatorSet
+            | _ | { "missing validator set" },
 
-    #[error("invalid chain identifier: raw value {0} with underlying validation error: {1}")]
-    InvalidChainId(String, ValidationKind),
+        MissingTrustedValidatorSet
+            | _ | { "missing trusted validator set" },
 
-    #[error("invalid raw height")]
-    InvalidRawHeight,
+        MissingTrustedHeight
+            | _ | { "missing trusted height" },
 
-    #[error("invalid raw client consensus state")]
-    InvalidRawConsensusState,
+        MissingTrustingPeriod
+            | _ | { "missing trusting period" },
 
-    #[error("invalid raw header")]
-    InvalidRawHeader,
+        MissingUnbondingPeriod
+            | _ | { "missing unbonding period" },
 
-    #[error("invalid raw misbehaviour")]
-    InvalidRawMisbehaviour,
-}
+        InvalidChainIdentifier
+            [ ValidationError ]
+            | _ | { "Invalid chain identifier" },
 
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        NegativeTrustingPeriod
+            | _ | { "negative trusting period" },
+
+        NegativeUnbondingPeriod
+            | _ | { "negative unbonding period" },
+
+        MissingMaxClockDrift
+            | _ | { "missing max clock drift" },
+
+        NegativeMaxClockDrift
+            | _ | {  "negative max clock drift" },
+
+        MissingLatestHeight
+            | _ | { "missing latest height" },
+
+        MissingFrozenHeight
+            | _ | { "missing frozen height" },
+
+        InvalidChainId
+            { raw_value: String }
+            [ ValidationError ]
+            | e | { format_args!("invalid chain identifier: raw value {0}", e.raw_value) },
+
+        InvalidRawHeight
+            | _ | { "invalid raw height" },
+
+        InvalidRawConsensusState
+            { reason: String }
+            | _ | { "invalid raw client consensus state" },
+
+        InvalidRawHeader
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | _ | { "invalid raw header" },
+
+        InvalidRawMisbehaviour
+            { reason: String }
+            | _ | { "invalid raw misbehaviour" },
+
+        Decode
+            [ TraceError<prost::DecodeError> ]
+            | _ | { "decode error" },
+
     }
 }

@@ -1,6 +1,5 @@
 use std::{thread, time::Duration};
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, warn};
 
@@ -11,6 +10,7 @@ use crate::{
     worker::retry_strategy,
 };
 
+use super::error::RunError;
 use super::WorkerCmd;
 
 pub struct ChannelWorker {
@@ -38,7 +38,7 @@ impl ChannelWorker {
     }
 
     /// Run the event loop for events associated with a [`Channel`].
-    pub(crate) fn run(self) -> Result<(), BoxError> {
+    pub(crate) fn run(self) -> Result<(), RunError> {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
 
@@ -66,7 +66,8 @@ impl ChannelWorker {
                                     a_chain.clone(),
                                     b_chain.clone(),
                                     event.clone(),
-                                )?;
+                                )
+                                .map_err(RunError::channel)?;
 
                                 retry_with_index(
                                     retry_strategy::worker_default_strategy(),
@@ -89,14 +90,15 @@ impl ChannelWorker {
                             "Channel worker starts processing block event at {:#?}", current_height
                         );
 
-                        let height = current_height.decrement()?;
+                        let height = current_height.decrement().map_err(RunError::ics02)?;
 
                         let (mut handshake_channel, state) = RelayChannel::restore_from_state(
                             a_chain.clone(),
                             b_chain.clone(),
                             self.channel.clone(),
                             height,
-                        )?;
+                        )
+                        .map_err(RunError::channel)?;
 
                         retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                             handshake_channel.step_state(state, index)

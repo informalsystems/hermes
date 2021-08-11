@@ -5,7 +5,7 @@ use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
 
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 /// This command does the following:
@@ -41,7 +41,7 @@ impl QueryUnreceivedAcknowledgementCmd {
         );
 
         unreceived_acknowledgements(chains.src.as_ref(), chains.dst.as_ref(), channel)
-            .map_err(|e| Kind::Query.context(e).into())
+            .map_err(Error::relayer)
     }
 }
 

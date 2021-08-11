@@ -1,7 +1,7 @@
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::WriteAcknowledgement;
 use crate::ics04_channel::packet::{Packet, PacketResult, Sequence};
-use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind};
+use crate::ics04_channel::{context::ChannelReader, error::Error};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::{
     events::IbcEvent,
@@ -29,16 +29,17 @@ pub fn process(
             packet.destination_channel.clone(),
         ))
         .ok_or_else(|| {
-            Kind::ChannelNotFound(
+            Error::channel_not_found(
                 packet.destination_port.clone(),
                 packet.destination_channel.clone(),
             )
         })?;
 
     if !dest_channel_end.state_matches(&State::Open) {
-        return Err(
-            Kind::InvalidChannelState(packet.source_channel, dest_channel_end.state).into(),
-        );
+        return Err(Error::invalid_channel_state(
+            packet.source_channel,
+            dest_channel_end.state,
+        ));
     }
 
     let _channel_cap = ctx.authenticated_capability(&packet.destination_port)?;
@@ -54,11 +55,11 @@ pub fn process(
         ))
         .is_some()
     {
-        return Err(Kind::AcknowledgementExists(packet.sequence).into());
+        return Err(Error::acknowledgement_exists(packet.sequence));
     }
 
     if ack.is_empty() {
-        return Err(Kind::InvalidAcknowledgement.into());
+        return Err(Error::invalid_acknowledgement());
     }
 
     let result = PacketResult::WriteAck(WriteAckPacketResult {

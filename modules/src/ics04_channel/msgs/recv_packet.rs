@@ -4,7 +4,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::Error;
 use crate::ics04_channel::packet::Packet;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -48,7 +48,7 @@ impl Msg for MsgRecvPacket {
 impl Protobuf<RawMsgRecvPacket> for MsgRecvPacket {}
 
 impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn try_from(raw_msg: RawMsgRecvPacket) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -58,18 +58,16 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
             None,
             raw_msg
                 .proof_height
-                .ok_or(Kind::MissingHeight)?
-                .try_into()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .ok_or_else(Error::missing_height)?
+                .into(),
         )
-        .map_err(|e| Kind::InvalidProof.context(e))?;
+        .map_err(Error::invalid_proof)?;
 
         Ok(MsgRecvPacket {
             packet: raw_msg
                 .packet
-                .ok_or(Kind::MissingPacket)?
-                .try_into()
-                .map_err(|e| Kind::InvalidPacket.context(e))?,
+                .ok_or_else(Error::missing_packet)?
+                .try_into()?,
             proofs,
             signer: raw_msg.signer.into(),
         })

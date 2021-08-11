@@ -1,5 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
+use bytes::Buf;
+use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
@@ -10,7 +12,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
-use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::error::Error;
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
 use std::cmp::Ordering;
@@ -90,26 +92,29 @@ impl TryFrom<RawHeader> for Header {
         Ok(Self {
             signed_header: raw
                 .signed_header
-                .ok_or_else(|| Kind::InvalidRawHeader.context("missing signed header"))?
+                .ok_or_else(Error::missing_signed_header)?
                 .try_into()
-                .map_err(|_| Kind::InvalidHeader.context("signed header conversion"))?,
+                .map_err(|e| Error::invalid_header("signed header conversion".to_string(), e))?,
             validator_set: raw
                 .validator_set
-                .ok_or_else(|| Kind::InvalidRawHeader.context("missing validator set"))?
+                .ok_or_else(Error::missing_validator_set)?
                 .try_into()
-                .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+                .map_err(Error::invalid_raw_header)?,
             trusted_height: raw
                 .trusted_height
-                .ok_or_else(|| Kind::InvalidRawHeader.context("missing height"))?
-                .try_into()
-                .map_err(|e| Kind::InvalidRawHeight.context(e))?,
+                .ok_or_else(Error::missing_trusted_height)?
+                .into(),
             trusted_validator_set: raw
                 .trusted_validators
-                .ok_or_else(|| Kind::InvalidRawHeader.context("missing trusted validator set"))?
+                .ok_or_else(Error::missing_trusted_validator_set)?
                 .try_into()
-                .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+                .map_err(Error::invalid_raw_header)?,
         })
     }
+}
+
+pub fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
+    RawHeader::decode(buf).map_err(Error::decode)?.try_into()
 }
 
 impl From<Header> for RawHeader {

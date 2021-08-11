@@ -1,46 +1,95 @@
-//! Error types
+use flex_error::{define_error, DisplayOnly};
+use ibc::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::ics24_host::identifier::ChainId;
+use ibc_relayer::channel::ChannelError;
+use ibc_relayer::connection::ConnectionError;
+use ibc_relayer::error::Error as RelayerError;
+use ibc_relayer::foreign_client::ForeignClientError;
+use ibc_relayer::link::error::LinkError;
+use ibc_relayer::supervisor::Error as SupervisorError;
+use ibc_relayer::transfer::PacketError;
+use ibc_relayer::upgrade_chain::UpgradeChainError;
 
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+define_error! {
+    /// An error raised within the relayer CLI
+    Error {
+        Config
+            |_| { "config error" },
 
-/// An error raised within the relayer CLI
-pub type Error = anomaly::Error<Kind>;
+        Io
+            |_| { "I/O error" },
 
-/// Kinds of errors
-#[derive(Clone, Debug, Eq, Error, PartialEq)]
-pub enum Kind {
-    /// Error in configuration file
-    #[error("config error")]
-    Config,
+        Query
+            |_| { "query error" },
 
-    /// Input/output error
-    #[error("I/O error")]
-    Io,
+        Runtime
+            |_| { "chain runtime error" },
 
-    /// Input/output error
-    #[error("CLI argument error: {0}")]
-    CliArg(String),
+        Tx
+            |_| { "tx error" },
 
-    /// Error during network query
-    #[error("query error")]
-    Query,
+        InvalidHash
+            { hash: String }
+            [ DisplayOnly<Box<dyn std::error::Error>> ]
+            | e | {
+                format_args!("CLI argument error: could not parse '{}' into a valid hash",
+                    e.hash)
+            },
 
-    /// Error while spawning the runtime
-    #[error("chain runtime error")]
-    Runtime,
+        CliArg
+            { reason: String }
+            | e | {
+                format_args!("CLI argument error: {0}",
+                    e.reason)
+            },
 
-    /// Error during transaction submission
-    #[error("tx error")]
-    Tx,
+        Keys
+            |_| { "keys error" },
 
-    /// Error during transaction submission
-    #[error("keys error")]
-    Keys,
-}
+        MissingConfig
+            { chain_id: ChainId }
+            | e | {
+                format_args!("missing chain for id ({}) in configuration file",
+                    e.chain_id)
+            },
 
-impl Kind {
-    /// Create an error context from this error
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Kind> {
-        Context::new(self, Some(source.into()))
+        MissingCounterpartyChannelId
+            { channel_end: IdentifiedChannelEnd }
+            | e | {
+                format_args!("the channel {:?} counterparty has no channel id",
+                    e.channel_end)
+            },
+
+        Relayer
+            [ RelayerError ]
+            |_| { "relayer error" },
+
+        Connection
+            [ ConnectionError ]
+            |_| { "connection error" },
+
+        Packet
+            [ PacketError ]
+            |_| { "packet error" },
+
+        Channel
+            [ ChannelError ]
+            |_| { "channel error" },
+
+        ForeignClient
+            [ ForeignClientError ]
+            |_| { "foreign client error" },
+
+        Supervisor
+            [ SupervisorError ]
+            |_| { "supervisor error" },
+
+        Link
+            [ LinkError ]
+            |_| { "link error" },
+
+        UpgradeChain
+            [ UpgradeChainError ]
+            |_| { "upgrade chain error" },
     }
 }

@@ -1,4 +1,3 @@
-use anomaly::BoxError;
 use itertools::Itertools;
 use tracing::{debug, error, warn};
 
@@ -24,6 +23,7 @@ use crate::{
     object::{Channel, Client, Connection, Object, Packet},
     registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
+    supervisor::error::Error as SupervisorError,
     worker::WorkerMap,
 };
 
@@ -174,7 +174,7 @@ impl<'a> SpawnContext<'a> {
             if chain_id == &id {
                 continue;
             }
-            self.spawn_workers_from_chain_to_chain(&id, &chain_id);
+            self.spawn_workers_from_chain_to_chain(&id, chain_id);
         }
     }
 
@@ -357,7 +357,7 @@ impl<'a> SpawnContext<'a> {
         for channel in connection_channels {
             let channel_id = channel.channel_id.clone();
 
-            match self.spawn_workers_for_channel(chain.clone(), &client, &connection, channel) {
+            match self.spawn_workers_for_channel(chain.clone(), client, &connection, channel) {
                 Ok(()) => debug!(
                     "done spawning workers for chain {} and channel {}",
                     chain.id(),
@@ -377,15 +377,13 @@ impl<'a> SpawnContext<'a> {
         &mut self,
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
-    ) -> Result<ConnectionState, BoxError> {
+    ) -> Result<ConnectionState, Error> {
         let counterparty_chain = self
             .registry
-            .get_or_spawn(&client.client_state.chain_id())?;
+            .get_or_spawn(&client.client_state.chain_id())
+            .map_err(Error::spawn)?;
 
-        Ok(connection_state_on_destination(
-            connection,
-            counterparty_chain.as_ref(),
-        )?)
+        connection_state_on_destination(connection, counterparty_chain.as_ref())
     }
 
     fn spawn_connection_workers(
@@ -393,7 +391,7 @@ impl<'a> SpawnContext<'a> {
         chain: Box<dyn ChainHandle>,
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
-    ) -> Result<(), BoxError> {
+    ) -> Result<(), Error> {
         let handshake_enabled = self
             .config
             .read()
@@ -402,7 +400,8 @@ impl<'a> SpawnContext<'a> {
 
         let counterparty_chain = self
             .registry
-            .get_or_spawn(&client.client_state.chain_id())?;
+            .get_or_spawn(&client.client_state.chain_id())
+            .map_err(Error::spawn)?;
 
         let conn_state_src = connection.connection_end.state;
         let conn_state_dst =
@@ -469,10 +468,10 @@ impl<'a> SpawnContext<'a> {
         let counterparty_chain = self
             .registry
             .get_or_spawn(&client.client_state.chain_id())
-            .map_err(|e| Error::FailedToSpawnChainRuntime(e.to_string()))?;
+            .map_err(SupervisorError::spawn)?;
 
         let counterparty_channel =
-            channel_on_destination(&channel, &connection, counterparty_chain.as_ref())?;
+            channel_on_destination(&channel, connection, counterparty_chain.as_ref())?;
 
         let chan_state_src = channel.channel_end.state;
         let chan_state_dst = counterparty_channel

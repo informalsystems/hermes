@@ -290,6 +290,6 @@ Partially implemented.
 [#628]: https://github.com/informalsystems/ibc-rs/issues/628
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#640]: https://github.com/informalsystems/ibc-rs/issues/640
-[client-state]: https://hermes.informal.systems/query_client.html#query-the-client-state
+[client-state]: https://hermes.informal.systems/commands/queries/client.html#query-the-client-state
 [client-create]: https://docs.rs/ibc/0.1.1/ibc/ics02_client/msgs/create_client/index.html
 [output]: https://github.com/informalsystems/ibc-rs/blob/1f2e72dbcafee5a8bbdab381ff4927d5870b4b59/relayer-cli/src/conclude.rs#L80

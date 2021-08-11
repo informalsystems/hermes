@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## v0.6.2
+
+This minor release of Hermes re-enables the `upgrade client`, `upgrade clients`,
+`tx raw upgrade-clients`, and `tx raw upgrade-chain`, and otherwise
+contains a few bug fixes and internal improvements.
+
+Upgrading from version `0.6.1` to `0.6.2` requires no explicit steps.
+
+### BUG FIXES
+
+- Add missing `Protobuf` impl for `ics03_connection::connection::Counterparty` ([#1247])
+
+[#1247]: https://github.com/informalsystems/ibc-rs/issues/1247
+
+### FEATURES
+
+- Use the [`flex-error`](https://docs.rs/flex-error/) crate to define and
+handle errors ([#1158])
+
+[#1158]: https://github.com/informalsystems/ibc-rs/issues/1158
+- Augment ClientCreationFailed error with chain id and WS address ([#1020])
+
+[#1020]: https://github.com/informalsystems/ibc-rs/issues/1020
+- Improve the error message for config file parse errors ([#1021])
+
+[#1021]: https://github.com/informalsystems/ibc-rs/issues/1021
+- Fix for upgrade CLI regression using new type ics02::TrustThreshold ([#1229])
+
+[#1229]: https://github.com/informalsystems/ibc-rs/issues/1229
+
+### IMPROVEMENTS
+
+- Add semantic validation of of `max_tx_size` and `max_num_msg` config options ([#1245])
+
+[#1245]: https://github.com/informalsystems/ibc-rs/issues/1245
+
+
 ## v0.6.1
 *July 22nd, 2021*
 
@@ -75,7 +112,7 @@ with the changes described below.
 
 #### Added inline documentation for all options.
 
-Please have a look around the [config.toml](./config.toml) directly.
+Please have a look around the [config.toml](https://github.com/informalsystems/ibc-rs/blob/v0.6.0/config.toml) directly.
 
 #### Added a packet filtering mechanism based on channel/port identifiers
 

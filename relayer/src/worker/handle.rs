@@ -3,7 +3,6 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use anomaly::BoxError;
 use crossbeam_channel::Sender;
 use tracing::trace;
 
@@ -13,6 +12,7 @@ use ibc::{
 
 use crate::{event::monitor::EventBatch, object::Object};
 
+use super::error::WorkerError;
 use super::{WorkerCmd, WorkerId};
 
 /// Handle to a [`Worker`], for sending [`WorkerCmd`]s to it.
@@ -53,33 +53,35 @@ impl WorkerHandle {
         height: Height,
         events: Vec<IbcEvent>,
         chain_id: ChainId,
-    ) -> Result<(), BoxError> {
+    ) -> Result<(), WorkerError> {
         let batch = EventBatch {
             chain_id,
             height,
             events,
         };
 
-        self.tx.send(WorkerCmd::IbcEvents { batch })?;
-        Ok(())
+        self.tx
+            .send(WorkerCmd::IbcEvents { batch })
+            .map_err(WorkerError::send)
     }
 
-    /// Notify the worker that a new block as been committed.
-    pub fn send_new_block(&self, height: Height, new_block: NewBlock) -> Result<(), BoxError> {
-        self.tx.send(WorkerCmd::NewBlock { height, new_block })?;
-        Ok(())
+    /// Send a batch of [`NewBlock`] event to the worker.
+    pub fn send_new_block(&self, height: Height, new_block: NewBlock) -> Result<(), WorkerError> {
+        self.tx
+            .send(WorkerCmd::NewBlock { height, new_block })
+            .map_err(WorkerError::send)
     }
 
     /// Instruct the worker to clear pending packets.
-    pub fn clear_pending_packets(&self) -> Result<(), BoxError> {
-        self.tx.send(WorkerCmd::ClearPendingPackets)?;
-        Ok(())
+    pub fn clear_pending_packets(&self) -> Result<(), WorkerError> {
+        self.tx
+            .send(WorkerCmd::ClearPendingPackets)
+            .map_err(WorkerError::send)
     }
 
     /// Shutdown the worker.
-    pub fn shutdown(&self) -> Result<(), BoxError> {
-        self.tx.send(WorkerCmd::Shutdown)?;
-        Ok(())
+    pub fn shutdown(&self) -> Result<(), WorkerError> {
+        self.tx.send(WorkerCmd::Shutdown).map_err(WorkerError::send)
     }
 
     /// Wait for the worker thread to finish.

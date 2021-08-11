@@ -5,7 +5,6 @@ use std::{
 };
 
 use abscissa_core::{Command, Options, Runnable};
-use anomaly::BoxError;
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -39,7 +38,7 @@ pub struct KeysAddCmd {
 }
 
 impl KeysAddCmd {
-    fn options(&self, config: &Config) -> Result<KeysAddOptions, BoxError> {
+    fn options(&self, config: &Config) -> Result<KeysAddOptions, Box<dyn std::error::Error>> {
         let chain_config = config
             .find_chain(&self.chain_id)
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
@@ -96,7 +95,7 @@ pub fn add_key(
     key_name: &str,
     file: &Path,
     hd_path: &HDPath,
-) -> Result<KeyEntry, BoxError> {
+) -> Result<KeyEntry, Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
 
     let key_contents = fs::read_to_string(file).map_err(|_| "error reading the key file")?;

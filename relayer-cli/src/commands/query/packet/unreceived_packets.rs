@@ -7,7 +7,7 @@ use ibc_relayer::chain::counterparty::unreceived_packets;
 
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Serialize, Debug)]
@@ -49,7 +49,7 @@ impl QueryUnreceivedPacketsCmd {
         );
 
         unreceived_packets(chains.src.as_ref(), chains.dst.as_ref(), channel)
-            .map_err(|e| Kind::Query.context(e).into())
+            .map_err(Error::relayer)
     }
 }
 
