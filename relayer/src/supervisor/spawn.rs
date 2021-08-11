@@ -510,21 +510,28 @@ impl<'a> SpawnContext<'a> {
             // Safe to unwrap because the inner channel end has state open
             let counterparty_channel = counterparty_channel.unwrap();
 
-            let has_packets = !unreceived_packets(
-                counterparty_chain.as_ref(),
-                chain.as_ref(),
-                counterparty_channel.clone(),
-            )?
-            .is_empty();
-            let has_acks = !unreceived_acknowledgements(
-                counterparty_chain.as_ref(),
-                chain.as_ref(),
-                counterparty_channel,
-            )?
-            .is_empty();
+            let has_packets = || -> bool {
+                !unreceived_packets(
+                    counterparty_chain.as_ref(),
+                    chain.as_ref(),
+                    counterparty_channel.clone(),
+                )
+                .unwrap_or_default()
+                .is_empty()
+            };
+
+            let has_acks = || -> bool {
+                !unreceived_acknowledgements(
+                    counterparty_chain.as_ref(),
+                    chain.as_ref(),
+                    counterparty_channel.clone(),
+                )
+                .unwrap_or_default()
+                .is_empty()
+            };
 
             // If there are any outstanding packets or acks to send, spawn the worker
-            if has_packets || has_acks {
+            if has_packets() || has_acks() {
                 // create the Packet object and spawn worker
                 let path_object = Object::Packet(Packet {
                     dst_chain_id: counterparty_chain.id(),
