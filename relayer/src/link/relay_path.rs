@@ -664,7 +664,7 @@ where
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
                 port_id: self.dst_port_id().to_string(),
                 channel_id: self.dst_channel_id()?.to_string(),
-                packet_commitment_sequences: vec![packet.sequence.into()],
+                packet_commitment_sequences: vec![packet.untag().sequence.into()],
             })
             .map_err(LinkError::relayer)?;
 
@@ -683,8 +683,8 @@ where
                 PacketMsgType::Recv,
                 self.src_port_id(),
                 self.src_channel_id()?,
-                packet.sequence,
-                Height::zero(),
+                packet.map(|p| p.sequence),
+                Height::tagged_zero(),
             )
             .map_err(LinkError::relayer)?;
 
@@ -693,20 +693,26 @@ where
 
     /// Checks if a send packet event has already been handled (e.g. by another relayer).
     fn send_packet_event_handled(&self, sp: Tagged<ChainA, SendPacket>) -> Result<bool, LinkError> {
-        Ok(self.send_packet_received_on_dst(&sp.packet)?
-            || self.send_packet_commitment_cleared_on_src(&sp.packet)?)
+        let packet = sp.map(|p| p.packet);
+        let is_received_on_dst = self.send_packet_received_on_dst(packet)?;
+        let is_commitment_cleared_on_src = self.send_packet_commitment_cleared_on_src(packet)?;
+
+        Ok(is_received_on_dst || is_commitment_cleared_on_src)
     }
 
     /// Checks if an acknowledgement for the given packet has been received on
     /// source chain of the packet, ie. the destination chain of the relay path
     /// that sends the acknowledgment.
-    fn recv_packet_acknowledged_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
+    fn recv_packet_acknowledged_on_src(
+        &self,
+        packet: Tagged<ChainA, Packet>,
+    ) -> Result<bool, LinkError> {
         let unreceived_ack = self
             .dst_chain()
             .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
                 port_id: self.dst_port_id().to_string(),
                 channel_id: self.dst_channel_id()?.to_string(),
-                packet_ack_sequences: vec![packet.sequence.into()],
+                packet_ack_sequences: vec![packet.value().sequence.into()],
             })
             .map_err(LinkError::relayer)?;
 
@@ -718,7 +724,7 @@ where
         &self,
         rp: Tagged<ChainA, WriteAcknowledgement>,
     ) -> Result<bool, LinkError> {
-        self.recv_packet_acknowledged_on_src(&rp.packet)
+        self.recv_packet_acknowledged_on_src(rp.map(|p| p.packet))
     }
 
     /// Returns `true` if the delay for this relaying path is zero.
@@ -728,12 +734,16 @@ where
     }
 
     /// Handles updating the client on the destination chain
-    fn update_client_dst(&self, src_chain_height: Height) -> Result<(), LinkError> {
+    fn update_client_dst(&self, src_chain_height: Tagged<ChainA, Height>) -> Result<(), LinkError> {
         // Handle the update on the destination chain
         // Check if a consensus state at update_height exists on destination chain already
         if self
             .dst_chain()
-            .proven_client_consensus(self.dst_client_id(), src_chain_height, Height::zero())
+            .proven_client_consensus(
+                self.dst_client_id(),
+                src_chain_height,
+                Height::tagged_zero(),
+            )
             .is_ok()
         {
             return Ok(());
@@ -758,7 +768,7 @@ where
 
             dst_err_ev = dst_tx_events
                 .into_iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
+                .find(|event| matches!(event.value(), IbcEvent::ChainError(_)));
 
             if dst_err_ev.is_none() {
                 return Ok(());
@@ -766,8 +776,8 @@ where
         }
 
         Err(LinkError::client(ForeignClientError::chain_error_event(
-            self.dst_chain().id(),
-            dst_err_ev.unwrap(),
+            self.dst_chain().id().untag(),
+            dst_err_ev.unwrap().untag(),
         )))
     }
 
@@ -1261,7 +1271,8 @@ where
         // to source operational data.
         let mut all_dst_odata = self.dst_operational_data.clone();
 
-        let mut timed_out: HashMap<usize, Vec<TransitMessage>> = HashMap::default();
+        let mut timed_out: HashMap<usize, (Tagged<ChainA, IbcEvent>, Tagged<ChainB, Any>)> =
+            HashMap::default();
 
         // For each operational data targeting the destination chain...
         for (odata_pos, odata) in all_dst_odata.iter_mut().enumerate() {
@@ -1269,9 +1280,8 @@ where
             let mut retain_batch = vec![];
 
             for gm in odata.batch.iter() {
-                let TransitMessage { event, .. } = gm;
-
-                match event {
+                let (event, _) = gm;
+                match event.value() {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
                         if self.send_packet_event_handled(e)? {
@@ -1286,12 +1296,10 @@ where
                                 "[{}] refreshing schedule: found a timed-out msg in the op data {}",
                                 self, odata
                             );
-                            timed_out.entry(odata_pos).or_insert_with(Vec::new).push(
-                                TransitMessage {
-                                    event: event.clone(),
-                                    msg: new_msg,
-                                },
-                            );
+                            timed_out
+                                .entry(odata_pos)
+                                .or_insert_with(Vec::new)
+                                .push((event.clone(), new_msg));
                         } else {
                             // A SendPacket event, but did not time-out yet, retain
                             retain_batch.push(gm.clone());
@@ -1394,13 +1402,13 @@ where
     fn try_fetch_scheduled_operational_data(
         &mut self,
     ) -> (
-        Vec<OperationPayload<ChainA, ChainB>>,
-        Vec<OperationPayload<ChainB, ChainA>>,
+        Vec<SrcOperationPayload<ChainA, ChainB>>,
+        Vec<DstOperationPayload<ChainA, ChainB>>,
     ) {
         // The first elements of the op. data vector contain the oldest entry.
         // Remove and return the elements with elapsed delay.
 
-        let src_ods: Vec<OperationPayload<ChainA>> = self
+        let src_ods: Vec<SrcOperationPayload<ChainA, ChainB>> = self
             .src_operational_data
             .iter()
             .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
@@ -1409,7 +1417,7 @@ where
 
         self.src_operational_data = self.src_operational_data[src_ods.len()..].to_owned();
 
-        let dst_ods: Vec<OperationPayload<ChainB>> = self
+        let dst_ods: Vec<DstOperationPayload<ChainA, ChainB>> = self
             .dst_operational_data
             .iter()
             .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)

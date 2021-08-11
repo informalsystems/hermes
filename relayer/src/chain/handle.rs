@@ -434,7 +434,7 @@ pub trait ChainHandle<Counterparty>: Clone + Send + Sync + Serialize + Debug + '
     fn proven_client_consensus(
         &self,
         client_id: Tagged<Self, ClientId>,
-        consensus_height: Tagged<Self, Height>,
+        consensus_height: Tagged<Counterparty, Height>,
         height: Tagged<Self, Height>,
     ) -> Result<(Tagged<Self, AnyConsensusState>, MerkleProof), Error>;
 

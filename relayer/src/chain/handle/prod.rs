@@ -339,7 +339,7 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
     fn proven_client_consensus(
         &self,
         client_id: Tagged<Self, ClientId>,
-        consensus_height: Tagged<Self, Height>,
+        consensus_height: Tagged<Counterparty, Height>,
         height: Tagged<Self, Height>,
     ) -> Result<(Tagged<Self, AnyConsensusState>, MerkleProof), Error> {
         let (state, proof) = self.send(|reply_to| ChainRequest::ProvenClientConsensus {
