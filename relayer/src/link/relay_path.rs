@@ -36,7 +36,9 @@ use crate::channel::{Channel, ChannelEnd};
 use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
-use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
+use crate::link::operational_data::{
+    OperationPayload, OperationalData, OperationalDataTarget, TransitMessage,
+};
 use crate::link::relay_summary::RelaySummary;
 
 const MAX_RETRIES: usize = 5;
@@ -55,9 +57,9 @@ where
     // These vectors of operational data are ordered decreasingly by their age, with element at
     // position `0` being the oldest.
     // The operational data targeting the source chain comprises mostly timeout packet messages.
-    src_operational_data: Vec<OperationalData>,
+    src_operational_data: Vec<OperationPayload<ChainA, ChainB>>,
     // The operational data targeting the destination chain comprises mostly RecvPacket and Ack msgs.
-    dst_operational_data: Vec<OperationalData>,
+    dst_operational_data: Vec<OperationPayload<ChainB, ChainA>>,
 }
 
 impl<ChainA, ChainB> RelayPath<ChainA, ChainB>
@@ -189,7 +191,7 @@ where
     fn build_chan_close_confirm_from_event(
         &self,
         event: Tagged<ChainA, IbcEvent>,
-    ) -> Result<Tagged<ChainA, Any>, LinkError> {
+    ) -> Result<Tagged<ChainB, Any>, LinkError> {
         let src_channel_id = self.src_channel_id()?;
         let event_height = event.map(|e| e.height());
 
@@ -200,10 +202,10 @@ where
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm::tagged_new(
-            self.src_port_id(),
-            src_channel_id,
+            self.dst_port_id(),
+            self.dst_channel_id()?,
             proofs,
-            self.src_signer()?,
+            self.dst_signer()?,
         );
 
         Ok(new_msg.map_into(Msg::to_any))
@@ -211,7 +213,10 @@ where
 
     // Determines if the events received are relevant and should be processed.
     // Only events for a port/channel matching one of the channel ends should be processed.
-    fn filter_events(&self, events: &[IbcEvent]) -> Vec<IbcEvent> {
+    fn filter_events(
+        &self,
+        events: Vec<Tagged<ChainA, IbcEvent>>,
+    ) -> Vec<Tagged<ChainA, IbcEvent>> {
         let mut result = vec![];
 
         let src_channel_id = if let Ok(some_id) = self.src_channel_id() {
@@ -221,31 +226,32 @@ where
         };
 
         for event in events.iter() {
-            match event {
+            // FIXME: Match the events with tagged identifiers instead of over raw values
+            match event.value() {
                 IbcEvent::SendPacket(send_packet_ev) => {
-                    if src_channel_id == send_packet_ev.src_channel_id()
-                        && self.src_port_id() == send_packet_ev.src_port_id()
+                    if src_channel_id.value() == send_packet_ev.src_channel_id()
+                        && self.src_port_id().value() == send_packet_ev.src_port_id()
                     {
                         result.push(event.clone());
                     }
                 }
                 IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                    if src_channel_id == write_ack_ev.dst_channel_id()
-                        && self.src_port_id() == write_ack_ev.dst_port_id()
+                    if src_channel_id.value() == write_ack_ev.dst_channel_id()
+                        && self.src_port_id().value() == write_ack_ev.dst_port_id()
                     {
                         result.push(event.clone());
                     }
                 }
                 IbcEvent::CloseInitChannel(chan_close_ev) => {
-                    if src_channel_id == chan_close_ev.channel_id()
-                        && self.src_port_id() == chan_close_ev.port_id()
+                    if src_channel_id.value() == chan_close_ev.channel_id()
+                        && self.src_port_id().value() == chan_close_ev.port_id()
                     {
                         result.push(event.clone());
                     }
                 }
                 IbcEvent::TimeoutPacket(timeout_ev) => {
-                    if src_channel_id == timeout_ev.src_channel_id()
-                        && self.channel.src_port_id() == timeout_ev.src_port_id()
+                    if src_channel_id.value() == timeout_ev.src_channel_id()
+                        && self.channel.src_port_id().value() == timeout_ev.src_port_id()
                     {
                         result.push(event.clone());
                     }
@@ -297,25 +303,28 @@ where
     }
 
     /// Generate & schedule operational data from the input `batch` of IBC events.
-    pub fn update_schedule(&mut self, batch: EventBatch) -> Result<(), LinkError> {
+    pub fn update_schedule(&mut self, batch: Tagged<ChainA, EventBatch>) -> Result<(), LinkError> {
         // Collect relevant events from the incoming batch & adjust their height.
-        let events = self.filter_events(&batch.events);
+        let events = self.filter_events(batch.map_into(|b| b.events).transpose());
 
         // Transform the events into operational data items
         self.events_to_operational_data(events)
     }
 
     /// Produces and schedules operational data for this relaying path based on the input events.
-    fn events_to_operational_data(&mut self, events: Vec<IbcEvent>) -> Result<(), LinkError> {
+    fn events_to_operational_data(
+        &mut self,
+        events: Vec<Tagged<ChainA, IbcEvent>>,
+    ) -> Result<(), LinkError> {
         // Obtain the operational data for the source chain (mostly timeout packets) and for the
         // destination chain (e.g., receive packet messages).
         let (src_opt, dst_opt) = self.generate_operational_data(events)?;
 
         if let Some(src_od) = src_opt {
-            self.schedule_operational_data(src_od)?;
+            self.schedule_operational_data(OperationalData::Src(src_od))?;
         }
         if let Some(dst_od) = dst_opt {
-            self.schedule_operational_data(dst_od)?;
+            self.schedule_operational_data(OperationalData::Dst(dst_od))?;
         }
 
         Ok(())
@@ -331,8 +340,14 @@ where
     /// or `MsgTimeout`).
     fn generate_operational_data(
         &self,
-        input: Vec<IbcEvent>,
-    ) -> Result<(Option<OperationalData>, Option<OperationalData>), LinkError> {
+        input: Vec<Tagged<ChainA, IbcEvent>>,
+    ) -> Result<
+        (
+            Option<OperationPayload<ChainA, ChainB>>,
+            Option<OperationPayload<ChainB, ChainA>>,
+        ),
+        LinkError,
+    > {
         if !input.is_empty() {
             info!(
                 "[{}] generate messages from batch with {} events",
@@ -342,67 +357,71 @@ where
         }
         let src_height = match input.get(0) {
             None => return Ok((None, None)),
-            Some(ev) => ev.height(),
+            Some(ev) => ev.map(|e| e.height()),
         };
 
         let dst_height = self.dst_latest_height()?;
         // Operational data targeting the source chain (e.g., Timeout packets)
-        let mut src_od = OperationalData::new(dst_height, OperationalDataTarget::Source);
+        let mut src_od = OperationPayload::new(dst_height);
         // Operational data targeting the destination chain (e.g., SendPacket messages)
-        let mut dst_od = OperationalData::new(src_height, OperationalDataTarget::Destination);
+        let mut dst_od = OperationPayload::new(src_height);
 
         for event in input {
             debug!("[{}] {} => {}", self, self.src_chain().id(), event);
-            let (dst_msg, src_msg) = match event {
-                IbcEvent::CloseInitChannel(_) => (
-                    Some(self.build_chan_close_confirm_from_event(&event)?),
-                    None,
-                ),
-                IbcEvent::TimeoutPacket(ref timeout_ev) => {
-                    // When a timeout packet for an ordered channel is processed on-chain (src here)
-                    // the chain closes the channel but no close init event is emitted, instead
-                    // we get a timeout packet event (this happens for both unordered and ordered channels)
-                    // Here we check that the channel is closed on src and send a channel close confirm
-                    // to the counterparty.
-                    if self.ordered_channel()
-                        && self
-                            .src_channel(timeout_ev.height)?
+            let (dst_msg, src_msg): (Option<Tagged<ChainB, Any>>, Option<Tagged<ChainA, Any>>) =
+                match event.value() {
+                    IbcEvent::CloseInitChannel(_) => {
+                        (Some(self.build_chan_close_confirm_from_event(event)?), None)
+                    }
+                    IbcEvent::TimeoutPacket(timeout_ev) => {
+                        let timeout_height = event.tag(timeout_ev.height);
+
+                        // When a timeout packet for an ordered channel is processed on-chain (src here)
+                        // the chain closes the channel but no close init event is emitted, instead
+                        // we get a timeout packet event (this happens for both unordered and ordered channels)
+                        // Here we check that the channel is closed on src and send a channel close confirm
+                        // to the counterparty.
+                        if self.ordered_channel()
+                            && self
+                                .src_channel(timeout_height)?
+                                .value()
+                                .state_matches(&ChannelState::Closed)
+                        {
+                            (Some(self.build_chan_close_confirm_from_event(event)?), None)
+                        } else {
+                            (None, None)
+                        }
+                    }
+                    IbcEvent::SendPacket(send_packet_ev) => {
+                        if self.send_packet_event_handled(event.tag(send_packet_ev.clone()))? {
+                            debug!("[{}] {} already handled", self, send_packet_ev);
+                            (None, None)
+                        } else {
+                            self.build_recv_or_timeout_from_send_packet_event(
+                                event.tag(send_packet_ev.clone()),
+                                dst_height,
+                            )?
+                        }
+                    }
+                    IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                        if self
+                            .dst_channel(Height::tagged_zero())?
+                            .value()
                             .state_matches(&ChannelState::Closed)
-                    {
-                        (
-                            Some(self.build_chan_close_confirm_from_event(&event)?),
-                            None,
-                        )
-                    } else {
-                        (None, None)
+                        {
+                            (None, None)
+                        } else if self.write_ack_event_handled(event.tag(write_ack_ev.clone()))? {
+                            debug!("[{}] {} already handled", self, write_ack_ev);
+                            (None, None)
+                        } else {
+                            (
+                                self.build_ack_from_recv_event(event.tag(write_ack_ev.clone()))?,
+                                None,
+                            )
+                        }
                     }
-                }
-                IbcEvent::SendPacket(ref send_packet_ev) => {
-                    if self.send_packet_event_handled(send_packet_ev)? {
-                        debug!("[{}] {} already handled", self, send_packet_ev);
-                        (None, None)
-                    } else {
-                        self.build_recv_or_timeout_from_send_packet_event(
-                            send_packet_ev,
-                            dst_height,
-                        )?
-                    }
-                }
-                IbcEvent::WriteAcknowledgement(ref write_ack_ev) => {
-                    if self
-                        .dst_channel(Height::zero())?
-                        .state_matches(&ChannelState::Closed)
-                    {
-                        (None, None)
-                    } else if self.write_ack_event_handled(write_ack_ev)? {
-                        debug!("[{}] {} already handled", self, write_ack_ev);
-                        (None, None)
-                    } else {
-                        (self.build_ack_from_recv_event(write_ack_ev)?, None)
-                    }
-                }
-                _ => (None, None),
-            };
+                    _ => (None, None),
+                };
 
             // Collect messages to be sent to the destination chain (e.g., RecvPacket)
             if let Some(msg) = dst_msg {
@@ -410,13 +429,11 @@ where
                     "[{}] {} <= {} from {}",
                     self,
                     self.dst_chain().id(),
-                    msg.type_url,
+                    msg.value().type_url,
                     event
                 );
-                dst_od.batch.push(TransitMessage {
-                    event: event.clone(),
-                    msg,
-                });
+
+                dst_od.batch.push(TransitMessage::new(event, msg));
             }
 
             // Collect timeout messages, to be sent to the source chain
@@ -428,10 +445,10 @@ where
                         "[{}] {} <= {} from {}",
                         self,
                         self.src_chain().id(),
-                        msg.type_url,
+                        msg.value().type_url,
                         event
                     );
-                    src_od.batch.push(TransitMessage { event, msg });
+                    src_od.batch.push(TransitMessage::new(event, msg));
                 }
             }
         }
@@ -454,7 +471,7 @@ where
     /// Returns the events generated by the target chain
     pub(crate) fn relay_from_operational_data(
         &mut self,
-        initial_od: OperationalData,
+        initial_od: OperationalData<ChainA, ChainB>,
     ) -> Result<RelaySummary, LinkError> {
         // We will operate on potentially different operational data if the initial one fails.
         let mut odata = initial_od;
@@ -519,8 +536,8 @@ where
     /// new timeout messages.
     fn regenerate_operational_data(
         &mut self,
-        initial_odata: OperationalData,
-    ) -> Option<OperationalData> {
+        initial_odata: OperationalData<ChainA, ChainB>,
+    ) -> Option<OperationalData<ChainA, ChainB>> {
         info!(
             "[{}] failed. Regenerate operational data from {} events",
             self,
@@ -590,7 +607,7 @@ where
     /// Returns the events generated by the target chain upon success.
     fn send_from_operational_data(
         &mut self,
-        odata: OperationalData,
+        odata: OperationalData<ChainA, ChainB>,
     ) -> Result<RelaySummary, LinkError> {
         if odata.batch.is_empty() {
             error!("[{}] ignoring empty operational data!", self);
@@ -624,7 +641,10 @@ where
     }
 
     /// Checks if a sent packet has been received on destination.
-    fn send_packet_received_on_dst(&self, packet: &Packet) -> Result<bool, LinkError> {
+    fn send_packet_received_on_dst(
+        &self,
+        packet: Tagged<ChainA, Packet>,
+    ) -> Result<bool, LinkError> {
         let unreceived_packet = self
             .dst_chain()
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
@@ -639,7 +659,10 @@ where
 
     /// Checks if a packet commitment has been cleared on source.
     /// The packet commitment is cleared when either an acknowledgment or a timeout is received on source.
-    fn send_packet_commitment_cleared_on_src(&self, packet: &Packet) -> Result<bool, LinkError> {
+    fn send_packet_commitment_cleared_on_src(
+        &self,
+        packet: Tagged<ChainA, Packet>,
+    ) -> Result<bool, LinkError> {
         let (bytes, _) = self
             .src_chain()
             .build_packet_proofs(
@@ -655,7 +678,7 @@ where
     }
 
     /// Checks if a send packet event has already been handled (e.g. by another relayer).
-    fn send_packet_event_handled(&self, sp: &SendPacket) -> Result<bool, LinkError> {
+    fn send_packet_event_handled(&self, sp: Tagged<ChainA, SendPacket>) -> Result<bool, LinkError> {
         Ok(self.send_packet_received_on_dst(&sp.packet)?
             || self.send_packet_commitment_cleared_on_src(&sp.packet)?)
     }
@@ -677,7 +700,10 @@ where
     }
 
     /// Checks if a receive packet event has already been handled (e.g. by another relayer).
-    fn write_ack_event_handled(&self, rp: &WriteAcknowledgement) -> Result<bool, LinkError> {
+    fn write_ack_event_handled(
+        &self,
+        rp: Tagged<ChainA, WriteAcknowledgement>,
+    ) -> Result<bool, LinkError> {
         self.recv_packet_acknowledged_on_src(&rp.packet)
     }
 
@@ -1049,8 +1075,8 @@ where
 
     fn build_ack_from_recv_event(
         &self,
-        event: &WriteAcknowledgement,
-    ) -> Result<Option<Any>, LinkError> {
+        event: Tagged<ChainA, WriteAcknowledgement>,
+    ) -> Result<Option<Tagged<ChainB, Any>>, LinkError> {
         let packet = event.packet.clone();
 
         let (_, proofs) = self
@@ -1131,9 +1157,9 @@ where
 
     fn build_timeout_on_close_packet(
         &self,
-        packet: &Packet,
-        height: Height,
-    ) -> Result<Option<Any>, LinkError> {
+        packet: Tagged<ChainA, Packet>,
+        height: Tagged<ChainB, Height>,
+    ) -> Result<Option<Tagged<ChainB, Any>>, LinkError> {
         let (_, proofs) = self
             .dst_chain()
             .build_packet_proofs(
@@ -1164,9 +1190,9 @@ where
 
     fn build_timeout_from_send_packet_event(
         &self,
-        event: &SendPacket,
-        dst_chain_height: Height,
-    ) -> Result<Option<Any>, LinkError> {
+        event: Tagged<ChainA, SendPacket>,
+        dst_chain_height: Tagged<ChainB, Height>,
+    ) -> Result<Option<Tagged<ChainB, Any>>, LinkError> {
         let packet = event.packet.clone();
         if self
             .dst_channel(dst_chain_height)?
@@ -1182,9 +1208,9 @@ where
 
     fn build_recv_or_timeout_from_send_packet_event(
         &self,
-        event: &SendPacket,
-        dst_chain_height: Height,
-    ) -> Result<(Option<Any>, Option<Any>), LinkError> {
+        event: Tagged<ChainA, SendPacket>,
+        dst_chain_height: Tagged<ChainB, Height>,
+    ) -> Result<(Option<Tagged<ChainB, Any>>, Option<Tagged<ChainA, Any>>), LinkError> {
         let timeout = self.build_timeout_from_send_packet_event(event, dst_chain_height)?;
         if timeout.is_some() {
             Ok((None, timeout))
@@ -1309,7 +1335,10 @@ where
     /// Adds a new operational data item for this relaying path to process later.
     /// If the relaying path has non-zero packet delays, this method also updates the client on the
     /// target chain with the appropriate headers.
-    fn schedule_operational_data(&mut self, mut od: OperationalData) -> Result<(), LinkError> {
+    fn schedule_operational_data(
+        &mut self,
+        mut od: OperationalData<ChainA, ChainB>,
+    ) -> Result<(), LinkError> {
         if od.batch.is_empty() {
             info!(
                 "[{}] ignoring operational data for {} because it has no messages",
@@ -1350,11 +1379,14 @@ where
     /// scheduled), returns immediately with `vec![]`.
     fn try_fetch_scheduled_operational_data(
         &mut self,
-    ) -> (Vec<OperationalData>, Vec<OperationalData>) {
+    ) -> (
+        Vec<OperationPayload<ChainA, ChainB>>,
+        Vec<OperationPayload<ChainB, ChainA>>,
+    ) {
         // The first elements of the op. data vector contain the oldest entry.
         // Remove and return the elements with elapsed delay.
 
-        let src_ods: Vec<OperationalData> = self
+        let src_ods: Vec<OperationPayload<ChainA>> = self
             .src_operational_data
             .iter()
             .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
@@ -1363,7 +1395,7 @@ where
 
         self.src_operational_data = self.src_operational_data[src_ods.len()..].to_owned();
 
-        let dst_ods: Vec<OperationalData> = self
+        let dst_ods: Vec<OperationPayload<ChainB>> = self
             .dst_operational_data
             .iter()
             .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
@@ -1378,7 +1410,9 @@ where
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
     /// waiting for the delay period to pass.
     /// Returns `None` if there is no operational data scheduled.
-    pub(crate) fn fetch_scheduled_operational_data(&mut self) -> Option<OperationalData> {
+    pub(crate) fn fetch_scheduled_operational_data(
+        &mut self,
+    ) -> Option<OperationalData<ChainA, ChainB>> {
         let odata = self
             .src_operational_data
             .first()

@@ -7,13 +7,26 @@ pub struct Tagged<Tag, Value>(pub Value, pub PhantomData<Tag>);
 
 pub struct DualTagged<Tag1, Tag2, Value>(pub Value, pub PhantomData<(Tag1, Tag2)>);
 
+pub enum EitherTagged<Tag1, Tag2, Value> {
+    Left(Tagged<Tag1, Value>),
+    Right(Tagged<Tag2, Value>)
+}
+
 impl<Tag, Value> Tagged<Tag, Value> {
     pub fn new(value: Value) -> Self {
         Tagged(value, PhantomData)
     }
 
+    pub fn new_with_tag(tag: PhantomData<Tag>, value: Value) -> Self {
+        Tagged(value, tag)
+    }
+
     pub fn value(&self) -> &Value {
         &self.0
+    }
+
+    pub fn tag<V>(&self, value: V) -> Tagged<Tag, V> {
+        Tagged::new(value)
     }
 
     pub fn untag(self) -> Value {
@@ -78,6 +91,12 @@ impl<Tag, Value> Tagged<Tag, Option<Value>> {
 impl<Tag, Value, E> Tagged<Tag, Result<Value, E>> {
     pub fn transpose(self) -> Result<Tagged<Tag, Value>, E> {
         self.0.map(Tagged::new)
+    }
+}
+
+impl<Tag, Value> Tagged<Tag, Vec<Value>> {
+    pub fn transpose(self) -> Vec<Tagged<Tag, Value>> {
+        self.into_iter().collect()
     }
 }
 
