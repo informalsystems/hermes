@@ -459,7 +459,7 @@ impl ChannelReader for MockContext {
     }
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        ClientReader::client_state(self, client_id)
+        ClientReader::client_state(self, client_id).ok()
     }
 
     fn client_consensus_state(
@@ -467,7 +467,7 @@ impl ChannelReader for MockContext {
         client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState> {
-        ClientReader::consensus_state(self, client_id, height)
+        ClientReader::consensus_state(self, client_id, height).ok()
     }
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ChannelError> {
@@ -636,7 +636,7 @@ impl ConnectionReader for MockContext {
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         // Forward method call to the Ics2 Client-specific method.
-        ClientReader::client_state(self, client_id)
+        ClientReader::client_state(self, client_id).ok()
     }
 
     fn host_current_height(&self) -> Height {
@@ -658,7 +658,7 @@ impl ConnectionReader for MockContext {
         height: Height,
     ) -> Option<AnyConsensusState> {
         // Forward method call to the Ics2Client-specific method.
-        self.consensus_state(client_id, height)
+        self.consensus_state(client_id, height).ok()
     }
 
     fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
@@ -698,32 +698,45 @@ impl ConnectionKeeper for MockContext {
 }
 
 impl ClientReader for MockContext {
-    fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
+    fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
         match self.clients.get(client_id) {
-            Some(client_record) => client_record.client_type.into(),
-            None => None,
+            Some(client_record) => Ok(client_record.client_type.into()),
+            None => Err(Ics02Error::client_not_found(client_id.clone())),
         }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics02Error> {
         match self.clients.get(client_id) {
-            Some(client_record) => client_record.client_state.clone(),
-            None => None,
+            Some(client_record) => client_record
+                .client_state
+                .clone()
+                .ok_or_else(|| Ics02Error::client_not_found(client_id.clone())),
+            None => Err(Ics02Error::client_not_found(client_id.clone())),
         }
     }
 
-    fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
+    fn consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<AnyConsensusState, Ics02Error> {
         match self.clients.get(client_id) {
             Some(client_record) => match client_record.consensus_states.get(&height) {
-                Some(consensus_state) => Option::from(consensus_state.clone()),
-                None => None,
+                Some(consensus_state) => Ok(consensus_state.clone()),
+                None => Err(Ics02Error::consensus_state_not_found(
+                    client_id.clone(),
+                    height,
+                )),
             },
-            None => None,
+            None => Err(Ics02Error::consensus_state_not_found(
+                client_id.clone(),
+                height,
+            )),
         }
     }
 
-    fn client_counter(&self) -> u64 {
-        self.client_ids_counter
+    fn client_counter(&self) -> Result<u64, Ics02Error> {
+        Ok(self.client_ids_counter)
     }
 }
 
@@ -788,7 +801,7 @@ impl Ics18Context for MockContext {
 
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         // Forward call to Ics2.
-        ClientReader::client_state(self, client_id)
+        ClientReader::client_state(self, client_id).ok()
     }
 
     fn query_latest_header(&self) -> Option<AnyHeader> {
