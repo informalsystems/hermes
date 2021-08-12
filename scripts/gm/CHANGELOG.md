@@ -1,5 +1,12 @@
 # Gaiad Manager Change Log
 
+## v0.0.7
+
+### BUGFIXES
+- Fixed gm not reporting missing dependencies ([#1261])
+
+[#1261]: https://github.com/informalsystems/ibc-rs/issues/1261
+
 ## v0.0.6
 
 ### FEATURES

@@ -2,11 +2,10 @@ use std::time::Duration;
 
 use crate::chain::counterparty::connection_state_on_destination;
 use crate::util::retry::RetryResult;
-use anomaly::BoxError;
+use flex_error::define_error;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 use prost_types::Any;
 use serde::Serialize;
-use thiserror::Error;
 use tracing::debug;
 use tracing::{error, warn};
 
@@ -24,54 +23,182 @@ use ibc::timestamp::ZERO_DURATION;
 use ibc::tx_msg::Msg;
 
 use crate::chain::handle::ChainHandle;
-use crate::error::Error;
+use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::object::Connection as WorkerConnectionObject;
+use crate::supervisor::Error as SupervisorError;
 
 /// Maximum value allowed for packet delay on any new connection that the relayer establishes.
 pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
 
 const MAX_RETRIES: usize = 5;
 
-#[derive(Debug, Error)]
-pub enum ConnectionError {
-    #[error("failed with underlying cause: {0}")]
-    Failed(String),
+define_error! {
+    ConnectionError {
+        Relayer
+            [ RelayerError ]
+            |_| { "relayer error" },
 
-    #[error("connection constructor error: {0}")]
-    ConstructorFailed(String),
+        MissingLocalConnectionId
+            |_| { "failed due to missing local channel id" },
 
-    #[error("failed due to missing local channel id")]
-    MissingLocalConnectionId,
+        MissingCounterpartyConnectionIdField
+            { counterparty: Counterparty }
+            |e| {
+                format!("the connection end has no connection id field in the counterparty: {:?}",
+                    e.counterparty)
+            },
 
-    #[error("failed due to missing counterparty connection id ")]
-    MissingCounterpartyConnectionId,
+        MissingCounterpartyConnectionId
+            |_| { "failed due to missing counterparty connection id" },
 
-    #[error("failed during a query to chain id {0} due to underlying error: {1}")]
-    QueryError(ChainId, Error),
+        ChainQuery
+            { chain_id: ChainId }
+            [ RelayerError ]
+            |e| {
+                format!("failed during a query to chain id {0}", e.chain_id)
+            },
 
-    #[error("failed during an operation on client ({0}) hosted by chain ({1}) with error {2}")]
-    ClientOperation(ClientId, ChainId, ForeignClientError),
+        ConnectionQuery
+            { connection_id: ConnectionId }
+            [ RelayerError ]
+            |e| {
+                format!("failed to query the connection for {}", e.connection_id)
+            },
 
-    #[error(
-        "failed during a transaction submission step to chain id {0} with underlying error: {1}"
-    )]
-    SubmitError(ChainId, Error),
+        ClientOperation
+            {
+                client_id: ClientId,
+                chain_id: ChainId,
+            }
+            [ ForeignClientError ]
+            |e| {
+                format!("failed during an operation on client ({0}) hosted by chain ({1})",
+                    e.client_id, e.chain_id)
+            },
+
+        Submit
+            { chain_id: ChainId }
+            [ RelayerError ]
+            |e| {
+                format!("failed during a transaction submission step to chain id {0}",
+                    e.chain_id)
+            },
+
+        MaxDelayPeriod
+            { delay_period: Duration }
+            |e| {
+                format!("Invalid delay period '{:?}': should be at max '{:?}'",
+                    e.delay_period, MAX_PACKET_DELAY)
+            },
+
+        InvalidEvent
+            { event: IbcEvent }
+            |e| {
+                format!("a connection object cannot be built from {}",
+                    e.event)
+            },
+
+        TxResponse
+            { event: String }
+            |e| {
+                format!("tx response event consists of an error: {}",
+                    e.event)
+            },
+
+        ConnectionClientIdMismatch
+            {
+                client_id: ClientId,
+                foreign_client_id: ClientId
+            }
+            |e| {
+                format!("the client id in the connection end ({}) does not match the foreign client id ({})",
+                    e.client_id, e.foreign_client_id)
+            },
+
+        ChainIdMismatch
+            {
+                source_chain_id: ChainId,
+                destination_chain_id: ChainId
+            }
+            |e| {
+                format!("the source chain of client a ({}) does not not match the destination chain of client b ({})",
+                    e.source_chain_id, e.destination_chain_id)
+            },
+
+        ConnectionNotOpen
+            {
+                state: State,
+            }
+            |e| {
+                format!("the connection end is expected to be in state 'Open'; found state: {:?}",
+                    e.state)
+            },
+
+        MaxRetry
+            |_| {
+                format!("Failed to finish connection handshake in {:?} iterations",
+                    MAX_RETRIES)
+            },
+
+        Supervisor
+            [ SupervisorError ]
+            |_| { "supervisor error" },
+
+        MissingConnectionId
+            {
+                chain_id: ChainId,
+            }
+            |e| {
+                format!("missing connection on source chain {}",
+                    e.chain_id)
+            },
+
+        Signer
+            { chain_id: ChainId }
+            [ RelayerError ]
+            |e| {
+                format!("failed while fetching the signer for chain ({})",
+                    e.chain_id)
+            },
+
+        MissingConnectionIdFromEvent
+            |_| { "cannot extract connection_id from result" },
+
+        MissingConnectionInitEvent
+            |_| { "no conn init event was in the response" },
+
+        MissingConnectionTryEvent
+            |_| { "no conn try event was in the response" },
+
+        MissingConnectionAckEvent
+            |_| { "no conn ack event was in the response" },
+
+        MissingConnectionConfirmEvent
+            |_| { "no conn confirm event was in the response" },
+
+        ConnectionProof
+            [ RelayerError ]
+            |_| { "failed to build connection proofs" },
+
+        ConnectionAlreadyExist
+            { connection_id: ConnectionId }
+            |e| {
+                format!("connection {} already exist in an incompatible state", e.connection_id)
+            },
+
+    }
 }
 
 #[derive(Clone, Debug)]
-pub struct ConnectionSide {
-    pub(crate) chain: Box<dyn ChainHandle>,
+pub struct ConnectionSide<Chain: ChainHandle> {
+    pub(crate) chain: Chain,
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
 }
 
-impl ConnectionSide {
-    pub fn new(
-        chain: Box<dyn ChainHandle>,
-        client_id: ClientId,
-        connection_id: Option<ConnectionId>,
-    ) -> Self {
+impl<Chain: ChainHandle> ConnectionSide<Chain> {
+    pub fn new(chain: Chain, client_id: ClientId, connection_id: Option<ConnectionId>) -> Self {
         Self {
             chain,
             client_id,
@@ -83,7 +210,7 @@ impl ConnectionSide {
     }
 }
 
-impl Serialize for ConnectionSide {
+impl<Chain: ChainHandle> Serialize for ConnectionSide<Chain> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -104,28 +231,25 @@ impl Serialize for ConnectionSide {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Connection {
+pub struct Connection<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub delay_period: Duration,
-    pub a_side: ConnectionSide,
-    pub b_side: ConnectionSide,
+    pub a_side: ConnectionSide<ChainA>,
+    pub b_side: ConnectionSide<ChainB>,
 }
 
-impl Connection {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
     pub fn new(
-        a_client: ForeignClient,
-        b_client: ForeignClient,
+        a_client: ForeignClient<ChainA, ChainB>,
+        b_client: ForeignClient<ChainB, ChainA>,
         delay_period: Duration,
     ) -> Result<Self, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
         // Validate the delay period against the upper bound
         if delay_period > MAX_PACKET_DELAY {
-            return Err(ConnectionError::ConstructorFailed(format!(
-                "Invalid delay period '{:?}': should be max '{:?}'",
-                delay_period, MAX_PACKET_DELAY
-            )));
+            return Err(ConnectionError::max_delay_period(delay_period));
         }
 
         let mut c = Self {
@@ -147,18 +271,13 @@ impl Connection {
         Ok(c)
     }
     pub fn restore_from_event(
-        chain: Box<dyn ChainHandle>,
-        counterparty_chain: Box<dyn ChainHandle>,
+        chain: ChainA,
+        counterparty_chain: ChainB,
         connection_open_event: IbcEvent,
-    ) -> Result<Connection, BoxError> {
+    ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         let connection_event_attributes = connection_open_event
             .connection_attributes()
-            .ok_or_else(|| {
-                ConnectionError::Failed(format!(
-                    "a connection object cannot be built from {}",
-                    connection_open_event
-                ))
-            })?;
+            .ok_or_else(|| ConnectionError::invalid_event(connection_open_event.clone()))?;
 
         let connection_id = connection_event_attributes.connection_id.clone();
 
@@ -184,12 +303,15 @@ impl Connection {
     /// Recreates a 'Connection' object from the worker's object built from chain state scanning.
     /// The connection must exist on chain.
     pub fn restore_from_state(
-        chain: Box<dyn ChainHandle>,
-        counterparty_chain: Box<dyn ChainHandle>,
+        chain: ChainA,
+        counterparty_chain: ChainB,
         connection: WorkerConnectionObject,
         height: Height,
-    ) -> Result<(Connection, State), BoxError> {
-        let a_connection = chain.query_connection(&connection.src_connection_id, height)?;
+    ) -> Result<(Connection<ChainA, ChainB>, State), ConnectionError> {
+        let a_connection = chain
+            .query_connection(&connection.src_connection_id, height)
+            .map_err(ConnectionError::relayer)?;
+
         let client_id = a_connection.client_id();
         let delay_period = a_connection.delay_period();
 
@@ -200,7 +322,7 @@ impl Connection {
         let mut handshake_connection = Connection {
             delay_period,
             a_side: ConnectionSide::new(
-                chain.clone(),
+                chain,
                 client_id.clone(),
                 Some(connection.src_connection_id.clone()),
             ),
@@ -215,8 +337,9 @@ impl Connection {
             let req = QueryConnectionsRequest {
                 pagination: ibc_proto::cosmos::base::query::pagination::all(),
             };
-            let connections: Vec<IdentifiedConnectionEnd> =
-                counterparty_chain.query_connections(req)?;
+            let connections: Vec<IdentifiedConnectionEnd> = counterparty_chain
+                .query_connections(req)
+                .map_err(ConnectionError::relayer)?;
 
             for conn in connections {
                 if !conn
@@ -240,30 +363,29 @@ impl Connection {
     }
 
     pub fn find(
-        a_client: ForeignClient,
-        b_client: ForeignClient,
+        a_client: ForeignClient<ChainA, ChainB>,
+        b_client: ForeignClient<ChainB, ChainA>,
         conn_end_a: &IdentifiedConnectionEnd,
-    ) -> Result<Connection, ConnectionError> {
+    ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         Self::validate_clients(&a_client, &b_client)?;
 
         // Validate the connection end
         if conn_end_a.end().client_id().ne(a_client.id()) {
-            return Err(ConnectionError::ConstructorFailed(format!(
-                "the client id in the connection end ({}) does not match the foreign client id ({})",
-                conn_end_a.end().client_id(), a_client.id()
-            )));
+            return Err(ConnectionError::connection_client_id_mismatch(
+                conn_end_a.end().client_id().clone(),
+                a_client.id().clone(),
+            ));
         }
         if conn_end_a.end().counterparty().client_id() != b_client.id() {
-            return Err(ConnectionError::ConstructorFailed(format!(
-                "the counterparty client id in the connection end ({}) does not match the foreign client id ({})",
-                conn_end_a.end().counterparty().client_id(), b_client.id()
-            )));
+            return Err(ConnectionError::connection_client_id_mismatch(
+                conn_end_a.end().counterparty().client_id().clone(),
+                b_client.id().clone(),
+            ));
         }
         if !conn_end_a.end().state_matches(&State::Open) {
-            return Err(ConnectionError::ConstructorFailed(format!(
-                "the connection end is expected to be in state 'Open'; found state: {:?}",
-                conn_end_a.end().state()
-            )));
+            return Err(ConnectionError::connection_not_open(
+                *conn_end_a.end().state(),
+            ));
         }
         let b_conn_id = conn_end_a
             .end()
@@ -271,22 +393,21 @@ impl Connection {
             .connection_id()
             .cloned()
             .ok_or_else(|| {
-                ConnectionError::ConstructorFailed(format!(
-                    "the connection end has no connection id field in the counterparty: {:?}",
-                    conn_end_a.end().counterparty()
-                ))
+                ConnectionError::missing_counterparty_connection_id_field(
+                    conn_end_a.end().counterparty().clone(),
+                )
             })?;
 
         let c = Connection {
             delay_period: conn_end_a.end().delay_period(),
             a_side: ConnectionSide {
                 chain: a_client.dst_chain.clone(),
-                client_id: a_client.id.clone(),
+                client_id: a_client.id,
                 connection_id: Some(conn_end_a.id().clone()),
             },
             b_side: ConnectionSide {
                 chain: b_client.dst_chain.clone(),
-                client_id: b_client.id.clone(),
+                client_id: b_client.id,
                 connection_id: Some(b_conn_id),
             },
         };
@@ -296,33 +417,31 @@ impl Connection {
 
     // Verifies that the two clients are mutually consistent, i.e., they serve the same two chains.
     fn validate_clients(
-        a_client: &ForeignClient,
-        b_client: &ForeignClient,
+        a_client: &ForeignClient<ChainA, ChainB>,
+        b_client: &ForeignClient<ChainB, ChainA>,
     ) -> Result<(), ConnectionError> {
         if a_client.src_chain().id() != b_client.dst_chain().id() {
-            return Err(ConnectionError::ConstructorFailed(format!(
-                "the source chain of client a ({}) does not not match the destination chain of client b ({})",
+            return Err(ConnectionError::chain_id_mismatch(
                 a_client.src_chain().id(),
-                b_client.dst_chain().id()
-            )));
+                b_client.dst_chain().id(),
+            ));
         }
 
         if a_client.dst_chain().id() != b_client.src_chain().id() {
-            return Err(ConnectionError::ConstructorFailed(format!(
-                "the destination chain of client a ({}) does not not match the source chain of client b ({})",
+            return Err(ConnectionError::chain_id_mismatch(
                 a_client.dst_chain().id(),
-                b_client.src_chain().id()
-            )));
+                b_client.src_chain().id(),
+            ));
         }
 
         Ok(())
     }
 
-    pub fn src_chain(&self) -> Box<dyn ChainHandle> {
+    pub fn src_chain(&self) -> ChainA {
         self.a_side.chain.clone()
     }
 
-    pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
+    pub fn dst_chain(&self) -> ChainB {
         self.b_side.chain.clone()
     }
 
@@ -342,7 +461,7 @@ impl Connection {
         self.b_side.connection_id()
     }
 
-    pub fn flipped(&self) -> Connection {
+    pub fn flipped(&self) -> Connection<ChainB, ChainA> {
         Connection {
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
@@ -397,17 +516,17 @@ impl Connection {
 
             let src_connection_id = self
                 .src_connection_id()
-                .ok_or(ConnectionError::MissingLocalConnectionId)?;
+                .ok_or_else(ConnectionError::missing_local_connection_id)?;
             let dst_connection_id = self
                 .dst_connection_id()
-                .ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+                .ok_or_else(ConnectionError::missing_counterparty_connection_id)?;
 
             // Continue loop if query error
-            let a_connection = a_chain.query_connection(&src_connection_id, Height::zero());
+            let a_connection = a_chain.query_connection(src_connection_id, Height::zero());
             if a_connection.is_err() {
                 continue;
             }
-            let b_connection = b_chain.query_connection(&dst_connection_id, Height::zero());
+            let b_connection = b_chain.query_connection(dst_connection_id, Height::zero());
             if b_connection.is_err() {
                 continue;
             }
@@ -451,39 +570,27 @@ impl Connection {
             }
         }
 
-        Err(ConnectionError::Failed(format!(
-            "Failed to finish connection handshake in {:?} iterations",
-            MAX_RETRIES
-        )))
+        Err(ConnectionError::max_retry())
     }
 
     pub fn counterparty_state(&self) -> Result<State, ConnectionError> {
         // Source connection ID must be specified
         let connection_id = self
             .src_connection_id()
-            .ok_or(ConnectionError::MissingLocalConnectionId)?;
+            .ok_or_else(ConnectionError::missing_local_connection_id)?;
 
         let connection_end = self
             .src_chain()
-            .query_connection(&connection_id, Height::zero())
-            .map_err(|_| {
-                ConnectionError::Failed(format!(
-                    "failed to query the connection for {}",
-                    connection_id
-                ))
-            })?;
+            .query_connection(connection_id, Height::zero())
+            .map_err(|e| ConnectionError::connection_query(connection_id.clone(), e))?;
 
         let connection = IdentifiedConnectionEnd {
             connection_end,
             connection_id: connection_id.clone(),
         };
 
-        connection_state_on_destination(connection, self.dst_chain().as_ref()).map_err(|e| {
-            ConnectionError::Failed(format!(
-                "failed to query the connection state on destination for {}; caused by {}",
-                connection_id, e
-            ))
-        })
+        connection_state_on_destination(connection, &self.dst_chain())
+            .map_err(ConnectionError::supervisor)
     }
 
     pub fn handshake_step(&mut self, state: State) -> Result<Vec<IbcEvent>, ConnectionError> {
@@ -533,12 +640,12 @@ impl Connection {
     ) -> Result<ConnectionEnd, ConnectionError> {
         let dst_connection_id = self
             .dst_connection_id()
-            .ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+            .ok_or_else(ConnectionError::missing_counterparty_connection_id)?;
 
         let prefix = self
             .src_chain()
             .query_commitment_prefix()
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         // If there is a connection present on the destination chain, it should look like this:
         let counterparty = Counterparty::new(
@@ -557,7 +664,7 @@ impl Connection {
         let versions = self
             .src_chain()
             .query_compatible_versions()
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         let dst_expected_connection = ConnectionEnd::new(
             highest_state,
@@ -571,16 +678,14 @@ impl Connection {
         let dst_connection = self
             .dst_chain()
             .query_connection(dst_connection_id, Height::zero())
-            .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
 
         // Check if a connection is expected to exist on destination chain
         // A connection must exist on destination chain for Ack and Confirm Tx-es to succeed
         if dst_connection.state_matches(&State::Uninitialized) {
-            return Err(ConnectionError::Failed(format!(
-                "missing connection {:?} on source chain {}",
-                self.src_connection_id().clone(),
-                self.dst_chain().id()
-            )));
+            return Err(ConnectionError::missing_connection_id(
+                self.dst_chain().id(),
+            ));
         }
 
         check_destination_connection_state(
@@ -595,38 +700,43 @@ impl Connection {
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
         let client = self.restore_src_client();
         client.build_update_client(height).map_err(|e| {
-            ConnectionError::ClientOperation(self.src_client_id().clone(), self.src_chain().id(), e)
+            ConnectionError::client_operation(
+                self.src_client_id().clone(),
+                self.src_chain().id(),
+                e,
+            )
         })
     }
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
         let client = self.restore_dst_client();
         client.build_update_client(height).map_err(|e| {
-            ConnectionError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)
+            ConnectionError::client_operation(
+                self.dst_client_id().clone(),
+                self.dst_chain().id(),
+                e,
+            )
         })
     }
 
     pub fn build_conn_init(&self) -> Result<Vec<Any>, ConnectionError> {
         // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ConnectionError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ConnectionError::signer(self.dst_chain().id(), e))?;
 
         let prefix = self
             .src_chain()
             .query_commitment_prefix()
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         let counterparty = Counterparty::new(self.src_client_id().clone(), None, prefix);
 
         let version = self
             .dst_chain()
             .query_compatible_versions()
-            .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?[0]
+            .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?[0]
             .clone();
 
         // Build the domain type message
@@ -647,7 +757,7 @@ impl Connection {
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ConnectionError::SubmitError(self.dst_chain().id(), e))?;
+            .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection init
         let result = events
@@ -656,17 +766,12 @@ impl Connection {
                 matches!(event, IbcEvent::OpenInitConnection(_))
                     || matches!(event, IbcEvent::ChainError(_))
             })
-            .ok_or_else(|| {
-                ConnectionError::Failed("no conn init event was in the response".to_string())
-            })?;
+            .ok_or_else(ConnectionError::missing_connection_init_event)?;
 
         // TODO - make chainError an actual error
         match result {
             IbcEvent::OpenInitConnection(_) => Ok(result),
-            IbcEvent::ChainError(e) => Err(ConnectionError::Failed(format!(
-                "tx response event consists of an error: {}",
-                e
-            ))),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
             _ => panic!("internal error"),
         }
     }
@@ -675,12 +780,12 @@ impl Connection {
     pub fn build_conn_try(&self) -> Result<Vec<Any>, ConnectionError> {
         let src_connection_id = self
             .src_connection_id()
-            .ok_or(ConnectionError::MissingLocalConnectionId)?;
+            .ok_or_else(ConnectionError::missing_local_connection_id)?;
 
         let src_connection = self
             .src_chain()
             .query_connection(src_connection_id, Height::zero())
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the try options
 
@@ -704,16 +809,16 @@ impl Connection {
         let src_client_target_height = self
             .dst_chain()
             .query_latest_height()
-            .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
         self.src_chain()
             .send_msgs(client_msgs)
-            .map_err(|e| ConnectionError::SubmitError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
         let (client_state, proofs) = self
             .src_chain()
             .build_connection_proofs_and_client_state(
@@ -722,9 +827,7 @@ impl Connection {
                 self.src_client_id(),
                 query_height,
             )
-            .map_err(|e| {
-                ConnectionError::Failed(format!("failed to build connection proofs: {}", e))
-            })?;
+            .map_err(ConnectionError::connection_proof)?;
 
         // Build message(s) for updating client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
@@ -732,24 +835,21 @@ impl Connection {
         let counterparty_versions = if src_connection.versions().is_empty() {
             self.src_chain()
                 .query_compatible_versions()
-                .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?
+                .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?
         } else {
             src_connection.versions()
         };
 
         // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ConnectionError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ConnectionError::signer(self.dst_chain().id(), e))?;
 
         let prefix = self
             .src_chain()
             .query_commitment_prefix()
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         let counterparty = Counterparty::new(
             self.src_client_id().clone(),
@@ -784,7 +884,7 @@ impl Connection {
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ConnectionError::SubmitError(self.dst_chain().id(), e))?;
+            .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection try transaction
         let result = events
@@ -793,15 +893,11 @@ impl Connection {
                 matches!(event, IbcEvent::OpenTryConnection(_))
                     || matches!(event, IbcEvent::ChainError(_))
             })
-            .ok_or_else(|| {
-                ConnectionError::Failed("no conn try event was in the response".to_string())
-            })?;
+            .ok_or_else(ConnectionError::missing_connection_try_event)?;
 
         match result {
             IbcEvent::OpenTryConnection(_) => Ok(result),
-            IbcEvent::ChainError(e) => {
-                Err(ConnectionError::Failed(format!("tx response error: {}", e)))
-            }
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
             _ => panic!("internal error"),
         }
     }
@@ -810,22 +906,18 @@ impl Connection {
     pub fn build_conn_ack(&self) -> Result<Vec<Any>, ConnectionError> {
         let src_connection_id = self
             .src_connection_id()
-            .ok_or(ConnectionError::MissingLocalConnectionId)?;
+            .ok_or_else(ConnectionError::missing_local_connection_id)?;
         let dst_connection_id = self
             .dst_connection_id()
-            .ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+            .ok_or_else(ConnectionError::missing_counterparty_connection_id)?;
 
-        let _expected_dst_connection = self
-            .validated_expected_connection(ConnectionMsgType::OpenAck)
-            .map_err(|e|
-                ConnectionError::Failed(format!(
-                    "ack options inconsistent with existing connection on destination chain; context={}", e
-                )))?;
+        let _expected_dst_connection =
+            self.validated_expected_connection(ConnectionMsgType::OpenAck)?;
 
         let src_connection = self
             .src_chain()
             .query_connection(src_connection_id, Height::zero())
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         // TODO - check that the src connection is consistent with the ack options
 
@@ -834,16 +926,17 @@ impl Connection {
         let src_client_target_height = self
             .dst_chain()
             .query_latest_height()
-            .map_err(|e| ConnectionError::QueryError(self.dst_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
         self.src_chain()
             .send_msgs(client_msgs)
-            .map_err(|e| ConnectionError::SubmitError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
+
         let (client_state, proofs) = self
             .src_chain()
             .build_connection_proofs_and_client_state(
@@ -852,21 +945,16 @@ impl Connection {
                 self.src_client_id(),
                 query_height,
             )
-            .map_err(|e| {
-                ConnectionError::Failed(format!("failed to build connection proofs: {}", e))
-            })?;
+            .map_err(ConnectionError::connection_proof)?;
 
         // Build message(s) for updating client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
         // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ConnectionError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ConnectionError::signer(self.dst_chain().id(), e))?;
 
         let new_msg = MsgConnectionOpenAck {
             connection_id: dst_connection_id.clone(),
@@ -887,7 +975,7 @@ impl Connection {
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ConnectionError::SubmitError(self.dst_chain().id(), e))?;
+            .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection ack
         let result = events
@@ -896,15 +984,11 @@ impl Connection {
                 matches!(event, IbcEvent::OpenAckConnection(_))
                     || matches!(event, IbcEvent::ChainError(_))
             })
-            .ok_or_else(|| {
-                ConnectionError::Failed("no conn ack event was in the response".to_string())
-            })?;
+            .ok_or_else(ConnectionError::missing_connection_ack_event)?;
 
         match result {
             IbcEvent::OpenAckConnection(_) => Ok(result),
-            IbcEvent::ChainError(e) => {
-                Err(ConnectionError::Failed(format!("tx response error: {}", e)))
-            }
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
             _ => panic!("internal error"),
         }
     }
@@ -913,32 +997,23 @@ impl Connection {
     pub fn build_conn_confirm(&self) -> Result<Vec<Any>, ConnectionError> {
         let src_connection_id = self
             .src_connection_id()
-            .ok_or(ConnectionError::MissingLocalConnectionId)?;
+            .ok_or_else(ConnectionError::missing_local_connection_id)?;
         let dst_connection_id = self
             .dst_connection_id()
-            .ok_or(ConnectionError::MissingCounterpartyConnectionId)?;
+            .ok_or_else(ConnectionError::missing_counterparty_connection_id)?;
 
-        let _expected_dst_connection = self
-            .validated_expected_connection(ConnectionMsgType::OpenAck)
-            .map_err(|e| {
-                    ConnectionError::Failed(format!(
-                    "confirm options inconsistent with existing connection on destination chain; context={}", e))
-            })?;
+        let _expected_dst_connection =
+            self.validated_expected_connection(ConnectionMsgType::OpenAck)?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ConnectionError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))?;
 
         let _src_connection = self
             .src_chain()
             .query_connection(src_connection_id, query_height)
-            .map_err(|_| {
-                ConnectionError::Failed(format!(
-                    "missing connection {} on source chain",
-                    src_connection_id
-                ))
-            })?;
+            .map_err(|e| ConnectionError::connection_query(src_connection_id.clone(), e))?;
 
         // TODO - check that the src connection is consistent with the confirm options
 
@@ -950,21 +1025,16 @@ impl Connection {
                 self.src_client_id(),
                 query_height,
             )
-            .map_err(|e| {
-                ConnectionError::Failed(format!("failed to build connection proofs: {}", e))
-            })?;
+            .map_err(ConnectionError::connection_proof)?;
 
         // Build message(s) for updating client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
         // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ConnectionError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ConnectionError::signer(self.dst_chain().id(), e))?;
 
         let new_msg = MsgConnectionOpenConfirm {
             connection_id: dst_connection_id.clone(),
@@ -982,7 +1052,7 @@ impl Connection {
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ConnectionError::SubmitError(self.dst_chain().id(), e))?;
+            .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection confirm
         let result = events
@@ -991,32 +1061,28 @@ impl Connection {
                 matches!(event, IbcEvent::OpenConfirmConnection(_))
                     || matches!(event, IbcEvent::ChainError(_))
             })
-            .ok_or_else(|| {
-                ConnectionError::Failed("no conn confirm event was in the response".to_string())
-            })?;
+            .ok_or_else(ConnectionError::missing_connection_confirm_event)?;
 
         match result {
             IbcEvent::OpenConfirmConnection(_) => Ok(result),
-            IbcEvent::ChainError(e) => {
-                Err(ConnectionError::Failed(format!("tx response error: {}", e)))
-            }
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
             _ => panic!("internal error"),
         }
     }
 
-    fn restore_src_client(&self) -> ForeignClient {
+    fn restore_src_client(&self) -> ForeignClient<ChainA, ChainB> {
         ForeignClient::restore(
             self.src_client_id().clone(),
-            self.src_chain().clone(),
-            self.dst_chain().clone(),
+            self.src_chain(),
+            self.dst_chain(),
         )
     }
 
-    fn restore_dst_client(&self) -> ForeignClient {
+    fn restore_dst_client(&self) -> ForeignClient<ChainB, ChainA> {
         ForeignClient::restore(
             self.dst_client_id().clone(),
-            self.dst_chain().clone(),
-            self.src_chain().clone(),
+            self.dst_chain(),
+            self.src_chain(),
         )
     }
 }
@@ -1029,7 +1095,7 @@ fn extract_connection_id(event: &IbcEvent) -> Result<&ConnectionId, ConnectionEr
         IbcEvent::OpenConfirmConnection(ev) => ev.connection_id().as_ref(),
         _ => None,
     }
-    .ok_or_else(|| ConnectionError::Failed("cannot extract connection_id from result".to_string()))
+    .ok_or_else(ConnectionError::missing_connection_id_from_event)
 }
 
 /// Enumeration of proof carrying ICS3 message, helper for relayer.
@@ -1060,9 +1126,6 @@ fn check_destination_connection_state(
     if good_state && good_client_ids && good_connection_ids {
         Ok(())
     } else {
-        Err(ConnectionError::Failed(format!(
-            "connection {} already exist in an incompatible state",
-            connection_id
-        )))
+        Err(ConnectionError::connection_already_exist(connection_id))
     }
 }

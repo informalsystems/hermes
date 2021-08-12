@@ -1,16 +1,19 @@
 use std::collections::HashMap;
 
-use anomaly::BoxError;
+use flex_error::define_error;
 use tracing::{debug, trace};
 
 use ibc::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::ics02_client::trust_threshold::TrustThreshold;
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics04_channel::error::Kind;
+use ibc::ics04_channel::error::Error as ChannelError;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 
+use crate::chain::handle::ChainHandle;
+use crate::error::Error as RelayerError;
 use crate::object;
-use crate::registry::Registry;
+use crate::registry::{Registry, SpawnError};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Permission {
@@ -35,6 +38,23 @@ enum CacheKey {
     Connection(ChainId, ConnectionId),
 }
 
+define_error! {
+    FilterError {
+        Spawn
+            [ SpawnError ]
+            | _ | { "spawn error" },
+
+        Relayer
+            [ RelayerError ]
+            | _ | { "relayer error" },
+
+        Channel
+            [ ChannelError ]
+            | _ | { "channel error" },
+
+    }
+}
+
 /// A cache storing filtering status (allow or deny) for
 /// arbitrary identifiers.
 #[derive(Default, Debug)]
@@ -54,14 +74,14 @@ impl FilterPolicy {
     ///
     /// May encounter errors caused by failed queries. Any such error
     /// is propagated and nothing is cached.
-    pub fn control_connection_end_and_client(
+    pub fn control_connection_end_and_client<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         chain_id: &ChainId, // Chain hosting the client & connection
         client_state: &AnyClientState,
         connection: &ConnectionEnd,
         connection_id: &ConnectionId,
-    ) -> Result<Permission, BoxError> {
+    ) -> Result<Permission, FilterError> {
         let identifier = CacheKey::Connection(chain_id.clone(), connection_id.clone());
 
         trace!(
@@ -77,17 +97,19 @@ impl FilterPolicy {
 
         // Fetch the details of the client on counterparty chain.
         let counterparty_chain_id = client_state.chain_id();
-        let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
+        let counterparty_chain = registry
+            .get_or_spawn(&counterparty_chain_id)
+            .map_err(FilterError::spawn)?;
         let counterparty_client_id = connection.counterparty().client_id();
-        let counterparty_client_state =
-            counterparty_chain.query_client_state(&counterparty_client_id, Height::zero())?;
+        let counterparty_client_state = counterparty_chain
+            .query_client_state(counterparty_client_id, Height::zero())
+            .map_err(FilterError::relayer)?;
 
         // Control both clients, cache their results.
-        let client_permission =
-            self.control_client(chain_id, &connection.client_id(), &client_state);
+        let client_permission = self.control_client(chain_id, connection.client_id(), client_state);
         let counterparty_client_permission = self.control_client(
             &counterparty_chain_id,
-            &counterparty_client_id,
+            counterparty_client_id,
             &counterparty_client_state,
         );
         let permission = client_permission.and(&counterparty_client_permission);
@@ -129,7 +151,7 @@ impl FilterPolicy {
         }
 
         let permission = match state.trust_threshold() {
-            Some(trust) if trust.numerator == 1 && trust.denominator == 3 => Permission::Allow,
+            Some(trust) if trust == TrustThreshold::ONE_THIRD => Permission::Allow,
             Some(_) => {
                 trace!(
                     "[client filter] client {} on chain {} has a trust threshold different than 1/3",
@@ -161,11 +183,11 @@ impl FilterPolicy {
         permission
     }
 
-    pub fn control_client_object(
+    pub fn control_client_object<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         obj: &object::Client,
-    ) -> Result<Permission, BoxError> {
+    ) -> Result<Permission, FilterError> {
         let identifier = CacheKey::Client(obj.dst_chain_id.clone(), obj.dst_client_id.clone());
 
         trace!(
@@ -179,7 +201,9 @@ impl FilterPolicy {
             return Ok(*p);
         }
 
-        let chain = registry.get_or_spawn(&obj.dst_chain_id)?;
+        let chain = registry
+            .get_or_spawn(&obj.dst_chain_id)
+            .map_err(FilterError::spawn)?;
 
         trace!(
             "[client filter] deciding if to relay on {:?} hosted chain {}",
@@ -187,15 +211,18 @@ impl FilterPolicy {
             obj.dst_chain_id
         );
 
-        let client_state = chain.query_client_state(&obj.dst_client_id, Height::zero())?;
+        let client_state = chain
+            .query_client_state(&obj.dst_client_id, Height::zero())
+            .map_err(FilterError::relayer)?;
+
         Ok(self.control_client(&obj.dst_chain_id, &obj.dst_client_id, &client_state))
     }
 
-    pub fn control_conn_object(
+    pub fn control_conn_object<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         obj: &object::Connection,
-    ) -> Result<Permission, BoxError> {
+    ) -> Result<Permission, FilterError> {
         let identifier =
             CacheKey::Connection(obj.src_chain_id.clone(), obj.src_connection_id.clone());
 
@@ -210,16 +237,23 @@ impl FilterPolicy {
             return Ok(*p);
         }
 
-        let src_chain = registry.get_or_spawn(&obj.src_chain_id)?;
+        let src_chain = registry
+            .get_or_spawn(&obj.src_chain_id)
+            .map_err(FilterError::spawn)?;
+
         trace!(
             "[client filter] deciding if to relay on {:?} hosted on chain {}",
             obj,
             obj.src_chain_id
         );
 
-        let connection_end = src_chain.query_connection(&obj.src_connection_id, Height::zero())?;
-        let client_state =
-            src_chain.query_client_state(&connection_end.client_id(), Height::zero())?;
+        let connection_end = src_chain
+            .query_connection(&obj.src_connection_id, Height::zero())
+            .map_err(FilterError::relayer)?;
+
+        let client_state = src_chain
+            .query_client_state(connection_end.client_id(), Height::zero())
+            .map_err(FilterError::relayer)?;
 
         self.control_connection_end_and_client(
             registry,
@@ -230,13 +264,13 @@ impl FilterPolicy {
         )
     }
 
-    fn control_channel(
+    fn control_channel<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         chain_id: &ChainId,
         port_id: &PortId,
         channel_id: &ChannelId,
-    ) -> Result<Permission, BoxError> {
+    ) -> Result<Permission, FilterError> {
         let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
 
         trace!(
@@ -250,21 +284,35 @@ impl FilterPolicy {
             return Ok(*p);
         }
 
-        let src_chain = registry.get_or_spawn(&chain_id)?;
-        let channel_end = src_chain.query_channel(&port_id, &channel_id, Height::zero())?;
+        let src_chain = registry
+            .get_or_spawn(chain_id)
+            .map_err(FilterError::spawn)?;
+
+        let channel_end = src_chain
+            .query_channel(port_id, channel_id, Height::zero())
+            .map_err(FilterError::relayer)?;
+
         let conn_id = channel_end.connection_hops.first().ok_or_else(|| {
-            Kind::InvalidConnectionHopsLength(1, channel_end.connection_hops().len())
+            FilterError::channel(ChannelError::invalid_connection_hops_length(
+                1,
+                channel_end.connection_hops().len(),
+            ))
         })?;
-        let connection_end = src_chain.query_connection(conn_id, Height::zero())?;
-        let client_state =
-            src_chain.query_client_state(&connection_end.client_id(), Height::zero())?;
+
+        let connection_end = src_chain
+            .query_connection(conn_id, Height::zero())
+            .map_err(FilterError::relayer)?;
+
+        let client_state = src_chain
+            .query_client_state(connection_end.client_id(), Height::zero())
+            .map_err(FilterError::relayer)?;
 
         let permission = self.control_connection_end_and_client(
             registry,
-            &chain_id,
+            chain_id,
             &client_state,
             &connection_end,
-            &conn_id,
+            conn_id,
         )?;
 
         let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
@@ -279,11 +327,11 @@ impl FilterPolicy {
         Ok(permission)
     }
 
-    pub fn control_chan_object(
+    pub fn control_chan_object<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         obj: &object::Channel,
-    ) -> Result<Permission, BoxError> {
+    ) -> Result<Permission, FilterError> {
         self.control_channel(
             registry,
             &obj.src_chain_id,
@@ -292,11 +340,11 @@ impl FilterPolicy {
         )
     }
 
-    pub fn control_packet_object(
+    pub fn control_packet_object<Chain: ChainHandle>(
         &mut self,
-        registry: &mut Registry,
+        registry: &mut Registry<Chain>,
         obj: &object::Packet,
-    ) -> Result<Permission, BoxError> {
+    ) -> Result<Permission, FilterError> {
         self.control_channel(
             registry,
             &obj.src_chain_id,

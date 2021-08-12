@@ -1,31 +1,33 @@
 use std::{thread, time::Duration};
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, warn};
 
 use crate::connection::Connection as RelayConnection;
 use crate::telemetry::Telemetry;
 use crate::{
-    chain::handle::ChainHandlePair, object::Connection, util::retry::retry_with_index,
+    chain::handle::{ChainHandle, ChainHandlePair},
+    object::Connection,
+    util::retry::retry_with_index,
     worker::retry_strategy,
 };
 
+use super::error::RunError;
 use super::WorkerCmd;
 
-pub struct ConnectionWorker {
+pub struct ConnectionWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     connection: Connection,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
 }
 
-impl ConnectionWorker {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectionWorker<ChainA, ChainB> {
     pub fn new(
         connection: Connection,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
     ) -> Self {
@@ -38,7 +40,7 @@ impl ConnectionWorker {
     }
 
     /// Run the event loop for events associated with a [`Connection`].
-    pub(crate) fn run(self) -> Result<(), BoxError> {
+    pub(crate) fn run(self) -> Result<(), RunError> {
         let a_chain = self.chains.a.clone();
         let b_chain = self.chains.b.clone();
 
@@ -67,7 +69,8 @@ impl ConnectionWorker {
                                     a_chain.clone(),
                                     b_chain.clone(),
                                     event.clone(),
-                                )?;
+                                )
+                                .map_err(RunError::connection)?;
 
                                 retry_with_index(
                                     retry_strategy::worker_default_strategy(),
@@ -92,7 +95,7 @@ impl ConnectionWorker {
                             current_height
                         );
 
-                        let height = current_height.decrement()?;
+                        let height = current_height.decrement().map_err(RunError::ics02)?;
 
                         let (mut handshake_connection, state) =
                             RelayConnection::restore_from_state(
@@ -100,7 +103,8 @@ impl ConnectionWorker {
                                 b_chain.clone(),
                                 self.connection.clone(),
                                 height,
-                            )?;
+                            )
+                            .map_err(RunError::connection)?;
 
                         retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                             handshake_connection.step_state(state, index)
@@ -111,6 +115,8 @@ impl ConnectionWorker {
                         info!(connection = %self.connection.short_name(), "shutting down Connection worker");
                         return Ok(());
                     }
+
+                    WorkerCmd::ClearPendingPackets => Ok(()), // nothing to do
                 };
 
                 if let Err(retries) = result {
@@ -129,7 +135,7 @@ impl ConnectionWorker {
     }
 
     /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

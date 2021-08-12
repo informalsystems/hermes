@@ -38,9 +38,9 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::Chain;
+use crate::chain::ChainEndpoint;
 use crate::config::ChainConfig;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
@@ -59,11 +59,12 @@ pub struct MockChain {
     event_receiver: EventReceiver,
 }
 
-impl Chain for MockChain {
+impl ChainEndpoint for MockChain {
     type LightBlock = TmLightBlock;
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
+    type LightClient = MockLightClient;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
         let (sender, receiver) = channel::unbounded();
@@ -80,8 +81,8 @@ impl Chain for MockChain {
         })
     }
 
-    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
-        Ok(Box::new(MockLightClient::new(self)))
+    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
+        Ok(MockLightClient::new(self))
     }
 
     fn init_event_monitor(
@@ -110,10 +111,7 @@ impl Chain for MockChain {
 
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        let events = self
-            .context
-            .send(proto_msgs)
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+        let events = self.context.send(proto_msgs).map_err(Error::ics18)?;
 
         Ok(events)
     }
@@ -157,10 +155,9 @@ impl Chain for MockChain {
         let any_state = self
             .context
             .query_client_full_state(client_id)
-            .ok_or(Kind::EmptyResponseValue)?;
-        let client_state = downcast!(any_state => AnyClientState::Tendermint).ok_or_else(|| {
-            Kind::Query("client state".into()).context("unexpected client state type")
-        })?;
+            .ok_or_else(Error::empty_response_value)?;
+        let client_state = downcast!(any_state.clone() => AnyClientState::Tendermint)
+            .ok_or_else(|| Error::client_state_type(format!("{:?}", any_state)))?;
         Ok(client_state)
     }
 
@@ -310,7 +307,7 @@ impl Chain for MockChain {
     fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
         let client_state = TendermintClientState::new(
             self.id().clone(),
-            self.config.trust_threshold,
+            self.config.trust_threshold.into(),
             self.config.trusting_period,
             self.config.trusting_period.add(Duration::from_secs(1000)),
             Duration::from_millis(3000),
@@ -322,7 +319,7 @@ impl Chain for MockChain {
                 after_misbehaviour: false,
             },
         )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
+        .map_err(Error::ics07)?;
 
         Ok(client_state)
     }
@@ -339,7 +336,7 @@ impl Chain for MockChain {
         trusted_height: Height,
         target_height: Height,
         client_state: &AnyClientState,
-        light_client: &mut dyn LightClient<Self>,
+        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         let succ_trusted = light_client.fetch(trusted_height.increment())?;
 
@@ -417,8 +414,8 @@ pub mod test_utils {
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
-            max_msg_num: None,
-            max_tx_size: None,
+            max_msg_num: Default::default(),
+            max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),

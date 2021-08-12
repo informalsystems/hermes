@@ -10,10 +10,12 @@ use tendermint::abci::transaction::Hash;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
+use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::chain::runtime::ChainRuntime;
 use ibc_relayer::chain::CosmosSdkChain;
 
 use crate::conclude::Output;
+use crate::error::Error;
 use crate::prelude::app_config;
 
 /// Query the events emitted by transaction
@@ -42,11 +44,17 @@ impl Runnable for QueryTxEventsCmd {
         };
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = ChainRuntime::<CosmosSdkChain>::spawn(chain_config.clone(), rt).unwrap();
+        let chain =
+            ChainRuntime::<CosmosSdkChain>::spawn::<ProdChainHandle>(chain_config.clone(), rt)
+                .unwrap();
 
-        let res = chain.query_txs(QueryTxRequest::Transaction(QueryTxHash(
-            Hash::from_str(self.hash.as_str()).unwrap(),
-        )));
+        let res = Hash::from_str(self.hash.as_str())
+            .map_err(|e| Error::invalid_hash(self.hash.clone(), e))
+            .and_then(|h| {
+                chain
+                    .query_txs(QueryTxRequest::Transaction(QueryTxHash(h)))
+                    .map_err(Error::relayer)
+            });
 
         match res {
             Ok(res) => Output::success(res).exit(),

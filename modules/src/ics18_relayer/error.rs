@@ -1,27 +1,38 @@
 use crate::ics24_host::identifier::ClientId;
+use crate::ics26_routing::error::Error as RoutingError;
 use crate::Height;
-use anomaly::{BoxError, Context};
-use thiserror::Error;
+use flex_error::define_error;
 
-pub type Error = anomaly::Error<Kind>;
+define_error! {
+    Error {
+        ClientStateNotFound
+            { client_id: ClientId }
+            | e | { format_args!("client state on destination chain not found, (client id: {0})", e.client_id) },
 
-#[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
-    #[error("client state on destination chain not found, (client id: {0})")]
-    ClientStateNotFound(ClientId),
+        ClientAlreadyUpToDate
+            {
+                client_id: ClientId,
+                source_height: Height,
+                destination_height: Height,
+            }
+            | e | {
+                format_args!("the client on destination chain is already up-to-date (client id: {0}, source height: {1}, dest height: {2})",
+                    e.client_id, e.source_height, e.destination_height)
+            },
 
-    #[error("the client on destination chain is already up-to-date (client id: {0}, source height: {1}, dest height: {2})")]
-    ClientAlreadyUpToDate(ClientId, Height, Height),
+        ClientAtHigherHeight
+            {
+                client_id: ClientId,
+                source_height: Height,
+                destination_height: Height,
+            }
+            | e | {
+                format_args!("the client on destination chain is at a higher height (client id: {0}, source height: {1}, dest height: {2})",
+                    e.client_id, e.source_height, e.destination_height)
+            },
 
-    #[error("the client on destination chain is at a higher height (client id: {0}, source height: {1}, dest height: {2})")]
-    ClientAtHigherHeight(ClientId, Height, Height),
-
-    #[error("transaction processing by modules failed")]
-    TransactionFailed,
-}
-
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
+        TransactionFailed
+            [ RoutingError ]
+            | _ | { "transaction processing by modules failed" },
     }
 }

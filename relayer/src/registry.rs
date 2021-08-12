@@ -1,8 +1,11 @@
 //! Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
-use anomaly::BoxError;
+use flex_error::define_error;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{trace, warn};
 
@@ -11,26 +14,54 @@ use ibc::ics24_host::identifier::ChainId;
 use crate::{
     chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSdkChain},
     config::Config,
+    error::Error as RelayerError,
     supervisor::RwArc,
 };
+
+define_error! {
+    SpawnError {
+        Relayer
+            [ RelayerError ]
+            | _ | { "relayer error" },
+
+        RuntimeNotFound
+            | _ | { "expected runtime to be found in registry" },
+
+        MissingChain
+            { chain_id: ChainId }
+            | e | {
+                format_args!("missing chain for id ({}) in configuration file",
+                    e.chain_id)
+            }
+    }
+}
 
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
-pub struct Registry {
+pub struct Registry<Chain: ChainHandle> {
     config: RwArc<Config>,
-    handles: HashMap<ChainId, Box<dyn ChainHandle>>,
+    handles: HashMap<ChainId, Chain>,
     rt: Arc<TokioRuntime>,
 }
-
-impl Registry {
-    /// Construct a new [`Registry`] using the provided [`Config`]
+impl<Chain: ChainHandle> Registry<Chain> {
+    /// Construct a new [`Registry`] using the provided shared [`Config`]
     pub fn new(config: RwArc<Config>) -> Self {
+        Self::from_shared(config)
+    }
+
+    /// Construct a new [`Registry`] using the provided shared [`Config`]
+    pub fn from_shared(config: RwArc<Config>) -> Self {
         Self {
             config,
             handles: HashMap::new(),
             rt: Arc::new(TokioRuntime::new().unwrap()),
         }
+    }
+
+    /// Construct a new [`Registry`] using the provided owned [`Config`]
+    pub fn from_owned(config: Config) -> Self {
+        Self::new(Arc::new(RwLock::new(config)))
     }
 
     /// Return the size of the registry, i.e., the number of distinct chain runtimes.
@@ -39,7 +70,7 @@ impl Registry {
     }
 
     /// Return an iterator overall the chain handles managed by the registry.
-    pub fn chains(&self) -> impl Iterator<Item = &Box<dyn ChainHandle>> {
+    pub fn chains(&self) -> impl Iterator<Item = &Chain> {
         self.handles.values()
     }
 
@@ -47,7 +78,7 @@ impl Registry {
     ///
     /// If there is no handle yet, this will first spawn the runtime and then
     /// return its handle.
-    pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Box<dyn ChainHandle>, BoxError> {
+    pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Chain, SpawnError> {
         self.spawn(chain_id)?;
 
         let handle = self
@@ -62,7 +93,7 @@ impl Registry {
     /// only if the registry does not contain a handle for that runtime already.
     ///
     /// Returns whether or not the runtime was actually spawned.
-    pub fn spawn(&mut self, chain_id: &ChainId) -> Result<bool, BoxError> {
+    pub fn spawn(&mut self, chain_id: &ChainId) -> Result<bool, SpawnError> {
         if !self.handles.contains_key(chain_id) {
             let handle = spawn_chain_runtime(&self.config, chain_id, self.rt.clone())?;
             self.handles.insert(chain_id.clone(), handle);
@@ -85,19 +116,20 @@ impl Registry {
 
 /// Spawns a chain runtime from the configuration and given a chain identifier.
 /// Returns the corresponding handle if successful.
-pub fn spawn_chain_runtime(
+pub fn spawn_chain_runtime<Chain: ChainHandle>(
     config: &RwArc<Config>,
     chain_id: &ChainId,
     rt: Arc<TokioRuntime>,
-) -> Result<Box<dyn ChainHandle>, BoxError> {
+) -> Result<Chain, SpawnError> {
     let chain_config = config
         .read()
         .expect("poisoned lock")
         .find_chain(chain_id)
         .cloned()
-        .ok_or_else(|| format!("missing chain for id ({}) in configuration file", chain_id))?;
+        .ok_or_else(|| SpawnError::missing_chain(chain_id.clone()))?;
 
-    let handle = ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt)?;
+    let handle =
+        ChainRuntime::<CosmosSdkChain>::spawn(chain_config, rt).map_err(SpawnError::relayer)?;
 
     Ok(handle)
 }

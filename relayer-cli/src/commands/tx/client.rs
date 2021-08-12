@@ -10,9 +10,9 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::{app_config, CliApp};
-use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
+use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::error::{Error, Kind};
+use crate::error::Error;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -43,7 +43,7 @@ impl Runnable for TxCreateClientCmd {
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IbcEvent, Error> = client
             .build_create_client_and_send()
-            .map_err(|e| Kind::Tx.context(e).into());
+            .map_err(Error::foreign_client);
 
         match res {
             Ok(receipt) => Output::success(receipt).exit(),
@@ -112,7 +112,7 @@ impl Runnable for TxUpdateClientCmd {
 
         let res = client
             .build_update_client_and_send(height, trusted_height)
-            .map_err(|e| Kind::Tx.context(e));
+            .map_err(Error::foreign_client);
 
         match res {
             Ok(events) => Output::success(events).exit(),
@@ -204,20 +204,20 @@ impl Runnable for TxUpgradeClientsCmd {
 }
 
 impl TxUpgradeClientsCmd {
-    fn upgrade_clients_for_chain(
+    fn upgrade_clients_for_chain<Chain: ChainHandle>(
         &self,
         config: &config::Reader<CliApp>,
-        src_chain: Box<dyn ChainHandle>,
+        src_chain: Chain,
         dst_chain_id: &ChainId,
     ) -> UpgradeClientsForChainResult {
-        let dst_chain = spawn_chain_runtime(&config, dst_chain_id)?;
+        let dst_chain = spawn_chain_runtime_generic::<Chain>(config, dst_chain_id)?;
 
         let req = QueryClientStatesRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
         let outputs = dst_chain
             .query_clients(req)
-            .map_err(|e| Kind::Query.context(e))?
+            .map_err(Error::relayer)?
             .into_iter()
             .filter_map(|c| (self.src_chain_id == c.client_state.chain_id()).then(|| c.client_id))
             .map(|id| TxUpgradeClientsCmd::upgrade_client(id, dst_chain.clone(), src_chain.clone()))
@@ -226,13 +226,13 @@ impl TxUpgradeClientsCmd {
         Ok(outputs)
     }
 
-    fn upgrade_client(
+    fn upgrade_client<Chain: ChainHandle>(
         client_id: ClientId,
-        dst_chain: Box<dyn ChainHandle>,
-        src_chain: Box<dyn ChainHandle>,
+        dst_chain: Chain,
+        src_chain: Chain,
     ) -> Result<Vec<IbcEvent>, Error> {
-        let client = ForeignClient::restore(client_id, dst_chain.clone(), src_chain.clone());
-        client.upgrade().map_err(|e| Kind::Query.context(e).into())
+        let client = ForeignClient::restore(client_id, dst_chain, src_chain);
+        client.upgrade().map_err(Error::foreign_client)
     }
 }
 

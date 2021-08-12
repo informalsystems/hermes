@@ -1,7 +1,6 @@
 use crate::ics04_channel::channel::{validate_version, ChannelEnd};
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::Error as ChannelError;
 use crate::ics24_host::error::ValidationError;
-use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
@@ -65,7 +64,7 @@ impl MsgChannelOpenTry {
     }
 }
 impl Msg for MsgChannelOpenTry {
-    type ValidationError = Error;
+    type ValidationError = ChannelError;
     type Raw = RawMsgChannelOpenTry;
 
     fn route(&self) -> String {
@@ -78,7 +77,7 @@ impl Msg for MsgChannelOpenTry {
 
     fn validate_basic(&self) -> Result<(), ValidationError> {
         match self.channel().counterparty().channel_id() {
-            None => Err(ValidationKind::InvalidCounterpartyChannelId.into()),
+            None => Err(ValidationError::invalid_counterparty_channel_id()),
             Some(_c) => Ok(()),
         }
     }
@@ -87,7 +86,7 @@ impl Msg for MsgChannelOpenTry {
 impl Protobuf<RawMsgChannelOpenTry> for MsgChannelOpenTry {}
 
 impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
-    type Error = anomaly::Error<Kind>;
+    type Error = ChannelError;
 
     fn try_from(raw_msg: RawMsgChannelOpenTry) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
@@ -97,34 +96,33 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             None,
             raw_msg
                 .proof_height
-                .ok_or(Kind::MissingHeight)?
-                .try_into()
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+                .ok_or_else(ChannelError::missing_height)?
+                .into(),
         )
-        .map_err(|e| Kind::InvalidProof.context(e))?;
+        .map_err(ChannelError::invalid_proof)?;
 
         let previous_channel_id = Some(raw_msg.previous_channel_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+            .map_err(ChannelError::identifier)?;
 
         let msg = MsgChannelOpenTry {
-            port_id: raw_msg
-                .port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            port_id: raw_msg.port_id.parse().map_err(ChannelError::identifier)?,
             previous_channel_id,
-            channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
+            channel: raw_msg
+                .channel
+                .ok_or_else(ChannelError::missing_channel)?
+                .try_into()?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
             signer: raw_msg.signer.into(),
         };
 
-        match msg.validate_basic() {
-            Err(_e) => Err(Kind::InvalidCounterpartyChannelId.into()),
-            Ok(()) => Ok(msg),
-        }
+        msg.validate_basic()
+            .map_err(ChannelError::invalid_counterparty_channel_id)?;
+
+        Ok(msg)
     }
 }
 

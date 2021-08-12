@@ -4,10 +4,11 @@ use serde::Serialize;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest;
+use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Serialize, Debug)]
@@ -44,7 +45,7 @@ impl QueryPacketCommitmentsCmd {
 
         chain
             .query_packet_commitments(grpc_request)
-            .map_err(|e| Kind::Query.context(e).into())
+            .map_err(Error::relayer)
             // Transform the raw packet commitm. state into the list of sequence numbers
             .map(|(ps_vec, height)| (ps_vec.iter().map(|ps| ps.sequence).collect(), height))
             // Assemble into a coherent result

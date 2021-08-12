@@ -106,11 +106,11 @@ impl WorkerMap {
     /// with the given [`Object`].
     ///
     /// This function will spawn a new [`Worker`] if one does not exists already.
-    pub fn get_or_spawn(
+    pub fn get_or_spawn<Chain: ChainHandle + 'static>(
         &mut self,
         object: Object,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
+        src: Chain,
+        dst: Chain,
         config: &Config,
     ) -> &WorkerHandle {
         if self.workers.contains_key(&object) {
@@ -124,10 +124,10 @@ impl WorkerMap {
     /// Spawn a new [`Worker`], only if one does not exists already.
     ///
     /// Returns whether or not the worker was actually spawned.
-    pub fn spawn(
+    pub fn spawn<Chain: ChainHandle + 'static>(
         &mut self,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
+        src: Chain,
+        dst: Chain,
         object: &Object,
         config: &Config,
     ) -> bool {
@@ -141,10 +141,10 @@ impl WorkerMap {
     }
 
     /// Force spawn a worker for the given [`Object`].
-    fn spawn_worker(
+    fn spawn_worker<Chain: ChainHandle + 'static>(
         &mut self,
-        src: Box<dyn ChainHandle>,
-        dst: Box<dyn ChainHandle>,
+        src: Chain,
+        dst: Chain,
         object: &Object,
         config: &Config,
     ) -> WorkerHandle {
@@ -173,6 +173,14 @@ impl WorkerMap {
             .keys()
             .filter(|o| o.for_chain(chain_id))
             .cloned()
+            .collect()
+    }
+
+    /// List the [`WorkerHandle`]s associated with the given chain.
+    pub fn workers_for_chain(&self, chain_id: &ChainId) -> Vec<&WorkerHandle> {
+        self.workers
+            .iter()
+            .filter_map(|(o, h)| o.for_chain(chain_id).then(|| h))
             .collect()
     }
 

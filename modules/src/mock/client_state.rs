@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
@@ -12,7 +13,6 @@ use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::error::Kind as ClientKind;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
@@ -104,16 +104,26 @@ impl ClientState for MockClientState {
 
 impl From<MockConsensusState> for MockClientState {
     fn from(cs: MockConsensusState) -> Self {
-        Self(cs.0)
+        Self(cs.header)
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct MockConsensusState(pub MockHeader);
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct MockConsensusState {
+    pub header: MockHeader,
+    pub root: CommitmentRoot,
+}
 
 impl MockConsensusState {
+    pub fn new(header: MockHeader) -> Self {
+        MockConsensusState {
+            header,
+            root: CommitmentRoot::from(vec![0]),
+        }
+    }
+
     pub fn timestamp(&self) -> Timestamp {
-        (self.0).timestamp
+        self.header.timestamp
     }
 }
 
@@ -123,11 +133,12 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
     type Error = Error;
 
     fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
-        let raw_header = raw
-            .header
-            .ok_or_else(|| ClientKind::InvalidRawConsensusState.context("missing header"))?;
+        let raw_header = raw.header.ok_or_else(Error::missing_raw_consensus_state)?;
 
-        Ok(Self(MockHeader::try_from(raw_header)?))
+        Ok(Self {
+            header: MockHeader::try_from(raw_header)?,
+            root: CommitmentRoot::from(vec![0]),
+        })
     }
 }
 
@@ -135,8 +146,8 @@ impl From<MockConsensusState> for RawMockConsensusState {
     fn from(value: MockConsensusState) -> Self {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(value.0.height().into()),
-                timestamp: (value.0).timestamp.as_nanoseconds(),
+                height: Some(value.header.height().into()),
+                timestamp: value.header.timestamp.as_nanoseconds(),
             }),
         }
     }
@@ -149,16 +160,18 @@ impl From<MockConsensusState> for AnyConsensusState {
 }
 
 impl ConsensusState for MockConsensusState {
+    type Error = Infallible;
+
     fn client_type(&self) -> ClientType {
         ClientType::Mock
     }
 
     fn root(&self) -> &CommitmentRoot {
-        todo!()
+        &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
+    fn validate_basic(&self) -> Result<(), Infallible> {
+        Ok(())
     }
 
     fn wrap_any(self) -> AnyConsensusState {
