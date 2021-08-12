@@ -2,6 +2,7 @@ use abscissa_core::{Command, Options, Runnable};
 
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
+use ibc_relayer::chain::handle::ProdChainHandle;
 
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
@@ -33,15 +34,19 @@ impl QueryUnreceivedAcknowledgementCmd {
         let config = app_config();
         debug!("Options: {:?}", self);
 
-        let (chains, channel) =
-            spawn_chain_counterparty(&config, &self.chain_id, &self.port_id, &self.channel_id)?;
+        let (chains, channel) = spawn_chain_counterparty::<ProdChainHandle>(
+            &config,
+            &self.chain_id,
+            &self.port_id,
+            &self.channel_id,
+        )?;
+
         debug!(
             "fetched from source chain {} the following channel {:?}",
             self.chain_id, channel
         );
 
-        unreceived_acknowledgements(chains.src.as_ref(), chains.dst.as_ref(), channel)
-            .map_err(Error::supervisor)
+        unreceived_acknowledgements(&chains.src, &chains.dst, channel).map_err(Error::supervisor)
     }
 }
 

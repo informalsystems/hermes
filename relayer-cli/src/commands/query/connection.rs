@@ -9,7 +9,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, PortChannelId},
 };
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
-use ibc_relayer::chain::{Chain, CosmosSdkChain};
+use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::Output;
 use crate::error::Error;

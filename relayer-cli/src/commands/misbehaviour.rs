@@ -8,7 +8,7 @@ use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 use std::ops::Deref;
 
 use crate::application::CliApp;
-use crate::cli_utils::spawn_chain_runtime;
+use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic};
 use crate::conclude::Output;
 use crate::prelude::*;
 use ibc::ics02_client::client_state::ClientState;
@@ -93,8 +93,8 @@ pub fn monitor_misbehaviour(
     Ok(None)
 }
 
-fn misbehaviour_handling(
-    chain: Box<dyn ChainHandle>,
+fn misbehaviour_handling<Chain: ChainHandle>(
+    chain: Chain,
     config: &config::Reader<CliApp>,
     client_id: ClientId,
     update: Option<UpdateClient>,
@@ -107,8 +107,8 @@ fn misbehaviour_handling(
         return Err(format!("client {} is already frozen", client_id).into());
     }
 
-    let counterparty_chain =
-        spawn_chain_runtime(config, &client_state.chain_id()).map_err(|e| {
+    let counterparty_chain = spawn_chain_runtime_generic::<Chain>(config, &client_state.chain_id())
+        .map_err(|e| {
             format!(
                 "could not spawn the chain runtime for {}: {}",
                 client_state.chain_id(),

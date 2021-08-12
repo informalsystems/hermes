@@ -39,12 +39,12 @@ define_error! {
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
-pub struct Registry {
+pub struct Registry<Chain: ChainHandle> {
     config: RwArc<Config>,
-    handles: HashMap<ChainId, Box<dyn ChainHandle>>,
+    handles: HashMap<ChainId, Chain>,
     rt: Arc<TokioRuntime>,
 }
-impl Registry {
+impl<Chain: ChainHandle> Registry<Chain> {
     /// Construct a new [`Registry`] using the provided shared [`Config`]
     pub fn new(config: RwArc<Config>) -> Self {
         Self::from_shared(config)
@@ -70,7 +70,7 @@ impl Registry {
     }
 
     /// Return an iterator overall the chain handles managed by the registry.
-    pub fn chains(&self) -> impl Iterator<Item = &Box<dyn ChainHandle>> {
+    pub fn chains(&self) -> impl Iterator<Item = &Chain> {
         self.handles.values()
     }
 
@@ -78,7 +78,7 @@ impl Registry {
     ///
     /// If there is no handle yet, this will first spawn the runtime and then
     /// return its handle.
-    pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Box<dyn ChainHandle>, SpawnError> {
+    pub fn get_or_spawn(&mut self, chain_id: &ChainId) -> Result<Chain, SpawnError> {
         self.spawn(chain_id)?;
 
         let handle = self
@@ -116,11 +116,11 @@ impl Registry {
 
 /// Spawns a chain runtime from the configuration and given a chain identifier.
 /// Returns the corresponding handle if successful.
-pub fn spawn_chain_runtime(
+pub fn spawn_chain_runtime<Chain: ChainHandle>(
     config: &RwArc<Config>,
     chain_id: &ChainId,
     rt: Arc<TokioRuntime>,
-) -> Result<Box<dyn ChainHandle>, SpawnError> {
+) -> Result<Chain, SpawnError> {
     let chain_config = config
         .read()
         .expect("poisoned lock")

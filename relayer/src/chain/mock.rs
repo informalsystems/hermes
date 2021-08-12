@@ -38,7 +38,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
 
-use crate::chain::Chain;
+use crate::chain::ChainEndpoint;
 use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -59,11 +59,12 @@ pub struct MockChain {
     event_receiver: EventReceiver,
 }
 
-impl Chain for MockChain {
+impl ChainEndpoint for MockChain {
     type LightBlock = TmLightBlock;
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
+    type LightClient = MockLightClient;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
         let (sender, receiver) = channel::unbounded();
@@ -80,8 +81,8 @@ impl Chain for MockChain {
         })
     }
 
-    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
-        Ok(Box::new(MockLightClient::new(self)))
+    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
+        Ok(MockLightClient::new(self))
     }
 
     fn init_event_monitor(
@@ -328,7 +329,7 @@ impl Chain for MockChain {
         trusted_height: Height,
         target_height: Height,
         client_state: &AnyClientState,
-        light_client: &mut dyn LightClient<Self>,
+        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         let succ_trusted = light_client.fetch(trusted_height.increment())?;
 

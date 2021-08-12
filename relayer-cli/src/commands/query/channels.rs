@@ -8,7 +8,7 @@ use ibc::ics04_channel::channel::{ChannelEnd, State};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
-use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::registry::Registry;
 
 use crate::commands::query::channel_ends::ChannelEnds;
@@ -30,7 +30,7 @@ pub struct QueryChannelsCmd {
     verbose: bool,
 }
 
-fn run_query_channels(
+fn run_query_channels<Chain: ChainHandle>(
     cmd: &QueryChannelsCmd,
 ) -> Result<QueryChannelsOutput, Box<dyn std::error::Error>> {
     debug!("Options: {:?}", cmd);
@@ -44,7 +44,7 @@ fn run_query_channels(
     let config = app_config();
     let chain_id = cmd.chain_id.clone();
 
-    let mut registry = Registry::from_owned((*config).clone());
+    let mut registry = <Registry<Chain>>::from_owned((*config).clone());
     let chain = registry.get_or_spawn(&cmd.chain_id)?;
     let chain_height = chain.query_latest_height()?;
 
@@ -82,7 +82,7 @@ fn run_query_channels(
         if cmd.verbose {
             let channel_ends = query_channel_ends(
                 &mut registry,
-                chain.as_ref(),
+                &chain,
                 cmd.destination_chain.as_ref(),
                 channel_end,
                 connection_id,
@@ -108,9 +108,9 @@ fn run_query_channels(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn query_channel_ends(
-    registry: &mut Registry,
-    chain: &dyn ChainHandle,
+fn query_channel_ends<Chain: ChainHandle>(
+    registry: &mut Registry<Chain>,
+    chain: &Chain,
     destination_chain: Option<&ChainId>,
     channel_end: ChannelEnd,
     connection_id: ConnectionId,
@@ -184,7 +184,7 @@ fn query_channel_ends(
 
 impl Runnable for QueryChannelsCmd {
     fn run(&self) {
-        match run_query_channels(self) {
+        match run_query_channels::<ProdChainHandle>(self) {
             Ok(output) => Output::success(output).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }

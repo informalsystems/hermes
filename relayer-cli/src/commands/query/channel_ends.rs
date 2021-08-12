@@ -7,6 +7,7 @@ use ibc::ics04_channel::channel::{ChannelEnd, State};
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
+use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::registry::Registry;
 
 use crate::conclude::Output;
@@ -58,7 +59,7 @@ pub struct ChannelEndsSummary {
     counterparty_port_id: PortId,
 }
 
-fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
+fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Options: {:?}", cmd);
 
     let config = app_config();
@@ -67,7 +68,7 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
     let port_id = cmd.port_id.clone();
     let channel_id = cmd.channel_id.clone();
 
-    let mut registry = Registry::from_owned((*config).clone());
+    let mut registry = <Registry<Chain>>::from_owned((*config).clone());
     let chain = registry.get_or_spawn(&chain_id)?;
 
     let chain_height = match cmd.height {
@@ -176,7 +177,7 @@ fn do_run(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
 
 impl Runnable for QueryChannelEndsCmd {
     fn run(&self) {
-        match do_run(self) {
+        match do_run::<ProdChainHandle>(self) {
             Ok(()) => {}
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
