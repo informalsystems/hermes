@@ -8,6 +8,7 @@ use crossbeam_channel::Sender;
 use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
+use ibc_relayer::rest;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
 
 use crate::conclude::json;
@@ -102,6 +103,19 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
     Ok(())
 }
 
+fn make_rest_receiver(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
+    let rest = config.read().expect("poisoned lock").rest.clone();
+
+    if rest.enabled {
+        let rest_config = ibc_relayer_rest::Config::new(rest.host, rest.port);
+        let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
+        Some(rest_receiver)
+    } else {
+        info!("[rest] address not configured, REST server disabled");
+        None
+    }
+}
+
 #[cfg(feature = "telemetry")]
 fn make_supervisor<Chain: ChainHandle + 'static>(
     config: Arc<RwLock<Config>>,
@@ -124,7 +138,9 @@ fn make_supervisor<Chain: ChainHandle + 'static>(
         }
     }
 
-    Ok(Supervisor::new(config, state))
+    let rest_receiver = make_rest_receiver(&config);
+
+    Ok(Supervisor::new(config, rest_receiver, state))
 }
 
 #[cfg(not(feature = "telemetry"))]
@@ -138,6 +154,8 @@ fn make_supervisor<Chain: ChainHandle + 'static>(
         );
     }
 
+    let rest_receiver = make_rest_receiver(&config);
+
     let telemetry = ibc_relayer::telemetry::TelemetryDisabled;
-    Ok(Supervisor::new(config, telemetry))
+    Ok(Supervisor::new(config, rest_receiver, telemetry))
 }

@@ -22,16 +22,16 @@ use crate::{
     event::monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
     registry::Registry,
+    rest,
     telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
 
 pub mod client_state_filter;
-pub mod error;
-
 use client_state_filter::{FilterPolicy, Permission};
 
+pub mod error;
 pub use error::{Error, ErrorDetail};
 
 pub mod dump_state;
@@ -60,6 +60,7 @@ pub struct Supervisor<Chain: ChainHandle> {
 
     cmd_rx: Receiver<SupervisorCmd>,
     worker_msg_rx: Receiver<WorkerMsg>,
+    rest_rx: Option<rest::Receiver>,
     client_state_filter: FilterPolicy,
 
     #[allow(dead_code)]
@@ -68,7 +69,11 @@ pub struct Supervisor<Chain: ChainHandle> {
 
 impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn new(config: RwArc<Config>, telemetry: Telemetry) -> (Self, Sender<SupervisorCmd>) {
+    pub fn new(
+        config: RwArc<Config>,
+        rest_rx: Option<rest::Receiver>,
+        telemetry: Telemetry,
+    ) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
@@ -82,6 +87,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             workers,
             cmd_rx,
             worker_msg_rx,
+            rest_rx,
             client_state_filter,
             telemetry,
         };
@@ -385,6 +391,9 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                 }
             }
 
+            // Process incoming requests from the REST server
+            self.handle_rest_requests();
+
             std::thread::sleep(Duration::from_millis(50));
         }
     }
@@ -439,11 +448,17 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
     fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
-        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
-        let state = SupervisorState::new(chains, self.workers.objects());
+        let state = self.state();
         let _ = reply_to.try_send(state);
 
         CmdEffect::Nothing
+    }
+
+    /// Returns a representation of the supervisor's internal state
+    /// as a [`SupervisorState`].
+    fn state(&self) -> SupervisorState {
+        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
+        SupervisorState::new(chains, self.workers.objects())
     }
 
     /// Apply the given configuration update.
@@ -552,6 +567,26 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         match msg {
             WorkerMsg::Stopped(id, object) => {
                 self.workers.remove_stopped(id, object);
+            }
+        }
+    }
+
+    fn handle_rest_requests(&self) {
+        if let Some(rest_rx) = &self.rest_rx {
+            let config = self.config.read().expect("poisoned lock");
+            if let Some(cmd) = rest::process_incoming_requests(&config, rest_rx) {
+                self.handle_rest_cmd(cmd);
+            }
+        }
+    }
+
+    fn handle_rest_cmd(&self, m: rest::Command) {
+        match m {
+            rest::Command::DumpState(reply) => {
+                let state = self.state();
+                reply.send(Ok(state)).unwrap_or_else(|e| {
+                    error!("[rest/supervisor] error replying to a REST request {}", e)
+                });
             }
         }
     }

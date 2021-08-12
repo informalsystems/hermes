@@ -30,6 +30,7 @@ ibc           = { version = "0.6.2", path = "../modules" }
 ibc-relayer   = { version = "0.6.2", path = "../relayer" }
 ibc-proto     = { version = "0.9.1", path = "../proto" }
 ibc-telemetry = { version = "0.6.2", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.1.0", path = "../relayer-rest" }
 
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }

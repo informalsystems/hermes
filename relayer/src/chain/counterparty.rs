@@ -1,21 +1,22 @@
 use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
+use crate::channel::ChannelError;
+use crate::supervisor::Error;
 use ibc::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
     ics03_connection::connection::{
         ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
     },
-    ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, State},
+    ics04_channel::channel::{IdentifiedChannelEnd, State},
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId},
     Height,
 };
-use ibc_proto::ibc::core::{
-    channel::v1::QueryConnectionChannelsRequest, connection::v1::QueryClientConnectionsRequest,
+use ibc_proto::ibc::core::channel::v1::{
+    QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-
-use crate::channel::ChannelError;
-use crate::supervisor::Error;
+use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 
 use super::handle::ChainHandle;
 
@@ -178,7 +179,7 @@ fn fetch_channel_on_destination(
     channel_id: &ChannelId,
     counterparty_chain: &impl ChainHandle,
     remote_connection_id: &ConnectionId,
-) -> Result<Option<ChannelEnd>, Error> {
+) -> Result<Option<IdentifiedChannelEnd>, Error> {
     let req = QueryConnectionChannelsRequest {
         connection: remote_connection_id.to_string(),
         pagination: ibc_proto::cosmos::base::query::pagination::all(),
@@ -192,7 +193,7 @@ fn fetch_channel_on_destination(
         let local_channel_end = &counterparty_channel.channel_end.remote;
         if let Some(local_channel_id) = local_channel_end.channel_id() {
             if local_channel_id == channel_id && local_channel_end.port_id() == port_id {
-                return Ok(Some(counterparty_channel.channel_end));
+                return Ok(Some(counterparty_channel));
             }
         }
     }
@@ -207,7 +208,7 @@ pub fn channel_state_on_destination(
     let remote_channel = channel_on_destination(channel, connection, counterparty_chain)?;
     Ok(remote_channel.map_or_else(
         || State::Uninitialized,
-        |remote_channel| remote_channel.state,
+        |remote_channel| remote_channel.channel_end.state,
     ))
 }
 
@@ -215,14 +216,19 @@ pub fn channel_on_destination(
     channel: &IdentifiedChannelEnd,
     connection: &IdentifiedConnectionEnd,
     counterparty_chain: &impl ChainHandle,
-) -> Result<Option<ChannelEnd>, Error> {
-    if let Some(remote_channel_id) = channel.channel_end.remote.channel_id() {
+) -> Result<Option<IdentifiedChannelEnd>, Error> {
+    if let Some(remote_channel_id) = channel.channel_end.counterparty().channel_id() {
         let counterparty = counterparty_chain
             .query_channel(
-                channel.channel_end.remote.port_id(),
+                channel.channel_end.counterparty().port_id(),
                 remote_channel_id,
                 Height::zero(),
             )
+            .map(|c| IdentifiedChannelEnd {
+                port_id: channel.channel_end.counterparty().port_id().clone(),
+                channel_id: remote_channel_id.clone(),
+                channel_end: c,
+            })
             .map_err(Error::relayer)?;
 
         Ok(Some(counterparty))
@@ -285,4 +291,128 @@ pub fn check_channel_counterparty(
     }
 
     Ok(())
+}
+
+pub fn unreceived_packets(
+    chain: &impl ChainHandle,
+    counterparty_chain: &impl ChainHandle,
+    channel: IdentifiedChannelEnd,
+) -> Result<Vec<u64>, Error> {
+    let counterparty_channel_id = channel
+        .channel_end
+        .counterparty()
+        .channel_id
+        .as_ref()
+        .ok_or_else(Error::missing_counterparty_channel_id)?;
+
+    let (_, sequences, _) = unreceived_packets_sequences(
+        counterparty_chain,
+        counterparty_channel_id,
+        &channel.channel_end.counterparty().port_id,
+        chain,
+        &channel.channel_id,
+        &channel.port_id,
+    )?;
+
+    Ok(sequences)
+}
+
+pub(crate) fn unreceived_packets_sequences(
+    src_chain: &impl ChainHandle,
+    src_channel_id: &ChannelId,
+    src_port_id: &PortId,
+    dst_chain: &impl ChainHandle,
+    dst_channel_id: &ChannelId,
+    dst_port_id: &PortId,
+) -> Result<(Vec<u64>, Vec<u64>, Height), Error> {
+    // get the packet commitments on the counterparty/ source chain
+    let commitments_request = QueryPacketCommitmentsRequest {
+        port_id: src_port_id.to_string(),
+        channel_id: src_channel_id.to_string(),
+        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+    };
+
+    let (commitments, src_response_height) = src_chain
+        .query_packet_commitments(commitments_request)
+        .map_err(Error::relayer)?;
+
+    let commit_sequences: Vec<u64> = commitments.into_iter().map(|v| v.sequence).collect();
+    if commit_sequences.is_empty() {
+        return Ok((commit_sequences, vec![], src_response_height));
+    }
+
+    let request = QueryUnreceivedPacketsRequest {
+        port_id: dst_port_id.to_string(),
+        channel_id: dst_channel_id.to_string(),
+        packet_commitment_sequences: commit_sequences.clone(),
+    };
+
+    let sequences = dst_chain
+        .query_unreceived_packets(request)
+        .map_err(Error::relayer)?;
+
+    Ok((commit_sequences, sequences, src_response_height))
+}
+
+pub fn unreceived_acknowledgements(
+    chain: &impl ChainHandle,
+    counterparty_chain: &impl ChainHandle,
+    channel: IdentifiedChannelEnd,
+) -> Result<Vec<u64>, Error> {
+    let counterparty_channel_id = channel
+        .channel_end
+        .counterparty()
+        .channel_id
+        .as_ref()
+        .ok_or_else(Error::missing_counterparty_channel_id)?;
+
+    let (_, sequences, _) = unreceived_acknowledgements_sequences(
+        counterparty_chain,
+        counterparty_channel_id,
+        &channel.channel_end.counterparty().port_id,
+        chain,
+        &channel.channel_id,
+        &channel.port_id,
+    )?;
+
+    Ok(sequences)
+}
+
+pub(crate) fn unreceived_acknowledgements_sequences(
+    src_chain: &impl ChainHandle,
+    src_channel_id: &ChannelId,
+    src_port_id: &PortId,
+    dst_chain: &impl ChainHandle,
+    dst_channel_id: &ChannelId,
+    dst_port_id: &PortId,
+) -> Result<(Vec<u64>, Vec<u64>, Height), Error> {
+    // get the packet acknowledgments on counterparty/source chain
+    let acks_request = QueryPacketAcknowledgementsRequest {
+        port_id: src_port_id.to_string(),
+        channel_id: src_channel_id.to_string(),
+        pagination: ibc_proto::cosmos::base::query::pagination::all(),
+    };
+
+    let (acks, src_response_height) = src_chain
+        .query_packet_acknowledgements(acks_request)
+        .map_err(Error::relayer)?;
+
+    let mut acked_sequences: Vec<u64> = acks.into_iter().map(|v| v.sequence).collect();
+    if acked_sequences.is_empty() {
+        return Ok((acked_sequences, vec![], src_response_height));
+    }
+
+    acked_sequences.sort_unstable();
+
+    let request = QueryUnreceivedAcksRequest {
+        port_id: dst_port_id.to_string(),
+        channel_id: dst_channel_id.to_string(),
+        packet_ack_sequences: acked_sequences.clone(),
+    };
+
+    let sequences = dst_chain
+        .query_unreceived_acknowledgement(request)
+        .map_err(Error::relayer)?;
+
+    Ok((acked_sequences, sequences, src_response_height))
 }

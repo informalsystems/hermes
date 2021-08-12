@@ -52,7 +52,6 @@ impl IbcTestRunner {
     }
 
     /// Create a `MockContext` for a given `chain_id`.
-    /// Panic if a context for `chain_id` already exists.
     pub fn init_chain_context(&mut self, chain_id: String, initial_height: u64) {
         let chain_id = Self::chain_id(chain_id);
         // never GC blocks
@@ -63,7 +62,7 @@ impl IbcTestRunner {
             max_history_size,
             Height::new(Self::revision(), initial_height),
         );
-        assert!(self.contexts.insert(chain_id, ctx).is_none());
+        self.contexts.insert(chain_id, ctx);
     }
 
     /// Returns a reference to the `MockContext` of a given `chain_id`.
@@ -436,8 +435,8 @@ impl IbcTestRunner {
     }
 }
 
-impl modelator::runner::TestRunner<Step> for IbcTestRunner {
-    fn initial_step(&mut self, step: Step) -> bool {
+impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
+    fn initial_step(&mut self, step: Step) -> Result<(), String> {
         assert_eq!(step.action, Action::None, "unexpected action type");
         assert_eq!(
             step.action_outcome,
@@ -448,10 +447,10 @@ impl modelator::runner::TestRunner<Step> for IbcTestRunner {
         for (chain_id, chain) in step.chains {
             self.init_chain_context(chain_id, chain.height);
         }
-        true
+        Ok(())
     }
 
-    fn next_step(&mut self, step: Step) -> bool {
+    fn next_step(&mut self, step: Step) -> Result<(), String> {
         let result = self.apply(step.action);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
@@ -499,6 +498,10 @@ impl modelator::runner::TestRunner<Step> for IbcTestRunner {
             ActionOutcome::Ics03ConnectionOpenConfirmOk => result.is_ok(),
         };
         // also check the state of chains
-        outcome_matches && self.validate_chains() && self.check_chain_states(step.chains)
+        if outcome_matches && self.validate_chains() && self.check_chain_states(step.chains) {
+            Ok(())
+        } else {
+            Err("next_step did not conclude successfully".into())
+        }
     }
 }
