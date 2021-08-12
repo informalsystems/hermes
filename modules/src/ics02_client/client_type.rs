@@ -57,7 +57,6 @@ mod tests {
     use test_env_log::test;
 
     use super::ClientType;
-    use crate::ics02_client::error::{Error, ErrorDetail};
 
     #[test]
     fn parse_tendermint_client_type() {
