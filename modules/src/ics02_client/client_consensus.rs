@@ -16,8 +16,8 @@ use crate::ics02_client::height::Height;
 use crate::ics07_tendermint::consensus_state;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
+use crate::tagged::{DualTagged, Tagged};
 use crate::timestamp::Timestamp;
-use crate::tagged::DualTagged;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
@@ -53,7 +53,8 @@ pub enum AnyConsensusState {
 }
 
 pub struct TaggedConsensusState<DstChain, SrcChain>(
-    pub DualTagged<DstChain, SrcChain, AnyConsensusState>);
+    pub DualTagged<DstChain, SrcChain, AnyConsensusState>,
+);
 
 impl AnyConsensusState {
     pub fn timestamp(&self) -> Timestamp {
@@ -184,4 +185,34 @@ pub struct QueryClientEventRequest {
     pub event_id: IbcEventType,
     pub client_id: ClientId,
     pub consensus_height: crate::Height,
+}
+
+impl QueryClientEventRequest {
+    pub fn new(
+        height: Height,
+        event_id: IbcEventType,
+        client_id: ClientId,
+        consensus_height: Height,
+    ) -> Self {
+        Self {
+            height,
+            event_id,
+            client_id,
+            consensus_height,
+        }
+    }
+
+    pub fn tagged_new<DstChain, SrcChain>(
+        height: Tagged<DstChain, Height>,
+        event_id: IbcEventType,
+        client_id: Tagged<DstChain, ClientId>,
+        consensus_height: Tagged<SrcChain, Height>,
+    ) -> Tagged<DstChain, Self> {
+        Tagged::new(Self::new(
+            height.untag(),
+            event_id,
+            client_id.untag(),
+            consensus_height.untag(),
+        ))
+    }
 }

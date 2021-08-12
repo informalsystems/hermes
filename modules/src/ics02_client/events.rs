@@ -11,7 +11,7 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::AnyHeader;
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
-use crate::tagged::{Tagged, DualTagged};
+use crate::tagged::{DualTagged, Tagged};
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
@@ -203,7 +203,8 @@ pub struct UpdateClient {
 }
 
 pub struct TaggedUpdateClient<Chain, Counterparty>(
-    pub DualTagged<Chain, Counterparty, UpdateClient>);
+    pub DualTagged<Chain, Counterparty, UpdateClient>,
+);
 
 impl UpdateClient {
     pub fn client_id(&self) -> &ClientId {
@@ -227,7 +228,7 @@ impl UpdateClient {
     }
 }
 
-impl <Chain, Counterparty> TaggedUpdateClient<Chain, Counterparty> {
+impl<Chain, Counterparty> TaggedUpdateClient<Chain, Counterparty> {
     pub fn tag(c: UpdateClient) -> Self {
         Self(DualTagged::new(c))
     }

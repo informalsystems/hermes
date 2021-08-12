@@ -36,7 +36,11 @@ impl MsgChannelCloseInit {
         channel_id: Tagged<Chain, ChannelId>,
         signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {
-        Tagged::new(Self::new(port_id.untag(), channel_id.untag(), signer.untag()))
+        Tagged::new(Self::new(
+            port_id.untag(),
+            channel_id.untag(),
+            signer.untag(),
+        ))
     }
 
     /// Getter: borrow the `port_id` from this message.

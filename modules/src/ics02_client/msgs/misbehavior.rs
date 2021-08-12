@@ -8,8 +8,8 @@ use crate::ics02_client::error::Error;
 use crate::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
-use crate::tx_msg::Msg;
 use crate::tagged::Tagged;
+use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgSubmitMisbehaviour";
 
@@ -25,15 +25,11 @@ pub struct MsgSubmitAnyMisbehaviour {
 }
 
 impl MsgSubmitAnyMisbehaviour {
-    pub fn new(
-        client_id: ClientId,
-        misbehaviour: AnyMisbehaviour,
-        signer: Signer,
-    ) -> Self {
+    pub fn new(client_id: ClientId, misbehaviour: AnyMisbehaviour, signer: Signer) -> Self {
         Self {
             client_id,
             misbehaviour,
-            signer
+            signer,
         }
     }
 
@@ -45,7 +41,7 @@ impl MsgSubmitAnyMisbehaviour {
         Tagged::new(Self::new(
             client_id.untag(),
             misbehaviour.untag(),
-            signer.untag()
+            signer.untag(),
         ))
     }
 }

@@ -1,7 +1,9 @@
+pub mod data;
+
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt::{self, Debug, Display};
+use core::iter::{IntoIterator, Iterator};
 use core::marker::PhantomData;
-use core::iter::{Iterator, IntoIterator};
 
 pub struct Tagged<Tag, Value>(pub Value, pub PhantomData<Tag>);
 
@@ -9,7 +11,7 @@ pub struct DualTagged<Tag1, Tag2, Value>(pub Value, pub PhantomData<(Tag1, Tag2)
 
 pub enum EitherTagged<Tag1, Tag2, Value> {
     Left(Tagged<Tag1, Value>),
-    Right(Tagged<Tag2, Value>)
+    Right(Tagged<Tag2, Value>),
 }
 
 impl<Tag, Value> Tagged<Tag, Value> {
@@ -25,12 +27,20 @@ impl<Tag, Value> Tagged<Tag, Value> {
         &self.0
     }
 
+    pub fn mut_value(&mut self) -> &mut Value {
+        &mut self.0
+    }
+
     pub fn tag<V>(&self, value: V) -> Tagged<Tag, V> {
         Tagged::new(value)
     }
 
     pub fn untag(self) -> Value {
         self.0
+    }
+
+    pub fn add_tag<Tag2>(self) -> DualTagged<Tag, Tag2, Value> {
+        DualTagged::new(self.untag())
     }
 
     pub fn map<T>(&self, mapper: impl FnOnce(&Value) -> T) -> Tagged<Tag, T> {
@@ -78,7 +88,6 @@ impl<Tag1, Tag2, Value> DualTagged<Tag1, Tag2, Value> {
 
 // impl <Tag, Value> Iterator for TaggedVec<Tag, Value> {
 //     type Item = Tagged<Tag, Value>;
-
 
 // }
 
@@ -196,17 +205,15 @@ impl<Tag1, Tag2, Value: Ord> Ord for DualTagged<Tag1, Tag2, Value> {
 
 pub struct TaggedIterator<Tag, It>(Tagged<Tag, It>);
 
-impl <Tag, It: Iterator> Iterator for TaggedIterator<Tag, It>
-{
+impl<Tag, It: Iterator> Iterator for TaggedIterator<Tag, It> {
     type Item = Tagged<Tag, It::Item>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.0.next().map(Tagged::new)
+        self.0 .0.next().map(Tagged::new)
     }
 }
 
-impl <Tag, Value: IntoIterator> IntoIterator for Tagged<Tag, Value>
-{
+impl<Tag, Value: IntoIterator> IntoIterator for Tagged<Tag, Value> {
     type Item = Tagged<Tag, Value::Item>;
 
     type IntoIter = TaggedIterator<Tag, Value::IntoIter>;

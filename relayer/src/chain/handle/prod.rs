@@ -469,15 +469,17 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         channel_id: Tagged<Self, ChannelId>,
         sequence: Tagged<Self, Sequence>,
         height: Tagged<Self, Height>,
-    ) -> Result<(Vec<u8>, Proofs), Error> {
-        self.send(|reply_to| ChainRequest::BuildPacketProofs {
+    ) -> Result<(Tagged<Self, Vec<u8>>, Tagged<Self, Proofs>), Error> {
+        let (bytes, proofs) = self.send(|reply_to| ChainRequest::BuildPacketProofs {
             packet_type,
             port_id: port_id.untag(),
             channel_id: channel_id.untag(),
             sequence: sequence.untag(),
             height: height.untag(),
             reply_to,
-        })
+        })?;
+
+        Ok((Tagged::new(bytes), Tagged::new(proofs)))
     }
 
     fn query_packet_commitments(
@@ -493,29 +495,54 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error> {
-        self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })
+    ) -> Result<Tagged<Self, Vec<u64>>, Error> {
+        let packets =
+            self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })?;
+
+        Ok(Tagged::new(packets))
     }
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Tagged<Self, Height>), Error> {
+    ) -> Result<(Tagged<Self, Vec<PacketState>>, Tagged<Self, Height>), Error> {
         let (states, height) =
             self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })?;
 
-        Ok((states, Tagged::new(height)))
+        Ok((Tagged::new(states), Tagged::new(height)))
     }
 
     fn query_unreceived_acknowledgement(
         &self,
-        request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error> {
-        self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        packet_ack_sequences: Tagged<Counterparty, Vec<u64>>,
+    ) -> Result<Tagged<Self, Vec<Sequence>>, Error> {
+        let request = QueryUnreceivedAcksRequest {
+            port_id: port_id.value().to_string(),
+            channel_id: channel_id.value().to_string(),
+            packet_ack_sequences: packet_ack_sequences.untag(),
+        };
+
+        let sequences = self
+            .send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })?
+            .into_iter()
+            .map(Sequence::new)
+            .collect();
+
+        Ok(Tagged::new(sequences))
     }
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
+    fn query_txs(
+        &self,
+        request: Tagged<Self, QueryTxRequest>,
+    ) -> Result<Tagged<Self, Vec<IbcEvent>>, Error> {
+        let events = self.send(|reply_to| ChainRequest::QueryPacketEventData {
+            request: request.untag(),
+            reply_to,
+        })?;
+
+        Ok(Tagged::new(events))
     }
 }
 

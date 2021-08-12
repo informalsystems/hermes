@@ -16,8 +16,8 @@ use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
+use crate::tagged::{DualTagged, Tagged};
 use crate::Height;
-use crate::tagged::{Tagged, DualTagged};
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
@@ -51,7 +51,8 @@ pub enum AnyClientState {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TaggedClientState<DstChain, SrcChain>(
-    pub DualTagged<DstChain, SrcChain, AnyClientState>);
+    pub DualTagged<DstChain, SrcChain, AnyClientState>,
+);
 
 impl AnyClientState {
     pub fn latest_height(&self) -> Height {
@@ -100,9 +101,7 @@ impl AnyClientState {
     }
 }
 
-impl <DstChain, SrcChain>
-    TaggedClientState<DstChain, SrcChain>
-{
+impl<DstChain, SrcChain> TaggedClientState<DstChain, SrcChain> {
     pub fn tag(state: AnyClientState) -> Self {
         Self(DualTagged::new(state))
     }
@@ -116,25 +115,19 @@ impl <DstChain, SrcChain>
     }
 
     pub fn trust_threshold(&self) -> Option<Tagged<DstChain, TrustThreshold>> {
-        self.0
-            .map(|s| s.trust_threshold())
-            .transpose()
+        self.0.map(|s| s.trust_threshold()).transpose()
     }
 
     pub fn client_type(&self) -> Tagged<DstChain, ClientType> {
-        self.0
-            .map(|s| s.client_type())
+        self.0.map(|s| s.client_type())
     }
 
     pub fn refresh_period(&self) -> Option<Tagged<DstChain, Duration>> {
-        self.0
-            .map(|s| s.refresh_period())
-            .transpose()
+        self.0.map(|s| s.refresh_period()).transpose()
     }
 
     pub fn expired(&self, elapsed_since_latest: Duration) -> Tagged<DstChain, bool> {
-        self.0
-            .map(|s| s.expired(elapsed_since_latest))
+        self.0.map(|s| s.expired(elapsed_since_latest))
     }
 
     pub fn value(&self) -> &AnyClientState {

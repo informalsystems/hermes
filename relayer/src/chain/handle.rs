@@ -499,7 +499,7 @@ pub trait ChainHandle<Counterparty>: Clone + Send + Sync + Serialize + Debug + '
         channel_id: Tagged<Self, ChannelId>,
         sequence: Tagged<Self, Sequence>,
         height: Tagged<Self, Height>,
-    ) -> Result<(Vec<u8>, Proofs), Error>;
+    ) -> Result<(Tagged<Self, Vec<u8>>, Tagged<Self, Proofs>), Error>;
 
     fn query_packet_commitments(
         &self,
@@ -509,17 +509,22 @@ pub trait ChainHandle<Counterparty>: Clone + Send + Sync + Serialize + Debug + '
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Vec<u64>, Error>;
+    ) -> Result<Tagged<Self, Vec<u64>>, Error>;
 
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Vec<PacketState>, Tagged<Self, Height>), Error>;
+    ) -> Result<(Tagged<Self, Vec<PacketState>>, Tagged<Self, Height>), Error>;
 
     fn query_unreceived_acknowledgement(
         &self,
-        request: QueryUnreceivedAcksRequest,
-    ) -> Result<Vec<u64>, Error>;
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        packet_ack_sequences: Tagged<Counterparty, Vec<u64>>,
+    ) -> Result<Tagged<Self, Vec<Sequence>>, Error>;
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+    fn query_txs(
+        &self,
+        request: Tagged<Self, QueryTxRequest>,
+    ) -> Result<Tagged<Self, Vec<IbcEvent>>, Error>;
 }

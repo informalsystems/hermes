@@ -7,6 +7,7 @@ use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
 use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::tagged::{DualTagged, Tagged};
 use crate::timestamp::{Expiry::Expired, Timestamp};
 use crate::Height;
 
@@ -72,6 +73,14 @@ impl FromStr for Sequence {
 }
 
 impl Sequence {
+    pub fn new(seq: u64) -> Self {
+        Self(seq)
+    }
+
+    pub fn to_u64(self) -> u64 {
+        self.0
+    }
+
     pub fn is_zero(&self) -> bool {
         self.0 == 0
     }
@@ -112,11 +121,87 @@ pub struct Packet {
     pub timeout_timestamp: Timestamp,
 }
 
+pub struct TaggedPacket<DstChain, SrcChain>(pub DualTagged<DstChain, SrcChain, Packet>);
+
 impl Packet {
+    pub fn new(
+        sequence: Sequence,
+        source_port: PortId,
+        source_channel: ChannelId,
+        destination_port: PortId,
+        destination_channel: ChannelId,
+        data: Vec<u8>,
+        timeout_height: Height,
+        timeout_timestamp: Timestamp,
+    ) -> Self {
+        Self {
+            sequence,
+            source_port,
+            source_channel,
+            destination_port,
+            destination_channel,
+            data,
+            timeout_height,
+            timeout_timestamp,
+        }
+    }
+
     pub fn timed_out(&self, dst_chain_height: Height) -> bool {
         (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
             || (self.timeout_timestamp != Timestamp::none()
                 && Timestamp::now().check_expiry(&self.timeout_timestamp) == Expired)
+    }
+}
+
+impl<DstChain, SrcChain> TaggedPacket<DstChain, SrcChain> {
+    pub fn new(
+        sequence: Tagged<DstChain, Sequence>,
+        source_port: Tagged<SrcChain, PortId>,
+        source_channel: Tagged<SrcChain, ChannelId>,
+        destination_port: Tagged<DstChain, PortId>,
+        destination_channel: Tagged<DstChain, ChannelId>,
+        data: Tagged<DstChain, Vec<u8>>,
+        timeout_height: Tagged<DstChain, Height>,
+        timeout_timestamp: Timestamp,
+    ) -> Self {
+        Self(DualTagged::new(Packet::new(
+            sequence.untag(),
+            source_port.untag(),
+            source_channel.untag(),
+            destination_port.untag(),
+            destination_channel.untag(),
+            data.untag(),
+            timeout_height.untag(),
+            timeout_timestamp,
+        )))
+    }
+
+    pub fn untag(self) -> Packet {
+        self.0.untag()
+    }
+
+    pub fn destination_port(&self) -> Tagged<DstChain, PortId> {
+        self.0.map(|p| p.destination_port.clone())
+    }
+
+    pub fn destination_channel(&self) -> Tagged<DstChain, ChannelId> {
+        self.0.map(|p| p.destination_channel.clone())
+    }
+
+    pub fn source_port(&self) -> Tagged<SrcChain, PortId> {
+        self.0.map_flipped(|p| p.source_port.clone())
+    }
+
+    pub fn source_channel(&self) -> Tagged<SrcChain, ChannelId> {
+        self.0.map_flipped(|p| p.source_channel.clone())
+    }
+
+    pub fn sequence(&self) -> Tagged<DstChain, Sequence> {
+        self.0.map(|p| p.sequence.clone())
+    }
+
+    pub fn timed_out(&self, dst_chain_height: Tagged<DstChain, Height>) -> bool {
+        self.0.value().timed_out(dst_chain_height.untag())
     }
 }
 

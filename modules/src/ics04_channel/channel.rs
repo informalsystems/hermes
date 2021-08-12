@@ -14,6 +14,7 @@ use crate::events::IbcEventType;
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::{error::Error, packet::Sequence};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::tagged::Tagged;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IdentifiedChannelEnd {
@@ -431,6 +432,66 @@ pub struct QueryPacketEventDataRequest {
     pub destination_port_id: PortId,
     pub sequences: Vec<Sequence>,
     pub height: Height,
+}
+
+impl QueryPacketEventDataRequest {
+    pub fn new(
+        event_id: IbcEventType,
+        source_channel_id: ChannelId,
+        source_port_id: PortId,
+        destination_channel_id: ChannelId,
+        destination_port_id: PortId,
+        sequences: Vec<Sequence>,
+        height: Height,
+    ) -> Self {
+        Self {
+            event_id,
+            source_channel_id,
+            source_port_id,
+            destination_channel_id,
+            destination_port_id,
+            sequences,
+            height,
+        }
+    }
+
+    pub fn new_send_packet<DstChain, SrcChain>(
+        source_channel_id: Tagged<SrcChain, ChannelId>,
+        source_port_id: Tagged<SrcChain, PortId>,
+        destination_channel_id: Tagged<DstChain, ChannelId>,
+        destination_port_id: Tagged<DstChain, PortId>,
+        sequences: Tagged<DstChain, Vec<Sequence>>,
+        height: Tagged<SrcChain, Height>,
+    ) -> Tagged<SrcChain, Self> {
+        Tagged::new(Self::new(
+            IbcEventType::SendPacket,
+            source_channel_id.untag(),
+            source_port_id.untag(),
+            destination_channel_id.untag(),
+            destination_port_id.untag(),
+            sequences.untag(),
+            height.untag(),
+        ))
+    }
+
+    pub fn new_write_ack<DstChain, SrcChain>(
+        source_channel_id: Tagged<DstChain, ChannelId>,
+        source_port_id: Tagged<DstChain, PortId>,
+        destination_channel_id: Tagged<SrcChain, ChannelId>,
+        destination_port_id: Tagged<SrcChain, PortId>,
+        sequences: Tagged<DstChain, Vec<Sequence>>,
+        height: Tagged<SrcChain, Height>,
+    ) -> Tagged<SrcChain, Self> {
+        Tagged::new(Self::new(
+            IbcEventType::WriteAck,
+            source_channel_id.untag(),
+            source_port_id.untag(),
+            destination_channel_id.untag(),
+            destination_port_id.untag(),
+            sequences.untag(),
+            height.untag(),
+        ))
+    }
 }
 
 /// Version validation, specific for channel (ICS4) opening handshake protocol.

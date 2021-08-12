@@ -393,25 +393,18 @@ pub struct PortChannelId {
 }
 
 impl PortChannelId {
-    pub fn new(
-        channel_id: ChannelId,
-        port_id: PortId,
-    ) -> Self
-    {
+    pub fn new(channel_id: ChannelId, port_id: PortId) -> Self {
         Self {
-            channel_id, port_id
+            channel_id,
+            port_id,
         }
     }
 
     pub fn tagged_new<Chain>(
         channel_id: Tagged<Chain, ChannelId>,
         port_id: Tagged<Chain, PortId>,
-    ) -> Tagged<Chain, Self>
-    {
-        Tagged::new(Self::new(
-            channel_id.untag(),
-            port_id.untag()
-        ))
+    ) -> Tagged<Chain, Self> {
+        Tagged::new(Self::new(channel_id.untag(), port_id.untag()))
     }
 }
 

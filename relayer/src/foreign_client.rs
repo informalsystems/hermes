@@ -9,7 +9,6 @@ use tracing::{debug, error, info, trace, warn};
 use crate::chain::handle::ChainHandle;
 use crate::error::Error as RelayerError;
 
-use ibc::downcast;
 use ibc::events::{IbcEvent, IbcEventType};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
@@ -748,19 +747,19 @@ where
         &self,
         consensus_height: Tagged<SrcChain, Height>,
     ) -> Result<Option<TaggedUpdateClient<DstChain, SrcChain>>, ForeignClientError> {
-        let request = QueryClientEventRequest {
-            height: Height::zero(),
-            event_id: IbcEventType::UpdateClient,
-            client_id: self.id().untag(),
-            consensus_height: consensus_height.untag(),
-        };
+        let request = QueryClientEventRequest::tagged_new(
+            Height::tagged_zero(),
+            IbcEventType::UpdateClient,
+            self.id(),
+            consensus_height,
+        );
 
-        let mut events = vec![];
+        let mut events = Tagged::new(vec![]);
         for i in 0..MAX_RETRIES {
             thread::sleep(Duration::from_millis(100));
             let result = self
                 .dst_chain
-                .query_txs(QueryTxRequest::Client(request.clone()))
+                .query_txs(request.map_into(QueryTxRequest::Client))
                 .map_err(|e| {
                     ForeignClientError::client_event_query(
                         self.id().untag(),
@@ -786,23 +785,30 @@ where
             }
         }
 
-        if events.is_empty() {
-            return Ok(None);
-        }
-
         // It is possible in theory that `query_txs` returns multiple client update events for the
         // same consensus height. This could happen when multiple client updates with same header
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.
-        let event = events[0].clone();
-        let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
-            ForeignClientError::unexpected_event(
-                self.id().untag(),
-                self.dst_chain.id().untag(),
-                event.to_json(),
-            )
-        })?;
-        Ok(Some(TaggedUpdateClient::tag(update)))
+        let update_event = events
+            .map_into(|events| {
+                events
+                    .into_iter()
+                    .next()
+                    .map(|event| match event {
+                        IbcEvent::UpdateClient(e) => Ok(e),
+                        _ => Err(ForeignClientError::unexpected_event(
+                            self.id().untag(),
+                            self.dst_chain.id().untag(),
+                            event.to_json(),
+                        )),
+                    })
+                    .transpose()
+            })
+            .transpose()?
+            .transpose()
+            .map(|event| TaggedUpdateClient(event.add_tag()));
+
+        Ok(update_event)
     }
 
     /// Retrieves all consensus states for this client and sorts them in descending height

@@ -1,8 +1,9 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 use crate::events::{extract_attribute, maybe_extract_attribute, Error, IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
-use crate::ics04_channel::packet::Packet;
+use crate::ics04_channel::packet::{Packet, TaggedPacket};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::tagged::{DualTagged, Tagged};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -520,7 +521,13 @@ pub struct SendPacket {
     pub packet: Packet,
 }
 
+pub struct TaggedSendPacket<DstChain, SrcChain>(pub DualTagged<DstChain, SrcChain, SendPacket>);
+
 impl SendPacket {
+    pub fn new(height: Height, packet: Packet) -> Self {
+        Self { height, packet }
+    }
+
     pub fn height(&self) -> Height {
         self.height
     }
@@ -538,6 +545,27 @@ impl SendPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
+    }
+}
+
+impl<DstChain, SrcChain> TaggedSendPacket<DstChain, SrcChain> {
+    pub fn new(height: Tagged<DstChain, Height>, packet: TaggedPacket<DstChain, SrcChain>) -> Self {
+        Self(DualTagged::new(SendPacket::new(
+            height.untag(),
+            packet.untag(),
+        )))
+    }
+
+    pub fn from_tagged(event: Tagged<SrcChain, SendPacket>) -> Self {
+        Self(DualTagged::new(event.untag()))
+    }
+
+    pub fn packet(&self) -> TaggedPacket<DstChain, SrcChain> {
+        TaggedPacket(self.0.dual_map(|p| p.packet.clone()))
+    }
+
+    pub fn height(&self) -> Tagged<DstChain, Height> {
+        self.0.map(|p| p.height)
     }
 }
 
@@ -626,7 +654,19 @@ pub struct WriteAcknowledgement {
     pub ack: Vec<u8>,
 }
 
+pub struct TaggedWriteAcknowledgement<DstChain, SrcChain>(
+    pub DualTagged<DstChain, SrcChain, WriteAcknowledgement>,
+);
+
 impl WriteAcknowledgement {
+    pub fn new(height: Height, packet: Packet, ack: Vec<u8>) -> Self {
+        Self {
+            height,
+            packet,
+            ack,
+        }
+    }
+
     pub fn height(&self) -> Height {
         self.height
     }
@@ -644,6 +684,40 @@ impl WriteAcknowledgement {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
+    }
+}
+
+impl<DstChain, SrcChain> TaggedWriteAcknowledgement<DstChain, SrcChain> {
+    pub fn new(
+        height: Tagged<DstChain, Height>,
+        packet: TaggedPacket<DstChain, SrcChain>,
+        ack: Tagged<DstChain, Vec<u8>>,
+    ) -> Self {
+        Self(DualTagged::new(WriteAcknowledgement::new(
+            height.untag(),
+            packet.untag(),
+            ack.untag(),
+        )))
+    }
+
+    pub fn from_tagged(tagged: Tagged<DstChain, WriteAcknowledgement>) -> Self {
+        Self(DualTagged::new(tagged.untag()))
+    }
+
+    pub fn packet(&self) -> TaggedPacket<DstChain, SrcChain> {
+        TaggedPacket(self.0.dual_map(|p| p.packet.clone()))
+    }
+
+    pub fn height(&self) -> Tagged<DstChain, Height> {
+        self.0.map(|e| e.height)
+    }
+
+    pub fn ack(&self) -> Tagged<DstChain, Vec<u8>> {
+        self.0.map(|e| e.ack.clone())
+    }
+
+    pub fn untag(self) -> WriteAcknowledgement {
+        self.0.untag()
     }
 }
 
