@@ -210,34 +210,34 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let mut result = vec![];
 
-        for ewh in events.into_iter() {
-            match &ewh {
+        for event in events.into_iter() {
+            match &event {
                 IbcEvent::SendPacket(send_packet_ev) => {
                     if src_channel_id == send_packet_ev.src_channel_id()
                         && self.src_port_id() == send_packet_ev.src_port_id()
                     {
-                        result.push(ewh);
+                        result.push(event);
                     }
                 }
                 IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                     if src_channel_id == write_ack_ev.dst_channel_id()
                         && self.src_port_id() == write_ack_ev.dst_port_id()
                     {
-                        result.push(ewh);
+                        result.push(event);
                     }
                 }
                 IbcEvent::CloseInitChannel(chan_close_ev) => {
                     if src_channel_id == chan_close_ev.channel_id()
                         && self.src_port_id() == chan_close_ev.port_id()
                     {
-                        result.push(ewh);
+                        result.push(event);
                     }
                 }
                 IbcEvent::TimeoutPacket(timeout_ev) => {
                     if src_channel_id == timeout_ev.src_channel_id()
                         && self.channel.src_port_id() == timeout_ev.src_port_id()
                     {
-                        result.push(ewh);
+                        result.push(event);
                     }
                 }
                 _ => {}
