@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::time::Instant;
 use std::{fmt, thread};
 
@@ -11,12 +11,12 @@ use ibc::{
     events::{IbcEvent, PrettyEvents},
     ics04_channel::{
         channel::{Order, QueryPacketEventDataRequest, State as ChannelState},
-        events::{SendPacket, TaggedSendPacket, TaggedWriteAcknowledgement, WriteAcknowledgement},
+        events::{TaggedSendPacket, TaggedWriteAcknowledgement},
         msgs::{
             acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
             recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
         },
-        packet::{Packet, PacketMsgType, Sequence, TaggedPacket},
+        packet::{PacketMsgType, Sequence, TaggedPacket},
     },
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     query::QueryTxRequest,
@@ -57,9 +57,9 @@ where
     // These vectors of operational data are ordered decreasingly by their age, with element at
     // position `0` being the oldest.
     // The operational data targeting the source chain comprises mostly timeout packet messages.
-    src_operational_data: Vec<SrcOperationPayload<ChainA, ChainB>>,
+    src_operational_data: VecDeque<SrcOperationPayload<ChainA, ChainB>>,
     // The operational data targeting the destination chain comprises mostly RecvPacket and Ack msgs.
-    dst_operational_data: Vec<DstOperationPayload<ChainA, ChainB>>,
+    dst_operational_data: VecDeque<DstOperationPayload<ChainA, ChainB>>,
 }
 
 impl<ChainA, ChainB> RelayPath<ChainA, ChainB>
@@ -71,8 +71,8 @@ where
         Self {
             channel,
             clear_packets: true,
-            src_operational_data: vec![],
-            dst_operational_data: vec![],
+            src_operational_data: VecDeque::new(),
+            dst_operational_data: VecDeque::new(),
         }
     }
 
@@ -400,7 +400,9 @@ where
                         }
                     }
                     IbcEvent::SendPacket(send_packet_ev) => {
-                        if self.send_packet_event_handled(event.tag(send_packet_ev.clone()))? {
+                        if self.send_packet_event_handled(TaggedSendPacket::from_tagged(
+                            event.tag(send_packet_ev.clone()),
+                        ))? {
                             debug!("[{}] {} already handled", self, send_packet_ev);
                             (None, None)
                         } else {
@@ -417,7 +419,11 @@ where
                             .state_matches(&ChannelState::Closed)
                         {
                             (None, None)
-                        } else if self.write_ack_event_handled(event.tag(write_ack_ev.clone()))? {
+                        } else if self.write_ack_event_handled(
+                            TaggedWriteAcknowledgement::from_tagged(
+                                event.tag(write_ack_ev.clone()),
+                            ),
+                        )? {
                             debug!("[{}] {} already handled", self, write_ack_ev);
                             (None, None)
                         } else {
@@ -668,7 +674,7 @@ where
     /// Checks if a sent packet has been received on destination.
     fn send_packet_received_on_dst(
         &self,
-        packet: Tagged<ChainA, Packet>,
+        packet: TaggedPacket<ChainB, ChainA>,
     ) -> Result<bool, LinkError> {
         let unreceived_packet = self
             .dst_chain()
@@ -686,15 +692,15 @@ where
     /// The packet commitment is cleared when either an acknowledgment or a timeout is received on source.
     fn send_packet_commitment_cleared_on_src(
         &self,
-        packet: Tagged<ChainA, Packet>,
+        packet: TaggedPacket<ChainB, ChainA>,
     ) -> Result<bool, LinkError> {
         let (bytes, _) = self
             .src_chain()
-            .build_packet_proofs(
+            .build_incoming_packet_proofs(
                 PacketMsgType::Recv,
                 self.src_port_id(),
                 self.src_channel_id()?,
-                packet.map(|p| p.sequence),
+                packet.sequence(),
                 Height::tagged_zero(),
             )
             .map_err(LinkError::relayer)?;
@@ -703,8 +709,11 @@ where
     }
 
     /// Checks if a send packet event has already been handled (e.g. by another relayer).
-    fn send_packet_event_handled(&self, sp: Tagged<ChainA, SendPacket>) -> Result<bool, LinkError> {
-        let packet = sp.map(|p| p.packet);
+    fn send_packet_event_handled(
+        &self,
+        sp: TaggedSendPacket<ChainB, ChainA>,
+    ) -> Result<bool, LinkError> {
+        let packet = sp.packet();
         let is_received_on_dst = self.send_packet_received_on_dst(packet)?;
         let is_commitment_cleared_on_src = self.send_packet_commitment_cleared_on_src(packet)?;
 
@@ -716,9 +725,9 @@ where
     /// that sends the acknowledgment.
     fn recv_packet_acknowledged_on_src(
         &self,
-        packet: Tagged<ChainA, Packet>,
+        packet: TaggedPacket<ChainA, ChainB>,
     ) -> Result<bool, LinkError> {
-        let sequences = packet.map(|p| vec![p.sequence.to_u64()]);
+        let sequences = packet.sequence().map_into(|s| vec![s.to_u64()]);
 
         let unreceived_ack = self
             .dst_chain()
@@ -731,9 +740,9 @@ where
     /// Checks if a receive packet event has already been handled (e.g. by another relayer).
     fn write_ack_event_handled(
         &self,
-        rp: Tagged<ChainA, WriteAcknowledgement>,
+        rp: TaggedWriteAcknowledgement<ChainA, ChainB>,
     ) -> Result<bool, LinkError> {
-        self.recv_packet_acknowledged_on_src(rp.map(|p| p.packet))
+        self.recv_packet_acknowledged_on_src(rp.packet())
     }
 
     /// Returns `true` if the delay for this relaying path is zero.
@@ -1106,11 +1115,11 @@ where
     fn build_recv_packet(
         &self,
         packet: TaggedPacket<ChainB, ChainA>,
-        height: Tagged<ChainA, Height>,
+        height: Tagged<ChainB, Height>,
     ) -> Result<Option<Tagged<ChainB, Any>>, LinkError> {
         let (_, proofs) = self
             .src_chain()
-            .build_packet_proofs(
+            .build_incoming_packet_proofs(
                 PacketMsgType::Recv,
                 packet.source_port(),
                 packet.source_channel(),
@@ -1279,11 +1288,11 @@ where
         let mut summary = RelaySummary::empty();
 
         for od in dst_ods {
-            summary.extend(self.relay_from_operational_data(od)?);
+            summary.extend(self.relay_from_operational_data(OperationalData::Dst(od))?);
         }
 
         for od in src_ods {
-            summary.extend(self.relay_from_operational_data(od)?);
+            summary.extend(self.relay_from_operational_data(OperationalData::Src(od))?);
         }
 
         Ok(summary)
@@ -1299,7 +1308,7 @@ where
         // to source operational data.
         let mut all_dst_odata = self.dst_operational_data.clone();
 
-        let mut timed_out: HashMap<usize, (Tagged<ChainA, IbcEvent>, Tagged<ChainB, Any>)> =
+        let mut timed_out: HashMap<usize, Vec<(Tagged<ChainA, IbcEvent>, Tagged<ChainA, Any>)>> =
             HashMap::default();
 
         // For each operational data targeting the destination chain...
@@ -1311,14 +1320,16 @@ where
                 let (event, _) = gm;
                 match event.value() {
                     IbcEvent::SendPacket(e) => {
+                        let send_packet = TaggedSendPacket::from_tagged(event.tag(e.clone()));
+
                         // Catch any SendPacket event that timed-out
-                        if self.send_packet_event_handled(e)? {
+                        if self.send_packet_event_handled(send_packet)? {
                             debug!(
                                 "[{}] refreshing schedule: already handled send packet {}",
                                 self, e
                             );
-                        } else if let Some(new_msg) =
-                            self.build_timeout_from_send_packet_event(e, dst_current_height)?
+                        } else if let Some(new_msg) = self
+                            .build_timeout_from_send_packet_event(send_packet, dst_current_height)?
                         {
                             debug!(
                                 "[{}] refreshing schedule: found a timed-out msg in the op data {}",
@@ -1334,7 +1345,9 @@ where
                         }
                     }
                     IbcEvent::WriteAcknowledgement(e) => {
-                        if self.write_ack_event_handled(e)? {
+                        let event = TaggedWriteAcknowledgement::from_tagged(event.tag(e.clone()));
+
+                        if self.write_ack_event_handled(event)? {
                             debug!(
                                 "[{}] refreshing schedule: already handled {} write ack ",
                                 self, e
@@ -1365,8 +1378,8 @@ where
 
         // Schedule new operational data targeting the source chain
         for (_, batch) in timed_out.into_iter() {
-            let mut new_od =
-                OperationalData::new(dst_current_height, OperationalDataTarget::Source);
+            let mut new_od: SrcOperationPayload<ChainA, ChainB> =
+                SrcOperationPayload::new(dst_current_height);
 
             new_od.batch = batch;
 
@@ -1376,7 +1389,7 @@ where
                 new_od.batch.len()
             );
 
-            self.schedule_operational_data(new_od)?;
+            self.schedule_operational_data(OperationalData::Src(new_od))?;
         }
 
         Ok(())
@@ -1389,10 +1402,11 @@ where
         &mut self,
         mut od: OperationalData<ChainA, ChainB>,
     ) -> Result<(), LinkError> {
-        if od.batch.is_empty() {
+        if od.is_empty_batch() {
             info!(
                 "[{}] ignoring operational data for {} because it has no messages",
-                self, od.target
+                self,
+                od.target()
             );
             return Ok(());
         }
@@ -1400,26 +1414,32 @@ where
         info!(
             "[{}] scheduling op. data with {} msg(s) for {} (height {})",
             self,
-            od.batch.len(),
-            od.target,
-            od.proofs_height.increment(), // increment for easier correlation with the client logs
+            od.batch_len(),
+            od.target(),
+            od.untagged_height().increment(), // increment for easier correlation with the client logs
         );
 
-        // Update clients ahead of scheduling the operational data, if the delays are non-zero.
-        if !self.zero_delay() {
-            let target_height = od.proofs_height.increment();
-            match od.target {
-                OperationalDataTarget::Source => self.update_client_src(target_height)?,
-                OperationalDataTarget::Destination => self.update_client_dst(target_height)?,
-            };
+        match od {
+            OperationalData::Src(data) => {
+                // Update clients ahead of scheduling the operational data, if the delays are non-zero.
+                if !self.zero_delay() {
+                    let height = data.proofs_height.map(|h| h.increment());
+                    self.update_client_src(height)?;
+                }
+
+                data.scheduled_time = Instant::now();
+                self.src_operational_data.push_back(data);
+            }
+            OperationalData::Dst(data) => {
+                if !self.zero_delay() {
+                    let height = data.proofs_height.map(|h| h.increment());
+                    self.update_client_dst(height)?;
+                }
+
+                data.scheduled_time = Instant::now();
+                self.dst_operational_data.push_back(data);
+            }
         }
-
-        od.scheduled_time = Instant::now();
-
-        match od.target {
-            OperationalDataTarget::Source => self.src_operational_data.push(od),
-            OperationalDataTarget::Destination => self.dst_operational_data.push(od),
-        };
 
         Ok(())
     }
@@ -1433,26 +1453,31 @@ where
         Vec<SrcOperationPayload<ChainA, ChainB>>,
         Vec<DstOperationPayload<ChainA, ChainB>>,
     ) {
-        // The first elements of the op. data vector contain the oldest entry.
-        // Remove and return the elements with elapsed delay.
+        fn extract<T>(queue: &mut VecDeque<T>, pred: impl Fn(&T) -> bool) -> Vec<T> {
+            let mut unextracted = VecDeque::new();
+            let mut extracted = Vec::new();
 
-        let src_ods: Vec<SrcOperationPayload<ChainA, ChainB>> = self
-            .src_operational_data
-            .iter()
-            .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
-            .cloned()
-            .collect();
+            for e in queue.drain(0..) {
+                if pred(&e) {
+                    extracted.push(e);
+                } else {
+                    unextracted.push_back(e);
+                }
+            }
 
-        self.src_operational_data = self.src_operational_data[src_ods.len()..].to_owned();
+            *queue = unextracted;
+            extracted
+        }
 
-        let dst_ods: Vec<DstOperationPayload<ChainA, ChainB>> = self
-            .dst_operational_data
-            .iter()
-            .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
-            .cloned()
-            .collect();
+        let connection_delay = self.channel.connection_delay;
 
-        self.dst_operational_data = self.dst_operational_data[dst_ods.len()..].to_owned();
+        let src_ods = extract(&mut self.src_operational_data, |op| {
+            op.scheduled_time.elapsed() > connection_delay
+        });
+
+        let dst_ods = extract(&mut self.dst_operational_data, |op| {
+            op.scheduled_time.elapsed() > connection_delay
+        });
 
         (src_ods, dst_ods)
     }
@@ -1465,30 +1490,35 @@ where
     ) -> Option<OperationalData<ChainA, ChainB>> {
         let odata = self
             .src_operational_data
-            .first()
-            .or_else(|| self.dst_operational_data.first());
+            .pop_front()
+            .map(OperationalData::Src)
+            .or_else(|| {
+                self.dst_operational_data
+                    .pop_front()
+                    .map(OperationalData::Dst)
+            });
 
         if let Some(odata) = odata {
             // Check if the delay period did not completely elapse
             let delay_left = self
                 .channel
                 .connection_delay
-                .checked_sub(odata.scheduled_time.elapsed());
+                .checked_sub(odata.scheduled_time().elapsed());
 
             match delay_left {
                 None => info!(
                     "[{}] ready to fetch a scheduled op. data with batch of size {} targeting {}",
                     self,
-                    odata.batch.len(),
-                    odata.target,
+                    odata.batch_len(),
+                    odata.target(),
                 ),
                 Some(delay_left) => {
                     info!(
                         "[{}] waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
                         self,
                         delay_left,
-                        odata.batch.len(),
-                        odata.target,
+                        odata.batch_len(),
+                        odata.target(),
                     );
 
                     // Wait until the delay period passes
@@ -1496,12 +1526,7 @@ where
                 }
             }
 
-            let op = match odata.target {
-                OperationalDataTarget::Source => self.src_operational_data.remove(0),
-                OperationalDataTarget::Destination => self.dst_operational_data.remove(0),
-            };
-
-            Some(op)
+            Some(odata)
         } else {
             None
         }
@@ -1532,7 +1557,7 @@ where
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let channel_id = self
             .src_channel_id()
-            .map(ToString::to_string)
+            .map(|id| id.untag().to_string())
             .unwrap_or_else(|_| "None".to_string());
 
         write!(

@@ -482,6 +482,26 @@ impl<Counterparty> ChainHandle<Counterparty> for ProdChainHandle {
         Ok((Tagged::new(bytes), Tagged::new(proofs)))
     }
 
+    fn build_incoming_packet_proofs(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        sequence: Tagged<Counterparty, Sequence>,
+        height: Tagged<Counterparty, Height>,
+    ) -> Result<(Tagged<Self, Vec<u8>>, Tagged<Self, Proofs>), Error> {
+        let (bytes, proofs) = self.send(|reply_to| ChainRequest::BuildPacketProofs {
+            packet_type,
+            port_id: port_id.untag(),
+            channel_id: channel_id.untag(),
+            sequence: sequence.untag(),
+            height: height.untag(),
+            reply_to,
+        })?;
+
+        Ok((Tagged::new(bytes), Tagged::new(proofs)))
+    }
+
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,

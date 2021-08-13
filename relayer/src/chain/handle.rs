@@ -501,6 +501,18 @@ pub trait ChainHandle<Counterparty>: Clone + Send + Sync + Serialize + Debug + '
         height: Tagged<Self, Height>,
     ) -> Result<(Tagged<Self, Vec<u8>>, Tagged<Self, Proofs>), Error>;
 
+    // Clarification needed: It seems like there are proofs that are constructed
+    // based on counterparty sequence and height?
+    // Either this or there are two types of packets: incoming and outgoing
+    fn build_incoming_packet_proofs(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        sequence: Tagged<Counterparty, Sequence>,
+        height: Tagged<Counterparty, Height>,
+    ) -> Result<(Tagged<Self, Vec<u8>>, Tagged<Self, Proofs>), Error>;
+
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
