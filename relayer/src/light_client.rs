@@ -1,7 +1,7 @@
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::misbehaviour::MisbehaviourEvidence;
 
-use crate::chain::Chain;
+use crate::chain::ChainEndpoint;
 use crate::error;
 use ibc::ics02_client::events::UpdateClient;
 
@@ -11,7 +11,7 @@ pub mod tendermint;
 pub mod mock;
 
 /// Defines a light block from the point of view of the relayer.
-pub trait LightBlock<C: Chain>: Send + Sync {
+pub trait LightBlock<C: ChainEndpoint>: Send + Sync {
     fn signed_header(&self) -> &C::Header;
 }
 
@@ -24,7 +24,7 @@ pub struct Verified<H> {
 }
 
 /// Defines a client from the point of view of the relayer.
-pub trait LightClient<C: Chain>: Send + Sync {
+pub trait LightClient<C: ChainEndpoint>: Send + Sync {
     /// Fetch and verify a header, and return its minimal supporting set.
     fn header_and_minimal_set(
         &mut self,

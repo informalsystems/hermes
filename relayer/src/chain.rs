@@ -67,7 +67,7 @@ pub struct QueryPacketOptions {
 }
 
 /// Defines a blockchain as understood by the relayer
-pub trait Chain: Sized {
+pub trait ChainEndpoint: Sized {
     /// Type of light blocks for this chain
     type LightBlock: Send + Sync;
 
@@ -80,12 +80,14 @@ pub trait Chain: Sized {
     /// Type of the client state for this chain
     type ClientState: ClientState;
 
+    type LightClient: LightClient<Self>;
+
     /// Constructs the chain
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
     #[allow(clippy::type_complexity)]
     /// Initializes and returns the light client (if any) associated with this chain.
-    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error>;
+    fn init_light_client(&self) -> Result<Self::LightClient, Error>;
 
     /// Initializes and returns the event monitor (if any) associated with this chain.
     fn init_event_monitor(
@@ -293,7 +295,7 @@ pub trait Chain: Sized {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-        light_client: &mut dyn LightClient<Self>,
+        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error>;
 
     /// Builds the required proofs and the client state for connection handshake messages.

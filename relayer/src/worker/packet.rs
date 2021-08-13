@@ -4,7 +4,7 @@ use crossbeam_channel::Receiver;
 use tracing::{error, info, warn};
 
 use crate::{
-    chain::handle::ChainHandlePair,
+    chain::handle::{ChainHandle, ChainHandlePair},
     link::{Link, LinkParameters, RelaySummary},
     object::Packet,
     telemetry,
@@ -22,18 +22,18 @@ enum Step {
 }
 
 #[derive(Debug)]
-pub struct PacketWorker {
+pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     path: Packet,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
     telemetry: Telemetry,
     clear_packets_interval: u64,
 }
 
-impl PacketWorker {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
     pub fn new(
         path: Packet,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
         clear_packets_interval: u64,
@@ -98,7 +98,12 @@ impl PacketWorker {
         }
     }
 
-    fn step(&self, cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<Step, u64> {
+    fn step(
+        &self,
+        cmd: Option<WorkerCmd>,
+        link: &mut Link<ChainA, ChainB>,
+        index: u64,
+    ) -> RetryResult<Step, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
                 WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
@@ -156,7 +161,7 @@ impl PacketWorker {
     }
 
     /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

@@ -13,7 +13,7 @@ use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::Plan;
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
-use crate::chain::{Chain, CosmosSdkChain};
+use crate::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
 
