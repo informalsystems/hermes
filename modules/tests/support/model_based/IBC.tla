@@ -130,7 +130,6 @@ ActionOutcomes == {
     "Ics03InvalidProof",
     \* ICS03_ConnectionOpenAck outcomes:
     "Ics03ConnectionOpenAckOk",
-    "Ics03UninitializedConnection",
     \* ICS03_ConnectionOpenConfirm outcomes:
     "Ics03ConnectionOpenConfirmOk"
 }

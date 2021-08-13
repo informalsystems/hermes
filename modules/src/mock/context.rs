@@ -16,7 +16,7 @@ use crate::ics02_client::error::Error as Ics02Error;
 use crate::ics02_client::header::AnyHeader;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
-use crate::ics03_connection::error::Error as Ics3Error;
+use crate::ics03_connection::error::Error as Ics03Error;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::ics04_channel::error::Error as ChannelError;
@@ -630,13 +630,17 @@ impl ChannelKeeper for MockContext {
 }
 
 impl ConnectionReader for MockContext {
-    fn connection_end(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
-        self.connections.get(cid).cloned()
+    fn connection_end(&self, cid: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
+        match self.connections.get(cid) {
+            Some(connection_end) => Ok(connection_end.clone()),
+            None => Err(Ics03Error::connection_not_found(cid.clone())),
+        }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
         // Forward method call to the Ics2 Client-specific method.
-        ClientReader::client_state(self, client_id).ok()
+        ClientReader::client_state(self, client_id)
+            .map_err(|_| Ics03Error::missing_client(client_id.clone()))
     }
 
     fn host_current_height(&self) -> Height {
@@ -656,18 +660,21 @@ impl ConnectionReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Option<AnyConsensusState> {
+    ) -> Result<AnyConsensusState, Ics03Error> {
         // Forward method call to the Ics2Client-specific method.
-        self.consensus_state(client_id, height).ok()
+        self.consensus_state(client_id, height)
+            .map_err(|_| Ics03Error::missing_client_consensus_state(height, client_id.clone()))
     }
 
-    fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        let block_ref = self.host_block(height);
-        block_ref.cloned().map(Into::into)
+    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics03Error> {
+        match self.host_block(height) {
+            Some(block_ref) => Ok(block_ref.clone().into()),
+            None => Err(Ics03Error::missing_local_consensus_state(height)),
+        }
     }
 
-    fn connection_counter(&self) -> u64 {
-        self.connection_ids_counter
+    fn connection_counter(&self) -> Result<u64, Ics03Error> {
+        Ok(self.connection_ids_counter)
     }
 }
 
@@ -676,7 +683,7 @@ impl ConnectionKeeper for MockContext {
         &mut self,
         connection_id: ConnectionId,
         connection_end: &ConnectionEnd,
-    ) -> Result<(), Ics3Error> {
+    ) -> Result<(), Ics03Error> {
         self.connections
             .insert(connection_id, connection_end.clone());
         Ok(())
@@ -686,7 +693,7 @@ impl ConnectionKeeper for MockContext {
         &mut self,
         connection_id: ConnectionId,
         client_id: &ClientId,
-    ) -> Result<(), Ics3Error> {
+    ) -> Result<(), Ics03Error> {
         self.client_connections
             .insert(client_id.clone(), connection_id);
         Ok(())
