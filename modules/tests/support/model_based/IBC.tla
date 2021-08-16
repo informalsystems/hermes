@@ -113,7 +113,7 @@ ActionOutcomes == {
     "None",
     "ModelError",
     \* ICS02_CreateClient outcomes:
-    "icS02CreateOk",
+    "Ics02CreateOk",
     \* ICS02_UpdateClient outcomes:
     "Ics02UpdateOk",
     "Ics02ClientNotFound",
