@@ -8,7 +8,7 @@ use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer::{
-    chain::{Chain, CosmosSdkChain},
+    chain::{ChainEndpoint, CosmosSdkChain},
     config::Config,
 };
 

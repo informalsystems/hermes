@@ -1,13 +1,10 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_proto::ibc::core::channel::v1::{
-    QueryPacketAcknowledgementsRequest, QueryUnreceivedAcksRequest,
-};
-use ibc_relayer::chain::counterparty::channel_connection_client;
+use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
+use ibc_relayer::chain::handle::ProdChainHandle;
 
-use crate::cli_utils::spawn_chain_runtime;
+use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
@@ -35,53 +32,21 @@ pub struct QueryUnreceivedAcknowledgementCmd {
 impl QueryUnreceivedAcknowledgementCmd {
     fn execute(&self) -> Result<Vec<u64>, Error> {
         let config = app_config();
-
         debug!("Options: {:?}", self);
 
-        let chain = spawn_chain_runtime(&config, &self.chain_id)?;
+        let (chains, channel) = spawn_chain_counterparty::<ProdChainHandle>(
+            &config,
+            &self.chain_id,
+            &self.port_id,
+            &self.channel_id,
+        )?;
 
-        let channel_connection_client =
-            channel_connection_client(chain.as_ref(), &self.port_id, &self.channel_id)
-                .map_err(Error::supervisor)?;
-
-        let channel = channel_connection_client.channel;
         debug!(
-            "Fetched from chain {} the following channel {:?}",
+            "fetched from source chain {} the following channel {:?}",
             self.chain_id, channel
         );
-        let counterparty_channel_id = channel
-            .channel_end
-            .counterparty()
-            .channel_id
-            .as_ref()
-            .ok_or_else(|| Error::missing_counterparty_channel_id(channel.clone()))?
-            .to_string();
 
-        let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
-        let counterparty_chain = spawn_chain_runtime(&config, &counterparty_chain_id)?;
-
-        // get the packet acknowledgments on counterparty chain
-        let acks_request = QueryPacketAcknowledgementsRequest {
-            port_id: channel.channel_end.counterparty().port_id.to_string(),
-            channel_id: counterparty_channel_id,
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
-
-        let sequences: Vec<u64> = counterparty_chain
-            .query_packet_acknowledgements(acks_request)
-            .map_err(Error::relayer)
-            // extract the sequences
-            .map(|(packet_state, _)| packet_state.into_iter().map(|v| v.sequence).collect())?;
-
-        let request = QueryUnreceivedAcksRequest {
-            port_id: self.port_id.to_string(),
-            channel_id: self.channel_id.to_string(),
-            packet_ack_sequences: sequences,
-        };
-
-        chain
-            .query_unreceived_acknowledgement(request)
-            .map_err(Error::relayer)
+        unreceived_acknowledgements(&chains.src, &chains.dst, channel).map_err(Error::supervisor)
     }
 }
 

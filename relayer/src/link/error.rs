@@ -8,6 +8,7 @@ use crate::channel::ChannelError;
 use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::foreign_client::ForeignClientError;
+use crate::supervisor::Error as SupervisorError;
 use crate::transfer::PacketError;
 
 define_error! {
@@ -15,6 +16,10 @@ define_error! {
         Relayer
             [ Error ]
             |_| { "failed with underlying error" },
+
+        Supervisor
+            [ SupervisorError ]
+            |_| { "error originating from the supervisor" },
 
         Initialization
             [ ChannelError ]

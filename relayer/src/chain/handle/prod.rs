@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crossbeam_channel as channel;
+use serde::{Serialize, Serializer};
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -71,6 +72,10 @@ impl ProdChainHandle {
 }
 
 impl ChainHandle for ProdChainHandle {
+    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+        Self::new(chain_id, sender)
+    }
+
     fn id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -401,5 +406,14 @@ impl ChainHandle for ProdChainHandle {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
+    }
+}
+
+impl Serialize for ProdChainHandle {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.id().serialize(serializer)
     }
 }

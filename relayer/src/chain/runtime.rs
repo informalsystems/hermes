@@ -53,8 +53,8 @@ use crate::{
 };
 
 use super::{
-    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
-    Chain,
+    handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
+    ChainEndpoint,
 };
 
 pub struct Threads {
@@ -62,9 +62,9 @@ pub struct Threads {
     pub event_monitor: Option<thread::JoinHandle<()>>,
 }
 
-pub struct ChainRuntime<C: Chain> {
+pub struct ChainRuntime<Endpoint: ChainEndpoint> {
     /// The specific chain this runtime runs against
-    chain: C,
+    chain: Endpoint,
 
     /// The sender side of a channel to this runtime. Any `ChainHandle` can use this to send
     /// chain requests to this runtime
@@ -84,20 +84,23 @@ pub struct ChainRuntime<C: Chain> {
     tx_monitor_cmd: TxMonitorCmd,
 
     /// A handle to the light client
-    light_client: Box<dyn LightClient<C>>,
+    light_client: Endpoint::LightClient,
 
     #[allow(dead_code)]
     rt: Arc<TokioRuntime>, // Making this future-proof, so we keep the runtime around.
 }
 
-impl<C: Chain + Send + 'static> ChainRuntime<C> {
+impl<Endpoint> ChainRuntime<Endpoint>
+where
+    Endpoint: ChainEndpoint + Send + 'static,
+{
     /// Spawns a new runtime for a specific Chain implementation.
-    pub fn spawn(
+    pub fn spawn<Handle: ChainHandle>(
         config: ChainConfig,
         rt: Arc<TokioRuntime>,
-    ) -> Result<Box<dyn ChainHandle>, Error> {
+    ) -> Result<Handle, Error> {
         // Similar to `from_config`.
-        let chain = C::bootstrap(config, rt.clone())?;
+        let chain = Endpoint::bootstrap(config, rt.clone())?;
 
         // Start the light client
         let light_client = chain.init_light_client()?;
@@ -112,17 +115,17 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     /// Initializes a runtime for a given chain, and spawns the associated thread
-    fn init(
-        chain: C,
-        light_client: Box<dyn LightClient<C>>,
+    fn init<Handle: ChainHandle>(
+        chain: Endpoint,
+        light_client: Endpoint::LightClient,
         event_receiver: EventReceiver,
         tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
-    ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
+    ) -> (Handle, thread::JoinHandle<()>) {
         let chain_runtime = Self::new(chain, light_client, event_receiver, tx_monitor_cmd, rt);
 
         // Get a handle to the runtime
-        let handle = chain_runtime.handle();
+        let handle: Handle = chain_runtime.handle();
 
         // Spawn the runtime & return
         let id = handle.id();
@@ -137,8 +140,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
     /// Basic constructor
     fn new(
-        chain: C,
-        light_client: Box<dyn LightClient<C>>,
+        chain: Endpoint,
+        light_client: Endpoint::LightClient,
         event_receiver: EventReceiver,
         tx_monitor_cmd: TxMonitorCmd,
         rt: Arc<TokioRuntime>,
@@ -157,11 +160,11 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         }
     }
 
-    pub fn handle(&self) -> Box<dyn ChainHandle> {
-        let chain_id = self.chain.id().clone();
+    pub fn handle<Handle: ChainHandle>(&self) -> Handle {
+        let chain_id = ChainEndpoint::id(&self.chain).clone();
         let sender = self.request_sender.clone();
 
-        Box::new(ProdChainHandle::new(chain_id, sender))
+        Handle::new(chain_id, sender)
     }
 
     fn run(mut self) -> Result<(), Error> {
@@ -414,7 +417,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                 trusted_height,
                 target_height,
                 &client_state,
-                self.light_client.as_mut(),
+                &mut self.light_client,
             )
             .map(|(header, support)| {
                 let header = header.wrap_any();

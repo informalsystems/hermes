@@ -5,6 +5,7 @@ use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc::Height;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -89,7 +90,7 @@ impl CreateChannelCommand {
 
         let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
             .unwrap_or_else(exit_with_unrecoverable_error);
-        let client_b = ForeignClient::new(chains.dst.clone(), chains.src.clone())
+        let client_b = ForeignClient::new(chains.dst.clone(), chains.src)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.
