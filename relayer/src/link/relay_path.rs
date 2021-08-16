@@ -38,17 +38,16 @@ use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
-use crate::link::relay_sender::SubmitReply;
+use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
-use crate::link::unconfirmed::Outcome;
+use crate::link::unconfirmed::{Mediator, Outcome};
 use crate::link::{relay_sender, unconfirmed};
 
 const MAX_RETRIES: usize = 5;
 
-
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
-  
+
     // Marks whether this path has already cleared pending packets.
     // Packets should be cleared once (at startup), then this
     // flag turns to `false`.
@@ -67,17 +66,22 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // The mediator stores unconfirmed operational data.
     // The relaying path periodically invokes the mediator
     // to confirm transactions.
-    mediator: unconfirmed::Mediator,
+    mediator_a: Mediator<ChainA>,
+    mediator_b: Mediator<ChainB>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn new(channel: Channel<ChainA, ChainB>) -> Self {
+        let src_chain = channel.src_chain().clone();
+        let dst_chain = channel.dst_chain().clone();
+
         Self {
             channel,
             clear_packets: true,
             src_operational_data: vec![],
             dst_operational_data: vec![],
-            mediator: Default::default(),
+            mediator_a: unconfirmed::Mediator::new(src_chain),
+            mediator_b: unconfirmed::Mediator::new(dst_chain),
         }
     }
 
@@ -593,20 +597,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             return Ok(S::Reply::empty());
         }
 
-
-        let target = self.infer_target_chain(&odata);
-
         let msgs = odata.assemble_msgs(self)?;
 
-        S::submit(target.as_ref(), msgs)
+        match odata.target {
+            OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
+            OperationalDataTarget::Destination => S::submit(self.dst_chain(), msgs),
+        }
     }
 
-    /// Returns the chain handle for the chain that is the
-    /// target of the given [`OperationalData`].
-    fn infer_target_chain(&self, odata: &OperationalData) -> Box<dyn ChainHandle> {
+    fn mediate_operational_data(&mut self, reply: AsyncReply, odata: OperationalData) {
         match odata.target {
-            OperationalDataTarget::Source => self.src_chain().clone(),
-            OperationalDataTarget::Destination => self.dst_chain().clone(),
+            OperationalDataTarget::Source => {
+                self.mediator_a.insert(reply, odata);
+            }
+            OperationalDataTarget::Destination => {
+                self.mediator_b.insert(reply, odata);
+            }
         }
     }
 
@@ -1154,22 +1160,39 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         for od in dst_ods {
             let reply =
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
-            let target_chain = self.infer_target_chain(&od).clone();
-            self.mediator.insert(reply, od, target_chain);
+
+            self.mediate_operational_data(reply, od);
         }
 
         for od in src_ods {
             let reply =
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
-            let target_chain = self.infer_target_chain(&od).clone();
-            self.mediator.insert(reply, od, target_chain);
+            self.mediate_operational_data(reply, od);
         }
 
         Ok(())
     }
 
     pub fn run_mediator(&mut self) -> RelaySummary {
-        match self.mediator.confirm_step() {
+        let mut result_a = self.run_mediator_a();
+        let result_b = self.run_mediator_b();
+        result_a.extend(result_b);
+
+        result_a
+    }
+
+    pub fn run_mediator_a(&mut self) -> RelaySummary {
+        match self.mediator_a.confirm_step() {
+            Outcome::TimedOut(_) => {
+                todo!()
+            }
+            Outcome::Confirmed(e) => e,
+            Outcome::None => RelaySummary::empty(),
+        }
+    }
+
+    pub fn run_mediator_b(&mut self) -> RelaySummary {
+        match self.mediator_a.confirm_step() {
             Outcome::TimedOut(_) => {
                 todo!()
             }

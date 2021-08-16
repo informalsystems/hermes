@@ -27,14 +27,22 @@ pub struct Unconfirmed {
     original_od: OperationalData,
     tx_hashes: TxHashes,
     submit_time: Instant,
-    target_chain: Box<dyn ChainHandle>,
 }
 
 /// The mediator stores all unconfirmed data
 /// and tries to confirm them asynchronously.
-#[derive(Default)]
-pub struct Mediator {
+pub struct Mediator<Chain> {
+    pub chain: Chain,
     pub unconfirmed: Vec<Unconfirmed>,
+}
+
+impl<Chain> Mediator<Chain> {
+    pub fn new(chain: Chain) -> Self {
+        Self {
+            chain,
+            unconfirmed: Vec::new(),
+        }
+    }
 }
 
 /// Represents the outcome of a [`Mediator`]'s
@@ -52,13 +60,12 @@ enum DoConfirmOutcome {
     Confirmed(Unconfirmed, Vec<IbcEvent>),
 }
 
-impl Mediator {
-    pub fn insert(&mut self, r: AsyncReply, od: OperationalData, target: Box<dyn ChainHandle>) {
+impl<Chain: ChainHandle> Mediator<Chain> {
+    pub fn insert(&mut self, r: AsyncReply, od: OperationalData) {
         let u = Unconfirmed {
             original_od: od,
             tx_hashes: r.into(),
             submit_time: Instant::now(),
-            target_chain: target,
         };
         self.unconfirmed.push(u);
     }
@@ -76,21 +83,21 @@ impl Mediator {
                 // This operational data should be re-submitted
                 error!(
                     "[mediator->{}] timed out while confirming {}",
-                    u.target_chain.id(),
+                    self.chain.id(),
                     u.tx_hashes
                 );
                 return Outcome::TimedOut(u.original_od);
             } else {
                 trace!(
                     "[mediator->{}] trying to confirm {} ",
-                    u.target_chain.id(),
+                    self.chain.id(),
                     u.tx_hashes
                 );
                 match self.do_confirm(u) {
                     DoConfirmOutcome::Unconfirmed(u) => {
                         trace!(
                             "[mediator->{}] remains unconfirmed, will retry again later: {} ",
-                            u.target_chain.id(),
+                            self.chain.id(),
                             u.tx_hashes
                         );
                         self.unconfirmed.push(u);
@@ -98,7 +105,7 @@ impl Mediator {
                     DoConfirmOutcome::Confirmed(u, events) => {
                         debug!(
                             "[mediator->{}] confirmed after {:#?}: {} ",
-                            u.target_chain.id(),
+                            self.chain.id(),
                             u.submit_time.elapsed(),
                             u.tx_hashes
                         );
@@ -119,8 +126,8 @@ impl Mediator {
         let hashes: Vec<transaction::Hash> = u.tx_hashes.clone().into();
 
         for h in hashes {
-            let query_events = u
-                .target_chain
+            let query_events = self
+                .chain
                 .query_txs(QueryTxRequest::Transaction(QueryTxHash(h)));
 
             match query_events {
@@ -135,7 +142,7 @@ impl Mediator {
                     // We retry later on
                     error!(
                         "[mediator->{}] error querying for tx hashes {}: {}",
-                        u.target_chain.id(),
+                        self.chain.id(),
                         u.tx_hashes,
                         e
                     );

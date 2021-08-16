@@ -101,7 +101,7 @@ impl OperationalData {
             None
         };
 
-        let mut msgs: Vec<Any> = self.batch.into_iter().map(|gm| gm.msg).collect();
+        let mut msgs: Vec<Any> = self.batch.iter().map(|gm| gm.msg.clone()).collect();
         if let Some(client_update) = client_update_msg {
             // SAFETY: inserting at position `0` should not panic because
             // we already checked that the `batch` vector is non-empty.

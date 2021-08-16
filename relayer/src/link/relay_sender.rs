@@ -24,7 +24,7 @@ impl SubmitReply for RelaySummary {
 pub trait Submit {
     type Reply: SubmitReply;
 
-    fn submit(target: &dyn ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError>;
+    fn submit(target: &impl ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError>;
 }
 
 /// Synchronous sender
@@ -36,8 +36,9 @@ impl Submit for SyncSender {
     // TODO: Switch from the `Chain::send_msgs` interface in this method
     //  to use `Chain::submit_msgs` instead; implement waiting for block
     //  commits directly here (instead of blocking in the chain runtime).
-    fn submit(target: &dyn ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
-        let tx_events = target.send_msgs(msgs)?;
+    fn submit(target: &impl ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
+        let tx_events = target.send_msgs(msgs).map_err(LinkError::relayer)?;
+
         info!(
             "[Sync->{}] result {}\n",
             target.id(),
@@ -50,7 +51,7 @@ impl Submit for SyncSender {
             .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
         match ev {
-            Some(ev) => Err(LinkError::SendError(Box::new(ev))),
+            Some(ev) => Err(LinkError::send(ev)),
             None => Ok(RelaySummary::from_events(tx_events)),
         }
     }
@@ -73,8 +74,8 @@ pub struct AsyncSender;
 impl Submit for AsyncSender {
     type Reply = AsyncReply;
 
-    fn submit(target: &dyn ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
-        let a = target.submit_msgs(msgs)?;
+    fn submit(target: &impl ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
+        let a = target.submit_msgs(msgs).map_err(LinkError::relayer)?;
         let reply = AsyncReply { responses: a };
         info!("[Async~>{}] {}\n", target.id(), reply);
 

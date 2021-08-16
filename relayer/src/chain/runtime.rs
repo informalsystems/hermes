@@ -383,7 +383,7 @@ where
     ) -> Result<(), Error> {
         let result = self.chain.submit_msgs(proto_msgs);
 
-        reply_to.send(result).map_err(Error::channel_send)?;
+        reply_to.send(result).map_err(Error::send)?;
 
         Ok(())
     }
