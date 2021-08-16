@@ -97,7 +97,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
         }),
     };
 
-    let proposal = if opts.legacy {
+    let proposal = if !opts.legacy {
         Proposal::Default(proposal)
     } else {
         Proposal::Legacy(proposal.into())
