@@ -34,14 +34,14 @@ configuration updates.
 On MacOS:
 ```bash
 curl -Lo /usr/local/bin/sconfig https://github.com/freshautomations/sconfig/releases/download/v0.1.0/sconfig_darwin_amd64
-curl -Lo /usr/local/bin/stoml https://github.com/freshautomations/stoml/releases/download/v0.6.1/stoml_darwin_amd64
+curl -Lo /usr/local/bin/stoml https://github.com/freshautomations/stoml/releases/download/v0.7.0/stoml_darwin_amd64
 chmod 755 /usr/local/bin/sconfig
 chmod 755 /usr/local/bin/stoml
 ```
 On Linux:
 ```bash
 curl -Lo /usr/local/bin/sconfig https://github.com/freshautomations/sconfig/releases/download/v0.1.0/sconfig_linux_amd64
-curl -Lo /usr/local/bin/stoml https://github.com/freshautomations/stoml/releases/download/v0.6.1/stoml_linux_amd64
+curl -Lo /usr/local/bin/stoml https://github.com/freshautomations/stoml/releases/download/v0.7.0/stoml_linux_amd64
 chmod 755 /usr/local/bin/sconfig
 chmod 755 /usr/local/bin/stoml
 ```
