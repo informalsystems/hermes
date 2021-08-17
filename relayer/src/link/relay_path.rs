@@ -66,8 +66,8 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // The mediator stores unconfirmed operational data.
     // The relaying path periodically invokes the mediator
     // to confirm transactions.
-    mediator_a: Mediator<ChainA>,
-    mediator_b: Mediator<ChainB>,
+    mediator_src: Mediator<ChainA>,
+    mediator_dst: Mediator<ChainB>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
@@ -80,8 +80,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             clear_packets: true,
             src_operational_data: vec![],
             dst_operational_data: vec![],
-            mediator_a: unconfirmed::Mediator::new(src_chain),
-            mediator_b: unconfirmed::Mediator::new(dst_chain),
+            mediator_src: unconfirmed::Mediator::new(src_chain),
+            mediator_dst: unconfirmed::Mediator::new(dst_chain),
         }
     }
 
@@ -608,10 +608,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn mediate_operational_data(&mut self, reply: AsyncReply, odata: OperationalData) {
         match odata.target {
             OperationalDataTarget::Source => {
-                self.mediator_a.insert(reply, odata);
+                self.mediator_src.insert(reply, odata);
             }
             OperationalDataTarget::Destination => {
-                self.mediator_b.insert(reply, odata);
+                self.mediator_dst.insert(reply, odata);
             }
         }
     }
@@ -1174,30 +1174,48 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub fn run_mediator(&mut self) -> RelaySummary {
-        let mut result_a = self.run_mediator_a();
-        let result_b = self.run_mediator_b();
-        result_a.extend(result_b);
+        let mut summary_src = self.run_src_mediator().unwrap();
+        let summary_dst = self.run_dst_mediator().unwrap();
+        summary_src.extend(summary_dst);
 
-        result_a
+        summary_src
     }
 
-    pub fn run_mediator_a(&mut self) -> RelaySummary {
-        match self.mediator_a.confirm_step() {
-            Outcome::TimedOut(_) => {
-                todo!()
+    fn run_src_mediator(&mut self) -> Result<RelaySummary, LinkError> {
+        let outcome = self
+            .mediator_src
+            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT);
+
+        match outcome {
+            Outcome::TimedOut(odata) => {
+                let reply =
+                    self.relay_from_operational_data::<relay_sender::AsyncSender>(odata.clone())?;
+
+                self.mediator_src.insert(reply, odata);
+
+                Ok(RelaySummary::empty())
             }
-            Outcome::Confirmed(e) => e,
-            Outcome::None => RelaySummary::empty(),
+            Outcome::Confirmed(summary) => Ok(summary),
+            Outcome::None => Ok(RelaySummary::empty()),
         }
     }
 
-    pub fn run_mediator_b(&mut self) -> RelaySummary {
-        match self.mediator_a.confirm_step() {
-            Outcome::TimedOut(_) => {
-                todo!()
+    fn run_dst_mediator(&mut self) -> Result<RelaySummary, LinkError> {
+        let outcome = self
+            .mediator_dst
+            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT);
+
+        match outcome {
+            Outcome::TimedOut(odata) => {
+                let reply =
+                    self.relay_from_operational_data::<relay_sender::AsyncSender>(odata.clone())?;
+
+                self.mediator_dst.insert(reply, odata);
+
+                Ok(RelaySummary::empty())
             }
-            Outcome::Confirmed(e) => e,
-            Outcome::None => RelaySummary::empty(),
+            Outcome::Confirmed(summary) => Ok(summary),
+            Outcome::None => Ok(RelaySummary::empty()),
         }
     }
 
