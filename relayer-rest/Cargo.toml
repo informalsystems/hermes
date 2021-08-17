@@ -14,8 +14,8 @@ description = """
 """
 
 [dependencies]
-ibc              = { version = "0.6.1", path = "../modules" }
-ibc-relayer       = { version = "0.6.1", path = "../relayer" }
+ibc               = { version = "0.7.0", path = "../modules" }
+ibc-relayer       = { version = "0.7.0", path = "../relayer" }
 
 crossbeam-channel = { version = "0.5" }
 rouille           = { version = "3.1" }
