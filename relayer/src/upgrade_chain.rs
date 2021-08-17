@@ -97,10 +97,10 @@ pub fn build_and_send_ibc_upgrade_proposal(
         }),
     };
 
-    let proposal = if !opts.legacy {
-        Proposal::Default(proposal)
-    } else {
+    let proposal = if opts.legacy {
         Proposal::Legacy(proposal.into())
+    } else {
+        Proposal::Default(proposal)
     };
 
     let mut buf_proposal = Vec::new();
