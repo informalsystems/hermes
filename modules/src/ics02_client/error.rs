@@ -206,5 +206,23 @@ define_error! {
                 format_args!("upgraded client height {0} must be at greater than current client height {1}",
                     e.upgraded_height, e.client_height)
             },
+
+        ReadFailure
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | e | {
+                format_args!("Reading an object failed, reason: {}", e)
+            },
+
+        WriteFailure
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | e | {
+                format_args!("Writing an object failed, reason: {}", e)
+            },
+
+        OtherFailure
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | e | {
+                format_args!("Failure happens, reason: {}", e)
+            },
     }
 }
