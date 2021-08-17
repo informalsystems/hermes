@@ -261,7 +261,7 @@ impl IbcTestRunner {
                             // if the connection has not yet been initialized, then
                             // there's nothing to check
                             true
-                        } else if let Some(connection_end) =
+                        } else if let Ok(connection_end) =
                             ctx.connection_end(&Self::connection_id(connection_id))
                         {
                             // states must match

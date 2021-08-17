@@ -19,7 +19,7 @@ use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as Ics03Error;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
-use crate::ics04_channel::error::Error as ChannelError;
+use crate::ics04_channel::error::Error as Ics04Error;
 use crate::ics04_channel::packet::{Receipt, Sequence};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics05_port::context::PortReader;
@@ -446,66 +446,120 @@ impl PortReader for MockContext {
 }
 
 impl ChannelReader for MockContext {
-    fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Option<ChannelEnd> {
-        self.channels.get(pcid).cloned()
+    fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
+        match self.channels.get(pcid) {
+            Some(channel_end) => Ok(channel_end.clone()),
+            None => Err(Ics04Error::channel_not_found(
+                pcid.0.clone(),
+                pcid.1.clone(),
+            )),
+        }
     }
 
-    fn connection_end(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
-        self.connections.get(cid).cloned()
+    fn connection_end(&self, cid: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
+        match self.connections.get(cid) {
+            Some(connection_end) => Ok(connection_end.clone()),
+            None => Err(Ics04Error::missing_connection(cid.clone())),
+        }
     }
 
-    fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
-        self.connection_channels.get(cid).cloned()
+    fn connection_channels(
+        &self,
+        cid: &ConnectionId,
+    ) -> Result<Vec<(PortId, ChannelId)>, Ics04Error> {
+        match self.connection_channels.get(cid) {
+            Some(pcid) => Ok(pcid.clone()),
+            None => Err(Ics04Error::missing_channel()),
+        }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        ClientReader::client_state(self, client_id).ok()
+    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
+        ClientReader::client_state(self, client_id)
+            .map_err(|_| Ics04Error::missing_client_state(client_id.clone()))
     }
 
     fn client_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Option<AnyConsensusState> {
-        ClientReader::consensus_state(self, client_id, height).ok()
+    ) -> Result<AnyConsensusState, Ics04Error> {
+        ClientReader::consensus_state(self, client_id, height).map_err(|_| {
+            Ics04Error::missing_client_consensus_state(client_id.clone(), height.clone())
+        })
     }
 
-    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ChannelError> {
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
         let cap = PortReader::lookup_module_by_port(self, port_id);
         match cap {
             Some(key) => {
                 if !PortReader::authenticate(self, &key, port_id) {
-                    Err(ChannelError::invalid_port_capability())
+                    Err(Ics04Error::invalid_port_capability())
                 } else {
                     Ok(key)
                 }
             }
-            None => Err(ChannelError::no_port_capability(port_id.clone())),
+            None => Err(Ics04Error::no_port_capability(port_id.clone())),
         }
     }
 
-    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
-        self.next_sequence_send.get(port_channel_id).cloned()
+    fn get_next_sequence_send(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<Sequence, Ics04Error> {
+        match self.next_sequence_send.get(port_channel_id) {
+            Some(sequence) => Ok(sequence.clone()),
+            None => Err(Ics04Error::missing_next_send_seq()),
+        }
     }
 
-    fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
-        self.next_sequence_recv.get(port_channel_id).cloned()
+    fn get_next_sequence_recv(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<Sequence, Ics04Error> {
+        match self.next_sequence_recv.get(port_channel_id) {
+            Some(sequence) => Ok(sequence.clone()),
+            None => Err(Ics04Error::missing_next_recv_seq()),
+        }
     }
 
-    fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
-        self.next_sequence_ack.get(port_channel_id).cloned()
+    fn get_next_sequence_ack(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<Sequence, Ics04Error> {
+        match self.next_sequence_ack.get(port_channel_id) {
+            Some(sequence) => Ok(sequence.clone()),
+            None => Err(Ics04Error::missing_next_ack_seq()),
+        }
     }
 
-    fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
-        self.packet_commitment.get(key).cloned()
+    fn get_packet_commitment(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> Result<String, Ics04Error> {
+        match self.packet_commitment.get(key) {
+            Some(commitment) => Ok(commitment.clone()),
+            None => Err(Ics04Error::packet_commitment_not_found(key.2.clone())),
+        }
     }
 
-    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<Receipt> {
-        self.packet_receipt.get(key).cloned()
+    fn get_packet_receipt(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> Result<Receipt, Ics04Error> {
+        match self.packet_receipt.get(key) {
+            Some(receipt) => Ok(receipt.clone()),
+            None => Err(Ics04Error::packet_receipt_not_found(key.2.clone())),
+        }
     }
 
-    fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
-        self.packet_acknowledgement.get(key).cloned()
+    fn get_packet_acknowledgement(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> Result<String, Ics04Error> {
+        match self.packet_acknowledgement.get(key) {
+            Some(ack) => Ok(ack.clone()),
+            None => Err(Ics04Error::packet_acknowledgement_not_found(key.2.clone())),
+        }
     }
 
     fn hash(&self, input: String) -> String {
@@ -521,8 +575,8 @@ impl ChannelReader for MockContext {
         self.timestamp
     }
 
-    fn channel_counter(&self) -> u64 {
-        self.channel_ids_counter
+    fn channel_counter(&self) -> Result<u64, Ics04Error> {
+        Ok(self.channel_ids_counter)
     }
 }
 
@@ -533,7 +587,7 @@ impl ChannelKeeper for MockContext {
         timeout_timestamp: Timestamp,
         timeout_height: Height,
         data: Vec<u8>,
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         let input = format!("{:?},{:?},{:?}", timeout_timestamp, timeout_height, data);
         self.packet_commitment
             .insert(key, ChannelReader::hash(self, input));
@@ -544,7 +598,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         key: (PortId, ChannelId, Sequence),
         ack: Vec<u8>,
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         let input = format!("{:?}", ack);
         self.packet_acknowledgement
             .insert(key, ChannelReader::hash(self, input));
@@ -554,7 +608,7 @@ impl ChannelKeeper for MockContext {
     fn delete_packet_acknowledgement(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         self.packet_acknowledgement.remove(&key);
         Ok(())
     }
@@ -563,7 +617,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         cid: ConnectionId,
         port_channel_id: &(PortId, ChannelId),
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         self.connection_channels
             .entry(cid)
             .or_insert_with(Vec::new)
@@ -575,7 +629,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         port_channel_id: (PortId, ChannelId),
         channel_end: &ChannelEnd,
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         self.channels.insert(port_channel_id, channel_end.clone());
         Ok(())
     }
@@ -584,7 +638,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         self.next_sequence_send.insert(port_channel_id, seq);
         Ok(())
     }
@@ -593,7 +647,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         self.next_sequence_recv.insert(port_channel_id, seq);
         Ok(())
     }
@@ -602,7 +656,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         port_channel_id: (PortId, ChannelId),
         seq: Sequence,
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         self.next_sequence_ack.insert(port_channel_id, seq);
         Ok(())
     }
@@ -614,7 +668,7 @@ impl ChannelKeeper for MockContext {
     fn delete_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         self.packet_commitment.remove(&key);
         Ok(())
     }
@@ -623,7 +677,7 @@ impl ChannelKeeper for MockContext {
         &mut self,
         key: (PortId, ChannelId, Sequence),
         receipt: Receipt,
-    ) -> Result<(), ChannelError> {
+    ) -> Result<(), Ics04Error> {
         self.packet_receipt.insert(key, receipt);
         Ok(())
     }

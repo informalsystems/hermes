@@ -6,10 +6,11 @@ use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::proofs::ProofError;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use flex_error::{define_error, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
 use tendermint_proto::Error as TendermintError;
 
 define_error! {
+    #[derive(Debug, PartialEq)]
     Error {
         UnknownState
             { state: i32 }
@@ -308,9 +309,42 @@ define_error! {
                     e.sequence)
             },
 
+        PacketReceiptNotFound
+            { sequence: Sequence }
+            | e | {
+                format_args!(
+                    "Receipt for the packet {0} not found",
+                    e.sequence)
+            },
+
+        PacketAcknowledgementNotFound
+            { sequence: Sequence }
+            | e | {
+                format_args!(
+                    "Acknowledgment for the packet {0} not found",
+                    e.sequence)
+            },
+
         MissingNextAckSeq
             | _ | { "Missing sequence number for ack packets" },
 
+        ReadFailure
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | e | {
+                format_args!("Reading an object failed, reason: {}", e)
+            },
+
+        WriteFailure
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | e | {
+                format_args!("Writing an object failed, reason: {}", e)
+            },
+
+        OtherFailure
+            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            | e | {
+                format_args!("Failure happens, reason: {}", e)
+            },
     }
 }
 

@@ -10,6 +10,7 @@ use tendermint_proto::Error as TendermintError;
 use flex_error::{define_error, DisplayOnly, TraceError};
 
 define_error! {
+    #[derive(Debug, PartialEq)]
     Error {
         UnknownClientType
             { client_type: String }
