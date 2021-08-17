@@ -1336,7 +1336,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "bytes",
  "chrono",
@@ -1365,7 +1365,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.9.1"
+version = "0.10.0"
 dependencies = [
  "bytes",
  "getrandom 0.2.3",
@@ -1377,7 +1377,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1431,7 +1431,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "abscissa_core",
  "atty",
@@ -1486,7 +1486,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "crossbeam-channel 0.5.1",
  "ibc",
