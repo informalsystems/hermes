@@ -1174,45 +1174,63 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub fn run_mediator(&mut self) -> RelaySummary {
-        let mut summary_src = self.run_src_mediator().unwrap();
-        let summary_dst = self.run_dst_mediator().unwrap();
-        summary_src.extend(summary_dst);
+        let mut summary_src = self.run_src_mediator().unwrap_or_else(|e| {
+            error!("error processing unconfirmed events in source chain: {}", e);
+            RelaySummary::empty()
+        });
 
+        let summary_dst = self.run_dst_mediator().unwrap_or_else(|e| {
+            error!(
+                "error processing unconfirmed events in destination chain: {}",
+                e
+            );
+            RelaySummary::empty()
+        });
+
+        summary_src.extend(summary_dst);
         summary_src
     }
 
     fn run_src_mediator(&mut self) -> Result<RelaySummary, LinkError> {
         let outcome = self
             .mediator_src
-            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT);
+            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT)?;
 
-        match outcome {
-            Outcome::TimedOut(odata) => {
-                let reply =
-                    self.relay_from_operational_data::<relay_sender::AsyncSender>(odata.clone())?;
-
-                self.mediator_src.insert(reply, odata);
-
-                Ok(RelaySummary::empty())
-            }
-            Outcome::Confirmed(summary) => Ok(summary),
-            Outcome::None => Ok(RelaySummary::empty()),
-        }
+        self.process_outcome(outcome)
     }
 
     fn run_dst_mediator(&mut self) -> Result<RelaySummary, LinkError> {
         let outcome = self
             .mediator_dst
-            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT);
+            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT)?;
 
+        self.process_outcome(outcome)
+    }
+
+    fn process_outcome(&mut self, outcome: Outcome) -> Result<RelaySummary, LinkError> {
         match outcome {
-            Outcome::TimedOut(odata) => {
-                let reply =
-                    self.relay_from_operational_data::<relay_sender::AsyncSender>(odata.clone())?;
+            Outcome::TimedOut(unconfirmed) => {
+                let odata = &unconfirmed.original_od;
+                let retry_result =
+                    self.relay_from_operational_data::<relay_sender::AsyncSender>(odata.clone());
 
-                self.mediator_dst.insert(reply, odata);
-
-                Ok(RelaySummary::empty())
+                match retry_result {
+                    Ok(reply) => {
+                        self.mediate_operational_data(reply, unconfirmed.original_od);
+                        Ok(RelaySummary::empty())
+                    }
+                    Err(e) => {
+                        match odata.target {
+                            OperationalDataTarget::Source => {
+                                self.mediator_src.reinsert(unconfirmed);
+                            }
+                            OperationalDataTarget::Destination => {
+                                self.mediator_dst.reinsert(unconfirmed);
+                            }
+                        }
+                        Err(e)
+                    }
+                }
             }
             Outcome::Confirmed(summary) => Ok(summary),
             Outcome::None => Ok(RelaySummary::empty()),

@@ -9,12 +9,11 @@ use ibc::ics24_host::identifier::ChainId;
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use crate::error::Error as RelayerError;
+use crate::link::error::LinkError;
 use crate::{
     chain::handle::ChainHandle,
     link::{operational_data::OperationalData, relay_sender::AsyncReply, RelaySummary, TxHashes},
 };
-
-use tendermint::abci::transaction;
 
 pub const TIMEOUT: Duration = Duration::from_secs(100);
 pub const MIN_BACKOFF: Duration = Duration::from_secs(1);
@@ -28,9 +27,9 @@ pub const MIN_BACKOFF: Duration = Duration::from_secs(1);
 ///         operational data as unconfirmed.
 #[derive(Clone)]
 pub struct Unconfirmed {
-    original_od: OperationalData,
-    tx_hashes: TxHashes,
-    submit_time: Instant,
+    pub original_od: OperationalData,
+    pub tx_hashes: TxHashes,
+    pub submit_time: Instant,
 }
 
 /// The mediator stores all unconfirmed data
@@ -52,16 +51,9 @@ impl<Chain> Mediator<Chain> {
 /// Represents the outcome of a [`Mediator`]'s
 /// attempt to confirm an operational data.
 pub enum Outcome {
-    TimedOut(OperationalData),
+    TimedOut(Unconfirmed),
     Confirmed(RelaySummary),
     None,
-}
-
-/// [`Mediator`]'s internal representation of the outcome
-/// of a single attempt to confirm an operational data.
-enum DoConfirmOutcome {
-    Unconfirmed(Unconfirmed),
-    Confirmed(Unconfirmed, Vec<IbcEvent>),
 }
 
 impl<Chain: ChainHandle> Mediator<Chain> {
@@ -78,88 +70,8 @@ impl<Chain: ChainHandle> Mediator<Chain> {
         self.unconfirmed.push_back(u);
     }
 
-    pub fn confirm_step(&mut self) -> Outcome {
-        if let Some(u) = self.pop() {
-            if !self.unconfirmed.is_empty() {
-                trace!(
-                    "[mediator] total unconfirmed left: {}",
-                    self.unconfirmed.len()
-                );
-            }
-
-            if u.submit_time.elapsed() > TIMEOUT {
-                // This operational data should be re-submitted
-                error!(
-                    "[mediator->{}] timed out while confirming {}",
-                    self.chain.id(),
-                    u.tx_hashes
-                );
-                return Outcome::TimedOut(u.original_od);
-            } else {
-                trace!(
-                    "[mediator->{}] trying to confirm {} ",
-                    self.chain.id(),
-                    u.tx_hashes
-                );
-                match self.do_confirm(u) {
-                    DoConfirmOutcome::Unconfirmed(u) => {
-                        trace!(
-                            "[mediator->{}] remains unconfirmed, will retry again later: {} ",
-                            self.chain.id(),
-                            u.tx_hashes
-                        );
-                        self.unconfirmed.push_front(u);
-                    }
-                    DoConfirmOutcome::Confirmed(u, events) => {
-                        debug!(
-                            "[mediator->{}] confirmed after {:#?}: {} ",
-                            self.chain.id(),
-                            u.submit_time.elapsed(),
-                            u.tx_hashes
-                        );
-                        let summary = RelaySummary::from_events(events);
-                        return Outcome::Confirmed(summary);
-                    }
-                }
-            }
-        }
-
-        Outcome::None
-    }
-
-    fn do_confirm(&self, u: Unconfirmed) -> DoConfirmOutcome {
-        let mut events_accum = vec![];
-
-        // Transform from `TxHash`es into `Hash`es
-        let hashes: Vec<transaction::Hash> = u.tx_hashes.clone().into();
-
-        for h in hashes {
-            let query_events = self
-                .chain
-                .query_txs(QueryTxRequest::Transaction(QueryTxHash(h)));
-
-            match query_events {
-                Ok(mut events) => {
-                    if events.is_empty() {
-                        return DoConfirmOutcome::Unconfirmed(u);
-                    } else {
-                        events_accum.append(&mut events);
-                    }
-                }
-                Err(e) => {
-                    // We retry later on
-                    error!(
-                        "[mediator->{}] error querying for tx hashes {}: {}",
-                        self.chain.id(),
-                        u.tx_hashes,
-                        e
-                    );
-                    return DoConfirmOutcome::Unconfirmed(u);
-                }
-            }
-        }
-
-        DoConfirmOutcome::Confirmed(u, events_accum)
+    pub fn reinsert(&mut self, unconfirmed: Unconfirmed) {
+        self.unconfirmed.push_back(unconfirmed)
     }
 
     fn check_tx_events(&self, tx_hashes: &TxHashes) -> Result<Option<Vec<IbcEvent>>, RelayerError> {
@@ -178,15 +90,21 @@ impl<Chain: ChainHandle> Mediator<Chain> {
         Ok(Some(all_events))
     }
 
-    pub fn process_unconfirmed(&mut self, min_backoff: Duration, timeout: Duration) -> Outcome {
-        if let Some(unconfirmed) = self.unconfirmed.front() {
+    pub fn process_unconfirmed(
+        &mut self,
+        min_backoff: Duration,
+        timeout: Duration,
+        // resubmit: impl FnOnce(OperationalData) -> Result<(), LinkError>,
+    ) -> Result<Outcome, LinkError> {
+        if let Some(unconfirmed) = self.unconfirmed.pop_front() {
             let tx_hashes = &unconfirmed.tx_hashes;
             let submit_time = &unconfirmed.submit_time;
 
             // Elapsed time should fulfil some basic minimum so that
             // the relayer does not confirm too aggressively
             if unconfirmed.submit_time.elapsed() < min_backoff {
-                Outcome::None
+                self.unconfirmed.push_front(unconfirmed);
+                Ok(Outcome::None)
             } else if submit_time.elapsed() > timeout {
                 // This operational data should be re-submitted
                 error!(
@@ -195,11 +113,7 @@ impl<Chain: ChainHandle> Mediator<Chain> {
                     tx_hashes
                 );
 
-                let odata = unconfirmed.original_od.clone();
-
-                self.unconfirmed.pop_front();
-
-                Outcome::TimedOut(odata)
+                Ok(Outcome::TimedOut(unconfirmed))
             } else {
                 trace!(
                     "[mediator] total unconfirmed left: {}",
@@ -214,7 +128,10 @@ impl<Chain: ChainHandle> Mediator<Chain> {
 
                 let events_result = self.check_tx_events(tx_hashes);
                 match events_result {
-                    Ok(None) => Outcome::None,
+                    Ok(None) => {
+                        self.unconfirmed.push_back(unconfirmed);
+                        Ok(Outcome::None)
+                    }
                     Ok(Some(events)) => {
                         debug!(
                             "[mediator->{}] confirmed after {:#?}: {} ",
@@ -223,10 +140,8 @@ impl<Chain: ChainHandle> Mediator<Chain> {
                             tx_hashes
                         );
 
-                        self.unconfirmed.pop_front();
-
                         let summary = RelaySummary::from_events(events);
-                        return Outcome::Confirmed(summary);
+                        return Ok(Outcome::Confirmed(summary));
                     }
                     Err(e) => {
                         error!(
@@ -236,23 +151,14 @@ impl<Chain: ChainHandle> Mediator<Chain> {
                             e
                         );
 
-                        Outcome::None
+                        self.unconfirmed.push_back(unconfirmed);
+
+                        Err(LinkError::relayer(e))
                     }
                 }
             }
         } else {
-            Outcome::None
+            Ok(Outcome::None)
         }
-    }
-
-    fn pop(&mut self) -> Option<Unconfirmed> {
-        if let Some(un) = self.unconfirmed.front() {
-            // Elapsed time should fulfil some basic minimum so that
-            // the relayer does not confirm too aggressively
-            if un.submit_time.elapsed() > MIN_BACKOFF {
-                return self.unconfirmed.pop_front();
-            }
-        }
-        None
     }
 }
