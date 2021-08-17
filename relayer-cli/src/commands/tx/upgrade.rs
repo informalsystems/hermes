@@ -61,6 +61,12 @@ pub struct TxIbcUpgradeChainCmd {
         help = "a string to name the upgrade proposal plan (default: 'plan')"
     )]
     upgrade_name: Option<String>,
+
+    #[options(
+        help = "use legacy upgrade proposal constructs (for chains built with Cosmos SDK < v0.43.0)",
+        short = "l"
+    )]
+    legacy: bool,
 }
 
 impl TxIbcUpgradeChainCmd {
@@ -88,6 +94,7 @@ impl TxIbcUpgradeChainCmd {
                 .upgrade_name
                 .clone()
                 .unwrap_or_else(|| "plan".to_string()),
+            legacy: self.legacy,
         };
 
         Ok(opts)
