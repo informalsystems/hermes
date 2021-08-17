@@ -403,16 +403,18 @@ CreateClientAction(chainId) ==
 
 UpdateClientAction(chainId) ==
     \* select a client to be updated (which may not exist)
-    \E clientId \in ClientIds:
+    \E clientId \in ClientIds: 
     \* select a height for the client to be updated
-    \E height \in Heights:
+    \* We only use heights at the same revision number to save on state space
+    \E height \in {height \in Heights: height.revision_number = chains[chainId].height.revision_number}:
         UpdateClient(chainId, clientId, height)
-
+        
 UpgradeClientAction(chainId) ==
-    \* select a client to be updated (which may not exist)
+    \* select a client to be upgraded (which may not exist)
     \E clientId \in ClientIds:
-    \* select a height for the client to be updated
-    \E height \in Heights:
+    \* select a height for the client to be upgraded
+    \* We only try to upgrade to heights with a height of one to save on state space
+    \E height \in {height \in Heights: height.revision_height = 1}:
         UpgradeClient(chainId, clientId, height)
 
 ConnectionOpenInitAction(chainId) ==
