@@ -28,7 +28,7 @@ telemetry = ["ibc-relayer/telemetry", "ibc-telemetry"]
 [dependencies]
 ibc           = { version = "0.7.0", path = "../modules" }
 ibc-relayer   = { version = "0.7.0", path = "../relayer" }
-ibc-proto     = { version = "0.9.1", path = "../proto" }
+ibc-proto     = { version = "0.10.0", path = "../proto" }
 ibc-telemetry = { version = "0.7.0", path = "../telemetry", optional = true }
 ibc-relayer-rest = { version = "0.1.0", path = "../relayer-rest" }
 
