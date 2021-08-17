@@ -214,8 +214,8 @@ impl From<ClientState> for RawClientState {
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
             proof_specs: ProofSpecs::cosmos().into(),
-            allow_update_after_expiry: false,
-            allow_update_after_misbehaviour: false,
+            allow_update_after_expiry: value.allow_update.after_expiry,
+            allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
             upgrade_path: value.upgrade_path,
         }
     }

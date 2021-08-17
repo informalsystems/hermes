@@ -9,7 +9,7 @@ use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::{Plan, SoftwareUpgradeProposal};
 use prost_types::Any;
 
-use crate::chain::{Chain, CosmosSdkChain};
+use crate::chain::{ChainEndpoint, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
 

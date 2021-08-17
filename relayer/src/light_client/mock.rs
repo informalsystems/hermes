@@ -9,7 +9,7 @@ use ibc::mock::host::HostBlock;
 use ibc::Height;
 
 use crate::chain::mock::MockChain;
-use crate::chain::Chain;
+use crate::chain::ChainEndpoint;
 use crate::error::Error;
 
 use super::Verified;

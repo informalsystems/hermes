@@ -5,6 +5,7 @@ use std::sync::{Arc, RwLock};
 use abscissa_core::{Command, Options, Runnable};
 use crossbeam_channel::Sender;
 
+use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
 use ibc_relayer::rest;
@@ -22,10 +23,11 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let (supervisor, tx_cmd) = make_supervisor(config.clone()).unwrap_or_else(|e| {
-            Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
-            unreachable!()
-        });
+        let (supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
+            .unwrap_or_else(|e| {
+                Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
+                unreachable!()
+            });
 
         match crate::config::config_path() {
             Some(config_path) => {
@@ -115,9 +117,9 @@ fn make_rest_receiver(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
 }
 
 #[cfg(feature = "telemetry")]
-fn make_supervisor(
+fn make_supervisor<Chain: ChainHandle + 'static>(
     config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
     let state = ibc_telemetry::new_state();
 
     let telemetry = config.read().expect("poisoned lock").telemetry.clone();
@@ -142,9 +144,9 @@ fn make_supervisor(
 }
 
 #[cfg(not(feature = "telemetry"))]
-fn make_supervisor(
+fn make_supervisor<Chain: ChainHandle + 'static>(
     config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
     if config.read().expect("poisoned lock").telemetry.enabled {
         warn!(
             "telemetry enabled in the config but Hermes was built without telemetry support, \
