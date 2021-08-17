@@ -61,6 +61,7 @@ impl<Chain: ChainHandle> Mediator<Chain> {
         self.chain.id()
     }
 
+    // Insert new unconfirmed transaction to the back of the queue.
     pub fn insert(&mut self, r: AsyncReply, od: OperationalData) {
         let u = Unconfirmed {
             original_od: od,
@@ -70,6 +71,12 @@ impl<Chain: ChainHandle> Mediator<Chain> {
         self.unconfirmed.push_back(u);
     }
 
+    // Re-insert timed-out transaction to the back of the queue.
+    // This is mainly used when timed-out unconfirmed transaction
+    // is returned from process_unconfirmed(), but the relayer
+    // failed to re-submit the transaction to the chain.
+    // In that case we ignore the timeout and try and re-confirm
+    // the transaction again at a later time.
     pub fn reinsert(&mut self, unconfirmed: Unconfirmed) {
         self.unconfirmed.push_back(unconfirmed)
     }
@@ -90,31 +97,31 @@ impl<Chain: ChainHandle> Mediator<Chain> {
         Ok(Some(all_events))
     }
 
+    // Try and process one unconfirmed transaction if available.
     pub fn process_unconfirmed(
         &mut self,
         min_backoff: Duration,
         timeout: Duration,
-        // resubmit: impl FnOnce(OperationalData) -> Result<(), LinkError>,
     ) -> Result<Outcome, LinkError> {
+        // We process unconfirmed transactions in a FIFO manner, so take from
+        // the front of the queue.
         if let Some(unconfirmed) = self.unconfirmed.pop_front() {
             let tx_hashes = &unconfirmed.tx_hashes;
             let submit_time = &unconfirmed.submit_time;
 
-            // Elapsed time should fulfil some basic minimum so that
-            // the relayer does not confirm too aggressively
             if unconfirmed.submit_time.elapsed() < min_backoff {
+                // The transaction was only submitted recently.
+                // We try not to reconfirm it too quickly as it may
+                // have not yet committed to the chain.
+
+                // Re-insert the unconfirmed transaction back to the
+                // front of the queue so that it will be processed in
+                // the next iteration.
                 self.unconfirmed.push_front(unconfirmed);
                 Ok(Outcome::None)
-            } else if submit_time.elapsed() > timeout {
-                // This operational data should be re-submitted
-                error!(
-                    "[mediator->{}] timed out while confirming {}",
-                    self.chain.id(),
-                    tx_hashes
-                );
-
-                Ok(Outcome::TimedOut(unconfirmed))
             } else {
+                // Process the given unconfirmed transaction.
+
                 trace!(
                     "[mediator] total unconfirmed left: {}",
                     self.unconfirmed.len()
@@ -126,13 +133,41 @@ impl<Chain: ChainHandle> Mediator<Chain> {
                     tx_hashes
                 );
 
+                // Check for TX events for the given unconfirmed transaction hashes.
                 let events_result = self.check_tx_events(tx_hashes);
                 match events_result {
                     Ok(None) => {
-                        self.unconfirmed.push_back(unconfirmed);
-                        Ok(Outcome::None)
+                        // There is no events for the associated transactions.
+                        // This means the transaction has not yet been committed.
+
+                        if submit_time.elapsed() > timeout {
+                            // The submission time for the transaction has exceeded the
+                            // timeout threshold. Returning Outcome::Timeout for the
+                            // relayer to resubmit the transaction to the chain again.
+                            error!(
+                                "[mediator->{}] timed out while confirming {}",
+                                self.chain.id(),
+                                tx_hashes
+                            );
+
+                            // We have to return it to RelayPath instead of
+                            // re-submitting it directly, because it requires
+                            // &mut RelayPath while the mut pointer is already
+                            // aliased here.
+                            Ok(Outcome::TimedOut(unconfirmed))
+                        } else {
+                            // Reinsert the unconfirmed transaction, this time
+                            // to the back of the queue so that we process other
+                            // unconfirmed transactions first in the meanwhile.
+                            self.unconfirmed.push_back(unconfirmed);
+                            Ok(Outcome::None)
+                        }
                     }
                     Ok(Some(events)) => {
+                        // We get a list of events for the transaction hashes,
+                        // Meaning the transaction has been committed successfully
+                        // to the chain.
+
                         debug!(
                             "[mediator->{}] confirmed after {:#?}: {} ",
                             self.chain.id(),
@@ -140,10 +175,15 @@ impl<Chain: ChainHandle> Mediator<Chain> {
                             tx_hashes
                         );
 
+                        // Convert the events to RelaySummary and return them.
                         let summary = RelaySummary::from_events(events);
                         return Ok(Outcome::Confirmed(summary));
                     }
                     Err(e) => {
+                        // There are errors querying for the transaction hashes.
+                        // This may be temporary errors when the relayer is communicating
+                        // with the chain endpoint.
+
                         error!(
                             "[mediator->{}] error querying for tx hashes {}: {}. will retry again later",
                             self.chain_id(),
@@ -151,6 +191,8 @@ impl<Chain: ChainHandle> Mediator<Chain> {
                             e
                         );
 
+                        // Push it to the back of the unconfirmed queue to process it
+                        // again at a later time.
                         self.unconfirmed.push_back(unconfirmed);
 
                         Err(LinkError::relayer(e))
