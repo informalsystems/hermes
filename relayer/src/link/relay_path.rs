@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::collections::{HashMap, VecDeque};
 use std::time::Instant;
 use std::{fmt, thread};
 
@@ -40,8 +41,9 @@ use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
-use crate::link::unconfirmed::{Mediator, Outcome};
+use crate::link::unconfirmed::{Outcome, PendingTxs};
 use crate::link::{relay_sender, unconfirmed};
+use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
 
@@ -51,7 +53,7 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // Marks whether this path has already cleared pending packets.
     // Packets should be cleared once (at startup), then this
     // flag turns to `false`.
-    clear_packets: bool,
+    clear_packets: RefCell<bool>,
 
     // Operational data, targeting both the source and destination chain.
     // These vectors of operational data are ordered decreasingly by
@@ -60,14 +62,14 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // mostly timeout packet messages.
     // The operational data targeting the destination chain
     // comprises mostly RecvPacket and Ack msgs.
-    src_operational_data: Vec<OperationalData>,
-    dst_operational_data: Vec<OperationalData>,
+    src_operational_data: Queue<OperationalData>,
+    dst_operational_data: Queue<OperationalData>,
 
     // The mediator stores unconfirmed operational data.
     // The relaying path periodically invokes the mediator
     // to confirm transactions.
-    mediator_src: Mediator<ChainA>,
-    mediator_dst: Mediator<ChainB>,
+    pending_txs_src: PendingTxs<ChainA>,
+    pending_txs_dst: PendingTxs<ChainB>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
@@ -77,11 +79,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         Self {
             channel,
-            clear_packets: true,
-            src_operational_data: vec![],
-            dst_operational_data: vec![],
-            mediator_src: unconfirmed::Mediator::new(src_chain),
-            mediator_dst: unconfirmed::Mediator::new(dst_chain),
+            clear_packets: RefCell::new(true),
+            src_operational_data: Queue::new(),
+            dst_operational_data: Queue::new(),
+            pending_txs_src: PendingTxs::new(src_chain),
+            pending_txs_dst: PendingTxs::new(dst_chain),
         }
     }
 
@@ -250,7 +252,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         result
     }
 
-    fn relay_pending_packets(&mut self, height: Option<Height>) -> Result<(), LinkError> {
+    fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
         for _ in 0..MAX_RETRIES {
             let cleared = self
                 .build_recv_packet_and_timeout_msgs(height)
@@ -267,14 +269,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Clears any packets that were sent before `height`, either if the `clear_packets` flag
     /// is set or if clearing is forced by the caller.
     pub fn schedule_packet_clearing(
-        &mut self,
+        &self,
         height: Option<Height>,
         force: bool,
     ) -> Result<(), LinkError> {
-        if self.clear_packets || force {
+        if *self.clear_packets.borrow() || force {
             // Disable further clearing of old packets by default.
             // Clearing may still happen: upon new blocks, when `force = true`.
-            self.clear_packets = false;
+            self.clear_packets.replace(false);
 
             let clear_height = height
                 .map(|h| h.decrement().map_err(|e| LinkError::decrement_height(h, e)))
@@ -291,7 +293,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Generate & schedule operational data from the input `batch` of IBC events.
-    pub fn update_schedule(&mut self, batch: EventBatch) -> Result<(), LinkError> {
+    pub fn update_schedule(&self, batch: EventBatch) -> Result<(), LinkError> {
         // Collect relevant events from the incoming batch & adjust their height.
         let events = self.filter_relaying_events(batch.events);
 
@@ -300,7 +302,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     /// Produces and schedules operational data for this relaying path based on the input events.
-    fn events_to_operational_data(&mut self, events: Vec<IbcEvent>) -> Result<(), LinkError> {
+    fn events_to_operational_data(&self, events: Vec<IbcEvent>) -> Result<(), LinkError> {
         // Obtain the operational data for the source chain (mostly timeout packets) and for the
         // destination chain (e.g., receive packet messages).
         let (src_opt, dst_opt) = self.generate_operational_data(events)?;
@@ -448,7 +450,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Relays an [`OperationalData`] using a specific
     /// sender, which implements [`relay_sender::Submit`].
     pub(crate) fn relay_from_operational_data<S: relay_sender::Submit>(
-        &mut self,
+        &self,
         initial_od: OperationalData,
     ) -> Result<S::Reply, LinkError> {
         // We will operate on potentially different operational data if the initial one fails.
@@ -513,7 +515,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Side effects: may schedule a new operational data targeting the source chain, comprising
     /// new timeout messages.
     fn regenerate_operational_data(
-        &mut self,
+        &self,
         initial_odata: OperationalData,
     ) -> Option<OperationalData> {
         info!(
@@ -605,13 +607,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
     }
 
-    fn mediate_operational_data(&mut self, reply: AsyncReply, odata: OperationalData) {
+    fn enqueue_pending_tx(&self, reply: AsyncReply, odata: OperationalData) {
         match odata.target {
             OperationalDataTarget::Source => {
-                self.mediator_src.insert(reply, odata);
+                self.pending_txs_src.insert_new_pending_tx(reply, odata);
             }
             OperationalDataTarget::Destination => {
-                self.mediator_dst.insert(reply, odata);
+                self.pending_txs_dst.insert_new_pending_tx(reply, odata);
             }
         }
     }
@@ -931,7 +933,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// chain where to query for packet data. If `None`, the latest available height on the source
     /// chain is used.
     pub fn build_recv_packet_and_timeout_msgs(
-        &mut self,
+        &self,
         opt_query_height: Option<Height>,
     ) -> Result<(), LinkError> {
         // Get the events for the send packets on source chain that have not been received on
@@ -956,10 +958,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// The `opt_query_height` parameter allows to optionally use a specific height on the source
     /// chain where to query for packet data. If `None`, the latest available height on the source
     /// chain is used.
-    pub fn build_packet_ack_msgs(
-        &mut self,
-        opt_query_height: Option<Height>,
-    ) -> Result<(), LinkError> {
+    pub fn build_packet_ack_msgs(&self, opt_query_height: Option<Height>) -> Result<(), LinkError> {
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
         let (mut events, height) = self.target_height_and_write_ack_events(opt_query_height)?;
@@ -1154,32 +1153,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// This method performs relaying using the asynchronous sender.
     /// Retains the operational data as unconfirmed, and associates it
     /// with one or more transaction hash(es).
-    pub fn execute_schedule(&mut self) -> Result<(), LinkError> {
+    pub fn execute_schedule(&self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
 
         for od in dst_ods {
             let reply =
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
 
-            self.mediate_operational_data(reply, od);
+            self.enqueue_pending_tx(reply, od);
         }
 
         for od in src_ods {
             let reply =
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(od.clone())?;
-            self.mediate_operational_data(reply, od);
+            self.enqueue_pending_tx(reply, od);
         }
 
         Ok(())
     }
 
-    pub fn run_mediator(&mut self) -> RelaySummary {
-        let mut summary_src = self.run_src_mediator().unwrap_or_else(|e| {
+    pub fn process_unconfirmed_txs(&self) -> RelaySummary {
+        let mut summary_src = self.process_unconfirmed_txs_src().unwrap_or_else(|e| {
             error!("error processing unconfirmed events in source chain: {}", e);
             RelaySummary::empty()
         });
 
-        let summary_dst = self.run_dst_mediator().unwrap_or_else(|e| {
+        let summary_dst = self.process_unconfirmed_txs_dst().unwrap_or_else(|e| {
             error!(
                 "error processing unconfirmed events in destination chain: {}",
                 e
@@ -1191,23 +1190,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         summary_src
     }
 
-    fn run_src_mediator(&mut self) -> Result<RelaySummary, LinkError> {
+    fn process_unconfirmed_txs_src(&self) -> Result<RelaySummary, LinkError> {
         let outcome = self
-            .mediator_src
+            .pending_txs_src
             .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT)?;
 
-        self.process_outcome(outcome)
+        self.process_confirm_outcome(outcome)
     }
 
-    fn run_dst_mediator(&mut self) -> Result<RelaySummary, LinkError> {
+    fn process_unconfirmed_txs_dst(&self) -> Result<RelaySummary, LinkError> {
         let outcome = self
-            .mediator_dst
+            .pending_txs_dst
             .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT)?;
 
-        self.process_outcome(outcome)
+        self.process_confirm_outcome(outcome)
     }
 
-    fn process_outcome(&mut self, outcome: Outcome) -> Result<RelaySummary, LinkError> {
+    fn process_confirm_outcome(&self, outcome: Outcome) -> Result<RelaySummary, LinkError> {
         match outcome {
             Outcome::TimedOut(unconfirmed) => {
                 let odata = &unconfirmed.original_od;
@@ -1216,16 +1215,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
                 match retry_result {
                     Ok(reply) => {
-                        self.mediate_operational_data(reply, unconfirmed.original_od);
+                        self.enqueue_pending_tx(reply, unconfirmed.original_od);
                         Ok(RelaySummary::empty())
                     }
                     Err(e) => {
                         match odata.target {
                             OperationalDataTarget::Source => {
-                                self.mediator_src.reinsert(unconfirmed);
+                                self.pending_txs_src.reinsert_unconfirmed_data(unconfirmed);
                             }
                             OperationalDataTarget::Destination => {
-                                self.mediator_dst.reinsert(unconfirmed);
+                                self.pending_txs_dst.reinsert_unconfirmed_data(unconfirmed);
                             }
                         }
                         Err(e)
@@ -1240,12 +1239,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Refreshes the scheduled batches.
     /// Verifies if any sendPacket messages timed-out. If so, moves them from destination op. data
     /// to source operational data, and adjusts the events and messages accordingly.
-    pub fn refresh_schedule(&mut self) -> Result<(), LinkError> {
+    pub fn refresh_schedule(&self) -> Result<(), LinkError> {
         let dst_current_height = self.dst_latest_height()?;
 
         // Intermediary data struct to help better manage the transfer from dst. operational data
         // to source operational data.
-        let mut all_dst_odata = self.dst_operational_data.clone();
+        let mut all_dst_odata = self.dst_operational_data.clone_vec();
 
         let mut timed_out: HashMap<usize, Vec<TransitMessage>> = HashMap::default();
 
@@ -1301,11 +1300,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             odata.batch = retain_batch;
         }
 
-        // Replace the original operational data with the updated one
-        self.dst_operational_data = all_dst_odata;
         // Possibly some op. data became empty (if no events were kept).
         // Retain only the non-empty ones.
-        self.dst_operational_data.retain(|o| !o.batch.is_empty());
+        all_dst_odata.retain(|o| !o.batch.is_empty());
+
+        // Replace the original operational data with the updated one
+        self.dst_operational_data.replace(all_dst_odata);
 
         // Handle timed-out events
         if timed_out.is_empty() {
@@ -1335,7 +1335,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Adds a new operational data item for this relaying path to process later.
     /// If the relaying path has non-zero packet delays, this method also updates the client on the
     /// target chain with the appropriate headers.
-    fn schedule_operational_data(&mut self, mut od: OperationalData) -> Result<(), LinkError> {
+    fn schedule_operational_data(&self, mut od: OperationalData) -> Result<(), LinkError> {
         if od.batch.is_empty() {
             info!(
                 "[{}] ignoring operational data for {} because it has no messages",
@@ -1364,8 +1364,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         od.scheduled_time = Instant::now();
 
         match od.target {
-            OperationalDataTarget::Source => self.src_operational_data.push(od),
-            OperationalDataTarget::Destination => self.dst_operational_data.push(od),
+            OperationalDataTarget::Source => self.src_operational_data.push_back(od),
+            OperationalDataTarget::Destination => self.dst_operational_data.push_back(od),
         };
 
         Ok(())
@@ -1375,40 +1375,54 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// now be processed. Does not block: if no OD fulfilled the delay period (or none is
     /// scheduled), returns immediately with `vec![]`.
     fn try_fetch_scheduled_operational_data(
-        &mut self,
-    ) -> (Vec<OperationalData>, Vec<OperationalData>) {
-        // The first elements of the op. data vector contain the oldest entry.
-        // Remove and return the elements with elapsed delay.
+        &self,
+    ) -> (VecDeque<OperationalData>, VecDeque<OperationalData>) {
+        // Extracts elements from a Vec when the predicate returns true.
+        // The mutable vector is then updated to the remaining unextracted elements.
+        fn partition<T>(
+            queue: VecDeque<T>,
+            pred: impl Fn(&T) -> bool,
+        ) -> (VecDeque<T>, VecDeque<T>) {
+            let mut true_res = VecDeque::new();
+            let mut false_res = VecDeque::new();
 
-        let src_ods: Vec<OperationalData> = self
-            .src_operational_data
-            .iter()
-            .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
-            .cloned()
-            .collect();
+            for e in queue.into_iter() {
+                if pred(&e) {
+                    true_res.push_back(e);
+                } else {
+                    false_res.push_back(e);
+                }
+            }
 
-        self.src_operational_data = self.src_operational_data[src_ods.len()..].to_owned();
+            (true_res, false_res)
+        }
 
-        let dst_ods: Vec<OperationalData> = self
-            .dst_operational_data
-            .iter()
-            .filter(|op| op.scheduled_time.elapsed() > self.channel.connection_delay)
-            .cloned()
-            .collect();
+        let connection_delay = self.channel.connection_delay;
+        let (elapsed_src_ods, unelapsed_src_ods) =
+            partition(self.src_operational_data.take(), |op| {
+                op.scheduled_time.elapsed() > connection_delay
+            });
 
-        self.dst_operational_data = self.dst_operational_data[dst_ods.len()..].to_owned();
+        self.src_operational_data.replace(unelapsed_src_ods);
 
-        (src_ods, dst_ods)
+        let (elapsed_dst_ods, unelapsed_dst_ods) =
+            partition(self.dst_operational_data.take(), |op| {
+                op.scheduled_time.elapsed() > connection_delay
+            });
+
+        self.dst_operational_data.replace(unelapsed_dst_ods);
+
+        (elapsed_src_ods, elapsed_dst_ods)
     }
 
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
     /// waiting for the delay period to pass.
     /// Returns `None` if there is no operational data scheduled.
-    pub(crate) fn fetch_scheduled_operational_data(&mut self) -> Option<OperationalData> {
+    pub(crate) fn fetch_scheduled_operational_data(&self) -> Option<OperationalData> {
         let odata = self
             .src_operational_data
-            .first()
-            .or_else(|| self.dst_operational_data.first());
+            .pop_front()
+            .or_else(|| self.dst_operational_data.pop_front());
 
         if let Some(odata) = odata {
             // Check if the delay period did not completely elapse
@@ -1438,12 +1452,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
             }
 
-            let op = match odata.target {
-                OperationalDataTarget::Source => self.src_operational_data.remove(0),
-                OperationalDataTarget::Destination => self.dst_operational_data.remove(0),
-            };
-
-            Some(op)
+            Some(odata)
         } else {
             None
         }

@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 use std::iter::Iterator;
 use std::time::{Duration, Instant};
 
@@ -10,6 +9,7 @@ use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use crate::error::Error as RelayerError;
 use crate::link::error::LinkError;
+use crate::util::queue::Queue;
 use crate::{
     chain::handle::ChainHandle,
     link::{operational_data::OperationalData, relay_sender::AsyncReply, RelaySummary, TxHashes},
@@ -26,7 +26,7 @@ pub const MIN_BACKOFF: Duration = Duration::from_secs(1);
 ///     - timestamp to track time-outs and declare an
 ///         operational data as unconfirmed.
 #[derive(Clone)]
-pub struct Unconfirmed {
+pub struct UnconfirmedData {
     pub original_od: OperationalData,
     pub tx_hashes: TxHashes,
     pub submit_time: Instant,
@@ -34,16 +34,16 @@ pub struct Unconfirmed {
 
 /// The mediator stores all unconfirmed data
 /// and tries to confirm them asynchronously.
-pub struct Mediator<Chain> {
+pub struct PendingTxs<Chain> {
     pub chain: Chain,
-    pub unconfirmed: VecDeque<Unconfirmed>,
+    pub unconfirmed: Queue<UnconfirmedData>,
 }
 
-impl<Chain> Mediator<Chain> {
+impl<Chain> PendingTxs<Chain> {
     pub fn new(chain: Chain) -> Self {
         Self {
             chain,
-            unconfirmed: VecDeque::new(),
+            unconfirmed: Queue::new(),
         }
     }
 }
@@ -51,19 +51,19 @@ impl<Chain> Mediator<Chain> {
 /// Represents the outcome of a [`Mediator`]'s
 /// attempt to confirm an operational data.
 pub enum Outcome {
-    TimedOut(Unconfirmed),
+    TimedOut(UnconfirmedData),
     Confirmed(RelaySummary),
     None,
 }
 
-impl<Chain: ChainHandle> Mediator<Chain> {
+impl<Chain: ChainHandle> PendingTxs<Chain> {
     pub fn chain_id(&self) -> ChainId {
         self.chain.id()
     }
 
     // Insert new unconfirmed transaction to the back of the queue.
-    pub fn insert(&mut self, r: AsyncReply, od: OperationalData) {
-        let u = Unconfirmed {
+    pub fn insert_new_pending_tx(&self, r: AsyncReply, od: OperationalData) {
+        let u = UnconfirmedData {
             original_od: od,
             tx_hashes: r.into(),
             submit_time: Instant::now(),
@@ -77,7 +77,7 @@ impl<Chain: ChainHandle> Mediator<Chain> {
     // failed to re-submit the transaction to the chain.
     // In that case we ignore the timeout and try and re-confirm
     // the transaction again at a later time.
-    pub fn reinsert(&mut self, unconfirmed: Unconfirmed) {
+    pub fn reinsert_unconfirmed_data(&self, unconfirmed: UnconfirmedData) {
         self.unconfirmed.push_back(unconfirmed)
     }
 
@@ -99,7 +99,7 @@ impl<Chain: ChainHandle> Mediator<Chain> {
 
     // Try and process one unconfirmed transaction if available.
     pub fn process_unconfirmed(
-        &mut self,
+        &self,
         min_backoff: Duration,
         timeout: Duration,
     ) -> Result<Outcome, LinkError> {
