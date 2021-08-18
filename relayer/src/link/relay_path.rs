@@ -104,8 +104,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             src_channel_id: src_channel_id.clone(),
             src_port_id: src_port_id.clone(),
-            dst_channel_id: src_channel_id.clone(),
-            dst_port_id: src_port_id.clone(),
+            dst_channel_id: dst_channel_id.clone(),
+            dst_port_id: dst_port_id.clone(),
 
             clear_packets: RefCell::new(true),
             src_operational_data: Queue::new(),
