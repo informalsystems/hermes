@@ -17,15 +17,14 @@ use crate::{
 };
 
 pub const TIMEOUT: Duration = Duration::from_secs(100);
-pub const MIN_BACKOFF: Duration = Duration::from_secs(1);
 
-/// A wrapper over an [`OperationalData`] that is unconfirmed.
+/// A wrapper over an [`OperationalData`] that is pending.
 /// Additionally holds all the necessary information
 /// to query for confirmations:
 ///     - hashes for all transactions in that op. data,
 ///     - the target chain to query for confirmations,
 ///     - timestamp to track time-outs and declare an
-///         operational data as unconfirmed.
+///         operational data as pending.
 #[derive(Clone)]
 pub struct PendingData {
     pub original_od: OperationalData,
@@ -33,7 +32,7 @@ pub struct PendingData {
     pub submit_time: Instant,
 }
 
-/// The mediator stores all unconfirmed data
+/// The mediator stores all pending data
 /// and tries to confirm them asynchronously.
 pub struct PendingTxs<Chain> {
     pub chain: Chain,
@@ -65,7 +64,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         self.chain.id()
     }
 
-    // Insert new unconfirmed transaction to the back of the queue.
+    // Insert new pending transaction to the back of the queue.
     pub fn insert_new_pending_tx(&self, r: AsyncReply, od: OperationalData) {
         let u = PendingData {
             original_od: od,
@@ -91,110 +90,97 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         Ok(Some(all_events))
     }
 
-    // Try and process one unconfirmed transaction if available.
-    pub fn process_unconfirmed(
+    // Try and process one pending transaction if available.
+    pub fn process_pending(
         &self,
-        min_backoff: Duration,
         timeout: Duration,
         resubmit: impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>,
     ) -> Result<Option<RelaySummary>, LinkError> {
-        // We process unconfirmed transactions in a FIFO manner, so take from
+        // We process pending transactions in a FIFO manner, so take from
         // the front of the queue.
-        if let Some(unconfirmed) = self.pending_queue.pop_front() {
-            let tx_hashes = &unconfirmed.tx_hashes;
-            let submit_time = &unconfirmed.submit_time;
+        if let Some(pending) = self.pending_queue.pop_front() {
+            let tx_hashes = &pending.tx_hashes;
+            let submit_time = &pending.submit_time;
 
-            if unconfirmed.submit_time.elapsed() < min_backoff {
-                // The transaction was only submitted recently.
-                // We try not to reconfirm it too quickly as it may
-                // have not yet committed to the chain.
+            // Process the given pending transaction.
+            trace!("[{}] trying to confirm {} ", self, tx_hashes);
 
-                // Re-insert the unconfirmed transaction back to the
-                // front of the queue so that it will be processed in
-                // the next iteration.
-                self.pending_queue.push_front(unconfirmed);
-                Ok(None)
-            } else {
-                // Process the given unconfirmed transaction.
-                trace!("[{}] trying to confirm {} ", self, tx_hashes);
+            // Check for TX events for the given pending transaction hashes.
+            let events_result = self.check_tx_events(tx_hashes);
+            let res = match events_result {
+                Ok(None) => {
+                    // There is no events for the associated transactions.
+                    // This means the transaction has not yet been committed.
 
-                // Check for TX events for the given unconfirmed transaction hashes.
-                let events_result = self.check_tx_events(tx_hashes);
-                let res = match events_result {
-                    Ok(None) => {
-                        // There is no events for the associated transactions.
-                        // This means the transaction has not yet been committed.
+                    if submit_time.elapsed() > timeout {
+                        // The submission time for the transaction has exceeded the
+                        // timeout threshold. Returning Outcome::Timeout for the
+                        // relayer to resubmit the transaction to the chain again.
+                        error!("[{}] timed out while confirming {}", self, tx_hashes);
 
-                        if submit_time.elapsed() > timeout {
-                            // The submission time for the transaction has exceeded the
-                            // timeout threshold. Returning Outcome::Timeout for the
-                            // relayer to resubmit the transaction to the chain again.
-                            error!("[{}] timed out while confirming {}", self, tx_hashes);
+                        let resubmit_res = resubmit(pending.original_od.clone());
 
-                            let resubmit_res = resubmit(unconfirmed.original_od.clone());
-
-                            match resubmit_res {
-                                Ok(reply) => {
-                                    self.insert_new_pending_tx(reply, unconfirmed.original_od);
-                                    Ok(None)
-                                }
-                                Err(e) => {
-                                    self.pending_queue.push_back(unconfirmed);
-                                    Err(e)
-                                }
+                        match resubmit_res {
+                            Ok(reply) => {
+                                self.insert_new_pending_tx(reply, pending.original_od);
+                                Ok(None)
                             }
-                        } else {
-                            // Reinsert the unconfirmed transaction, this time
-                            // to the back of the queue so that we process other
-                            // unconfirmed transactions first in the meanwhile.
-                            self.pending_queue.push_back(unconfirmed);
-                            Ok(None)
+                            Err(e) => {
+                                self.pending_queue.push_back(pending);
+                                Err(e)
+                            }
                         }
+                    } else {
+                        // Reinsert the pending transaction, this time
+                        // to the back of the queue so that we process other
+                        // pending transactions first in the meanwhile.
+                        self.pending_queue.push_back(pending);
+                        Ok(None)
                     }
-                    Ok(Some(events)) => {
-                        // We get a list of events for the transaction hashes,
-                        // Meaning the transaction has been committed successfully
-                        // to the chain.
-
-                        debug!(
-                            "[{}] confirmed after {:#?}: {} ",
-                            self,
-                            unconfirmed.submit_time.elapsed(),
-                            tx_hashes
-                        );
-
-                        // Convert the events to RelaySummary and return them.
-                        let summary = RelaySummary::from_events(events);
-                        Ok(Some(summary))
-                    }
-                    Err(e) => {
-                        // There are errors querying for the transaction hashes.
-                        // This may be temporary errors when the relayer is communicating
-                        // with the chain endpoint.
-
-                        error!(
-                            "[{}] error querying for tx hashes {}: {}. will retry again later",
-                            self, tx_hashes, e
-                        );
-
-                        // Push it to the back of the unconfirmed queue to process it
-                        // again at a later time.
-                        self.pending_queue.push_back(unconfirmed);
-
-                        Err(LinkError::relayer(e))
-                    }
-                };
-
-                if !self.pending_queue.is_empty() {
-                    trace!(
-                        "[{}] total pending transactions left: {}",
-                        self,
-                        self.pending_queue.len()
-                    );
                 }
+                Ok(Some(events)) => {
+                    // We get a list of events for the transaction hashes,
+                    // Meaning the transaction has been committed successfully
+                    // to the chain.
 
-                res
+                    debug!(
+                        "[{}] confirmed after {:#?}: {} ",
+                        self,
+                        pending.submit_time.elapsed(),
+                        tx_hashes
+                    );
+
+                    // Convert the events to RelaySummary and return them.
+                    let summary = RelaySummary::from_events(events);
+                    Ok(Some(summary))
+                }
+                Err(e) => {
+                    // There are errors querying for the transaction hashes.
+                    // This may be temporary errors when the relayer is communicating
+                    // with the chain endpoint.
+
+                    error!(
+                        "[{}] error querying for tx hashes {}: {}. will retry again later",
+                        self, tx_hashes, e
+                    );
+
+                    // Push it to the back of the pending queue to process it
+                    // again at a later time.
+                    self.pending_queue.push_back(pending);
+
+                    Err(LinkError::relayer(e))
+                }
+            };
+
+            if !self.pending_queue.is_empty() {
+                trace!(
+                    "[{}] total pending transactions left: {}",
+                    self,
+                    self.pending_queue.len()
+                );
             }
+
+            res
         } else {
             Ok(None)
         }

@@ -71,7 +71,7 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     src_operational_data: Queue<OperationalData>,
     dst_operational_data: Queue<OperationalData>,
 
-    // The mediator stores unconfirmed operational data.
+    // The mediator stores pending operational data.
     // The relaying path periodically invokes the mediator
     // to confirm transactions.
     pending_txs_src: PendingTxs<ChainA>,
@@ -1175,7 +1175,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// to the target chain.
     ///
     /// This method performs relaying using the asynchronous sender.
-    /// Retains the operational data as unconfirmed, and associates it
+    /// Retains the operational data as pending, and associates it
     /// with one or more transaction hash(es).
     pub fn execute_schedule(&self) -> Result<(), LinkError> {
         let (src_ods, dst_ods) = self.try_fetch_scheduled_operational_data();
@@ -1196,15 +1196,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(())
     }
 
-    pub fn process_unconfirmed_txs(&self) -> RelaySummary {
-        let mut summary_src = self.process_unconfirmed_txs_src().unwrap_or_else(|e| {
-            error!("error processing unconfirmed events in source chain: {}", e);
+    pub fn process_pending_txs(&self) -> RelaySummary {
+        let mut summary_src = self.process_pending_txs_src().unwrap_or_else(|e| {
+            error!("error processing pending events in source chain: {}", e);
             RelaySummary::empty()
         });
 
-        let summary_dst = self.process_unconfirmed_txs_dst().unwrap_or_else(|e| {
+        let summary_dst = self.process_pending_txs_dst().unwrap_or_else(|e| {
             error!(
-                "error processing unconfirmed events in destination chain: {}",
+                "error processing pending events in destination chain: {}",
                 e
             );
             RelaySummary::empty()
@@ -1214,10 +1214,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         summary_src
     }
 
-    fn process_unconfirmed_txs_src(&self) -> Result<RelaySummary, LinkError> {
+    fn process_pending_txs_src(&self) -> Result<RelaySummary, LinkError> {
         let res = self
             .pending_txs_src
-            .process_unconfirmed(pending::MIN_BACKOFF, pending::TIMEOUT, |odata| {
+            .process_pending(pending::TIMEOUT, |odata| {
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
             })?
             .unwrap_or_else(RelaySummary::empty);
@@ -1225,10 +1225,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(res)
     }
 
-    fn process_unconfirmed_txs_dst(&self) -> Result<RelaySummary, LinkError> {
+    fn process_pending_txs_dst(&self) -> Result<RelaySummary, LinkError> {
         let res = self
             .pending_txs_dst
-            .process_unconfirmed(pending::MIN_BACKOFF, pending::TIMEOUT, |odata| {
+            .process_pending(pending::TIMEOUT, |odata| {
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
             })?
             .unwrap_or_else(RelaySummary::empty);

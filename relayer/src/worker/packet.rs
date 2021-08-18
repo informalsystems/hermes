@@ -161,7 +161,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             return RetryResult::Retry(index);
         }
 
-        let confirmation_result = link.a_to_b.process_unconfirmed_txs();
+        let confirmation_result = link.a_to_b.process_pending_txs();
 
         RetryResult::Ok(Step::Success(confirmation_result))
     }
