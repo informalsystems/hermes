@@ -1,3 +1,4 @@
+use core::fmt;
 use std::iter::Iterator;
 use std::time::{Duration, Instant};
 
@@ -38,16 +39,23 @@ pub struct PendingTxs<Chain> {
     pub chain: Chain,
     pub channel_id: ChannelId,
     pub port_id: PortId,
-    pub unconfirmed: Queue<UnconfirmedData>,
+    pub counterparty_chain_id: ChainId,
+    pub unconfirmed_queue: Queue<UnconfirmedData>,
 }
 
 impl<Chain> PendingTxs<Chain> {
-    pub fn new(chain: Chain, channel_id: ChannelId, port_id: PortId) -> Self {
+    pub fn new(
+        chain: Chain,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_chain_id: ChainId,
+    ) -> Self {
         Self {
             chain,
             channel_id,
             port_id,
-            unconfirmed: Queue::new(),
+            counterparty_chain_id,
+            unconfirmed_queue: Queue::new(),
         }
     }
 }
@@ -64,7 +72,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
             tx_hashes: r.into(),
             submit_time: Instant::now(),
         };
-        self.unconfirmed.push_back(u);
+        self.unconfirmed_queue.push_back(u);
     }
 
     fn check_tx_events(&self, tx_hashes: &TxHashes) -> Result<Option<Vec<IbcEvent>>, RelayerError> {
@@ -92,7 +100,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
     ) -> Result<Option<RelaySummary>, LinkError> {
         // We process unconfirmed transactions in a FIFO manner, so take from
         // the front of the queue.
-        if let Some(unconfirmed) = self.unconfirmed.pop_front() {
+        if let Some(unconfirmed) = self.unconfirmed_queue.pop_front() {
             let tx_hashes = &unconfirmed.tx_hashes;
             let submit_time = &unconfirmed.submit_time;
 
@@ -104,21 +112,18 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 // Re-insert the unconfirmed transaction back to the
                 // front of the queue so that it will be processed in
                 // the next iteration.
-                self.unconfirmed.push_front(unconfirmed);
+                self.unconfirmed_queue.push_front(unconfirmed);
                 Ok(None)
             } else {
                 // Process the given unconfirmed transaction.
 
                 trace!(
-                    "[mediator] total unconfirmed left: {}",
-                    self.unconfirmed.len()
+                    "[{}] total unconfirmed left: {}",
+                    self,
+                    self.unconfirmed_queue.len()
                 );
 
-                trace!(
-                    "[mediator->{}] trying to confirm {} ",
-                    self.chain.id(),
-                    tx_hashes
-                );
+                trace!("[{}] trying to confirm {} ", self, tx_hashes);
 
                 // Check for TX events for the given unconfirmed transaction hashes.
                 let events_result = self.check_tx_events(tx_hashes);
@@ -131,11 +136,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                             // The submission time for the transaction has exceeded the
                             // timeout threshold. Returning Outcome::Timeout for the
                             // relayer to resubmit the transaction to the chain again.
-                            error!(
-                                "[mediator->{}] timed out while confirming {}",
-                                self.chain.id(),
-                                tx_hashes
-                            );
+                            error!("[{}] timed out while confirming {}", self, tx_hashes);
 
                             let resubmit_res = resubmit(unconfirmed.original_od.clone());
 
@@ -145,7 +146,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                                     Ok(None)
                                 }
                                 Err(e) => {
-                                    self.unconfirmed.push_back(unconfirmed);
+                                    self.unconfirmed_queue.push_back(unconfirmed);
                                     Err(e)
                                 }
                             }
@@ -153,7 +154,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                             // Reinsert the unconfirmed transaction, this time
                             // to the back of the queue so that we process other
                             // unconfirmed transactions first in the meanwhile.
-                            self.unconfirmed.push_back(unconfirmed);
+                            self.unconfirmed_queue.push_back(unconfirmed);
                             Ok(None)
                         }
                     }
@@ -163,8 +164,8 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         // to the chain.
 
                         debug!(
-                            "[mediator->{}] confirmed after {:#?}: {} ",
-                            self.chain.id(),
+                            "[{}] confirmed after {:#?}: {} ",
+                            self,
                             unconfirmed.submit_time.elapsed(),
                             tx_hashes
                         );
@@ -179,15 +180,13 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         // with the chain endpoint.
 
                         error!(
-                            "[mediator->{}] error querying for tx hashes {}: {}. will retry again later",
-                            self.chain_id(),
-                            tx_hashes,
-                            e
+                            "[{}] error querying for tx hashes {}: {}. will retry again later",
+                            self, tx_hashes, e
                         );
 
                         // Push it to the back of the unconfirmed queue to process it
                         // again at a later time.
-                        self.unconfirmed.push_back(unconfirmed);
+                        self.unconfirmed_queue.push_back(unconfirmed);
 
                         Err(LinkError::relayer(e))
                     }
@@ -196,5 +195,18 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         } else {
             Ok(None)
         }
+    }
+}
+
+impl<Chain: ChainHandle> fmt::Display for PendingTxs<Chain> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}:{}/{} -> {}",
+            self.chain_id(),
+            self.port_id,
+            self.channel_id,
+            self.counterparty_chain_id
+        )
     }
 }

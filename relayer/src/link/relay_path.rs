@@ -83,6 +83,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_chain = channel.src_chain().clone();
         let dst_chain = channel.dst_chain().clone();
 
+        let src_chain_id = src_chain.id();
+        let dst_chain_id = dst_chain.id();
+
         let src_channel_id = channel
             .src_channel_id()
             .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?
@@ -107,8 +110,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             clear_packets: RefCell::new(true),
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
-            pending_txs_src: PendingTxs::new(src_chain, src_channel_id, src_port_id),
-            pending_txs_dst: PendingTxs::new(dst_chain, dst_channel_id, dst_port_id),
+            pending_txs_src: PendingTxs::new(src_chain, src_channel_id, src_port_id, dst_chain_id),
+            pending_txs_dst: PendingTxs::new(dst_chain, dst_channel_id, dst_port_id, src_chain_id),
         })
     }
 
