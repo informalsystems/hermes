@@ -68,7 +68,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         for hash in &tx_hashes.0 {
             let mut events = self
                 .chain
-                .query_txs(QueryTxRequest::Transaction(QueryTxHash(hash.clone())))?;
+                .query_txs(QueryTxRequest::Transaction(QueryTxHash(*hash)))?;
 
             if events.is_empty() {
                 return Ok(None);
@@ -167,7 +167,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                         // Convert the events to RelaySummary and return them.
                         let summary = RelaySummary::from_events(events);
-                        return Ok(Some(summary));
+                        Ok(Some(summary))
                     }
                     Err(e) => {
                         // There are errors querying for the transaction hashes.

@@ -33,6 +33,10 @@ impl<T> Queue<T> {
         self.0.borrow().len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.borrow().is_empty()
+    }
+
     pub fn into_vec(self) -> VecDeque<T> {
         self.0.into_inner()
     }
@@ -47,11 +51,19 @@ impl<T> Queue<T> {
 }
 
 impl<T: Clone> Queue<T> {
-    pub fn clone(&self) -> Queue<T> {
-        Queue(RefCell::new(self.0.borrow().clone()))
-    }
-
     pub fn clone_vec(&self) -> VecDeque<T> {
         self.0.borrow().clone()
+    }
+}
+
+impl<T: Clone> Clone for Queue<T> {
+    fn clone(&self) -> Queue<T> {
+        Queue(RefCell::new(self.0.borrow().clone()))
+    }
+}
+
+impl<T> Default for Queue<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
