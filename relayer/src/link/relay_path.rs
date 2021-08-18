@@ -41,7 +41,7 @@ use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
-use crate::link::unconfirmed::{Outcome, PendingTxs};
+use crate::link::unconfirmed::PendingTxs;
 use crate::link::{relay_sender, unconfirmed};
 use crate::util::queue::Queue;
 
@@ -266,6 +266,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Err(LinkError::old_packet_clearing_failed())
     }
 
+    fn should_clear_packets(&self) -> bool {
+        *self.clear_packets.borrow()
+    }
+
     /// Clears any packets that were sent before `height`, either if the `clear_packets` flag
     /// is set or if clearing is forced by the caller.
     pub fn schedule_packet_clearing(
@@ -273,7 +277,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         height: Option<Height>,
         force: bool,
     ) -> Result<(), LinkError> {
-        if *self.clear_packets.borrow() || force {
+        if self.should_clear_packets() || force {
             // Disable further clearing of old packets by default.
             // Clearing may still happen: upon new blocks, when `force = true`.
             self.clear_packets.replace(false);
@@ -1191,49 +1195,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn process_unconfirmed_txs_src(&self) -> Result<RelaySummary, LinkError> {
-        let outcome = self
+        let res = self
             .pending_txs_src
-            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT)?;
+            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT, |odata| {
+                self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
+            })?
+            .unwrap_or_else(RelaySummary::empty);
 
-        self.process_confirm_outcome(outcome)
+        Ok(res)
     }
 
     fn process_unconfirmed_txs_dst(&self) -> Result<RelaySummary, LinkError> {
-        let outcome = self
+        let res = self
             .pending_txs_dst
-            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT)?;
+            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT, |odata| {
+                self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
+            })?
+            .unwrap_or_else(RelaySummary::empty);
 
-        self.process_confirm_outcome(outcome)
-    }
-
-    fn process_confirm_outcome(&self, outcome: Outcome) -> Result<RelaySummary, LinkError> {
-        match outcome {
-            Outcome::TimedOut(unconfirmed) => {
-                let odata = &unconfirmed.original_od;
-                let retry_result =
-                    self.relay_from_operational_data::<relay_sender::AsyncSender>(odata.clone());
-
-                match retry_result {
-                    Ok(reply) => {
-                        self.enqueue_pending_tx(reply, unconfirmed.original_od);
-                        Ok(RelaySummary::empty())
-                    }
-                    Err(e) => {
-                        match odata.target {
-                            OperationalDataTarget::Source => {
-                                self.pending_txs_src.reinsert_unconfirmed_data(unconfirmed);
-                            }
-                            OperationalDataTarget::Destination => {
-                                self.pending_txs_dst.reinsert_unconfirmed_data(unconfirmed);
-                            }
-                        }
-                        Err(e)
-                    }
-                }
-            }
-            Outcome::Confirmed(summary) => Ok(summary),
-            Outcome::None => Ok(RelaySummary::empty()),
-        }
+        Ok(res)
     }
 
     /// Refreshes the scheduled batches.

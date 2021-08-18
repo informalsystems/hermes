@@ -48,14 +48,6 @@ impl<Chain> PendingTxs<Chain> {
     }
 }
 
-/// Represents the outcome of a [`Mediator`]'s
-/// attempt to confirm an operational data.
-pub enum Outcome {
-    TimedOut(UnconfirmedData),
-    Confirmed(RelaySummary),
-    None,
-}
-
 impl<Chain: ChainHandle> PendingTxs<Chain> {
     pub fn chain_id(&self) -> ChainId {
         self.chain.id()
@@ -69,16 +61,6 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
             submit_time: Instant::now(),
         };
         self.unconfirmed.push_back(u);
-    }
-
-    // Re-insert timed-out transaction to the back of the queue.
-    // This is mainly used when timed-out unconfirmed transaction
-    // is returned from process_unconfirmed(), but the relayer
-    // failed to re-submit the transaction to the chain.
-    // In that case we ignore the timeout and try and re-confirm
-    // the transaction again at a later time.
-    pub fn reinsert_unconfirmed_data(&self, unconfirmed: UnconfirmedData) {
-        self.unconfirmed.push_back(unconfirmed)
     }
 
     fn check_tx_events(&self, tx_hashes: &TxHashes) -> Result<Option<Vec<IbcEvent>>, RelayerError> {
@@ -102,7 +84,8 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
         &self,
         min_backoff: Duration,
         timeout: Duration,
-    ) -> Result<Outcome, LinkError> {
+        resubmit: impl FnOnce(OperationalData) -> Result<AsyncReply, LinkError>,
+    ) -> Result<Option<RelaySummary>, LinkError> {
         // We process unconfirmed transactions in a FIFO manner, so take from
         // the front of the queue.
         if let Some(unconfirmed) = self.unconfirmed.pop_front() {
@@ -118,7 +101,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 // front of the queue so that it will be processed in
                 // the next iteration.
                 self.unconfirmed.push_front(unconfirmed);
-                Ok(Outcome::None)
+                Ok(None)
             } else {
                 // Process the given unconfirmed transaction.
 
@@ -150,17 +133,24 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                                 tx_hashes
                             );
 
-                            // We have to return it to RelayPath instead of
-                            // re-submitting it directly, because it requires
-                            // &mut RelayPath while the mut pointer is already
-                            // aliased here.
-                            Ok(Outcome::TimedOut(unconfirmed))
+                            let resubmit_res = resubmit(unconfirmed.original_od.clone());
+
+                            match resubmit_res {
+                                Ok(reply) => {
+                                    self.insert_new_pending_tx(reply, unconfirmed.original_od);
+                                    Ok(None)
+                                }
+                                Err(e) => {
+                                    self.unconfirmed.push_back(unconfirmed);
+                                    Err(e)
+                                }
+                            }
                         } else {
                             // Reinsert the unconfirmed transaction, this time
                             // to the back of the queue so that we process other
                             // unconfirmed transactions first in the meanwhile.
                             self.unconfirmed.push_back(unconfirmed);
-                            Ok(Outcome::None)
+                            Ok(None)
                         }
                     }
                     Ok(Some(events)) => {
@@ -177,7 +167,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                         // Convert the events to RelaySummary and return them.
                         let summary = RelaySummary::from_events(events);
-                        return Ok(Outcome::Confirmed(summary));
+                        return Ok(Some(summary));
                     }
                     Err(e) => {
                         // There are errors querying for the transaction hashes.
@@ -200,7 +190,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 }
             }
         } else {
-            Ok(Outcome::None)
+            Ok(None)
         }
     }
 }
