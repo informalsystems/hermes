@@ -50,6 +50,12 @@ const MAX_RETRIES: usize = 5;
 pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     channel: Channel<ChainA, ChainB>,
 
+    src_channel_id: ChannelId,
+    src_port_id: PortId,
+
+    dst_channel_id: ChannelId,
+    dst_port_id: PortId,
+
     // Marks whether this path has already cleared pending packets.
     // Packets should be cleared once (at startup), then this
     // flag turns to `false`.
@@ -73,18 +79,37 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
-    pub fn new(channel: Channel<ChainA, ChainB>) -> Self {
+    pub fn new(channel: Channel<ChainA, ChainB>) -> Result<Self, LinkError> {
         let src_chain = channel.src_chain().clone();
         let dst_chain = channel.dst_chain().clone();
 
-        Self {
+        let src_channel_id = channel
+            .src_channel_id()
+            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?
+            .clone();
+
+        let dst_channel_id = channel
+            .dst_channel_id()
+            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?
+            .clone();
+
+        let src_port_id = channel.src_port_id().clone();
+        let dst_port_id = channel.dst_port_id().clone();
+
+        Ok(Self {
             channel,
+
+            src_channel_id: src_channel_id.clone(),
+            src_port_id: src_port_id.clone(),
+            dst_channel_id: src_channel_id.clone(),
+            dst_port_id: src_port_id.clone(),
+
             clear_packets: RefCell::new(true),
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
-            pending_txs_src: PendingTxs::new(src_chain),
-            pending_txs_dst: PendingTxs::new(dst_chain),
-        }
+            pending_txs_src: PendingTxs::new(src_chain, src_channel_id, src_port_id),
+            pending_txs_dst: PendingTxs::new(dst_chain, dst_channel_id, dst_port_id),
+        })
     }
 
     pub fn src_chain(&self) -> &ChainA {
@@ -112,23 +137,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub fn src_port_id(&self) -> &PortId {
-        self.channel.src_port_id()
+        &self.src_port_id
     }
 
     pub fn dst_port_id(&self) -> &PortId {
-        self.channel.dst_port_id()
+        &self.dst_port_id
     }
 
-    pub fn src_channel_id(&self) -> Result<&ChannelId, LinkError> {
-        self.channel
-            .src_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(self.src_chain().id()))
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.src_channel_id
     }
 
-    pub fn dst_channel_id(&self) -> Result<&ChannelId, LinkError> {
-        self.channel
-            .dst_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(self.dst_chain().id()))
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.dst_channel_id
     }
 
     pub fn channel(&self) -> &Channel<ChainA, ChainB> {
@@ -137,13 +158,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     fn src_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.src_chain()
-            .query_channel(self.src_port_id(), self.src_channel_id()?, height)
+            .query_channel(self.src_port_id(), self.src_channel_id(), height)
             .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
     fn dst_channel(&self, height: Height) -> Result<ChannelEnd, LinkError> {
         self.dst_chain()
-            .query_channel(self.dst_port_id(), self.dst_channel_id()?, height)
+            .query_channel(self.dst_port_id(), self.dst_channel_id(), height)
             .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
@@ -188,7 +209,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
-        let src_channel_id = self.src_channel_id()?;
+        let src_channel_id = self.src_channel_id();
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
@@ -197,7 +218,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: self.dst_channel_id()?.clone(),
+            channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
         };
@@ -208,11 +229,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     // Determines if the events received are relevant and should be processed.
     // Only events for a port/channel matching one of the channel ends should be processed.
     fn filter_relaying_events(&self, events: Vec<IbcEvent>) -> Vec<IbcEvent> {
-        let src_channel_id = if let Ok(some_id) = self.src_channel_id() {
-            some_id
-        } else {
-            return vec![];
-        };
+        let src_channel_id = self.src_channel_id();
 
         let mut result = vec![];
 
@@ -628,7 +645,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
                 port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id()?.to_string(),
+                channel_id: self.dst_channel_id().to_string(),
                 packet_commitment_sequences: vec![packet.sequence.into()],
             })
             .map_err(LinkError::relayer)?;
@@ -644,7 +661,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .build_packet_proofs(
                 PacketMsgType::Recv,
                 self.src_port_id(),
-                self.src_channel_id()?,
+                self.src_channel_id(),
                 packet.sequence,
                 Height::zero(),
             )
@@ -667,7 +684,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .query_unreceived_acknowledgement(QueryUnreceivedAcksRequest {
                 port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id()?.to_string(),
+                channel_id: self.dst_channel_id().to_string(),
                 packet_ack_sequences: vec![packet.sequence.into()],
             })
             .map_err(LinkError::relayer)?;
@@ -779,8 +796,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<(Vec<IbcEvent>, Height), LinkError> {
         let mut events_result = vec![];
 
-        let src_channel_id = self.src_channel_id()?;
-        let dst_channel_id = self.dst_channel_id()?;
+        let src_channel_id = self.src_channel_id();
+        let dst_channel_id = self.dst_channel_id();
 
         let (commit_sequences, sequences, src_response_height) = unreceived_packets_sequences(
             self.src_chain(),
@@ -861,8 +878,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<(Vec<IbcEvent>, Height), LinkError> {
         let mut events_result = vec![];
 
-        let src_channel_id = self.src_channel_id()?;
-        let dst_channel_id = self.dst_channel_id()?;
+        let src_channel_id = self.src_channel_id();
+        let dst_channel_id = self.dst_channel_id();
 
         let (acked_sequences, sequences, src_response_height) =
             unreceived_acknowledgements_sequences(
@@ -1043,7 +1060,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         packet: &Packet,
         height: Height,
     ) -> Result<Option<Any>, LinkError> {
-        let dst_channel_id = self.dst_channel_id()?;
+        let dst_channel_id = self.dst_channel_id();
 
         let (packet_type, next_sequence_received) = if self.ordered_channel() {
             let next_seq = self
@@ -1457,17 +1474,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> fmt::Display for RelayPath<ChainA, ChainB> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let channel_id = self
-            .src_channel_id()
-            .map(ToString::to_string)
-            .unwrap_or_else(|_| "None".to_string());
-
         write!(
             f,
             "{}:{}/{} -> {}",
             self.src_chain().id(),
             self.src_port_id(),
-            channel_id,
+            self.src_channel_id(),
             self.dst_chain().id()
         )
     }

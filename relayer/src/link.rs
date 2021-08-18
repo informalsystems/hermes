@@ -35,14 +35,14 @@ pub struct Link<ChainA: ChainHandle, ChainB: ChainHandle> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
-    pub fn new(channel: Channel<ChainA, ChainB>) -> Self {
-        Self {
-            a_to_b: RelayPath::new(channel),
-        }
+    pub fn new(channel: Channel<ChainA, ChainB>) -> Result<Self, LinkError> {
+        Ok(Self {
+            a_to_b: RelayPath::new(channel)?,
+        })
     }
 
     pub fn is_closed(&self) -> Result<bool, LinkError> {
-        let a_channel_id = self.a_to_b.src_channel_id()?;
+        let a_channel_id = self.a_to_b.src_channel_id();
 
         let a_channel = self
             .a_to_b
@@ -52,7 +52,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 LinkError::channel_not_found(a_channel_id.clone(), self.a_to_b.src_chain().id(), e)
             })?;
 
-        let b_channel_id = self.a_to_b.dst_channel_id()?;
+        let b_channel_id = self.a_to_b.dst_channel_id();
 
         let b_channel = self
             .a_to_b
@@ -151,7 +151,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             version: None,
         };
 
-        Ok(Link::new(channel))
+        Link::new(channel)
     }
 
     /// Implements the `packet-recv` CLI

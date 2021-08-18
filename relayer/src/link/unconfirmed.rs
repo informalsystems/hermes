@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use tracing::{debug, error, trace};
 
 use ibc::events::IbcEvent;
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use crate::error::Error as RelayerError;
@@ -36,13 +36,17 @@ pub struct UnconfirmedData {
 /// and tries to confirm them asynchronously.
 pub struct PendingTxs<Chain> {
     pub chain: Chain,
+    pub channel_id: ChannelId,
+    pub port_id: PortId,
     pub unconfirmed: Queue<UnconfirmedData>,
 }
 
 impl<Chain> PendingTxs<Chain> {
-    pub fn new(chain: Chain) -> Self {
+    pub fn new(chain: Chain, channel_id: ChannelId, port_id: PortId) -> Self {
         Self {
             chain,
+            channel_id,
+            port_id,
             unconfirmed: Queue::new(),
         }
     }
