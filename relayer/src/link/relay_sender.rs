@@ -37,7 +37,9 @@ impl Submit for SyncSender {
     //  to use `Chain::submit_msgs` instead; implement waiting for block
     //  commits directly here (instead of blocking in the chain runtime).
     fn submit(target: &impl ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
-        let tx_events = target.send_msgs(msgs).map_err(LinkError::relayer)?;
+        let tx_events = target
+            .send_messages_and_wait_commit(msgs)
+            .map_err(LinkError::relayer)?;
 
         info!(
             "[Sync->{}] result {}\n",
@@ -75,7 +77,9 @@ impl Submit for AsyncSender {
     type Reply = AsyncReply;
 
     fn submit(target: &impl ChainHandle, msgs: Vec<Any>) -> Result<Self::Reply, LinkError> {
-        let a = target.submit_msgs(msgs).map_err(LinkError::relayer)?;
+        let a = target
+            .send_messages_and_wait_check_tx(msgs)
+            .map_err(LinkError::relayer)?;
         let reply = AsyncReply { responses: a };
         info!("[Async~>{}] {}\n", target.id(), reply);
 

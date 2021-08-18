@@ -14,11 +14,11 @@ use crate::link::relay_path::RelayPath;
 
 pub mod error;
 mod operational_data;
+mod pending;
 mod relay_path;
 mod relay_sender;
 mod relay_summary;
 mod tx_hashes;
-mod unconfirmed;
 use tx_hashes::TxHashes;
 
 // Re-export the telemetries summary

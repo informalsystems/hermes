@@ -111,7 +111,7 @@ pub fn build_and_send_upgrade_chain_message(
     };
 
     let events = dst_chain
-        .send_msgs(vec![any_msg])
+        .send_messages_and_wait_commit(vec![any_msg])
         .map_err(|e| UpgradeChainError::submit(dst_chain.id().clone(), e))?;
 
     // Check if the chain rejected the transaction

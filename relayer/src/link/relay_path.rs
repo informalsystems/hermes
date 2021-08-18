@@ -39,10 +39,10 @@ use crate::event::monitor::EventBatch;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{OperationalData, OperationalDataTarget, TransitMessage};
+use crate::link::pending::PendingTxs;
 use crate::link::relay_sender::{AsyncReply, SubmitReply};
 use crate::link::relay_summary::RelaySummary;
-use crate::link::unconfirmed::PendingTxs;
-use crate::link::{relay_sender, unconfirmed};
+use crate::link::{pending, relay_sender};
 use crate::util::queue::Queue;
 
 const MAX_RETRIES: usize = 5;
@@ -731,7 +731,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             let dst_tx_events = self
                 .dst_chain()
-                .send_msgs(dst_update)
+                .send_messages_and_wait_commit(dst_update)
                 .map_err(LinkError::relayer)?;
             info!("[{}] result {}\n", self, PrettyEvents(&dst_tx_events));
 
@@ -772,7 +772,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             let src_tx_events = self
                 .src_chain()
-                .send_msgs(src_update)
+                .send_messages_and_wait_commit(src_update)
                 .map_err(LinkError::relayer)?;
             info!("[{}] result {}\n", self, PrettyEvents(&src_tx_events));
 
@@ -1217,7 +1217,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn process_unconfirmed_txs_src(&self) -> Result<RelaySummary, LinkError> {
         let res = self
             .pending_txs_src
-            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT, |odata| {
+            .process_unconfirmed(pending::MIN_BACKOFF, pending::TIMEOUT, |odata| {
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
             })?
             .unwrap_or_else(RelaySummary::empty);
@@ -1228,7 +1228,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn process_unconfirmed_txs_dst(&self) -> Result<RelaySummary, LinkError> {
         let res = self
             .pending_txs_dst
-            .process_unconfirmed(unconfirmed::MIN_BACKOFF, unconfirmed::TIMEOUT, |odata| {
+            .process_unconfirmed(pending::MIN_BACKOFF, pending::TIMEOUT, |odata| {
                 self.relay_from_operational_data::<relay_sender::AsyncSender>(odata)
             })?
             .unwrap_or_else(RelaySummary::empty);

@@ -109,14 +109,17 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
+    fn send_messages_and_wait_commit(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self.context.send(proto_msgs).map_err(Error::ics18)?;
 
         Ok(events)
     }
 
-    fn submit_msgs(
+    fn send_messages_and_wait_check_tx(
         &mut self,
         _proto_msgs: Vec<Any>,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {

@@ -27,7 +27,7 @@ pub const MIN_BACKOFF: Duration = Duration::from_secs(1);
 ///     - timestamp to track time-outs and declare an
 ///         operational data as unconfirmed.
 #[derive(Clone)]
-pub struct UnconfirmedData {
+pub struct PendingData {
     pub original_od: OperationalData,
     pub tx_hashes: TxHashes,
     pub submit_time: Instant,
@@ -40,7 +40,7 @@ pub struct PendingTxs<Chain> {
     pub channel_id: ChannelId,
     pub port_id: PortId,
     pub counterparty_chain_id: ChainId,
-    pub unconfirmed_queue: Queue<UnconfirmedData>,
+    pub pending_queue: Queue<PendingData>,
 }
 
 impl<Chain> PendingTxs<Chain> {
@@ -55,7 +55,7 @@ impl<Chain> PendingTxs<Chain> {
             channel_id,
             port_id,
             counterparty_chain_id,
-            unconfirmed_queue: Queue::new(),
+            pending_queue: Queue::new(),
         }
     }
 }
@@ -67,12 +67,12 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
     // Insert new unconfirmed transaction to the back of the queue.
     pub fn insert_new_pending_tx(&self, r: AsyncReply, od: OperationalData) {
-        let u = UnconfirmedData {
+        let u = PendingData {
             original_od: od,
             tx_hashes: r.into(),
             submit_time: Instant::now(),
         };
-        self.unconfirmed_queue.push_back(u);
+        self.pending_queue.push_back(u);
     }
 
     fn check_tx_events(&self, tx_hashes: &TxHashes) -> Result<Option<Vec<IbcEvent>>, RelayerError> {
@@ -100,7 +100,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
     ) -> Result<Option<RelaySummary>, LinkError> {
         // We process unconfirmed transactions in a FIFO manner, so take from
         // the front of the queue.
-        if let Some(unconfirmed) = self.unconfirmed_queue.pop_front() {
+        if let Some(unconfirmed) = self.pending_queue.pop_front() {
             let tx_hashes = &unconfirmed.tx_hashes;
             let submit_time = &unconfirmed.submit_time;
 
@@ -112,22 +112,15 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 // Re-insert the unconfirmed transaction back to the
                 // front of the queue so that it will be processed in
                 // the next iteration.
-                self.unconfirmed_queue.push_front(unconfirmed);
+                self.pending_queue.push_front(unconfirmed);
                 Ok(None)
             } else {
                 // Process the given unconfirmed transaction.
-
-                trace!(
-                    "[{}] total unconfirmed left: {}",
-                    self,
-                    self.unconfirmed_queue.len()
-                );
-
                 trace!("[{}] trying to confirm {} ", self, tx_hashes);
 
                 // Check for TX events for the given unconfirmed transaction hashes.
                 let events_result = self.check_tx_events(tx_hashes);
-                match events_result {
+                let res = match events_result {
                     Ok(None) => {
                         // There is no events for the associated transactions.
                         // This means the transaction has not yet been committed.
@@ -146,7 +139,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                                     Ok(None)
                                 }
                                 Err(e) => {
-                                    self.unconfirmed_queue.push_back(unconfirmed);
+                                    self.pending_queue.push_back(unconfirmed);
                                     Err(e)
                                 }
                             }
@@ -154,7 +147,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                             // Reinsert the unconfirmed transaction, this time
                             // to the back of the queue so that we process other
                             // unconfirmed transactions first in the meanwhile.
-                            self.unconfirmed_queue.push_back(unconfirmed);
+                            self.pending_queue.push_back(unconfirmed);
                             Ok(None)
                         }
                     }
@@ -186,11 +179,21 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                         // Push it to the back of the unconfirmed queue to process it
                         // again at a later time.
-                        self.unconfirmed_queue.push_back(unconfirmed);
+                        self.pending_queue.push_back(unconfirmed);
 
                         Err(LinkError::relayer(e))
                     }
+                };
+
+                if !self.pending_queue.is_empty() {
+                    trace!(
+                        "[{}] total pending transactions left: {}",
+                        self,
+                        self.pending_queue.len()
+                    );
                 }
+
+                res
             }
         } else {
             Ok(None)

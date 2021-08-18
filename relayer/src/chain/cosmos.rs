@@ -795,7 +795,10 @@ impl ChainEndpoint for CosmosSdkChain {
     /// then it returns error.
     /// TODO - more work is required here for a smarter split maybe iteratively accumulating/ evaluating
     /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
+    fn send_messages_and_wait_commit(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_msgs");
 
         if proto_msgs.is_empty() {
@@ -844,7 +847,10 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(events)
     }
 
-    fn submit_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<Response>, Error> {
+    fn send_messages_and_wait_check_tx(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<Response>, Error> {
         crate::time!("submit_msgs");
 
         if proto_msgs.is_empty() {

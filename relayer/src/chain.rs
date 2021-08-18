@@ -33,6 +33,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
@@ -107,14 +108,17 @@ pub trait ChainEndpoint: Sized {
     fn keybase_mut(&mut self) -> &mut KeyRing;
 
     /// Sends one or more transactions with `msgs` to chain.
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
+    fn send_messages_and_wait_commit(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<IbcEvent>, Error>;
 
     /// Sends one or more transactions with `msgs` to chain.
     /// Non-blocking alternative to `send_msgs` interface.
-    fn submit_msgs(
+    fn send_messages_and_wait_check_tx(
         &mut self,
         proto_msgs: Vec<Any>,
-    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error>;
+    ) -> Result<Vec<TxResponse>, Error>;
 
     fn get_signer(&mut self) -> Result<Signer, Error>;
 

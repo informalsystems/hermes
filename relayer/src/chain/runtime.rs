@@ -199,12 +199,12 @@ where
                             self.subscribe(reply_to)?
                         },
 
-                        Ok(ChainRequest::SendMsgs { proto_msgs, reply_to }) => {
-                            self.send_msgs(proto_msgs, reply_to)?
+                        Ok(ChainRequest::SendMessagesAndWaitCommit { proto_msgs, reply_to }) => {
+                            self.send_messages_and_wait_commit(proto_msgs, reply_to)?
                         },
 
-                        Ok(ChainRequest::SubmitMsgs { proto_msgs, reply_to }) => {
-                            self.submit_msgs(proto_msgs, reply_to)?
+                        Ok(ChainRequest::SendMessagesAndWaitCheckTx { proto_msgs, reply_to }) => {
+                            self.send_messages_and_wait_check_tx(proto_msgs, reply_to)?
                         },
 
                         Ok(ChainRequest::Signer { reply_to }) => {
@@ -364,24 +364,24 @@ where
         Ok(())
     }
 
-    fn send_msgs(
+    fn send_messages_and_wait_commit(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_msgs(proto_msgs);
+        let result = self.chain.send_messages_and_wait_commit(proto_msgs);
 
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())
     }
 
-    fn submit_msgs(
+    fn send_messages_and_wait_check_tx(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
         reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
     ) -> Result<(), Error> {
-        let result = self.chain.submit_msgs(proto_msgs);
+        let result = self.chain.send_messages_and_wait_check_tx(proto_msgs);
 
         reply_to.send(result).map_err(Error::send)?;
 

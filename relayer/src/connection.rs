@@ -756,7 +756,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let events = self
             .dst_chain()
-            .send_msgs(dst_msgs)
+            .send_messages_and_wait_commit(dst_msgs)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection init
@@ -812,7 +812,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
         self.src_chain()
-            .send_msgs(client_msgs)
+            .send_messages_and_wait_commit(client_msgs)
             .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
 
         let query_height = self
@@ -883,7 +883,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let events = self
             .dst_chain()
-            .send_msgs(dst_msgs)
+            .send_messages_and_wait_commit(dst_msgs)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection try transaction
@@ -929,7 +929,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
         self.src_chain()
-            .send_msgs(client_msgs)
+            .send_messages_and_wait_commit(client_msgs)
             .map_err(|e| ConnectionError::submit(self.src_chain().id(), e))?;
 
         let query_height = self
@@ -974,7 +974,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let events = self
             .dst_chain()
-            .send_msgs(dst_msgs)
+            .send_messages_and_wait_commit(dst_msgs)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection ack
@@ -1051,7 +1051,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let events = self
             .dst_chain()
-            .send_msgs(dst_msgs)
+            .send_messages_and_wait_commit(dst_msgs)
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection confirm
