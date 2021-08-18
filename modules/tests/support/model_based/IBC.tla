@@ -445,7 +445,7 @@ ConnectionOpenTryAction(chainId) ==
     \E previousConnectionId \in ConnectionIds \union {ConnectionIdNone}:
     \* select a claimed height for the client
     \* Only use heights whose revision number is 1 (this covers updates) OR whose revision height <= 2 (this allows for an upgrade and an update, but no updates after that)
-    \E height \in {height \in Heights: height.revision_number = 1 \/ height.revision_height <= 2}:
+    \E height \in {height \in Heights: height.revision_number <= 2 /\ height.revision_height <= 2}:
     \* select a counterparty chain id
     \E counterpartyChainId \in ChainIds:
     \* select a counterparty client id
@@ -476,7 +476,7 @@ ConnectionOpenAckAction(chainId) ==
     \E connectionId \in ConnectionIds:
     \* select a claimed height for the client
     \* Only use heights whose revision number is 1 (this covers updates) OR whose revision height <= 2 (this allows for an upgrade but no updates after that)
-    \E height \in {height \in Heights: height.revision_number = 1 \/ height.revision_height <= 2}:
+    \E height \in {height \in Heights: height.revision_number <= 2 /\ height.revision_height <= 2}:
     \* select a counterparty chain id
     \E counterpartyChainId \in ChainIds:
     \* select a counterparty connection id
@@ -497,7 +497,7 @@ ConnectionOpenConfirmAction(chainId) ==
     \E connectionId \in ConnectionIds:
     \* select a claimed height for the client
     \* Only use heights whose revision number is 1 (this covers updates) OR whose revision height <= 2 (this allows for an upgrade but no updates after that)
-    \E height \in {height \in Heights: height.revision_number = 1 \/ height.revision_height <= 2}:
+    \E height \in {height \in Heights: height.revision_number <= 2 /\ height.revision_height <= 2}:
     \* select a counterparty chain id
     \E counterpartyChainId \in ChainIds:
     \* select a counterparty connection id
