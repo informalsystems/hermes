@@ -960,7 +960,8 @@ impl Channel {
         self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         // Channel must exist on source
-        let src_channel = self.src_chain()
+        let src_channel = self
+            .src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
 
