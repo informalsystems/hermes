@@ -2,6 +2,7 @@
 use abscissa_core::{Command, Help, Options, Runnable};
 
 mod add;
+mod delete;
 mod list;
 mod restore;
 
@@ -15,6 +16,10 @@ pub enum KeysCmd {
     /// The `keys add` subcommand
     #[options(help = "Adds a key to a configured chain")]
     Add(add::KeysAddCmd),
+
+    /// The `keys delete` subcommand
+    #[options(help = "Delete key(s) from a configured chain")]
+    Delete(delete::KeysDeleteCmd),
 
     /// The `keys list` subcommand
     #[options(help = "List keys configured on a chain")]

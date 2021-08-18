@@ -1,33 +1,21 @@
+use core::convert::TryInto;
 use prost_types::Any;
-use tendermint_proto::Protobuf;
 
-use crate::application::ics20_fungible_token_transfer::msgs::transfer;
 use crate::application::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer as ics20_msg_dispatcher;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
-use crate::ics02_client::msgs::{create_client, update_client, upgrade_client, ClientMsg};
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
-use crate::ics03_connection::msgs::{
-    conn_open_ack, conn_open_confirm, conn_open_init, conn_open_try, ConnectionMsg,
-};
 use crate::ics04_channel::handler::channel_dispatch as ics4_msg_dispatcher;
 use crate::ics04_channel::handler::packet_dispatch as ics04_packet_msg_dispatcher;
-use crate::{events::IbcEvent, handler::HandlerOutput};
-
-use crate::ics04_channel::msgs::{
-    acknowledgement, chan_close_confirm, chan_close_init, chan_open_ack, chan_open_confirm,
-    chan_open_init, chan_open_try, recv_packet, timeout, timeout_on_close, ChannelMsg, PacketMsg,
-};
 use crate::ics26_routing::context::Ics26Context;
-use crate::ics26_routing::error::{Error, Kind};
+use crate::ics26_routing::error::Error;
 use crate::ics26_routing::msgs::Ics26Envelope::{
     self, Ics20Msg, Ics2Msg, Ics3Msg, Ics4ChannelMsg, Ics4PacketMsg,
 };
+use crate::{events::IbcEvent, handler::HandlerOutput};
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
 /// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-///
-/// See <https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics>
 pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
 where
     Ctx: Ics26Context,
@@ -40,115 +28,7 @@ where
 
     for any_msg in messages {
         // Decode the proto message into a domain message, creating an ICS26 envelope.
-        let envelope = match any_msg.type_url.as_str() {
-            // ICS2 messages
-            create_client::TYPE_URL => {
-                // Pop out the message and then wrap it in the corresponding type.
-                let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics2Msg(ClientMsg::CreateClient(domain_msg)))
-            }
-            update_client::TYPE_URL => {
-                let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics2Msg(ClientMsg::UpdateClient(domain_msg)))
-            }
-            upgrade_client::TYPE_URL => {
-                let domain_msg = upgrade_client::MsgUpgradeAnyClient::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics2Msg(ClientMsg::UpgradeClient(domain_msg)))
-            }
-
-            // ICS03
-            conn_open_init::TYPE_URL => {
-                let domain_msg = conn_open_init::MsgConnectionOpenInit::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics3Msg(ConnectionMsg::ConnectionOpenInit(domain_msg)))
-            }
-            conn_open_try::TYPE_URL => {
-                let domain_msg = conn_open_try::MsgConnectionOpenTry::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
-                    domain_msg,
-                ))))
-            }
-            conn_open_ack::TYPE_URL => {
-                let domain_msg = conn_open_ack::MsgConnectionOpenAck::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
-                    domain_msg,
-                ))))
-            }
-            conn_open_confirm::TYPE_URL => {
-                let domain_msg =
-                    conn_open_confirm::MsgConnectionOpenConfirm::decode_vec(&any_msg.value)
-                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics3Msg(ConnectionMsg::ConnectionOpenConfirm(domain_msg)))
-            }
-
-            // ICS04 channel messages
-            chan_open_init::TYPE_URL => {
-                let domain_msg = chan_open_init::MsgChannelOpenInit::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(domain_msg)))
-            }
-            chan_open_try::TYPE_URL => {
-                let domain_msg = chan_open_try::MsgChannelOpenTry::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenTry(domain_msg)))
-            }
-            chan_open_ack::TYPE_URL => {
-                let domain_msg = chan_open_ack::MsgChannelOpenAck::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenAck(domain_msg)))
-            }
-            chan_open_confirm::TYPE_URL => {
-                let domain_msg =
-                    chan_open_confirm::MsgChannelOpenConfirm::decode_vec(&any_msg.value)
-                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4ChannelMsg(ChannelMsg::ChannelOpenConfirm(domain_msg)))
-            }
-            chan_close_init::TYPE_URL => {
-                let domain_msg = chan_close_init::MsgChannelCloseInit::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4ChannelMsg(ChannelMsg::ChannelCloseInit(domain_msg)))
-            }
-            chan_close_confirm::TYPE_URL => {
-                let domain_msg =
-                    chan_close_confirm::MsgChannelCloseConfirm::decode_vec(&any_msg.value)
-                        .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4ChannelMsg(ChannelMsg::ChannelCloseConfirm(domain_msg)))
-            }
-            // ICS20 - 04 - Send packet
-            transfer::TYPE_URL => {
-                let domain_msg = transfer::MsgTransfer::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics20Msg(domain_msg))
-            }
-            // ICS04 packet messages
-            recv_packet::TYPE_URL => {
-                let domain_msg = recv_packet::MsgRecvPacket::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4PacketMsg(PacketMsg::RecvPacket(domain_msg)))
-            }
-            acknowledgement::TYPE_URL => {
-                let domain_msg = acknowledgement::MsgAcknowledgement::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4PacketMsg(PacketMsg::AckPacket(domain_msg)))
-            }
-            timeout::TYPE_URL => {
-                let domain_msg = timeout::MsgTimeout::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4PacketMsg(PacketMsg::ToPacket(domain_msg)))
-            }
-            timeout_on_close::TYPE_URL => {
-                let domain_msg = timeout_on_close::MsgTimeoutOnClose::decode_vec(&any_msg.value)
-                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(Ics4PacketMsg(PacketMsg::ToClosePacket(domain_msg)))
-            }
-
-            _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)),
-        }?;
+        let envelope = decode(any_msg)?;
 
         // Process the envelope, and accumulate any events that were generated.
         let mut output = dispatch(&mut ctx_interim, envelope)?;
@@ -161,6 +41,11 @@ where
     Ok(res)
 }
 
+/// Attempts to convert a message into a [Ics26Envelope] message
+pub fn decode(message: Any) -> Result<Ics26Envelope, Error> {
+    message.try_into()
+}
+
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
 /// Returns a handler output with empty result of type `HandlerOutput<()>` which contains the log
 /// and events produced after processing the input `msg`.
@@ -170,12 +55,11 @@ where
 {
     let output = match msg {
         Ics2Msg(msg) => {
-            let handler_output =
-                ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output = ics2_msg_dispatcher(ctx, msg).map_err(Error::ics02_client)?;
 
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics02_client)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -184,12 +68,11 @@ where
         }
 
         Ics3Msg(msg) => {
-            let handler_output =
-                ics3_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output = ics3_msg_dispatcher(ctx, msg).map_err(Error::ics03_connection)?;
 
             // Apply any results to the host chain store.
             ctx.store_connection_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics03_connection)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -198,12 +81,11 @@ where
         }
 
         Ics4ChannelMsg(msg) => {
-            let handler_output =
-                ics4_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output = ics4_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_channel_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -213,11 +95,11 @@ where
 
         Ics20Msg(msg) => {
             let handler_output =
-                ics20_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+                ics20_msg_dispatcher(ctx, msg).map_err(Error::ics20_fungible_token_transfer)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -226,12 +108,12 @@ where
         }
 
         Ics4PacketMsg(msg) => {
-            let handler_output = ics04_packet_msg_dispatcher(ctx, msg)
-                .map_err(|e| Kind::HandlerRaisedError.context(e))?;
+            let handler_output =
+                ics04_packet_msg_dispatcher(ctx, msg).map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
             ctx.store_packet_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+                .map_err(Error::ics04_channel)?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
@@ -317,7 +199,9 @@ mod tests {
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState(MockHeader::new(start_client_height))),
-            AnyConsensusState::from(MockConsensusState(MockHeader::new(start_client_height))),
+            AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
+                start_client_height,
+            ))),
             default_signer.clone(),
         )
         .unwrap();
@@ -547,7 +431,7 @@ mod tests {
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
                     client_id.clone(),
                     AnyClientState::Mock(MockClientState(MockHeader::new(upgrade_client_height))),
-                    AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
+                    AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
                         upgrade_client_height,
                     ))),
                     get_dummy_merkle_proof(),
@@ -563,7 +447,7 @@ mod tests {
                     AnyClientState::Mock(MockClientState(MockHeader::new(
                         upgrade_client_height_second,
                     ))),
-                    AnyConsensusState::Mock(MockConsensusState(MockHeader::new(
+                    AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
                         upgrade_client_height_second,
                     ))),
                     get_dummy_merkle_proof(),

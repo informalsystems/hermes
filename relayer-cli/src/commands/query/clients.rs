@@ -7,10 +7,10 @@ use tokio::runtime::Runtime as TokioRuntime;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
-use ibc_relayer::chain::{Chain, CosmosSdkChain};
+use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 /// Query clients command
@@ -39,7 +39,7 @@ struct ClientChain {
 }
 
 /// Command for querying all clients.
-/// hermes -c cfg.toml query clients ibc-1  
+/// hermes -c cfg.toml query clients ibc-1
 impl Runnable for QueryAllClientsCmd {
     fn run(&self) {
         let config = app_config();
@@ -64,9 +64,7 @@ impl Runnable for QueryAllClientsCmd {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let res: Result<_, Error> = chain
-            .query_clients(req)
-            .map_err(|e| Kind::Query.context(e).into());
+        let res: Result<_, Error> = chain.query_clients(req).map_err(Error::relayer);
 
         match res {
             Ok(clients) => {

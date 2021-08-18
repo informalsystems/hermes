@@ -1,12 +1,9 @@
 #![allow(clippy::borrowed_box)]
 
-use std::time::Duration;
-
-use anomaly::BoxError;
 use prost_types::Any;
 use serde::Serialize;
-use thiserror::Error;
-use tracing::{debug, error, info};
+use std::time::Duration;
+use tracing::{debug, error, info, warn};
 
 use ibc::events::IbcEvent;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State};
@@ -16,9 +13,7 @@ use ibc::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use ibc::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
-};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
@@ -26,13 +21,14 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
-use crate::error::Error;
-use crate::foreign_client::{ForeignClient, ForeignClientError};
+use crate::foreign_client::ForeignClient;
 use crate::object::Channel as WorkerChannelObject;
-use crate::supervisor::Error as WorkerChannelError;
+use crate::supervisor::error::Error as SupervisorError;
+use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
-use crate::util::retry::{retry_count, retry_with_index};
-use std::fmt;
+
+pub mod error;
+pub use error::ChannelError;
 
 mod retry_strategy {
     use std::time::Duration;
@@ -51,61 +47,42 @@ mod retry_strategy {
     }
 }
 
-#[derive(Debug, Error)]
-pub enum ChannelError {
-    #[error("failed with underlying cause: {0}")]
-    Failed(String),
-
-    #[error("failed due to missing local channel id")]
-    MissingLocalChannelId,
-
-    #[error("failed due to missing counterparty channel id")]
-    MissingCounterpartyChannelId,
-
-    #[error("failed due to missing counterparty connection")]
-    MissingCounterpartyConnection,
-
-    #[error("channel constructor failed due to missing connection id on chain id {0}")]
-    MissingLocalConnection(ChainId),
-
-    #[error("failed during an operation on client ({0}) hosted by chain ({1}) with error: {2}")]
-    ClientOperation(ClientId, ChainId, ForeignClientError),
-
-    #[error("failed during a query to chain id {0} with underlying error: {1}")]
-    QueryError(ChainId, Error),
-
-    #[error(
-        "failed during a transaction submission step to chain id {0} with underlying error: {1}"
-    )]
-    SubmitError(ChainId, Error),
-
-    #[error("the channel is partially open ({0}, {1})")]
-    PartialOpenHandshake(State, State),
-
-    #[error("channel {0} on chain {1} has no counterparty channel id")]
-    IncompleteChannelState(PortChannelId, ChainId),
-
-    #[error("channel {0} on chain {1} expected to have counterparty {2} (but instead has {3})")]
-    MismatchingChannelEnds(PortChannelId, ChainId, PortChannelId, PortChannelId),
+pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> ChannelError {
+    match e {
+        retry::Error::Operation {
+            error,
+            total_delay,
+            tries,
+        } => {
+            let detail = error::ChannelErrorDetail::MaxRetry(error::MaxRetrySubdetail {
+                description,
+                tries,
+                total_delay,
+                source: Box::new(error.0),
+            });
+            ChannelError(detail, error.1)
+        }
+        retry::Error::Internal(reason) => ChannelError::retry_internal(reason),
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct ChannelSide {
-    pub chain: Box<dyn ChainHandle>,
+pub struct ChannelSide<Chain: ChainHandle> {
+    pub chain: Chain,
     client_id: ClientId,
     connection_id: ConnectionId,
     port_id: PortId,
     channel_id: Option<ChannelId>,
 }
 
-impl ChannelSide {
+impl<Chain: ChainHandle> ChannelSide<Chain> {
     pub fn new(
-        chain: Box<dyn ChainHandle>,
+        chain: Chain,
         client_id: ClientId,
         connection_id: ConnectionId,
         port_id: PortId,
         channel_id: Option<ChannelId>,
-    ) -> ChannelSide {
+    ) -> ChannelSide<Chain> {
         Self {
             chain,
             client_id,
@@ -137,49 +114,49 @@ impl ChannelSide {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Channel {
+pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub ordering: Order,
-    pub a_side: ChannelSide,
-    pub b_side: ChannelSide,
+    pub a_side: ChannelSide<ChainA>,
+    pub b_side: ChannelSide<ChainB>,
     pub connection_delay: Duration,
     pub version: Option<String>,
 }
 
-impl Channel {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     /// Creates a new channel on top of the existing connection. If the channel is not already
     /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
     pub fn new(
-        connection: Connection,
+        connection: Connection<ChainA, ChainB>,
         ordering: Order,
         a_port: PortId,
         b_port: PortId,
         version: Option<String>,
     ) -> Result<Self, ChannelError> {
-        let b_side_chain = connection.dst_chain().clone();
+        let b_side_chain = connection.dst_chain();
         let version = version.unwrap_or(
             b_side_chain
-                .module_version(&a_port)
-                .map_err(|e| ChannelError::QueryError(b_side_chain.id(), e))?,
+                .module_version(&b_port)
+                .map_err(|e| ChannelError::query(b_side_chain.id(), e))?,
         );
 
         let src_connection_id = connection
             .src_connection_id()
-            .ok_or_else(|| ChannelError::MissingLocalConnection(connection.src_chain().id()))?;
+            .ok_or_else(|| ChannelError::missing_local_connection(connection.src_chain().id()))?;
         let dst_connection_id = connection
             .dst_connection_id()
-            .ok_or_else(|| ChannelError::MissingLocalConnection(connection.dst_chain().id()))?;
+            .ok_or_else(|| ChannelError::missing_local_connection(connection.dst_chain().id()))?;
 
         let mut channel = Self {
             ordering,
             a_side: ChannelSide::new(
-                connection.src_chain().clone(),
+                connection.src_chain(),
                 connection.src_client_id().clone(),
                 src_connection_id.clone(),
                 a_port,
                 Default::default(),
             ),
             b_side: ChannelSide::new(
-                connection.dst_chain().clone(),
+                connection.dst_chain(),
                 connection.dst_client_id().clone(),
                 dst_connection_id.clone(),
                 b_port,
@@ -195,32 +172,31 @@ impl Channel {
     }
 
     pub fn restore_from_event(
-        chain: Box<dyn ChainHandle>,
-        counterparty_chain: Box<dyn ChainHandle>,
+        chain: ChainA,
+        counterparty_chain: ChainB,
         channel_open_event: IbcEvent,
-    ) -> Result<Channel, BoxError> {
-        let channel_event_attributes =
-            channel_open_event.channel_attributes().ok_or_else(|| {
-                ChannelError::Failed(format!(
-                    "a channel object cannot be built from {}",
-                    channel_open_event
-                ))
-            })?;
+    ) -> Result<Channel<ChainA, ChainB>, ChannelError> {
+        let channel_event_attributes = channel_open_event
+            .channel_attributes()
+            .ok_or_else(|| ChannelError::invalid_event(channel_open_event.clone()))?;
 
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id.clone();
 
         let version = counterparty_chain
-            .module_version(&port_id)
-            .map_err(|e| ChannelError::QueryError(counterparty_chain.id(), e))?;
+            .module_version(&channel_event_attributes.counterparty_port_id)
+            .map_err(|e| ChannelError::query(counterparty_chain.id(), e))?;
 
         let connection_id = channel_event_attributes.connection_id.clone();
-        let connection = chain.query_connection(&connection_id, Height::zero())?;
+        let connection = chain
+            .query_connection(&connection_id, Height::zero())
+            .map_err(ChannelError::relayer)?;
+
         let connection_counterparty = connection.counterparty();
 
         let counterparty_connection_id = connection_counterparty
             .connection_id()
-            .ok_or(ChannelError::MissingCounterpartyConnection)?;
+            .ok_or_else(ChannelError::missing_counterparty_connection)?;
 
         Ok(Channel {
             // The event does not include the channel ordering.
@@ -228,14 +204,14 @@ impl Channel {
             // message from channel query.
             ordering: Default::default(),
             a_side: ChannelSide::new(
-                chain.clone(),
+                chain,
                 connection.client_id().clone(),
                 connection_id,
                 port_id,
                 channel_id,
             ),
             b_side: ChannelSide::new(
-                counterparty_chain.clone(),
+                counterparty_chain,
                 connection.counterparty().client_id().clone(),
                 counterparty_connection_id.clone(),
                 channel_event_attributes.counterparty_port_id.clone(),
@@ -251,29 +227,36 @@ impl Channel {
     /// Recreates a 'Channel' object from the worker's object built from chain state scanning.
     /// The channel must exist on chain and its connection must be initialized on both chains.
     pub fn restore_from_state(
-        chain: Box<dyn ChainHandle>,
-        counterparty_chain: Box<dyn ChainHandle>,
+        chain: ChainA,
+        counterparty_chain: ChainB,
         channel: WorkerChannelObject,
         height: Height,
-    ) -> Result<(Channel, State), BoxError> {
-        let a_channel =
-            chain.query_channel(&channel.src_port_id, &channel.src_channel_id, height)?;
+    ) -> Result<(Channel<ChainA, ChainB>, State), ChannelError> {
+        let a_channel = chain
+            .query_channel(&channel.src_port_id, &channel.src_channel_id, height)
+            .map_err(ChannelError::relayer)?;
 
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
-            WorkerChannelError::MissingConnectionHops(channel.src_channel_id.clone(), chain.id())
+            ChannelError::supervisor(SupervisorError::missing_connection_hops(
+                channel.src_channel_id.clone(),
+                chain.id(),
+            ))
         })?;
 
-        let a_connection = chain.query_connection(a_connection_id, Height::zero())?;
+        let a_connection = chain
+            .query_connection(a_connection_id, Height::zero())
+            .map_err(ChannelError::relayer)?;
+
         let b_connection_id = a_connection
             .counterparty()
             .connection_id()
             .cloned()
             .ok_or_else(|| {
-                WorkerChannelError::ChannelConnectionUninitialized(
+                ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
                     channel.src_channel_id.clone(),
                     chain.id(),
                     a_connection.counterparty().clone(),
-                )
+                ))
             })?;
 
         let mut handshake_channel = Channel {
@@ -302,8 +285,9 @@ impl Channel {
                 pagination: ibc_proto::cosmos::base::query::pagination::all(),
             };
 
-            let channels: Vec<IdentifiedChannelEnd> =
-                counterparty_chain.query_connection_channels(req)?;
+            let channels: Vec<IdentifiedChannelEnd> = counterparty_chain
+                .query_connection_channels(req)
+                .map_err(ChannelError::relayer)?;
 
             for chan in channels {
                 if let Some(remote_channel_id) = chan.channel_end.remote.channel_id() {
@@ -318,11 +302,11 @@ impl Channel {
         Ok((handshake_channel, a_channel.state))
     }
 
-    pub fn src_chain(&self) -> &Box<dyn ChainHandle> {
+    pub fn src_chain(&self) -> &ChainA {
         &self.a_side.chain
     }
 
-    pub fn dst_chain(&self) -> &Box<dyn ChainHandle> {
+    pub fn dst_chain(&self) -> &ChainB {
         &self.b_side.chain
     }
 
@@ -358,7 +342,7 @@ impl Channel {
         self.b_side.channel_id()
     }
 
-    pub fn flipped(&self) -> Channel {
+    pub fn flipped(&self) -> Channel<ChainB, ChainA> {
         Channel {
             ordering: self.ordering,
             a_side: self.b_side.clone(),
@@ -369,13 +353,7 @@ impl Channel {
     }
 
     fn do_chan_open_init_and_send(&mut self) -> Result<(), ChannelError> {
-        let event = self
-            .flipped()
-            .build_chan_open_init_and_send()
-            .map_err(|e| {
-                error!("Failed ChanInit {:?}: {:?}", self.a_side, e);
-                e
-            })?;
+        let event = self.flipped().build_chan_open_init_and_send()?;
 
         info!("done {} => {:#?}\n", self.src_chain().id(), event);
 
@@ -393,11 +371,11 @@ impl Channel {
         })
         .map_err(|err| {
             error!("failed to open channel after {} retries", err);
-            ChannelError::Failed(format!(
-                "Failed to finish channel open init in {} iterations for {:?}",
-                retry_count(&err),
-                self
-            ))
+
+            from_retry_error(
+                err,
+                format!("Failed to finish channel open init for {:?}", self),
+            )
         })?;
 
         Ok(())
@@ -422,132 +400,156 @@ impl Channel {
         })
         .map_err(|err| {
             error!("failed to open channel after {} retries", err);
-            ChannelError::Failed(format!(
-                "Failed to finish channel open try in {} iterations for {:?}",
-                retry_count(&err),
-                self
-            ))
+
+            from_retry_error(
+                err,
+                format!("Failed to finish channel open try for {:?}", self),
+            )
         })?;
 
         Ok(())
     }
 
-    /// Does a single step towards finalizing the channel open handshake.
-    /// Covers only a step of type either Ack or Confirm.
-    /// (Assumes that the channel open handshake was previously
-    /// initialized with Init & Try steps.)
+    /// Sends the last two steps, consisting of `Ack` and `Confirm`
+    /// messages, for finalizing the channel open handshake.
+    ///
+    /// Assumes that the channel open handshake was previously
+    /// started (with `Init` & `Try` steps).
     ///
     /// Returns `Ok` when both channel ends are in state `Open`.
     /// Also returns `Ok` if the channel is undergoing a closing handshake.
     ///
     /// An `Err` can signal two cases:
-    ///     - the attempted handshake step has failed,
-    ///     - the attempted step may have finished successfully, but further
-    ///     steps are necessary to finalize the channel open handshake.
+    ///     - the common-case flow for the handshake protocol was interrupted,
+    ///         e.g., by a competing relayer.
+    ///     - Rpc problems (a query or submitting a tx failed).
     /// In both `Err` cases, there should be retry calling this method.
-    fn do_chan_open_ack_confirm_step(&self) -> Result<(), ChannelError> {
-        let src_channel_id = self
-            .src_channel_id()
-            .ok_or(ChannelError::MissingLocalChannelId)?;
+    fn do_chan_open_finalize(&self) -> Result<(), ChannelError> {
+        fn query_channel_states<ChainA: ChainHandle, ChainB: ChainHandle>(
+            channel: &Channel<ChainA, ChainB>,
+        ) -> Result<(State, State), ChannelError> {
+            let src_channel_id = channel
+                .src_channel_id()
+                .ok_or_else(ChannelError::missing_local_channel_id)?;
 
-        let dst_channel_id = self
-            .dst_channel_id()
-            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+            let dst_channel_id = channel
+                .dst_channel_id()
+                .ok_or_else(ChannelError::missing_counterparty_connection)?;
 
-        // Continue loop if query error
-        let a_channel = self
-            .src_chain()
-            .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|_| {
-                ChannelError::Failed(format!(
-                    "failed to query source chain {}",
-                    self.src_chain().id()
-                ))
-            })?;
+            debug!(
+                "do_chan_open_finalize for src_channel_id: {}, dst_channel_id: {}",
+                src_channel_id, dst_channel_id
+            );
 
-        let b_channel = self
-            .dst_chain()
-            .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
-            .map_err(|_| {
-                ChannelError::Failed(format!(
-                    "failed to query destination chain {}",
-                    self.dst_chain().id()
-                ))
-            })?;
+            // Continue loop if query error
+            let a_channel = channel
+                .src_chain()
+                .query_channel(channel.src_port_id(), src_channel_id, Height::zero())
+                .map_err(|e| {
+                    ChannelError::handshake_finalize(
+                        channel.src_port_id().clone(),
+                        src_channel_id.clone(),
+                        channel.src_chain().id(),
+                        e,
+                    )
+                })?;
 
-        match (a_channel.state(), b_channel.state()) {
-            // Handle sending the Ack message to the source chain
+            let b_channel = channel
+                .dst_chain()
+                .query_channel(channel.dst_port_id(), dst_channel_id, Height::zero())
+                .map_err(|e| {
+                    ChannelError::handshake_finalize(
+                        channel.dst_port_id().clone(),
+                        dst_channel_id.clone(),
+                        channel.dst_chain().id(),
+                        e,
+                    )
+                })?;
+
+            Ok((*a_channel.state(), *b_channel.state()))
+        }
+
+        fn expect_channel_states<ChainA: ChainHandle, ChainB: ChainHandle>(
+            ctx: &Channel<ChainA, ChainB>,
+            a1: State,
+            b1: State,
+        ) -> Result<(), ChannelError> {
+            let (a2, b2) = query_channel_states(ctx)?;
+
+            if (a1, b1) == (a2, b2) {
+                Ok(())
+            } else {
+                warn!(
+                    "expected channels to progress to states {}, {}), instead got ({}, {})",
+                    a1, b1, a2, b2
+                );
+
+                debug!("returning PartialOpenHandshake to retry");
+
+                // One more step (confirm) left.
+                // Returning error signals that the caller should retry.
+                Err(ChannelError::partial_open_handshake(a1, b1))
+            }
+        }
+
+        let (a_state, b_state) = query_channel_states(self)?;
+        debug!(
+            "do_chan_open_finalize with channel states: {}, {}",
+            a_state, b_state
+        );
+
+        match (a_state, b_state) {
+            // Handle sending the Ack message to the source chain,
+            // then the Confirm message to the destination.
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
-                let event = self.flipped().build_chan_open_ack_and_send().map_err(|e| {
-                    error!("failed ChanAck {:?}: {}", self.a_side, e);
-                    e
-                })?;
+                self.flipped().build_chan_open_ack_and_send()?;
 
-                info!(
-                    "done with ChanAck step {} => {:#?}\n",
-                    self.src_chain().id(),
-                    event
-                );
-                // One more step (confirm) left.
-                // Returning error signals that the caller should retry.
-                Err(ChannelError::PartialOpenHandshake(
-                    *a_channel.state(),
-                    *b_channel.state(),
-                ))
+                expect_channel_states(self, State::Open, State::TryOpen)?;
+
+                self.build_chan_open_confirm_and_send()?;
+
+                expect_channel_states(self, State::Open, State::Open)?;
+
+                Ok(())
             }
 
-            // Handle sending the Ack message to the destination chain
+            // Handle sending the Ack message to the destination chain,
+            // then the Confirm to the source chain.
             (State::TryOpen, State::Init) => {
-                let event = self.build_chan_open_ack_and_send().map_err(|e| {
-                    error!("failed ChanAck {:?}: {}", self.b_side, e);
-                    e
-                })?;
+                self.flipped().build_chan_open_ack_and_send()?;
 
-                info!(
-                    "done with ChanAck step {} => {:#?}\n",
-                    self.dst_chain().id(),
-                    event
-                );
-                // One more step (confirm) left.
-                // Returning error signals that the caller should retry.
-                Err(ChannelError::PartialOpenHandshake(
-                    *a_channel.state(),
-                    *b_channel.state(),
-                ))
+                expect_channel_states(self, State::TryOpen, State::Open)?;
+
+                self.flipped().build_chan_open_confirm_and_send()?;
+
+                expect_channel_states(self, State::Open, State::Open)?;
+
+                Ok(())
             }
 
-            // Handle sending the Confirm message to the destination chain
+            // Handle sending the Confirm message to the destination chain.
             (State::Open, State::TryOpen) => {
-                let event = self.build_chan_open_confirm_and_send().map_err(|e| {
-                    error!("failed ChanConfirm {:?}: {}", self.b_side, e);
-                    e
-                })?;
+                self.build_chan_open_confirm_and_send()?;
 
-                info!("done {} => {:#?}\n", self.dst_chain().id(), event);
+                expect_channel_states(self, State::Open, State::Open)?;
+
                 Ok(())
             }
 
-            // Send Confirm to the source chain
+            // Send Confirm to the source chain.
             (State::TryOpen, State::Open) => {
-                let event = self
-                    .flipped()
-                    .build_chan_open_confirm_and_send()
-                    .map_err(|e| {
-                        error!("failed ChanConfirm {:?}: {}", self.a_side, e);
-                        e
-                    })?;
+                self.flipped().build_chan_open_confirm_and_send()?;
 
-                info!(
-                    "finalized channel open handshake {} => {:#?}\n",
-                    self.src_chain().id(),
-                    event
-                );
+                expect_channel_states(self, State::Open, State::Open)?;
+
                 Ok(())
             }
+
             (State::Open, State::Open) => {
                 info!("channel handshake already finished for {:#?}\n", self);
                 Ok(())
             }
+
             // In all other conditions, return Ok, since the channel open handshake does not apply.
             _ => Ok(()),
         }
@@ -555,22 +557,20 @@ impl Channel {
 
     /// Takes a partially open channel and finalizes the open handshake protocol.
     ///
-    /// Pre-condition: the channel identifiers are already established on both ends
-    ///   (i.e., the OpenInit and OpenTry steps have been fulfilled for this channel).
+    /// Pre-condition: the channel identifiers are established on both ends
+    ///   (i.e., `OpenInit` and `OpenTry` have executed previously for this channel).
     ///
     /// Post-condition: the channel state is `Open` on both ends if successful.
     fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| {
-            self.do_chan_open_ack_confirm_step()
-        })
-        .map_err(|err| {
-            error!("failed to open channel after {} retries", err);
-            ChannelError::Failed(format!(
-                "Failed to finish channel handshake in {} iterations for {:?}",
-                retry_count(&err),
-                self
-            ))
-        })?;
+        retry_with_index(retry_strategy::default(), |_| self.do_chan_open_finalize()).map_err(
+            |err| {
+                error!("failed to open channel after {} retries", err);
+                from_retry_error(
+                    err,
+                    format!("Failed to finish channel handshake for {:?}", self),
+                )
+            },
+        )?;
 
         Ok(())
     }
@@ -586,28 +586,18 @@ impl Channel {
         // Source channel ID must be specified
         let channel_id = self
             .src_channel_id()
-            .ok_or(ChannelError::MissingLocalChannelId)?;
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
 
         let channel_deps =
-            channel_connection_client(self.src_chain().as_ref(), self.src_port_id(), channel_id)
-                .map_err(|_| {
-                    ChannelError::Failed(format!(
-                        "failed to query the channel dependecies for {}",
-                        channel_id
-                    ))
-                })?;
+            channel_connection_client(self.src_chain(), self.src_port_id(), channel_id)
+                .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))?;
 
         channel_state_on_destination(
             &channel_deps.channel,
             &channel_deps.connection,
-            self.dst_chain().as_ref(),
+            self.dst_chain(),
         )
-        .map_err(|_| {
-            ChannelError::Failed(format!(
-                "failed to query the channel state on destination for {}",
-                channel_id
-            ))
-        })
+        .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
     }
 
     pub fn handshake_step(&mut self, state: State) -> Result<Vec<IbcEvent>, ChannelError> {
@@ -656,7 +646,7 @@ impl Channel {
         );
 
         client.build_update_client(height).map_err(|e| {
-            ChannelError::ClientOperation(self.dst_client_id().clone(), self.dst_chain().id(), e)
+            ChannelError::client_operation(self.dst_client_id().clone(), self.dst_chain().id(), e)
         })
     }
 
@@ -665,47 +655,28 @@ impl Channel {
     /// Note: This query is currently not available and it is hardcoded in the `module_version()`
     /// to be `ics20-1` for `transfer` port.
     pub fn dst_version(&self) -> Result<String, ChannelError> {
-        Ok(self.version.clone()
-            .unwrap_or(
-                self
-                    .dst_chain()
-                    .module_version(self.dst_port_id())
-                    .map_err(|e| {
-                        ChannelError::Failed(format!(
-                            "failed while getting the module version from dst chain ({}) with error: {}",
-                            self.dst_chain().id(),
-                            e
-                        ))
-                    })?
-            ))
+        Ok(self.version.clone().unwrap_or(
+            self.dst_chain()
+                .module_version(self.dst_port_id())
+                .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?,
+        ))
     }
 
     /// Returns the channel version if already set, otherwise it queries the source chain
     /// for the source port's version.
     pub fn src_version(&self) -> Result<String, ChannelError> {
-        Ok(self.version.clone()
-            .unwrap_or(
-                self
-                    .src_chain()
-                    .module_version(self.src_port_id())
-                    .map_err(|e| {
-                        ChannelError::Failed(format!(
-                            "failed while getting the module version from src chain ({}) with error: {}",
-                            self.src_chain().id(),
-                            e
-                        ))
-                    })?
-            ))
+        Ok(self.version.clone().unwrap_or(
+            self.src_chain()
+                .module_version(self.src_port_id())
+                .map_err(|e| ChannelError::query(self.src_chain().id(), e))?,
+        ))
     }
 
     pub fn build_chan_open_init(&self) -> Result<Vec<Any>, ChannelError> {
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ChannelError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let counterparty = Counterparty::new(self.src_port_id().clone(), None);
 
@@ -733,7 +704,7 @@ impl Channel {
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel open init
         let result = events
@@ -743,15 +714,13 @@ impl Channel {
                     || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
-                ChannelError::Failed("no chan init event was in the response".to_string())
+                ChannelError::missing_event("no chan init event was in the response".to_string())
             })?;
 
         match result {
             IbcEvent::OpenInitChannel(_) => Ok(result),
-            IbcEvent::ChainError(e) => {
-                Err(ChannelError::Failed(format!("tx response error: {}", e)))
-            }
-            _ => panic!("internal error"),
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
+            _ => Err(ChannelError::invalid_event(result)),
         }
     }
 
@@ -766,7 +735,7 @@ impl Channel {
         // Destination channel ID must be specified
         let dst_channel_id = self
             .dst_channel_id()
-            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
         // If there is a channel present on the destination chain, it should look like this:
         let counterparty =
@@ -792,14 +761,12 @@ impl Channel {
         let dst_channel = self
             .dst_chain()
             .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         // Check if a channel is expected to exist on destination chain
         // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
         if dst_channel.state_matches(&State::Uninitialized) {
-            return Err(ChannelError::Failed(
-                "missing channel on destination chain".to_string(),
-            ));
+            return Err(ChannelError::missing_channel_on_destination());
         }
 
         check_destination_channel_state(
@@ -815,64 +782,38 @@ impl Channel {
         // Source channel ID must be specified
         let src_channel_id = self
             .src_channel_id()
-            .ok_or(ChannelError::MissingLocalChannelId)?;
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
 
         // Channel must exist on source
         let src_channel = self
             .src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         if src_channel.counterparty().port_id() != self.dst_port_id() {
-            return Err(ChannelError::Failed(format!(
-                "channel open try to chain `{}` and destination port `{}` does not match \
-                the source chain `{}` counterparty port `{}` for channel_id {}",
+            return Err(ChannelError::mismatch_port(
                 self.dst_chain().id(),
-                self.dst_port_id(),
+                self.dst_port_id().clone(),
                 self.src_chain().id(),
-                src_channel.counterparty().port_id,
-                src_channel_id
-            )));
+                src_channel.counterparty().port_id.clone(),
+                src_channel_id.clone(),
+            ));
         }
 
         // Connection must exist on destination
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
-
-        // If a counterparty channel is specified check that the channel exists on destination
-        if let Some(counterparty_channel_id) = self.dst_channel_id() {
-            let channel = self
-                .dst_chain()
-                .query_channel(self.dst_port_id(), counterparty_channel_id, Height::zero())
-                .map_err(|e| {
-                    ChannelError::Failed(format!(
-                        "error querying counterparty channel {}/{} on destination chain {}: {}",
-                        self.dst_port_id(),
-                        counterparty_channel_id,
-                        self.dst_chain().id(),
-                        e
-                    ))
-                })?;
-            if channel.state_matches(&State::Uninitialized) {
-                return Err(ChannelError::Failed(format!(
-                    "counterparty channel {}/{} specified in open-init but does not exist on destination chain {}",
-                    self.dst_port_id(),
-                    counterparty_channel_id,
-                    self.dst_chain().id()
-                )));
-            }
-        }
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
-            .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
+            .map_err(ChannelError::channel_proof)?;
 
         // Build message(s) to update client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
@@ -889,13 +830,10 @@ impl Channel {
         );
 
         // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ChannelError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         let previous_channel_id = if src_channel.counterparty().channel_id.is_none() {
             self.b_side.channel_id.clone()
@@ -913,8 +851,6 @@ impl Channel {
             signer,
         };
 
-        tracing::trace!("Built try message: {:#?}", new_msg);
-
         msgs.push(new_msg.to_any());
         Ok(msgs)
     }
@@ -925,7 +861,7 @@ impl Channel {
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel open try
         let result = events
@@ -935,15 +871,13 @@ impl Channel {
                     || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
-                ChannelError::Failed("no chan try event was in the response".to_string())
+                ChannelError::missing_event("no chan try event was in the response".to_string())
             })?;
 
         match result {
             IbcEvent::OpenTryChannel(_) => Ok(result),
-            IbcEvent::ChainError(e) => {
-                Err(ChannelError::Failed(format!("tx response error: {}", e)))
-            }
-            _ => panic!("internal error"),
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
+            _ => Err(ChannelError::invalid_event(result)),
         }
     }
 
@@ -951,10 +885,10 @@ impl Channel {
         // Source and destination channel IDs must be specified
         let src_channel_id = self
             .src_channel_id()
-            .ok_or(ChannelError::MissingLocalChannelId)?;
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
         let dst_channel_id = self
             .dst_channel_id()
-            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
         // Check that the destination chain will accept the message
         self.validated_expected_channel(ChannelMsgType::OpenAck)?;
@@ -963,92 +897,97 @@ impl Channel {
         let src_channel = self
             .src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
-            .map_err(|e| {
-                ChannelError::Failed(format!(
-                    "failed while building the channel proofs at ACK step with error: {}",
-                    e
-                ))
-            })?;
+            .map_err(ChannelError::channel_proof)?;
 
         // Build message(s) to update client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
         // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ChannelError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         // Build the domain type message
         let new_msg = MsgChannelOpenAck {
             port_id: self.dst_port_id().clone(),
             channel_id: dst_channel_id.clone(),
             counterparty_channel_id: src_channel_id.clone(),
-            counterparty_version: src_channel.version,
+            counterparty_version: src_channel.version(),
             proofs,
             signer,
         };
-
-        tracing::trace!("Built ack message: {:#?}", new_msg);
 
         msgs.push(new_msg.to_any());
         Ok(msgs)
     }
 
     pub fn build_chan_open_ack_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = self.build_chan_open_ack()?;
+        fn do_build_chan_open_ack_and_send<ChainA: ChainHandle, ChainB: ChainHandle>(
+            channel: &Channel<ChainA, ChainB>,
+        ) -> Result<IbcEvent, ChannelError> {
+            let dst_msgs = channel.build_chan_open_ack()?;
 
-        let events = self
-            .dst_chain()
-            .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
+            let events = channel
+                .dst_chain()
+                .send_msgs(dst_msgs)
+                .map_err(|e| ChannelError::submit(channel.dst_chain().id(), e))?;
 
-        // Find the relevant event for channel open ack
-        let result = events
-            .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenAckChannel(_))
-                    || matches!(event, IbcEvent::ChainError(_))
-            })
-            .ok_or_else(|| {
-                ChannelError::Failed("no chan ack event was in the response".to_string())
-            })?;
+            // Find the relevant event for channel open ack
+            let event = events
+                .into_iter()
+                .find(|event| {
+                    matches!(event, IbcEvent::OpenAckChannel(_))
+                        || matches!(event, IbcEvent::ChainError(_))
+                })
+                .ok_or_else(|| {
+                    ChannelError::missing_event("no chan ack event was in the response".to_string())
+                })?;
 
-        match result {
-            IbcEvent::OpenAckChannel(_) => Ok(result),
-            IbcEvent::ChainError(e) => {
-                Err(ChannelError::Failed(format!("tx response error: {}", e)))
+            match event {
+                IbcEvent::OpenAckChannel(_) => {
+                    info!(
+                        "done with ChanAck step {} => {:#?}\n",
+                        channel.dst_chain().id(),
+                        event
+                    );
+
+                    Ok(event)
+                }
+                IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
+                _ => Err(ChannelError::invalid_event(event)),
             }
-            _ => panic!("internal error"),
         }
+
+        do_build_chan_open_ack_and_send(self).map_err(|e| {
+            error!("failed ChanAck {:?}: {}", self.b_side, e);
+            e
+        })
     }
 
     pub fn build_chan_open_confirm(&self) -> Result<Vec<Any>, ChannelError> {
         // Source and destination channel IDs must be specified
         let src_channel_id = self
             .src_channel_id()
-            .ok_or(ChannelError::MissingLocalChannelId)?;
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
         let dst_channel_id = self
             .dst_channel_id()
-            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
         // Check that the destination chain will accept the message
         self.validated_expected_channel(ChannelMsgType::OpenConfirm)?;
@@ -1056,34 +995,31 @@ impl Channel {
         // Channel must exist on source
         self.src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
-            .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
+            .map_err(ChannelError::channel_proof)?;
 
         // Build message(s) to update client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
         // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ChannelError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         // Build the domain type message
         let new_msg = MsgChannelOpenConfirm {
@@ -1098,51 +1034,60 @@ impl Channel {
     }
 
     pub fn build_chan_open_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = self.build_chan_open_confirm()?;
+        fn do_build_chan_open_confirm_and_send<ChainA: ChainHandle, ChainB: ChainHandle>(
+            channel: &Channel<ChainA, ChainB>,
+        ) -> Result<IbcEvent, ChannelError> {
+            let dst_msgs = channel.build_chan_open_confirm()?;
 
-        let events = self
-            .dst_chain()
-            .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
+            let events = channel
+                .dst_chain()
+                .send_msgs(dst_msgs)
+                .map_err(|e| ChannelError::submit(channel.dst_chain().id(), e))?;
 
-        // Find the relevant event for channel open confirm
-        let result = events
-            .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenConfirmChannel(_))
-                    || matches!(event, IbcEvent::ChainError(_))
-            })
-            .ok_or_else(|| {
-                ChannelError::Failed("no chan confirm event was in the response".to_string())
-            })?;
+            // Find the relevant event for channel open confirm
+            let event = events
+                .into_iter()
+                .find(|event| {
+                    matches!(event, IbcEvent::OpenConfirmChannel(_))
+                        || matches!(event, IbcEvent::ChainError(_))
+                })
+                .ok_or_else(|| {
+                    ChannelError::missing_event(
+                        "no chan confirm event was in the response".to_string(),
+                    )
+                })?;
 
-        match result {
-            IbcEvent::OpenConfirmChannel(_) => Ok(result),
-            IbcEvent::ChainError(e) => {
-                Err(ChannelError::Failed(format!("tx response error: {}", e)))
+            match event {
+                IbcEvent::OpenConfirmChannel(_) => {
+                    info!("done {} => {:#?}\n", channel.dst_chain().id(), event);
+                    Ok(event)
+                }
+                IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
+                _ => Err(ChannelError::invalid_event(event)),
             }
-            _ => panic!("internal error"),
         }
+
+        do_build_chan_open_confirm_and_send(self).map_err(|e| {
+            error!("failed ChanConfirm {:?}: {}", self.b_side, e);
+            e
+        })
     }
 
     pub fn build_chan_close_init(&self) -> Result<Vec<Any>, ChannelError> {
         // Destination channel ID must be specified
         let dst_channel_id = self
             .dst_channel_id()
-            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
         // Channel must exist on destination
         self.dst_chain()
             .query_channel(self.dst_port_id(), dst_channel_id, Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ChannelError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseInit {
@@ -1160,7 +1105,7 @@ impl Channel {
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel close init
         let result = events
@@ -1170,16 +1115,13 @@ impl Channel {
                     || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
-                ChannelError::Failed("no chan init event was in the response".to_string())
+                ChannelError::missing_event("no chan init event was in the response".to_string())
             })?;
 
         match result {
             IbcEvent::CloseInitChannel(_) => Ok(result),
-            IbcEvent::ChainError(e) => Err(ChannelError::Failed(format!(
-                "tx response event consists of an error: {}",
-                e
-            ))),
-            _ => panic!("internal error"),
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
+            _ => Err(ChannelError::invalid_event(result)),
         }
     }
 
@@ -1187,10 +1129,10 @@ impl Channel {
         // Source and destination channel IDs must be specified
         let src_channel_id = self
             .src_channel_id()
-            .ok_or(ChannelError::MissingLocalChannelId)?;
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
         let dst_channel_id = self
             .dst_channel_id()
-            .ok_or(ChannelError::MissingCounterpartyChannelId)?;
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
         // Check that the destination chain will accept the message
         self.validated_expected_channel(ChannelMsgType::CloseConfirm)?;
@@ -1198,34 +1140,31 @@ impl Channel {
         // Channel must exist on source
         self.src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         // Connection must exist on destination
         self.dst_chain()
             .query_connection(self.dst_connection_id(), Height::zero())
-            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
         let query_height = self
             .src_chain()
             .query_latest_height()
-            .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
         let proofs = self
             .src_chain()
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
-            .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
+            .map_err(ChannelError::channel_proof)?;
 
         // Build message(s) to update client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
         // Get signer
-        let signer = self.dst_chain().get_signer().map_err(|e| {
-            ChannelError::Failed(format!(
-                "failed while fetching the signer for dst chain ({}) with error: {}",
-                self.dst_chain().id(),
-                e
-            ))
-        })?;
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
@@ -1245,7 +1184,7 @@ impl Channel {
         let events = self
             .dst_chain()
             .send_msgs(dst_msgs)
-            .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel close confirm
         let result = events
@@ -1255,34 +1194,14 @@ impl Channel {
                     || matches!(event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
-                ChannelError::Failed("no chan confirm event was in the response".to_string())
+                ChannelError::missing_event("no chan confirm event was in the response".to_string())
             })?;
 
         match result {
             IbcEvent::CloseConfirmChannel(_) => Ok(result),
-            IbcEvent::ChainError(e) => {
-                Err(ChannelError::Failed(format!("tx response error: {}", e)))
-            }
-            _ => panic!("internal error"),
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
+            _ => Err(ChannelError::invalid_event(result)),
         }
-    }
-}
-
-impl fmt::Display for Channel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let channel_id = self
-            .src_channel_id()
-            .map(ToString::to_string)
-            .unwrap_or_else(|| "None".to_string());
-
-        write!(
-            f,
-            "{}:{}/{} -> {}",
-            self.src_chain().id(),
-            self.src_port_id(),
-            channel_id,
-            self.dst_chain().id()
-        )
     }
 }
 
@@ -1294,7 +1213,7 @@ pub fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> 
         IbcEvent::OpenConfirmChannel(ev) => ev.channel_id(),
         _ => None,
     }
-    .ok_or_else(|| ChannelError::Failed("cannot extract channel_id from result".to_string()))
+    .ok_or_else(|| ChannelError::missing_event("cannot extract channel_id from result".to_string()))
 }
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
@@ -1327,9 +1246,6 @@ fn check_destination_channel_state(
     if good_state && good_connection_hops && good_channel_port_ids {
         Ok(())
     } else {
-        Err(ChannelError::Failed(format!(
-            "channel {} already exist in an incompatible state",
-            channel_id
-        )))
+        Err(ChannelError::channel_already_exist(channel_id))
     }
 }

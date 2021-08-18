@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crossbeam_channel as channel;
+use serde::{Serialize, Serializer};
 
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -35,11 +36,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryClientConnectionsRequest;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
-use crate::{
-    connection::ConnectionMsgType,
-    error::{Error, Kind},
-    keyring::KeyEntry,
-};
+use crate::{connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
 
 use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
 
@@ -68,15 +65,17 @@ impl ProdChainHandle {
         let (sender, receiver) = reply_channel();
         let input = f(sender);
 
-        self.runtime_sender
-            .send(input)
-            .map_err(|e| Kind::Channel.context(e))?;
+        self.runtime_sender.send(input).map_err(Error::send)?;
 
-        receiver.recv().map_err(|e| Kind::Channel.context(e))?
+        receiver.recv().map_err(Error::channel_receive)?
     }
 }
 
 impl ChainHandle for ProdChainHandle {
+    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+        Self::new(chain_id, sender)
+    }
+
     fn id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -407,5 +406,14 @@ impl ChainHandle for ProdChainHandle {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
+    }
+}
+
+impl Serialize for ProdChainHandle {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.id().serialize(serializer)
     }
 }

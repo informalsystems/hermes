@@ -5,8 +5,10 @@ use std::sync::{Arc, RwLock};
 use abscissa_core::{Command, Options, Runnable};
 use crossbeam_channel::Sender;
 
+use ibc_relayer::chain::handle::{ChainHandle, ProdChainHandle};
 use ibc_relayer::config::reload::ConfigReload;
 use ibc_relayer::config::Config;
+use ibc_relayer::rest;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, Supervisor};
 
 use crate::conclude::json;
@@ -21,10 +23,11 @@ impl Runnable for StartCmd {
         let config = (*app_config()).clone();
         let config = Arc::new(RwLock::new(config));
 
-        let (supervisor, tx_cmd) = make_supervisor(config.clone()).unwrap_or_else(|e| {
-            Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
-            unreachable!()
-        });
+        let (supervisor, tx_cmd) = make_supervisor::<ProdChainHandle>(config.clone())
+            .unwrap_or_else(|e| {
+                Output::error(format!("Hermes failed to start, last error: {}", e)).exit();
+                unreachable!()
+            });
 
         match crate::config::config_path() {
             Some(config_path) => {
@@ -100,10 +103,23 @@ fn register_signals(reload: ConfigReload, tx_cmd: Sender<SupervisorCmd>) -> Resu
     Ok(())
 }
 
+fn make_rest_receiver(config: &Arc<RwLock<Config>>) -> Option<rest::Receiver> {
+    let rest = config.read().expect("poisoned lock").rest.clone();
+
+    if rest.enabled {
+        let rest_config = ibc_relayer_rest::Config::new(rest.host, rest.port);
+        let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
+        Some(rest_receiver)
+    } else {
+        info!("[rest] address not configured, REST server disabled");
+        None
+    }
+}
+
 #[cfg(feature = "telemetry")]
-fn make_supervisor(
+fn make_supervisor<Chain: ChainHandle + 'static>(
     config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
     let state = ibc_telemetry::new_state();
 
     let telemetry = config.read().expect("poisoned lock").telemetry.clone();
@@ -122,13 +138,15 @@ fn make_supervisor(
         }
     }
 
-    Ok(Supervisor::new(config, state))
+    let rest_receiver = make_rest_receiver(&config);
+
+    Ok(Supervisor::new(config, rest_receiver, state))
 }
 
 #[cfg(not(feature = "telemetry"))]
-fn make_supervisor(
+fn make_supervisor<Chain: ChainHandle + 'static>(
     config: Arc<RwLock<Config>>,
-) -> Result<(Supervisor, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
+) -> Result<(Supervisor<Chain>, Sender<SupervisorCmd>), Box<dyn Error + Send + Sync>> {
     if config.read().expect("poisoned lock").telemetry.enabled {
         warn!(
             "telemetry enabled in the config but Hermes was built without telemetry support, \
@@ -136,6 +154,8 @@ fn make_supervisor(
         );
     }
 
+    let rest_receiver = make_rest_receiver(&config);
+
     let telemetry = ibc_relayer::telemetry::TelemetryDisabled;
-    Ok(Supervisor::new(config, telemetry))
+    Ok(Supervisor::new(config, rest_receiver, telemetry))
 }

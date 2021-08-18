@@ -129,6 +129,28 @@ identifier `<client-id>` with new consensus state from up-to-date headers.
 Hermes will automatically infer the target chain of this client from
 the [client state][client-state].
 
+- Upgrade a client:
+
+```
+upgrade client <host-chain-id> <client-id>
+```
+
+**Details:**
+Submits a transaction to chain id `<host-chain-id>` to upgrade the client having
+identifier `<client-id>`. 
+Hermes will automatically infer the target chain of this client from
+the [client state][client-state].
+
+- Upgrade all clients that target a specific chain:
+
+```
+upgrade clients <target-chain-id> 
+```
+
+**Details:**
+Submits a transaction to upgrade clients of all chains in the config that target
+chain id `<target-chain-id>`.
+
 ##### Create New Connection
 
 - Minimal invocation: this will create the connection from scratch, using
@@ -268,6 +290,6 @@ Partially implemented.
 [#628]: https://github.com/informalsystems/ibc-rs/issues/628
 [#673]: https://github.com/informalsystems/ibc-rs/issues/673
 [#640]: https://github.com/informalsystems/ibc-rs/issues/640
-[client-state]: https://hermes.informal.systems/query_client.html#query-the-client-state
+[client-state]: https://hermes.informal.systems/commands/queries/client.html#query-the-client-state
 [client-create]: https://docs.rs/ibc/0.1.1/ibc/ics02_client/msgs/create_client/index.html
 [output]: https://github.com/informalsystems/ibc-rs/blob/1f2e72dbcafee5a8bbdab381ff4927d5870b4b59/relayer-cli/src/conclude.rs#L80

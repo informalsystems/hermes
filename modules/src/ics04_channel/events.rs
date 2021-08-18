@@ -397,14 +397,6 @@ impl From<CloseConfirm> for IbcEvent {
     }
 }
 
-#[macro_export]
-macro_rules! p_attribute {
-    ($a:ident, $b:literal) => {{
-        let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(nb)?[$a.idx].parse()?
-    }};
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SendPacket {
     pub height: Height,

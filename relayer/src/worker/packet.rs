@@ -1,11 +1,10 @@
 use std::time::Duration;
 
-use anomaly::BoxError;
 use crossbeam_channel::Receiver;
 use tracing::{error, info, warn};
 
 use crate::{
-    chain::handle::ChainHandlePair,
+    chain::handle::{ChainHandle, ChainHandlePair},
     link::{Link, LinkParameters, RelaySummary},
     object::Packet,
     telemetry,
@@ -14,6 +13,7 @@ use crate::{
     worker::retry_strategy,
 };
 
+use super::error::RunError;
 use super::WorkerCmd;
 
 enum Step {
@@ -22,18 +22,18 @@ enum Step {
 }
 
 #[derive(Debug)]
-pub struct PacketWorker {
+pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     path: Packet,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
     telemetry: Telemetry,
     clear_packets_interval: u64,
 }
 
-impl PacketWorker {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
     pub fn new(
         path: Packet,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
         clear_packets_interval: u64,
@@ -48,7 +48,7 @@ impl PacketWorker {
     }
 
     /// Run the event loop for events associated with a [`Packet`].
-    pub fn run(self) -> Result<(), BoxError> {
+    pub fn run(self) -> Result<(), RunError> {
         let mut link = Link::new_from_opts(
             self.chains.a.clone(),
             self.chains.b.clone(),
@@ -56,10 +56,13 @@ impl PacketWorker {
                 src_port_id: self.path.src_port_id.clone(),
                 src_channel_id: self.path.src_channel_id.clone(),
             },
-        )?;
+        )
+        .map_err(RunError::link)?;
+
+        let is_closed = link.is_closed().map_err(RunError::link)?;
 
         // TODO: Do periodical checks that the link is closed (upon every retry in the loop).
-        if link.is_closed()? {
+        if is_closed {
             warn!("channel is closed, exiting");
             return Ok(());
         }
@@ -89,19 +92,21 @@ impl PacketWorker {
                 }
 
                 Err(retries) => {
-                    return Err(format!("Packet worker failed after {} retries", retries).into());
+                    return Err(RunError::retry(retries));
                 }
             }
         }
     }
 
-    fn step(&self, cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<Step, u64> {
+    fn step(
+        &self,
+        cmd: Option<WorkerCmd>,
+        link: &mut Link<ChainA, ChainB>,
+        index: u64,
+    ) -> RetryResult<Step, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
-                WorkerCmd::IbcEvents { batch } => {
-                    // Update scheduled batches.
-                    link.a_to_b.update_schedule(batch)
-                }
+                WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
 
                 // Handle the arrival of an event signaling that the
                 // source chain has advanced to a new block.
@@ -109,16 +114,16 @@ impl PacketWorker {
                     height,
                     new_block: _,
                 } => {
-                    // Schedule the clearing of pending packets
-                    // at predefined block intervals.
-                    if self.clear_packets_interval != 0
-                        && height.revision_height % self.clear_packets_interval == 0
-                    {
-                        link.a_to_b.clear_packets(height)
-                    } else {
-                        Ok(())
-                    }
+                    // Schedule the clearing of pending packets. This should happen
+                    // once at start, and _forced_ at predefined block intervals.
+                    let force_packet_clearing = self.clear_packets_interval != 0
+                        && height.revision_height % self.clear_packets_interval == 0;
+
+                    link.a_to_b
+                        .schedule_packet_clearing(Some(height), force_packet_clearing)
                 }
+
+                WorkerCmd::ClearPendingPackets => link.a_to_b.schedule_packet_clearing(None, true),
 
                 WorkerCmd::Shutdown => {
                     return RetryResult::Ok(Step::Shutdown);
@@ -156,7 +161,7 @@ impl PacketWorker {
     }
 
     /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

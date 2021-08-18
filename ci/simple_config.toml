@@ -1,7 +1,13 @@
 [global]
 strategy = 'all'
-log_level = 'info'
+log_level = 'trace'
+filter = false
 clear_packets_interval = 100
+
+[telemetry]
+enabled = false
+host = '127.0.0.1'
+port = 3001
 
 [[chains]]
 id = 'ibc-0'
@@ -12,10 +18,13 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-max_gas = 400000
+max_gas = 3000000
+max_msg_num = 30
+max_tx_size = 2097152
 gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
 
 [[chains]]
 id = 'ibc-1'
@@ -26,7 +35,10 @@ rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-max_gas = 400000
+max_gas = 3000000
+max_msg_num = 30
+max_tx_size = 2097152
 gas_price = { price = 0.001, denom = 'stake' }
 clock_drift = '5s'
 trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }

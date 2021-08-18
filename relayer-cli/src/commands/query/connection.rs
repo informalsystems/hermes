@@ -9,10 +9,10 @@ use ibc::{
     ics24_host::identifier::{ChainId, PortChannelId},
 };
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
-use ibc_relayer::chain::{Chain, CosmosSdkChain};
+use ibc_relayer::chain::{ChainEndpoint, CosmosSdkChain};
 
 use crate::conclude::Output;
-use crate::error::{Error, Kind};
+use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -104,9 +104,7 @@ impl Runnable for QueryConnectionChannelsCmd {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
         };
 
-        let res: Result<_, Error> = chain
-            .query_connection_channels(req)
-            .map_err(|e| Kind::Query.context(e).into());
+        let res: Result<_, Error> = chain.query_connection_channels(req).map_err(Error::relayer);
 
         match res {
             Ok(channels) => {

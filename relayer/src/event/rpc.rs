@@ -28,7 +28,7 @@ pub fn get_all_events(
             );
             for event in tx_result.result.events.iter() {
                 let abci_event = tendermint::abci::Event {
-                    type_str: event.event_type.to_string(),
+                    type_str: event.type_str.clone(),
                     attributes: event
                         .attributes
                         .iter()

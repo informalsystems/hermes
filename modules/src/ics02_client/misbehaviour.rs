@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
 use crate::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -19,7 +19,6 @@ pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.
 #[cfg(any(test, feature = "mocks"))]
 pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
 
-#[dyn_clonable::clonable]
 pub trait Misbehaviour: Clone + std::fmt::Debug + Send + Sync {
     /// The type of client (eg. Tendermint)
     fn client_id(&self) -> &ClientId;
@@ -68,19 +67,17 @@ impl Protobuf<Any> for AnyMisbehaviour {}
 impl TryFrom<Any> for AnyMisbehaviour {
     type Error = Error;
 
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
+    fn try_from(raw: Any) -> Result<Self, Error> {
         match raw.type_url.as_str() {
             TENDERMINT_MISBEHAVIOR_TYPE_URL => Ok(AnyMisbehaviour::Tendermint(
-                TmMisbehaviour::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawMisbehaviour.context(e))?,
+                TmMisbehaviour::decode_vec(&raw.value).map_err(Error::decode_raw_misbehaviour)?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_MISBEHAVIOUR_TYPE_URL => Ok(AnyMisbehaviour::Mock(
-                MockMisbehaviour::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawMisbehaviour.context(e))?,
+                MockMisbehaviour::decode_vec(&raw.value).map_err(Error::decode_raw_misbehaviour)?,
             )),
-            _ => Err(Kind::UnknownMisbehaviourType(raw.type_url).into()),
+            _ => Err(Error::unknown_misbehaviour_type(raw.type_url)),
         }
     }
 }
