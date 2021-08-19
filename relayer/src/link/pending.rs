@@ -30,6 +30,7 @@ pub struct PendingData {
     pub original_od: OperationalData,
     pub tx_hashes: TxHashes,
     pub submit_time: Instant,
+    pub error_events: Vec<IbcEvent>,
 }
 
 /// The mediator stores all pending data
@@ -66,10 +67,42 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
     // Insert new pending transaction to the back of the queue.
     pub fn insert_new_pending_tx(&self, r: AsyncReply, od: OperationalData) {
+        let mut tx_hashes = Vec::new();
+        let mut error_events = Vec::new();
+
+        for response in r.responses.into_iter() {
+            if response.code.is_err() {
+                // If the response is an error, we do not want to check for the
+                // transaction confirmation status because it is never going to
+                // be committed. Instead we convert it into an error event and
+                // store it to be returned in the RelaySummary after all other
+                // transactions have been confirmed.
+                // This is not ideal, but is just to follow the previous synchronous
+                // behavior of handling the OperationalData.
+                trace!(
+                    "[{}] putting error response in error event queue: {:?} ",
+                    self,
+                    response
+                );
+
+                let error_event = IbcEvent::ChainError(format!(
+                    "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                    self.chain_id(),
+                    response.hash,
+                    response.code,
+                    response.log
+                ));
+                error_events.push(error_event);
+            } else {
+                tx_hashes.push(response.hash);
+            }
+        }
+
         let u = PendingData {
             original_od: od,
-            tx_hashes: r.into(),
+            tx_hashes: TxHashes(tx_hashes),
             submit_time: Instant::now(),
+            error_events,
         };
         self.pending_queue.push_back(u);
     }
@@ -102,6 +135,10 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
             let tx_hashes = &pending.tx_hashes;
             let submit_time = &pending.submit_time;
 
+            if tx_hashes.0.is_empty() {
+                return Ok(Some(RelaySummary::from_events(pending.error_events)));
+            }
+
             // Process the given pending transaction.
             trace!("[{}] trying to confirm {} ", self, tx_hashes);
 
@@ -111,6 +148,12 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 Ok(None) => {
                     // There is no events for the associated transactions.
                     // This means the transaction has not yet been committed.
+
+                    trace!(
+                        "[{}] transaction is not yet committed: {} ",
+                        self,
+                        tx_hashes
+                    );
 
                     if submit_time.elapsed() > timeout {
                         // The submission time for the transaction has exceeded the
@@ -151,7 +194,9 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                     );
 
                     // Convert the events to RelaySummary and return them.
-                    let summary = RelaySummary::from_events(events);
+                    let mut summary = RelaySummary::from_events(events);
+                    summary.extend(RelaySummary::from_events(pending.error_events));
+
                     Ok(Some(summary))
                 }
                 Err(e) => {
