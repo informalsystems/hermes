@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crossbeam_channel::Receiver;
-use tracing::{error, info, warn};
+use tracing::{error, info, trace, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
@@ -68,7 +68,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         }
 
         loop {
-            const BACKOFF: Duration = Duration::from_millis(200);
+            const BACKOFF: Duration = Duration::from_millis(1000);
 
             // Pop-out any unprocessed commands
             // If there are no incoming commands, it's safe to backoff.
@@ -82,8 +82,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             });
 
             match result {
-                Ok(Step::Success(_summary)) => {
-                    telemetry!(self.packet_metrics(&_summary));
+                Ok(Step::Success(summary)) => {
+                    if !summary.is_empty() {
+                        trace!("Packet worker produced relay summary: {:?}", summary);
+                    }
+                    telemetry!(self.packet_metrics(&summary));
                 }
 
                 Ok(Step::Shutdown) => {
