@@ -68,7 +68,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         }
 
         loop {
-            const BACKOFF: Duration = Duration::from_millis(1000);
+            const BACKOFF: Duration = Duration::from_millis(200);
 
             // Pop-out any unprocessed commands
             // If there are no incoming commands, it's safe to backoff.
