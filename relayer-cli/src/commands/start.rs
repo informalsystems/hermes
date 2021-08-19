@@ -127,7 +127,7 @@ fn make_supervisor<Chain: ChainHandle + 'static>(
         match ibc_telemetry::spawn((telemetry.host, telemetry.port), state.clone()) {
             Ok((addr, _)) => {
                 info!(
-                    "telemetry service running, exposing metrics at {}/metrics",
+                    "telemetry service running, exposing metrics at http://{}/metrics",
                     addr
                 );
             }
