@@ -1,5 +1,5 @@
 use crossbeam_channel::TryRecvError;
-use tracing::{debug, error};
+use tracing::{error, trace};
 
 use crate::{
     config::Config,
@@ -44,38 +44,42 @@ pub fn process_incoming_requests(config: &Config, channel: &Receiver) -> Option<
     match channel.try_recv() {
         Ok(request) => match request {
             Request::Version { reply_to } => {
-                debug!("[rest/supervisor] Version");
+                trace!("[rest] Version");
+
                 let v = VersionInfo {
                     name: NAME.to_string(),
                     version: VER.to_string(),
                 };
+
                 reply_to.send(Ok(v)).unwrap_or_else(|e| {
                     error!("[rest/supervisor] error replying to a REST request {}", e)
                 });
             }
 
             Request::GetChains { reply_to } => {
-                debug!("[rest/supervisor] GetChains");
+                trace!("[rest] GetChains");
+
                 reply_to
                     .send(Ok(config.chains.iter().map(|c| c.id.clone()).collect()))
-                    .unwrap_or_else(|e| {
-                        error!("[rest/supervisor] error replying to a REST request {}", e)
-                    });
+                    .unwrap_or_else(|e| error!("[rest] error replying to a REST request {}", e));
             }
 
             Request::GetChain { chain_id, reply_to } => {
-                debug!("[rest/supervisor] GetChain {}", chain_id);
+                trace!("[rest] GetChain {}", chain_id);
+
                 let result = config
                     .find_chain(&chain_id)
                     .cloned()
-                    .ok_or_else(|| RestApiError::chain_config_not_found(chain_id));
+                    .ok_or(RestApiError::ChainConfigNotFound(chain_id));
+
                 reply_to.send(result).unwrap_or_else(|e| {
                     error!("[rest/supervisor] error replying to a REST request {}", e)
                 });
             }
 
             Request::State { reply_to } => {
-                debug!("[rest/supervisor] State");
+                trace!("[rest] State");
+
                 return Some(Command::DumpState(reply_to));
             }
         },
