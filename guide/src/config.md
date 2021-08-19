@@ -68,8 +68,29 @@ Here is an example for the `telemetry` section:
 ```toml
 [telemetry]
 enabled = true
-host = '127.0.0.1'
-port = 3001
+host    = '127.0.0.1'
+port    = 3001
+```
+
+### `[rest]`
+
+The `rest` section defines parameters for Hermes' built-in [REST API](rest-api.md)..
+
+#### Parameters
+
+* __enabled__: *(boolean)* Whether or not to enable the built-in REST server. Default: `false`.
+
+* __host__: *(string)* Specify the IPv4/6 host over which the built-in HTTP server will be listening. Default: `127.0.0.1`
+
+* __port__: *(u16)* Specify the port over which the built-in HTTP server will be listening. Default: `3000`
+
+Here is an example for the `rest` section:
+
+```toml
+[rest]
+enabled = true
+host    = '127.0.0.1'
+port    = 3000
 ```
 
 ### `[[chains]]`
