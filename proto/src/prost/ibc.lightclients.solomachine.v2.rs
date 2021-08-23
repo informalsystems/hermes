@@ -6,8 +6,8 @@ pub struct ClientState {
     #[prost(uint64, tag = "1")]
     pub sequence: u64,
     /// frozen sequence of the solo machine
-    #[prost(uint64, tag = "2")]
-    pub frozen_sequence: u64,
+    #[prost(bool, tag = "2")]
+    pub is_frozen: bool,
     #[prost(message, optional, tag = "3")]
     pub consensus_state: ::core::option::Option<ConsensusState>,
     /// when set to true, will allow governance to update a solo machine client.

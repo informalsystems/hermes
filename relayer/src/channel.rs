@@ -703,7 +703,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let events = self
             .dst_chain()
-            .send_msgs(dst_msgs)
+            .send_messages_and_wait_commit(dst_msgs)
             .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel open init
@@ -860,7 +860,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let events = self
             .dst_chain()
-            .send_msgs(dst_msgs)
+            .send_messages_and_wait_commit(dst_msgs)
             .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel open try
@@ -945,7 +945,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             let events = channel
                 .dst_chain()
-                .send_msgs(dst_msgs)
+                .send_messages_and_wait_commit(dst_msgs)
                 .map_err(|e| ChannelError::submit(channel.dst_chain().id(), e))?;
 
             // Find the relevant event for channel open ack
@@ -1041,7 +1041,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             let events = channel
                 .dst_chain()
-                .send_msgs(dst_msgs)
+                .send_messages_and_wait_commit(dst_msgs)
                 .map_err(|e| ChannelError::submit(channel.dst_chain().id(), e))?;
 
             // Find the relevant event for channel open confirm
@@ -1104,7 +1104,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let events = self
             .dst_chain()
-            .send_msgs(dst_msgs)
+            .send_messages_and_wait_commit(dst_msgs)
             .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel close init
@@ -1183,7 +1183,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let events = self
             .dst_chain()
-            .send_msgs(dst_msgs)
+            .send_messages_and_wait_commit(dst_msgs)
             .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel close confirm
