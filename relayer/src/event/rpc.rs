@@ -25,8 +25,9 @@ pub fn get_all_events(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 tx_result.height as u64,
             );
-            for abci_event in tx_result.result.events.iter() {
-                if let Some(ibc_event) = from_tx_response_event(height, &abci_event) {
+
+            for abci_event in &tx_result.result.events {
+                if let Some(ibc_event) = from_tx_response_event(height, abci_event) {
                     tracing::trace!("Extracted ibc_event {:?}", ibc_event);
                     vals.push((height, ibc_event));
                 }
