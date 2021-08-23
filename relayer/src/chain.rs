@@ -107,14 +107,15 @@ pub trait ChainEndpoint: Sized {
     /// Returns the chain's keybase, mutably
     fn keybase_mut(&mut self) -> &mut KeyRing;
 
-    /// Sends one or more transactions with `msgs` to chain.
+    /// Sends one or more transactions with `msgs` to chain and
+    // synchronously wait for it to be committed.
     fn send_messages_and_wait_commit(
         &mut self,
         proto_msgs: Vec<Any>,
     ) -> Result<Vec<IbcEvent>, Error>;
 
     /// Sends one or more transactions with `msgs` to chain.
-    /// Non-blocking alternative to `send_msgs` interface.
+    /// Non-blocking alternative to `send_messages_and_wait_commit` interface.
     fn send_messages_and_wait_check_tx(
         &mut self,
         proto_msgs: Vec<Any>,

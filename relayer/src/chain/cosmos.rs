@@ -662,7 +662,6 @@ impl CosmosSdkChain {
                     if empty_event_present(events) {
                         // If the transaction failed, replace the events with an error,
                         // so that we don't attempt to resolve the transaction later on.
-                        // !! TODO(Adi): This check must be part of `submit_msgs` method!!
                         if response.code.value() != 0 {
                             *events = vec![IbcEvent::ChainError(format!(
                             "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",

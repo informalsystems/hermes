@@ -1,4 +1,5 @@
 use std::fmt;
+use std::iter;
 use std::time::Instant;
 
 use prost_types::Any;
@@ -101,12 +102,12 @@ impl OperationalData {
             None
         };
 
-        let mut msgs: Vec<Any> = self.batch.iter().map(|gm| gm.msg.clone()).collect();
-        if let Some(client_update) = client_update_msg {
-            // SAFETY: inserting at position `0` should not panic because
-            // we already checked that the `batch` vector is non-empty.
-            msgs.insert(0, client_update);
-        }
+        let msgs: Vec<Any> = match client_update_msg {
+            Some(client_update) => iter::once(client_update)
+                .chain(self.batch.iter().map(|gm| gm.msg.clone()))
+                .collect(),
+            None => self.batch.iter().map(|gm| gm.msg.clone()).collect(),
+        };
 
         info!(
             "[{}] assembled batch of {} message(s)",
