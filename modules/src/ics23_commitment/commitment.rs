@@ -51,8 +51,9 @@ pub struct CommitmentProofBytes {
 }
 
 impl fmt::Debug for CommitmentProofBytes {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[...]")
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hex = Hex::upper_case().encode_to_string(&self.bytes).unwrap();
+        f.debug_tuple("CommitmentProof").field(&hex).finish()
     }
 }
 
