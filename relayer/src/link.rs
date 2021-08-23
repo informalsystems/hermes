@@ -14,8 +14,12 @@ use crate::link::relay_path::RelayPath;
 
 pub mod error;
 mod operational_data;
+mod pending;
 mod relay_path;
+mod relay_sender;
 mod relay_summary;
+mod tx_hashes;
+use tx_hashes::TxHashes;
 
 // Re-export the telemetries summary
 pub use relay_summary::RelaySummary;
@@ -31,14 +35,14 @@ pub struct Link<ChainA: ChainHandle, ChainB: ChainHandle> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
-    pub fn new(channel: Channel<ChainA, ChainB>) -> Self {
-        Self {
-            a_to_b: RelayPath::new(channel),
-        }
+    pub fn new(channel: Channel<ChainA, ChainB>) -> Result<Self, LinkError> {
+        Ok(Self {
+            a_to_b: RelayPath::new(channel)?,
+        })
     }
 
     pub fn is_closed(&self) -> Result<bool, LinkError> {
-        let a_channel_id = self.a_to_b.src_channel_id()?;
+        let a_channel_id = self.a_to_b.src_channel_id();
 
         let a_channel = self
             .a_to_b
@@ -48,7 +52,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 LinkError::channel_not_found(a_channel_id.clone(), self.a_to_b.src_chain().id(), e)
             })?;
 
-        let b_channel_id = self.a_to_b.dst_channel_id()?;
+        let b_channel_id = self.a_to_b.dst_channel_id();
 
         let b_channel = self
             .a_to_b
@@ -147,9 +151,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             version: None,
         };
 
-        Ok(Link::new(channel))
+        Link::new(channel)
     }
 
+    /// Implements the `packet-recv` CLI
     pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
         self.a_to_b.build_recv_packet_and_timeout_msgs(None)?;
 
@@ -157,13 +162,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         // Block waiting for all of the scheduled data (until `None` is returned)
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
-            let mut last_res = self.a_to_b.relay_from_operational_data(odata)?;
+            let mut last_res = self
+                .a_to_b
+                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
             results.append(&mut last_res.events);
         }
 
         Ok(results)
     }
 
+    /// Implements the `packet-ack` CLI
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IbcEvent>, LinkError> {
         self.a_to_b.build_packet_ack_msgs(None)?;
 
@@ -171,7 +179,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         // Block waiting for all of the scheduled data
         while let Some(odata) = self.a_to_b.fetch_scheduled_operational_data() {
-            let mut last_res = self.a_to_b.relay_from_operational_data(odata)?;
+            let mut last_res = self
+                .a_to_b
+                .relay_from_operational_data::<relay_sender::SyncSender>(odata)?;
             results.append(&mut last_res.events);
         }
 
