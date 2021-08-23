@@ -26,6 +26,36 @@ pub enum PacketMsgType {
     TimeoutOnClose,
 }
 
+pub enum OutgoingPacketMsgType {
+    Recv,
+}
+
+pub enum IncomingPacketMsgType {
+    Ack,
+    TimeoutUnordered,
+    TimeoutOrdered,
+    TimeoutOnClose,
+}
+
+impl From<OutgoingPacketMsgType> for PacketMsgType {
+    fn from(packet_type: OutgoingPacketMsgType) -> Self {
+        match packet_type {
+            OutgoingPacketMsgType::Recv => Self::Recv,
+        }
+    }
+}
+
+impl From<IncomingPacketMsgType> for PacketMsgType {
+    fn from(packet_type: IncomingPacketMsgType) -> Self {
+        match packet_type {
+            IncomingPacketMsgType::Ack => Self::Ack,
+            IncomingPacketMsgType::TimeoutUnordered => Self::TimeoutUnordered,
+            IncomingPacketMsgType::TimeoutOrdered => Self::TimeoutOrdered,
+            IncomingPacketMsgType::TimeoutOnClose => Self::TimeoutOnClose,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum PacketResult {
     Send(SendPacketResult),
@@ -121,7 +151,8 @@ pub struct Packet {
     pub timeout_timestamp: Timestamp,
 }
 
-pub struct TaggedPacket<DstChain, SrcChain>(pub DualTagged<DstChain, SrcChain, Packet>);
+pub struct OutgoingPacket<DstChain, SrcChain>(pub DualTagged<DstChain, SrcChain, Packet>);
+pub struct IncomingPacket<DstChain, SrcChain>(pub DualTagged<DstChain, SrcChain, Packet>);
 
 impl Packet {
     pub fn new(
@@ -153,9 +184,9 @@ impl Packet {
     }
 }
 
-impl<DstChain, SrcChain> TaggedPacket<DstChain, SrcChain> {
+impl<DstChain, SrcChain> OutgoingPacket<DstChain, SrcChain> {
     pub fn new(
-        sequence: Tagged<DstChain, Sequence>,
+        sequence: Tagged<SrcChain, Sequence>,
         source_port: Tagged<SrcChain, PortId>,
         source_channel: Tagged<SrcChain, ChannelId>,
         destination_port: Tagged<DstChain, PortId>,
@@ -196,11 +227,63 @@ impl<DstChain, SrcChain> TaggedPacket<DstChain, SrcChain> {
         self.0.map_flipped(|p| p.source_channel.clone())
     }
 
+    pub fn sequence(&self) -> Tagged<SrcChain, Sequence> {
+        self.0.map_flipped(|p| p.sequence.clone())
+    }
+
+    pub fn timed_out(&self, dst_chain_height: Tagged<DstChain, Height>) -> bool {
+        self.0.value().timed_out(dst_chain_height.untag())
+    }
+}
+
+impl<DstChain, SrcChain> IncomingPacket<DstChain, SrcChain> {
+    pub fn new(
+        sequence: Tagged<DstChain, Sequence>,
+        source_port: Tagged<DstChain, PortId>,
+        source_channel: Tagged<DstChain, ChannelId>,
+        destination_port: Tagged<SrcChain, PortId>,
+        destination_channel: Tagged<SrcChain, ChannelId>,
+        data: Tagged<SrcChain, Vec<u8>>,
+        timeout_height: Tagged<SrcChain, Height>,
+        timeout_timestamp: Timestamp,
+    ) -> Self {
+        Self(DualTagged::new(Packet::new(
+            sequence.untag(),
+            source_port.untag(),
+            source_channel.untag(),
+            destination_port.untag(),
+            destination_channel.untag(),
+            data.untag(),
+            timeout_height.untag(),
+            timeout_timestamp,
+        )))
+    }
+
+    pub fn untag(self) -> Packet {
+        self.0.untag()
+    }
+
+    pub fn destination_port(&self) -> Tagged<SrcChain, PortId> {
+        self.0.map_flipped(|p| p.destination_port.clone())
+    }
+
+    pub fn destination_channel(&self) -> Tagged<SrcChain, ChannelId> {
+        self.0.map_flipped(|p| p.destination_channel.clone())
+    }
+
+    pub fn source_port(&self) -> Tagged<DstChain, PortId> {
+        self.0.map(|p| p.source_port.clone())
+    }
+
+    pub fn source_channel(&self) -> Tagged<DstChain, ChannelId> {
+        self.0.map(|p| p.source_channel.clone())
+    }
+
     pub fn sequence(&self) -> Tagged<DstChain, Sequence> {
         self.0.map(|p| p.sequence.clone())
     }
 
-    pub fn timed_out(&self, dst_chain_height: Tagged<DstChain, Height>) -> bool {
+    pub fn timed_out(&self, dst_chain_height: Tagged<SrcChain, Height>) -> bool {
         self.0.value().timed_out(dst_chain_height.untag())
     }
 }

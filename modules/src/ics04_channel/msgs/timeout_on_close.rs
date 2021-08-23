@@ -5,7 +5,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
 
 use crate::ics04_channel::error::Error;
-use crate::ics04_channel::packet::{Packet, Sequence, TaggedPacket};
+use crate::ics04_channel::packet::{OutgoingPacket, Packet, Sequence};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tagged::Tagged;
@@ -40,7 +40,7 @@ impl MsgTimeoutOnClose {
     }
 
     pub fn tagged_new<ChainA, ChainB>(
-        packet: TaggedPacket<ChainB, ChainA>,
+        packet: OutgoingPacket<ChainB, ChainA>,
         next_sequence_recv: Tagged<ChainB, Sequence>,
         proofs: Tagged<ChainB, Proofs>,
         signer: Tagged<ChainA, Signer>,

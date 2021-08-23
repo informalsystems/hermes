@@ -5,7 +5,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
 use crate::ics04_channel::error::Error;
-use crate::ics04_channel::packet::{Packet, TaggedPacket};
+use crate::ics04_channel::packet::{OutgoingPacket, Packet};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tagged::Tagged;
@@ -23,6 +23,12 @@ pub struct MsgRecvPacket {
     pub signer: Signer,
 }
 
+pub struct TaggedMsgRecvPacket<DstChain, SrcChain> {
+    pub packet: OutgoingPacket<DstChain, SrcChain>,
+    pub proofs: Tagged<SrcChain, Proofs>,
+    pub signer: Tagged<DstChain, Signer>,
+}
+
 impl MsgRecvPacket {
     pub fn new(packet: Packet, proofs: Proofs, signer: Signer) -> MsgRecvPacket {
         Self {
@@ -33,7 +39,7 @@ impl MsgRecvPacket {
     }
 
     pub fn tagged_new<Chain, Counterparty>(
-        packet: TaggedPacket<Chain, Counterparty>,
+        packet: OutgoingPacket<Chain, Counterparty>,
         proofs: Tagged<Counterparty, Proofs>,
         signer: Tagged<Chain, Signer>,
     ) -> Tagged<Chain, Self> {

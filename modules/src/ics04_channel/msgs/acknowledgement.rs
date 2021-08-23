@@ -5,7 +5,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 
 use crate::ics04_channel::error::Error;
-use crate::ics04_channel::packet::{Packet, TaggedPacket};
+use crate::ics04_channel::packet::{OutgoingPacket, Packet};
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tagged::Tagged;
@@ -24,6 +24,13 @@ pub struct MsgAcknowledgement {
     pub signer: Signer,
 }
 
+pub struct TaggedMsgAcknowledgement<DstChain, SrcChain> {
+    pub packet: OutgoingPacket<SrcChain, DstChain>,
+    pub acknowledgement: Tagged<SrcChain, Vec<u8>>,
+    pub proofs: Tagged<SrcChain, Proofs>,
+    pub signer: Tagged<DstChain, Signer>,
+}
+
 impl MsgAcknowledgement {
     pub fn new(
         packet: Packet,
@@ -40,7 +47,7 @@ impl MsgAcknowledgement {
     }
 
     pub fn tagged_new<ChainA, ChainB>(
-        packet: TaggedPacket<ChainA, ChainB>,
+        packet: OutgoingPacket<ChainA, ChainB>,
         acknowledgement: Tagged<ChainA, Vec<u8>>,
         proofs: Tagged<ChainA, Proofs>,
         signer: Tagged<ChainB, Signer>,

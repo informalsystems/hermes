@@ -1,7 +1,7 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 use crate::events::{extract_attribute, maybe_extract_attribute, Error, IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
-use crate::ics04_channel::packet::{Packet, TaggedPacket};
+use crate::ics04_channel::packet::{IncomingPacket, OutgoingPacket, Packet};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::tagged::{DualTagged, Tagged};
 use serde_derive::{Deserialize, Serialize};
@@ -549,7 +549,10 @@ impl SendPacket {
 }
 
 impl<DstChain, SrcChain> TaggedSendPacket<DstChain, SrcChain> {
-    pub fn new(height: Tagged<DstChain, Height>, packet: TaggedPacket<DstChain, SrcChain>) -> Self {
+    pub fn new(
+        height: Tagged<DstChain, Height>,
+        packet: OutgoingPacket<DstChain, SrcChain>,
+    ) -> Self {
         Self(DualTagged::new(SendPacket::new(
             height.untag(),
             packet.untag(),
@@ -560,8 +563,8 @@ impl<DstChain, SrcChain> TaggedSendPacket<DstChain, SrcChain> {
         Self(DualTagged::new(event.untag()))
     }
 
-    pub fn packet(&self) -> TaggedPacket<DstChain, SrcChain> {
-        TaggedPacket(self.0.dual_map(|p| p.packet.clone()))
+    pub fn packet(&self) -> OutgoingPacket<DstChain, SrcChain> {
+        OutgoingPacket(self.0.dual_map(|p| p.packet.clone()))
     }
 
     pub fn height(&self) -> Tagged<DstChain, Height> {
@@ -689,8 +692,8 @@ impl WriteAcknowledgement {
 
 impl<DstChain, SrcChain> TaggedWriteAcknowledgement<DstChain, SrcChain> {
     pub fn new(
-        height: Tagged<DstChain, Height>,
-        packet: TaggedPacket<DstChain, SrcChain>,
+        height: Tagged<SrcChain, Height>,
+        packet: IncomingPacket<DstChain, SrcChain>,
         ack: Tagged<DstChain, Vec<u8>>,
     ) -> Self {
         Self(DualTagged::new(WriteAcknowledgement::new(
@@ -704,12 +707,12 @@ impl<DstChain, SrcChain> TaggedWriteAcknowledgement<DstChain, SrcChain> {
         Self(DualTagged::new(tagged.untag()))
     }
 
-    pub fn packet(&self) -> TaggedPacket<DstChain, SrcChain> {
-        TaggedPacket(self.0.dual_map(|p| p.packet.clone()))
+    pub fn packet(&self) -> IncomingPacket<DstChain, SrcChain> {
+        IncomingPacket(self.0.dual_map(|p| p.packet.clone()))
     }
 
-    pub fn height(&self) -> Tagged<DstChain, Height> {
-        self.0.map(|e| e.height)
+    pub fn height(&self) -> Tagged<SrcChain, Height> {
+        self.0.map_flipped(|e| e.height)
     }
 
     pub fn ack(&self) -> Tagged<DstChain, Vec<u8>> {

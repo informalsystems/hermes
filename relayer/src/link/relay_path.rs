@@ -16,7 +16,10 @@ use ibc::{
             acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
             recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
         },
-        packet::{PacketMsgType, Sequence, TaggedPacket},
+        packet::{
+            IncomingPacket, IncomingPacketMsgType, OutgoingPacket, OutgoingPacketMsgType,
+            PacketMsgType, Sequence,
+        },
     },
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     query::QueryTxRequest,
@@ -25,6 +28,7 @@ use ibc::{
     tx_msg::Msg,
     Height,
 };
+use ibc_proto::cosmos::base::query::pagination;
 use ibc_proto::ibc::core::channel::v1::{
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
@@ -674,15 +678,15 @@ where
     /// Checks if a sent packet has been received on destination.
     fn send_packet_received_on_dst(
         &self,
-        packet: TaggedPacket<ChainB, ChainA>,
+        packet: OutgoingPacket<ChainB, ChainA>,
     ) -> Result<bool, LinkError> {
         let unreceived_packet = self
             .dst_chain()
-            .query_unreceived_packets(QueryUnreceivedPacketsRequest {
-                port_id: self.dst_port_id().to_string(),
-                channel_id: self.dst_channel_id()?.to_string(),
-                packet_commitment_sequences: vec![packet.untag().sequence.into()],
-            })
+            .query_unreceived_packets(
+                self.dst_port_id(),
+                self.dst_channel_id()?,
+                packet.sequence().map_into(|s| vec![s]),
+            )
             .map_err(LinkError::relayer)?;
 
         Ok(unreceived_packet.value().is_empty())
@@ -692,12 +696,12 @@ where
     /// The packet commitment is cleared when either an acknowledgment or a timeout is received on source.
     fn send_packet_commitment_cleared_on_src(
         &self,
-        packet: TaggedPacket<ChainB, ChainA>,
+        packet: OutgoingPacket<ChainB, ChainA>,
     ) -> Result<bool, LinkError> {
         let (bytes, _) = self
             .src_chain()
-            .build_incoming_packet_proofs(
-                PacketMsgType::Recv,
+            .build_outgoing_packet_proofs(
+                OutgoingPacketMsgType::Recv,
                 self.src_port_id(),
                 self.src_channel_id()?,
                 packet.sequence(),
@@ -725,9 +729,9 @@ where
     /// that sends the acknowledgment.
     fn recv_packet_acknowledged_on_src(
         &self,
-        packet: TaggedPacket<ChainA, ChainB>,
+        packet: OutgoingPacket<ChainA, ChainB>,
     ) -> Result<bool, LinkError> {
-        let sequences = packet.sequence().map_into(|s| vec![s.to_u64()]);
+        let sequences = packet.sequence().map_into(|s| vec![s]);
 
         let unreceived_ack = self
             .dst_chain()
@@ -876,23 +880,16 @@ where
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
-        if packet_commitments.is_empty() {
+        if packet_commitments.value().is_empty() {
             return Ok((events_result, query_height));
         }
-        let commit_sequences: Vec<u64> = packet_commitments.iter().map(|p| p.sequence).collect();
-
-        // Get the packets that have not been received on destination chain
-        let request = QueryUnreceivedPacketsRequest {
-            port_id: self.dst_port_id().to_string(),
-            channel_id: self.dst_channel_id()?.to_string(),
-            packet_commitment_sequences: commit_sequences.clone(),
-        };
+        let commit_sequences = packet_commitments
+            .map_into(|commitments| commitments.into_iter().map(|p| p.sequence.into()).collect());
 
         let sequences: Tagged<ChainB, Vec<Sequence>> = self
             .dst_chain()
-            .query_unreceived_packets(request)
-            .map_err(LinkError::relayer)?
-            .map_into(|sequences| sequences.into_iter().map(Sequence::new).collect());
+            .query_unreceived_packets(self.dst_port_id(), self.dst_channel_id()?, commit_sequences)
+            .map_err(LinkError::relayer)?;
 
         if sequences.value().is_empty() {
             return Ok((events_result, query_height));
@@ -902,8 +899,8 @@ where
             "[{}] packets that still have commitments on {}: {} (first 10 shown here; total={})",
             self,
             self.src_chain().id(),
-            commit_sequences.iter().take(10).join(", "),
-            commit_sequences.len()
+            commit_sequences.value().iter().take(10).join(", "),
+            commit_sequences.value().len()
         );
 
         debug!(
@@ -965,14 +962,9 @@ where
         let dst_channel_id = self.dst_channel_id()?;
 
         // Get the sequences of packets that have been acknowledged on source
-        let pc_request = QueryPacketAcknowledgementsRequest {
-            port_id: self.src_port_id().to_string(),
-            channel_id: src_channel_id.to_string(),
-            pagination: ibc_proto::cosmos::base::query::pagination::all(),
-        };
         let (acks_on_source, src_response_height) = self
             .src_chain()
-            .query_packet_acknowledgements(pc_request)
+            .query_packet_acknowledgements(self.src_port_id(), src_channel_id, pagination::all())
             .map_err(|e| LinkError::query(self.src_chain().id().untag(), e))?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
@@ -982,7 +974,8 @@ where
         }
 
         let acked_sequences = acks_on_source.map_into(|packets| {
-            let mut sequences: Vec<u64> = packets.into_iter().map(|p| p.sequence).collect();
+            let mut sequences: Vec<Sequence> =
+                packets.into_iter().map(|p| p.sequence.into()).collect();
             sequences.sort_unstable();
             sequences
         });
@@ -1114,13 +1107,13 @@ where
 
     fn build_recv_packet(
         &self,
-        packet: TaggedPacket<ChainB, ChainA>,
-        height: Tagged<ChainB, Height>,
+        packet: OutgoingPacket<ChainB, ChainA>,
+        height: Tagged<ChainA, Height>,
     ) -> Result<Option<Tagged<ChainB, Any>>, LinkError> {
         let (_, proofs) = self
             .src_chain()
-            .build_incoming_packet_proofs(
-                PacketMsgType::Recv,
+            .build_outgoing_packet_proofs(
+                OutgoingPacketMsgType::Recv,
                 packet.source_port(),
                 packet.source_channel(),
                 packet.sequence(),
@@ -1142,14 +1135,14 @@ where
 
     fn build_ack_from_recv_event(
         &self,
-        event: TaggedWriteAcknowledgement<ChainA, ChainB>,
+        event: TaggedWriteAcknowledgement<ChainB, ChainA>,
     ) -> Result<Option<Tagged<ChainB, Any>>, LinkError> {
         let packet = event.packet();
 
         let (_, proofs) = self
             .src_chain()
-            .build_packet_proofs(
-                PacketMsgType::Ack,
+            .build_incoming_packet_proofs(
+                IncomingPacketMsgType::Ack,
                 packet.destination_port(),
                 packet.destination_channel(),
                 packet.sequence(),
@@ -1172,7 +1165,7 @@ where
 
     fn build_timeout_packet(
         &self,
-        packet: TaggedPacket<ChainB, ChainA>,
+        packet: IncomingPacket<ChainB, ChainA>,
         height: Tagged<ChainB, Height>,
     ) -> Result<Option<Tagged<ChainA, Any>>, LinkError> {
         let dst_channel_id = self.dst_channel_id()?;
@@ -1216,7 +1209,7 @@ where
 
     fn build_timeout_on_close_packet(
         &self,
-        packet: TaggedPacket<ChainB, ChainA>,
+        packet: IncomingPacket<ChainB, ChainA>,
         height: Tagged<ChainB, Height>,
     ) -> Result<Option<Tagged<ChainA, Any>>, LinkError> {
         let (_, proofs) = self

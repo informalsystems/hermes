@@ -19,7 +19,7 @@ use ibc::{
     ics03_connection::{connection, version::Version},
     ics04_channel::{
         channel,
-        packet::{PacketMsgType, Sequence},
+        packet::{IncomingPacketMsgType, OutgoingPacketMsgType, PacketMsgType, Sequence},
     },
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
@@ -29,6 +29,7 @@ use ibc::{
     Height,
 };
 
+use ibc_proto::cosmos::base::query::v1beta1::PageRequest;
 use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
@@ -400,7 +401,7 @@ pub trait ChainHandle<Counterparty>: Clone + Send + Sync + Serialize + Debug + '
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Tagged<Self, Sequence>, Error>;
+    ) -> Result<Tagged<Counterparty, Sequence>, Error>;
 
     fn query_channels(
         &self,
@@ -492,47 +493,48 @@ pub trait ChainHandle<Counterparty>: Clone + Send + Sync + Serialize + Debug + '
         height: Tagged<Self, Height>,
     ) -> Result<Tagged<Self, Proofs>, Error>;
 
-    fn build_packet_proofs(
+    fn build_outgoing_packet_proofs(
         &self,
-        packet_type: PacketMsgType,
+        packet_type: OutgoingPacketMsgType,
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
         sequence: Tagged<Self, Sequence>,
         height: Tagged<Self, Height>,
     ) -> Result<(Tagged<Self, Vec<u8>>, Tagged<Self, Proofs>), Error>;
 
-    // Clarification needed: It seems like there are proofs that are constructed
-    // based on counterparty sequence and height?
-    // Either this or there are two types of packets: incoming and outgoing
     fn build_incoming_packet_proofs(
         &self,
-        packet_type: PacketMsgType,
+        packet_type: IncomingPacketMsgType,
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
         sequence: Tagged<Counterparty, Sequence>,
-        height: Tagged<Counterparty, Height>,
+        height: Tagged<Self, Height>,
     ) -> Result<(Tagged<Self, Vec<u8>>, Tagged<Self, Proofs>), Error>;
 
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketState>, Tagged<Self, Height>), Error>;
+    ) -> Result<(Tagged<Self, Vec<PacketState>>, Tagged<Self, Height>), Error>;
 
     fn query_unreceived_packets(
         &self,
-        request: QueryUnreceivedPacketsRequest,
-    ) -> Result<Tagged<Self, Vec<u64>>, Error>;
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        sequences: Tagged<Counterparty, Vec<Sequence>>,
+    ) -> Result<Tagged<Self, Vec<Sequence>>, Error>;
 
     fn query_packet_acknowledgements(
         &self,
-        request: QueryPacketAcknowledgementsRequest,
-    ) -> Result<(Tagged<Self, Vec<PacketState>>, Tagged<Self, Height>), Error>;
+        port_id: Tagged<Self, PortId>,
+        channel_id: Tagged<Self, ChannelId>,
+        pagination: Option<PageRequest>,
+    ) -> Result<(Tagged<Counterparty, Vec<PacketState>>, Tagged<Self, Height>), Error>;
 
     fn query_unreceived_acknowledgement(
         &self,
         port_id: Tagged<Self, PortId>,
         channel_id: Tagged<Self, ChannelId>,
-        packet_ack_sequences: Tagged<Counterparty, Vec<u64>>,
+        packet_ack_sequences: Tagged<Self, Vec<Sequence>>,
     ) -> Result<Tagged<Self, Vec<Sequence>>, Error>;
 
     fn query_txs(
