@@ -801,7 +801,11 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self,
         proto_msgs: Vec<Any>,
     ) -> Result<Vec<IbcEvent>, Error> {
-        crate::time!("send_msgs");
+        crate::time!("send_messages_and_wait_commit");
+        debug!(
+            "send_messages_and_wait_commit with {} messages",
+            proto_msgs.len()
+        );
 
         if proto_msgs.is_empty() {
             return Ok(vec![]);
@@ -853,7 +857,11 @@ impl ChainEndpoint for CosmosSdkChain {
         &mut self,
         proto_msgs: Vec<Any>,
     ) -> Result<Vec<Response>, Error> {
-        crate::time!("submit_msgs");
+        crate::time!("send_messages_and_wait_check_tx");
+        debug!(
+            "send_messages_and_wait_check_tx with {} messages",
+            proto_msgs.len()
+        );
 
         if proto_msgs.is_empty() {
             return Ok(vec![]);
