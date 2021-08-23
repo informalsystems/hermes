@@ -1,4 +1,3 @@
-use tendermint::abci::tag::Tag as AbciTag;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData, EventData};
 
 use ibc::events::{from_tx_response_event, IbcEvent};
@@ -26,21 +25,7 @@ pub fn get_all_events(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 tx_result.height as u64,
             );
-            for event in tx_result.result.events.iter() {
-                let abci_event = tendermint::abci::Event {
-                    type_str: event.type_str.clone(),
-                    attributes: event
-                        .attributes
-                        .iter()
-                        .map(|rpc_tag| {
-                            serde_json::from_str::<AbciTag>(
-                                serde_json::to_string(rpc_tag).unwrap().as_str(),
-                            )
-                            .unwrap()
-                        })
-                        .collect(),
-                };
-
+            for abci_event in tx_result.result.events.iter() {
                 if let Some(ibc_event) = from_tx_response_event(height, &abci_event) {
                     tracing::trace!("Extracted ibc_event {:?}", ibc_event);
                     vals.push((height, ibc_event));
