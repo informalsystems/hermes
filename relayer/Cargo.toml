@@ -29,7 +29,7 @@ ibc-telemetry = { version = "0.6.2", path = "../telemetry", optional = true }
 subtle-encoding = "0.5"
 async-trait = "0.1.50"
 humantime-serde = "1.0.0"
-serde = "1.0.125"
+serde = "1.0.128"
 serde_cbor = "0.11.2"
 serde_derive = "1.0"
 sled = { version = "0.34.4", features = ["no_metrics", "no_logs"] }
