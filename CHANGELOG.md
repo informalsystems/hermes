@@ -1,5 +1,68 @@
 # CHANGELOG
 
+## v0.7.0
+
+This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.
+Hermes 0.7.0 also improves the performance and reliability of the relayer, notably by waiting asynchronously for transactions to be confirmed.
+Additionnally, Hermes now includes a REST server which exposes the relayer's internal state over HTTP.
+
+### BUG FIXES
+
+- General
+  - [gm] Fix silent exit when requirements are missing
+    
+    [#1261]: https://github.com/informalsystems/ibc-rs/issues/1261
+  - Fix small typo in IBC.tla specification
+    
+    [#1285]: https://github.com/informalsystems/ibc-rs/pull/1285
+- [ibc](modules)
+  - Set the index of `ibc::ics05_port::capabilities::Capability` ([#1257])
+    
+    [#1257]: https://github.com/informalsystems/ibc-rs/issues/1257
+
+### FEATURES
+
+- Expose the Hermes config and internal state over a REST API ([#843])
+
+[#843]: https://github.com/informalsystems/ibc-rs/issues/843
+- Spawn packet workers only when there are outstanding packets or acknowledgements to relay ([#901])
+
+[#901]: https://github.com/informalsystems/ibc-rs/issues/901
+- Upgrade to Cosmos SDK proto (v0.43.0) & ibc-go proto (v1.0.0) ([#948]) 
+
+- [#948]: https://github.com/informalsystems/ibc-rs/pull/948
+- Added `keys delete` CLI command ([#1065])
+
+[#1065]: https://github.com/informalsystems/ibc-rs/issues/1065
+- Update CI to test with gaiad v5.0.5 ([#1175])
+
+
+[#1175]: https://github.com/informalsystems/ibc-rs/issues/1175
+- Add `--legacy | -l` flag to support upgrades for chains built with Cosmos SDK < v0.43.0 ([#1287])
+
+[#1287]: https://github.com/informalsystems/ibc-rs/issues/1287
+
+### IMPROVEMENTS
+
+- General
+  - Add optional destination chain and `--verbose` options for `query channels` CLI ([#1132])
+    
+    [#1132]: https://github.com/informalsystems/ibc-rs/issues/1132
+  - Improve support for Interchain Accounts (ICS 027) ([#1191])
+    
+    [#1191]: https://github.com/informalsystems/ibc-rs/issues/1191
+  - Update Modelator to 0.2.0 ([#1249])
+    
+    [#1249]: https://github.com/informalsystems/ibc-rs/pull/1249
+  - Improve performance and reliability of the relayer by asynchronously waiting for tx confirmations ([#1124], [#1265])
+    
+    [#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
+    [#1265]: https://github.com/informalsystems/ibc-rs/issues/1265
+- [ibc](modules)
+  - Implement `ics02_client::client_consensus::ConsensusState` for `AnyConsensusState` ([#1297])
+    
+    [#1297]: https://github.com/informalsystems/ibc-rs/issues/1297
+
 ## v0.6.2
 
 This minor release of Hermes re-enables the `upgrade client`, `upgrade clients`,
@@ -35,7 +98,6 @@ handle errors ([#1158])
 - Add semantic validation of of `max_tx_size` and `max_num_msg` config options ([#1245])
 
 [#1245]: https://github.com/informalsystems/ibc-rs/issues/1245
-
 
 ## v0.6.1
 *July 22nd, 2021*
