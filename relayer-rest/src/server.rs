@@ -1,6 +1,7 @@
 use std::thread;
 
 use crossbeam_channel as channel;
+use serde::{Deserialize, Serialize};
 use tracing::{info, trace};
 
 use ibc_relayer::rest::request::Request;
@@ -28,37 +29,57 @@ impl ServerHandle {
 pub fn spawn(config: Config) -> (ServerHandle, channel::Receiver<Request>) {
     let (req_tx, req_rx) = channel::unbounded::<Request>();
 
-    info!("[rest] starting REST API server at {}", config);
+    info!("starting REST API server listening at http://{}", config);
     let handle = run(config, req_tx);
 
     (handle, req_rx)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "status", content = "result")]
+#[serde(rename_all = "lowercase")]
+enum JsonResult<R, E> {
+    Success(R),
+    Error(E),
+}
+
+impl<R, E> From<Result<R, E>> for JsonResult<R, E> {
+    fn from(r: Result<R, E>) -> Self {
+        match r {
+            Ok(a) => Self::Success(a),
+            Err(e) => Self::Error(e),
+        }
+    }
 }
 
 #[allow(clippy::manual_strip)]
 fn run(config: Config, sender: channel::Sender<Request>) -> ServerHandle {
     let server = rouille::Server::new(config.address(), move |request| {
         router!(request,
-            (GET) (/) => {
-                trace!("[rest/server] GET /");
+            (GET) (/version) => {
+                trace!("[rest/server] GET /version");
                 let result = assemble_version_info(&sender);
                 rouille::Response::json(&result)
             },
 
-            (GET) (/chain) => {
+            (GET) (/chains) => {
                 // TODO(Soares): Add a `into_detail` to consume the error and obtain
                 //   the underlying detail, so that we avoid doing `e.0`
-                trace!("[rest/server] GET /chain");
-                rouille::Response::json(&all_chain_ids(&sender).map_err(|e| e.0))
+                trace!("[rest] GET /chains");
+                let result = all_chain_ids(&sender);
+                rouille::Response::json(&JsonResult::from(result))
             },
 
             (GET) (/chain/{id: String}) => {
-                trace!("[rest/server] GET /chain/{}", id);
-                rouille::Response::json(&chain_config(&sender, &id).map_err(|e| e.0))
+                trace!("[rest] GET /chain/{}", id);
+                let result = chain_config(&sender, &id);
+                rouille::Response::json(&JsonResult::from(result))
             },
 
             (GET) (/state) => {
-                trace!("[rest/server] GET /state");
-                rouille::Response::json(&supervisor_state(&sender).map_err(|e| e.0))
+                trace!("[rest] GET /state");
+                let result = supervisor_state(&sender);
+                rouille::Response::json(&JsonResult::from(result))
             },
 
             _ => rouille::Response::empty_404(),
