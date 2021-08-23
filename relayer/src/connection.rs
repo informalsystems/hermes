@@ -37,7 +37,7 @@ define_error! {
     ConnectionError {
         Relayer
             [ RelayerError ]
-            |_| { "relayer error" },
+            |e| { format_args!("relayer error: {}", e.source) },
 
         MissingLocalConnectionId
             |_| { "failed due to missing local channel id" },
