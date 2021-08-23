@@ -826,7 +826,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             *src_channel.ordering(),
             counterparty,
             vec![self.dst_connection_id().clone()],
-            self.dst_version()?,
+            src_channel.version(),
         );
 
         // Get signer
@@ -845,7 +845,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let new_msg = MsgChannelOpenTry {
             port_id: self.dst_port_id().clone(),
             previous_channel_id,
-            counterparty_version: self.src_version()?,
+            counterparty_version: src_channel.version(),
             channel,
             proofs,
             signer,
@@ -894,7 +894,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         // Channel must exist on source
-        self.src_chain()
+        let src_channel = self
+            .src_chain()
             .query_channel(self.src_port_id(), src_channel_id, Height::zero())
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
@@ -927,7 +928,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             port_id: self.dst_port_id().clone(),
             channel_id: dst_channel_id.clone(),
             counterparty_channel_id: src_channel_id.clone(),
-            counterparty_version: self.src_version()?,
+            counterparty_version: src_channel.version(),
             proofs,
             signer,
         };

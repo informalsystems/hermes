@@ -91,7 +91,7 @@ impl From<MsgTimeoutOnClose> for RawMsgTimeoutOnClose {
             proof_unreceived: domain_msg.proofs.object_proof().clone().into(),
             proof_close: domain_msg
                 .proofs
-                .other_proof
+                .other_proof()
                 .clone()
                 .map_or_else(Vec::new, |v| v.into()),
             proof_height: Some(domain_msg.proofs.height().into()),
