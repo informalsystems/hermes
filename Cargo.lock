@@ -1470,7 +1470,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "crossbeam-channel 0.5.1",
  "ibc",
