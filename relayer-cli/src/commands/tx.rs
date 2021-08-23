@@ -101,8 +101,8 @@ pub enum TxRawCommands {
     PacketAck(packet::TxRawPacketAckCmd),
 
     /// The `tx raw upgrade-chain` subcommand
-    #[options(help = "Send an upgrade plan")]
-    UpgradeChain(upgrade::TxUpgradeChainCmd),
+    #[options(help = "Send an IBC upgrade plan")]
+    UpgradeChain(upgrade::TxIbcUpgradeChainCmd),
 }
 
 impl Override<Config> for TxCmd {

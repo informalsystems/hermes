@@ -129,12 +129,19 @@ define_error! {
         Event
             |_| { "Bad Notification" },
 
-        EmptyUpgradedClientState
-            |_| { "The upgrade plan specifies no upgraded client state" },
+        ConversionFromAny
+            [ TraceError<TendermintProtoError> ]
+            |_| { "Conversion from a protobuf `Any` into a domain type failed" },
 
-        InvalidUpgradedClientState
-            [ client_error::Error ]
-            |e| { format!("the upgrade plan specifies an invalid upgraded client state: {}", e.source) },
+        EmptyUpgradedClientState
+            |_| { "Found no upgraded client state" },
+
+        ConsensusStateTypeMismatch
+            {
+                expected: ClientType,
+                got: ClientType,
+            }
+            |e| { format!("consensus state type mismatch; hint: expected client type '{0}', got '{1}'", e.expected, e.got) },
 
         EmptyResponseValue
             |_| { "Empty response value" },
@@ -415,7 +422,6 @@ define_error! {
                 format!("Hermes health check failed while verifying the application compatibility for chain {0}:{1}; caused by: {2}",
                     e.chain_id, e.address, e.cause)
             },
-
     }
 }
 
