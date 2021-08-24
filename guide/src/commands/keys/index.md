@@ -24,15 +24,17 @@ Currently there are two sub-commands supported `add` and `list`:
 
 ```shell
 USAGE:
-    hermes-cli keys <SUBCOMMAND>
+    hermes keys <SUBCOMMAND>
 
 DESCRIPTION:
     Manage keys in the relayer for each chain
 
 SUBCOMMANDS:
     help       Get usage information
-    add        adds a key to a configured chain
-    list       list keys configured on a chain
+    add        Adds a key to a configured chain
+    delete     Delete key(s) from a configured chain
+    list       List keys configured on a chain
+    restore    restore a key to a configured chain using a mnemonic
 ```
 
 ### Key Seed file (Private Key)
@@ -62,7 +64,6 @@ The command outputs a JSON similar to the one below. You can save this file (e.g
 #### Add a private key to a chain from a key file
 
 ```shell
-USAGE:
     hermes keys add <OPTIONS>
 
 DESCRIPTION:
@@ -72,8 +73,9 @@ POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain
 
 FLAGS:
-    -f, --file FILE           the path to the key file (conflicts with --mnemonic)
+    -f, --file FILE           path to the key file
     -n, --name NAME           name of the key (defaults to the `key_name` defined in the config)
+    -p, --hd-path HD-PATH     derivation path for this key (default: m/44'/118'/0'/0/0)
 ```
 
 To add a private key file to a chain:
@@ -110,8 +112,8 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -m, --mnemonic MNEMONIC   mnemonic to restore the key from
-    -t, --coin-type COIN-TYPE coin type of the key to restore, default: 118 (Atom)
     -n, --name NAME           name of the key (defaults to the `key_name` defined in the config)
+    -p, --hd-path HD-PATH     derivation path for this key (default: m/44'/118'/0'/0/0)
 ```
 
 To restore a key from its mnemonic:
