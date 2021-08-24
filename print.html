@@ -2191,15 +2191,17 @@ or the <code>keys restore</code> commands.</p>
 </code></pre>
 <p>Currently there are two sub-commands supported <code>add</code> and <code>list</code>:</p>
 <pre><code class="language-shell">USAGE:
-    hermes-cli keys &lt;SUBCOMMAND&gt;
+    hermes keys &lt;SUBCOMMAND&gt;
 
 DESCRIPTION:
     Manage keys in the relayer for each chain
 
 SUBCOMMANDS:
     help       Get usage information
-    add        adds a key to a configured chain
-    list       list keys configured on a chain
+    add        Adds a key to a configured chain
+    delete     Delete key(s) from a configured chain
+    list       List keys configured on a chain
+    restore    restore a key to a configured chain using a mnemonic
 </code></pre>
 <h3 id="key-seed-file-private-key"><a class="header" href="#key-seed-file-private-key">Key Seed file (Private Key)</a></h3>
 <p>In order to execute the command below you need a private key file (JSON). The relayer uses the private key file to sign the transactions submitted to the chain.</p>
@@ -2217,8 +2219,7 @@ SUBCOMMANDS:
 </code></pre>
 <h3 id="adding-keys"><a class="header" href="#adding-keys">Adding Keys</a></h3>
 <h4 id="add-a-private-key-to-a-chain-from-a-key-file"><a class="header" href="#add-a-private-key-to-a-chain-from-a-key-file">Add a private key to a chain from a key file</a></h4>
-<pre><code class="language-shell">USAGE:
-    hermes keys add &lt;OPTIONS&gt;
+<pre><code class="language-shell">    hermes keys add &lt;OPTIONS&gt;
 
 DESCRIPTION:
     Adds a key to a configured chain
@@ -2227,8 +2228,9 @@ POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain
 
 FLAGS:
-    -f, --file FILE           the path to the key file (conflicts with --mnemonic)
+    -f, --file FILE           path to the key file
     -n, --name NAME           name of the key (defaults to the `key_name` defined in the config)
+    -p, --hd-path HD-PATH     derivation path for this key (default: m/44'/118'/0'/0/0)
 </code></pre>
 <p>To add a private key file to a chain:</p>
 <pre><code class="language-shell">hermes -c config.toml keys add [CHAIN_ID] -f [PRIVATE_KEY_FILE]
@@ -2255,8 +2257,8 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -m, --mnemonic MNEMONIC   mnemonic to restore the key from
-    -t, --coin-type COIN-TYPE coin type of the key to restore, default: 118 (Atom)
     -n, --name NAME           name of the key (defaults to the `key_name` defined in the config)
+    -p, --hd-path HD-PATH     derivation path for this key (default: m/44'/118'/0'/0/0)
 </code></pre>
 <p>To restore a key from its mnemonic:</p>
 <pre><code class="language-shell">hermes -c config.toml keys restore [CHAIN_ID] -m &quot;[MNEMONIC]&quot;
