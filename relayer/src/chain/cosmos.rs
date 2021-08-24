@@ -523,15 +523,13 @@ impl CosmosSdkChain {
     fn account(&mut self) -> Result<&mut BaseAccount, Error> {
         if self.account == None {
             let account = self.block_on(query_account(self, self.key()?.account))?;
-            if let Some(acc) = account.as_ref() {
-                debug!(
-                    sequence = %acc.sequence,
-                    number = %acc.account_number,
-                    "[{}] send_tx: retrieved account",
-                    self.id()
-                );
-            }
-            self.account = account;
+            debug!(
+                sequence = %account.sequence,
+                number = %account.account_number,
+                "[{}] send_tx: retrieved account",
+                self.id()
+            );
+            self.account = Some(account);
         }
 
         Ok(self
@@ -1896,10 +1894,7 @@ async fn broadcast_tx_sync(chain: &CosmosSdkChain, data: Vec<u8>) -> Result<Resp
 }
 
 /// Uses the GRPC client to retrieve the account sequence
-async fn query_account(
-    chain: &CosmosSdkChain,
-    address: String,
-) -> Result<Option<BaseAccount>, Error> {
+async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
     let mut client = ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(
         chain.grpc_addr.clone(),
     )
@@ -1915,14 +1910,13 @@ async fn query_account(
         .account
         .unwrap();
     if resp_account.type_url == "/cosmos.auth.v1beta1.BaseAccount" {
-        Ok(Some(
-            BaseAccount::decode(resp_account.value.as_slice())
-                .map_err(|e| Error::protobuf_decode("BaseAccount".to_string(), e))?,
-        ))
+        Ok(BaseAccount::decode(resp_account.value.as_slice())
+            .map_err(|e| Error::protobuf_decode("BaseAccount".to_string(), e))?)
     } else if resp_account.type_url.ends_with(".EthAccount") {
         Ok(EthAccount::decode(resp_account.value.as_slice())
             .map_err(|e| Error::protobuf_decode("EthAccount".to_string(), e))?
-            .base_account)
+            .base_account
+            .ok_or_else(Error::empty_base_account)?)
     } else {
         Err(Error::unknown_account_type(resp_account.type_url))
     }

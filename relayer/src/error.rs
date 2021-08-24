@@ -432,6 +432,9 @@ define_error! {
                     e.type_url)
             },
 
+        EmptyBaseAccount
+            |_| { "Empty BaseAccount within EthAccount" },
+
     }
 }
 
