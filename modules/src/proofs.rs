@@ -23,7 +23,7 @@ pub struct Proofs {
     client_proof: Option<CommitmentProofBytes>,
     consensus_proof: Option<ConsensusProof>,
     /// Currently used for proof_close for MsgTimeoutOnCLose where object_proof is proof_unreceived
-    pub(crate) other_proof: Option<CommitmentProofBytes>,
+    other_proof: Option<CommitmentProofBytes>,
     /// Height for the commitment root for proving the proofs above.
     /// When creating these proofs, the chain is queried at `height-1`.
     height: Height,
@@ -74,6 +74,11 @@ impl Proofs {
     /// Getter for the client_proof.
     pub fn client_proof(&self) -> &Option<CommitmentProofBytes> {
         &self.client_proof
+    }
+
+    /// Getter for the other_proof.
+    pub fn other_proof(&self) -> &Option<CommitmentProofBytes> {
+        &self.other_proof
     }
 }
 

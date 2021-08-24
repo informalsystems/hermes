@@ -67,7 +67,9 @@ pub struct TxBody {
     /// transaction.
     #[prost(message, repeated, tag = "1")]
     pub messages: ::prost::alloc::vec::Vec<::prost_types::Any>,
-    /// memo is any arbitrary memo to be added to the transaction
+    /// memo is any arbitrary note/comment to be added to the transaction.
+    /// WARNING: in clients, any publicly exposed text should not be called memo,
+    /// but should be called `note` instead (see https://github.com/cosmos/cosmos-sdk/issues/9122).
     #[prost(string, tag = "2")]
     pub memo: ::prost::alloc::string::String,
     /// timeout is the block height after which this transaction will not
@@ -237,8 +239,13 @@ pub struct BroadcastTxResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimulateRequest {
     /// tx is the transaction to simulate.
+    /// Deprecated. Send raw tx bytes instead.
+    #[deprecated]
     #[prost(message, optional, tag = "1")]
     pub tx: ::core::option::Option<Tx>,
+    /// tx_bytes is the raw transaction.
+    #[prost(bytes = "vec", tag = "2")]
+    pub tx_bytes: ::prost::alloc::vec::Vec<u8>,
 }
 /// SimulateResponse is the response type for the
 /// Service.SimulateRPC method.

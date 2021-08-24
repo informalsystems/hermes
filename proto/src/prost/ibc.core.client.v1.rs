@@ -9,7 +9,8 @@ pub struct IdentifiedClientState {
     #[prost(message, optional, tag = "2")]
     pub client_state: ::core::option::Option<::prost_types::Any>,
 }
-/// ConsensusStateWithHeight defines a consensus state with an additional height field.
+/// ConsensusStateWithHeight defines a consensus state with an additional height
+/// field.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusStateWithHeight {
     /// consensus state height
@@ -30,9 +31,10 @@ pub struct ClientConsensusStates {
     #[prost(message, repeated, tag = "2")]
     pub consensus_states: ::prost::alloc::vec::Vec<ConsensusStateWithHeight>,
 }
-/// ClientUpdateProposal is a governance proposal. If it passes, the client is
-/// updated with the provided header. The update may fail if the header is not
-/// valid given certain conditions specified by the client implementation.
+/// ClientUpdateProposal is a governance proposal. If it passes, the substitute
+/// client's latest consensus state is copied over to the subject client. The proposal
+/// handler may fail if the subject and the substitute do not match in client and
+/// chain parameters (with exception to latest height, frozen height, and chain-id).
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientUpdateProposal {
     /// the title of the update proposal
@@ -43,20 +45,41 @@ pub struct ClientUpdateProposal {
     pub description: ::prost::alloc::string::String,
     /// the client identifier for the client to be updated if the proposal passes
     #[prost(string, tag = "3")]
-    pub client_id: ::prost::alloc::string::String,
-    /// the header used to update the client if the proposal passes
+    pub subject_client_id: ::prost::alloc::string::String,
+    /// the substitute client identifier for the client standing in for the subject
+    /// client
+    #[prost(string, tag = "4")]
+    pub substitute_client_id: ::prost::alloc::string::String,
+}
+/// UpgradeProposal is a gov Content type for initiating an IBC breaking
+/// upgrade.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpgradeProposal {
+    #[prost(string, tag = "1")]
+    pub title: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub description: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub plan: ::core::option::Option<super::super::super::super::cosmos::upgrade::v1beta1::Plan>,
+    /// An UpgradedClientState must be provided to perform an IBC breaking upgrade.
+    /// This will make the chain commit to the correct upgraded (self) client state
+    /// before the upgrade occurs, so that connecting chains can verify that the
+    /// new upgraded client is valid by verifying a proof on the previous version
+    /// of the chain. This will allow IBC connections to persist smoothly across
+    /// planned chain upgrades
     #[prost(message, optional, tag = "4")]
-    pub header: ::core::option::Option<::prost_types::Any>,
+    pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
 }
 /// Height is a monotonically increasing data type
 /// that can be compared against another Height for the purposes of updating and
 /// freezing clients
 ///
-/// Normally the RevisionHeight is incremented at each height while keeping RevisionNumber
-/// the same. However some consensus algorithms may choose to reset the
-/// height in certain conditions e.g. hard forks, state-machine breaking changes
-/// In these cases, the RevisionNumber is incremented so that height continues to
-/// be monitonically increasing even as the RevisionHeight gets reset
+/// Normally the RevisionHeight is incremented at each height while keeping
+/// RevisionNumber the same. However some consensus algorithms may choose to
+/// reset the height in certain conditions e.g. hard forks, state-machine
+/// breaking changes In these cases, the RevisionNumber is incremented so that
+/// height continues to be monitonically increasing even as the RevisionHeight
+/// gets reset
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Height {
     /// the revision that the client is currently on
@@ -72,46 +95,6 @@ pub struct Params {
     /// allowed_clients defines the list of allowed client state types.
     #[prost(string, repeated, tag = "1")]
     pub allowed_clients: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-/// GenesisState defines the ibc client submodule's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// client states with their corresponding identifiers
-    #[prost(message, repeated, tag = "1")]
-    pub clients: ::prost::alloc::vec::Vec<IdentifiedClientState>,
-    /// consensus states from each client
-    #[prost(message, repeated, tag = "2")]
-    pub clients_consensus: ::prost::alloc::vec::Vec<ClientConsensusStates>,
-    /// metadata from each client
-    #[prost(message, repeated, tag = "3")]
-    pub clients_metadata: ::prost::alloc::vec::Vec<IdentifiedGenesisMetadata>,
-    #[prost(message, optional, tag = "4")]
-    pub params: ::core::option::Option<Params>,
-    /// create localhost on initialization
-    #[prost(bool, tag = "5")]
-    pub create_localhost: bool,
-    /// the sequence for the next generated client identifier
-    #[prost(uint64, tag = "6")]
-    pub next_client_sequence: u64,
-}
-/// GenesisMetadata defines the genesis type for metadata that clients may return
-/// with ExportMetadata
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisMetadata {
-    /// store key of metadata without clientID-prefix
-    #[prost(bytes = "vec", tag = "1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    /// metadata value
-    #[prost(bytes = "vec", tag = "2")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
-}
-/// IdentifiedGenesisMetadata has the client metadata with the corresponding client id.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IdentifiedGenesisMetadata {
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "2")]
-    pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
 }
 /// QueryClientStateRequest is the request type for the Query/ClientState RPC
 /// method
@@ -218,15 +201,56 @@ pub struct QueryConsensusStatesResponse {
         super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
     >,
 }
-/// QueryClientParamsRequest is the request type for the Query/ClientParams RPC method.
+/// QueryClientStatusRequest is the request type for the Query/ClientStatus RPC
+/// method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryClientStatusRequest {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+}
+/// QueryClientStatusResponse is the response type for the Query/ClientStatus RPC
+/// method. It returns the current status of the IBC client.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryClientStatusResponse {
+    #[prost(string, tag = "1")]
+    pub status: ::prost::alloc::string::String,
+}
+/// QueryClientParamsRequest is the request type for the Query/ClientParams RPC
+/// method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientParamsRequest {}
-/// QueryClientParamsResponse is the response type for the Query/ClientParams RPC method.
+/// QueryClientParamsResponse is the response type for the Query/ClientParams RPC
+/// method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientParamsResponse {
     /// params defines the parameters of the module.
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
+}
+/// QueryUpgradedClientStateRequest is the request type for the
+/// Query/UpgradedClientState RPC method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradedClientStateRequest {}
+/// QueryUpgradedClientStateResponse is the response type for the
+/// Query/UpgradedClientState RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradedClientStateResponse {
+    /// client state associated with the request identifier
+    #[prost(message, optional, tag = "1")]
+    pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
+}
+/// QueryUpgradedConsensusStateRequest is the request type for the
+/// Query/UpgradedConsensusState RPC method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradedConsensusStateRequest {}
+/// QueryUpgradedConsensusStateResponse is the response type for the
+/// Query/UpgradedConsensusState RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUpgradedConsensusStateResponse {
+    /// Consensus state associated with the request identifier
+    #[prost(message, optional, tag = "1")]
+    pub upgraded_consensus_state: ::core::option::Option<::prost_types::Any>,
 }
 #[doc = r" Generated client implementations."]
 pub mod query_client {
@@ -328,6 +352,22 @@ pub mod query_client {
                 http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Query/ConsensusStates");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        #[doc = " Status queries the status of an IBC client."]
+        pub async fn client_status(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryClientStatusRequest>,
+        ) -> Result<tonic::Response<super::QueryClientStatusResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Query/ClientStatus");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         #[doc = " ClientParams queries all parameters of the ibc client."]
         pub async fn client_params(
             &mut self,
@@ -342,6 +382,42 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Query/ClientParams");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        #[doc = " UpgradedClientState queries an Upgraded IBC light client."]
+        pub async fn upgraded_client_state(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryUpgradedClientStateRequest>,
+        ) -> Result<tonic::Response<super::QueryUpgradedClientStateResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.client.v1.Query/UpgradedClientState",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        #[doc = " UpgradedConsensusState queries an Upgraded IBC consensus state."]
+        pub async fn upgraded_consensus_state(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryUpgradedConsensusStateRequest>,
+        ) -> Result<tonic::Response<super::QueryUpgradedConsensusStateResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.client.v1.Query/UpgradedConsensusState",
+            );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -392,7 +468,8 @@ pub struct MsgUpdateClient {
 /// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateClientResponse {}
-/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client state
+/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
+/// state
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpgradeClient {
     /// client unique identifier
@@ -401,7 +478,8 @@ pub struct MsgUpgradeClient {
     /// upgraded client state
     #[prost(message, optional, tag = "2")]
     pub client_state: ::core::option::Option<::prost_types::Any>,
-    /// upgraded consensus state, only contains enough information to serve as a basis of trust in update logic
+    /// upgraded consensus state, only contains enough information to serve as a
+    /// basis of trust in update logic
     #[prost(message, optional, tag = "3")]
     pub consensus_state: ::core::option::Option<::prost_types::Any>,
     /// proof that old chain committed to new client
@@ -431,7 +509,8 @@ pub struct MsgSubmitMisbehaviour {
     #[prost(string, tag = "3")]
     pub signer: ::prost::alloc::string::String,
 }
-/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response type.
+/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
+/// type.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitMisbehaviourResponse {}
 #[doc = r" Generated client implementations."]
@@ -543,4 +622,45 @@ pub mod msg_client {
             write!(f, "MsgClient {{ ... }}")
         }
     }
+}
+/// GenesisState defines the ibc client submodule's genesis state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// client states with their corresponding identifiers
+    #[prost(message, repeated, tag = "1")]
+    pub clients: ::prost::alloc::vec::Vec<IdentifiedClientState>,
+    /// consensus states from each client
+    #[prost(message, repeated, tag = "2")]
+    pub clients_consensus: ::prost::alloc::vec::Vec<ClientConsensusStates>,
+    /// metadata from each client
+    #[prost(message, repeated, tag = "3")]
+    pub clients_metadata: ::prost::alloc::vec::Vec<IdentifiedGenesisMetadata>,
+    #[prost(message, optional, tag = "4")]
+    pub params: ::core::option::Option<Params>,
+    /// create localhost on initialization
+    #[prost(bool, tag = "5")]
+    pub create_localhost: bool,
+    /// the sequence for the next generated client identifier
+    #[prost(uint64, tag = "6")]
+    pub next_client_sequence: u64,
+}
+/// GenesisMetadata defines the genesis type for metadata that clients may return
+/// with ExportMetadata
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisMetadata {
+    /// store key of metadata without clientID-prefix
+    #[prost(bytes = "vec", tag = "1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    /// metadata value
+    #[prost(bytes = "vec", tag = "2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+}
+/// IdentifiedGenesisMetadata has the client metadata with the corresponding
+/// client id.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IdentifiedGenesisMetadata {
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
 }

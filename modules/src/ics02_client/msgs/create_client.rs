@@ -12,7 +12,7 @@ use crate::ics02_client::error::Error;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
+pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]

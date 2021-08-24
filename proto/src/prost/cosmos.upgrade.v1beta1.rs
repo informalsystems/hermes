@@ -10,8 +10,10 @@ pub struct Plan {
     /// reached and the software will exit.
     #[prost(string, tag = "1")]
     pub name: ::prost::alloc::string::String,
-    /// The time after which the upgrade must be performed.
-    /// Leave set to its zero value to use a pre-defined Height instead.
+    /// Deprecated: Time based upgrades have been deprecated. Time based upgrade logic
+    /// has been removed from the SDK.
+    /// If this field is not empty, an error will be thrown.
+    #[deprecated]
     #[prost(message, optional, tag = "2")]
     pub time: ::core::option::Option<::prost_types::Timestamp>,
     /// The height at which the upgrade must be performed.
@@ -22,11 +24,10 @@ pub struct Plan {
     /// such as a git commit that validators could automatically upgrade to
     #[prost(string, tag = "4")]
     pub info: ::prost::alloc::string::String,
-    /// IBC-enabled chains can opt-in to including the upgraded client state in its upgrade plan
-    /// This will make the chain commit to the correct upgraded (self) client state before the upgrade occurs,
-    /// so that connecting chains can verify that the new upgraded client is valid by verifying a proof on the
-    /// previous version of the chain.
-    /// This will allow IBC connections to persist smoothly across planned chain upgrades
+    /// Deprecated: UpgradedClientState field has been deprecated. IBC upgrade logic has been
+    /// moved to the IBC module in the sub module 02-client.
+    /// If this field is not empty, an error will be thrown.
+    #[deprecated]
     #[prost(message, optional, tag = "5")]
     pub upgraded_client_state: ::core::option::Option<::prost_types::Any>,
 }
@@ -49,6 +50,16 @@ pub struct CancelSoftwareUpgradeProposal {
     pub title: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub description: ::prost::alloc::string::String,
+}
+/// ModuleVersion specifies a module and its consensus version.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ModuleVersion {
+    /// name of the app module
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    /// consensus version of the app module
+    #[prost(uint64, tag = "2")]
+    pub version: u64,
 }
 /// QueryCurrentPlanRequest is the request type for the Query/CurrentPlan RPC
 /// method.
@@ -91,8 +102,26 @@ pub struct QueryUpgradedConsensusStateRequest {
 /// RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryUpgradedConsensusStateResponse {
-    #[prost(message, optional, tag = "1")]
-    pub upgraded_consensus_state: ::core::option::Option<::prost_types::Any>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub upgraded_consensus_state: ::prost::alloc::vec::Vec<u8>,
+}
+/// QueryModuleVersionsRequest is the request type for the Query/ModuleVersions
+/// RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryModuleVersionsRequest {
+    /// module_name is a field to query a specific module
+    /// consensus version from state. Leaving this empty will
+    /// fetch the full list of module versions from state
+    #[prost(string, tag = "1")]
+    pub module_name: ::prost::alloc::string::String,
+}
+/// QueryModuleVersionsResponse is the response type for the Query/ModuleVersions
+/// RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryModuleVersionsResponse {
+    /// module_versions is a list of module names with their consensus versions.
+    #[prost(message, repeated, tag = "1")]
+    pub module_versions: ::prost::alloc::vec::Vec<ModuleVersion>,
 }
 #[doc = r" Generated client implementations."]
 pub mod query_client {
@@ -178,6 +207,23 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        #[doc = " ModuleVersions queries the list of module versions from state."]
+        pub async fn module_versions(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryModuleVersionsRequest>,
+        ) -> Result<tonic::Response<super::QueryModuleVersionsResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.upgrade.v1beta1.Query/ModuleVersions",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }

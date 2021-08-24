@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crossbeam_channel::Receiver;
-use tracing::{error, info, warn};
+use tracing::{error, info, trace, warn};
 
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
@@ -82,8 +82,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             });
 
             match result {
-                Ok(Step::Success(_summary)) => {
-                    telemetry!(self.packet_metrics(&_summary));
+                Ok(Step::Success(summary)) => {
+                    if !summary.is_empty() {
+                        trace!("Packet worker produced relay summary: {:?}", summary);
+                    }
+                    telemetry!(self.packet_metrics(&summary));
                 }
 
                 Ok(Step::Shutdown) => {
@@ -98,6 +101,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         }
     }
 
+    /// Receives worker commands, which may be:
+    ///     - IbcEvent => then it updates schedule
+    ///     - NewBlock => schedules packet clearing
+    ///     - Shutdown => exits
+    ///
+    /// Regardless of the incoming command, this method
+    /// also refreshes and executes any scheduled operational
+    /// data that is ready.
     fn step(
         &self,
         cmd: Option<WorkerCmd>,
@@ -141,23 +152,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             }
         }
 
-        let result = link
+        if let Err(e) = link
             .a_to_b
             .refresh_schedule()
-            .and_then(|_| link.a_to_b.execute_schedule());
-
-        match result {
-            Ok(summary) => RetryResult::Ok(Step::Success(summary)),
-            Err(e) => {
-                error!(
-                    path = %self.path.short_name(),
-                    "[{}] worker: schedule execution encountered error: {}",
-                    link.a_to_b, e
-                );
-
-                RetryResult::Retry(index)
-            }
+            .and_then(|_| link.a_to_b.execute_schedule())
+        {
+            error!(
+                "[{}] worker: schedule execution encountered error: {}",
+                link.a_to_b, e
+            );
+            return RetryResult::Retry(index);
         }
+
+        let confirmation_result = link.a_to_b.process_pending_txs();
+
+        RetryResult::Ok(Step::Success(confirmation_result))
     }
 
     /// Get a reference to the uni chan path worker's chains.
