@@ -1,8 +1,10 @@
-use ibc::ics03_connection::connection::State as ConnectionState;
-use ibc::Height;
-use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::Debug;
+
+use serde::{Deserialize, Deserializer};
+
+use ibc::ics03_connection::connection::State as ConnectionState;
+use ibc::Height;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Step {

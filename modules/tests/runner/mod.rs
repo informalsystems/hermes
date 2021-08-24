@@ -1,6 +1,7 @@
 pub mod step;
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::time::Duration;
 
@@ -38,7 +39,7 @@ use ibc::signer::Signer;
 use ibc::timestamp::ZERO_DURATION;
 use ibc::Height;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use std::convert::TryFrom;
+
 use step::{Action, ActionOutcome, Chain, Step};
 
 #[derive(Debug, Clone)]
@@ -61,7 +62,7 @@ impl IbcTestRunner {
         // never GC blocks
         let max_history_size = usize::MAX;
         let ctx = MockContext::new(
-            chain_id_struct.clone(),
+            chain_id_struct,
             HostType::Mock,
             max_history_size,
             initial_height,
