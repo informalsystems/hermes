@@ -1,7 +1,10 @@
-use ibc::ics03_connection::connection::State as ConnectionState;
-use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::Debug;
+
+use serde::{Deserialize, Deserializer};
+
+use ibc::ics03_connection::connection::State as ConnectionState;
+use ibc::Height;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Step {
@@ -22,10 +25,10 @@ pub enum Action {
         chain_id: String,
 
         #[serde(alias = "clientState")]
-        client_state: u64,
+        client_state: Height,
 
         #[serde(alias = "consensusState")]
-        consensus_state: u64,
+        consensus_state: Height,
     },
     Ics02UpdateClient {
         #[serde(alias = "chainId")]
@@ -34,7 +37,16 @@ pub enum Action {
         #[serde(alias = "clientId")]
         client_id: u64,
 
-        header: u64,
+        header: Height,
+    },
+    Ics07UpgradeClient {
+        #[serde(alias = "chainId")]
+        chain_id: String,
+
+        #[serde(alias = "clientId")]
+        client_id: u64,
+
+        header: Height,
     },
     Ics03ConnectionOpenInit {
         #[serde(alias = "chainId")]
@@ -61,7 +73,7 @@ pub enum Action {
         client_id: u64,
 
         #[serde(alias = "clientState")]
-        client_state: u64,
+        client_state: Height,
 
         #[serde(alias = "counterpartyChainId")]
         counterparty_chain_id: String,
@@ -80,7 +92,7 @@ pub enum Action {
         connection_id: u64,
 
         #[serde(alias = "clientState")]
-        client_state: u64,
+        client_state: Height,
 
         #[serde(alias = "counterpartyChainId")]
         counterparty_chain_id: String,
@@ -96,7 +108,7 @@ pub enum Action {
         connection_id: u64,
 
         #[serde(alias = "clientState")]
-        client_state: u64,
+        client_state: Height,
 
         #[serde(alias = "counterpartyChainId")]
         counterparty_chain_id: String,
@@ -113,6 +125,11 @@ pub enum ActionOutcome {
     Ics02UpdateOk,
     Ics02ClientNotFound,
     Ics02HeaderVerificationFailure,
+
+    Ics07UpgradeOk,
+    Ics07ClientNotFound,
+    Ics07HeaderVerificationFailure,
+
     Ics03ConnectionOpenInitOk,
     Ics03MissingClient,
     Ics03ConnectionOpenTryOk,
@@ -128,7 +145,7 @@ pub enum ActionOutcome {
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Chain {
-    pub height: u64,
+    pub height: Height,
 
     pub clients: HashMap<u64, Client>,
 
@@ -137,7 +154,7 @@ pub struct Chain {
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Client {
-    pub heights: Vec<u64>,
+    pub heights: Vec<Height>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

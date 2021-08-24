@@ -94,7 +94,7 @@ ICS03_ConnectionOpenTry(
         counterpartyConnectionId |-> counterpartyConnectionId
     ]) IN
     \* check if client's claimed height is higher than the chain's height
-    IF height > chain.height THEN
+    IF HeightGT(height, chain.height) THEN
         \* if client's height is too advanced, then set an error outcome
         [
             connections |-> chain.connections,
@@ -251,7 +251,7 @@ ICS03_ConnectionOpenAck(
     LET connections == chain.connections IN
     LET connectionProofs == chain.connectionProofs IN
     \* check if client's claimed height is higher than the chain's height
-    IF height > chain.height THEN
+    IF HeightGT(height, chain.height) THEN
         \* if client's height is too advanced, then set an error outcome
         [
             connections |-> connections,
