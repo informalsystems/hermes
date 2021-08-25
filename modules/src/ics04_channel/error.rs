@@ -10,6 +10,7 @@ use flex_error::{define_error, TraceError};
 use tendermint_proto::Error as TendermintError;
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     Error {
         UnknownState
             { state: i32 }

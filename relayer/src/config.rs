@@ -112,6 +112,8 @@ pub struct Config {
     #[serde(default)]
     pub global: GlobalConfig,
     #[serde(default)]
+    pub rest: RestConfig,
+    #[serde(default)]
     pub telemetry: TelemetryConfig,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
@@ -240,6 +242,24 @@ impl Default for TelemetryConfig {
             enabled: false,
             host: "127.0.0.1".to_string(),
             port: 3001,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RestConfig {
+    pub enabled: bool,
+    pub host: String,
+    pub port: u16,
+}
+
+impl Default for RestConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            host: "127.0.0.1".to_string(),
+            port: 3000,
         }
     }
 }

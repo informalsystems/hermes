@@ -1,8 +1,9 @@
 use alloc::string::String;
 use flex_error::define_error;
+use serde::Serialize;
 
 define_error! {
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, Serialize)]
     ValidationError {
         ContainSeparator
             { id : String }

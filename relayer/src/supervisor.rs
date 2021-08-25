@@ -21,16 +21,16 @@ use crate::{
     event::monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
     registry::Registry,
+    rest,
     telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
 
 pub mod client_state_filter;
-pub mod error;
-
 use client_state_filter::{FilterPolicy, Permission};
 
+pub mod error;
 pub use error::{Error, ErrorDetail};
 
 pub mod dump_state;
@@ -46,29 +46,33 @@ use self::spawn::SpawnMode;
 
 type ArcBatch = Arc<event::monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
-type BoxHandle = Box<dyn ChainHandle>;
 
 pub type RwArc<T> = Arc<RwLock<T>>;
 
 /// The supervisor listens for events on multiple pairs of chains,
 /// and dispatches the events it receives to the appropriate
 /// worker, based on the [`Object`] associated with each event.
-pub struct Supervisor {
+pub struct Supervisor<Chain: ChainHandle> {
     config: RwArc<Config>,
-    registry: Registry,
+    registry: Registry<Chain>,
     workers: WorkerMap,
 
     cmd_rx: Receiver<SupervisorCmd>,
     worker_msg_rx: Receiver<WorkerMsg>,
+    rest_rx: Option<rest::Receiver>,
     client_state_filter: FilterPolicy,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
 }
 
-impl Supervisor {
+impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     /// Create a [`Supervisor`] which will listen for events on all the chains in the [`Config`].
-    pub fn new(config: RwArc<Config>, telemetry: Telemetry) -> (Self, Sender<SupervisorCmd>) {
+    pub fn new(
+        config: RwArc<Config>,
+        rest_rx: Option<rest::Receiver>,
+        telemetry: Telemetry,
+    ) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
         let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
@@ -82,6 +86,7 @@ impl Supervisor {
             workers,
             cmd_rx,
             worker_msg_rx,
+            rest_rx,
             client_state_filter,
             telemetry,
         };
@@ -176,7 +181,7 @@ impl Supervisor {
     /// and maps each [`IbcEvent`] to their corresponding [`Object`].
     pub fn collect_events(
         &self,
-        src_chain: &dyn ChainHandle,
+        src_chain: &impl ChainHandle,
         batch: &EventBatch,
     ) -> CollectedEvents {
         let mut collected = CollectedEvents::new(batch.height, batch.chain_id.clone());
@@ -340,7 +345,7 @@ impl Supervisor {
     }
 
     /// Create a new `SpawnContext` for spawning workers.
-    fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_> {
+    fn spawn_context(&mut self, mode: SpawnMode) -> SpawnContext<'_, Chain> {
         SpawnContext::new(
             &self.config,
             &mut self.registry,
@@ -385,12 +390,15 @@ impl Supervisor {
                 }
             }
 
+            // Process incoming requests from the REST server
+            self.handle_rest_requests();
+
             std::thread::sleep(Duration::from_millis(50));
         }
     }
 
     /// Subscribe to the events emitted by the chains the supervisor is connected to.
-    fn init_subscriptions(&mut self) -> Result<Vec<(BoxHandle, Subscription)>, Error> {
+    fn init_subscriptions(&mut self) -> Result<Vec<(Chain, Subscription)>, Error> {
         let chains = &self.config.read().expect("poisoned lock").chains;
 
         let mut subscriptions = Vec::with_capacity(chains.len());
@@ -439,11 +447,17 @@ impl Supervisor {
     /// Dump the state of the supervisor into a [`SupervisorState`] value,
     /// and send it back through the given channel.
     fn dump_state(&self, reply_to: Sender<SupervisorState>) -> CmdEffect {
-        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
-        let state = SupervisorState::new(chains, self.workers.objects());
+        let state = self.state();
         let _ = reply_to.try_send(state);
 
         CmdEffect::Nothing
+    }
+
+    /// Returns a representation of the supervisor's internal state
+    /// as a [`SupervisorState`].
+    fn state(&self) -> SupervisorState {
+        let chains = self.registry.chains().map(|c| c.id()).collect_vec();
+        SupervisorState::new(chains, self.workers.objects())
     }
 
     /// Apply the given configuration update.
@@ -556,9 +570,29 @@ impl Supervisor {
         }
     }
 
+    fn handle_rest_requests(&self) {
+        if let Some(rest_rx) = &self.rest_rx {
+            let config = self.config.read().expect("poisoned lock");
+            if let Some(cmd) = rest::process_incoming_requests(&config, rest_rx) {
+                self.handle_rest_cmd(cmd);
+            }
+        }
+    }
+
+    fn handle_rest_cmd(&self, m: rest::Command) {
+        match m {
+            rest::Command::DumpState(reply) => {
+                let state = self.state();
+                reply.send(Ok(state)).unwrap_or_else(|e| {
+                    error!("[rest/supervisor] error replying to a REST request {}", e)
+                });
+            }
+        }
+    }
+
     /// Process the given batch if it does not contain any errors,
     /// output the errors on the console otherwise.
-    fn handle_batch(&mut self, chain: Box<dyn ChainHandle>, batch: ArcBatch) {
+    fn handle_batch(&mut self, chain: Chain, batch: ArcBatch) {
         let chain_id = chain.id();
 
         match batch.deref() {
@@ -584,17 +618,13 @@ impl Supervisor {
     }
 
     /// Process a batch of events received from a chain.
-    fn process_batch(
-        &mut self,
-        src_chain: Box<dyn ChainHandle>,
-        batch: &EventBatch,
-    ) -> Result<(), Error> {
+    fn process_batch(&mut self, src_chain: Chain, batch: &EventBatch) -> Result<(), Error> {
         assert_eq!(src_chain.id(), batch.chain_id);
 
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
-        let collected = self.collect_events(src_chain.clone().as_ref(), batch);
+        let collected = self.collect_events(&src_chain, batch);
 
         for (object, events) in collected.per_object.into_iter() {
             if !self.relay_on_object(&src_chain.id(), &object) {

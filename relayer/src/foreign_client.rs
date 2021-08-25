@@ -214,16 +214,16 @@ define_error! {
 }
 
 #[derive(Clone, Debug)]
-pub struct ForeignClient {
+pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
     /// The identifier of this client. The host chain determines this id upon client creation,
     /// so we may be using the default value temporarily.
     pub id: ClientId,
 
     /// A handle to the chain hosting this client, i.e., destination chain.
-    pub dst_chain: Box<dyn ChainHandle>,
+    pub dst_chain: DstChain,
 
     /// A handle to the chain whose headers this client is verifying, aka the source chain.
-    pub src_chain: Box<dyn ChainHandle>,
+    pub src_chain: SrcChain,
 }
 
 /// Used in Output messages.
@@ -233,7 +233,9 @@ pub struct ForeignClient {
 /// where the first chain identifier is for the source
 /// chain, and the second chain identifier is the
 /// destination (which hosts the client) chain.
-impl fmt::Display for ForeignClient {
+impl<DstChain: ChainHandle, SrcChain: ChainHandle> fmt::Display
+    for ForeignClient<DstChain, SrcChain>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -245,14 +247,14 @@ impl fmt::Display for ForeignClient {
     }
 }
 
-impl ForeignClient {
+impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcChain> {
     /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
     /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
     pub fn new(
-        dst_chain: Box<dyn ChainHandle>,
-        src_chain: Box<dyn ChainHandle>,
-    ) -> Result<ForeignClient, ForeignClientError> {
+        dst_chain: DstChain,
+        src_chain: SrcChain,
+    ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         // Sanity check
         if src_chain.id().eq(&dst_chain.id()) {
             return Err(ForeignClientError::same_chain_id(src_chain.id()));
@@ -260,8 +262,8 @@ impl ForeignClient {
 
         let mut client = ForeignClient {
             id: ClientId::default(),
-            dst_chain: dst_chain.clone(),
-            src_chain: src_chain.clone(),
+            dst_chain,
+            src_chain,
         };
 
         client.create()?;
@@ -271,9 +273,9 @@ impl ForeignClient {
 
     pub fn restore(
         id: ClientId,
-        dst_chain: Box<dyn ChainHandle>,
-        src_chain: Box<dyn ChainHandle>,
-    ) -> ForeignClient {
+        dst_chain: DstChain,
+        src_chain: SrcChain,
+    ) -> ForeignClient<DstChain, SrcChain> {
         ForeignClient {
             id,
             dst_chain,
@@ -287,10 +289,10 @@ impl ForeignClient {
     /// verifying) is consistent with `expected_target_chain`, and if so, return a new
     /// `ForeignClient` representing this client.
     pub fn find(
-        expected_target_chain: Box<dyn ChainHandle>,
-        host_chain: Box<dyn ChainHandle>,
+        expected_target_chain: SrcChain,
+        host_chain: DstChain,
         client_id: &ClientId,
-    ) -> Result<ForeignClient, ForeignClientError> {
+    ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         let height = Height::new(expected_target_chain.id().version(), 0);
 
         match host_chain.query_client_state(client_id, height) {
@@ -305,7 +307,7 @@ impl ForeignClient {
                     // TODO: Any additional checks?
                     Ok(ForeignClient::restore(
                         client_id.clone(),
-                        host_chain.clone(),
+                        host_chain,
                         expected_target_chain,
                     ))
                 }
@@ -388,25 +390,28 @@ impl ForeignClient {
 
         msgs.push(msg_upgrade);
 
-        let res = self.dst_chain.send_msgs(msgs).map_err(|e| {
-            ForeignClientError::client_upgrade(
-                self.id.clone(),
-                self.dst_chain.id(),
-                "failed while sending message to destination chain".to_string(),
-                e,
-            )
-        })?;
+        let res = self
+            .dst_chain
+            .send_messages_and_wait_commit(msgs)
+            .map_err(|e| {
+                ForeignClientError::client_upgrade(
+                    self.id.clone(),
+                    self.dst_chain.id(),
+                    "failed while sending message to destination chain".to_string(),
+                    e,
+                )
+            })?;
 
         Ok(res)
     }
 
     /// Returns a handle to the chain hosting this client.
-    pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
+    pub fn dst_chain(&self) -> DstChain {
         self.dst_chain.clone()
     }
 
     /// Returns a handle to the chain whose headers this client is sourcing (the source chain).
-    pub fn src_chain(&self) -> Box<dyn ChainHandle> {
+    pub fn src_chain(&self) -> SrcChain {
         self.src_chain.clone()
     }
 
@@ -475,7 +480,7 @@ impl ForeignClient {
 
         let res = self
             .dst_chain
-            .send_msgs(vec![new_msg.to_any()])
+            .send_messages_and_wait_commit(vec![new_msg.to_any()])
             .map_err(|e| {
                 ForeignClientError::client_create(
                     self.dst_chain.id(),
@@ -699,13 +704,16 @@ impl ForeignClient {
             ));
         }
 
-        let events = self.dst_chain().send_msgs(new_msgs).map_err(|e| {
-            ForeignClientError::client_update(
-                self.dst_chain.id(),
-                "failed sending message to dst chain".to_string(),
-                e,
-            )
-        })?;
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(new_msgs)
+            .map_err(|e| {
+                ForeignClientError::client_update(
+                    self.dst_chain.id(),
+                    "failed sending message to dst chain".to_string(),
+                    e,
+                )
+            })?;
 
         Ok(events)
     }
@@ -1019,15 +1027,18 @@ impl ForeignClient {
             .to_any(),
         );
 
-        let events = self.dst_chain().send_msgs(msgs).map_err(|e| {
-            ForeignClientError::misbehaviour(
-                format!(
-                    "failed sending evidence to destination chain ({})",
-                    self.dst_chain.id(),
-                ),
-                e,
-            )
-        })?;
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(msgs)
+            .map_err(|e| {
+                ForeignClientError::misbehaviour(
+                    format!(
+                        "failed sending evidence to destination chain ({})",
+                        self.dst_chain.id(),
+                    ),
+                    e,
+                )
+            })?;
 
         Ok(events)
     }
@@ -1126,6 +1137,7 @@ mod test {
     use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
 
+    use crate::chain::handle::{ChainHandle, ProdChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
@@ -1138,13 +1150,13 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain =
+            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
         let a_client =
             ForeignClient::restore(ClientId::default(), a_chain.clone(), b_chain.clone());
 
-        let b_client =
-            ForeignClient::restore(ClientId::default(), b_chain.clone(), a_chain.clone());
+        let b_client = ForeignClient::restore(ClientId::default(), b_chain, a_chain);
 
         // Create the client on chain a
         let res = a_client.build_create_client_and_send();
@@ -1176,8 +1188,9 @@ mod test {
         let num_iterations = 3;
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain =
+            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
         let mut a_client = ForeignClient::restore(a_client_id, a_chain.clone(), b_chain.clone());
 
         let mut b_client =
@@ -1191,7 +1204,7 @@ mod test {
         );
 
         // Remember b's height.
-        let b_height_start = b_chain.clone().query_latest_height().unwrap();
+        let b_height_start = b_chain.query_latest_height().unwrap();
 
         // Create a client on chain a
         let res = a_client.create();
@@ -1282,8 +1295,9 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain =
+            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());
@@ -1330,8 +1344,9 @@ mod test {
         let mut _b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let a_chain = ChainRuntime::<MockChain>::spawn(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn(b_cfg, rt).unwrap();
+        let a_chain =
+            ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(a_cfg, rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<ProdChainHandle>(b_cfg, rt).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone());

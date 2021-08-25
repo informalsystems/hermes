@@ -5,6 +5,7 @@ use alloc::string::String;
 use flex_error::define_error;
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     Error {
         UnknowMessageTypeUrl
             { url: String }

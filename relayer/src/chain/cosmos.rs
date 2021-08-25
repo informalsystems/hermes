@@ -32,6 +32,7 @@ use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
 };
 use ibc::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::events as ClientEvents;
 use ibc::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest};
@@ -58,9 +59,6 @@ use ibc_proto::cosmos::tx::v1beta1::{
     AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, SimulateRequest, SimulateResponse, Tx, TxBody,
     TxRaw,
 };
-use ibc_proto::cosmos::upgrade::v1beta1::{
-    QueryCurrentPlanRequest, QueryUpgradedConsensusStateRequest,
-};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelsRequest,
     QueryConnectionChannelsRequest, QueryNextSequenceReceiveRequest,
@@ -82,7 +80,7 @@ use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
 
-use super::Chain;
+use super::ChainEndpoint;
 
 mod compatibility;
 
@@ -335,12 +333,10 @@ impl CosmosSdkChain {
         // if the batch is split in two TX-es, the second one will fail the simulation in `deliverTx` check
         // In this case we just leave the gas un-adjusted, i.e. use `self.max_gas()`
         let estimated_gas = self
-            .send_tx_simulate(SimulateRequest {
-                tx: Some(Tx {
-                    body: Some(body),
-                    auth_info: Some(auth_info),
-                    signatures: vec![signed_doc],
-                }),
+            .send_tx_simulate(Tx {
+                body: Some(body),
+                auth_info: Some(auth_info),
+                signatures: vec![signed_doc],
             })
             .map_or(self.max_gas(), |sr| {
                 sr.gas_info.map_or(self.max_gas(), |g| g.gas_used)
@@ -452,12 +448,17 @@ impl CosmosSdkChain {
         Ok(response)
     }
 
-    // Perform an ABCI query against the client upgrade sub-store to fetch a proof.
-    fn query_client_upgrade_proof(
+    /// Perform an ABCI query against the client upgrade sub-store.
+    /// Fetches both the target data, as well as the proof.
+    ///
+    /// The data is returned in its raw format `Vec<u8>`, and is either
+    /// the client state (if the target path is [`UpgradedClientState`]),
+    /// or the client consensus state ([`UpgradedClientConsensusState`]).
+    fn query_client_upgrade_state(
         &self,
         data: ClientUpgradePath,
         height: Height,
-    ) -> Result<(MerkleProof, ICSHeight), Error> {
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
         let prev_height = Height::try_from(height.value() - 1).map_err(Error::invalid_height)?;
 
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH).unwrap();
@@ -471,16 +472,18 @@ impl CosmosSdkChain {
 
         let proof = response.proof.ok_or_else(Error::empty_response_proof)?;
 
-        let height = ICSHeight::new(
-            self.config.id.version(),
-            response.height.increment().value(),
-        );
-
-        Ok((proof, height))
+        Ok((response.value, proof))
     }
 
-    fn send_tx_simulate(&self, request: SimulateRequest) -> Result<SimulateResponse, Error> {
+    fn send_tx_simulate(&self, tx: Tx) -> Result<SimulateResponse, Error> {
         crate::time!("tx simulate");
+
+        // The `tx` field of `SimulateRequest` was deprecated
+        // in favor of `tx_bytes`
+        let mut tx_bytes = vec![];
+        prost::Message::encode(&tx, &mut tx_bytes).unwrap();
+        #[allow(deprecated)]
+        let req = SimulateRequest { tx: None, tx_bytes };
 
         let mut client = self
             .block_on(
@@ -490,7 +493,7 @@ impl CosmosSdkChain {
             )
             .map_err(Error::grpc_transport)?;
 
-        let request = tonic::Request::new(request);
+        let request = tonic::Request::new(req);
         let response = self
             .block_on(client.simulate(request))
             .map_err(Error::grpc_status)?
@@ -627,7 +630,11 @@ impl CosmosSdkChain {
             .map(|res| res.response.hash.to_string())
             .join(", ");
 
-        debug!("[{}] waiting for commit of block(s) {}", self.id(), hashes);
+        warn!(
+            "[{}] waiting for commit of tx hashes(s) {}",
+            self.id(),
+            hashes
+        );
 
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));
@@ -697,11 +704,12 @@ fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
         .all(|r| !empty_event_present(&r.events))
 }
 
-impl Chain for CosmosSdkChain {
+impl ChainEndpoint for CosmosSdkChain {
     type LightBlock = TMLightBlock;
     type Header = TmHeader;
     type ConsensusState = TMConsensusState;
     type ClientState = ClientState;
+    type LightClient = TmLightClient;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
@@ -729,7 +737,7 @@ impl Chain for CosmosSdkChain {
         Ok(chain)
     }
 
-    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error> {
+    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
         use tendermint_light_client::types::PeerId;
 
         crate::time!("init_light_client");
@@ -742,7 +750,7 @@ impl Chain for CosmosSdkChain {
 
         let light_client = TmLightClient::from_config(&self.config, peer_id)?;
 
-        Ok(Box::new(light_client))
+        Ok(light_client)
     }
 
     fn init_event_monitor(
@@ -789,8 +797,15 @@ impl Chain for CosmosSdkChain {
     /// then it returns error.
     /// TODO - more work is required here for a smarter split maybe iteratively accumulating/ evaluating
     /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
-        crate::time!("send_msgs");
+    fn send_messages_and_wait_commit(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        crate::time!("send_messages_and_wait_commit");
+        debug!(
+            "send_messages_and_wait_commit with {} messages",
+            proto_msgs.len()
+        );
 
         if proto_msgs.is_empty() {
             return Ok(vec![]);
@@ -836,6 +851,45 @@ impl Chain for CosmosSdkChain {
             .collect();
 
         Ok(events)
+    }
+
+    fn send_messages_and_wait_check_tx(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<Response>, Error> {
+        crate::time!("send_messages_and_wait_check_tx");
+        debug!(
+            "send_messages_and_wait_check_tx with {} messages",
+            proto_msgs.len()
+        );
+
+        if proto_msgs.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut responses = vec![];
+
+        let mut n = 0;
+        let mut size = 0;
+        let mut msg_batch = vec![];
+        for msg in proto_msgs.iter() {
+            msg_batch.push(msg.clone());
+            let mut buf = Vec::new();
+            prost::Message::encode(msg, &mut buf).unwrap();
+            n += 1;
+            size += buf.len();
+            if n >= self.max_msg_num() || size >= self.max_tx_size() {
+                // Send the tx and enqueue the resulting response
+                responses.push(self.send_tx(msg_batch)?);
+                n = 0;
+                size = 0;
+                msg_batch = vec![];
+            }
+        }
+        if !msg_batch.is_empty() {
+            responses.push(self.send_tx(msg_batch)?);
+        }
+
+        Ok(responses)
     }
 
     /// Get the account for the signer
@@ -953,38 +1007,19 @@ impl Chain for CosmosSdkChain {
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         crate::time!("query_upgraded_client_state");
 
-        let mut client = self
-            .block_on(
-                ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
-            .map_err(Error::grpc_transport)?;
-
-        let req = tonic::Request::new(QueryCurrentPlanRequest {});
-        let response = self
-            .block_on(client.current_plan(req))
-            .map_err(Error::grpc_status)?;
-
-        let upgraded_client_state_raw = response
-            .into_inner()
-            .plan
-            .ok_or_else(Error::empty_response_value)?
-            .upgraded_client_state
-            .ok_or_else(Error::empty_upgraded_client_state)?;
-        let client_state = AnyClientState::try_from(upgraded_client_state_raw)
-            .map_err(Error::invalid_upgraded_client_state)?;
-
-        // TODO: Better error kinds here.
-        let tm_client_state = downcast!(client_state.clone() => AnyClientState::Tendermint)
-            .ok_or_else(|| Error::client_state_type(format!("{:?}", client_state)))?;
-
-        // Query for the proof.
+        // Query for the value and the proof.
         let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
-        let (proof, _proof_height) = self.query_client_upgrade_proof(
+        let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
             ClientUpgradePath::UpgradedClientState(height.revision_height),
             tm_height,
         )?;
+
+        let client_state = AnyClientState::decode_vec(&upgraded_client_state_raw)
+            .map_err(Error::conversion_from_any)?;
+
+        let client_type = client_state.client_type();
+        let tm_client_state = downcast!(client_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Error::client_type_mismatch(ClientType::Tendermint, client_type))?;
 
         Ok((tm_client_state, proof))
     }
@@ -997,39 +1032,20 @@ impl Chain for CosmosSdkChain {
 
         let tm_height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
 
-        let mut client = self
-            .block_on(
-                ibc_proto::cosmos::upgrade::v1beta1::query_client::QueryClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
-            .map_err(Error::grpc_transport)?;
-
-        let req = tonic::Request::new(QueryUpgradedConsensusStateRequest {
-            last_height: tm_height.into(),
-        });
-        let response = self
-            .block_on(client.upgraded_consensus_state(req))
-            .map_err(Error::grpc_status)?;
-
-        let upgraded_consensus_state_raw = response
-            .into_inner()
-            .upgraded_consensus_state
-            .ok_or_else(Error::empty_response_value)?;
-
-        // TODO: More explicit error kinds (should not reuse Grpc all over the place)
-        let consensus_state =
-            AnyConsensusState::try_from(upgraded_consensus_state_raw).map_err(Error::ics02)?;
-
-        let tm_consensus_state =
-            downcast!(consensus_state.clone() => AnyConsensusState::Tendermint)
-                .ok_or_else(|| Error::client_state_type(format!("{:?}", consensus_state)))?;
-
-        // Fetch the proof.
-        let (proof, _proof_height) = self.query_client_upgrade_proof(
+        // Fetch the consensus state and its proof.
+        let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
             ClientUpgradePath::UpgradedClientConsensusState(height.revision_height),
             tm_height,
         )?;
+
+        let consensus_state = AnyConsensusState::decode_vec(&upgraded_consensus_state_raw)
+            .map_err(Error::conversion_from_any)?;
+
+        let cs_client_type = consensus_state.client_type();
+        let tm_consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
+            .ok_or_else(|| {
+                Error::consensus_state_type_mismatch(ClientType::Tendermint, cs_client_type)
+            })?;
 
         Ok((tm_consensus_state, proof))
     }
@@ -1716,7 +1732,7 @@ impl Chain for CosmosSdkChain {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-        light_client: &mut dyn LightClient<Self>,
+        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 

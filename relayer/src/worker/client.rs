@@ -7,7 +7,7 @@ use tracing::{debug, info, trace, warn};
 use ibc::{events::IbcEvent, ics02_client::events::UpdateClient};
 
 use crate::{
-    chain::handle::ChainHandlePair,
+    chain::handle::{ChainHandle, ChainHandlePair},
     foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
@@ -17,19 +17,19 @@ use crate::{
 use super::error::RunError;
 use super::WorkerCmd;
 
-pub struct ClientWorker {
+pub struct ClientWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     client: Client,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
 
     #[allow(dead_code)]
     telemetry: Telemetry,
 }
 
-impl ClientWorker {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
     pub fn new(
         client: Client,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
     ) -> Self {
@@ -98,7 +98,7 @@ impl ClientWorker {
         Ok(())
     }
 
-    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient) -> Next {
+    fn process_cmd(&self, cmd: WorkerCmd, client: &ForeignClient<ChainB, ChainA>) -> Next {
         match cmd {
             WorkerCmd::IbcEvents { batch } => {
                 trace!("[{}] worker received batch: {:?}", client, batch);
@@ -131,7 +131,11 @@ impl ClientWorker {
         }
     }
 
-    fn detect_misbehaviour(&self, client: &ForeignClient, update: Option<UpdateClient>) -> bool {
+    fn detect_misbehaviour(
+        &self,
+        client: &ForeignClient<ChainB, ChainA>,
+        update: Option<UpdateClient>,
+    ) -> bool {
         match client.detect_misbehaviour_and_submit_evidence(update) {
             MisbehaviourResults::ValidClient => false,
             MisbehaviourResults::VerificationError => {
@@ -151,7 +155,7 @@ impl ClientWorker {
     }
 
     /// Get a reference to the client worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

@@ -2,10 +2,9 @@ use alloc::sync::Arc;
 use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
-use dyn_clone::DynClone;
 use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use serde::{Serialize, Serializer};
+use serde::Serialize;
 
 use ibc::{
     events::IbcEvent,
@@ -54,22 +53,22 @@ mod prod;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]
-pub struct ChainHandlePair {
-    pub a: Box<dyn ChainHandle>,
-    pub b: Box<dyn ChainHandle>,
+pub struct ChainHandlePair<ChainA: ChainHandle, ChainB: ChainHandle> {
+    pub a: ChainA,
+    pub b: ChainB,
 }
 
-impl ChainHandlePair {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> ChainHandlePair<ChainA, ChainB> {
     /// Swap the two handles.
-    pub fn swap(self) -> Self {
-        Self {
+    pub fn swap(self) -> ChainHandlePair<ChainB, ChainA> {
+        ChainHandlePair {
             a: self.b,
             b: self.a,
         }
     }
 }
 
-impl Debug for ChainHandlePair {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> Debug for ChainHandlePair<ChainA, ChainB> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ChainHandlePair")
             .field("a", &self.a.id())
@@ -99,9 +98,14 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Subscription>,
     },
 
-    SendMsgs {
+    SendMessagesAndWaitCommit {
         proto_msgs: Vec<prost_types::Any>,
         reply_to: ReplyTo<Vec<IbcEvent>>,
+    },
+
+    SendMessagesAndWaitCheckTx {
+        proto_msgs: Vec<prost_types::Any>,
+        reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
     },
 
     Signer {
@@ -299,10 +303,9 @@ pub enum ChainRequest {
     },
 }
 
-// Make `clone` accessible to a ChainHandle object
-dyn_clone::clone_trait_object!(ChainHandle);
+pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
+    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self;
 
-pub trait ChainHandle: DynClone + Send + Sync + Debug {
     /// Get the [`ChainId`] of this chain.
     fn id(&self) -> ChainId;
 
@@ -314,7 +317,19 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     /// Send the given `msgs` to the chain, packaged as one or more transactions,
     /// and return the list of events emitted by the chain after the transaction was committed.
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error>;
+    fn send_messages_and_wait_commit(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<IbcEvent>, Error>;
+
+    /// Submit messages asynchronously.
+    /// Does not block waiting on the chain to produce the
+    /// resulting events. Instead of events, this method
+    /// returns a set of transaction hashes.
+    fn send_messages_and_wait_check_tx(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
 
@@ -492,13 +507,4 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
     ) -> Result<Vec<u64>, Error>;
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
-}
-
-impl Serialize for dyn ChainHandle {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        self.id().serialize(serializer)
-    }
 }

@@ -10,7 +10,7 @@ use alloc::string::String;
 
 use alloc::vec::Vec;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EmptyPrefixError;
 
 pub fn apply_prefix(

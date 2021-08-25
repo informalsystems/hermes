@@ -1,4 +1,3 @@
-use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::fmt;
 use flex_error::{define_error, TraceError};
 use prost::alloc::fmt::Formatter;
@@ -257,75 +256,4 @@ impl IbcEvent {
             _ => None,
         }
     }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct RawObject {
-    pub height: Height,
-    pub action: String,
-    pub idx: usize,
-    pub events: HashMap<String, Vec<String>>,
-}
-
-impl RawObject {
-    pub fn new(
-        height: Height,
-        action: String,
-        idx: usize,
-        events: HashMap<String, Vec<String>>,
-    ) -> RawObject {
-        RawObject {
-            height,
-            action,
-            idx,
-            events,
-        }
-    }
-}
-
-pub fn extract_events(
-    events: &HashMap<String, Vec<String>>,
-    action_string: &str,
-) -> Result<(), Error> {
-    if let Some(message_action) = events.get("message.action") {
-        if message_action.contains(&action_string.to_owned()) {
-            return Ok(());
-        }
-        return Err(Error::missing_action_string());
-    }
-    Err(Error::incorrect_event_type(action_string.to_string()))
-}
-
-pub fn extract_attribute(object: &RawObject, key: &str) -> Result<String, Error> {
-    let value = object
-        .events
-        .get(key)
-        .ok_or_else(|| Error::missing_key(key.to_string()))?[object.idx]
-        .clone();
-
-    Ok(value)
-}
-
-pub fn maybe_extract_attribute(object: &RawObject, key: &str) -> Option<String> {
-    object.events.get(key).map(|tags| tags[object.idx].clone())
-}
-
-#[macro_export]
-macro_rules! make_event {
-    ($a:ident, $b:literal) => {
-        #[derive(Debug, Deserialize, Serialize, Clone)]
-        pub struct $a {
-            pub data: ::alloc::collections::btree_map::BTreeMap<String, Vec<String>>,
-        }
-        impl ::core::convert::TryFrom<$crate::events::RawObject> for $a {
-            type Error = $crate::event::Error;
-
-            fn try_from(result: $crate::events::RawObject) -> Result<Self, Self::Error> {
-                $crate::events::extract_events(&result.events, $b)?;
-                Ok($a {
-                    data: result.events.clone(),
-                })
-            }
-        }
-    };
 }

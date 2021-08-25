@@ -12,6 +12,7 @@ use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     Error {
         UnknownClientType
             { client_type: String }

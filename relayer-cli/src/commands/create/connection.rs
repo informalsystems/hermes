@@ -5,6 +5,7 @@ use abscissa_core::{Command, Options, Runnable};
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::Height;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
@@ -85,7 +86,7 @@ impl CreateConnectionCommand {
 
         let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
             .unwrap_or_else(exit_with_unrecoverable_error);
-        let client_b = ForeignClient::new(chains.dst.clone(), chains.src.clone())
+        let client_b = ForeignClient::new(chains.dst.clone(), chains.src)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Finally, execute the connection handshake.
@@ -155,7 +156,7 @@ impl CreateConnectionCommand {
         // Get the two ForeignClient objects.
         let client_a = ForeignClient::find(chain_b.clone(), chain_a.clone(), client_a_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
-        let client_b = ForeignClient::find(chain_a.clone(), chain_b.clone(), client_b_id)
+        let client_b = ForeignClient::find(chain_a, chain_b, client_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // All verification passed. Create the Connection object & do the handshake.

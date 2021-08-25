@@ -13,7 +13,7 @@ use crate::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
+pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible

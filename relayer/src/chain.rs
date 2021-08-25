@@ -32,6 +32,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
 };
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::connection::ConnectionMsgType;
 use crate::error::Error;
@@ -66,7 +67,7 @@ pub struct QueryPacketOptions {
 }
 
 /// Defines a blockchain as understood by the relayer
-pub trait Chain: Sized {
+pub trait ChainEndpoint: Sized {
     /// Type of light blocks for this chain
     type LightBlock: Send + Sync;
 
@@ -79,12 +80,14 @@ pub trait Chain: Sized {
     /// Type of the client state for this chain
     type ClientState: ClientState;
 
+    type LightClient: LightClient<Self>;
+
     /// Constructs the chain
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
     #[allow(clippy::type_complexity)]
     /// Initializes and returns the light client (if any) associated with this chain.
-    fn init_light_client(&self) -> Result<Box<dyn LightClient<Self>>, Error>;
+    fn init_light_client(&self) -> Result<Self::LightClient, Error>;
 
     /// Initializes and returns the event monitor (if any) associated with this chain.
     fn init_event_monitor(
@@ -103,8 +106,19 @@ pub trait Chain: Sized {
     /// Returns the chain's keybase, mutably
     fn keybase_mut(&mut self) -> &mut KeyRing;
 
+    /// Sends one or more transactions with `msgs` to chain and
+    // synchronously wait for it to be committed.
+    fn send_messages_and_wait_commit(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<IbcEvent>, Error>;
+
     /// Sends one or more transactions with `msgs` to chain.
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error>;
+    /// Non-blocking alternative to `send_messages_and_wait_commit` interface.
+    fn send_messages_and_wait_check_tx(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<TxResponse>, Error>;
 
     fn get_signer(&mut self) -> Result<Signer, Error>;
 
@@ -292,7 +306,7 @@ pub trait Chain: Sized {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-        light_client: &mut dyn LightClient<Self>,
+        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error>;
 
     /// Builds the required proofs and the client state for connection handshake messages.
