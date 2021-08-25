@@ -1,5 +1,5 @@
-use alloc::string::ToString;
-use alloc::vec::Vec;
+use crate::prelude::*;
+
 /// Path-space as listed in ICS-024
 /// https://github.com/cosmos/ics/tree/master/spec/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.

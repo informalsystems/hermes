@@ -1,7 +1,7 @@
 use crate::ics04_channel::error as channel_error;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use alloc::string::String;
+use crate::prelude::*;
 use flex_error::define_error;
 
 define_error! {

@@ -1,7 +1,6 @@
 //! Definition of domain type message `MsgCreateAnyClient`.
 
-use alloc::string::String;
-use alloc::string::ToString;
+use crate::prelude::*;
 use core::convert::TryFrom;
 
 use tendermint_proto::Protobuf;

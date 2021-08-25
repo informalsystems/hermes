@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::prelude::*;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 use crate::signer::Signer;

@@ -1,5 +1,4 @@
-use alloc::string::ToString;
-use alloc::vec::Vec;
+use crate::prelude::*;
 use core::convert::TryFrom;
 use core::str::FromStr;
 
@@ -157,7 +156,7 @@ impl Default for Packet {
             source_channel: Default::default(),
             destination_port: Default::default(),
             destination_channel: Default::default(),
-            data: vec![],
+            data: Vec::new(),
             timeout_height: Default::default(),
             timeout_timestamp: Default::default(),
         }
@@ -222,6 +221,7 @@ impl From<Packet> for RawPacket {
 
 #[cfg(test)]
 pub mod test_utils {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
@@ -247,6 +247,7 @@ pub mod test_utils {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use core::convert::TryFrom;
     use test_env_log::test;
 

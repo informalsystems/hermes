@@ -2,11 +2,10 @@ use crate::ics04_channel::channel::{validate_version, ChannelEnd};
 use crate::ics04_channel::error::Error as ChannelError;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::prelude::*;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
-use alloc::string::String;
-use alloc::string::ToString;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 use tendermint_proto::Protobuf;
@@ -146,6 +145,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
@@ -174,6 +174,7 @@ pub mod test_util {
 mod tests {
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+    use crate::prelude::*;
     use core::convert::TryFrom;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
     use ibc_proto::ibc::core::client::v1::Height;
@@ -282,7 +283,7 @@ mod tests {
             Test {
                 name: "Missing proof init (object proof)".to_string(),
                 raw: RawMsgChannelOpenTry {
-                    proof_init: vec![],
+                    proof_init: Vec::new(),
                     ..default_raw_msg
                 },
                 want_pass: false,

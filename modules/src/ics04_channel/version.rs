@@ -1,5 +1,4 @@
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
+use crate::prelude::*;
 use core::convert::TryFrom;
 use core::str::FromStr;
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
@@ -75,7 +74,7 @@ pub fn pick_version(
     supported_versions: Vec<String>,
     counterparty_versions: Vec<String>,
 ) -> Result<String, Error> {
-    let mut intersection: Vec<Version> = vec![];
+    let mut intersection: Vec<Version> = Vec::new();
     for s in supported_versions.iter() {
         let supported_version = Version::decode(s.as_bytes()).map_err(Error::invalid_version)?;
         for c in counterparty_versions.iter() {

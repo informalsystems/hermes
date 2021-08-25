@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 use core::str::FromStr;
 use core::time::Duration;
@@ -95,7 +96,7 @@ impl Default for ConnectionEnd {
             state: State::Uninitialized,
             client_id: Default::default(),
             counterparty: Default::default(),
-            versions: vec![],
+            versions: Vec::new(),
             delay_period: ZERO_DURATION,
         }
     }

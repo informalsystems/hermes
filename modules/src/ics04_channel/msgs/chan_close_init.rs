@@ -1,5 +1,4 @@
-use alloc::string::String;
-use alloc::string::ToString;
+use crate::prelude::*;
 use core::convert::TryFrom;
 use tendermint_proto::Protobuf;
 
@@ -79,6 +78,7 @@ impl From<MsgChannelCloseInit> for RawMsgChannelCloseInit {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
     use crate::ics24_host::identifier::{ChannelId, PortId};
@@ -96,6 +96,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use core::convert::TryFrom;
     use test_env_log::test;
 

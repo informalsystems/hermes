@@ -1,11 +1,9 @@
+use crate::prelude::*;
 use core::{
     convert::{TryFrom, TryInto},
     str::FromStr,
     time::Duration,
 };
-
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
 
 use tendermint_proto::Protobuf;
 
@@ -198,6 +196,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
@@ -254,7 +253,7 @@ pub mod test_util {
                 revision_number: 0,
                 revision_height: consensus_height,
             }),
-            proof_client: vec![],
+            proof_client: Vec::new(),
             signer: get_dummy_bech32_account(),
         }
     }
@@ -262,6 +261,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use core::convert::TryFrom;
     use test_env_log::test;
 
@@ -327,7 +327,7 @@ mod tests {
                 Test {
                     name: "Bad counterparty versions, empty versions vec".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        counterparty_versions: vec![],
+                        counterparty_versions: Vec::new(),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,
@@ -335,7 +335,7 @@ mod tests {
                 Test {
                     name: "Bad counterparty versions, empty version string".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        counterparty_versions: vec![],
+                        counterparty_versions: Vec::new(),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,

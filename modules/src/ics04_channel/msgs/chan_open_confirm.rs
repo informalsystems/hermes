@@ -1,11 +1,10 @@
 use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::prelude::*;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-use alloc::string::String;
-use alloc::string::ToString;
 use core::convert::TryFrom;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint_proto::Protobuf;
@@ -102,6 +101,7 @@ impl From<MsgChannelOpenConfirm> for RawMsgChannelOpenConfirm {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 
     use crate::ics24_host::identifier::{ChannelId, PortId};
@@ -125,6 +125,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
     use test_env_log::test;
 
@@ -212,7 +213,7 @@ mod tests {
             Test {
                 name: "Missing object proof".to_string(),
                 raw: RawMsgChannelOpenConfirm {
-                    proof_ack: vec![],
+                    proof_ack: Vec::new(),
                     ..default_raw_msg
                 },
                 want_pass: false,

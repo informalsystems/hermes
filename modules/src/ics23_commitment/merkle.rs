@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use tendermint::merkle::proof::Proof;
 
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
@@ -5,10 +6,6 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use crate::ics23_commitment::error::Error;
-use alloc::format;
-use alloc::string::String;
-
-use alloc::vec::Vec;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EmptyPrefixError;
@@ -85,7 +82,7 @@ pub struct MerkleProof {
 // }
 
 pub fn convert_tm_to_ics_merkle_proof(tm_proof: &Proof) -> Result<RawMerkleProof, Error> {
-    let mut proofs = vec![];
+    let mut proofs = Vec::new();
 
     for op in &tm_proof.ops {
         let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };

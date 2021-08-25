@@ -1,5 +1,4 @@
-use alloc::string::String;
-use alloc::string::ToString;
+use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 use tendermint_proto::Protobuf;
 
@@ -123,6 +122,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod test {
+    use crate::prelude::*;
     use core::convert::{TryFrom, TryInto};
     use test_env_log::test;
 
@@ -161,7 +161,7 @@ mod test {
             Test {
                 name: "Missing proof".to_string(),
                 raw: RawMsgTimeout {
-                    proof_unreceived: vec![],
+                    proof_unreceived: Vec::new(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

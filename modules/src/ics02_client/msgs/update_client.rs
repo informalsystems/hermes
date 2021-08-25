@@ -1,6 +1,6 @@
 //! Definition of domain type message `MsgUpdateAnyClient`.
 
-use alloc::string::{String, ToString};
+use crate::prelude::*;
 use core::convert::TryFrom;
 use tendermint_proto::Protobuf;
 

@@ -1,4 +1,4 @@
-use alloc::string::{String, ToString};
+use crate::prelude::*;
 use core::convert::TryFrom;
 
 use tendermint_proto::Protobuf;
@@ -84,6 +84,7 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
@@ -104,6 +105,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use core::convert::TryFrom;
     use test_env_log::test;
 

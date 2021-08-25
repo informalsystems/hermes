@@ -1,7 +1,6 @@
 //! Definition of domain type msg `MsgUpgradeAnyClient`.
 
-use alloc::string::String;
-use alloc::string::ToString;
+use crate::prelude::*;
 use core::convert::TryFrom;
 use core::str::FromStr;
 use tendermint_proto::Protobuf;

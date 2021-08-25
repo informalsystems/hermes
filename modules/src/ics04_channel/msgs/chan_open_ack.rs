@@ -1,12 +1,11 @@
 use crate::ics04_channel::channel::validate_version;
 use crate::ics04_channel::error::Error;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::prelude::*;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-use alloc::string::String;
-use alloc::string::ToString;
 use core::convert::TryFrom;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
@@ -128,6 +127,7 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
     use crate::ics24_host::identifier::{ChannelId, PortId};
@@ -153,6 +153,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
     use test_env_log::test;
 
@@ -288,7 +289,7 @@ mod tests {
             Test {
                 name: "Missing proof try (object proof)".to_string(),
                 raw: RawMsgChannelOpenAck {
-                    proof_try: vec![],
+                    proof_try: Vec::new(),
                     ..default_raw_msg
                 },
                 want_pass: false,

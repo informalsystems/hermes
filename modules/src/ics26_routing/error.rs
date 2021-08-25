@@ -1,4 +1,4 @@
-use alloc::string::String;
+use crate::prelude::*;
 use flex_error::{define_error, TraceError};
 
 use crate::application::ics20_fungible_token_transfer;

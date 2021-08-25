@@ -1,4 +1,4 @@
-use alloc::string::ToString;
+use crate::prelude::*;
 use core::convert::TryFrom;
 use core::ops::Deref;
 use prost_types::Any;

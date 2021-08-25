@@ -1,6 +1,6 @@
 use crate::ics23_commitment::error::Error;
-use alloc::format;
-use alloc::vec::Vec;
+use crate::prelude::*;
+
 use core::{convert::TryFrom, fmt};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use serde::{Deserialize, Serialize};
@@ -155,6 +155,7 @@ impl Serialize for CommitmentPrefix {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::prelude::*;
     use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
     /// Returns a dummy `RawMerkleProof`, for testing only!

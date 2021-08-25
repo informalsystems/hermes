@@ -1,4 +1,4 @@
-use alloc::string::String;
+use crate::prelude::*;
 use flex_error::{define_error, DisplayOnly, TraceError};
 
 use crate::ics24_host::error::ValidationError;

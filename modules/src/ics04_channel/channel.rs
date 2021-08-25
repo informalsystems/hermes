@@ -1,5 +1,4 @@
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
+use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 use core::fmt;
 use core::str::FromStr;
@@ -90,7 +89,7 @@ impl Default for ChannelEnd {
             state: State::Uninitialized,
             ordering: Default::default(),
             remote: Counterparty::default(),
-            connection_hops: vec![],
+            connection_hops: Vec::new(),
             version: "".to_string(),
         }
     }
@@ -444,8 +443,8 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 
 #[cfg(test)]
 pub mod test_util {
-
     use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+    use crate::prelude::*;
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
@@ -472,6 +471,7 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use core::convert::TryFrom;
     use core::str::FromStr;
     use test_env_log::test;

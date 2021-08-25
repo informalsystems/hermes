@@ -1,4 +1,4 @@
-use alloc::string::ToString;
+use crate::prelude::*;
 use core::convert::Infallible;
 use core::convert::TryFrom;
 use std::time::SystemTime;
@@ -111,6 +111,7 @@ impl From<Header> for ConsensusState {
 
 #[cfg(test)]
 mod tests {
+    use std::println;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
     use test_env_log::test;
 

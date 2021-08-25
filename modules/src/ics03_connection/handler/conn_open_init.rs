@@ -9,7 +9,7 @@ use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use crate::ics24_host::identifier::ConnectionId;
-use alloc::format;
+use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
@@ -56,6 +56,7 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use core::convert::TryFrom;
     use test_env_log::test;
 

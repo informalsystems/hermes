@@ -3,8 +3,8 @@ use crate::events::IbcEvent;
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::prelude::*;
 
-use alloc::vec::Vec;
 use serde_derive::{Deserialize, Serialize};
 
 /// Channel event types
@@ -124,7 +124,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
 
 fn extract_packet_and_write_ack_from_tx(event: &tendermint::abci::Event) -> (Packet, Vec<u8>) {
     let mut packet = Packet::default();
-    let mut write_ack: Vec<u8> = vec![];
+    let mut write_ack: Vec<u8> = Vec::new();
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();

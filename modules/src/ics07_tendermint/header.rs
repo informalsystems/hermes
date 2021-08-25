@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 
 use bytes::Buf;
@@ -130,6 +131,7 @@ impl From<Header> for RawHeader {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::prelude::*;
     use core::convert::TryInto;
 
     use subtle_encoding::hex;

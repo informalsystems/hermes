@@ -1,3 +1,4 @@
+#![no_std]
 #![allow(clippy::large_enum_variant)]
 #![deny(
     warnings,
@@ -28,6 +29,9 @@
 //!    - ICS 20: Fungible Token Transfer
 
 extern crate alloc;
+extern crate std;
+
+mod prelude;
 
 pub mod application;
 pub mod events;
