@@ -1,37 +1,54 @@
-use flex_error::define_error;
-use serde::Serialize;
+use serde::ser::{Serialize, SerializeMap, Serializer};
+use thiserror::Error;
 
-use ibc::{ics24_host::error::ValidationError, ics24_host::identifier::ChainId};
+use ibc::ics24_host::{error::ValidationErrorDetail, identifier::ChainId};
 
-define_error! {
-    #[derive(Debug, Serialize)]
-    RestApiError {
-        ChannelSend
-            { cause: String }
-            |e| { format!("failed to send a request through crossbeam channel: {0}", e.cause) },
+#[derive(Error, Debug)]
+pub enum RestApiError {
+    #[error("failed to send a request through crossbeam channel: {0}")]
+    ChannelSend(String),
 
-        ChannelRecv
-            { cause: String }
-            |e| { format!("failed to receive a reply from crossbeam channel: {0}", e.cause) },
+    #[error("failed to receive a reply from crossbeam channel: {0}")]
+    ChannelRecv(String),
 
-        Serialization
-            { cause: String }
-            |e| { format!("failed while serializing reply into json value: {0}", e.cause) },
+    #[error("failed while serializing reply into json value: {0}")]
+    Serialization(String),
 
-        ChainConfigNotFound
-            { chain_id: ChainId }
-            |e| { format!("could not find configuration for chain id {0}", e.chain_id) },
+    #[error("could not find configuration for chain: {0}")]
+    ChainConfigNotFound(ChainId),
 
-        InvalidChainId
-            { chain_id_raw: String }
-            [ ValidationError ]
-            |e| { format!("failed to parse the string {0} into a valid chain identifier", e.chain_id_raw) },
+    #[error("failed to parse the string {0} into a valid chain identifier: {1}")]
+    InvalidChainId(String, ValidationErrorDetail),
 
-        InvalidChainConfig
-            { cause: String }
-            |e| { format!("failed while parsing the request body into a chain configuration {}", e.cause) },
+    #[error("failed while parsing the request body into a chain configuration: {0}")]
+    InvalidChainConfig(String),
 
-        Unimplemented
-            | _ | { "not implemented".to_string() },
+    #[error("not implemented")]
+    Unimplemented,
+}
+
+impl RestApiError {
+    pub fn name(&self) -> &'static str {
+        match self {
+            RestApiError::ChannelSend(_) => "ChannelSend",
+            RestApiError::ChannelRecv(_) => "ChannelRecv",
+            RestApiError::Serialization(_) => "Serialization",
+            RestApiError::ChainConfigNotFound(_) => "ChainConfigNotFound",
+            RestApiError::InvalidChainId(_, _) => "InvalidChainId",
+            RestApiError::InvalidChainConfig(_) => "InvalidChainConfig",
+            RestApiError::Unimplemented => "Unimplemented",
+        }
+    }
+}
+
+impl Serialize for RestApiError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(3))?;
+        map.serialize_entry("name", self.name())?;
+        map.serialize_entry("msg", &self.to_string())?;
+        map.end()
     }
 }

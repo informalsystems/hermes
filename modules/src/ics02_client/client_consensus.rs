@@ -161,11 +161,21 @@ impl ConsensusState for AnyConsensusState {
     }
 
     fn root(&self) -> &CommitmentRoot {
-        todo!()
+        match self {
+            Self::Tendermint(cs_state) => cs_state.root(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(mock_state) => mock_state.root(),
+        }
     }
 
     fn validate_basic(&self) -> Result<(), Infallible> {
-        todo!()
+        match self {
+            Self::Tendermint(cs_state) => cs_state.validate_basic(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(mock_state) => mock_state.validate_basic(),
+        }
     }
 
     fn wrap_any(self) -> AnyConsensusState {

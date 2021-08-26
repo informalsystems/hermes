@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::{
@@ -11,9 +11,17 @@ use ibc_relayer::{
 
 use ibc_relayer_rest::{server::spawn, Config};
 
-pub enum TestResult {
+enum TestResult {
     Success,
     WrongRequest(Request),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "status", content = "result")]
+#[serde(rename_all = "lowercase")]
+enum JsonResult<R, E> {
+    Success(R),
+    Error(E),
 }
 
 fn run_test<R, F>(port: u16, path: &str, expected: R, handler: F)
@@ -55,15 +63,14 @@ fn version() {
 
     let rest_api_version = VersionInfo {
         name: "ibc-relayer-rest".to_string(),
-        version: "0.1.0".to_string(),
+        version: "0.7.0".to_string(),
     };
 
     let result = vec![version.clone(), rest_api_version];
 
-    run_test(19101, "/", result, |req| match req {
+    run_test(19101, "/version", result, |req| match req {
         Request::Version { reply_to } => {
             reply_to.send(Ok(version)).unwrap();
-
             TestResult::Success
         }
         req => TestResult::WrongRequest(req),
@@ -73,9 +80,9 @@ fn version() {
 #[test]
 fn get_chains() {
     let chain_id = ChainId::from_str("mock-0").unwrap();
-    let result: Result<_, ()> = Ok(vec![chain_id.clone()]);
+    let result: JsonResult<_, ()> = JsonResult::Success(vec![chain_id.clone()]);
 
-    run_test(19102, "/chain", result, |req| match req {
+    run_test(19102, "/chains", result, |req| match req {
         Request::GetChains { reply_to } => {
             reply_to.send(Ok(vec![chain_id])).unwrap();
             TestResult::Success
@@ -106,7 +113,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 #[test]
 fn get_chain() {
     let config: ChainConfig = toml::de::from_str(MOCK_CHAIN_CONFIG).unwrap();
-    let result: Result<_, ()> = Ok(config.clone());
+    let result: JsonResult<_, ()> = JsonResult::Success(config.clone());
 
     run_test(19103, "/chain/mock-0", result, |req| match req {
         Request::GetChain { chain_id, reply_to } if chain_id.to_string().as_str() == "mock-0" => {
@@ -120,7 +127,7 @@ fn get_chain() {
 #[test]
 fn state() {
     let state = SupervisorState::new(vec!["mock-0".parse().unwrap()], std::iter::empty());
-    let result: Result<_, ()> = Ok(state.clone());
+    let result: JsonResult<_, ()> = JsonResult::Success(state.clone());
 
     run_test(19104, "/state", result, |req| match req {
         Request::State { reply_to } => {

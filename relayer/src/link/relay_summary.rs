@@ -12,6 +12,10 @@ impl RelaySummary {
         Self { events: vec![] }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty()
+    }
+
     pub fn from_events(events: Vec<IbcEvent>) -> Self {
         Self { events }
     }

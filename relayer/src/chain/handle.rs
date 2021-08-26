@@ -100,9 +100,14 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Subscription>,
     },
 
-    SendMsgs {
+    SendMessagesAndWaitCommit {
         proto_msgs: Vec<prost_types::Any>,
         reply_to: ReplyTo<Vec<IbcEvent>>,
+    },
+
+    SendMessagesAndWaitCheckTx {
+        proto_msgs: Vec<prost_types::Any>,
+        reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
     },
 
     Signer {
@@ -314,7 +319,19 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     /// Send the given `msgs` to the chain, packaged as one or more transactions,
     /// and return the list of events emitted by the chain after the transaction was committed.
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IbcEvent>, Error>;
+    fn send_messages_and_wait_commit(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<IbcEvent>, Error>;
+
+    /// Submit messages asynchronously.
+    /// Does not block waiting on the chain to produce the
+    /// resulting events. Instead of events, this method
+    /// returns a set of transaction hashes.
+    fn send_messages_and_wait_check_tx(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error>;
 
     fn get_signer(&self) -> Result<Signer, Error>;
 

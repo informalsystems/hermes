@@ -37,12 +37,12 @@ where
     // Send the request
     request_sender
         .send(req)
-        .map_err(|e| RestApiError::channel_send(e.to_string()))?;
+        .map_err(|e| RestApiError::ChannelSend(e.to_string()))?;
 
     // Wait for the reply
     reply_receiver
         .recv()
-        .map_err(|e| RestApiError::channel_recv(e.to_string()))?
+        .map_err(|e| RestApiError::ChannelRecv(e.to_string()))?
 }
 
 pub fn all_chain_ids(sender: &channel::Sender<Request>) -> Result<Vec<ChainId>, RestApiError> {
@@ -55,7 +55,7 @@ pub fn chain_config(
 ) -> Result<ChainConfig, RestApiError> {
     match ChainId::from_str(chain_id) {
         Ok(chain_id) => submit_request(sender, |reply_to| Request::GetChain { chain_id, reply_to }),
-        Err(e) => Err(RestApiError::invalid_chain_id(chain_id.to_string(), e)),
+        Err(e) => Err(RestApiError::InvalidChainId(chain_id.to_string(), e.0)),
     }
 }
 
