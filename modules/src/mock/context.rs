@@ -23,6 +23,7 @@ use crate::ics04_channel::error::Error as Ics04Error;
 use crate::ics04_channel::packet::{Receipt, Sequence};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics05_port::context::PortReader;
+use crate::ics05_port::error::Error as Ics05Error;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::Ics18Context;
 use crate::ics18_relayer::error::Error as Ics18Error;
@@ -436,8 +437,11 @@ impl Ics26Context for MockContext {}
 impl Ics20Context for MockContext {}
 
 impl PortReader for MockContext {
-    fn lookup_module_by_port(&self, port_id: &PortId) -> Option<Capability> {
-        self.port_capabilities.get(port_id).cloned()
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Result<Capability, Ics05Error> {
+        match self.port_capabilities.get(port_id) {
+            Some(cap) => Ok(cap.clone()),
+            None => Err(Ics05Error::unknown_port(port_id.clone())),
+        }
     }
 
     fn authenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
@@ -483,22 +487,23 @@ impl ChannelReader for MockContext {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyConsensusState, Ics04Error> {
-        ClientReader::consensus_state(self, client_id, height).map_err(|_| {
-            Ics04Error::missing_client_consensus_state(client_id.clone(), height.clone())
-        })
+        ClientReader::consensus_state(self, client_id, height)
+            .map_err(|_| Ics04Error::missing_client_consensus_state(client_id.clone(), height))
     }
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
-        let cap = PortReader::lookup_module_by_port(self, port_id);
-        match cap {
-            Some(key) => {
+        match PortReader::lookup_module_by_port(self, port_id) {
+            Ok(key) => {
                 if !PortReader::authenticate(self, &key, port_id) {
                     Err(Ics04Error::invalid_port_capability())
                 } else {
                     Ok(key)
                 }
             }
-            None => Err(Ics04Error::no_port_capability(port_id.clone())),
+            Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
+                Err(Ics04Error::no_port_capability(port_id.clone()))
+            }
+            Err(_) => Err(Ics04Error::implementation_specific()),
         }
     }
 
@@ -507,7 +512,7 @@ impl ChannelReader for MockContext {
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, Ics04Error> {
         match self.next_sequence_send.get(port_channel_id) {
-            Some(sequence) => Ok(sequence.clone()),
+            Some(sequence) => Ok(*sequence),
             None => Err(Ics04Error::missing_next_send_seq()),
         }
     }
@@ -517,7 +522,7 @@ impl ChannelReader for MockContext {
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, Ics04Error> {
         match self.next_sequence_recv.get(port_channel_id) {
-            Some(sequence) => Ok(sequence.clone()),
+            Some(sequence) => Ok(*sequence),
             None => Err(Ics04Error::missing_next_recv_seq()),
         }
     }
@@ -527,7 +532,7 @@ impl ChannelReader for MockContext {
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, Ics04Error> {
         match self.next_sequence_ack.get(port_channel_id) {
-            Some(sequence) => Ok(sequence.clone()),
+            Some(sequence) => Ok(*sequence),
             None => Err(Ics04Error::missing_next_ack_seq()),
         }
     }
@@ -538,7 +543,7 @@ impl ChannelReader for MockContext {
     ) -> Result<String, Ics04Error> {
         match self.packet_commitment.get(key) {
             Some(commitment) => Ok(commitment.clone()),
-            None => Err(Ics04Error::packet_commitment_not_found(key.2.clone())),
+            None => Err(Ics04Error::packet_commitment_not_found(key.2)),
         }
     }
 
@@ -548,7 +553,7 @@ impl ChannelReader for MockContext {
     ) -> Result<Receipt, Ics04Error> {
         match self.packet_receipt.get(key) {
             Some(receipt) => Ok(receipt.clone()),
-            None => Err(Ics04Error::packet_receipt_not_found(key.2.clone())),
+            None => Err(Ics04Error::packet_receipt_not_found(key.2)),
         }
     }
 
@@ -558,7 +563,7 @@ impl ChannelReader for MockContext {
     ) -> Result<String, Ics04Error> {
         match self.packet_acknowledgement.get(key) {
             Some(ack) => Ok(ack.clone()),
-            None => Err(Ics04Error::packet_acknowledgement_not_found(key.2.clone())),
+            None => Err(Ics04Error::packet_acknowledgement_not_found(key.2)),
         }
     }
 

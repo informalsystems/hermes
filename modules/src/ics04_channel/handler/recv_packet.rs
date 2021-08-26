@@ -116,7 +116,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: MsgRecvPacket) -> HandlerResult<Pac
                     receipt: Some(Receipt::Ok),
                 })
             }
-            Err(e) => return Err(Error::read_failure(Box::new(e))),
+            Err(_) => return Err(Error::implementation_specific()),
         }
     };
 

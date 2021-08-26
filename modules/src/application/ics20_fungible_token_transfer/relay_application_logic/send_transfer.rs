@@ -15,7 +15,7 @@ where
 {
     let source_channel_end = ctx
         .channel_end(&(msg.source_port.clone(), msg.source_channel.clone()))
-        .map_err(|e| Error::ics04_channel(e))?;
+        .map_err(Error::ics04_channel)?;
 
     let destination_port = source_channel_end.counterparty().port_id().clone();
     let destination_channel = source_channel_end
@@ -31,7 +31,7 @@ where
     // get the next sequence
     let sequence = ctx
         .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()))
-        .map_err(|e| Error::ics04_channel(e))?;
+        .map_err(Error::ics04_channel)?;
 
     //TODO: Application LOGIC.
 

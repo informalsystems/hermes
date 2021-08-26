@@ -6,7 +6,7 @@ use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::proofs::ProofError;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use flex_error::{define_error, DisplayOnly, TraceError};
+use flex_error::{define_error, TraceError};
 use tendermint_proto::Error as TendermintError;
 
 define_error! {
@@ -328,23 +328,8 @@ define_error! {
         MissingNextAckSeq
             | _ | { "Missing sequence number for ack packets" },
 
-        ReadFailure
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
-            | e | {
-                format_args!("Reading an object failed, reason: {}", e)
-            },
-
-        WriteFailure
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
-            | e | {
-                format_args!("Writing an object failed, reason: {}", e)
-            },
-
-        OtherFailure
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
-            | e | {
-                format_args!("Failure happens, reason: {}", e)
-            },
+        ImplementationSpecific
+            | _ | { "implementation specific error" },
     }
 }
 
