@@ -402,7 +402,17 @@ fn private_key_from_mnemonic(
 /// Return an address from a Public Key
 fn get_address(pk: ExtendedPubKey, at: &AddressType) -> Vec<u8> {
     match at {
-        AddressType::Cosmos => {
+        AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
+            let public_key = pk.public_key.key.serialize_uncompressed();
+            // 0x04 is [SECP256K1_TAG_PUBKEY_UNCOMPRESSED](https://github.com/bitcoin-core/secp256k1/blob/d7ec49a6893751f068275cc8ddf4993ef7f31756/include/secp256k1.h#L196)
+            debug_assert_eq!(public_key[0], 0x04);
+
+            let output = keccak256_hash(&public_key[1..]);
+            // right-most 20-bytes from the 32-byte keccak hash
+            // (see https://kobl.one/blog/create-full-ethereum-keypair-and-address/)
+            output[12..].to_vec()
+        }
+        AddressType::Cosmos | AddressType::Ethermint { .. } => {
             let mut hasher = Sha256::new();
             hasher.update(pk.public_key.to_bytes().as_slice());
 
@@ -415,16 +425,6 @@ fn get_address(pk: ExtendedPubKey, at: &AddressType) -> Vec<u8> {
             let rip_result = rip_hasher.finalize();
 
             rip_result.to_vec()
-        }
-        AddressType::Ethermint { .. } => {
-            let public_key = pk.public_key.key.serialize_uncompressed();
-            // 0x04 is [SECP256K1_TAG_PUBKEY_UNCOMPRESSED](https://github.com/bitcoin-core/secp256k1/blob/d7ec49a6893751f068275cc8ddf4993ef7f31756/include/secp256k1.h#L196)
-            debug_assert_eq!(public_key[0], 0x04);
-
-            let output = keccak256_hash(&public_key[1..]);
-            // right-most 20-bytes from the 32-byte keccak hash
-            // (see https://kobl.one/blog/create-full-ethereum-keypair-and-address/)
-            output[12..].to_vec()
         }
     }
 }
