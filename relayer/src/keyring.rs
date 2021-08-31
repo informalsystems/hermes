@@ -355,13 +355,7 @@ impl KeyRing {
 
         let private_key_bytes = key.private_key.private_key.to_bytes();
         match address_type {
-            AddressType::Cosmos => {
-                let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice())
-                    .map_err(Error::invalid_key)?;
-                let signature: Signature = signing_key.sign(&msg);
-                Ok(signature.as_ref().to_vec())
-            }
-            AddressType::Ethermint { .. } => {
+            AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
                 let hash = keccak256_hash(msg.as_slice());
                 let s = Secp256k1::signing_only();
                 // SAFETY: hash is 32 bytes, as expected in `Message::from_slice` -- see `keccak256_hash`, hence `unwrap`
@@ -370,6 +364,12 @@ impl KeyRing {
                     .map_err(Error::invalid_key_raw)?;
                 let (_, sig_bytes) = s.sign_recoverable(&sign_msg, &key).serialize_compact();
                 Ok(sig_bytes.to_vec())
+            }
+            AddressType::Cosmos | AddressType::Ethermint { .. } => {
+                let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice())
+                    .map_err(Error::invalid_key)?;
+                let signature: Signature = signing_key.sign(&msg);
+                Ok(signature.as_ref().to_vec())
             }
         }
     }
