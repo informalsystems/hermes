@@ -12,11 +12,9 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
-    error::Code,
     event::Event as RpcEvent,
     query::{EventType, Query},
-    Error as RpcError, Result as RpcResult, SubscriptionClient, Url, WebSocketClient,
-    WebSocketClientDriver,
+    Error as RpcError, SubscriptionClient, Url, WebSocketClient, WebSocketClientDriver,
 };
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
@@ -87,8 +85,10 @@ define_error! {
 
 impl Error {
     fn canceled_or_generic(e: RpcError) -> Self {
-        match (e.code(), e.data()) {
-            (Code::ServerError, Some(msg)) if msg.contains("subscription was cancelled") => {
+        match e.detail() {
+            tendermint_rpc::error::ErrorDetail::Server(detail)
+                if detail.reason.contains("subscription was cancelled") =>
+            {
                 Self::subscription_cancelled(e)
             }
             _ => Self::rpc(e),
@@ -106,7 +106,7 @@ pub struct EventBatch {
     pub events: Vec<IbcEvent>,
 }
 
-type SubscriptionResult = RpcResult<RpcEvent>;
+type SubscriptionResult = std::result::Result<RpcEvent, RpcError>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
 pub type EventSender = channel::Sender<Result<EventBatch>>;

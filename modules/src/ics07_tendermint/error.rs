@@ -1,8 +1,9 @@
 use crate::ics24_host::error::ValidationError;
 use crate::Height;
-use flex_error::{define_error, DisplayOnly, TraceError};
+use flex_error::{define_error, TraceError};
 use tendermint::account::Id;
 use tendermint::hash::Hash;
+use tendermint::Error as TendermintError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -20,7 +21,7 @@ define_error! {
 
         InvalidHeader
             { reason: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ TendermintError ]
             | _ | { "invalid header, failed basic validation" },
 
         InvalidTrustThreshold
@@ -91,7 +92,7 @@ define_error! {
             | _ | { "invalid raw client consensus state" },
 
         InvalidRawHeader
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ TendermintError ]
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour

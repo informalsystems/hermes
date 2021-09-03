@@ -8,8 +8,9 @@ use crate::Height;
 
 use std::num::TryFromIntError;
 
-use flex_error::{define_error, DisplayOnly, TraceError};
-use tendermint_proto::Error as TendermintError;
+use flex_error::{define_error, TraceError};
+use tendermint::Error as TendermintError;
+use tendermint_proto::Error as TendermintProtoError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -58,7 +59,7 @@ define_error! {
 
         FailedTrustThresholdConversion
             { numerator: u64, denominator: u64 }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ TendermintError ]
             | e | { format_args!("failed to build Tendermint domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
 
         UnknownClientStateType
@@ -105,14 +106,14 @@ define_error! {
             },
 
         DecodeRawClientState
-            [ TraceError<TendermintError> ]
+            [ TraceError<TendermintProtoError> ]
             | _ | { "error decoding raw client state" },
 
         MissingRawClientState
             | _ | { "missing raw client state" },
 
         InvalidRawConsensusState
-            [ TraceError<TendermintError> ]
+            [ TraceError<TendermintProtoError> ]
             | _ | { "invalid raw client consensus state" },
 
         MissingRawConsensusState
@@ -134,14 +135,14 @@ define_error! {
             | _ | { "invalid client identifier" },
 
         InvalidRawHeader
-            [ TraceError<TendermintError> ]
+            [ TraceError<TendermintProtoError> ]
             | _ | { "invalid raw header" },
 
         MissingRawHeader
             | _ | { "missing raw header" },
 
         DecodeRawMisbehaviour
-            [ TraceError<TendermintError> ]
+            [ TraceError<TendermintProtoError> ]
             | _ | { "invalid raw misbehaviour" },
 
         InvalidRawMisbehaviour

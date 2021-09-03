@@ -5,13 +5,14 @@ use crate::sdk_error::SdkError;
 use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use prost::DecodeError;
+use tendermint::Error as TendermintError;
 use tendermint_light_client::{
     components::io::IoError as LightClientIoError, errors::Error as LightClientError,
 };
 use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
-use tendermint_rpc::Error as TendermintError;
+use tendermint_rpc::Error as TendermintRpcError;
 use tonic::{
     metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
     Status as GrpcStatus,
@@ -50,7 +51,7 @@ define_error! {
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ TraceClone<TendermintError> ]
+            [ TraceClone<TendermintRpcError> ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -154,7 +155,7 @@ define_error! {
             |_| { "Malformed proof" },
 
         InvalidHeight
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ TendermintError ]
             |_| { "Invalid height" },
 
         InvalidMetadata
@@ -305,7 +306,7 @@ define_error! {
 
         InvalidKeyAddress
             { address: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ TendermintError ]
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding
