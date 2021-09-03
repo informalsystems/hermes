@@ -181,9 +181,9 @@ define_error! {
             },
 
         InsufficientVotingPower
-            { reason: String}
-            |e|{
-                format_args!("Insufficient overlap {}", e.reason )
+            { reason: String }
+            | e | {
+                format_args!("Insufficient overlap {}", e.reason)
             },
 
         RawClientAndConsensusStateTypesMismatch
@@ -216,29 +216,27 @@ define_error! {
                     e.upgraded_height, e.client_height)
             },
 
-            InvalidConsensusStateTimestamp
+        InvalidConsensusStateTimestamp
             {
                 time1: Timestamp,
                 time2: Timestamp,
             }
-            | e |{
+            | e | {
                 format_args!("Timestamp none or {} and now {}", e.time1, e.time2)
             },
 
-
-
-            HeaderNotWithinTrustPeriod
+        HeaderNotWithinTrustPeriod
             {
                 latest_time:Timestamp,
                 update_time: Timestamp,
             }
             | e | {
-                format_args!("Header not withing trusting period: expires_at={0} now={1}",e.latest_time, e.update_time)
+                format_args!("Header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
             },
 
-            TendermintHandlerError
-            { err: Ics07Error }
-            | e | { format_args!("Tendermint-specific handler error: {}",e.err) },
+        TendermintHandlerError
+            [ Ics07Error ]
+            | _ | { format_args!("Tendermint-specific handler error") },
 
     }
 }

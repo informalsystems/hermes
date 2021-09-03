@@ -59,12 +59,12 @@ impl ClientState {
             ));
         }
         if unbonding_period <= Duration::new(0, 0) {
-            return Err(Error::invalid_unbounding_period(
+            return Err(Error::invalid_unbonding_period(
                 "ClientState unbonding period must be greater than zero".to_string(),
             ));
         }
         if trusting_period >= unbonding_period {
-            return Err(Error::invalid_unbounding_period(
+            return Err(Error::invalid_unbonding_period(
                 "ClientState trusting period must be smaller than unbonding period".to_string(),
             ));
         }
