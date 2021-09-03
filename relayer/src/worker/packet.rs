@@ -1,10 +1,10 @@
 use std::time::Duration;
 
 use crossbeam_channel::Receiver;
-use tracing::{error, info, warn};
+use tracing::{error, info, trace, warn};
 
 use crate::{
-    chain::handle::ChainHandlePair,
+    chain::handle::{ChainHandle, ChainHandlePair},
     link::{Link, LinkParameters, RelaySummary},
     object::Packet,
     telemetry,
@@ -22,18 +22,18 @@ enum Step {
 }
 
 #[derive(Debug)]
-pub struct PacketWorker {
+pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     path: Packet,
-    chains: ChainHandlePair,
+    chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
     telemetry: Telemetry,
     clear_packets_interval: u64,
 }
 
-impl PacketWorker {
+impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
     pub fn new(
         path: Packet,
-        chains: ChainHandlePair,
+        chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         telemetry: Telemetry,
         clear_packets_interval: u64,
@@ -82,8 +82,11 @@ impl PacketWorker {
             });
 
             match result {
-                Ok(Step::Success(_summary)) => {
-                    telemetry!(self.packet_metrics(&_summary));
+                Ok(Step::Success(summary)) => {
+                    if !summary.is_empty() {
+                        trace!("Packet worker produced relay summary: {:?}", summary);
+                    }
+                    telemetry!(self.packet_metrics(&summary));
                 }
 
                 Ok(Step::Shutdown) => {
@@ -98,7 +101,20 @@ impl PacketWorker {
         }
     }
 
-    fn step(&self, cmd: Option<WorkerCmd>, link: &mut Link, index: u64) -> RetryResult<Step, u64> {
+    /// Receives worker commands, which may be:
+    ///     - IbcEvent => then it updates schedule
+    ///     - NewBlock => schedules packet clearing
+    ///     - Shutdown => exits
+    ///
+    /// Regardless of the incoming command, this method
+    /// also refreshes and executes any scheduled operational
+    /// data that is ready.
+    fn step(
+        &self,
+        cmd: Option<WorkerCmd>,
+        link: &mut Link<ChainA, ChainB>,
+        index: u64,
+    ) -> RetryResult<Step, u64> {
         if let Some(cmd) = cmd {
             let result = match cmd {
                 WorkerCmd::IbcEvents { batch } => link.a_to_b.update_schedule(batch),
@@ -136,27 +152,25 @@ impl PacketWorker {
             }
         }
 
-        let result = link
+        if let Err(e) = link
             .a_to_b
             .refresh_schedule()
-            .and_then(|_| link.a_to_b.execute_schedule());
-
-        match result {
-            Ok(summary) => RetryResult::Ok(Step::Success(summary)),
-            Err(e) => {
-                error!(
-                    path = %self.path.short_name(),
-                    "[{}] worker: schedule execution encountered error: {}",
-                    link.a_to_b, e
-                );
-
-                RetryResult::Retry(index)
-            }
+            .and_then(|_| link.a_to_b.execute_schedule())
+        {
+            error!(
+                "[{}] worker: schedule execution encountered error: {}",
+                link.a_to_b, e
+            );
+            return RetryResult::Retry(index);
         }
+
+        let confirmation_result = link.a_to_b.process_pending_txs();
+
+        RetryResult::Ok(Step::Success(confirmation_result))
     }
 
     /// Get a reference to the uni chan path worker's chains.
-    pub fn chains(&self) -> &ChainHandlePair {
+    pub fn chains(&self) -> &ChainHandlePair<ChainA, ChainB> {
         &self.chains
     }
 

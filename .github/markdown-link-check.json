@@ -1,0 +1,11 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^https://crates.io"
+    },
+    {
+      "pattern": "^https?://localhost"
+    }
+  ],
+  "aliveStatusCodes": [429, 200]
+}

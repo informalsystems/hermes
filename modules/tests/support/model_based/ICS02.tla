@@ -68,10 +68,10 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
     ELSE
         \* if the client exists, check its height
         LET client == ICS02_GetClient(chain.clients, clientId) IN
-        LET highestHeight == Max(client.heights) IN
-        IF highestHeight >= height THEN
-            \* if the client's new height is not higher than the highest client
-            \* height, then set an error outcome
+        LET highestHeight == FindMaxHeight(client.heights) IN
+        IF ~HigherRevisionHeight(height, highestHeight) THEN
+            \* if the client's new height is not at the same revision number and a higher
+            \* block height than the highest client height, then set an error outcome
             [
                 clients |-> chain.clients,
                 action |-> action_,
@@ -92,6 +92,50 @@ ICS02_UpdateClient(chain, chainId, clientId, height) ==
                 ),
                 action |-> action_,
                 outcome |-> "Ics02UpdateOk"
+            ]
+
+ICS07_UpgradeClient(chain, chainId, clientId, height) ==
+    LET action_ == AsAction([
+        type |-> "Ics07UpgradeClient",
+        chainId |-> chainId,
+        clientId |-> clientId,
+        header |-> height
+    ]) IN
+    \* check if the client exists
+    IF ~ICS02_ClientExists(chain.clients, clientId) THEN
+        \* if the client does not exist, then set an error outcome
+        [
+            clients |-> chain.clients,
+            action |-> action_,
+            outcome |-> "Ics07ClientNotFound"
+        ]
+    ELSE
+        \* if the client exists, check its height
+        LET client == ICS02_GetClient(chain.clients, clientId) IN
+        LET highestHeight == FindMaxHeight(client.heights) IN
+        IF ~HigherRevisionNumber(height, highestHeight) THEN
+            \* if the client's new height is not at a higher revision than the highest client
+            \* height, then set an error outcome
+            [
+                clients |-> chain.clients,
+                action |-> action_,
+                outcome |-> "Ics07HeaderVerificationFailure"
+            ]
+        ELSE
+            \* if the client's new height is higher than the highest client
+            \* height, then update the client
+            LET updatedClient == [client EXCEPT
+                !.heights = client.heights \union {height}
+            ] IN
+            \* return result with updated state
+            [
+                clients |-> ICS02_SetClient(
+                    chain.clients,
+                    clientId,
+                    updatedClient
+                ),
+                action |-> action_,
+                outcome |-> "Ics07UpgradeOk"
             ]
 
 ===============================================================================

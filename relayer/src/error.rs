@@ -103,6 +103,10 @@ define_error! {
             [ TraceError<LightClientError> ]
             |e| { format!("Light client error for RPC address {0}", e.address) },
 
+        LightClientState
+            [ client_error::Error ]
+            |_| { "Light client encountered error due to client state".to_string() },
+
         LightClientIo
             { address: String }
             [ TraceError<LightClientIoError> ]
@@ -125,8 +129,19 @@ define_error! {
         Event
             |_| { "Bad Notification" },
 
+        ConversionFromAny
+            [ TraceError<TendermintProtoError> ]
+            |_| { "Conversion from a protobuf `Any` into a domain type failed" },
+
         EmptyUpgradedClientState
-            |_| { "The upgrade plan specifies no upgraded client state" },
+            |_| { "Found no upgraded client state" },
+
+        ConsensusStateTypeMismatch
+            {
+                expected: ClientType,
+                got: ClientType,
+            }
+            |e| { format!("consensus state type mismatch; hint: expected client type '{0}', got '{1}'", e.expected, e.got) },
 
         EmptyResponseValue
             |_| { "Empty response value" },
@@ -239,7 +254,7 @@ define_error! {
 
         Ics02
             [ client_error::Error ]
-            |_| { "ICS 02 error" },
+            |e| { format!("ICS 02 error: {}", e.source) },
 
         Ics03
             [ connection_error::Error ]
@@ -407,7 +422,6 @@ define_error! {
                 format!("Hermes health check failed while verifying the application compatibility for chain {0}:{1}; caused by: {2}",
                     e.chain_id, e.address, e.cause)
             },
-
     }
 }
 

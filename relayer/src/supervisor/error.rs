@@ -52,6 +52,9 @@ define_error! {
                     e.channel_id, e.chain_id)
             },
 
+        MissingCounterpartyChannelId
+            |_| { "failed due to missing counterparty channel id" },
+
         Relayer
             [ RelayerError ]
             |_| { "relayer error" },

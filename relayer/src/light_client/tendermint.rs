@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use itertools::Itertools;
 
@@ -189,7 +189,10 @@ impl LightClient {
             })?;
 
         let params = TmOptions {
-            trust_threshold: client_state.trust_level,
+            trust_threshold: client_state
+                .trust_level
+                .try_into()
+                .map_err(Error::light_client_state)?,
             trusting_period: client_state.trusting_period,
             clock_drift: client_state.max_clock_drift,
         };

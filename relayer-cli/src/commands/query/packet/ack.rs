@@ -4,6 +4,7 @@ use subtle_encoding::{Encoding, Hex};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
+use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::Output;

@@ -10,7 +10,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::{app_config, CliApp};
-use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
+use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 
@@ -131,15 +131,7 @@ pub struct TxUpgradeClientCmd {
 }
 
 impl Runnable for TxUpgradeClientCmd {
-    #[allow(unreachable_code)]
     fn run(&self) {
-        tracing::error!("This command is currently disabled due to a regression in Hermes v0.6.1.");
-        tracing::error!("Please track the following issue for background and progress:");
-        tracing::error!("");
-        tracing::error!("    https://github.com/informalsystems/ibc-rs/issues/1229");
-
-        std::process::exit(1);
-
         let config = app_config();
 
         let dst_chain = match spawn_chain_runtime(&config, &self.chain_id) {
@@ -187,15 +179,7 @@ pub struct TxUpgradeClientsCmd {
 }
 
 impl Runnable for TxUpgradeClientsCmd {
-    #[allow(unreachable_code)]
     fn run(&self) {
-        tracing::error!("This command is currently disabled due to a regression in Hermes v0.6.1.");
-        tracing::error!("Please track the following issue for background and progress:");
-        tracing::error!("");
-        tracing::error!("    https://github.com/informalsystems/ibc-rs/issues/1229");
-
-        std::process::exit(1);
-
         let config = app_config();
         let src_chain = match spawn_chain_runtime(&config, &self.src_chain_id) {
             Ok(handle) => handle,
@@ -220,13 +204,13 @@ impl Runnable for TxUpgradeClientsCmd {
 }
 
 impl TxUpgradeClientsCmd {
-    fn upgrade_clients_for_chain(
+    fn upgrade_clients_for_chain<Chain: ChainHandle>(
         &self,
         config: &config::Reader<CliApp>,
-        src_chain: Box<dyn ChainHandle>,
+        src_chain: Chain,
         dst_chain_id: &ChainId,
     ) -> UpgradeClientsForChainResult {
-        let dst_chain = spawn_chain_runtime(config, dst_chain_id)?;
+        let dst_chain = spawn_chain_runtime_generic::<Chain>(config, dst_chain_id)?;
 
         let req = QueryClientStatesRequest {
             pagination: ibc_proto::cosmos::base::query::pagination::all(),
@@ -242,12 +226,12 @@ impl TxUpgradeClientsCmd {
         Ok(outputs)
     }
 
-    fn upgrade_client(
+    fn upgrade_client<Chain: ChainHandle>(
         client_id: ClientId,
-        dst_chain: Box<dyn ChainHandle>,
-        src_chain: Box<dyn ChainHandle>,
+        dst_chain: Chain,
+        src_chain: Chain,
     ) -> Result<Vec<IbcEvent>, Error> {
-        let client = ForeignClient::restore(client_id, dst_chain.clone(), src_chain.clone());
+        let client = ForeignClient::restore(client_id, dst_chain, src_chain);
         client.upgrade().map_err(Error::foreign_client)
     }
 }

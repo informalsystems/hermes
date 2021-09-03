@@ -5,6 +5,7 @@ use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::{Channel, ChannelSide};
 
 use crate::cli_utils::ChainHandlePair;
@@ -94,7 +95,7 @@ impl Runnable for TxRawChanOpenInitCmd {
                 None,
             ),
             b_side: ChannelSide::new(
-                chains.dst.clone(),
+                chains.dst,
                 dst_connection.client_id().clone(),
                 self.dst_conn_id.clone(),
                 self.dst_port_id.clone(),
@@ -178,7 +179,7 @@ impl Runnable for TxRawChanOpenTryCmd {
                 Some(self.src_chan_id.clone()),
             ),
             b_side: ChannelSide::new(
-                chains.dst.clone(),
+                chains.dst,
                 dst_connection.client_id().clone(),
                 self.dst_conn_id.clone(),
                 self.dst_port_id.clone(),
@@ -214,7 +215,7 @@ impl Runnable for TxRawChanOpenTryCmd {
                         Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst.clone(),
+                        chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
@@ -279,7 +280,7 @@ impl Runnable for TxRawChanOpenAckCmd {
                         Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst.clone(),
+                        chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
@@ -344,7 +345,7 @@ impl Runnable for TxRawChanOpenConfirmCmd {
                         Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst.clone(),
+                        chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
@@ -409,7 +410,7 @@ impl Runnable for TxRawChanCloseInitCmd {
                         Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst.clone(),
+                        chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),
@@ -474,7 +475,7 @@ impl Runnable for TxRawChanCloseConfirmCmd {
                         Some(self.src_chan_id.clone()),
                     ),
                     b_side: ChannelSide::new(
-                        chains.dst.clone(),
+                        chains.dst,
                         dst_connection.client_id().clone(),
                         self.dst_conn_id.clone(),
                         self.dst_port_id.clone(),

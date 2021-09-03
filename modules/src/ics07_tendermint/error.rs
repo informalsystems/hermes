@@ -5,6 +5,7 @@ use tendermint::account::Id;
 use tendermint::hash::Hash;
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     Error {
         InvalidTrustingPeriod
             { reason: String }

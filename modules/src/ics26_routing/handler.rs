@@ -56,7 +56,6 @@ where
     let output = match msg {
         Ics2Msg(msg) => {
             let handler_output = ics2_msg_dispatcher(ctx, msg).map_err(Error::ics02_client)?;
-
             // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
                 .map_err(Error::ics02_client)?;

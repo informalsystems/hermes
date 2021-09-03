@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  echo "v0.0.6"
+  echo "v0.0.7"
 }
 
 # Configuration Management
@@ -203,20 +203,20 @@ install() {
 }
 
 enforce_requirements() {
-  if [ -z "$(which sconfig)" ]; then
+  if [ -z "$(which sconfig || echo)" ]; then
     exit_with_error "missing sconfig, install it from https://github.com/freshautomations/sconfig/releases"
   fi
-  SED="$(which sed)"
+  SED="$(which sed || echo)"
   if [ -z "$SED" ]; then
     exit_with_error "missing sed, please install it"
   fi
-  if [ -z "$(which tr)" ]; then
+  if [ -z "$(which tr || echo)" ]; then
     exit_with_error "missing tr, please install it"
   fi
-  if [ -z "$(which dirname)" ]; then
+  if [ -z "$(which dirname || echo)" ]; then
     exit_with_error "missing dirname, please install it"
   fi
-  STOML="$(which stoml)"
+  STOML="$(which stoml || echo)"
   if [ -z "$STOML" ]; then
     exit_with_error "missing stoml, install it from https://github.com/freshautomations/stoml/releases"
   fi

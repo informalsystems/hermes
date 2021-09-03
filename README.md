@@ -25,13 +25,14 @@ This project comprises primarily four crates:
 
 See the table below for more details.
 
-Includes [TLA+ specifications](/docs/spec).
+Includes [TLA+ specifications](docs/spec).
 
 | Crate name    |   Type   |     Version       | Docs   |
 |:-------------:|:------:|:-------------:|:-----:|
 | [ibc](./modules) (modules) | lib|  [![IBC Crate][ibc-crate-image]][ibc-crate-link] | [![IBC Docs][ibc-docs-image]][ibc-docs-link] |
 | [ibc-relayer](./relayer)      | lib |  [![IBC Relayer Crate][relayer-crate-image]][relayer-crate-link]  | [![IBC Relayer Docs][relayer-docs-image]][relayer-docs-link] |
 | [ibc-relayer-cli](./relayer-cli)  | bin: [hermes](relayer-cli/) |  [![IBC Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]      |  [![IBC Relayer CLI Docs][relayer-cli-docs-image]][relayer-cli-docs-link] |
+| [ibc-relayer-rest](./relayer-rest)  | lib |  [![IBC Relayer REST Crate][relayer-rest-crate-image]][relayer-rest-crate-link]      |  [![IBC Relayer REST Docs][relayer-rest-docs-image]][relayer-rest-docs-link] |
 | [ibc-proto](./proto)  | lib |  [![IBC Proto Crate][ibc-proto-crate-image]][ibc-proto-crate-link]      |  [![IBC Proto Docs][ibc-proto-docs-image]][ibc-proto-docs-link] |
 | [ibc-telemetry](./telemetry)  | lib |  [![IBC Telemetry Crate][ibc-telemetry-crate-image]][ibc-telemetry-crate-link]      |  [![IBC Telemetry Docs][ibc-telemetry-docs-image]][ibc-telemetry-docs-link] |
 
@@ -91,6 +92,10 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [relayer-cli-crate-link]: https://crates.io/crates/ibc-relayer-cli
 [relayer-cli-docs-image]: https://docs.rs/ibc-relayer-cli/badge.svg
 [relayer-cli-docs-link]: https://docs.rs/ibc-relayer-cli/
+[relayer-rest-crate-image]: https://img.shields.io/crates/v/ibc-relayer-rest.svg
+[relayer-rest-crate-link]: https://crates.io/crates/ibc-relayer-rest
+[relayer-rest-docs-image]: https://docs.rs/ibc-relayer-rest/badge.svg
+[relayer-rest-docs-link]: https://docs.rs/ibc-relayer-rest/
 [ibc-proto-crate-image]: https://img.shields.io/crates/v/ibc-proto.svg
 [ibc-proto-crate-link]: https://crates.io/crates/ibc-proto
 [ibc-proto-docs-image]: https://docs.rs/ibc-proto/badge.svg

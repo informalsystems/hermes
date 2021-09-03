@@ -27,7 +27,7 @@ The configuration file must have one `global` section, and one `chains` section 
 > **Note:** As of 0.6.0, the Hermes configuration file is self-documented.
 > This section of the guide which discusses each parameter in turn is no
 > longer maintained, and we may remove it soon. Please read the configuration
-> file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.6.1/config.toml) itself for the most up-to-date documentation of parameters.
+> file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.7.0/config.toml) itself for the most up-to-date documentation of parameters.
 
 ### `[global]`
 
@@ -68,8 +68,29 @@ Here is an example for the `telemetry` section:
 ```toml
 [telemetry]
 enabled = true
-host = '127.0.0.1'
-port = 3001
+host    = '127.0.0.1'
+port    = 3001
+```
+
+### `[rest]`
+
+The `rest` section defines parameters for Hermes' built-in [REST API](rest-api.md)..
+
+#### Parameters
+
+* __enabled__: *(boolean)* Whether or not to enable the built-in REST server. Default: `false`.
+
+* __host__: *(string)* Specify the IPv4/6 host over which the built-in HTTP server will be listening. Default: `127.0.0.1`
+
+* __port__: *(u16)* Specify the port over which the built-in HTTP server will be listening. Default: `3000`
+
+Here is an example for the `rest` section:
+
+```toml
+[rest]
+enabled = true
+host    = '127.0.0.1'
+port    = 3000
 ```
 
 ### `[[chains]]`
@@ -261,4 +282,4 @@ on [inspecting the relayer state](help.md#inspecting-the-relayer-state).
 
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
 
-[log-level]: ./help.html#parametrizing-the-log-output-level
+[log-level]: ./help.md#parametrizing-the-log-output-level

@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.6.1)
+# Hermes (v0.7.0)
 
 ---
 - [Introduction](./index.md)
@@ -12,6 +12,7 @@
    - [Installation](./installation.md)
    - [Configuration](./config.md)
 - [Telemetry](./telemetry.md)
+- [REST API](./rest-api.md)
 - [Tutorials](./tutorials/index.md)
    - [Local chains](./tutorials/local-chains/index.md)
      - [Install Gaia](./tutorials/local-chains/gaia.md)

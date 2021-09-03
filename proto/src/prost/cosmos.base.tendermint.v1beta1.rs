@@ -110,6 +110,8 @@ pub struct VersionInfo {
     pub go_version: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "7")]
     pub build_deps: ::prost::alloc::vec::Vec<Module>,
+    #[prost(string, tag = "8")]
+    pub cosmos_sdk_version: ::prost::alloc::string::String,
 }
 /// Module is the type for VersionInfo
 #[derive(Clone, PartialEq, ::prost::Message)]
