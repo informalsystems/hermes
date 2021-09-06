@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use bitcoin::util::uint::Uint256;
 use flex_error::{define_error, DetailOnly};
 use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::events::IbcEvent;
@@ -56,7 +57,7 @@ pub struct TransferOptions {
     pub packet_dst_chain_config: ChainConfig,
     pub packet_src_port_id: PortId,
     pub packet_src_channel_id: ChannelId,
-    pub amount: u64,
+    pub amount: Uint256,
     pub denom: String,
     pub receiver: Option<String>,
     pub timeout_height_offset: u64,

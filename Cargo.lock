@@ -1425,6 +1425,7 @@ version = "0.7.0"
 dependencies = [
  "abscissa_core",
  "atty",
+ "bitcoin",
  "color-eyre",
  "crossbeam-channel 0.5.1",
  "dirs-next",

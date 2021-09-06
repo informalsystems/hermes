@@ -1,5 +1,9 @@
-use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
+use abscissa_core::{config::Override, Command, FrameworkErrorKind, Options, Runnable};
+use bitcoin::util::uint::{ParseLengthError, Uint256};
+use hex::FromHexError;
 use ibc::{
     events::IbcEvent,
     ics02_client::client_state::ClientState,
@@ -36,7 +40,7 @@ pub struct TxIcs20MsgTransferCmd {
         required,
         help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
-    amount: u64,
+    amount: Amount,
 
     #[options(help = "timeout in number of blocks since current", short = "o")]
     timeout_height_offset: u64,
@@ -112,7 +116,7 @@ impl TxIcs20MsgTransferCmd {
             packet_dst_chain_config: dest_chain_config.clone(),
             packet_src_port_id: self.src_port_id.clone(),
             packet_src_channel_id: self.src_channel_id.clone(),
-            amount: self.amount,
+            amount: self.amount.0,
             denom,
             receiver: self.receiver.clone(),
             timeout_height_offset: self.timeout_height_offset,
@@ -158,7 +162,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                 self.src_chain_id,
                 channel_end_src.state
             ))
-            .exit();
+                .exit();
         }
 
         let conn_id = match channel_end_src.connection_hops.first() {
@@ -167,7 +171,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                     "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
                     opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
                 ))
-                .exit()
+                    .exit();
             }
             Some(cid) => cid,
         };
@@ -206,5 +210,46 @@ impl Runnable for TxIcs20MsgTransferCmd {
             Ok(ev) => Output::success(ev).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct Amount(Uint256);
+
+enum AmountParseError {
+    HexDecode(FromHexError),
+    U256Parse(ParseLengthError),
+}
+
+impl From<FromHexError> for AmountParseError {
+    fn from(e: FromHexError) -> Self {
+        Self::HexDecode(e)
+    }
+}
+
+impl From<ParseLengthError> for AmountParseError {
+    fn from(e: ParseLengthError) -> Self {
+        Self::U256Parse(e)
+    }
+}
+
+impl Display for AmountParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AmountParseError::HexDecode(e) => write!(f, "Failed to decode hex str: {}", e),
+            AmountParseError::U256Parse(e) => write!(f, "Parse length error: {}", e),
+        }
+    }
+}
+
+impl FromStr for Amount {
+    type Err = AmountParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        const SIZEOF_U256: usize = 32;
+        let value = s.strip_prefix("0x").unwrap_or(s);
+        let mut bytes = [0u8; SIZEOF_U256];
+        hex::decode_to_slice(value, &mut bytes[SIZEOF_U256 - value.len() / 2..])?;
+        Ok(Self(Uint256::from_be_slice(&bytes)?))
     }
 }
