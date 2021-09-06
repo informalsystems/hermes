@@ -28,7 +28,7 @@ mocks = [ "tendermint-testgen", "sha2" ]
 ibc-proto = { version = "0.10.0", path = "../proto" }
 ics23 = "0.6.5"
 chrono = "0.4.19"
-thiserror = "1.0.28"
+thiserror = "1.0.29"
 serde_derive = "1.0.104"
 serde = "1.0.130"
 serde_json = "1"
