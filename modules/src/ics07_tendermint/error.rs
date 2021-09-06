@@ -2,6 +2,7 @@ use crate::ics24_host::error::ValidationError;
 use flex_error::{define_error, DisplayOnly, TraceError};
 
 define_error! {
+    #[derive(Debug, PartialEq, Eq)]
     Error {
         InvalidTrustingPeriod
             { reason: String }

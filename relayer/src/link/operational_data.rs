@@ -1,4 +1,5 @@
 use std::fmt;
+use std::iter;
 use std::time::Instant;
 
 use prost_types::Any;
@@ -76,10 +77,8 @@ impl OperationalData {
             return Ok(vec![]);
         }
 
-        let mut msgs: Vec<Any> = self.batch.iter().map(|gm| gm.msg.clone()).collect();
-
         // For zero delay we prepend the client update msgs.
-        if relay_path.zero_delay() {
+        let client_update_msg = if relay_path.zero_delay() {
             let update_height = self.proofs_height.increment();
 
             info!(
@@ -98,10 +97,17 @@ impl OperationalData {
                 }
             };
 
-            if let Some(client_update) = client_update_opt.pop() {
-                msgs.insert(0, client_update);
-            }
-        }
+            client_update_opt.pop()
+        } else {
+            None
+        };
+
+        let msgs: Vec<Any> = match client_update_msg {
+            Some(client_update) => iter::once(client_update)
+                .chain(self.batch.iter().map(|gm| gm.msg.clone()))
+                .collect(),
+            None => self.batch.iter().map(|gm| gm.msg.clone()).collect(),
+        };
 
         info!(
             "[{}] assembled batch of {} message(s)",

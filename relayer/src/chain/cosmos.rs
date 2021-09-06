@@ -636,7 +636,11 @@ impl CosmosSdkChain {
             .map(|res| res.response.hash.to_string())
             .join(", ");
 
-        debug!("[{}] waiting for commit of block(s) {}", self.id(), hashes);
+        warn!(
+            "[{}] waiting for commit of tx hashes(s) {}",
+            self.id(),
+            hashes
+        );
 
         // Wait a little bit initially
         thread::sleep(Duration::from_millis(200));
@@ -799,8 +803,15 @@ impl ChainEndpoint for CosmosSdkChain {
     /// then it returns error.
     /// TODO - more work is required here for a smarter split maybe iteratively accumulating/ evaluating
     /// msgs in a Tx until any of the max size, max num msgs, max fee are exceeded.
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
-        crate::time!("send_msgs");
+    fn send_messages_and_wait_commit(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<IbcEvent>, Error> {
+        crate::time!("send_messages_and_wait_commit");
+        debug!(
+            "send_messages_and_wait_commit with {} messages",
+            proto_msgs.len()
+        );
 
         if proto_msgs.is_empty() {
             return Ok(vec![]);
@@ -846,6 +857,45 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect();
 
         Ok(events)
+    }
+
+    fn send_messages_and_wait_check_tx(
+        &mut self,
+        proto_msgs: Vec<Any>,
+    ) -> Result<Vec<Response>, Error> {
+        crate::time!("send_messages_and_wait_check_tx");
+        debug!(
+            "send_messages_and_wait_check_tx with {} messages",
+            proto_msgs.len()
+        );
+
+        if proto_msgs.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut responses = vec![];
+
+        let mut n = 0;
+        let mut size = 0;
+        let mut msg_batch = vec![];
+        for msg in proto_msgs.iter() {
+            msg_batch.push(msg.clone());
+            let mut buf = Vec::new();
+            prost::Message::encode(msg, &mut buf).unwrap();
+            n += 1;
+            size += buf.len();
+            if n >= self.max_msg_num() || size >= self.max_tx_size() {
+                // Send the tx and enqueue the resulting response
+                responses.push(self.send_tx(msg_batch)?);
+                n = 0;
+                size = 0;
+                msg_batch = vec![];
+            }
+        }
+        if !msg_batch.is_empty() {
+            responses.push(self.send_tx(msg_batch)?);
+        }
+
+        Ok(responses)
     }
 
     /// Get the account for the signer
