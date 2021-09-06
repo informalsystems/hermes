@@ -52,7 +52,7 @@ dirs-next = "2.0.0"
 itertools = "0.10.1"
 atty = "0.2.14"
 flex-error = { version = "0.4.2", default-features = false }
-signal-hook = "0.3.9"
+signal-hook = "0.3.10"
 
 [dependencies.tendermint-proto]
 version = "=0.21.0"
