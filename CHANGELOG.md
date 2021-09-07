@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Unreleased
+
+### BUG FIXES
+
+- [gm](scripts/gm)
+  - Fix gaiad keys add prints to stderr instead of stdout in SDK 0.43 ([#1312])
+  - Bumped default rpc_timeout in Hermes config to 5s ([#1312])
+
+[#1312]: https://github.com/informalsystems/ibc-rs/issues/1312
+
 ## v0.7.0
 
 This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.
