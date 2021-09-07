@@ -461,10 +461,7 @@ impl ChannelReader for MockContext {
     }
 
     fn connection_end(&self, cid: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
-        match self.connections.get(cid) {
-            Some(connection_end) => Ok(connection_end.clone()),
-            None => Err(Ics04Error::missing_connection(cid.clone())),
-        }
+        ConnectionReader::connection_end(self, cid).map_err(Ics04Error::ics03_connection)
     }
 
     fn connection_channels(
@@ -478,8 +475,7 @@ impl ChannelReader for MockContext {
     }
 
     fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
-        ClientReader::client_state(self, client_id)
-            .map_err(|_| Ics04Error::missing_client_state(client_id.clone()))
+        ClientReader::client_state(self, client_id).map_err(Ics04Error::ics02_client)
     }
 
     fn client_consensus_state(
@@ -487,8 +483,7 @@ impl ChannelReader for MockContext {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyConsensusState, Ics04Error> {
-        ClientReader::consensus_state(self, client_id, height)
-            .map_err(|_| Ics04Error::missing_client_consensus_state(client_id.clone(), height))
+        ClientReader::consensus_state(self, client_id, height).map_err(Ics04Error::ics02_client)
     }
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
@@ -513,7 +508,7 @@ impl ChannelReader for MockContext {
     ) -> Result<Sequence, Ics04Error> {
         match self.next_sequence_send.get(port_channel_id) {
             Some(sequence) => Ok(*sequence),
-            None => Err(Ics04Error::missing_next_send_seq()),
+            None => Err(Ics04Error::missing_next_send_seq(port_channel_id.clone())),
         }
     }
 
@@ -523,7 +518,7 @@ impl ChannelReader for MockContext {
     ) -> Result<Sequence, Ics04Error> {
         match self.next_sequence_recv.get(port_channel_id) {
             Some(sequence) => Ok(*sequence),
-            None => Err(Ics04Error::missing_next_recv_seq()),
+            None => Err(Ics04Error::missing_next_recv_seq(port_channel_id.clone())),
         }
     }
 
@@ -533,7 +528,7 @@ impl ChannelReader for MockContext {
     ) -> Result<Sequence, Ics04Error> {
         match self.next_sequence_ack.get(port_channel_id) {
             Some(sequence) => Ok(*sequence),
-            None => Err(Ics04Error::missing_next_ack_seq()),
+            None => Err(Ics04Error::missing_next_ack_seq(port_channel_id.clone())),
         }
     }
 
@@ -698,8 +693,7 @@ impl ConnectionReader for MockContext {
 
     fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
         // Forward method call to the Ics2 Client-specific method.
-        ClientReader::client_state(self, client_id)
-            .map_err(|_| Ics03Error::missing_client(client_id.clone()))
+        ClientReader::client_state(self, client_id).map_err(Ics03Error::ics02_client)
     }
 
     fn host_current_height(&self) -> Height {
@@ -722,7 +716,7 @@ impl ConnectionReader for MockContext {
     ) -> Result<AnyConsensusState, Ics03Error> {
         // Forward method call to the Ics2Client-specific method.
         self.consensus_state(client_id, height)
-            .map_err(|_| Ics03Error::missing_client_consensus_state(height, client_id.clone()))
+            .map_err(Ics03Error::ics02_client)
     }
 
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics03Error> {
