@@ -20,6 +20,10 @@ on:
       - relayer/**
       - relayer-cli/**
 
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+
 jobs:
   test-end-to-end:
     runs-on: ubuntu-20.04
