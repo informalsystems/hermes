@@ -13,10 +13,6 @@ use tendermint_proto::Error as TendermintError;
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
     Error {
-        Ics02Client
-            [ client_error::Error ]
-            | _ | { "ics02 client error" },
-
         Ics03Connection
             [ connection_error::Error ]
             | _ | { "ics03 connection error" },

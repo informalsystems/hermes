@@ -475,7 +475,8 @@ impl ChannelReader for MockContext {
     }
 
     fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
-        ClientReader::client_state(self, client_id).map_err(Ics04Error::ics02_client)
+        ClientReader::client_state(self, client_id)
+            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
     fn client_consensus_state(
@@ -483,7 +484,8 @@ impl ChannelReader for MockContext {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyConsensusState, Ics04Error> {
-        ClientReader::consensus_state(self, client_id, height).map_err(Ics04Error::ics02_client)
+        ClientReader::consensus_state(self, client_id, height)
+            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Ics04Error> {
