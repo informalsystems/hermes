@@ -176,6 +176,11 @@ define_error! {
                 format_args!("Not enough trust because insufficient validators overlap: {}", e.reason)
             },
 
+        VerificationError
+            { detail: tendermint_light_client::predicates::errors::VerificationErrorDetail }
+            | e | {
+                format_args!("verification failed: {}", e.detail)
+            }
     }
 }
 

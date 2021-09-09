@@ -3,12 +3,14 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
+use tendermint_light_client::light_client::Options;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::Error as Ics02Error;
 use crate::ics02_client::trust_threshold::TrustThreshold;
 use crate::ics07_tendermint::error::Error;
 use crate::ics07_tendermint::header::Header;
@@ -137,6 +139,20 @@ impl ClientState {
     /// state timestamp
     pub fn expired(&self, elapsed: Duration) -> bool {
         elapsed > self.trusting_period
+    }
+
+    /// Helper method to produce a
+    /// [`tendermint_light_client::light_client::Options`] struct for use in
+    /// Tendermint-specific light client verification.
+    pub fn light_client_options(&self) -> Result<Options, Error> {
+        Ok(Options {
+            trust_threshold: self
+                .trust_level
+                .try_into()
+                .map_err(|e: Ics02Error| Error::invalid_trust_threshold(e.to_string()))?,
+            trusting_period: self.trusting_period,
+            clock_drift: self.max_clock_drift,
+        })
     }
 }
 

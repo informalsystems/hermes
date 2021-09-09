@@ -60,8 +60,8 @@ impl HostBlock {
     }
 
     pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
-        //Sleep is required otherwise the generator produces blocks with the same timestamp
-        //as two block can be generated per second.
+        // Sleep is required otherwise the generator produces blocks with the
+        // same timestamp as two block can be generated per second.
         let ten_millis = time::Duration::from_millis(1000);
         thread::sleep(ten_millis);
         let time = Time::now()

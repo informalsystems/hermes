@@ -248,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_syntetic_tendermint_client_adjacent_ok() {
+    fn test_update_synthetic_tendermint_client_adjacent_ok() {
         let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
         let client_height = Height::new(1, 20);
         let update_height = Height::new(1, 21);
@@ -323,7 +323,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_syntetic_tendermint_client_non_adjacent_ok() {
+    fn test_update_synthetic_tendermint_client_non_adjacent_ok() {
         let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
         let client_height = Height::new(1, 20);
         let update_height = Height::new(1, 21);
@@ -400,7 +400,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_syntetic_tendermint_client_duplicate_ok() {
+    fn test_update_synthetic_tendermint_client_duplicate_ok() {
         let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
         let client_height = Height::new(1, 20);
 
@@ -483,7 +483,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_syntetic_tendermint_client_duplicate_height_frozen() {
+    fn test_update_synthetic_tendermint_client_duplicate_height_frozen() {
         let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
         let client_height = Height::new(1, 20);
 
@@ -546,14 +546,14 @@ mod tests {
                     _ => panic!("update handler result has incorrect type"),
                 }
             }
-            Err(_err) => {
-                panic!("unexpected error");
+            Err(err) => {
+                panic!("unexpected error: {:?}", err);
             }
         }
     }
 
     #[test]
-    fn test_update_syntetic_tendermint_client_lower_height() {
+    fn test_update_synthetic_tendermint_client_lower_height() {
         let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
         let client_height = Height::new(1, 20);
 

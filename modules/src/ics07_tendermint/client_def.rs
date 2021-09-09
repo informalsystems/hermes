@@ -1,4 +1,9 @@
+use std::convert::TryInto;
+
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use tendermint::Time;
+use tendermint_light_client::components::verifier::{ProdVerifier, Verdict, Verifier};
+use tendermint_light_client::types::{TrustedBlockState, UntrustedBlockState};
 
 use crate::ics02_client::client_consensus::AnyConsensusState;
 use crate::ics02_client::client_def::ClientDef;
@@ -6,28 +11,34 @@ use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::Error as Ics02Error;
-use crate::ics07_tendermint::error::Error;
-//use crate::ics07_tendermint::error::VerificationError;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
+use crate::ics07_tendermint::error::Error;
 use crate::ics07_tendermint::header::Header;
-use crate::ics07_tendermint::header::{monotonicity_checks, voting_power_in};
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use crate::Height;
-use tendermint::trust_threshold::TrustThresholdFraction;
-use tendermint::validator::Set;
 
 //Box<dyn std::error::Error>
 use crate::downcast;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TendermintClient;
+pub struct TendermintClient {
+    verifier: ProdVerifier,
+}
+
+impl Default for TendermintClient {
+    fn default() -> Self {
+        Self {
+            verifier: ProdVerifier::default(),
+        }
+    }
+}
 
 impl ClientDef for TendermintClient {
     type Header = Header;
@@ -43,109 +54,76 @@ impl ClientDef for TendermintClient {
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
         // check if a consensus state is already installed; if so it should
         // match the untrusted header.
-
-        if let Some(cs) = ctx.consensus_state(&client_id, header.height()) {
-            //could the header height be zero ?
-            let consensus_state = downcast!(
-                cs => AnyConsensusState::Tendermint
-            )
-            .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))?;
-
-            if consensus_state != ConsensusState::from(header.clone()) {
-                //freeze the client and return the installed consensus state
-                return Ok((
-                    client_state.with_set_frozen(header.height()),
-                    consensus_state,
-                ));
-            } else {
-                return Ok((client_state, consensus_state));
-            }
-        };
-
-        let latest_consensus_state =
-            match ctx.consensus_state(&client_id, client_state.latest_height) {
-                //could the header height be zero ?
-                Some(cs) => downcast!(
-                    cs => AnyConsensusState::Tendermint
-                )
-                .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))?,
-                None => {
-                    return Err(Ics02Error::consensus_state_not_found(
-                        client_id.clone(),
-                        client_state.latest_height,
-                    ));
+        let header_consensus_state = ConsensusState::from(header.clone());
+        let existing_consensus_state =
+            match maybe_read_consensus_state(ctx, &client_id, header.height())? {
+                Some(cs) => {
+                    // If this consensus state matches, skip verification
+                    // (optimization)
+                    if cs == header_consensus_state {
+                        // Header is already installed and matches the incoming
+                        // header (already verified)
+                        return Ok((client_state, cs));
+                    }
+                    Some(cs)
                 }
+                None => None,
             };
 
-        monotonicity_checks(latest_consensus_state, header.clone(), client_state.clone())
-            .map_err(Ics02Error::tendermint_handler_error)?;
+        let trusted_consensus_state = read_consensus_state(ctx, &client_id, header.trusted_height)?;
 
-        // check that the versions of the client state and the header match
-        if client_state.latest_height.revision_number != header.height().revision_number {
-            return Err(Error::mismatched_revisions(
-                client_state.latest_height.revision_number,
-                header.height().revision_number,
-            )
-            .into());
+        let trusted_state = TrustedBlockState {
+            header_time: trusted_consensus_state.timestamp,
+            height: header
+                .trusted_height
+                .revision_height
+                .try_into()
+                .map_err(|_| {
+                    Ics02Error::tendermint_handler_error(Error::invalid_header_height(
+                        header.trusted_height,
+                    ))
+                })?,
+            next_validators: &header.trusted_validator_set,
+            next_validators_hash: trusted_consensus_state.next_validators_hash,
         };
 
-        let trusted_consensus_state = match ctx.consensus_state(&client_id, header.trusted_height) {
-            Some(ts) => downcast!(
-                ts => AnyConsensusState::Tendermint
-            )
-            .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))?,
-            None => {
-                return Err(Ics02Error::consensus_state_not_found(
-                    client_id,
-                    header.trusted_height,
+        let untrusted_state = UntrustedBlockState {
+            signed_header: &header.signed_header,
+            validators: &header.validator_set,
+            // NB: This will skip the
+            // VerificationPredicates::next_validators_match check for the
+            // untrusted state.
+            next_validators: None,
+        };
+
+        let options = client_state.light_client_options()?;
+
+        match self
+            .verifier
+            .verify(untrusted_state, trusted_state, &options, Time::now())
+        {
+            Verdict::Success => {}
+            Verdict::NotEnoughTrust(voting_power_tally) => {
+                return Err(Error::not_enough_trusted_vals_signed(format!(
+                    "voting power tally: {}",
+                    voting_power_tally
+                ))
+                .into())
+            }
+            Verdict::Invalid(detail) => {
+                return Err(Ics02Error::tendermint_handler_error(
+                    Error::verification_error(detail),
                 ))
             }
-        };
+        }
 
-        if header.height() == header.trusted_height.increment() {
-            //adjacent
-
-            // check that the header's trusted validator set is
-            // the next_validator_set of the trusted consensus state
-            if Set::hash(&header.validator_set) != trusted_consensus_state.next_validators_hash {
-                return Err(Error::invalid_validator_set(
-                    trusted_consensus_state.next_validators_hash,
-                    Set::hash(&header.validator_set),
-                )
-                .into());
+        // If the header has verified, but its corresponding consensus state
+        // differs from the existing consensus state for that height, freeze the
+        // client and return the installed consensus state.
+        if let Some(cs) = existing_consensus_state {
+            if cs != header_consensus_state {
+                return Ok((client_state.with_set_frozen(header.height()), cs));
             }
-
-            // check that the validators that sign the commit of the untrusted header
-            // have 2/3 of the voting power of the current validator set.
-            if let Err(e) = voting_power_in(
-                &header.signed_header,
-                &header.validator_set,
-                TrustThresholdFraction::TWO_THIRDS,
-            ) {
-                return Err(Error::insufficient_voting_power(e.to_string()).into());
-            }
-        } else {
-            //Non-adjacent
-
-            //check that a subset of the trusted validator set, having 1/3 of the voting power
-            //signes the commit of the untrusted header
-            if let Err(e) = voting_power_in(
-                &header.signed_header,
-                &header.trusted_validator_set,
-                TrustThresholdFraction::default(),
-            ) {
-                return Err(Error::not_enough_trusted_vals_signed(e.to_string()).into());
-            };
-
-            // check that the validators that sign the commit of the untrusted header
-            // have 2/3 of the voting power of the current validator set.
-            if let Err(e) = voting_power_in(
-                &header.signed_header,
-                &header.validator_set,
-                TrustThresholdFraction::TWO_THIRDS,
-            ) {
-                return Err(Error::insufficient_voting_power(e.to_string()).into());
-            };
         }
 
         Ok((
@@ -264,4 +242,30 @@ impl ClientDef for TendermintClient {
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
         todo!()
     }
+}
+
+// Utility method to improve readability of obtaining a Tendermint-specific
+// consensus state from the given context.
+fn read_consensus_state(
+    ctx: &dyn ClientReader,
+    client_id: &ClientId,
+    height: Height,
+) -> Result<ConsensusState, Ics02Error> {
+    maybe_read_consensus_state(ctx, client_id, height)?
+        .ok_or_else(|| Ics02Error::consensus_state_not_found(client_id.clone(), height))
+}
+
+fn maybe_read_consensus_state(
+    ctx: &dyn ClientReader,
+    client_id: &ClientId,
+    height: Height,
+) -> Result<Option<ConsensusState>, Ics02Error> {
+    ctx.consensus_state(client_id, height)
+        .map(|cs| {
+            downcast!(
+                cs => AnyConsensusState::Tendermint
+            )
+            .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
+        })
+        .transpose()
 }

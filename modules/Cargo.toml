@@ -47,6 +47,9 @@ version = "=0.21.0"
 [dependencies.tendermint-proto]
 version = "=0.21.0"
 
+[dependencies.tendermint-light-client]
+version = "=0.21.0"
+
 [dependencies.tendermint-testgen]
 version = "=0.21.0"
 optional = true
