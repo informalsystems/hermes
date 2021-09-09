@@ -18,11 +18,11 @@ ibc               = { version = "0.7.0", path = "../modules" }
 ibc-relayer       = { version = "0.7.0", path = "../relayer" }
 
 crossbeam-channel = "0.5"
-rouille           = "3.1"
-serde             = "1.0.128"
+rouille           = "3.3"
+serde             = "1.0.130"
 tracing           = "0.1"
 
 [dev-dependencies]
-serde_json = "1.0.66"
+serde_json = "1.0.67"
 toml       = "0.5.8"
-ureq       = "2.1.1"
+ureq       = "2.2.0"
