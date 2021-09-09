@@ -6,7 +6,7 @@ use crate::Height;
 use flex_error::define_error;
 
 define_error! {
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug)]
     Error {
         Ics02Client
             [ client_error::Error ]

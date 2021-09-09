@@ -4,7 +4,7 @@ use crate::ics24_host::identifier::{ChannelId, PortId};
 use flex_error::define_error;
 
 define_error! {
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug)]
     Error {
         UnknowMessageTypeUrl
             { url: String }

@@ -154,7 +154,7 @@ define_error! {
             |_| { "Malformed proof" },
 
         InvalidHeight
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ tendermint::Error ]
             |_| { "Invalid height" },
 
         InvalidMetadata
@@ -305,7 +305,7 @@ define_error! {
 
         InvalidKeyAddress
             { address: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ tendermint::Error ]
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding
