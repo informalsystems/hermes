@@ -370,12 +370,16 @@ mod tests {
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
                 match_error: Box::new(|e| match e {
-                    error::ErrorDetail::Ics02Client(e) => {
+                    error::ErrorDetail::Ics03Connection(e) => {
                         assert_eq!(
                             e.source,
-                            ics02_error::ErrorDetail::ClientNotFound(
-                                ics02_error::ClientNotFoundSubdetail {
-                                    client_id: ClientId::new(ClientType::Mock, 45).unwrap()
+                            ics03_error::ErrorDetail::Ics02Client(
+                                ics03_error::Ics02ClientSubdetail {
+                                    source: ics02_error::ErrorDetail::ClientNotFound(
+                                        ics02_error::ClientNotFoundSubdetail {
+                                            client_id: ClientId::new(ClientType::Mock, 45).unwrap()
+                                        }
+                                    )
                                 }
                             )
                         );
