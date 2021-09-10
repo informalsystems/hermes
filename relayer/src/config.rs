@@ -262,6 +262,37 @@ impl Default for RestConfig {
     }
 }
 
+/// It defines the address generation method
+/// TODO: Ethermint `pk_type` to be restricted
+/// after the Cosmos SDK release with ethsecp256k1
+/// https://github.com/cosmos/cosmos-sdk/pull/9981
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(
+    rename_all = "lowercase",
+    tag = "derivation",
+    content = "proto_type",
+    deny_unknown_fields
+)]
+pub enum AddressType {
+    Cosmos,
+    Ethermint { pk_type: String },
+}
+
+impl Default for AddressType {
+    fn default() -> Self {
+        AddressType::Cosmos
+    }
+}
+
+impl fmt::Display for AddressType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AddressType::Cosmos => write!(f, "cosmos"),
+            AddressType::Ethermint { .. } => write!(f, "ethermint"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
@@ -291,6 +322,8 @@ pub struct ChainConfig {
     pub gas_price: GasPrice,
     #[serde(default)]
     pub packet_filter: PacketFilter,
+    #[serde(default)]
+    pub address_type: AddressType,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
