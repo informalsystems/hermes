@@ -18,17 +18,17 @@ pub fn worker_default_strategy() -> impl Iterator<Item = Duration> {
 
 /// A stubborn worker retry strategy.
 ///
-/// Initial retry delay is hardcoded to 500ms, and
-/// the delay grows by 500ms at every step. The
-/// strategy delay is capped at 20 sec. The
-/// total number of retries is capped to 200.
+/// Initial retry delay is hardcoded to 1s, and
+/// the delay grows by 1s at every step. The
+/// strategy delay is capped at 60 sec. The
+/// total number of retries is capped to 400.
 /// Therefore the overall amount of time spent
-/// retrying will be approx. 1 hour.
+/// retrying will be approx. 6 hours.
 ///
 /// See the `stubbord_strategy` test below.
 pub fn worker_stubborn_strategy() -> impl Iterator<Item = Duration> {
-    let strategy = ConstantGrowth::new(Duration::from_millis(500), Duration::from_millis(500));
-    clamp(strategy, Duration::from_secs(20), 200)
+    let strategy = ConstantGrowth::new(Duration::from_secs(1), Duration::from_secs(1));
+    clamp(strategy, Duration::from_secs(60), 400)
 }
 
 
@@ -58,28 +58,28 @@ mod tests {
     fn stubborn_strategy() {
         let strategy = worker_stubborn_strategy();
         let delays = strategy.collect::<Vec<_>>();
-        assert_eq!(delays.len(), 200);
+        assert_eq!(delays.len(), 400);
 
         // Assert the first 10 steps manually
         assert_eq!(delays.iter().take(10).cloned().collect::<Vec<_>>(),
             vec![
-                Duration::from_millis(500),
-                Duration::from_millis(1000),
-                Duration::from_millis(1500),
-                Duration::from_millis(2000),
-                Duration::from_millis(2500),
-                Duration::from_millis(3000),
-                Duration::from_millis(3500),
-                Duration::from_millis(4000),
-                Duration::from_millis(4500),
-                Duration::from_millis(5000),
+                Duration::from_secs(1),
+                Duration::from_secs(2),
+                Duration::from_secs(3),
+                Duration::from_secs(4),
+                Duration::from_secs(5),
+                Duration::from_secs(6),
+                Duration::from_secs(7),
+                Duration::from_secs(8),
+                Duration::from_secs(9),
+                Duration::from_secs(10),
             ]
         );
 
-        // Assert that delays increment by 500ms and are capped to 20s
+        // Assert that delays increment by 1s and are capped to 60s
         let mut delaysp = delays.into_iter().peekable();
-        let cap = Duration::from_secs(20);
-        let step = Duration::from_millis(500);
+        let cap = Duration::from_secs(60);
+        let step = Duration::from_secs(1);
         for first in delaysp.next() {
             if let Some(next) = delaysp.peek() {
                 if first == cap {
