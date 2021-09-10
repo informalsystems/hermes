@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  echo "v0.0.7"
+  echo "v0.0.8"
 }
 
 # Configuration Management
