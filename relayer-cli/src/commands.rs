@@ -16,13 +16,14 @@ use crate::DEFAULT_CONFIG_PATH;
 use ibc_relayer::config::Config;
 
 use self::{
-    config::ConfigCmd, create::CreateCmds, keys::KeysCmd, listen::ListenCmd,
-    misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
-    upgrade::UpgradeCmds, version::VersionCmd,
+    config::ConfigCmd, create::CreateCmds, health::HealthCheckCmd, keys::KeysCmd,
+    listen::ListenCmd, misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
+    update::UpdateCmds, upgrade::UpgradeCmds, version::VersionCmd,
 };
 
 mod config;
 mod create;
+mod health;
 mod keys;
 mod listen;
 mod misbehaviour;
@@ -89,6 +90,10 @@ pub enum CliCmd {
     /// The `version` subcommand
     #[options(help = "Display version information")]
     Version(VersionCmd),
+
+    /// The `health` subcommand
+    #[options(help = "Performs a health check of all chains in the the config")]
+    HealthCheck(HealthCheckCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.

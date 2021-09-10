@@ -127,7 +127,7 @@ impl CosmosSdkChain {
     /// Emits a log warning in case anything is amiss.
     /// Exits early if any health check fails, without doing any
     /// further checks.
-    fn health_checkup(&self) {
+    pub fn health_checkup(&self) {
         async fn do_health_checkup(chain: &CosmosSdkChain) -> Result<(), Error> {
             let chain_id = chain.id();
             let grpc_address = chain.grpc_addr.to_string();
@@ -737,8 +737,8 @@ impl ChainEndpoint for CosmosSdkChain {
             account: None,
         };
 
-        chain.health_checkup();
-        chain.validate_params();
+        //chain.health_checkup();
+        //chain.validate_params();
 
         Ok(chain)
     }
