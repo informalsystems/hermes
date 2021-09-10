@@ -1,6 +1,5 @@
-use crate::util::retry::{clamp_total, clamp, ConstantGrowth};
+use crate::util::retry::{clamp, clamp_total, ConstantGrowth};
 use std::time::Duration;
-
 
 /// A basic worker retry strategy.
 ///
@@ -14,7 +13,6 @@ pub fn worker_default_strategy() -> impl Iterator<Item = Duration> {
     let strategy = ConstantGrowth::new(Duration::from_millis(200), Duration::from_millis(100));
     clamp_total(strategy, Duration::from_millis(500), Duration::from_secs(2))
 }
-
 
 /// A stubborn worker retry strategy.
 ///
@@ -31,18 +29,18 @@ pub fn worker_stubborn_strategy() -> impl Iterator<Item = Duration> {
     clamp(strategy, Duration::from_secs(60), 400)
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
 
-    use crate::worker::retry_strategy::{worker_stubborn_strategy, worker_default_strategy};
+    use crate::worker::retry_strategy::{worker_default_strategy, worker_stubborn_strategy};
 
     #[test]
     fn default_strategy() {
         let strategy = worker_default_strategy();
         let delays = strategy.take(10).collect::<Vec<_>>();
-        assert_eq!(delays,
+        assert_eq!(
+            delays,
             vec![
                 Duration::from_millis(200),
                 Duration::from_millis(300),
@@ -61,7 +59,8 @@ mod tests {
         assert_eq!(delays.len(), 400);
 
         // Assert the first 10 steps manually
-        assert_eq!(delays.iter().take(10).cloned().collect::<Vec<_>>(),
+        assert_eq!(
+            delays.iter().take(10).cloned().collect::<Vec<_>>(),
             vec![
                 Duration::from_secs(1),
                 Duration::from_secs(2),
@@ -80,7 +79,7 @@ mod tests {
         let mut delaysp = delays.into_iter().peekable();
         let cap = Duration::from_secs(60);
         let step = Duration::from_secs(1);
-        for first in delaysp.next() {
+        while let Some(first) = delaysp.next() {
             if let Some(next) = delaysp.peek() {
                 if first == cap {
                     assert_eq!(*next, cap);
