@@ -4,11 +4,12 @@ This document describes the architecture of ibc-rs. If you're looking for a high
 
 ## Bird's Eye View
 
-![](https://github.com/informalsystems/ibc-rs/blob/adi/arch/repo-context.pdf)
+![](docs/architecture/assets/repo-context.png)
 
 [What is it core reason developers use Hermes for?]
 
 At its highest level, ibc-rs [does what?]
+
 
 ## Code Map 
 
@@ -49,5 +50,4 @@ TODO
 ## Error Handling 
 
 TODO 
-
 
