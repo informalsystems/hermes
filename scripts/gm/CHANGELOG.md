@@ -1,5 +1,13 @@
 # Gaiad Manager Change Log
 
+## v0.0.8
+
+### BUGFIXES
+- Fixed gaiad 0.43 keys add printing key to stderr instead of stdout issue ([#1312])
+- Bumped default rpc_timeout in Hermes config to 5s ([#1312])
+
+[#1312]: https://github.com/informalsystems/ibc-rs/issues/1312
+
 ## v0.0.7
 
 ### BUGFIXES
