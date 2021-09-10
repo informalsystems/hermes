@@ -30,8 +30,10 @@ pub mod cosmos {
         pub mod v1beta1 {
             include!("prost/cosmos.auth.v1beta1.rs");
             /// EthAccount defines an Ethermint account.
-            /// TODO: remove when https://github.com/cosmos/cosmos-sdk/pull/9981
+            /// TODO: remove when/if a canonical `EthAccount`
             /// lands in the next Cosmos SDK release
+            /// (note https://github.com/cosmos/cosmos-sdk/pull/9981
+            /// only adds the PubKey type)
             #[derive(Clone, PartialEq, ::prost::Message)]
             pub struct EthAccount {
                 #[prost(message, optional, tag = "1")]
