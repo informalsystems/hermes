@@ -1857,7 +1857,10 @@ fn update_client_from_tx_search_response(
         .filter(|event| event.type_str == request.event_id.as_str())
         .flat_map(|event| ClientEvents::try_from_tx(&event))
         .flat_map(|event| match event {
-            IbcEvent::UpdateClient(update) => Some(update),
+            IbcEvent::UpdateClient(mut update) => {
+                update.common.height = height;
+                Some(update)
+            }
             _ => None,
         })
         .find(|update| {

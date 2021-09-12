@@ -944,8 +944,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // May happen on chains running older SDKs (e.g., Akash)
             if update_event.header.is_none() {
                 return Err(ForeignClientError::misbehaviour_exit(format!(
-                    "could not extract header from update client event for chain {:?}, client {:?}, consensus_height {:?}",
-                    self.dst_chain.id(), update_event.client_id(), update_event.consensus_height()
+                    "could not extract header from update client event {:?} emitted by chain {:?}",
+                    update_event,
+                    self.dst_chain.id()
                 )));
             }
 
