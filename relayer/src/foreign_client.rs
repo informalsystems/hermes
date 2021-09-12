@@ -943,9 +943,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // No header in events, cannot run misbehavior.
             // May happen on chains running older SDKs (e.g., Akash)
             if update_event.header.is_none() {
-                return Err(ForeignClientError::misbehaviour_exit(
-                    "no header in update client events".to_string(),
-                ));
+                return Err(ForeignClientError::misbehaviour_exit(format!(
+                    "no header in update client event for height {:?}",
+                    update_event.height()
+                )));
             }
 
             // Check for misbehaviour according to the specific source chain type.
