@@ -1356,7 +1356,7 @@ dependencies = [
  "test-env-log",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.2.20",
+ "tracing-subscriber 0.2.22",
 ]
 
 [[package]]
@@ -1423,7 +1423,7 @@ dependencies = [
  "toml",
  "tonic",
  "tracing",
- "tracing-subscriber 0.2.20",
+ "tracing-subscriber 0.2.22",
  "uint",
 ]
 
@@ -1464,7 +1464,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.2.20",
+ "tracing-subscriber 0.2.22",
 ]
 
 [[package]]
@@ -1754,7 +1754,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.2.20",
+ "tracing-subscriber 0.2.22",
  "ureq",
 ]
 
@@ -3373,9 +3373,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.19"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ca517f43f0fb96e0c3072ed5c275fe5eece87e8cb52f4a77b69226d3b1c9df8"
+checksum = "46125608c26121c81b0c6d693eab5a420e416da7e43c426d2e8f7df8da8a3acf"
 dependencies = [
  "lazy_static",
 ]
@@ -3387,7 +3387,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4d7c0b83d4a500748fa5879461652b361edf5c9d51ede2a2ac03875ca185e24"
 dependencies = [
  "tracing",
- "tracing-subscriber 0.2.20",
+ "tracing-subscriber 0.2.22",
 ]
 
 [[package]]
@@ -3440,9 +3440,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.20"
+version = "0.2.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9cbe87a2fa7e35900ce5de20220a582a9483a7063811defce79d7cbd59d4cfe"
+checksum = "62af966210b88ad5776ee3ba12d5f35b8d6a2b2a12168f3080cf02b814d7376b"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",
