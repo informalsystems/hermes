@@ -38,7 +38,7 @@ prost-types = "0.7"
 bytes = "1.1.0"
 regex = "1"
 subtle-encoding = "0.5"
-sha2 = { version = "0.9.6", optional = true }
+sha2 = { version = "0.9.8", optional = true }
 flex-error = { version = "0.4.2", default-features = false }
 
 [dependencies.tendermint]
@@ -58,7 +58,7 @@ test-env-log = { version = "0.2.7", features = ["trace"] }
 modelator = "0.2.1"
 tendermint-rpc = { version = "=0.21.0", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.21.0" } # Needed for generating (synthetic) light blocks.
-sha2 = { version = "0.9.6" }
+sha2 = { version = "0.9.8" }
 
 [[test]]
 name = "mbt"
