@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.7.0"
+version    = "0.7.1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -15,9 +15,7 @@ description = """
 
 [features]
 default = ["std", "eyre_tracer"]
-std = [
-    "flex-error/std"
-]
+std = ["flex-error/std"]
 eyre_tracer = ["flex-error/eyre_tracer"]
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
@@ -25,7 +23,7 @@ mocks = [ "tendermint-testgen", "sha2" ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.10.0", path = "../proto" }
+ibc-proto = { version = "0.10.1", path = "../proto" }
 ics23 = "0.6.5"
 chrono = "0.4.19"
 thiserror = "1.0.29"
