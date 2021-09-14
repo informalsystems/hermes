@@ -15,10 +15,14 @@ use ibc_relayer::connection::{Connection, ConnectionSide};
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_cli::cli_utils::spawn_chain_runtime;
 
-fn create_client(
-    source_chain: Box<dyn ChainHandle>,
-    target_chain: Box<dyn ChainHandle>,
-) -> Result<ClientId> {
+fn create_client<SrcChain, DstChain>(
+    source_chain: SrcChain,
+    target_chain: DstChain,
+) -> Result<ClientId>
+where
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
+{
     let foreign_client = ForeignClient::restore(
         ClientId::default(),
         target_chain.clone(),
@@ -34,8 +38,8 @@ fn create_client(
     Ok(create_event.client_id().clone())
 }
 
-fn query_client_state(
-    target_chain: Box<dyn ChainHandle>,
+fn query_client_state<Chain: ChainHandle>(
+    target_chain: Chain,
     client_id: &ClientId,
 ) -> Result<ClientState> {
     let any_client_state = target_chain.query_client_state(client_id, Height::zero())?;
@@ -49,11 +53,15 @@ fn query_client_state(
     }
 }
 
-fn update_client_state(
-    source_chain: Box<dyn ChainHandle>,
-    target_chain: Box<dyn ChainHandle>,
+fn update_client_state<SrcChain, DstChain>(
+    source_chain: SrcChain,
+    target_chain: DstChain,
     source_on_target_client_id: &ClientId,
-) -> Result<Vec<IbcEvent>> {
+) -> Result<Vec<IbcEvent>>
+where
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
+{
     let foreign_client =
         ForeignClient::find(source_chain, target_chain, source_on_target_client_id)?;
 
@@ -62,10 +70,14 @@ fn update_client_state(
     Ok(events)
 }
 
-fn create_client_pair(
-    chain_a: Box<dyn ChainHandle>,
-    chain_b: Box<dyn ChainHandle>,
-) -> Result<(ClientId, ClientId)> {
+fn create_client_pair<ChainA, ChainB>(
+    chain_a: ChainA,
+    chain_b: ChainB,
+) -> Result<(ClientId, ClientId)>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
     let a_on_b_client_id = create_client(chain_a.clone(), chain_b.clone())?;
 
     info!(
@@ -131,12 +143,16 @@ fn create_client_pair(
     Ok((a_on_b_client_id, b_on_a_client_id))
 }
 
-fn connection_init(
-    chain_a: Box<dyn ChainHandle>,
-    chain_b: Box<dyn ChainHandle>,
+fn connection_init<ChainA, ChainB>(
+    chain_a: ChainA,
+    chain_b: ChainB,
     a_on_b_client_id: ClientId,
     b_on_a_client_id: ClientId,
-) -> Result<ConnectionId> {
+) -> Result<ConnectionId>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
     let connection = Connection {
         delay_period: ZERO_DURATION,
         a_side: ConnectionSide::new(chain_a, b_on_a_client_id.clone(), None),
@@ -161,13 +177,17 @@ fn connection_init(
     Ok(connection_id)
 }
 
-fn connection_try(
-    chain_a: Box<dyn ChainHandle>,
-    chain_b: Box<dyn ChainHandle>,
+fn connection_try<ChainA, ChainB>(
+    chain_a: ChainA,
+    chain_b: ChainB,
     a_on_b_client_id: ClientId,
     b_on_a_client_id: ClientId,
     connection_id_on_b: ConnectionId,
-) -> Result<ConnectionId> {
+) -> Result<ConnectionId>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
     let connection = Connection {
         delay_period: ZERO_DURATION,
         a_side: ConnectionSide::new(chain_a, b_on_a_client_id.clone(), Some(connection_id_on_b)),
@@ -192,14 +212,18 @@ fn connection_try(
     Ok(connection_id)
 }
 
-fn connection_ack(
-    chain_a: Box<dyn ChainHandle>,
-    chain_b: Box<dyn ChainHandle>,
+fn connection_ack<ChainA, ChainB>(
+    chain_a: ChainA,
+    chain_b: ChainB,
     b_on_a_client_id: ClientId,
     a_on_b_client_id: ClientId,
     connection_id_on_a: ConnectionId,
     connection_id_on_b: ConnectionId,
-) -> Result<ConnectionId> {
+) -> Result<ConnectionId>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
     let connection = Connection {
         delay_period: ZERO_DURATION,
         a_side: ConnectionSide::new(
@@ -237,13 +261,17 @@ fn connection_ack(
     Ok(connection_id)
 }
 
-fn channel_open_init(
-    chain_a: Box<dyn ChainHandle>,
-    chain_b: Box<dyn ChainHandle>,
+fn channel_open_init<ChainA, ChainB>(
+    chain_a: ChainA,
+    chain_b: ChainB,
     a_on_b_client_id: ClientId,
     connection_id_on_b: ConnectionId,
     port_id: PortId,
-) -> Result<ChannelId> {
+) -> Result<ChannelId>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
     let channel = Channel {
         connection_delay: Default::default(),
         ordering: Order::Unordered,
@@ -281,12 +309,16 @@ fn channel_open_init(
     Ok(channel_id)
 }
 
-fn raw_connection_handshake(
-    chain_a: Box<dyn ChainHandle>,
-    chain_b: Box<dyn ChainHandle>,
+fn raw_connection_handshake<ChainA, ChainB>(
+    chain_a: ChainA,
+    chain_b: ChainB,
     a_on_b_client_id: ClientId,
     b_on_a_client_id: ClientId,
-) -> Result<(ConnectionId, ConnectionId)> {
+) -> Result<(ConnectionId, ConnectionId)>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
     let connection_id_on_b = connection_init(
         chain_a.clone(),
         chain_b.clone(),

@@ -4,5 +4,7 @@
 
 pub mod init;
 
+pub mod chain;
+
 #[cfg(test)]
 pub mod tests;

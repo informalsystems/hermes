@@ -1496,7 +1496,7 @@ dependencies = [
  "rusty-fork",
  "tokio",
  "tracing",
- "tracing-subscriber 0.2.19",
+ "tracing-subscriber 0.2.20",
 ]
 
 [[package]]
