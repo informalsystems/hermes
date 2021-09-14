@@ -14,14 +14,6 @@ define_error! {
             [ channel_error::Error ]
             |_ | { "Ics04 channel error" },
 
-        SequenceSendNotFound
-            { port_id: PortId, channel_id: ChannelId }
-            | e | { format_args!("sending sequence number not found for port {0} and channel {1}", e.port_id, e.channel_id) },
-
-        ChannelNotFound
-            { port_id: PortId, channel_id: ChannelId }
-            | e | { format_args!("sending sequence number not found for port {0} and channel {1}", e.port_id, e.channel_id) },
-
         DestinationChannelNotFound
             { port_id: PortId, channel_id: ChannelId }
             | e | { format_args!("destination channel not found in the counterparty of port_id {0} and channel_id {1} ", e.port_id, e.channel_id) },

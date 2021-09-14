@@ -124,6 +124,7 @@ pub enum ActionOutcome {
     Ics02CreateOk,
     Ics02UpdateOk,
     Ics02ClientNotFound,
+    Ics02ConsensusStateNotFound,
     Ics02HeaderVerificationFailure,
 
     Ics07UpgradeOk,
@@ -131,15 +132,12 @@ pub enum ActionOutcome {
     Ics07HeaderVerificationFailure,
 
     Ics03ConnectionOpenInitOk,
-    Ics03MissingClient,
     Ics03ConnectionOpenTryOk,
     Ics03InvalidConsensusHeight,
     Ics03ConnectionNotFound,
     Ics03ConnectionMismatch,
-    Ics03MissingClientConsensusState,
     Ics03InvalidProof,
     Ics03ConnectionOpenAckOk,
-    Ics03UninitializedConnection,
     Ics03ConnectionOpenConfirmOk,
 }
 

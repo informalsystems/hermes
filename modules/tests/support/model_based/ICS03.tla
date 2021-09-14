@@ -35,7 +35,7 @@ ICS03_ConnectionOpenInit(
             connections |-> chain.connections,
             connectionIdCounter |-> chain.connectionIdCounter,
             action |-> action_,
-            outcome |-> "Ics03MissingClient"
+            outcome |-> "Ics02ClientNotFound"
         ]
     ELSE
         \* if the client exists,
@@ -170,7 +170,7 @@ ICS03_ConnectionOpenTry(
                     connections |-> chain.connections,
                     connectionIdCounter |-> chain.connectionIdCounter,
                     action |-> action_,
-                    outcome |-> "Ics03MissingClient"
+                    outcome |-> "Ics02ClientNotFound"
                 ]
             ELSE
                 \* check if the client has a consensus state with this height
@@ -183,7 +183,7 @@ ICS03_ConnectionOpenTry(
                         connections |-> chain.connections,
                         connectionIdCounter |-> chain.connectionIdCounter,
                         action |-> action_,
-                        outcome |-> "Ics03MissingClientConsensusState"
+                        outcome |-> "Ics02ConsensusStateNotFound"
                     ]
                 ELSE
                     \* check if there was an open init at the remote chain
@@ -296,7 +296,7 @@ ICS03_ConnectionOpenAck(
                     [
                         connections |-> connections,
                         action |-> action_,
-                        outcome |-> "Ics03MissingClientConsensusState"
+                        outcome |-> "Ics02ConsensusStateNotFound"
                     ]
                 ELSE
                     \* check if there was an open try at the remote chain
@@ -385,7 +385,7 @@ ICS03_ConnectionOpenConfirm(
                 [
                     connections |-> connections,
                     action |-> action_,
-                    outcome |-> "Ics03MissingClientConsensusState"
+                    outcome |-> "Ics02ConsensusStateNotFound"
                 ]
             ELSE
                 \* check if there was an open ack at the remote chain
