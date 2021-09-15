@@ -35,9 +35,9 @@ ports       print the ports of a (running) node
 start       start one or more nodes (starts all nodes if no parameter is given)
 status      print the status of nodes
 stop        stop one or more nodes (stops all nodes if no parameter is given)
-reset       reset one or more nodes' database (resets all nodes if no parameter is given)"
-rm          delete the configuration of a node"
-version     print the application version"
+reset       reset one or more nodes' database (resets all nodes if no parameter is given)
+rm          delete the configuration of a node
+version     print the application version
 
 EOF
 }

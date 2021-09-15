@@ -13,6 +13,7 @@ version() {
 
 set_config_defaults() {
     GLOBAL_GAIAD_BINARY="$(which gaiad || echo "${GOPATH:-./gaiad}")"
+    GLOBAL_GAIACLI_BINARY="$(which gaiacli || echo "${GOPATH:-./gaiacli}")"
     #GLOBAL_PORTS_START_AT is deliberately not exported because it is updated sometimes during execution
     DEFAULT_PORTS_START_AT=27000
     GLOBAL_HOME_DIR="${HOME}/.gm"
@@ -43,6 +44,8 @@ parse_config_file() {
   #   This is irrelevant here, because the return code is taken into account.
   # shellcheck disable=SC2155
   export GLOBAL_GAIAD_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.gaiad_binary || echo "$GLOBAL_GAIAD_BINARY")")"
+  # shellcheck disable=SC2155
+  export GLOBAL_GAIACLI_BINARY="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.gaiacli_binary || echo "$GLOBAL_GAIACLI_BINARY")")"
   # shellcheck disable=SC2155
   export GLOBAL_HOME_DIR="$(eval echo "$(stoml -sq "$CONFIG_FILE" global.home_dir || echo "$GLOBAL_HOME_DIR")")"
   # shellcheck disable=SC2155
@@ -143,6 +146,7 @@ write_default_config_file() {
   cat <<EOF > "$CONFIG_FILE"
 [global]
 gaiad_binary="$GLOBAL_GAIAD_BINARY"
+gaiacli_binary="$GLOBAL_GAIACLI_BINARY"
 
 [global.hermes]
 binary="$GLOBAL_HERMES_BINARY"
@@ -307,6 +311,15 @@ get_gaiad_binary() {
   fi
 }
 
+get_gaiacli_binary() {
+  RESULT="$(stoml -q "$CONFIG_FILE" "${1}.gaiacli_binary")"
+  if [ -z "$RESULT" ]; then
+    echo "$GLOBAL_GAIACLI_BINARY"
+  else
+    eval echo "$RESULT"
+  fi
+}
+
 get_ports_start_at() {
   RESULT="$(stoml -q "$CONFIG_FILE" "${1}.ports_start_at")"
   if [ -z "$RESULT" ]; then
@@ -449,6 +462,7 @@ EOF
 create() {
   echo "Creating $1 config..."
   GAIAD_BINARY="$(get_gaiad_binary "$1")"
+  GAIACLI_BINARY="$(get_gaiacli_binary "$1")"
   HOME_DIR="$(get_home_dir "$1")"
   NETWORK="$(get_chain_id "$1")"
   EXEC_RESULT="$("$GAIAD_BINARY" init "$1" --chain-id "$NETWORK" --home "$HOME_DIR" 2>&1)"
@@ -462,27 +476,27 @@ create() {
     # Create validator key
     VALIDATOR_MNEMONIC="$(get_validator_mnemonic "$1")"
     if [ -z "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "validator" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
+      "$GAIACLI_BINARY" --home "${HOME_DIR}" keys add "validator" --keyring-backend test --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
     elif [ -z "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
+      "$GAIACLI_BINARY" --home "${HOME_DIR}" keys add "validator" --hd-path "$HDPATH" --keyring-backend test --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
     elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
+      echo "$VALIDATOR_MNEMONIC" | "$GAIACLI_BINARY" --home "${HOME_DIR}" keys add "validator" --recover --keyring-backend test --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
       sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
     elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
+      echo "$VALIDATOR_MNEMONIC" | "$GAIACLI_BINARY" --home "${HOME_DIR}" keys add "validator" --hd-path "$HDPATH" --recover --keyring-backend test --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
       sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
     fi
     # Create wallet key
     WALLET_MNEMONIC="$(get_wallet_mnemonic "$1")"
     if [ -z "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
+      "$GAIACLI_BINARY" --home "${HOME_DIR}" keys add "wallet" --keyring-backend test --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
     elif [ -z "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
+      "$GAIACLI_BINARY" --home "${HOME_DIR}" keys add "wallet" --hd-path "$HDPATH" --keyring-backend test --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
     elif [ -n "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
+      echo "$WALLET_MNEMONIC" | "$GAIACLI_BINARY" --home "${HOME_DIR}" keys add "wallet" --recover --keyring-backend test--output json > "${HOME_DIR}/wallet_seed.json" 2>&1
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
     elif [ -n "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
+      echo "$WALLET_MNEMONIC" | "$GAIACLI_BINARY" --home "${HOME_DIR}" keys add "wallet" --hd-path "$HDPATH" --recover --keyring-backend test --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
     fi
     # Add accounts to genesis
@@ -696,9 +710,10 @@ list_keys() {
     return 0
   fi
   GAIAD_BINARY="$(get_gaiad_binary "$1")"
-  echo "\"$GAIAD_BINARY\" keys list --keyring-backend test --keyring-dir \"$HOME_DIR\""
+  GAIACLI_BINARY="$(get_gaiacli_binary "$1")"
+  echo "\"$GAIACLI_BINARY\" --home \"$HOME_DIR\" keys list --keyring-backend test"
   KEY_NAME=""
-  "$GAIAD_BINARY" keys list --keyring-backend test --keyring-dir "$HOME_DIR" | while read -r line
+  "$GAIACLI_BINARY" --home \"$HOME_DIR\" keys list --keyring-backend test | while read -r line
   do
     NAME="${line##'- name: '}"
     TYPE="${line##'type: '}"
@@ -769,7 +784,7 @@ id = '${ID}'
 rpc_addr = 'http://localhost:${RPC}'
 grpc_addr = 'http://localhost:${GRPC}'
 websocket_addr = 'ws://localhost:${RPC}/websocket'
-rpc_timeout = '5s'
+rpc_timeout = '10s'
 account_prefix = '${ACCOUNT_PREFIX}'
 key_name = 'wallet'
 store_prefix = 'ibc'
