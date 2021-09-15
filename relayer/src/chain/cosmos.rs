@@ -95,6 +95,10 @@ const DEFAULT_GAS_PRICE_ADJUSTMENT: f64 = 0.1;
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 
+// The error "incorrect account sequence" is defined as the unique error code 32 in cosmos-sdk:
+// https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
+pub const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
+
 mod retry_strategy {
     use crate::util::retry::Fixed;
     use std::time::Duration;
@@ -404,8 +408,7 @@ impl CosmosSdkChain {
                 self.incr_account_sequence();
                 Ok(response)
             }
-            // Cosmos SDK defines an account sequence mismatch with the error code 32
-            Code::Err(32) => {
+            Code::Err(code) if code == INCORRECT_ACCOUNT_SEQUENCE_ERR => {
                 if retries < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
                     warn!("send_tx failed with incorrect account sequence. retrying with account sequence refetched from the chain.");
 
