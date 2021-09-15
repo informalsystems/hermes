@@ -1,3 +1,7 @@
+// TODO: disable unwraps:
+// https://github.com/informalsystems/ibc-rs/issues/987
+// #![cfg_attr(not(test), deny(clippy::unwrap_used))]
+
 #![no_std]
 #![allow(clippy::large_enum_variant)]
 #![deny(
@@ -10,9 +14,6 @@
     rust_2018_idioms
 )]
 #![forbid(unsafe_code)]
-// TODO: disable unwraps:
-// https://github.com/informalsystems/ibc-rs/issues/987
-// #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 //! Implementation of the following ICS modules:
 //!
