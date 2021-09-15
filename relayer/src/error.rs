@@ -120,14 +120,10 @@ define_error! {
             |e| { format!("node at {} running chain {} not caught up", e.address, e.chain_id) },
 
         PrivateStore
-            |_| { "requested proof for a path in the private store" },
-
-        Store
-            [ TraceError<sled::Error> ]
-            |_| { "Store error" },
+            |_| { "Requested proof for a path in the private store" },
 
         Event
-            |_| { "Bad Notification" },
+            |_| { "Bad notification" },
 
         ConversionFromAny
             [ TraceError<TendermintProtoError> ]
