@@ -71,8 +71,14 @@ pub fn extract_header_from_tx(event: &tendermint::abci::Event) -> Option<AnyHead
         let value = tag.value.as_ref();
         if let HEADER = key {
             let header_bytes = hex::decode(value).unwrap();
-            let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
-            return Some(header);
+            let result = match Protobuf::decode(header_bytes.as_ref()) {
+                Ok(header) => Some(header),
+                Err(e) => {
+                    tracing::error!("error {} while decoding {:?}", e, header_bytes);
+                    None
+                }
+            };
+            return result;
         }
     }
     None

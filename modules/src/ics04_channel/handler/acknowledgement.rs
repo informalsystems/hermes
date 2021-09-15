@@ -28,11 +28,8 @@ pub fn process(
 
     let packet = &msg.packet;
 
-    let source_channel_end = ctx
-        .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
-        .ok_or_else(|| {
-            Error::channel_not_found(packet.source_port.clone(), packet.source_channel.clone())
-        })?;
+    let source_channel_end =
+        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
     if !source_channel_end.state_matches(&State::Open) {
         return Err(Error::channel_closed(packet.source_channel.clone()));
@@ -52,11 +49,7 @@ pub fn process(
         ));
     }
 
-    let connection_end = ctx
-        .connection_end(&source_channel_end.connection_hops()[0])
-        .ok_or_else(|| {
-            Error::missing_connection(source_channel_end.connection_hops()[0].clone())
-        })?;
+    let connection_end = ctx.connection_end(&source_channel_end.connection_hops()[0])?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -67,13 +60,11 @@ pub fn process(
     let client_id = connection_end.client_id().clone();
 
     // Verify packet commitment
-    let packet_commitment = ctx
-        .get_packet_commitment(&(
-            packet.source_port.clone(),
-            packet.source_channel.clone(),
-            packet.sequence,
-        ))
-        .ok_or_else(|| Error::packet_commitment_not_found(packet.sequence))?;
+    let packet_commitment = ctx.get_packet_commitment(&(
+        packet.source_port.clone(),
+        packet.source_channel.clone(),
+        packet.sequence,
+    ))?;
 
     let input = format!(
         "{:?},{:?},{:?}",
@@ -95,8 +86,7 @@ pub fn process(
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
         let next_seq_ack = ctx
-            .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))
-            .ok_or_else(Error::missing_next_ack_seq)?;
+            .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
         if packet.sequence != next_seq_ack {
             return Err(Error::invalid_packet_sequence(

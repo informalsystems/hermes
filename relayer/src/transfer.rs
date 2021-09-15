@@ -1,3 +1,5 @@
+use core::fmt::{Display, Formatter};
+use core::str::FromStr;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
@@ -7,10 +9,12 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use uint::FromStrRadixErr;
 
 use crate::chain::handle::ChainHandle;
 use crate::config::ChainConfig;
 use crate::error::Error;
+use crate::util::bigint::U256;
 
 define_error! {
     PacketError {
@@ -50,13 +54,30 @@ define_error! {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Amount(U256);
+
+impl Display for Amount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for Amount {
+    type Err = FromStrRadixErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(U256::from_str_radix(s, 10)?))
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TransferOptions {
     pub packet_src_chain_config: ChainConfig,
     pub packet_dst_chain_config: ChainConfig,
     pub packet_src_port_id: PortId,
     pub packet_src_channel_id: ChannelId,
-    pub amount: u64,
+    pub amount: Amount,
     pub denom: String,
     pub receiver: Option<String>,
     pub timeout_height_offset: u64,

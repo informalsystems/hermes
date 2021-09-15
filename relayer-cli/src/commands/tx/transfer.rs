@@ -7,6 +7,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, PortId},
 };
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::transfer::Amount;
 use ibc_relayer::{
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
@@ -36,7 +37,7 @@ pub struct TxIcs20MsgTransferCmd {
         required,
         help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
-    amount: u64,
+    amount: Amount,
 
     #[options(help = "timeout in number of blocks since current", short = "o")]
     timeout_height_offset: u64,
@@ -158,7 +159,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                 self.src_chain_id,
                 channel_end_src.state
             ))
-            .exit();
+                .exit();
         }
 
         let conn_id = match channel_end_src.connection_hops.first() {
@@ -167,7 +168,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                     "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
                     opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
                 ))
-                .exit()
+                    .exit();
             }
             Some(cid) => cid,
         };

@@ -10,7 +10,7 @@ members = [
 ]
 
 exclude = [
-    "no-std-check",
+    "ci/no-std-check",
     "proto-compiler"
 ]
 

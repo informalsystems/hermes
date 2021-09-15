@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  echo "v0.0.7"
+  echo "v0.0.8"
 }
 
 # Configuration Management
@@ -462,27 +462,27 @@ create() {
     # Create validator key
     VALIDATOR_MNEMONIC="$(get_validator_mnemonic "$1")"
     if [ -z "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "validator" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      "$GAIAD_BINARY" keys add "validator" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
     elif [ -z "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
     elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
       sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
     elif [ -n "$VALIDATOR_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/validator_seed.json"
+      echo "$VALIDATOR_MNEMONIC" | "$GAIAD_BINARY" keys add "validator" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/validator_seed.json" 2>&1
       sconfig "${HOME_DIR}/validator_seed.json" -t string "mnemonic=${VALIDATOR_MNEMONIC}" 1> /dev/null
     fi
     # Create wallet key
     WALLET_MNEMONIC="$(get_wallet_mnemonic "$1")"
     if [ -z "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      "$GAIAD_BINARY" keys add "wallet" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
     elif [ -z "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
     elif [ -n "$WALLET_MNEMONIC" ] && [ -z "$HDPATH" ]; then
-      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
     elif [ -n "$WALLET_MNEMONIC" ] && [ -n "$HDPATH" ]; then
-      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json > "${HOME_DIR}/wallet_seed.json"
+      echo "$WALLET_MNEMONIC" | "$GAIAD_BINARY" keys add "wallet" --hd-path "$HDPATH" --recover --keyring-backend test --keyring-dir "${HOME_DIR}" --output json 1> "${HOME_DIR}/wallet_seed.json" 2>&1
       sconfig "${HOME_DIR}/wallet_seed.json" -t string "mnemonic=${WALLET_MNEMONIC}" 1> /dev/null
     fi
     # Add accounts to genesis
@@ -769,7 +769,7 @@ id = '${ID}'
 rpc_addr = 'http://localhost:${RPC}'
 grpc_addr = 'http://localhost:${GRPC}'
 websocket_addr = 'ws://localhost:${RPC}/websocket'
-rpc_timeout = '1s'
+rpc_timeout = '5s'
 account_prefix = '${ACCOUNT_PREFIX}'
 key_name = 'wallet'
 store_prefix = 'ibc'

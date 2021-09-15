@@ -90,6 +90,20 @@ account_prefix = 'cosmos'
 #   https://hermes.informal.systems/commands/keys/index.html#adding-keys
 key_name = 'testkey'
 
+# Specify the address type which determines:
+# 1) address derivation;
+# 2) how to retrieve and decode accounts and pubkeys;
+# 3) the message signing method.
+# The current configuration options are for Cosmos SDK and Ethermint.
+#
+# Example configuration for Ethermint:
+#
+# address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
+#
+# Default: { derivation = 'cosmos' }, i.e. address derivation as in Cosmos SDK
+# Warning: This is an advanced feature! Modify with caution.
+address_type = { derivation = 'cosmos' }
+
 # Specify the store prefix used by the on-chain IBC modules. Required
 # Recommended value for Cosmos SDK: 'ibc'
 store_prefix = 'ibc'
@@ -168,3 +182,4 @@ max_tx_size = 2097152
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
+address_type = { derivation = 'cosmos' }
