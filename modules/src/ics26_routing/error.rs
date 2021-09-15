@@ -5,7 +5,7 @@ use crate::ics04_channel;
 use flex_error::{define_error, TraceError};
 
 define_error! {
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq, Eq)]
     Error {
         Ics02Client
             [ ics02_client::error::Error ]

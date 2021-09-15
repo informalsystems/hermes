@@ -11,7 +11,7 @@ use flex_error::{define_error, TraceError};
 use tendermint_proto::Error as TendermintError;
 
 define_error! {
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq, Eq)]
     Error {
         Ics03Connection
             [ connection_error::Error ]
