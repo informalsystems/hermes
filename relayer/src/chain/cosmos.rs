@@ -85,10 +85,6 @@ use super::ChainEndpoint;
 
 mod compatibility;
 
-// Maximum number of retries for send_tx in the case of
-// an account sequence mismatch.
-const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 5;
-
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 300_000;
 
@@ -102,6 +98,10 @@ pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 mod retry_strategy {
     use crate::util::retry::Fixed;
     use std::time::Duration;
+
+    // Maximum number of retries for send_tx in the case of
+    // an account sequence mismatch.
+    pub const MAX_ACCOUNT_SEQUENCE_RETRY: u32 = 5;
 
     pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
         let backoff_millis = 300; // The periodic backoff
@@ -406,7 +406,7 @@ impl CosmosSdkChain {
             }
             // Cosmos SDK defines an account sequence mismatch with the error code 32
             Code::Err(32) => {
-                if retries < MAX_ACCOUNT_SEQUENCE_RETRY {
+                if retries < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
                     warn!("send_tx failed with incorrect account sequence. retrying with account sequence refetched from the chain.");
 
                     // Refetch account information from the chain.
