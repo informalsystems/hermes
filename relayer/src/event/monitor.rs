@@ -106,7 +106,7 @@ pub struct EventBatch {
     pub events: Vec<IbcEvent>,
 }
 
-type SubscriptionResult = std::result::Result<RpcEvent, RpcError>;
+type SubscriptionResult = core::result::Result<RpcEvent, RpcError>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
 pub type EventSender = channel::Sender<Result<EventBatch>>;
