@@ -67,6 +67,7 @@ uint = "0.9"
 
 [dependencies.tendermint]
 version = "=0.21.0"
+features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
 version = "=0.21.0"
