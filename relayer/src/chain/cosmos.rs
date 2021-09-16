@@ -408,7 +408,7 @@ impl CosmosSdkChain {
                 self.incr_account_sequence();
                 Ok(response)
             }
-            Code::Err(code) if code == INCORRECT_ACCOUNT_SEQUENCE_ERR => {
+            Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
                 if retries < retry_strategy::MAX_ACCOUNT_SEQUENCE_RETRY {
                     warn!("send_tx failed with incorrect account sequence. retrying with account sequence refetched from the chain.");
 
