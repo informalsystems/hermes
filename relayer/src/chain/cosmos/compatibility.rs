@@ -98,7 +98,11 @@ pub(crate) fn run_diagnostic(version_info: VersionInfo) -> Result<(), Diagnostic
         .expect("parsing the SDK module requirements into semver");
 
     // Get the Cosmos SDK version
-    let version = get_sdk_version(&version_info)?;
+    let mut version = get_sdk_version(&version_info)?;
+
+    // Remove the pre-release version to ensure we treat pre-releases of the SDK
+    // as their normal version, eg. 0.42.0-rc2 should satisfy >=0.41.3, <= 0.42.6.
+    version.pre = semver::Prerelease::EMPTY;
 
     // Finally, check the version requirements
     match reqs.matches(&version) {
