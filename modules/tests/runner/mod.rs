@@ -1,9 +1,9 @@
 pub mod step;
 
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::fmt::Debug;
-use std::time::Duration;
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use core::convert::TryFrom;
+use core::fmt::Debug;
+use core::time::Duration;
 
 use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::client_state::AnyClientState;
@@ -480,6 +480,10 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
                 Self::extract_ics02_error_kind(result),
                 client_error::ErrorDetail::ClientNotFound(_)
             ),
+            ActionOutcome::Ics02ConsensusStateNotFound => matches!(
+                Self::extract_ics02_error_kind(result),
+                client_error::ErrorDetail::ConsensusStateNotFound(_)
+            ),
             ActionOutcome::Ics02HeaderVerificationFailure => {
                 matches!(
                     Self::extract_ics02_error_kind(result),
@@ -498,10 +502,6 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
                 )
             }
             ActionOutcome::Ics03ConnectionOpenInitOk => result.is_ok(),
-            ActionOutcome::Ics03MissingClient => matches!(
-                Self::extract_ics03_error_kind(result),
-                connection_error::ErrorDetail::MissingClient(_)
-            ),
             ActionOutcome::Ics03ConnectionOpenTryOk => result.is_ok(),
             ActionOutcome::Ics03InvalidConsensusHeight => matches!(
                 Self::extract_ics03_error_kind(result),
@@ -515,19 +515,11 @@ impl modelator::step_runner::StepRunner<Step> for IbcTestRunner {
                 Self::extract_ics03_error_kind(result),
                 connection_error::ErrorDetail::ConnectionMismatch(_)
             ),
-            ActionOutcome::Ics03MissingClientConsensusState => matches!(
-                Self::extract_ics03_error_kind(result),
-                connection_error::ErrorDetail::MissingClientConsensusState(_)
-            ),
             ActionOutcome::Ics03InvalidProof => matches!(
                 Self::extract_ics03_error_kind(result),
                 connection_error::ErrorDetail::InvalidProof(_)
             ),
             ActionOutcome::Ics03ConnectionOpenAckOk => result.is_ok(),
-            ActionOutcome::Ics03UninitializedConnection => matches!(
-                Self::extract_ics03_error_kind(result),
-                connection_error::ErrorDetail::UninitializedConnection(_)
-            ),
             ActionOutcome::Ics03ConnectionOpenConfirmOk => result.is_ok(),
         };
 

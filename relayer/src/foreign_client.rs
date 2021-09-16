@@ -1,5 +1,6 @@
+use core::{fmt, time::Duration};
+use std::thread;
 use std::time::Instant;
-use std::{fmt, thread, time::Duration};
 
 use itertools::Itertools;
 use prost_types::Any;
@@ -804,7 +805,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .map_err(|e| {
                 ForeignClientError::client_query(self.id().clone(), self.src_chain.id(), e)
             })?;
-        consensus_states.sort_by_key(|a| std::cmp::Reverse(a.height));
+        consensus_states.sort_by_key(|a| core::cmp::Reverse(a.height));
         Ok(consensus_states)
     }
 
@@ -943,9 +944,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // No header in events, cannot run misbehavior.
             // May happen on chains running older SDKs (e.g., Akash)
             if update_event.header.is_none() {
-                return Err(ForeignClientError::misbehaviour_exit(
-                    "no header in update client events".to_string(),
-                ));
+                return Err(ForeignClientError::misbehaviour_exit(format!(
+                    "could not extract header from update client event {:?} emitted by chain {:?}",
+                    update_event,
+                    self.dst_chain.id()
+                )));
             }
 
             // Check for misbehaviour according to the specific source chain type.
@@ -1126,8 +1129,8 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
 /// instances of chains built using `MockChain`.
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-    use std::sync::Arc;
+    use alloc::sync::Arc;
+    use core::str::FromStr;
 
     use test_env_log::test;
     use tokio::runtime::Runtime as TokioRuntime;

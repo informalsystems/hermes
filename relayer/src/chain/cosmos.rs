@@ -1,12 +1,12 @@
-use std::{
+use alloc::sync::Arc;
+use core::{
     cmp::min,
     convert::{TryFrom, TryInto},
     future::Future,
     str::FromStr,
-    sync::Arc,
-    thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
+use std::{thread, time::Instant};
 
 use bech32::{ToBase32, Variant};
 use bitcoin::hashes::hex::ToHex;
@@ -96,7 +96,7 @@ pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 
 mod retry_strategy {
     use crate::util::retry::Fixed;
-    use std::time::Duration;
+    use core::time::Duration;
 
     pub fn wait_for_block_commits(max_total_wait: Duration) -> impl Iterator<Item = Duration> {
         let backoff_millis = 300; // The periodic backoff
@@ -1780,7 +1780,10 @@ fn update_client_from_tx_search_response(
         .filter(|event| event.type_str == request.event_id.as_str())
         .flat_map(|event| ClientEvents::try_from_tx(&event))
         .flat_map(|event| match event {
-            IbcEvent::UpdateClient(update) => Some(update),
+            IbcEvent::UpdateClient(mut update) => {
+                update.common.height = height;
+                Some(update)
+            }
             _ => None,
         })
         .find(|update| {

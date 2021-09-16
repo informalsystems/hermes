@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.7.0"
+version    = "0.7.1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -25,17 +25,17 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.7.0", path = "../modules" }
-ibc-relayer      = { version = "0.7.0", path = "../relayer" }
-ibc-proto        = { version = "0.10.0", path = "../proto" }
-ibc-telemetry    = { version = "0.7.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.7.0", path = "../relayer-rest", optional = true }
+ibc              = { version = "0.7.1", path = "../modules" }
+ibc-relayer      = { version = "0.7.1", path = "../relayer" }
+ibc-proto        = { version = "0.10.1", path = "../proto" }
+ibc-telemetry    = { version = "0.7.1", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.7.1", path = "../relayer-rest", optional = true }
 
 gumdrop = { version = "0.7", features = ["default_expr"] }
 serde = { version = "1", features = ["serde_derive"] }
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.26"
-tracing-subscriber = "0.2.20"
+tracing-subscriber = "0.2.22"
 eyre = "0.6.5"
 color-eyre = "0.5"
 futures = "0.3.17"
@@ -59,6 +59,7 @@ version = "=0.21.0"
 
 [dependencies.tendermint]
 version = "=0.21.0"
+features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
 version = "=0.21.0"

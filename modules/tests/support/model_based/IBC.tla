@@ -136,13 +136,11 @@ ActionOutcomes == {
     "Ics07HeaderVerificationFailure",
     \* ICS03_ConnectionOpenInit outcomes:
     "Ics03ConnectionOpenInitOk",
-    "Ics03MissingClient",
     \* ICS03_ConnectionOpenTry outcomes:
     "Ics03ConnectionOpenTryOk",
     "Ics03InvalidConsensusHeight",
     "Ics03ConnectionNotFound",
     "Ics03ConnectionMismatch",
-    "Ics03MissingClientConsensusState",
     "Ics03InvalidProof",
     \* ICS03_ConnectionOpenAck outcomes:
     "Ics03ConnectionOpenAckOk",

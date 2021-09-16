@@ -71,8 +71,14 @@ pub fn extract_header_from_tx(event: &tendermint::abci::Event) -> Option<AnyHead
         let value = tag.value.as_ref();
         if let HEADER = key {
             let header_bytes = hex::decode(value).unwrap();
-            let header: AnyHeader = Protobuf::decode(header_bytes.as_ref()).unwrap();
-            return Some(header);
+            let result = match Protobuf::decode(header_bytes.as_ref()) {
+                Ok(header) => Some(header),
+                Err(e) => {
+                    tracing::error!("error {} while decoding {:?}", e, header_bytes);
+                    None
+                }
+            };
+            return result;
         }
     }
     None
@@ -122,8 +128,8 @@ impl Default for Attributes {
     }
 }
 
-impl std::fmt::Display for Attributes {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl core::fmt::Display for Attributes {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             f,
             "h: {}, cs_h: {}({})",
@@ -160,8 +166,8 @@ impl From<CreateClient> for IbcEvent {
     }
 }
 
-impl std::fmt::Display for CreateClient {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl core::fmt::Display for CreateClient {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(f, "{}", self.0)
     }
 }
@@ -209,8 +215,8 @@ impl From<UpdateClient> for IbcEvent {
     }
 }
 
-impl std::fmt::Display for UpdateClient {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl core::fmt::Display for UpdateClient {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(f, "{}", self.common)
     }
 }
