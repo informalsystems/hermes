@@ -126,23 +126,25 @@ impl CosmosSdkChain {
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
         // Check on the configured max_tx_size against genesis block max_bytes parameter
-        let genesis = self.block_on(self.rpc_client.genesis()).map_err(|e| {
-            Error::config_validation_json_rpc(
-                self.id().clone(),
-                self.config.rpc_addr.to_string(),
-                "/genesis".to_string(),
-                e,
-            )
-        })?;
+        let result = self
+            .block_on(self.rpc_client.consensus_params::<u32>(None))
+            .map_err(|e| {
+                Error::config_validation_json_rpc(
+                    self.id().clone(),
+                    self.config.rpc_addr.to_string(),
+                    "/consensus_params".to_string(),
+                    e,
+                )
+            })?;
 
-        let genesis_max_bound = genesis.consensus_params.block.max_bytes;
-        let max_allowed = mul_ceil(genesis_max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
+        let max_bound = result.consensus_params.block.max_bytes;
+        let max_allowed = mul_ceil(max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
 
         if self.max_tx_size() > max_allowed {
             return Err(Error::config_validation_tx_size_out_of_bounds(
                 self.id().clone(),
                 self.max_tx_size(),
-                genesis_max_bound,
+                max_bound,
             ));
         }
 
