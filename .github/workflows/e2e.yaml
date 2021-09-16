@@ -20,6 +20,14 @@ on:
       - relayer/**
       - relayer-cli/**
 
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 1
+  CARGO_PROFILE_RELEASE_DEBUG: 1
+  RUST_BACKTRACE: short
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
 jobs:
   test-end-to-end:
     runs-on: ubuntu-20.04
@@ -29,6 +37,7 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         with:
           command: build
