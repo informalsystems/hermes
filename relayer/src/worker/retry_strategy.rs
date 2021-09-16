@@ -1,4 +1,4 @@
-use crate::util::retry::{clamp, clamp_total, ConstantGrowth};
+use crate::util::retry::{clamp_total, ConstantGrowth};
 use std::time::Duration;
 
 /// A basic worker retry strategy.
@@ -17,16 +17,13 @@ pub fn worker_default_strategy() -> impl Iterator<Item = Duration> {
 /// A stubborn worker retry strategy.
 ///
 /// Initial retry delay is hardcoded to 1s, and
-/// the delay grows by 1s at every step. The
-/// strategy delay is capped at 60 sec. The
-/// total number of retries is capped to 400.
-/// Therefore the overall amount of time spent
-/// retrying will be approx. 6 hours.
+/// the delay grows very slowly and steadily by
+/// 10ms at every step. The strategy delay is
+/// not capped, so it will retry indefinitely.
 ///
 /// See the `stubbord_strategy` test below.
 pub fn worker_stubborn_strategy() -> impl Iterator<Item = Duration> {
-    let strategy = ConstantGrowth::new(Duration::from_secs(1), Duration::from_secs(1));
-    clamp(strategy, Duration::from_secs(60), 400)
+    ConstantGrowth::new(Duration::from_secs(1), Duration::from_millis(10))
 }
 
 #[cfg(test)]
@@ -55,37 +52,13 @@ mod tests {
     #[test]
     fn stubborn_strategy() {
         let strategy = worker_stubborn_strategy();
-        let delays = strategy.collect::<Vec<_>>();
-        assert_eq!(delays.len(), 400);
-
-        // Assert the first 10 steps manually
-        assert_eq!(
-            delays.iter().take(10).cloned().collect::<Vec<_>>(),
-            vec![
-                Duration::from_secs(1),
-                Duration::from_secs(2),
-                Duration::from_secs(3),
-                Duration::from_secs(4),
-                Duration::from_secs(5),
-                Duration::from_secs(6),
-                Duration::from_secs(7),
-                Duration::from_secs(8),
-                Duration::from_secs(9),
-                Duration::from_secs(10),
-            ]
-        );
-
-        // Assert that delays increment by 1s and are capped to 60s
-        let mut delaysp = delays.into_iter().peekable();
-        let cap = Duration::from_secs(60);
-        let step = Duration::from_secs(1);
+        // Assert that delays increment by 10ms
+        // Stop after 50 iterations
+        let mut delaysp = strategy.into_iter().take(50).peekable();
+        let step = Duration::from_millis(10);
         while let Some(first) = delaysp.next() {
             if let Some(next) = delaysp.peek() {
-                if first == cap {
-                    assert_eq!(*next, cap);
-                } else {
-                    assert_eq!(first + step, *next);
-                }
+                assert_eq!(first + step, *next);
             }
         }
     }
