@@ -2947,7 +2947,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#be7c665ca9b111b0b7c8417e952527cac6289aa3"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2980,7 +2980,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#be7c665ca9b111b0b7c8417e952527cac6289aa3"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3000,7 +3000,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#be7c665ca9b111b0b7c8417e952527cac6289aa3"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
 dependencies = [
  "bytes",
  "chrono",
@@ -3017,7 +3017,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#be7c665ca9b111b0b7c8417e952527cac6289aa3"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3049,7 +3049,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#be7c665ca9b111b0b7c8417e952527cac6289aa3"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",

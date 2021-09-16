@@ -127,7 +127,7 @@ impl CosmosSdkChain {
     pub fn validate_params(&self) -> Result<(), Error> {
         // Check on the configured max_tx_size against the latest block's consensus parameters
         let result = self
-            .block_on(self.rpc_client.consensus_params::<u32>(None))
+            .block_on(self.rpc_client.latest_consensus_params())
             .map_err(|e| {
                 Error::config_validation_json_rpc(
                     self.id().clone(),
