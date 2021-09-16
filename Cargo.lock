@@ -2947,7 +2947,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2980,7 +2980,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -2990,7 +2990,6 @@ dependencies = [
  "serde",
  "serde_cbor",
  "serde_derive",
- "sled",
  "static_assertions",
  "tendermint",
  "tendermint-rpc",
@@ -3000,7 +2999,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
 dependencies = [
  "bytes",
  "chrono",
@@ -3017,7 +3016,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3049,7 +3048,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=thane/832-consensus-params#a11d4bc04c7b4c51b5b149985246c1c2c3373990"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",
