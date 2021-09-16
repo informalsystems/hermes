@@ -195,7 +195,7 @@ impl CosmosSdkChain {
             })?;
 
             // Checkup on the underlying SDK version
-            if let Some(diagnostic) = compatibility::run_diagnostic(version) {
+            if let Err(diagnostic) = compatibility::run_diagnostic(version) {
                 return Err(Error::sdk_module_version(
                     chain_id.clone(),
                     grpc_address.clone(),
