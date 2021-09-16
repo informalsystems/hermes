@@ -3,10 +3,10 @@ use std::time::Duration;
 
 /// A basic worker retry strategy.
 ///
-/// The delay is initially 200ms and grows
-/// by 100ms at each step. The delay is
+/// The backoff delay is initially 200ms and grows
+/// by 100ms at each step. The backoff delay is
 /// capped at 500ms.
-/// The overall amount of time spent retrying
+/// The overall amount of time spent backing off
 /// is capped to 2 seconds.
 /// See the `default_strategy` test below.
 pub fn worker_default_strategy() -> impl Iterator<Item = Duration> {
@@ -16,8 +16,8 @@ pub fn worker_default_strategy() -> impl Iterator<Item = Duration> {
 
 /// A stubborn worker retry strategy.
 ///
-/// Initial retry delay is hardcoded to 1s, and
-/// the delay grows very slowly and steadily by
+/// Initial retry backoff is hardcoded to 1s, and
+/// this delay grows very slowly and steadily by
 /// 10ms at every step. The strategy delay is
 /// not capped, so it will retry indefinitely.
 ///
@@ -36,6 +36,7 @@ mod tests {
     fn default_strategy() {
         let strategy = worker_default_strategy();
         let delays = strategy.take(10).collect::<Vec<_>>();
+        // This strategy has exactly 6 retry steps
         assert_eq!(
             delays,
             vec![
@@ -52,6 +53,7 @@ mod tests {
     #[test]
     fn stubborn_strategy() {
         let strategy = worker_stubborn_strategy();
+        // This strategy has an infinite amount of retry steps
         // Assert that delays increment by 10ms
         // Stop after 50 iterations
         let mut delaysp = strategy.into_iter().take(50).peekable();
