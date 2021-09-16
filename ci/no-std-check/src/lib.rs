@@ -4,23 +4,64 @@
 
 // Import the crates that we want to check if they are fully no-std compliance
 
-#[cfg(feature = "use-ibc")]
+#[cfg(feature = "ibc")]
 use ibc;
 
-#[cfg(feature = "use-ibc")]
+#[cfg(feature = "ibc_proto")]
 use ibc_proto;
 
-#[cfg(feature = "use-substrate")]
+#[cfg(feature = "sp_core")]
 use sp_core;
 
-#[cfg(feature = "use-substrate")]
+#[cfg(feature = "sp_io")]
 use sp_io;
 
-#[cfg(feature = "use-substrate")]
+#[cfg(feature = "sp_runtime")]
 use sp_runtime;
 
-#[cfg(feature = "use-substrate")]
+#[cfg(feature = "sp_std")]
 use sp_std;
+
+// Supported Imports
+
+use bytes;
+use chrono;
+use contracts;
+use crossbeam_channel;
+use ed25519;
+use ed25519_dalek;
+use flex_error;
+use futures;
+use impl_serde;
+use k256;
+use num_derive;
+use num_traits;
+use once_cell;
+use prost;
+use prost_types;
+use ripemd160;
+use ryu;
+use serde;
+use serde_bytes;
+use serde_derive;
+use serde_json;
+use serde_repr;
+use sha2;
+use signature;
+use static_assertions;
+use subtle;
+use subtle_encoding;
+use time;
+use tracing;
+use zeroize;
+
+// Unsupported Imports
+
+#[cfg(feature = "serde_cbor")]
+use serde_cbor;
+
+#[cfg(feature = "serde_json_core")]
+use serde_json_core;
 
 #[cfg(feature = "tonic")]
 use tonic;
@@ -31,11 +72,8 @@ use socket2;
 #[cfg(feature = "getrandom")]
 use getrandom;
 
-#[cfg(feature = "serde")]
-use serde;
-
-#[cfg(feature = "serde_json")]
-use serde_json;
+#[cfg(feature = "ics23")]
+use ics23;
 
 #[cfg(feature = "thiserror")]
 use thiserror;
@@ -43,14 +81,18 @@ use thiserror;
 #[cfg(feature = "regex")]
 use regex;
 
-use flex_error;
-use prost;
-use prost_types;
-use chrono;
-use bytes;
-use serde_derive;
-use tracing;
-use sha2;
+#[cfg(feature = "sled")]
+use sled;
+
+#[cfg(feature = "tokio")]
+use tokio;
+
+#[cfg(feature = "toml")]
+use toml;
+
+#[cfg(feature = "url")]
+use url;
+
 
 use core::panic::PanicInfo;
 
@@ -74,6 +116,7 @@ error[E0152]: found duplicate lang item `panic_impl`
  */
 #[cfg(not(feature = "use-substrate"))]
 #[panic_handler]
+#[no_mangle]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
