@@ -80,7 +80,7 @@ use crate::light_client::LightClient;
 use crate::light_client::Verified;
 use crate::{chain::QueryResponse, event::monitor::TxMonitorCmd};
 
-use super::ChainEndpoint;
+use super::{ChainEndpoint, HealthCheck};
 
 mod compatibility;
 
@@ -116,103 +116,6 @@ pub struct CosmosSdkChain {
 }
 
 impl CosmosSdkChain {
-    /// Does multiple RPC calls to the full node, to check for
-    /// reachability and some basic APIs are available.
-    ///
-    /// Currently this checks that:
-    ///     - the node responds OK to `/health` RPC call;
-    ///     - the node has transaction indexing enabled;
-    ///     - the SDK version is supported;
-    ///
-    /// Emits a log warning in case anything is amiss.
-    /// Exits early if any health check fails, without doing any
-    /// further checks.
-    pub fn health_checkup(&self) {
-        async fn do_health_checkup(chain: &CosmosSdkChain) -> Result<(), Error> {
-            let chain_id = chain.id();
-            let grpc_address = chain.grpc_addr.to_string();
-            let rpc_address = chain.config.rpc_addr.to_string();
-
-            // Checkup on the self-reported health endpoint
-            chain.rpc_client.health().await.map_err(|e| {
-                Error::health_check_json_rpc(
-                    chain_id.clone(),
-                    rpc_address.clone(),
-                    "/health".to_string(),
-                    e,
-                )
-            })?;
-
-            // Checkup on transaction indexing
-            chain
-                .rpc_client
-                .tx_search(
-                    Query::from(EventType::NewBlock),
-                    false,
-                    1,
-                    1,
-                    Order::Ascending,
-                )
-                .await
-                .map_err(|e| {
-                    Error::health_check_json_rpc(
-                        chain_id.clone(),
-                        rpc_address.clone(),
-                        "/tx_search".to_string(),
-                        e,
-                    )
-                })?;
-
-            // Construct a grpc client
-            let mut client = ServiceClient::connect(chain.grpc_addr.clone())
-                .await
-                .map_err(|e| {
-                    Error::health_check_grpc_transport(
-                        chain_id.clone(),
-                        rpc_address.clone(),
-                        "tendermint::ServiceClient".to_string(),
-                        e,
-                    )
-                })?;
-
-            let request = tonic::Request::new(GetNodeInfoRequest {});
-
-            let response = client.get_node_info(request).await.map_err(|e| {
-                Error::health_check_grpc_status(
-                    chain_id.clone(),
-                    rpc_address.clone(),
-                    "tendermint::ServiceClient".to_string(),
-                    e,
-                )
-            })?;
-
-            let version = response.into_inner().application_version.ok_or_else(|| {
-                Error::health_check_invalid_version(
-                    chain_id.clone(),
-                    rpc_address.clone(),
-                    "tendermint::GetNodeInfoRequest".to_string(),
-                )
-            })?;
-
-            // Checkup on the underlying SDK version
-            if let Some(diagnostic) = compatibility::run_diagnostic(version) {
-                return Err(Error::sdk_module_version(
-                    chain_id.clone(),
-                    grpc_address.clone(),
-                    diagnostic.to_string(),
-                ));
-            }
-
-            Ok(())
-        }
-
-        if let Err(e) = self.block_on(do_health_checkup(self)) {
-            warn!("Health checkup for chain '{}' failed", self.id());
-            warn!("    Reason: {}", e);
-            warn!("    Some Hermes features may not work in this mode!");
-        }
-    }
-
     /// Performs validation of chain-specific configuration
     /// parameters against the chain's genesis configuration.
     ///
@@ -221,37 +124,29 @@ impl CosmosSdkChain {
     ///
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
-    pub fn validate_params(&self) {
-        fn do_validate_params(chain: &CosmosSdkChain) -> Result<(), Error> {
-            // Check on the configured max_tx_size against genesis block max_bytes parameter
-            let genesis = chain.block_on(chain.rpc_client.genesis()).map_err(|e| {
-                Error::config_validation_json_rpc(
-                    chain.id().clone(),
-                    chain.config.rpc_addr.to_string(),
-                    "/genesis".to_string(),
-                    e,
-                )
-            })?;
+    pub fn validate_params(&self) -> Result<(), Error> {
+        // Check on the configured max_tx_size against genesis block max_bytes parameter
+        let genesis = self.block_on(self.rpc_client.genesis()).map_err(|e| {
+            Error::config_validation_json_rpc(
+                self.id().clone(),
+                self.config.rpc_addr.to_string(),
+                "/genesis".to_string(),
+                e,
+            )
+        })?;
 
-            let genesis_max_bound = genesis.consensus_params.block.max_bytes;
-            let max_allowed = mul_ceil(genesis_max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
+        let genesis_max_bound = genesis.consensus_params.block.max_bytes;
+        let max_allowed = mul_ceil(genesis_max_bound, GENESIS_MAX_BYTES_MAX_FRACTION) as usize;
 
-            if chain.max_tx_size() > max_allowed {
-                return Err(Error::config_validation_tx_size_out_of_bounds(
-                    chain.id().clone(),
-                    chain.max_tx_size(),
-                    genesis_max_bound,
-                ));
-            }
-
-            Ok(())
+        if self.max_tx_size() > max_allowed {
+            return Err(Error::config_validation_tx_size_out_of_bounds(
+                self.id().clone(),
+                self.max_tx_size(),
+                genesis_max_bound,
+            ));
         }
 
-        if let Err(e) = do_validate_params(self) {
-            warn!("Hermes might be misconfigured for chain '{}'", self.id());
-            warn!("    Reason: {}", e);
-            warn!("    Some Hermes features may not work in this mode!");
-        }
+        Ok(())
     }
 
     /// The unbonding period of this chain
@@ -737,9 +632,6 @@ impl ChainEndpoint for CosmosSdkChain {
             account: None,
         };
 
-        //chain.health_checkup();
-        //chain.validate_params();
-
         Ok(chain)
     }
 
@@ -793,6 +685,37 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn keybase_mut(&mut self) -> &mut KeyRing {
         &mut self.keybase
+    }
+
+    /// Does multiple RPC calls to the full node, to check for
+    /// reachability and some basic APIs are available.
+    ///
+    /// Currently this checks that:
+    ///     - the node responds OK to `/health` RPC call;
+    ///     - the node has transaction indexing enabled;
+    ///     - the SDK version is supported;
+    ///
+    /// Emits a log warning in case anything is amiss.
+    /// Exits early if any health check fails, without doing any
+    /// further checks.
+    fn health_check(&self) -> Result<HealthCheck, Error> {
+        if let Err(e) = self.block_on(do_health_check(self)) {
+            warn!("Health checkup for chain '{}' failed", self.id());
+            warn!("    Reason: {}", e);
+            warn!("    Some Hermes features may not work in this mode!");
+
+            return Ok(HealthCheck::Unhealthy(Box::new(e)));
+        }
+
+        if let Err(e) = self.validate_params() {
+            warn!("Hermes might be misconfigured for chain '{}'", self.id());
+            warn!("    Reason: {}", e);
+            warn!("    Some Hermes features may not work in this mode!");
+
+            return Ok(HealthCheck::Unhealthy(Box::new(e)));
+        }
+
+        Ok(HealthCheck::Healthy)
     }
 
     /// Send one or more transactions that include all the specified messages.
@@ -2026,6 +1949,84 @@ fn tx_body_and_bytes(proto_msgs: Vec<Any>) -> Result<(TxBody, Vec<u8>), Error> {
     let mut body_buf = Vec::new();
     prost::Message::encode(&body, &mut body_buf).unwrap();
     Ok((body, body_buf))
+}
+
+async fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
+    let chain_id = chain.id();
+    let grpc_address = chain.grpc_addr.to_string();
+    let rpc_address = chain.config.rpc_addr.to_string();
+
+    // Checkup on the self-reported health endpoint
+    chain.rpc_client.health().await.map_err(|e| {
+        Error::health_check_json_rpc(
+            chain_id.clone(),
+            rpc_address.clone(),
+            "/health".to_string(),
+            e,
+        )
+    })?;
+
+    // Checkup on transaction indexing
+    chain
+        .rpc_client
+        .tx_search(
+            Query::from(EventType::NewBlock),
+            false,
+            1,
+            1,
+            Order::Ascending,
+        )
+        .await
+        .map_err(|e| {
+            Error::health_check_json_rpc(
+                chain_id.clone(),
+                rpc_address.clone(),
+                "/tx_search".to_string(),
+                e,
+            )
+        })?;
+
+    // Construct a grpc client
+    let mut client = ServiceClient::connect(chain.grpc_addr.clone())
+        .await
+        .map_err(|e| {
+            Error::health_check_grpc_transport(
+                chain_id.clone(),
+                rpc_address.clone(),
+                "tendermint::ServiceClient".to_string(),
+                e,
+            )
+        })?;
+
+    let request = tonic::Request::new(GetNodeInfoRequest {});
+
+    let response = client.get_node_info(request).await.map_err(|e| {
+        Error::health_check_grpc_status(
+            chain_id.clone(),
+            rpc_address.clone(),
+            "tendermint::ServiceClient".to_string(),
+            e,
+        )
+    })?;
+
+    let version = response.into_inner().application_version.ok_or_else(|| {
+        Error::health_check_invalid_version(
+            chain_id.clone(),
+            rpc_address.clone(),
+            "tendermint::GetNodeInfoRequest".to_string(),
+        )
+    })?;
+
+    // Checkup on the underlying SDK version
+    if let Some(diagnostic) = compatibility::run_diagnostic(version) {
+        return Err(Error::sdk_module_version(
+            chain_id.clone(),
+            grpc_address.clone(),
+            diagnostic.to_string(),
+        ));
+    }
+
+    Ok(())
 }
 
 fn calculate_fee(adjusted_gas_amount: u64, gas_price: &GasPrice) -> Coin {

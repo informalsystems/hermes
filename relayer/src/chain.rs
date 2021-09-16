@@ -50,6 +50,13 @@ pub mod runtime;
 #[cfg(test)]
 pub mod mock;
 
+/// The result of a health check.
+#[derive(Debug)]
+pub enum HealthCheck {
+    Healthy,
+    Unhealthy(Box<Error>),
+}
+
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
 #[derive(Clone, Debug, PartialEq)]
@@ -96,10 +103,14 @@ pub trait ChainEndpoint: Sized {
         rt: Arc<TokioRuntime>,
     ) -> Result<(EventReceiver, TxMonitorCmd), Error>;
 
-    fn shutdown(self) -> Result<(), Error>;
-
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;
+
+    /// Shutdown the chain runtime
+    fn shutdown(self) -> Result<(), Error>;
+
+    /// Perform a health check
+    fn health_check(&self) -> Result<HealthCheck, Error>;
 
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
