@@ -4,22 +4,22 @@
 
 // Import the crates that we want to check if they are fully no-std compliance
 
-#[cfg(feature = "ibc")]
-use ibc;
+// #[cfg(feature = "ibc")]
+// use ibc;
 
-#[cfg(feature = "ibc_proto")]
-use ibc_proto;
+// #[cfg(feature = "ibc_proto")]
+// use ibc_proto;
 
-#[cfg(feature = "sp_core")]
+#[cfg(feature = "sp-core")]
 use sp_core;
 
-#[cfg(feature = "sp_io")]
+#[cfg(feature = "sp-io")]
 use sp_io;
 
-#[cfg(feature = "sp_runtime")]
+#[cfg(feature = "sp-runtime")]
 use sp_runtime;
 
-#[cfg(feature = "sp_std")]
+#[cfg(feature = "sp-std")]
 use sp_std;
 
 // Supported Imports
@@ -46,6 +46,8 @@ use serde_bytes;
 use serde_derive;
 use serde_json;
 use serde_repr;
+use serde_cbor;
+use serde_json_core;
 use sha2;
 use signature;
 use static_assertions;
@@ -57,23 +59,17 @@ use zeroize;
 
 // Unsupported Imports
 
-#[cfg(feature = "serde_cbor")]
-use serde_cbor;
-
-#[cfg(feature = "serde_json_core")]
-use serde_json_core;
-
 #[cfg(feature = "tonic")]
 use tonic;
 
 #[cfg(feature = "socket2")]
 use socket2;
 
-#[cfg(feature = "getrandom")]
-use getrandom;
-
 #[cfg(feature = "ics23")]
 use ics23;
+
+#[cfg(feature = "getrandom")]
+use getrandom;
 
 #[cfg(feature = "thiserror")]
 use thiserror;

@@ -23,5 +23,6 @@ check-wasm:
 check-substrate:
 	rustup run $(NIGHTLY_VERSION) -- \
 		cargo build \
+		--no-default-features \
 		--features use-unsupported,use-substrate \
 		--target wasm32-unknown-unknown
