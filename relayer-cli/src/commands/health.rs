@@ -29,7 +29,7 @@ impl Runnable for HealthCheckCmd {
                 Some(chain_config) => chain_config,
             };
 
-            info!("Performing health check on chain {:?}...", ch.id);
+            info!("[{}] performing health check...", ch.id);
 
             let chain = CosmosSdkChain::bootstrap(chain_config.clone(), rt).unwrap();
             match chain.health_check() {
@@ -38,7 +38,7 @@ impl Runnable for HealthCheckCmd {
                 Err(e) => error!("[{}] failed to perform health check: {}", ch.id, e),
             }
         }
-        info!("Hermes executed a health check for all chains in the config");
-        Output::success_msg("done").exit()
+
+        Output::success_msg("performed health check for all chains in the config").exit()
     }
 }
