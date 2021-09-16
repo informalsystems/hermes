@@ -125,7 +125,7 @@ impl CosmosSdkChain {
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
-        // Check on the configured max_tx_size against genesis block max_bytes parameter
+        // Check on the configured max_tx_size against the latest block's consensus parameters
         let result = self
             .block_on(self.rpc_client.consensus_params::<u32>(None))
             .map_err(|e| {
