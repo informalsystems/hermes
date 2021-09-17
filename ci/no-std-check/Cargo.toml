@@ -74,16 +74,16 @@ use-substrate = [
 ]
 
 use-unsupported = [
-  # "tonic",
-  # "socket2",
-  # "getrandom",
-  # "ics23",
-  # "thiserror",
-  # "regex",
-  # "sled",
-  # "tokio",
-  # "toml",
-  # "url",
+  "tonic",
+  "socket2",
+  "getrandom",
+  "ics23",
+  "thiserror",
+  "regex",
+  "sled",
+  "tokio",
+  "toml",
+  "url",
 ]
 
 [profile.dev]
