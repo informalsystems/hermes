@@ -1,4 +1,5 @@
-use std::{cmp::Ordering, sync::Arc};
+use alloc::sync::Arc;
+use core::cmp::Ordering;
 
 use crossbeam_channel as channel;
 use flex_error::{define_error, TraceError};
@@ -12,11 +13,9 @@ use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, trace};
 
 use tendermint_rpc::{
-    error::Code,
     event::Event as RpcEvent,
     query::{EventType, Query},
-    Error as RpcError, Result as RpcResult, SubscriptionClient, Url, WebSocketClient,
-    WebSocketClientDriver,
+    Error as RpcError, SubscriptionClient, Url, WebSocketClient, WebSocketClientDriver,
 };
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
@@ -28,8 +27,8 @@ use crate::util::{
 
 mod retry_strategy {
     use crate::util::retry::clamp_total;
+    use core::time::Duration;
     use retry::delay::Fibonacci;
-    use std::time::Duration;
 
     // Default parameters for the retrying mechanism
     const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
@@ -87,8 +86,10 @@ define_error! {
 
 impl Error {
     fn canceled_or_generic(e: RpcError) -> Self {
-        match (e.code(), e.data()) {
-            (Code::ServerError, Some(msg)) if msg.contains("subscription was cancelled") => {
+        use tendermint_rpc::error::ErrorDetail;
+
+        match e.detail() {
+            ErrorDetail::Server(detail) if detail.reason.contains("subscription was cancelled") => {
                 Self::subscription_cancelled(e)
             }
             _ => Self::rpc(e),
@@ -96,7 +97,7 @@ impl Error {
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -106,7 +107,7 @@ pub struct EventBatch {
     pub events: Vec<IbcEvent>,
 }
 
-type SubscriptionResult = RpcResult<RpcEvent>;
+type SubscriptionResult = core::result::Result<RpcEvent, RpcError>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
 pub type EventSender = channel::Sender<Result<EventBatch>>;
@@ -247,8 +248,8 @@ impl EventMonitor {
 
         // Swap the new client with the previous one which failed,
         // so that we can shut the latter down gracefully.
-        std::mem::swap(&mut self.client, &mut client);
-        std::mem::swap(&mut self.driver_handle, &mut driver_handle);
+        core::mem::swap(&mut self.client, &mut client);
+        core::mem::swap(&mut self.driver_handle, &mut driver_handle);
 
         trace!(
             "[{}] reconnected to WebSocket endpoint {}",
@@ -345,7 +346,7 @@ impl EventMonitor {
     fn run_loop(&mut self) -> Next {
         // Take ownership of the subscriptions
         let subscriptions =
-            std::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
+            core::mem::replace(&mut self.subscriptions, Box::new(futures::stream::empty()));
 
         // Convert the stream of RPC events into a stream of event batches.
         let batches = stream_batches(subscriptions, self.chain_id.clone());

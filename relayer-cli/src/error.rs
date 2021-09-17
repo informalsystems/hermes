@@ -1,4 +1,4 @@
-use flex_error::{define_error, DisplayOnly};
+use flex_error::define_error;
 use ibc::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::channel::ChannelError;
@@ -30,7 +30,7 @@ define_error! {
 
         InvalidHash
             { hash: String }
-            [ DisplayOnly<Box<dyn std::error::Error>> ]
+            [ tendermint::Error ]
             | e | {
                 format_args!("CLI argument error: could not parse '{}' into a valid hash",
                     e.hash)
