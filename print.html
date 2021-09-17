@@ -207,7 +207,7 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 <blockquote>
 <p><strong>Cosmos SDK compatibility:</strong>
 Hermes supports Cosmos SDK chains implementing the <a href="https://github.com/cosmos/ibc-go/tree/main/proto/ibc">IBC v1.0</a> protocol specification.
-Cosmos SDK versions <code>0.41.3</code> to <code>0.42.9</code> are officially supported.
+Cosmos SDK versions <code>0.41.3</code> to <code>0.44.0</code> are officially supported.
 In case Hermes finds an incompatible SDK version, it will output a log warning.</p>
 </blockquote>
 <h2 id="supported-features"><a class="header" href="#supported-features">Supported Features</a></h2>
@@ -1194,6 +1194,20 @@ account_prefix = 'cosmos'
 #   https://hermes.informal.systems/commands/keys/index.html#adding-keys
 key_name = 'testkey'
 
+# Specify the address type which determines:
+# 1) address derivation;
+# 2) how to retrieve and decode accounts and pubkeys;
+# 3) the message signing method.
+# The current configuration options are for Cosmos SDK and Ethermint.
+#
+# Example configuration for Ethermint:
+#
+# address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
+#
+# Default: { derivation = 'cosmos' }, i.e. address derivation as in Cosmos SDK
+# Warning: This is an advanced feature! Modify with caution.
+address_type = { derivation = 'cosmos' }
+
 # Specify the store prefix used by the on-chain IBC modules. Required
 # Recommended value for Cosmos SDK: 'ibc'
 store_prefix = 'ibc'
@@ -1272,6 +1286,7 @@ max_tx_size = 2097152
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
+address_type = { derivation = 'cosmos' }
 </code></pre>
 <h4 id="saving-the-configuration-file"><a class="header" href="#saving-the-configuration-file">Saving the configuration file</a></h4>
 <h5 id="create-the-configtoml-file"><a class="header" href="#create-the-configtoml-file">Create the config.toml file</a></h5>
