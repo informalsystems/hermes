@@ -496,19 +496,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossbeam-epoch"
-version = "0.9.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ec02e091aa634e2c3ada4a392989e7c3116673ef0ac5b72232439094d73b7fd"
-dependencies = [
- "cfg-if 1.0.0",
- "crossbeam-utils 0.8.5",
- "lazy_static",
- "memoffset",
- "scopeguard",
-]
-
-[[package]]
 name = "crossbeam-utils"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -537,9 +524,9 @@ checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43b0ca41e2a75a407a44812f110ecd40e1efacb8993f612746491e12d5b929fe"
+checksum = "51e7ef8604ba15f1ea2cef61e17577e630ee39aef7f94305d138dbf1a216ada3"
 dependencies = [
  "generic-array",
  "rand_core 0.6.3",
@@ -851,16 +838,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fs2"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
-dependencies = [
- "libc",
- "winapi",
-]
-
-[[package]]
 name = "funty"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -958,15 +935,6 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro-nested",
  "slab",
-]
-
-[[package]]
-name = "fxhash"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
-dependencies = [
- "byteorder",
 ]
 
 [[package]]
@@ -1240,9 +1208,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.12"
+version = "0.14.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13f67199e765030fa08fe0bd581af683f0d5bc04ea09c2b1102012c5fb90e7fd"
+checksum = "15d1cfb9e4f68655fa04c01f59edb405b6074a0f7118ea881e5026e4a1cd8593"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1336,7 +1304,7 @@ dependencies = [
  "test-env-log",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.2.22",
+ "tracing-subscriber 0.2.23",
 ]
 
 [[package]]
@@ -1388,7 +1356,6 @@ dependencies = [
  "serial_test",
  "sha2",
  "signature",
- "sled",
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client",
@@ -1403,7 +1370,7 @@ dependencies = [
  "toml",
  "tonic",
  "tracing",
- "tracing-subscriber 0.2.22",
+ "tracing-subscriber 0.2.23",
  "uint",
 ]
 
@@ -1435,7 +1402,6 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "signal-hook 0.3.10",
- "sled",
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client",
@@ -1444,7 +1410,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "tracing-subscriber 0.2.22",
+ "tracing-subscriber 0.2.23",
 ]
 
 [[package]]
@@ -1663,15 +1629,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
 
 [[package]]
-name = "memoffset"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9"
-dependencies = [
- "autocfg",
-]
-
-[[package]]
 name = "mime"
 version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1734,7 +1691,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.2.22",
+ "tracing-subscriber 0.2.23",
  "ureq",
 ]
 
@@ -2807,22 +2764,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c307a32c1c5c437f38c7fd45d753050587732ba8628319fbdf12a7e289ccc590"
 
 [[package]]
-name = "sled"
-version = "0.34.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f96b4737c2ce5987354855aed3797279def4ebf734436c6aa4552cf8e169935"
-dependencies = [
- "crc32fast",
- "crossbeam-epoch",
- "crossbeam-utils 0.8.5",
- "fs2",
- "fxhash",
- "libc",
- "log",
- "parking_lot",
-]
-
-[[package]]
 name = "smallvec"
 version = "0.6.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2947,7 +2888,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#086acc8f98e9d95cfeb45c7f31b0fe69d629786a"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2980,7 +2921,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#086acc8f98e9d95cfeb45c7f31b0fe69d629786a"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -2999,7 +2940,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#086acc8f98e9d95cfeb45c7f31b0fe69d629786a"
 dependencies = [
  "bytes",
  "chrono",
@@ -3016,7 +2957,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#086acc8f98e9d95cfeb45c7f31b0fe69d629786a"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3048,7 +2989,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#51e5646e39cf1c9ac8f70ca835fc4105f9febb28"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#086acc8f98e9d95cfeb45c7f31b0fe69d629786a"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",
@@ -3390,7 +3331,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4d7c0b83d4a500748fa5879461652b361edf5c9d51ede2a2ac03875ca185e24"
 dependencies = [
  "tracing",
- "tracing-subscriber 0.2.22",
+ "tracing-subscriber 0.2.23",
 ]
 
 [[package]]
@@ -3443,9 +3384,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.22"
+version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62af966210b88ad5776ee3ba12d5f35b8d6a2b2a12168f3080cf02b814d7376b"
+checksum = "56c42e73a9d277d4d2b6a88389a137ccf3c58599660b17e8f5fc39305e490669"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",
@@ -3553,9 +3494,9 @@ checksum = "8895849a949e7845e06bd6dc1aa51731a103c42707010a5b591c0038fb73385b"
 
 [[package]]
 name = "unicode-width"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9337591893a19b88d8d87f2cec1e73fad5cdfd10e5a6f349f498ad6ea2ffb1e3"
+checksum = "3ed742d4ea2bd1176e236172c8429aaf54486e7ac098db29ffe6529e0ce50973"
 
 [[package]]
 name = "unicode-xid"
