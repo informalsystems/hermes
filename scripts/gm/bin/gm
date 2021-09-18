@@ -12,8 +12,8 @@ if [ -f "$LOCAL_LIB_GM" ]; then
   . "$LOCAL_LIB_GM"
 elif [ -f "$HOME/.gm/bin/lib-gm" ]; then
   . "$HOME/.gm/bin/lib-gm"
-elif [ -f "$LIB_GM_PATH" ]; then
-  . "$HOME"
+elif [ -f "$LIB_GM_PATH/lib-gm" ]; then
+  . "$LIB_GM_PATH/lib-gm"
 else
   echo "ERROR: could not find lib-gm, exiting..."
   exit 1
