@@ -7,6 +7,7 @@ set -eu
 SCRIPT_0="${0:-$HOME/.gm/bin/gm}"
 export SCRIPT_DIR="${SCRIPT_0%%gm}"
 export LOCAL_LIB_GM="${SCRIPT_DIR}lib-gm"
+echo $LIB_GM_PATH
 if [ -f "$LOCAL_LIB_GM" ]; then
   . "$LOCAL_LIB_GM"
 elif [ -f "$HOME/.gm/bin/lib-gm" ]; then
