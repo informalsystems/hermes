@@ -7,6 +7,7 @@ SCRIPT_0="${0:-$HOME/.gm/bin/gm}"
 export SCRIPT_DIR="${SCRIPT_0%%gm}"
 export LOCAL_LIB_GM="${SCRIPT_DIR}lib-gm"
 if [ -f "$LOCAL_LIB_GM" ]; then
+  # shellcheck disable=SC1090
   . "$LOCAL_LIB_GM"
 elif [ -f "$HOME/.gm/bin/lib-gm" ]; then
   . "$HOME/.gm/bin/lib-gm"
@@ -173,8 +174,7 @@ case "${1:-help}" in
     ;;
   ss)
     # For debug purposes
-    # Todo: either make this a supported command or remove it
-    lsof -i4:27000-28000 -P
+    (which lsof && lsof -i:27000-28000 -P) || (which ss && ss -tulpn sport '>=' :27000 '&&' sport '<=' :28000) || (which netstat && netstat -tulpn) || echo "ERROR: no app found to list open ports"
     ;;
   start)
     parse_config_file

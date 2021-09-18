@@ -1,5 +1,13 @@
 # Gaiad Manager Change Log
 
+## v0.0.9
+
+### FEATURES
+- Binaries in the config can be defined as URLs now.
+
+### BUGFIXES
+- Fixed debug messages not printing to stdout properly.
+
 ## v0.0.8
 
 ### BUGFIXES
