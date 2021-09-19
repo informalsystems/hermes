@@ -703,7 +703,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn health_check(&self) -> Result<HealthCheck, Error> {
         if let Err(e) = self.block_on(do_health_check(self)) {
             warn!("Health checkup for chain '{}' failed", self.id());
-            warn!("    Reason: {}", e);
+            warn!("    Reason: {}", e.detail());
             warn!("    Some Hermes features may not work in this mode!");
 
             return Ok(HealthCheck::Unhealthy(Box::new(e)));
@@ -711,7 +711,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         if let Err(e) = self.validate_params() {
             warn!("Hermes might be misconfigured for chain '{}'", self.id());
-            warn!("    Reason: {}", e);
+            warn!("    Reason: {}", e.detail());
             warn!("    Some Hermes features may not work in this mode!");
 
             return Ok(HealthCheck::Unhealthy(Box::new(e)));
