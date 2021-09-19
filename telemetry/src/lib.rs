@@ -17,7 +17,7 @@ pub fn new_state() -> Arc<TelemetryState> {
     Arc::new(TelemetryState::default())
 }
 
-static GLOBAL_STATE: once_cell::sync::Lazy<Arc<TelemetryState>> = Lazy::new(new_state);
+static GLOBAL_STATE: Lazy<Arc<TelemetryState>> = Lazy::new(new_state);
 
 pub fn global() -> &'static Arc<TelemetryState> {
     &GLOBAL_STATE
