@@ -21,7 +21,7 @@ pub type Telemetry = TelemetryDisabled;
 /// ## Example
 ///
 /// ```rust,ignore
-/// telemetry!(self.telemetry.tx_count(1));
+/// telemetry!(ibc_telemetry::global().tx_count(1));
 /// ```
 #[macro_export]
 macro_rules! telemetry {

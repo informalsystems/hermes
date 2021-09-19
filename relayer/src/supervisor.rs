@@ -22,7 +22,6 @@ use crate::{
     object::Object,
     registry::Registry,
     rest,
-    telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
@@ -61,9 +60,6 @@ pub struct Supervisor<Chain: ChainHandle> {
     worker_msg_rx: Receiver<WorkerMsg>,
     rest_rx: Option<rest::Receiver>,
     client_state_filter: FilterPolicy,
-
-    #[allow(dead_code)]
-    telemetry: Telemetry,
 }
 
 impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
@@ -71,11 +67,10 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     pub fn new(
         config: RwArc<Config>,
         rest_rx: Option<rest::Receiver>,
-        telemetry: Telemetry,
     ) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
-        let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
+        let workers = WorkerMap::new(worker_msg_tx);
         let client_state_filter = FilterPolicy::default();
 
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
@@ -88,7 +83,6 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             worker_msg_rx,
             rest_rx,
             client_state_filter,
-            telemetry,
         };
 
         (supervisor, cmd_tx)

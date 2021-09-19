@@ -11,7 +11,6 @@ use crate::{
     foreign_client::{ForeignClient, ForeignClientErrorDetail, MisbehaviourResults},
     object::Client,
     telemetry,
-    telemetry::Telemetry,
 };
 
 use super::error::RunError;
@@ -21,9 +20,6 @@ pub struct ClientWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     client: Client,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-
-    #[allow(dead_code)]
-    telemetry: Telemetry,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
@@ -31,13 +27,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         client: Client,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: Telemetry,
     ) -> Self {
         Self {
             client,
             chains,
             cmd_rx,
-            telemetry,
         }
     }
 
@@ -64,7 +58,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
             match client.refresh() {
                 Ok(Some(_)) => {
                     telemetry! {
-                        self.telemetry.ibc_client_update(
+                        ibc_telemetry::global().ibc_client_update(
                             &self.client.dst_chain_id,
                             &self.client.dst_client_id,
                             1
@@ -111,7 +105,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
                         // iteration with frozen client
                         if self.detect_misbehaviour(client, Some(update)) {
                             telemetry! {
-                                self.telemetry.ibc_client_misbehaviour(
+                                ibc_telemetry::global().ibc_client_misbehaviour(
                                     &self.client.dst_chain_id,
                                     &self.client.dst_client_id,
                                     1
