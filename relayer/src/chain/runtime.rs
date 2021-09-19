@@ -55,7 +55,7 @@ use crate::{
 
 use super::{
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
-    ChainEndpoint,
+    ChainEndpoint, HealthCheck,
 };
 
 pub struct Threads {
@@ -195,6 +195,10 @@ where
 
                             break;
                         }
+
+                        Ok(ChainRequest::HealthCheck { reply_to }) => {
+                            self.health_check(reply_to)?
+                        },
 
                         Ok(ChainRequest::Subscribe { reply_to }) => {
                             self.subscribe(reply_to)?
@@ -357,12 +361,14 @@ where
         Ok(())
     }
 
+    fn health_check(&mut self, reply_to: ReplyTo<HealthCheck>) -> Result<(), Error> {
+        let result = self.chain.health_check();
+        reply_to.send(result).map_err(Error::send)
+    }
+
     fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
         let subscription = self.event_bus.subscribe();
-
-        reply_to.send(Ok(subscription)).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(Ok(subscription)).map_err(Error::send)
     }
 
     fn send_messages_and_wait_commit(
@@ -371,10 +377,7 @@ where
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_commit(proto_msgs);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn send_messages_and_wait_check_tx(
@@ -383,42 +386,27 @@ where
         reply_to: ReplyTo<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_check_tx(proto_msgs);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_latest_height(&self, reply_to: ReplyTo<Height>) -> Result<(), Error> {
         let latest_height = self.chain.query_latest_height();
-
-        reply_to.send(latest_height).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(latest_height).map_err(Error::send)
     }
 
     fn get_signer(&mut self, reply_to: ReplyTo<Signer>) -> Result<(), Error> {
         let result = self.chain.get_signer();
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn get_key(&mut self, reply_to: ReplyTo<KeyEntry>) -> Result<(), Error> {
         let result = self.chain.get_key();
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn module_version(&self, port_id: PortId, reply_to: ReplyTo<String>) -> Result<(), Error> {
         let result = self.chain.query_module_version(&port_id);
-
-        reply_to.send(Ok(result)).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(Ok(result)).map_err(Error::send)
     }
 
     fn build_header(
@@ -442,9 +430,7 @@ where
                 (header, support)
             });
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     /// Constructs a client state for the given height
@@ -458,9 +444,7 @@ where
             .build_client_state(height)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(client_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(client_state).map_err(Error::send)
     }
 
     /// Constructs a consensus state for the given height
@@ -478,9 +462,7 @@ where
             .build_consensus_state(verified.target)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(consensus_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_state).map_err(Error::send)
     }
 
     /// Constructs AnyMisbehaviour for the update event
@@ -494,9 +476,7 @@ where
             .light_client
             .check_misbehaviour(update_event, &client_state);
 
-        reply_to.send(misbehaviour).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(misbehaviour).map_err(Error::send)
     }
 
     fn build_connection_proofs_and_client_state(
@@ -517,9 +497,7 @@ where
         let result = result
             .map(|(opt_client_state, proofs)| (opt_client_state.map(|cs| cs.wrap_any()), proofs));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_clients(
@@ -528,10 +506,7 @@ where
         reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_clients(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_client_connections(
@@ -540,10 +515,7 @@ where
         reply_to: ReplyTo<Vec<ConnectionId>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_client_connections(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_client_state(
@@ -557,9 +529,7 @@ where
             .query_client_state(&client_id, height)
             .map(|cs| cs.wrap_any());
 
-        reply_to.send(client_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(client_state).map_err(Error::send)
     }
 
     fn query_upgraded_client_state(
@@ -572,9 +542,7 @@ where
             .query_upgraded_client_state(height)
             .map(|(cl, proof)| (cl.wrap_any(), proof));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_consensus_states(
@@ -583,10 +551,7 @@ where
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
     ) -> Result<(), Error> {
         let consensus_states = self.chain.query_consensus_states(request);
-
-        reply_to.send(consensus_states).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_states).map_err(Error::send)
     }
 
     fn query_consensus_state(
@@ -600,9 +565,7 @@ where
             self.chain
                 .query_consensus_state(client_id, consensus_height, query_height);
 
-        reply_to.send(consensus_state).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(consensus_state).map_err(Error::send)
     }
 
     fn query_upgraded_consensus_state(
@@ -615,25 +578,17 @@ where
             .query_upgraded_consensus_state(height)
             .map(|(cs, proof)| (cs.wrap_any(), proof));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_commitment_prefix(&self, reply_to: ReplyTo<CommitmentPrefix>) -> Result<(), Error> {
         let prefix = self.chain.query_commitment_prefix();
-
-        reply_to.send(prefix).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(prefix).map_err(Error::send)
     }
 
     fn query_compatible_versions(&self, reply_to: ReplyTo<Vec<Version>>) -> Result<(), Error> {
         let versions = self.chain.query_compatible_versions();
-
-        reply_to.send(versions).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(versions).map_err(Error::send)
     }
 
     fn query_connection(
@@ -643,10 +598,7 @@ where
         reply_to: ReplyTo<ConnectionEnd>,
     ) -> Result<(), Error> {
         let connection_end = self.chain.query_connection(&connection_id, height);
-
-        reply_to.send(connection_end).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(connection_end).map_err(Error::send)
     }
 
     fn query_connections(
@@ -655,10 +607,7 @@ where
         reply_to: ReplyTo<Vec<IdentifiedConnectionEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_connections(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_connection_channels(
@@ -667,10 +616,7 @@ where
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_connection_channels(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channels(
@@ -679,10 +625,7 @@ where
         reply_to: ReplyTo<Vec<IdentifiedChannelEnd>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channels(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channel(
@@ -693,10 +636,7 @@ where
         reply_to: ReplyTo<ChannelEnd>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel(&port_id, &channel_id, height);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_channel_client_state(
@@ -705,10 +645,7 @@ where
         reply_to: ReplyTo<Option<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_channel_client_state(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_client_state(
@@ -722,9 +659,7 @@ where
             .proven_client_state(&client_id, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_connection(
@@ -734,10 +669,7 @@ where
         reply_to: ReplyTo<(ConnectionEnd, MerkleProof)>,
     ) -> Result<(), Error> {
         let result = self.chain.proven_connection(&connection_id, height);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn proven_client_consensus(
@@ -752,9 +684,7 @@ where
             .proven_client_consensus(&client_id, consensus_height, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn build_channel_proofs(
@@ -768,9 +698,7 @@ where
             .chain
             .build_channel_proofs(&port_id, &channel_id, height);
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn build_packet_proofs(
@@ -786,9 +714,7 @@ where
             self.chain
                 .build_packet_proofs(packet_type, port_id, channel_id, sequence, height);
 
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_packet_commitments(
@@ -797,10 +723,7 @@ where
         reply_to: ReplyTo<(Vec<PacketState>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_commitments(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_unreceived_packets(
@@ -809,10 +732,7 @@ where
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_packet_acknowledgements(
@@ -821,10 +741,7 @@ where
         reply_to: ReplyTo<(Vec<PacketState>, Height)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_packet_acknowledgements(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_unreceived_acknowledgement(
@@ -833,10 +750,7 @@ where
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_acknowledgements(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_next_sequence_receive(
@@ -845,10 +759,7 @@ where
         reply_to: ReplyTo<Sequence>,
     ) -> Result<(), Error> {
         let result = self.chain.query_next_sequence_receive(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 
     fn query_txs(
@@ -857,9 +768,6 @@ where
         reply_to: ReplyTo<Vec<IbcEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
-
-        reply_to.send(result).map_err(Error::send)?;
-
-        Ok(())
+        reply_to.send(result).map_err(Error::send)
     }
 }
