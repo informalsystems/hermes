@@ -2,8 +2,7 @@
 
 set -eu
 
-# Load lib-gm either from the local folder or from the global $HOME/.gm/bin/lib-gm or finally from an absolute path set
-# as an environment variable
+# Load lib-gm either from the local folder or from the global $HOME/.gm/bin/lib-gm
 SCRIPT_0="${0:-$HOME/.gm/bin/gm}"
 export SCRIPT_DIR="${SCRIPT_0%%gm}"
 export LOCAL_LIB_GM="${SCRIPT_DIR}lib-gm"
@@ -11,8 +10,8 @@ if [ -f "$LOCAL_LIB_GM" ]; then
   . "$LOCAL_LIB_GM"
 elif [ -f "$HOME/.gm/bin/lib-gm" ]; then
   . "$HOME/.gm/bin/lib-gm"
-elif [ -f "$LIB_GM_PATH/lib-gm" ]; then
-  . "$LIB_GM_PATH/lib-gm"
+elif [ -f "${LIB_GM-:}" ]; then
+  . "$LIB_GM"
 else
   echo "ERROR: could not find lib-gm, exiting..."
   exit 1
