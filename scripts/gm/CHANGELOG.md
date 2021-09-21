@@ -1,5 +1,10 @@
 # Gaiad Manager Change Log
 
+## v0.0.9
+
+### FEATURES
+- Add the option to set gm-lib path via the $GM_LIB environment variable ([#1365])
+
 ## v0.0.8
 
 ### BUGFIXES
