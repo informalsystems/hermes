@@ -10,7 +10,7 @@ if [ -f "$LOCAL_LIB_GM" ]; then
   . "$LOCAL_LIB_GM"
 elif [ -f "$HOME/.gm/bin/lib-gm" ]; then
   . "$HOME/.gm/bin/lib-gm"
-elif [ -f "${LIB_GM-:}" ]; then
+elif [ -f "${LIB_GM:-}" ]; then
   . "$LIB_GM"
 else
   echo "ERROR: could not find lib-gm, exiting..."
