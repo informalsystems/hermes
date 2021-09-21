@@ -4,6 +4,7 @@ pub mod server;
 pub mod state;
 
 use alloc::sync::Arc;
+use once_cell::sync::Lazy;
 use std::{
     error::Error,
     net::{SocketAddr, ToSocketAddrs},
@@ -14,6 +15,12 @@ pub use crate::state::TelemetryState;
 
 pub fn new_state() -> Arc<TelemetryState> {
     Arc::new(TelemetryState::default())
+}
+
+static GLOBAL_STATE: Lazy<Arc<TelemetryState>> = Lazy::new(new_state);
+
+pub fn global() -> &'static Arc<TelemetryState> {
+    &GLOBAL_STATE
 }
 
 pub fn spawn<A>(

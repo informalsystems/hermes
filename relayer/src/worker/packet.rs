@@ -8,7 +8,6 @@ use crate::{
     link::{Link, LinkParameters, RelaySummary},
     object::Packet,
     telemetry,
-    telemetry::Telemetry,
     util::retry::{retry_with_index, RetryResult},
     worker::retry_strategy,
 };
@@ -26,7 +25,6 @@ pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     path: Packet,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-    telemetry: Telemetry,
     clear_packets_interval: u64,
 }
 
@@ -35,14 +33,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         path: Packet,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: Telemetry,
         clear_packets_interval: u64,
     ) -> Self {
         Self {
             path,
             chains,
             cmd_rx,
-            telemetry,
             clear_packets_interval,
         }
     }
@@ -196,12 +192,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             .filter(|e| matches!(e, WriteAcknowledgement(_)))
             .count();
 
-        self.telemetry.ibc_receive_packets(
+        telemetry!(
+            ibc_receive_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 
     #[cfg(feature = "telemetry")]
@@ -214,12 +211,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             .filter(|e| matches!(e, AcknowledgePacket(_)))
             .count();
 
-        self.telemetry.ibc_acknowledgment_packets(
+        telemetry!(
+            ibc_acknowledgment_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 
     #[cfg(feature = "telemetry")]
@@ -231,11 +229,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             .filter(|e| matches!(e, TimeoutPacket(_)))
             .count();
 
-        self.telemetry.ibc_timeout_packets(
+        telemetry!(
+            ibc_timeout_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 }
