@@ -4,6 +4,7 @@
 
 ### FEATURES
 - Binaries in the config can be defined as URLs now.
+- Added LIB_GM to enable storing `lib-gm` separately for nix compatibility. (by @JonathanLorimer) [#1363]
 
 ### BUGFIXES
 - Fixed debug messages not printing to stdout properly.
@@ -15,6 +16,7 @@
 - Bumped default rpc_timeout in Hermes config to 5s ([#1312])
 
 [#1312]: https://github.com/informalsystems/ibc-rs/issues/1312
+[#1363]: https://github.com/informalsystems/ibc-rs/issues/1363
 
 ## v0.0.7
 

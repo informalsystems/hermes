@@ -5,7 +5,12 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  echo "v0.0.9"
+  VERSION="v0.0.9"
+  if [ "$OUTPUT" == "json" ]; then
+    printf '{"status": "success", "message": "%s"}' "$VERSION"
+  else
+    echo "$VERSION"
+  fi
 }
 
 # Configuration Management
@@ -274,7 +279,11 @@ warn_unknown_hermes_node() {
 }
 
 exit_with_error() {
-  echo "ERROR: $*, exiting..."
+  if [ "${OUTPUT:-}" == "json" ]; then
+    printf '{"status": "error", "message": "%s"}' "$*"
+  else
+    echo "ERROR: $*, exiting..."
+  fi
   return 1
 }
 
