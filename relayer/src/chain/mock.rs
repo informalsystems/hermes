@@ -1,6 +1,6 @@
-use std::ops::Add;
-use std::sync::Arc;
-use std::time::Duration;
+use alloc::sync::Arc;
+use core::ops::Add;
+use core::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
@@ -45,6 +45,8 @@ use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+
+use super::HealthCheck;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -95,6 +97,10 @@ impl ChainEndpoint for MockChain {
 
     fn id(&self) -> &ChainId {
         &self.config.id
+    }
+
+    fn health_check(&self) -> Result<HealthCheck, Error> {
+        Ok(HealthCheck::Healthy)
     }
 
     fn shutdown(self) -> Result<(), Error> {
@@ -396,8 +402,8 @@ impl ChainEndpoint for MockChain {
 // For integration tests with the modules
 #[cfg(test)]
 pub mod test_utils {
-    use std::str::FromStr;
-    use std::time::Duration;
+    use core::str::FromStr;
+    use core::time::Duration;
 
     use ibc::ics24_host::identifier::ChainId;
 

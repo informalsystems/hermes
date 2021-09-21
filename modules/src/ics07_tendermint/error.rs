@@ -1,5 +1,8 @@
+use crate::prelude::*;
+
+use flex_error::{define_error, TraceError};
+
 use crate::ics24_host::error::ValidationError;
-use flex_error::{define_error, DisplayOnly, TraceError};
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -17,7 +20,7 @@ define_error! {
 
         InvalidHeader
             { reason: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ tendermint::Error ]
             | _ | { "invalid header, failed basic validation" },
 
         InvalidTrustThreshold
@@ -88,7 +91,7 @@ define_error! {
             | _ | { "invalid raw client consensus state" },
 
         InvalidRawHeader
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ tendermint::Error ]
             | _ | { "invalid raw header" },
 
         InvalidRawMisbehaviour

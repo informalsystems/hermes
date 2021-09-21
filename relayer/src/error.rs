@@ -120,14 +120,10 @@ define_error! {
             |e| { format!("node at {} running chain {} not caught up", e.address, e.chain_id) },
 
         PrivateStore
-            |_| { "requested proof for a path in the private store" },
-
-        Store
-            [ TraceError<sled::Error> ]
-            |_| { "Store error" },
+            |_| { "Requested proof for a path in the private store" },
 
         Event
-            |_| { "Bad Notification" },
+            |_| { "Bad notification" },
 
         ConversionFromAny
             [ TraceError<TendermintProtoError> ]
@@ -154,7 +150,7 @@ define_error! {
             |_| { "Malformed proof" },
 
         InvalidHeight
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ tendermint::Error ]
             |_| { "Invalid height" },
 
         InvalidMetadata
@@ -305,7 +301,7 @@ define_error! {
 
         InvalidKeyAddress
             { address: String }
-            [ DisplayOnly<Box<dyn std::error::Error + Send + Sync>> ]
+            [ tendermint::Error ]
             |e| { format!("invalid key address: {0}", e.address) },
 
         Bech32Encoding

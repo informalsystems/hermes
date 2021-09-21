@@ -32,7 +32,6 @@ humantime-serde = "1.0.0"
 serde = "1.0.130"
 serde_cbor = "0.11.2"
 serde_derive = "1.0"
-sled = { version = "0.34.4", features = ["no_metrics", "no_logs"] }
 thiserror = "1.0.29"
 toml = "0.5"
 tracing = "0.1.26"
@@ -67,6 +66,7 @@ uint = "0.9"
 
 [dependencies.tendermint]
 version = "=0.21.0"
+features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
 version = "=0.21.0"
@@ -74,7 +74,8 @@ features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
 version = "=0.21.0"
-features = ["unstable"]
+default-features = false
+features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-proto]
 version = "=0.21.0"

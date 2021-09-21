@@ -1,3 +1,8 @@
+// TODO: disable unwraps:
+// https://github.com/informalsystems/ibc-rs/issues/987
+// #![cfg_attr(not(test), deny(clippy::unwrap_used))]
+
+#![no_std]
 #![allow(clippy::large_enum_variant)]
 #![deny(
     warnings,
@@ -8,9 +13,6 @@
     unused_qualifications,
     rust_2018_idioms
 )]
-// TODO: disable unwraps:
-//  https://github.com/informalsystems/ibc-rs/issues/987
-// #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 #![forbid(unsafe_code)]
 
 //! Implementation of the following ICS modules:
@@ -26,6 +28,11 @@
 //! - ICS 26: Routing
 //! - Applications:
 //!    - ICS 20: Fungible Token Transfer
+
+extern crate alloc;
+extern crate std;
+
+mod prelude;
 
 pub mod application;
 pub mod events;
