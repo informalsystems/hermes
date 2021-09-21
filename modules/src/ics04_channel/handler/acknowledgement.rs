@@ -10,6 +10,7 @@ use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use crate::ics04_channel::packet::{PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error};
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct AckPacketResult {
@@ -27,11 +28,8 @@ pub fn process(
 
     let packet = &msg.packet;
 
-    let source_channel_end = ctx
-        .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
-        .ok_or_else(|| {
-            Error::channel_not_found(packet.source_port.clone(), packet.source_channel.clone())
-        })?;
+    let source_channel_end =
+        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
     if !source_channel_end.state_matches(&State::Open) {
         return Err(Error::channel_closed(packet.source_channel.clone()));
@@ -51,11 +49,7 @@ pub fn process(
         ));
     }
 
-    let connection_end = ctx
-        .connection_end(&source_channel_end.connection_hops()[0])
-        .ok_or_else(|| {
-            Error::missing_connection(source_channel_end.connection_hops()[0].clone())
-        })?;
+    let connection_end = ctx.connection_end(&source_channel_end.connection_hops()[0])?;
 
     if !connection_end.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
@@ -66,13 +60,11 @@ pub fn process(
     let client_id = connection_end.client_id().clone();
 
     // Verify packet commitment
-    let packet_commitment = ctx
-        .get_packet_commitment(&(
-            packet.source_port.clone(),
-            packet.source_channel.clone(),
-            packet.sequence,
-        ))
-        .ok_or_else(|| Error::packet_commitment_not_found(packet.sequence))?;
+    let packet_commitment = ctx.get_packet_commitment(&(
+        packet.source_port.clone(),
+        packet.source_channel.clone(),
+        packet.sequence,
+    ))?;
 
     let input = format!(
         "{:?},{:?},{:?}",
@@ -94,8 +86,7 @@ pub fn process(
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
         let next_seq_ack = ctx
-            .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))
-            .ok_or_else(Error::missing_next_ack_seq)?;
+            .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
         if packet.sequence != next_seq_ack {
             return Err(Error::invalid_packet_sequence(
@@ -131,7 +122,6 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-
     use crate::events::IbcEvent;
     use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
@@ -145,10 +135,11 @@ mod tests {
     use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
+    use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
     use test_env_log::test;
 
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
 
     #[test]
     fn ack_packet_processing() {

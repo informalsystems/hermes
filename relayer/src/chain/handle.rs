@@ -1,7 +1,5 @@
-use std::{
-    fmt::{self, Debug},
-    sync::Arc,
-};
+use alloc::sync::Arc;
+use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
 use ibc::ics03_connection::connection::IdentifiedConnectionEnd;
@@ -51,6 +49,8 @@ use crate::{
     keyring::KeyEntry,
 };
 
+use super::HealthCheck;
+
 mod prod;
 
 /// A pair of [`ChainHandle`]s.
@@ -94,6 +94,10 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
 pub enum ChainRequest {
     Shutdown {
         reply_to: ReplyTo<()>,
+    },
+
+    HealthCheck {
+        reply_to: ReplyTo<HealthCheck>,
     },
 
     Subscribe {
@@ -313,6 +317,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug {
 
     /// Shutdown the chain runtime.
     fn shutdown(&self) -> Result<(), Error>;
+
+    /// Perform a health check
+    fn health_check(&self) -> Result<HealthCheck, Error>;
 
     /// Subscribe to the events emitted by the chain.
     fn subscribe(&self) -> Result<Subscription, Error>;

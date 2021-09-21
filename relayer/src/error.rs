@@ -121,14 +121,10 @@ define_error! {
             |e| { format!("node at {} running chain {} not caught up", e.address, e.chain_id) },
 
         PrivateStore
-            |_| { "requested proof for a path in the private store" },
-
-        Store
-            [ TraceError<sled::Error> ]
-            |_| { "Store error" },
+            |_| { "Requested proof for a path in the private store" },
 
         Event
-            |_| { "Bad Notification" },
+            |_| { "Bad notification" },
 
         ConversionFromAny
             [ TraceError<TendermintProtoError> ]
@@ -423,6 +419,19 @@ define_error! {
                 format!("Hermes health check failed while verifying the application compatibility for chain {0}:{1}; caused by: {2}",
                     e.chain_id, e.address, e.cause)
             },
+
+        UnknownAccountType
+            {
+                type_url: String
+            }
+            |e| {
+                format!("Failed to deserialize account of an unknown protobuf type: {0}",
+                    e.type_url)
+            },
+
+        EmptyBaseAccount
+            |_| { "Empty BaseAccount within EthAccount" },
+
     }
 }
 

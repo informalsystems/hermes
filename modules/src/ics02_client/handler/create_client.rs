@@ -1,4 +1,5 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
+use crate::prelude::*;
 
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -11,7 +12,6 @@ use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
-
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -29,7 +29,7 @@ pub fn process(
     let mut output = HandlerOutput::builder();
 
     // Construct this client's identifier
-    let id_counter = ctx.client_counter();
+    let id_counter = ctx.client_counter()?;
     let client_id = ClientId::new(msg.client_state().client_type(), id_counter).map_err(|e| {
         Error::client_identifier_constructor(msg.client_state().client_type(), id_counter, e)
     })?;
@@ -57,8 +57,9 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
-    use std::time::Duration;
+    use crate::prelude::*;
+    use core::convert::TryInto;
+    use core::time::Duration;
     use test_env_log::test;
 
     use crate::events::IbcEvent;

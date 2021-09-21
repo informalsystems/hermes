@@ -8,7 +8,9 @@
 [global]
 
 # Path to the `gaiad` (or other SDK-based) binary to use.
-gaiad_binary="$GOPATH/bin/gaiad"
+# You can add a local path here or a ftp/http/https URL.
+# In the case of a URL, a local copy will be downloaded into a temporary folder within the GM folder.
+gaiad_binary="https://github.com/cosmos/gaia/releases/download/v5.0.5/gaiad-v5.0.5-linux-amd64"
 
 # The first free port to use for newly created nodes.
 # The value will be incremented (by 10) when a new node requires ports.
@@ -50,6 +52,8 @@ add_to_hermes=false
 [global.hermes]
 
 # Path to the `hermes` binary to use.
+# You can add a local path here or a ftp/http/https URL.
+# In the case of a URL, a local copy will be downloaded into a temporary folder within the GM folder.
 binary="./hermes"
 
 # Hermes configuration file path.

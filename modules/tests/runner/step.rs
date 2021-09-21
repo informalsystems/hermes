@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-use std::fmt::Debug;
-
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use core::fmt::Debug;
+use ibc::ics03_connection::connection::State as ConnectionState;
 use serde::{Deserialize, Deserializer};
 
-use ibc::ics03_connection::connection::State as ConnectionState;
 use ibc::Height;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -124,6 +123,7 @@ pub enum ActionOutcome {
     Ics02CreateOk,
     Ics02UpdateOk,
     Ics02ClientNotFound,
+    Ics02ConsensusStateNotFound,
     Ics02HeaderVerificationFailure,
 
     Ics07UpgradeOk,
@@ -131,15 +131,12 @@ pub enum ActionOutcome {
     Ics07HeaderVerificationFailure,
 
     Ics03ConnectionOpenInitOk,
-    Ics03MissingClient,
     Ics03ConnectionOpenTryOk,
     Ics03InvalidConsensusHeight,
     Ics03ConnectionNotFound,
     Ics03ConnectionMismatch,
-    Ics03MissingClientConsensusState,
     Ics03InvalidProof,
     Ics03ConnectionOpenAckOk,
-    Ics03UninitializedConnection,
     Ics03ConnectionOpenConfirmOk,
 }
 

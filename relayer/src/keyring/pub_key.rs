@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use core::str::FromStr;
 
 use serde::{Deserialize, Deserializer};
 use subtle_encoding::base64;
@@ -63,7 +63,15 @@ impl FromStr for EncodedPubKey {
                     proto.tpe
                 );
 
-                if proto.tpe != "/cosmos.crypto.secp256k1.PubKey" {
+                // Ethermint pubkey types:
+                // e.g. "/ethermint.crypto.v1alpha1.ethsecp256k1.PubKey", "/injective.crypto.v1beta1.ethsecp256k1.PubKey"
+                // "/ethermint.crypto.v1beta1.ethsecp256k1.PubKey", "/ethermint.crypto.v1.ethsecp256k1.PubKey",
+                // "/cosmos.crypto.ethsecp256k1.PubKey"
+                // TODO: to be restricted after the Cosmos SDK release with ethsecp256k1
+                // https://github.com/cosmos/cosmos-sdk/pull/9981
+                if proto.tpe != "/cosmos.crypto.secp256k1.PubKey"
+                    && !proto.tpe.ends_with(".ethsecp256k1.PubKey")
+                {
                     Err(Error::unsupported_public_key(proto.tpe))
                 } else {
                     Ok(EncodedPubKey::Proto(proto))

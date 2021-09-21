@@ -15,17 +15,8 @@ exclude = [
 ]
 
 [patch.crates-io]
-# Uncomment the following lines to use dependencies from tendermint-rs on GitHub
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "thane/ibc-1252" }
-tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "thane/ibc-1252" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "thane/ibc-1252" }
-tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "thane/ibc-1252" }
-tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "thane/ibc-1252" }
-
-# Alternatively, uncomment the following lines to use the dependencies from your
-# local machine, assuming they are one folder up from the ibc-rs folder.
-# tendermint              = { path = "../tendermint-rs/tendermint" }
-# tendermint-rpc          = { path = "../tendermint-rs/rpc" }
-# tendermint-proto        = { path = "../tendermint-rs/proto" }
-# tendermint-light-client = { path = "../tendermint-rs/light-client" }
-# tendermint-testgen      = { path = "../tendermint-rs/testgen" }
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "master" }

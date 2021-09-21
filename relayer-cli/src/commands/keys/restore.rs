@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use core::str::FromStr;
 
 use abscissa_core::{Command, Options, Runnable};
 
@@ -93,7 +93,7 @@ pub fn restore_key(
     config: &ChainConfig,
 ) -> Result<KeyEntry, Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
-    let key_entry = keyring.key_from_mnemonic(mnemonic, hdpath)?;
+    let key_entry = keyring.key_from_mnemonic(mnemonic, hdpath, &config.address_type)?;
 
     keyring.add_key(key_name, key_entry.clone())?;
     Ok(key_entry)

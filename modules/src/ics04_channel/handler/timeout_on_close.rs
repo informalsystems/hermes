@@ -12,6 +12,7 @@ use crate::ics04_channel::packet::PacketResult;
 use crate::ics04_channel::{
     context::ChannelReader, error::Error, handler::timeout::TimeoutPacketResult,
 };
+use crate::prelude::*;
 
 pub fn process(
     ctx: &dyn ChannelReader,
@@ -21,11 +22,8 @@ pub fn process(
 
     let packet = &msg.packet;
 
-    let source_channel_end = ctx
-        .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
-        .ok_or_else(|| {
-            Error::channel_not_found(packet.source_port.clone(), packet.source_channel.clone())
-        })?;
+    let source_channel_end =
+        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
     let _channel_cap = ctx.authenticated_capability(&packet.source_port)?;
 
@@ -41,22 +39,16 @@ pub fn process(
         ));
     }
 
-    let connection_end = ctx
-        .connection_end(&source_channel_end.connection_hops()[0])
-        .ok_or_else(|| {
-            Error::missing_connection(source_channel_end.connection_hops()[0].clone())
-        })?;
+    let connection_end = ctx.connection_end(&source_channel_end.connection_hops()[0])?;
 
     let client_id = connection_end.client_id().clone();
 
     //verify the packet was sent, check the store
-    let packet_commitment = ctx
-        .get_packet_commitment(&(
-            packet.source_port.clone(),
-            packet.source_channel.clone(),
-            packet.sequence,
-        ))
-        .ok_or_else(|| Error::packet_commitment_not_found(packet.sequence))?;
+    let packet_commitment = ctx.get_packet_commitment(&(
+        packet.source_port.clone(),
+        packet.source_channel.clone(),
+        packet.sequence,
+    ))?;
 
     let input = format!(
         "{:?},{:?},{:?}",
@@ -152,11 +144,12 @@ mod tests {
     use crate::ics04_channel::msgs::timeout_on_close::test_util::get_dummy_raw_msg_timeout_on_close;
     use crate::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
     use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::prelude::*;
     use crate::timestamp::ZERO_DURATION;
 
     use crate::mock::context::MockContext;
 
-    use std::convert::TryFrom;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     #[test]

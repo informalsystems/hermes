@@ -9,5 +9,4 @@ pub mod diff;
 pub mod iter;
 pub mod queue;
 pub mod retry;
-pub mod sled;
 pub mod stream;

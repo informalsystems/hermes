@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crossbeam_channel as channel;
 use serde::{Serialize, Serializer};
@@ -38,7 +38,7 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::{connection::ConnectionMsgType, error::Error, keyring::KeyEntry};
 
-use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
+use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -78,6 +78,10 @@ impl ChainHandle for ProdChainHandle {
 
     fn id(&self) -> ChainId {
         self.chain_id.clone()
+    }
+
+    fn health_check(&self) -> Result<HealthCheck, Error> {
+        self.send(|reply_to| ChainRequest::HealthCheck { reply_to })
     }
 
     fn shutdown(&self) -> Result<(), Error> {

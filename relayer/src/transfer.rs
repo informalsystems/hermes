@@ -1,6 +1,6 @@
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
-use std::time::Duration;
+use core::fmt::{Display, Formatter};
+use core::str::FromStr;
+use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
 use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;

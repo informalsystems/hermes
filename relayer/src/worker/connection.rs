@@ -1,10 +1,10 @@
-use std::{thread, time::Duration};
+use core::time::Duration;
+use std::thread;
 
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, warn};
 
 use crate::connection::Connection as RelayConnection;
-use crate::telemetry::Telemetry;
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
     object::Connection,
@@ -19,9 +19,6 @@ pub struct ConnectionWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     connection: Connection,
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
-
-    #[allow(dead_code)]
-    telemetry: Telemetry,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectionWorker<ChainA, ChainB> {
@@ -29,13 +26,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ConnectionWorker<ChainA, ChainB> 
         connection: Connection,
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
-        telemetry: Telemetry,
     ) -> Self {
         Self {
             connection,
             chains,
             cmd_rx,
-            telemetry,
         }
     }
 

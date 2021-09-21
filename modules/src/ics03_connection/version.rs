@@ -1,9 +1,9 @@
-use std::convert::TryFrom;
-
-use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
+use crate::prelude::*;
+use core::convert::TryFrom;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
+use serde::{Deserialize, Serialize};
+use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::error::Error;
 
@@ -70,31 +70,37 @@ pub fn get_compatible_versions() -> Vec<Version> {
 pub fn pick_version(
     supported_versions: Vec<Version>,
     counterparty_versions: Vec<Version>,
-) -> Option<Version> {
-    let mut intersection: Vec<Version> = vec![];
+) -> Result<Version, Error> {
+    let mut intersection: Vec<Version> = Vec::new();
     for s in supported_versions.iter() {
         for c in counterparty_versions.iter() {
             if c.identifier != s.identifier {
                 continue;
             }
-            // TODO - perform feature intersection and error if empty
+            for feature in c.features.iter() {
+                if feature.trim().is_empty() {
+                    return Err(Error::empty_features());
+                }
+            }
             intersection.append(&mut vec![s.clone()]);
         }
     }
     intersection.sort_by(|a, b| a.identifier.cmp(&b.identifier));
     if intersection.is_empty() {
-        return None;
+        return Err(Error::no_common_version());
     }
-    Some(intersection[0].clone())
+    Ok(intersection[0].clone())
 }
 
 #[cfg(test)]
 mod tests {
-    use std::convert::{TryFrom, TryInto};
+    use crate::prelude::*;
+    use core::convert::{TryFrom, TryInto};
     use test_env_log::test;
 
     use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 
+    use crate::ics03_connection::error::Error;
     use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
 
     fn good_versions() -> Vec<RawVersion> {
@@ -133,11 +139,11 @@ mod tests {
                 Version::default(),
                 Version {
                     identifier: "3".to_string(),
-                    features: vec![],
+                    features: Vec::new(),
                 },
                 Version {
                     identifier: "4".to_string(),
-                    features: vec![],
+                    features: Vec::new(),
                 },
             ]
             .into_iter()
@@ -145,15 +151,15 @@ mod tests {
             vec![
                 Version {
                     identifier: "2".to_string(),
-                    features: vec![],
+                    features: Vec::new(),
                 },
                 Version {
                     identifier: "4".to_string(),
-                    features: vec![],
+                    features: Vec::new(),
                 },
                 Version {
                     identifier: "3".to_string(),
-                    features: vec![],
+                    features: Vec::new(),
                 },
             ]
             .into_iter()
@@ -161,7 +167,7 @@ mod tests {
             // Should pick version 3 as it's the lowest of the intersection {3, 4}
             Version {
                 identifier: "3".to_string(),
-                features: vec![],
+                features: Vec::new(),
             },
         )
     }
@@ -170,13 +176,13 @@ mod tests {
         (
             vec![Version {
                 identifier: "1".to_string(),
-                features: vec![],
+                features: Vec::new(),
             }]
             .into_iter()
             .collect(),
             vec![Version {
                 identifier: "2".to_string(),
-                features: vec![],
+                features: Vec::new(),
             }]
             .into_iter()
             .collect(),
@@ -213,7 +219,7 @@ mod tests {
             },
             Test {
                 name: "Bad versions empty".to_string(),
-                versions: vec![],
+                versions: Vec::new(),
                 want_pass: true,
             },
         ];
@@ -240,7 +246,7 @@ mod tests {
             name: String,
             supported: Vec<Version>,
             counterparty: Vec<Version>,
-            picked: Option<Version>,
+            picked: Result<Version, Error>,
             want_pass: bool,
         }
         let tests: Vec<Test> = vec![
@@ -248,21 +254,21 @@ mod tests {
                 name: "Compatible versions".to_string(),
                 supported: get_compatible_versions(),
                 counterparty: get_compatible_versions(),
-                picked: Some(Version::default()),
+                picked: Ok(Version::default()),
                 want_pass: true,
             },
             Test {
                 name: "Overlapping versions".to_string(),
                 supported: overlapping().0,
                 counterparty: overlapping().1,
-                picked: Some(overlapping().2),
+                picked: Ok(overlapping().2),
                 want_pass: true,
             },
             Test {
                 name: "Disjoint versions".to_string(),
                 supported: disjoint().0,
                 counterparty: disjoint().1,
-                picked: None,
+                picked: Err(Error::no_common_version()),
                 want_pass: false,
             },
         ];
@@ -272,13 +278,13 @@ mod tests {
 
             assert_eq!(
                 test.want_pass,
-                version.is_some(),
+                version.is_ok(),
                 "Validate versions failed for test {}",
                 test.name,
             );
 
             if test.want_pass {
-                assert_eq!(version, test.picked);
+                assert_eq!(version.unwrap(), test.picked.unwrap());
             }
         }
     }

@@ -1,5 +1,8 @@
 //! Host chain types and methods, used by context mock.
 
+use core::convert::TryFrom;
+
+use tendermint::chain::Id as TMChainId;
 use tendermint::time::Time;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
@@ -10,9 +13,9 @@ use crate::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState
 use crate::ics07_tendermint::header::Header as TMHeader;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
+use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use std::{thread, time};
 
 /// Defines the different types of host chains that a mock context can emulate.
 /// The variants are as follows:

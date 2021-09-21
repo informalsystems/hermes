@@ -1,9 +1,8 @@
-use std::{
-    collections::HashMap,
-    ops::Deref,
-    sync::{Arc, RwLock},
-    time::Duration,
-};
+use alloc::collections::btree_map::BTreeMap as HashMap;
+use alloc::sync::Arc;
+use core::ops::Deref;
+use core::time::Duration;
+use std::sync::RwLock;
 
 use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
@@ -16,14 +15,13 @@ use ibc::{
 };
 
 use crate::{
-    chain::handle::ChainHandle,
+    chain::{handle::ChainHandle, HealthCheck},
     config::{ChainConfig, Config},
     event,
     event::monitor::{Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
     object::Object,
     registry::Registry,
     rest,
-    telemetry::Telemetry,
     util::try_recv_multiple,
     worker::{WorkerMap, WorkerMsg},
 };
@@ -62,9 +60,6 @@ pub struct Supervisor<Chain: ChainHandle> {
     worker_msg_rx: Receiver<WorkerMsg>,
     rest_rx: Option<rest::Receiver>,
     client_state_filter: FilterPolicy,
-
-    #[allow(dead_code)]
-    telemetry: Telemetry,
 }
 
 impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
@@ -72,11 +67,10 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
     pub fn new(
         config: RwArc<Config>,
         rest_rx: Option<rest::Receiver>,
-        telemetry: Telemetry,
     ) -> (Self, Sender<SupervisorCmd>) {
         let registry = Registry::new(config.clone());
         let (worker_msg_tx, worker_msg_rx) = crossbeam_channel::unbounded();
-        let workers = WorkerMap::new(worker_msg_tx, telemetry.clone());
+        let workers = WorkerMap::new(worker_msg_tx);
         let client_state_filter = FilterPolicy::default();
 
         let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
@@ -89,7 +83,6 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
             worker_msg_rx,
             rest_rx,
             client_state_filter,
-            telemetry,
         };
 
         (supervisor, cmd_tx)
@@ -362,8 +355,36 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         self.spawn_context(mode).spawn_workers();
     }
 
+    /// Perform a health check on all connected chains
+    fn health_check(&mut self) {
+        use HealthCheck::*;
+
+        let chains = &self.config.read().expect("poisoned lock").chains;
+
+        for config in chains {
+            let id = &config.id;
+            let chain = self.registry.get_or_spawn(id);
+
+            match chain {
+                Ok(chain) => match chain.health_check() {
+                    Ok(Healthy) => info!("[{}] chain is healthy", id),
+                    Ok(Unhealthy(e)) => error!("[{}] chain is unhealthy: {}", id, e),
+                    Err(e) => error!("[{}] failed to perform health check: {}", id, e),
+                },
+                Err(e) => {
+                    error!(
+                        "skipping health check for chain {}, reason: failed to spawn chain runtime with error: {}",
+                        config.id, e
+                    );
+                }
+            }
+        }
+    }
+
     /// Run the supervisor event loop.
     pub fn run(mut self) -> Result<(), Error> {
+        self.health_check();
+
         self.spawn_workers(SpawnMode::Startup);
 
         let mut subscriptions = self.init_subscriptions()?;
@@ -412,6 +433,7 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
                         "failed to spawn chain runtime for {}: {}",
                         chain_config.id, e
                     );
+
                     continue;
                 }
             };
@@ -625,9 +647,9 @@ impl<Chain: ChainHandle + 'static> Supervisor<Chain> {
         let height = batch.height;
         let chain_id = batch.chain_id.clone();
 
-        let mut collected = self.collect_events(&src_chain, batch);
+        let collected = self.collect_events(&src_chain, batch);
 
-        for (object, events) in collected.per_object.drain() {
+        for (object, events) in collected.per_object.into_iter() {
             if !self.relay_on_object(&src_chain.id(), &object) {
                 trace!(
                     "skipping events for '{}'. \

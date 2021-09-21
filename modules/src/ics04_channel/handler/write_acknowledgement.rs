@@ -3,6 +3,7 @@ use crate::ics04_channel::events::WriteAcknowledgement;
 use crate::ics04_channel::packet::{Packet, PacketResult, Sequence};
 use crate::ics04_channel::{context::ChannelReader, error::Error};
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::prelude::*;
 use crate::{
     events::IbcEvent,
     handler::{HandlerOutput, HandlerResult},
@@ -23,17 +24,10 @@ pub fn process(
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let dest_channel_end = ctx
-        .channel_end(&(
-            packet.destination_port.clone(),
-            packet.destination_channel.clone(),
-        ))
-        .ok_or_else(|| {
-            Error::channel_not_found(
-                packet.destination_port.clone(),
-                packet.destination_channel.clone(),
-            )
-        })?;
+    let dest_channel_end = ctx.channel_end(&(
+        packet.destination_port.clone(),
+        packet.destination_channel.clone(),
+    ))?;
 
     if !dest_channel_end.state_matches(&State::Open) {
         return Err(Error::invalid_channel_state(
@@ -47,15 +41,15 @@ pub fn process(
     // NOTE: IBC app modules might have written the acknowledgement synchronously on
     // the OnRecvPacket callback so we need to check if the acknowledgement is already
     // set on the store and return an error if so.
-    if ctx
-        .get_packet_acknowledgement(&(
-            packet.destination_port.clone(),
-            packet.destination_channel.clone(),
-            packet.sequence,
-        ))
-        .is_some()
-    {
-        return Err(Error::acknowledgement_exists(packet.sequence));
+    match ctx.get_packet_acknowledgement(&(
+        packet.destination_port.clone(),
+        packet.destination_channel.clone(),
+        packet.sequence,
+    )) {
+        Ok(_) => return Err(Error::acknowledgement_exists(packet.sequence)),
+        Err(e)
+            if e.detail() == Error::packet_acknowledgement_not_found(packet.sequence).detail() => {}
+        Err(e) => return Err(e),
     }
 
     if ack.is_empty() {
@@ -82,7 +76,8 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
+    use crate::prelude::*;
+    use core::convert::TryInto;
     use test_env_log::test;
 
     use crate::ics02_client::height::Height;
@@ -117,7 +112,7 @@ mod tests {
         packet.data = vec![0];
 
         let ack = vec![0];
-        let ack_null = vec![];
+        let ack_null = Vec::new();
 
         let dest_channel_end = ChannelEnd::new(
             State::Open,

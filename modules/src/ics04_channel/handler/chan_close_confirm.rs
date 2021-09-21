@@ -9,6 +9,7 @@ use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
+use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -17,9 +18,7 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Retrieve the old channel end and validate it against the message.
-    let mut channel_end = ctx
-        .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
-        .ok_or_else(|| Error::channel_not_found(msg.port_id.clone(), msg.channel_id().clone()))?;
+    let mut channel_end = ctx.channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))?;
 
     // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {
@@ -37,9 +36,7 @@ pub(crate) fn process(
         ));
     }
 
-    let conn = ctx
-        .connection_end(&channel_end.connection_hops()[0])
-        .ok_or_else(|| Error::missing_connection(channel_end.connection_hops()[0].clone()))?;
+    let conn = ctx.connection_end(&channel_end.connection_hops()[0])?;
 
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(

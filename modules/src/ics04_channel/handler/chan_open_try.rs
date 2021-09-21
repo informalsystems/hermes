@@ -11,6 +11,7 @@ use crate::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::ics24_host::identifier::ChannelId;
+use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -21,9 +22,7 @@ pub(crate) fn process(
     // Unwrap the old channel end (if any) and validate it against the message.
     let (mut new_channel_end, channel_id) = match msg.previous_channel_id() {
         Some(prev_id) => {
-            let old_channel_end = ctx
-                .channel_end(&(msg.port_id().clone(), prev_id.clone()))
-                .ok_or_else(|| Error::channel_not_found(msg.port_id.clone(), prev_id.clone()))?;
+            let old_channel_end = ctx.channel_end(&(msg.port_id().clone(), prev_id.clone()))?;
 
             // Validate that existing channel end matches with the one we're trying to establish.
             if old_channel_end.state_matches(&State::Init)
@@ -50,7 +49,7 @@ pub(crate) fn process(
             );
 
             // Channel identifier construction.
-            let id_counter = ctx.channel_counter();
+            let id_counter = ctx.channel_counter()?;
             let chan_id = ChannelId::new(id_counter);
 
             output.log(format!(
@@ -70,11 +69,7 @@ pub(crate) fn process(
         ));
     }
 
-    let connection_end_opt = ctx.connection_end(&msg.channel().connection_hops()[0]);
-
-    let conn = connection_end_opt
-        .ok_or_else(|| Error::missing_connection(msg.channel().connection_hops()[0].clone()))?;
-
+    let conn = ctx.connection_end(&msg.channel().connection_hops()[0])?;
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(Error::connection_not_open(
             msg.channel.connection_hops()[0].clone(),
@@ -156,14 +151,17 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use crate::prelude::*;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use crate::events::IbcEvent;
     use crate::ics02_client::client_type::ClientType;
+    use crate::ics02_client::error as ics02_error;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::ics03_connection::connection::State as ConnectionState;
+    use crate::ics03_connection::error as ics03_error;
     use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::channel::{ChannelEnd, State};
@@ -279,8 +277,13 @@ mod tests {
                 match_error: {
                     let connection_id = msg.channel().connection_hops()[0].clone();
                     Box::new(move |e| match e {
-                        error::ErrorDetail::MissingConnection(e) => {
-                            assert_eq!(e.connection_id, connection_id);
+                        error::ErrorDetail::Ics03Connection(e) => {
+                            assert_eq!(
+                                e.source,
+                                ics03_error::ErrorDetail::ConnectionNotFound(
+                                    ics03_error::ConnectionNotFoundSubdetail { connection_id }
+                                )
+                            );
                         }
                         _ => {
                             panic!("Expected MissingConnection, instead got {}", e)
@@ -369,7 +372,20 @@ mod tests {
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
                 match_error: Box::new(|e| match e {
-                    error::ErrorDetail::MissingClientState(_) => {}
+                    error::ErrorDetail::Ics03Connection(e) => {
+                        assert_eq!(
+                            e.source,
+                            ics03_error::ErrorDetail::Ics02Client(
+                                ics03_error::Ics02ClientSubdetail {
+                                    source: ics02_error::ErrorDetail::ClientNotFound(
+                                        ics02_error::ClientNotFoundSubdetail {
+                                            client_id: ClientId::new(ClientType::Mock, 45).unwrap()
+                                        }
+                                    )
+                                }
+                            )
+                        );
+                    }
                     _ => {
                         panic!("Expected MissingClientState, instead got {}", e)
                     }

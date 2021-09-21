@@ -1,5 +1,44 @@
 # CHANGELOG
 
+## v0.7.1
+
+This minor release of Hermes notably features support for Ethermint chains and transfer amounts expressed as a 256-bit unsigned integer.
+This release also fixes a bug where the chain runtime within the relayer would crash when failing to decode a invalid header included in a `ClientUpdate` IBC event.
+
+### BUG FIXES
+
+- Fix header decoding error which resulted in killing the chain runtime ([#1342](https://github.com/informalsystems/ibc-rs/issues/1342))
+
+- [gm](scripts/gm)
+  - Fix gaiad keys add prints to stderr instead of stdout in SDK 0.43 ([#1312])
+  - Bumped default `rpc_timeout` in Hermes config to 5 seconds ([#1312])
+
+[#1312]: https://github.com/informalsystems/ibc-rs/issues/1312
+
+### FEATURES
+
+- Added post-Stargate (v0.5+) Ethermint support ([#1267] [#1071])
+
+[#1267]: https://github.com/informalsystems/ibc-rs/issues/1267
+[#1071]: https://github.com/informalsystems/ibc-rs/issues/1071
+
+### IMPROVEMENTS
+
+- General
+  - Derive `Debug`, `PartialEq` and `Eq` traits for module errors ([#1281])
+  - Add MBT tests for ICS 07 Client Upgrade ([#1311])
+  - Add support for uint256 transfer amounts ([#1319])
+
+- [ibc](modules)
+  - Change all `*Reader` traits to return `Result` instead of `Option` ([#1268])
+  - Clean up modules' errors ([#1333])
+
+[#1268]: https://github.com/informalsystems/ibc-rs/issues/1268
+[#1281]: https://github.com/informalsystems/ibc-rs/issues/1281
+[#1311]: https://github.com/informalsystems/ibc-rs/issues/1311
+[#1319]: https://github.com/informalsystems/ibc-rs/issues/1319
+[#1333]: https://github.com/informalsystems/ibc-rs/issues/1333
+
 ## v0.7.0
 
 This release of Hermes is the first to be compatible with the development version of Cosmos SDK 0.43.

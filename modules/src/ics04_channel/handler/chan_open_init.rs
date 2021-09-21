@@ -9,6 +9,7 @@ use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::ics24_host::identifier::ChannelId;
+use crate::prelude::*;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -27,11 +28,7 @@ pub(crate) fn process(
     }
 
     // An IBC connection running on the local (host) chain should exist.
-    let connection_end = ctx.connection_end(&msg.channel().connection_hops()[0]);
-
-    let conn = connection_end
-        .ok_or_else(|| Error::missing_connection(msg.channel().connection_hops()[0].clone()))?;
-
+    let conn = ctx.connection_end(&msg.channel().connection_hops()[0])?;
     let get_versions = conn.versions();
     let version = match get_versions.as_slice() {
         [version] => version,
@@ -49,7 +46,7 @@ pub(crate) fn process(
     }
 
     // Channel identifier construction.
-    let id_counter = ctx.channel_counter();
+    let id_counter = ctx.channel_counter()?;
     let chan_id = ChannelId::new(id_counter);
 
     output.log(format!(
@@ -86,7 +83,8 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use crate::prelude::*;
+    use core::convert::TryFrom;
     use test_env_log::test;
 
     use crate::events::IbcEvent;
