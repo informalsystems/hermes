@@ -57,13 +57,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
             // Run client refresh, exit only if expired or frozen
             match client.refresh() {
                 Ok(Some(_)) => {
-                    telemetry! {
-                        ibc_telemetry::global().ibc_client_update(
-                            &self.client.dst_chain_id,
-                            &self.client.dst_client_id,
-                            1
-                        )
-                    };
+                    telemetry!(
+                        ibc_client_update,
+                        &self.client.dst_chain_id,
+                        &self.client.dst_client_id,
+                        1
+                    );
                 }
                 Err(e) => {
                     if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
@@ -104,13 +103,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
                         // Run misbehaviour. If evidence submitted the loop will exit in next
                         // iteration with frozen client
                         if self.detect_misbehaviour(client, Some(update)) {
-                            telemetry! {
-                                ibc_telemetry::global().ibc_client_misbehaviour(
-                                    &self.client.dst_chain_id,
-                                    &self.client.dst_client_id,
-                                    1
-                                )
-                            };
+                            telemetry!(
+                                ibc_client_misbehaviour,
+                                &self.client.dst_chain_id,
+                                &self.client.dst_client_id,
+                                1
+                            );
                         }
                     }
                 }

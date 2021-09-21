@@ -192,12 +192,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             .filter(|e| matches!(e, WriteAcknowledgement(_)))
             .count();
 
-        ibc_telemetry::global().ibc_receive_packets(
+        telemetry!(
+            ibc_receive_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 
     #[cfg(feature = "telemetry")]
@@ -210,12 +211,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             .filter(|e| matches!(e, AcknowledgePacket(_)))
             .count();
 
-        ibc_telemetry::global().ibc_acknowledgment_packets(
+        telemetry!(
+            ibc_acknowledgment_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 
     #[cfg(feature = "telemetry")]
@@ -227,11 +229,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
             .filter(|e| matches!(e, TimeoutPacket(_)))
             .count();
 
-        ibc_telemetry::global().ibc_timeout_packets(
+        telemetry!(
+            ibc_timeout_packets,
             &self.path.src_chain_id,
             &self.path.src_channel_id,
             &self.path.src_port_id,
             count as u64,
-        )
+        );
     }
 }

@@ -43,7 +43,7 @@ impl WorkerMap {
     pub fn remove_stopped(&mut self, id: WorkerId, object: Object) -> bool {
         match self.workers.remove(&object) {
             Some(handle) if handle.id() == id => {
-                telemetry!(ibc_telemetry::global().worker(metric_type(&object), -1));
+                telemetry!(worker, metric_type(&object), -1);
 
                 let id = handle.id();
 
@@ -145,7 +145,7 @@ impl WorkerMap {
         object: &Object,
         config: &Config,
     ) -> WorkerHandle {
-        telemetry!(ibc_telemetry::global().worker(metric_type(object), 1));
+        telemetry!(worker, metric_type(object), 1);
 
         Worker::spawn(
             ChainHandlePair { a: src, b: dst },
@@ -183,7 +183,7 @@ impl WorkerMap {
     /// Shutdown the worker associated with the given [`Object`].
     pub fn shutdown_worker(&mut self, object: &Object) {
         if let Some(handle) = self.workers.remove(object) {
-            telemetry!(ibc_telemetry::global().worker(metric_type(object), -1));
+            telemetry!(worker, metric_type(object), -1);
 
             match handle.shutdown() {
                 Ok(()) => {
