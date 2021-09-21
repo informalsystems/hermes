@@ -23,7 +23,7 @@ const SDK_MODULE_NAME: &str = "cosmos/cosmos-sdk";
 /// # Note: Should be consistent with [features] guide page.
 ///
 /// [features]: https://hermes.informal.systems/features.html
-const SDK_MODULE_VERSION_REQ: &str = ">=0.41.3, <=0.43.0";
+const SDK_MODULE_VERSION_REQ: &str = ">=0.41.3, <=0.44.0";
 
 /// Helper struct to capture all the reported information of an
 /// IBC application, e.g., `gaiad`.

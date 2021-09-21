@@ -46,6 +46,8 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
+use super::HealthCheck;
+
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
 /// primary interface for doing so is captured by `ICS18Context` which this struct can access via
@@ -95,6 +97,10 @@ impl ChainEndpoint for MockChain {
 
     fn id(&self) -> &ChainId {
         &self.config.id
+    }
+
+    fn health_check(&self) -> Result<HealthCheck, Error> {
+        Ok(HealthCheck::Healthy)
     }
 
     fn shutdown(self) -> Result<(), Error> {
