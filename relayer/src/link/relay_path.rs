@@ -73,15 +73,21 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     src_operational_data: Queue<OperationalData>,
     dst_operational_data: Queue<OperationalData>,
 
-    // The mediator stores pending operational data.
-    // The relaying path periodically invokes the mediator
-    // to confirm transactions.
+    // Toggle for the transaction confirmation mechanism.
+    confirm_txes: bool,
+
+    // Stores pending (i.e., unconfirmed) operational data.
+    // The relaying path periodically tries to confirm these pending
+    // transactions if [`confirm_txes`] is true.
     pending_txs_src: PendingTxs<ChainA>,
     pending_txs_dst: PendingTxs<ChainB>,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
-    pub fn new(channel: Channel<ChainA, ChainB>) -> Result<Self, LinkError> {
+    pub fn new(
+        channel: Channel<ChainA, ChainB>,
+        with_tx_confirmation: bool,
+    ) -> Result<Self, LinkError> {
         let src_chain = channel.src_chain().clone();
         let dst_chain = channel.dst_chain().clone();
 
@@ -112,6 +118,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             clear_packets: RefCell::new(true),
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
+
+            confirm_txes: with_tx_confirmation,
             pending_txs_src: PendingTxs::new(src_chain, src_channel_id, src_port_id, dst_chain_id),
             pending_txs_dst: PendingTxs::new(dst_chain, dst_channel_id, dst_port_id, src_chain_id),
         })
@@ -634,6 +642,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     fn enqueue_pending_tx(&self, reply: AsyncReply, odata: OperationalData) {
+        if !self.confirm_txes {
+            return;
+        }
+
         match odata.target {
             OperationalDataTarget::Source => {
                 self.pending_txs_src.insert_new_pending_tx(reply, odata);
@@ -1199,6 +1211,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     pub fn process_pending_txs(&self) -> RelaySummary {
+        if !self.confirm_txes {
+            return RelaySummary::empty();
+        }
+
         let mut summary_src = self.process_pending_txs_src().unwrap_or_else(|e| {
             error!("error processing pending events in source chain: {}", e);
             RelaySummary::empty()

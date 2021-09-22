@@ -28,6 +28,13 @@ log_level = 'info'
 # periodic packet clearing. Default: 100
 clear_packets_interval = 100
 
+# Toggle the transaction confirmation mechanism.
+# The tx confirmation mechanism periodically queries the `/tx_search` RPC
+# endpoint for checking that previously submitted transactions
+# (to any chain in this config file) have delivered successfully.
+# Experimental feature. Default: true.
+tx_confirmation = true
+
 
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
