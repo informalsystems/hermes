@@ -1,5 +1,5 @@
 use core::time::Duration;
-use std::thread;
+use std::{thread, time::Instant};
 
 use crossbeam_channel::Receiver;
 use tracing::{debug, info, trace, warn};
@@ -51,30 +51,37 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         // initial check for evidence of misbehaviour for all updates
         let skip_misbehaviour = self.detect_misbehaviour(&client, None);
 
+        // remember the time of the last refresh so we backoff
+        let mut last_refresh = Instant::now() - Duration::from_secs(61);
+
         loop {
             thread::sleep(Duration::from_millis(600));
 
-            // Run client refresh, exit only if expired or frozen
-            match client.refresh() {
-                Ok(Some(_)) => {
-                    telemetry!(
-                        ibc_client_update,
-                        &self.client.dst_chain_id,
-                        &self.client.dst_client_id,
-                        1
-                    );
-                }
-                Err(e) => {
-                    if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
-                        warn!("failed to refresh client '{}': {}", client, e);
-
-                        // This worker has completed its job as the client cannot be refreshed any
-                        // further, and can therefore exit without an error.
-                        return Ok(());
+            if last_refresh.elapsed() > Duration::from_secs(60) {
+                // Run client refresh, exit only if expired or frozen
+                match client.refresh() {
+                    Ok(Some(_)) => {
+                        telemetry!(
+                            ibc_client_update,
+                            &self.client.dst_chain_id,
+                            &self.client.dst_client_id,
+                            1
+                        );
                     }
-                }
-                _ => (),
-            };
+                    Err(e) => {
+                        if let ForeignClientErrorDetail::ExpiredOrFrozen(_) = e.detail() {
+                            warn!("failed to refresh client '{}': {}", client, e);
+
+                            // This worker has completed its job as the client cannot be refreshed any
+                            // further, and can therefore exit without an error.
+                            return Ok(());
+                        }
+                    }
+                    _ => (),
+                };
+
+                last_refresh = Instant::now();
+            }
 
             if skip_misbehaviour {
                 continue;
