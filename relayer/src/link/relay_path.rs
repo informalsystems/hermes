@@ -1258,6 +1258,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Verifies if any sendPacket messages timed-out. If so, moves them from destination op. data
     /// to source operational data, and adjusts the events and messages accordingly.
     pub fn refresh_schedule(&self) -> Result<(), LinkError> {
+        // Bail fast if no op. data to refresh
+        if self.dst_operational_data.is_empty() {
+            return Ok(());
+        }
+
         let dst_current_height = self.dst_latest_height()?;
 
         // Intermediary data struct to help better manage the transfer from dst. operational data
