@@ -125,9 +125,14 @@ impl CosmosSdkChain {
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
-        // Check on the configured max_tx_size against the latest block's consensus parameters
+        // Get the latest height and convert to tendermint Height
+        let tm_height =
+            tendermint::block::Height::try_from(self.query_latest_height()?.revision_height)
+                .map_err(Error::invalid_height)?;
+
+        // Check on the configured max_tx_size against the consensus parameters at latest height
         let result = self
-            .block_on(self.rpc_client.latest_consensus_params())
+            .block_on(self.rpc_client.consensus_params(tm_height))
             .map_err(|e| {
                 Error::config_validation_json_rpc(
                     self.id().clone(),
