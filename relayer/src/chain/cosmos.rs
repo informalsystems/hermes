@@ -884,7 +884,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-        crate::time!("query_chain_clients");
+        crate::time!("query_clients");
 
         let mut client = self
             .block_on(
@@ -986,7 +986,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        crate::time!("query_chain_clients");
+        crate::time!("query_consensus_states");
 
         let mut client = self
             .block_on(
@@ -1018,7 +1018,7 @@ impl ChainEndpoint for CosmosSdkChain {
         consensus_height: ICSHeight,
         query_height: ICSHeight,
     ) -> Result<AnyConsensusState, Error> {
-        crate::time!("query_chain_clients");
+        crate::time!("query_consensus_state");
 
         let consensus_state = self
             .proven_client_consensus(&client_id, consensus_height, query_height)?
