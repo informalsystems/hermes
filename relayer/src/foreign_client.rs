@@ -581,7 +581,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // the time the target height was determined, and the time
             // the client state was fetched.
 
-            warn!("Getting trusted height from the full list of consensus state heights. This may take a while.");
+            warn!("[{}] resolving trusted height from the full list of consensus state heights for target height {}; this may take a while",
+        self, target_height);
 
             // Potential optimization: cache the list of consensus heights
             // so that subsequent fetches can be fast.
@@ -618,8 +619,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // We should consider skipping the validation entirely and only validate
             // it from the command line itself.
 
-            warn!("Validating that trusted height {} is present in the full list of consensus state heights. This may take a while.",
-                trusted_height);
+            warn!("[{}] validating that trusted height {} for target height {} is present in the full list of consensus state heights; this may take a while",
+            self, trusted_height, target_height);
 
             let cs_heights = self.consensus_state_heights()?;
 
