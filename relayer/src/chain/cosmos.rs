@@ -126,9 +126,8 @@ impl CosmosSdkChain {
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
         // Get the latest height and convert to tendermint Height
-        let tm_height =
-            tendermint::block::Height::try_from(self.query_latest_height()?.revision_height)
-                .map_err(Error::invalid_height)?;
+        let tm_height = Height::try_from(self.query_latest_height()?.revision_height)
+            .map_err(Error::invalid_height)?;
 
         // Check on the configured max_tx_size against the consensus parameters at latest height
         let result = self
