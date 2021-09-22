@@ -13,6 +13,7 @@ use ibc::events::{IbcEvent, IbcEventType};
 use ibc::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
 };
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::error::Error as ClientError;
 use ibc::ics02_client::events::UpdateClient;
@@ -554,6 +555,66 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         self.build_update_client_with_trusted(target_height, Height::zero())
     }
 
+    fn get_trusted_height_from_client_state(
+        &self,
+        target_height: Height,
+        client_state: &AnyClientState,
+    ) -> Result<Height, ForeignClientError> {
+        let client_latest_height = client_state.latest_height();
+
+        if client_latest_height < target_height {
+            Ok(client_latest_height)
+        } else {
+            warn!("Getting trusted height from the whole list of consensus state heights. This may take a while.");
+
+            // If not specified, set trusted state to the highest height smaller than target height.
+            // Otherwise ensure that a consensus state at trusted height exists on-chain.
+            let cs_heights = self.consensus_state_heights()?;
+
+            // Get highest height smaller than target height
+            cs_heights
+                .into_iter()
+                .find(|h| h < &target_height)
+                .ok_or_else(|| {
+                    ForeignClientError::missing_smaller_trusted_height(
+                        self.dst_chain().id(),
+                        target_height,
+                    )
+                })
+        }
+    }
+
+    fn validate_trusted_height(
+        &self,
+        target_height: Height,
+        trusted_height: Height,
+        client_state: &AnyClientState,
+    ) -> Result<(), ForeignClientError> {
+        if client_state.latest_height() == trusted_height {
+            Ok(())
+        } else {
+            // There should be no need to validate a trusted height in production,
+            // Since it is always fetched from some client state. The only use is
+            // from the command line when the trusted height is manually specified.
+            // We should consider skipping the validation entirely and only validate
+            // it from the command line itself.
+
+            warn!("Validating that trusted height {} is present in the whole list of consensus state heights. This may take a while.",
+                trusted_height);
+
+            let cs_heights = self.consensus_state_heights()?;
+
+            cs_heights
+                .into_iter()
+                .find(|h| h == &trusted_height)
+                .ok_or_else(|| {
+                    ForeignClientError::missing_trusted_height(self.dst_chain().id(), target_height)
+                })?;
+
+            Ok(())
+        }
+    }
+
     /// Returns a vector with a message for updating the client to height `target_height`.
     /// If the client already stores consensus states for this height, returns an empty vector.
     pub fn build_update_client_with_trusted(
@@ -585,28 +646,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        // If not specified, set trusted state to the highest height smaller than target height.
-        // Otherwise ensure that a consensus state at trusted height exists on-chain.
-        let cs_heights = self.consensus_state_heights()?;
         let trusted_height = if trusted_height == Height::zero() {
-            // Get highest height smaller than target height
-            cs_heights
-                .into_iter()
-                .find(|h| h < &target_height)
-                .ok_or_else(|| {
-                    ForeignClientError::missing_smaller_trusted_height(
-                        self.dst_chain().id(),
-                        target_height,
-                    )
-                    // ))
-                })?
+            self.get_trusted_height_from_client_state(target_height, &client_state)?
         } else {
-            cs_heights
-                .into_iter()
-                .find(|h| h == &trusted_height)
-                .ok_or_else(|| {
-                    ForeignClientError::missing_trusted_height(self.dst_chain().id(), target_height)
-                })?
+            self.validate_trusted_height(target_height, trusted_height, &client_state)?;
+            trusted_height
         };
 
         if trusted_height >= target_height {
