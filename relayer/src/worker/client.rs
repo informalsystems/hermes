@@ -57,6 +57,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> ClientWorker<ChainA, ChainB> {
         loop {
             thread::sleep(Duration::from_millis(600));
 
+            // Clients typically need refresh every 2/3 of their
+            // trusting period (which can e.g., two weeks).
+            // Backoff refresh checking to attempt it every minute.
             if last_refresh.elapsed() > Duration::from_secs(60) {
                 // Run client refresh, exit only if expired or frozen
                 match client.refresh() {
