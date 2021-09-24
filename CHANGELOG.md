@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.7.2
+## v0.7.2
 
 This minor release brings substantial performance improvements as well as
 support for chains using Secp256k1 signatures in consensus votes.
@@ -11,9 +11,11 @@ It also bumps the compatibility to Cosmos SDK 0.44.
 
 - Support for chains which use Secp256k1 signatures in consensus votes ([#1155](https://github.com/informalsystems/ibc-rs/issues/1155))
 - Modified packet worker to use stubborn strategy ([#1290](https://github.com/informalsystems/ibc-rs/issues/1290))
+- Skip `consensus_heights` query in `update_client` when possible ([#1362](https://github.com/informalsystems/ibc-rs/issues/1362))
 - [gm](scripts/gm)
   - Binaries in the config can be defined as URLs now.
   - Add the option to set gm-lib path via the $GM_LIB environment variable ([#1365](https://github.com/informalsystems/ibc-rs/issues/1365))
+- Support for disabling tx confirmation mechanism ([#1380](https://github.com/informalsystems/ibc-rs/issues/1380))
 
 ### IMPROVEMENTS
 
