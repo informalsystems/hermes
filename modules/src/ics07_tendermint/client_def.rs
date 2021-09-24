@@ -97,7 +97,7 @@ impl ClientDef for TendermintClient {
             next_validators: None,
         };
 
-        let options = client_state.light_client_options()?;
+        let options = client_state.as_light_client_options()?;
 
         match self
             .verifier

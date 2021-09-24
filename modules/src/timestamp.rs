@@ -106,11 +106,6 @@ impl Timestamp {
         self.time
     }
 
-    // /// Convert a `Timestamp` to an optional [`chrono::DateTime<Utc>`]
-    // pub fn as_time(&self) -> Option<Time> {
-    //     self.time.into()
-    // }
-
     /// Checks whether the timestamp has expired when compared to the
     /// `other` timestamp. Returns an [`Expiry`] result.
     pub fn check_expiry(&self, other: &Timestamp) -> Expiry {
