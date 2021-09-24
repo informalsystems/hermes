@@ -433,6 +433,7 @@ mod tests {
                     .clone();
                 if let AnyConsensusState::Tendermint(tcs) = cons_state {
                     theader.signed_header.header.time = tcs.timestamp;
+                    theader.trusted_height = Height::new(1, 11)
                 }
                 AnyHeader::Tendermint(theader)
             }
