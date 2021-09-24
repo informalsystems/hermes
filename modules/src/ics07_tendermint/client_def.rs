@@ -53,6 +53,15 @@ impl ClientDef for TendermintClient {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
+        if header.height().revision_number != header.trusted_height.revision_number {
+            return Err(Ics02Error::tendermint_handler_error(
+                Error::mismatched_revisions(
+                    header.trusted_height.revision_number,
+                    header.height().revision_number,
+                ),
+            ));
+        }
+
         // Check if a consensus state is already installed; if so it should
         // match the untrusted header.
         let header_consensus_state = ConsensusState::from(header.clone());

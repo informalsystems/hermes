@@ -473,8 +473,8 @@ mod tests {
                     _ => panic!("update handler result has incorrect type"),
                 }
             }
-            Err(_err) => {
-                panic!("unexpected error");
+            Err(err) => {
+                panic!("unexpected error: {:?}", err);
             }
         }
     }
