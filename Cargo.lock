@@ -75,6 +75,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "anomaly"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "550632e31568ae1a5f47998c3aa48563030fc49b9ec91913ca337cf64fbc5ccb"
+dependencies = [
+ "backtrace",
+ "serde",
+]
+
+[[package]]
 name = "ansi_term"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -188,6 +198,7 @@ dependencies = [
  "miniz_oxide",
  "object",
  "rustc-demangle",
+ "serde",
 ]
 
 [[package]]
@@ -493,6 +504,19 @@ checksum = "06ed27e177f16d65f0f0c22a213e17c696ace5dd64b14258b52f9417ccb52db4"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils 0.8.5",
+]
+
+[[package]]
+name = "crossbeam-epoch"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ec02e091aa634e2c3ada4a392989e7c3116673ef0ac5b72232439094d73b7fd"
+dependencies = [
+ "cfg-if 1.0.0",
+ "crossbeam-utils 0.8.5",
+ "lazy_static",
+ "memoffset",
+ "scopeguard",
 ]
 
 [[package]]
@@ -838,6 +862,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs2"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "funty"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -935,6 +969,15 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro-nested",
  "slab",
+]
+
+[[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
 ]
 
 [[package]]
@@ -1501,11 +1544,14 @@ dependencies = [
 
 [[package]]
 name = "instant"
-version = "0.1.10"
+version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bee0328b1209d157ef001c94dd85b4f8f64139adb0eac2659f4b08382b2f474d"
+checksum = "716d3d89f35ac6a34fd0eed635395f4c3b76fa889338a4632e5231a8684216bd"
 dependencies = [
  "cfg-if 1.0.0",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -1628,6 +1674,15 @@ name = "memchr"
 version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
+
+[[package]]
+name = "memoffset"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9"
+dependencies = [
+ "autocfg",
+]
 
 [[package]]
 name = "mime"
@@ -1983,33 +2038,6 @@ checksum = "216eaa586a190f0a738f2f918511eecfa90f13295abec0e457cdebcceda80cbd"
 dependencies = [
  "crypto-mac 0.8.0",
 ]
-
-[[package]]
-name = "peg"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07c0b841ea54f523f7aa556956fbd293bcbe06f2e67d2eb732b7278aaf1d166a"
-dependencies = [
- "peg-macros",
- "peg-runtime",
-]
-
-[[package]]
-name = "peg-macros"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5aa52829b8decbef693af90202711348ab001456803ba2a98eb4ec8fb70844c"
-dependencies = [
- "peg-runtime",
- "proc-macro2",
- "quote",
-]
-
-[[package]]
-name = "peg-runtime"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c719dcf55f09a3a7e764c6649ab594c18a177e3599c467983cdf644bfc0a4088"
 
 [[package]]
 name = "percent-encoding"
@@ -2765,6 +2793,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c307a32c1c5c437f38c7fd45d753050587732ba8628319fbdf12a7e289ccc590"
 
 [[package]]
+name = "sled"
+version = "0.34.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f96b4737c2ce5987354855aed3797279def4ebf734436c6aa4552cf8e169935"
+dependencies = [
+ "crc32fast",
+ "crossbeam-epoch",
+ "crossbeam-utils 0.8.5",
+ "fs2",
+ "fxhash",
+ "libc",
+ "log",
+ "parking_lot",
+]
+
+[[package]]
 name = "smallvec"
 version = "0.6.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2845,9 +2889,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.76"
+version = "1.0.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6f107db402c2c2055242dbf4d2af0e69197202e9faacbef9571bbe47f5a1b84"
+checksum = "5239bc68e0fef57495900cfea4e8dc75596d9a319d7e16b1e0a440d24e6fe0a0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2889,14 +2933,15 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#dd371372da58921efe1b48a4dd24a2597225df11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0752808f59b612916614e92e43be64e9ba566b762a266bcfcf7dce1b324e9319"
 dependencies = [
+ "anomaly",
  "async-trait",
  "bytes",
  "chrono",
  "ed25519",
  "ed25519-dalek",
- "flex-error",
  "futures",
  "k256",
  "num-traits",
@@ -2913,7 +2958,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.1.44",
+ "thiserror",
  "toml",
  "url",
  "zeroize",
@@ -2922,30 +2967,34 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#dd371372da58921efe1b48a4dd24a2597225df11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63ac4ac7140f46cfc0be39227c7e307779d341c0f68cf11e595e7b3176a5a771"
 dependencies = [
+ "anomaly",
  "contracts",
  "crossbeam-channel 0.4.4",
  "derive_more",
- "flex-error",
  "futures",
  "serde",
  "serde_cbor",
  "serde_derive",
+ "sled",
  "static_assertions",
  "tendermint",
  "tendermint-rpc",
+ "thiserror",
  "tokio",
 ]
 
 [[package]]
 name = "tendermint-proto"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#dd371372da58921efe1b48a4dd24a2597225df11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfd0371c6b0c7fc4f6b053b8a1bc868a2a47c49a1408c4cd6f595d9f3bd3c238"
 dependencies = [
+ "anomaly",
  "bytes",
  "chrono",
- "flex-error",
  "num-derive",
  "num-traits",
  "prost",
@@ -2953,25 +3002,25 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
+ "thiserror",
 ]
 
 [[package]]
 name = "tendermint-rpc"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#dd371372da58921efe1b48a4dd24a2597225df11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0fa8d172e3129802d28de980531993dd25cc01841c5bc8fe4a87c7750a7f222"
 dependencies = [
  "async-trait",
  "async-tungstenite",
  "bytes",
  "chrono",
- "flex-error",
  "futures",
  "getrandom 0.1.16",
  "http",
  "hyper",
  "hyper-proxy",
  "hyper-rustls",
- "peg",
  "pin-project",
  "serde",
  "serde_bytes",
@@ -2990,7 +3039,8 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.21.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#dd371372da58921efe1b48a4dd24a2597225df11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1451e554ad7f6f69a366ce85f1cbb722290416e1e6287f38937c094a07d8d47"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",
@@ -3090,13 +3140,14 @@ dependencies = [
 
 [[package]]
 name = "tiny-bip39"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9e44c4759bae7f1032e286a7ef990bd9ed23fe831b7eeba0beb97484c2e59b8"
+checksum = "524daa5624d9d4ffb5a0625971d35205b882111daa6b6338a7a6c578a3c36928"
 dependencies = [
  "anyhow",
  "hmac 0.8.1",
  "once_cell",
+ "parking_lot",
  "pbkdf2",
  "rand 0.7.3",
  "rustc-hash",
@@ -3751,3 +3802,28 @@ dependencies = [
  "syn",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "tendermint"
+version = "0.22.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#979b7b5d7f3b53011f2fce3c76802a2d3547ac92"
+
+[[patch.unused]]
+name = "tendermint-light-client"
+version = "0.22.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#979b7b5d7f3b53011f2fce3c76802a2d3547ac92"
+
+[[patch.unused]]
+name = "tendermint-proto"
+version = "0.22.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#979b7b5d7f3b53011f2fce3c76802a2d3547ac92"
+
+[[patch.unused]]
+name = "tendermint-rpc"
+version = "0.22.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#979b7b5d7f3b53011f2fce3c76802a2d3547ac92"
+
+[[patch.unused]]
+name = "tendermint-testgen"
+version = "0.22.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=master#979b7b5d7f3b53011f2fce3c76802a2d3547ac92"
