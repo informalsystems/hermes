@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.7.1"
+version    = "0.7.2"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -40,13 +40,13 @@ sha2 = { version = "0.9.8", optional = true }
 flex-error = { version = "0.4.2", default-features = false }
 
 [dependencies.tendermint]
-version = "=0.21.0"
+version = "=0.22.0"
 
 [dependencies.tendermint-proto]
-version = "=0.21.0"
+version = "=0.22.0"
 
 [dependencies.tendermint-testgen]
-version = "=0.21.0"
+version = "=0.22.0"
 optional = true
 
 [dev-dependencies]
@@ -54,8 +54,8 @@ env_logger = "0.9.0"
 tracing-subscriber = "0.2.24"
 test-env-log = { version = "0.2.7", features = ["trace"] }
 modelator = "0.2.1"
-tendermint-rpc = { version = "=0.21.0", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.21.0" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { version = "=0.22.0", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.22.0" } # Needed for generating (synthetic) light blocks.
 sha2 = { version = "0.9.8" }
 
 [[test]]

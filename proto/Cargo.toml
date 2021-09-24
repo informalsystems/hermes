@@ -29,4 +29,4 @@ tonic = "0.4"
 getrandom = { version = "0.2", features = ["js"] }
 
 [dependencies.tendermint-proto]
-version = "=0.21.0"
+version = "=0.22.0"
