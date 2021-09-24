@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer"
-version    = "0.7.1"
+version    = "0.7.2"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -22,9 +22,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.7.1", path = "../modules" }
+ibc           = { version = "0.7.2", path = "../modules" }
 ibc-proto     = { version = "0.10.1", path = "../proto" }
-ibc-telemetry = { version = "0.7.1", path = "../telemetry", optional = true }
+ibc-telemetry = { version = "0.7.2", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
 async-trait = "0.1.50"
