@@ -595,9 +595,10 @@ mod tests {
             Ok(_) => {
                 panic!("update handler result has incorrect type");
             }
-            Err(err) => {
-                // assert_eq!(err, Error::header_verification_failure);
-            }
+            Err(err) => match err.detail() {
+                ErrorDetail::HeaderVerificationFailure(_) => {}
+                _ => panic!("unexpected error: {}", err),
+            },
         }
     }
 }
