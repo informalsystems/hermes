@@ -833,6 +833,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 }
                 Ok(result) => {
                     events = result;
+                    // Should break to prevent retrying uselessly.
+                    break;
                 }
             }
         }
@@ -1050,6 +1052,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             // Clear the update
             update = None;
+
+            // slight backoff
+            thread::sleep(Duration::from_millis(100));
         }
 
         debug!("[{}] finished misbehaviour checking", self);
