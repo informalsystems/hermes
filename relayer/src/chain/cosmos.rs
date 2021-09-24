@@ -125,9 +125,13 @@ impl CosmosSdkChain {
     /// Emits a log warning in case any error is encountered and
     /// exits early without doing subsequent validations.
     pub fn validate_params(&self) -> Result<(), Error> {
-        // Check on the configured max_tx_size against the latest block's consensus parameters
+        // Get the latest height and convert to tendermint Height
+        let latest_height = Height::try_from(self.query_latest_height()?.revision_height)
+            .map_err(Error::invalid_height)?;
+
+        // Check on the configured max_tx_size against the consensus parameters at latest height
         let result = self
-            .block_on(self.rpc_client.latest_consensus_params())
+            .block_on(self.rpc_client.consensus_params(latest_height))
             .map_err(|e| {
                 Error::config_validation_json_rpc(
                     self.id().clone(),
@@ -884,7 +888,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-        crate::time!("query_chain_clients");
+        crate::time!("query_clients");
 
         let mut client = self
             .block_on(
@@ -986,7 +990,7 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        crate::time!("query_chain_clients");
+        crate::time!("query_consensus_states");
 
         let mut client = self
             .block_on(
@@ -1018,7 +1022,7 @@ impl ChainEndpoint for CosmosSdkChain {
         consensus_height: ICSHeight,
         query_height: ICSHeight,
     ) -> Result<AnyConsensusState, Error> {
-        crate::time!("query_chain_clients");
+        crate::time!("query_consensus_state");
 
         let consensus_state = self
             .proven_client_consensus(&client_id, consensus_height, query_height)?

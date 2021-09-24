@@ -26,6 +26,7 @@ pub struct PacketWorker<ChainA: ChainHandle, ChainB: ChainHandle> {
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
     clear_packets_interval: u64,
+    with_tx_confirmation: bool,
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
@@ -34,12 +35,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
         chains: ChainHandlePair<ChainA, ChainB>,
         cmd_rx: Receiver<WorkerCmd>,
         clear_packets_interval: u64,
+        with_tx_confirmation: bool,
     ) -> Self {
         Self {
             path,
             chains,
             cmd_rx,
             clear_packets_interval,
+            with_tx_confirmation,
         }
     }
 
@@ -52,6 +55,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                 src_port_id: self.path.src_port_id.clone(),
                 src_channel_id: self.path.src_channel_id.clone(),
             },
+            self.with_tx_confirmation,
         )
         .map_err(RunError::link)?;
 
@@ -73,7 +77,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> PacketWorker<ChainA, ChainB> {
                 recv(crossbeam_channel::after(BACKOFF)) -> _ => None,
             };
 
-            let result = retry_with_index(retry_strategy::worker_default_strategy(), |index| {
+            let result = retry_with_index(retry_strategy::worker_stubborn_strategy(), |index| {
                 self.step(maybe_cmd.clone(), &mut link, index)
             });
 

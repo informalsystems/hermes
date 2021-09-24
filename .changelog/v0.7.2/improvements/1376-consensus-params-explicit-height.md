@@ -1,0 +1,1 @@
+- Improve reliability of health check ([#1382](https://github.com/informalsystems/ibc-rs/issues/1376))

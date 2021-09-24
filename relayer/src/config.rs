@@ -81,6 +81,10 @@ impl ChannelsSpec {
 pub mod default {
     use super::*;
 
+    pub fn tx_confirmation() -> bool {
+        true
+    }
+
     pub fn filter() -> bool {
         false
     }
@@ -215,6 +219,8 @@ pub struct GlobalConfig {
     pub filter: bool,
     #[serde(default = "default::clear_packets_interval")]
     pub clear_packets_interval: u64,
+    #[serde(default = "default::tx_confirmation")]
+    pub tx_confirmation: bool,
 }
 
 impl Default for GlobalConfig {
@@ -224,6 +230,7 @@ impl Default for GlobalConfig {
             log_level: LogLevel::default(),
             filter: default::filter(),
             clear_packets_interval: default::clear_packets_interval(),
+            tx_confirmation: default::tx_confirmation(),
         }
     }
 }
