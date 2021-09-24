@@ -53,7 +53,7 @@ impl ClientDef for TendermintClient {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
-        // check if a consensus state is already installed; if so it should
+        // Check if a consensus state is already installed; if so it should
         // match the untrusted header.
         let header_consensus_state = ConsensusState::from(header.clone());
         let existing_consensus_state =

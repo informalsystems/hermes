@@ -161,7 +161,7 @@ define_error! {
                 update_revision: u64,
             }
             | e | {
-                format_args!("The header's revision height, which is {0}, and the update's revision height, which is {1}, should coincide", e.current_revision, e.update_revision)
+                format_args!("The header's revision number, which is {0}, and the update's revision number, which is {1}, should coincide", e.current_revision, e.update_revision)
             },
 
         InvalidValidatorSet
