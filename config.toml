@@ -30,9 +30,10 @@ clear_packets_interval = 100
 
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
-# endpoint for checking that previously submitted transactions
+# endpoint to check that previously-submitted transactions
 # (to any chain in this config file) have delivered successfully.
-# Experimental feature. Default: true.
+# Experimental feature. Affects telemetrics if set to false.
+# Default: true.
 tx_confirmation = true
 
 
