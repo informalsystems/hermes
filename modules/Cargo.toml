@@ -46,7 +46,7 @@ version = "=0.22.0"
 version = "=0.22.0"
 
 [dependencies.tendermint-light-client]
-version = "=0.21.0"
+version = "=0.22.0"
 
 [dependencies.tendermint-testgen]
 version = "=0.22.0"
