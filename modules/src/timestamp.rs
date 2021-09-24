@@ -9,6 +9,7 @@ use core::time::Duration;
 use chrono::{offset::Utc, DateTime, TimeZone};
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
+use tendermint::Time;
 
 pub const ZERO_DURATION: Duration = Duration::from_secs(0);
 
