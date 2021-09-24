@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## 0.7.2
+
+This minor release brings substantial performance improvements as well as
+support for chains using Secp256k1 signatures in consensus votes.
+
+It also bumps the compatibility to Cosmos SDK 0.44.
+
+### FEATURES
+
+- Support for chains which use Secp256k1 signatures in consensus votes ([#1155](https://github.com/informalsystems/ibc-rs/issues/1155))
+- Modified packet worker to use stubborn strategy ([#1290](https://github.com/informalsystems/ibc-rs/issues/1290))
+- [gm](scripts/gm)
+  - Binaries in the config can be defined as URLs now.
+  - Add the option to set gm-lib path via the $GM_LIB environment variable ([#1365](https://github.com/informalsystems/ibc-rs/issues/1365))
+
+### IMPROVEMENTS
+
+- Use `core` and `alloc` crates for `no_std` compatibility ([#1156](https://github.com/informalsystems/ibc-rs/issues/1156))
+- Improve performance of health check, and only perform it on `hermes start`.
+  Add a `hermes health-check` command. ([#1336](https://github.com/informalsystems/ibc-rs/issues/1336))
+- Treat pre-releases of the Cosmos SDK as their standard version in compatibility check ([#1337](https://github.com/informalsystems/ibc-rs/issues/1337))
+- Bump Cosmos SDK compatibility to v0.44.0 ([#1344](https://github.com/informalsystems/ibc-rs/issues/1344))
+- Improve reliability of health check ([#1382](https://github.com/informalsystems/ibc-rs/issues/1376))
+
 ## v0.7.1
 
 This minor release of Hermes notably features support for Ethermint chains and transfer amounts expressed as a 256-bit unsigned integer.
