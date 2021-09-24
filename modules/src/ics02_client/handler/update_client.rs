@@ -117,7 +117,7 @@ mod tests {
     use crate::mock::client_state::MockClientState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::mock::host::{HostBlock, HostType};
+    use crate::mock::host::HostType;
     use crate::prelude::*;
     use crate::test_utils::get_dummy_account_id;
     use crate::timestamp::Timestamp;
@@ -475,76 +475,6 @@ mod tests {
             }
             Err(_err) => {
                 panic!("unexpected error");
-            }
-        }
-    }
-
-    #[test]
-    fn test_update_synthetic_tendermint_client_duplicate_height_frozen() {
-        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
-        let client_height = Height::new(1, 20);
-
-        let chain_start_height = Height::new(1, 11);
-
-        let ctx = MockContext::new(
-            ChainId::new("mockgaiaA".to_string(), 1),
-            HostType::Mock,
-            5,
-            chain_start_height,
-        )
-        .with_client_parametrized(
-            &client_id,
-            client_height,
-            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
-            Some(client_height),
-        );
-
-        let signer = get_dummy_account_id();
-
-        let block_ref = HostBlock::generate_block(
-            ChainId::new("mockgaiaB".to_string(), 1),
-            HostType::SyntheticTendermint,
-            client_height.revision_height,
-        );
-
-        let latest_header: AnyHeader = Some(block_ref).map(Into::into).unwrap();
-
-        let msg = MsgUpdateAnyClient {
-            client_id: client_id.clone(),
-            header: latest_header,
-            signer,
-        };
-
-        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
-
-        match output {
-            Ok(HandlerOutput {
-                result,
-                mut events,
-                log,
-            }) => {
-                assert_eq!(events.len(), 1);
-                let event = events.pop().unwrap();
-                assert!(
-                    matches!(event, IbcEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
-                );
-                assert!(log.is_empty());
-                // Check the result
-                match result {
-                    Update(upd_res) => {
-                        assert_eq!(upd_res.client_id, client_id);
-                        assert!(upd_res.client_state.is_frozen());
-                        assert_ne!(
-                            upd_res.client_state,
-                            ctx.latest_client_states(&client_id).clone()
-                        );
-                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
-                    }
-                    _ => panic!("update handler result has incorrect type"),
-                }
-            }
-            Err(err) => {
-                panic!("unexpected error: {:?}", err);
             }
         }
     }
