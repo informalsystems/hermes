@@ -10,7 +10,7 @@ use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::Error as Ics02Error;
+use crate::ics02_client::error::{Error as Ics02Error, ErrorDetail as Ics02ErrorDetail};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::packet::Sequence;
@@ -261,12 +261,16 @@ fn maybe_read_consensus_state(
     client_id: &ClientId,
     height: Height,
 ) -> Result<Option<ConsensusState>, Ics02Error> {
-    ctx.consensus_state(client_id, height)
-        .map(|cs| {
-            downcast!(
-                cs => AnyConsensusState::Tendermint
-            )
-            .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
-        })
-        .transpose()
+    match ctx.consensus_state(client_id, height).map(|cs| {
+        downcast!(
+            cs => AnyConsensusState::Tendermint
+        )
+        .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
+    }) {
+        Ok(result) => result.map(Some),
+        Err(e) => match e.detail() {
+            Ics02ErrorDetail::ConsensusStateNotFound(_) => Ok(None),
+            _ => Err(e),
+        },
+    }
 }
