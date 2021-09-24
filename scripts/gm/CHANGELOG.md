@@ -1,5 +1,9 @@
 # Gaiad Manager Change Log
 
+## UNRELEASED
+
+- Increased default Hermes config constants `rpc_timeout` and `max_gas`
+
 ## v0.0.9
 
 ### FEATURES
