@@ -597,7 +597,7 @@ mod tests {
             }
             Err(err) => match err.detail() {
                 ErrorDetail::HeaderVerificationFailure(_) => {}
-                _ => panic!("unexpected error: {}", err),
+                _ => panic!("unexpected error: {:?}", err),
             },
         }
     }
