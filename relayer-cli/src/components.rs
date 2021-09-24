@@ -46,6 +46,7 @@ impl JsonTracing {
             .with_env_filter(filter)
             .with_writer(std::io::stderr as StdWriter)
             .with_ansi(use_color)
+            .with_thread_ids(true)
             .json()
             .with_filter_reloading();
 
@@ -75,6 +76,7 @@ impl PrettyTracing {
             .with_env_filter(filter)
             .with_writer(std::io::stderr as StdWriter)
             .with_ansi(enable_ansi())
+            .with_thread_ids(true)
             .with_filter_reloading();
 
         let filter_handle = builder.reload_handle();
