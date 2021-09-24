@@ -1,8 +1,5 @@
 //! Host chain types and methods, used by context mock.
 
-use core::convert::TryFrom;
-
-use tendermint::chain::Id as TMChainId;
 use tendermint::time::Time;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
@@ -65,8 +62,8 @@ impl HostBlock {
     pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TmLightBlock {
         // Sleep is required otherwise the generator produces blocks with the
         // same timestamp as two block can be generated per second.
-        let ten_millis = time::Duration::from_millis(1000);
-        thread::sleep(ten_millis);
+        let ten_millis = core::time::Duration::from_millis(1000);
+        std::thread::sleep(ten_millis);
         let time = Time::now()
             .duration_since(Time::unix_epoch())
             .unwrap()
