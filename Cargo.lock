@@ -2891,7 +2891,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f07d0c0f765f8df1ebc5046e3182a4e171e69e19"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2916,15 +2916,26 @@ dependencies = [
  "subtle-encoding",
  "tendermint-proto",
  "time 0.1.44",
+ "zeroize",
+]
+
+[[package]]
+name = "tendermint-config"
+version = "0.22.0"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f07d0c0f765f8df1ebc5046e3182a4e171e69e19"
+dependencies = [
+ "flex-error",
+ "serde",
+ "serde_json",
+ "tendermint",
  "toml",
  "url",
- "zeroize",
 ]
 
 [[package]]
 name = "tendermint-light-client"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f07d0c0f765f8df1ebc5046e3182a4e171e69e19"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -2943,7 +2954,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f07d0c0f765f8df1ebc5046e3182a4e171e69e19"
 dependencies = [
  "bytes",
  "chrono",
@@ -2960,7 +2971,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f07d0c0f765f8df1ebc5046e3182a4e171e69e19"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -2980,6 +2991,7 @@ dependencies = [
  "serde_json",
  "subtle-encoding",
  "tendermint",
+ "tendermint-config",
  "tendermint-proto",
  "thiserror",
  "tokio",
@@ -2992,7 +3004,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.22.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/activate-no-std#f07d0c0f765f8df1ebc5046e3182a4e171e69e19"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",
