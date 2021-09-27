@@ -61,6 +61,14 @@ pub struct MockChain {
     event_receiver: EventReceiver,
 }
 
+impl MockChain {
+    fn trusting_period(&self) -> Duration {
+        self.config
+            .trusting_period
+            .unwrap_or(Duration::from_secs(14 * 24 * 60 * 60)) // 14 days
+    }
+}
+
 impl ChainEndpoint for MockChain {
     type LightBlock = TmLightBlock;
     type Header = TendermintHeader;
@@ -317,8 +325,8 @@ impl ChainEndpoint for MockChain {
         let client_state = TendermintClientState::new(
             self.id().clone(),
             self.config.trust_threshold.into(),
-            self.config.trusting_period,
-            self.config.trusting_period.add(Duration::from_secs(1000)),
+            self.trusting_period(),
+            self.trusting_period().add(Duration::from_secs(1000)),
             Duration::from_millis(3000),
             height,
             Height::zero(),
@@ -426,7 +434,7 @@ pub mod test_utils {
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
             clock_drift: Duration::from_secs(5),
-            trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
+            trusting_period: Some(Duration::from_secs(14 * 24 * 60 * 60)), // 14 days
             trust_threshold: Default::default(),
             packet_filter: PacketFilter::default(),
             address_type: AddressType::default(),
