@@ -118,14 +118,16 @@ pub fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
     RawHeader::decode(buf).map_err(Error::decode)?.try_into()
 }
 
-impl From<Header> for RawHeader {
-    fn from(value: Header) -> Self {
-        RawHeader {
-            signed_header: Some(value.signed_header.into()),
+impl TryFrom<Header> for RawHeader {
+    type Error = Error;
+
+    fn try_from(value: Header) -> Result<Self, Error> {
+        Ok(RawHeader {
+            signed_header: Some(value.signed_header.try_into().map_err(Error::tendermint)?),
             validator_set: Some(value.validator_set.into()),
             trusted_height: Some(value.trusted_height.into()),
             trusted_validators: Some(value.trusted_validator_set.into()),
-        }
+        })
     }
 }
 

@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use core::convert::Infallible;
-use core::convert::TryFrom;
-use std::time::SystemTime;
+use core::convert::{TryFrom, TryInto};
 
 use chrono::{TimeZone, Utc};
 use prost_types::Timestamp;
@@ -81,15 +80,25 @@ impl TryFrom<RawConsensusState> for ConsensusState {
     }
 }
 
-impl From<ConsensusState> for RawConsensusState {
-    fn from(value: ConsensusState) -> Self {
-        RawConsensusState {
-            timestamp: Some(Timestamp::from(SystemTime::from(value.timestamp))),
+impl TryFrom<ConsensusState> for RawConsensusState {
+    type Error = Error;
+
+    fn try_from(value: ConsensusState) -> Result<Self, Error> {
+        Ok(RawConsensusState {
+            timestamp: Some(Timestamp {
+                seconds: value.timestamp.0.timestamp(),
+                nanos: value
+                    .timestamp
+                    .0
+                    .timestamp_subsec_nanos()
+                    .try_into()
+                    .map_err(Error::timestamp_overflow)?,
+            }),
             root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot {
                 hash: value.root.into_vec(),
             }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
-        }
+        })
     }
 }
 

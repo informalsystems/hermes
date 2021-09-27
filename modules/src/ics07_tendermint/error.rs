@@ -1,12 +1,18 @@
 use crate::prelude::*;
 
+use core::num::TryFromIntError;
 use flex_error::{define_error, TraceError};
+use tendermint::Error as TendermintError;
 
 use crate::ics24_host::error::ValidationError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
     Error {
+        Tendermint
+            [ TendermintError ]
+            | _ | { "tendermint error" },
+
         InvalidTrustingPeriod
             { reason: String }
             | _ | { "invalid trusting period" },
@@ -102,5 +108,8 @@ define_error! {
             [ TraceError<prost::DecodeError> ]
             | _ | { "decode error" },
 
+        TimestampOverflow
+            [ TraceError<TryFromIntError> ]
+            | _ | { "timestamp overflow" },
     }
 }

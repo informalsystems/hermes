@@ -30,6 +30,10 @@
 //!    - ICS 20: Fungible Token Transfer
 
 extern crate alloc;
+
+// Only allow the use of std in tests. Otherwise the main
+// ibc crate works with no_std.
+#[cfg(test)]
 extern crate std;
 
 mod prelude;

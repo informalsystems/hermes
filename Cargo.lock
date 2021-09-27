@@ -789,9 +789,9 @@ dependencies = [
 
 [[package]]
 name = "flex-error"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8754b6f51ccfe4ff91bd54f34f3b46a3027007e29d7f42d56ef814f96010dd9"
+checksum = "3e8de6bf49fb8856ee814e288a518e0d45598b6f78a95c1233b96eedba8bc06a"
 dependencies = [
  "eyre",
  "paste",
@@ -2072,9 +2072,9 @@ dependencies = [
 
 [[package]]
 name = "pkg-config"
-version = "0.3.19"
+version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
+checksum = "7c9b1041b4387893b91ee6746cddfc28516aff326a3519fb2adf820932c5e6cb"
 
 [[package]]
 name = "ppv-lite86"
@@ -2389,7 +2389,7 @@ dependencies = [
  "serde_json",
  "sha1",
  "threadpool",
- "time 0.3.2",
+ "time 0.3.3",
  "tiny_http",
  "url",
 ]
@@ -2891,8 +2891,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa5354dfcc3bbd8bf3b000b9cfb19afcb4e1bbaed9d6b2d6bc2fa05e027bd7e1"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2925,8 +2924,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c67bd8950fa29cd53f482ae3030700c74235260d9143bf634563136b5da5224c"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -2945,8 +2943,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c36f58bd68be7a6e3221c49cc1a14cbc619c189bb26a43425f544831922d2be"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
 dependencies = [
  "bytes",
  "chrono",
@@ -2963,8 +2960,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ca84e07a1ca78193a81854685a9cb99c17080674442c4fe10ee53f4d2195169"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -2996,8 +2992,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82fe76085d594f6c836f60b84a7acc69ddd12556d3d3a4f8c3d83626da2e658e"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=soares/use-core-alloc#23105801e258415aba29445c1fc883e92cf71a92"
 dependencies = [
  "ed25519-dalek",
  "gumdrop 0.8.0",
@@ -3088,9 +3083,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e0a10c9a9fb3a5dce8c2239ed670f1a2569fcf42da035f5face1b19860d52b0"
+checksum = "cde1cf55178e0293453ba2cca0d5f8392a922e52aa958aee9c28ed02becc6d03"
 dependencies = [
  "libc",
 ]
@@ -3138,9 +3133,9 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "1.4.0"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5241dd6f21443a3606b432718b166d3cedc962fd4b8bea54a8bc7f514ebda986"
+checksum = "f83b2a3d4d9091d0abd7eba4dc2710b1718583bd4d8992e2190720ea38f391f7"
 dependencies = [
  "tinyvec_macros",
 ]
