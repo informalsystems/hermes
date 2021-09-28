@@ -65,7 +65,7 @@ impl MockChain {
     fn trusting_period(&self) -> Duration {
         self.config
             .trusting_period
-            .unwrap_or(Duration::from_secs(14 * 24 * 60 * 60)) // 14 days
+            .unwrap_or_else(|| Duration::from_secs(14 * 24 * 60 * 60)) // 14 days
     }
 }
 
