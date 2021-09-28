@@ -9,7 +9,7 @@
 ![Rust 1.51+][rustc-version]
 
 Rust crate for interacting with Cosmos SDK
-[IBC structs](https://github.com/cosmos/cosmos-sdk/tree/master/proto/ibc).
+[IBC structs](https://github.com/cosmos/ibc-go/tree/main/proto/ibc).
 
 [Documentation][docs-link]
 
