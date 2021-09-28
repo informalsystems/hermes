@@ -32,11 +32,11 @@ Connections associate a chain with another chain by connecting a client on the l
 
 #### Channels
 
-Channels are an abstraction layer that facilitate communication between applications and the chains those applications depend upon. One important function that channels fulfill is guaranteeing that data packets sent between an application and its chain are well-ordered. 
+Channels are an abstraction layer that facilitate communication between applications and the chains those applications are built upon. One important function that channels can fulfill is guaranteeing that data packets sent between an application and its chain are well-ordered. 
 
 ### `relayer`
 
-This crate provides the logic for relaying datagrams between chains. The process of relaying packets is kicked off by submitting transactions to read from or write to an IBC-enabled chain's state. More broadly, a relayer enables a chain to ascertain another chain's state by accessing its clients, connections, channels, or anything that is IBC-related.
+This crate provides the logic for relaying datagrams between chains. The process of relaying packets is an off-chain process that is kicked off by submitting transactions to read from or write to an IBC-enabled chain's state. More broadly, a relayer enables a chain to ascertain another chain's state by accessing its clients, connections, channels, or anything that is IBC-related.
 
 ### `relayer-cli`
 
