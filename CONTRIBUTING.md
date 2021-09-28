@@ -142,7 +142,7 @@ specific release number in Changelog.
 Changelog entries should be formatted as follows:
 
 ```
-- [pkg] Some description about the change ([#xxx]) (optional @contributor)
+- [pkg] Some description about the change ([#xxx](https://github.com/informalsystems/ibc-rs/issues/xxx)) (optional @contributor)
 ```
 
 Here, `pkg` is the part of the code that changed (typically a
@@ -178,7 +178,8 @@ PRs must:
 
 - make reference to an issue outlining the context.
 - update any relevant documentation and include tests.
-- update [CHANGELOG.md](CHANGELOG.md) with a description of the change in the __Unreleased__ section.
+- add a corresponding entry in the `.changelog` directory using `unclog`,
+  see the section above for more details.
 
 Pull requests should aim to be small and self contained to facilitate quick
 review and merging. Larger change sets should be broken up across multiple PRs.
