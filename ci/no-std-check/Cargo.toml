@@ -47,6 +47,7 @@ subtle-encoding = { version = "0.5.1", default-features = false }
 time = { version = "0.3.2", default-features = false, features = ["alloc", "serde"] }
 tracing = { version = "0.1.26", default-features = false }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
+safe-regex = { version = "0.2.4" }
 
 # Dependencies that do not support no_std
 tonic = { version = "0.4.1", optional = true, default-features = false }
