@@ -5,7 +5,7 @@ of ibc-rs is to provide a high quality, formally verified implementation of
 the IBC protocol and relayer.
 
 All work on the code base should be motivated by a Github
-Issue. Search is a good place to start when looking for places to contribute. 
+Issue. Search is a good place to start when looking for places to contribute.
 If you would like to work on an issue which already exists, please indicate so
 by leaving a comment. If you'd like to work on something else, open an Issue to
 start the discussion.
@@ -40,7 +40,7 @@ the form of an [Architectural Decision Record
 overall strategy to ensure the code base maintains coherence
 in the larger context. If you are not comfortable with writing an ADR,
 you can open a less-formal issue and the maintainers will help you
-turn it into an ADR. 
+turn it into an ADR.
 
 When the problem as well as proposed solution are well understood,
 changes should start with a [draft
@@ -63,7 +63,7 @@ Each stage of the process is aimed at creating feedback cycles which align contr
 
 ## Forking
 
-If you do not have write access to the repository, your contribution should be 
+If you do not have write access to the repository, your contribution should be
 made through a fork on Github. Fork the repository, contribute to your fork,
 and make a pull request back upstream.
 
@@ -91,27 +91,31 @@ accomplished indirectly by adding entries to the `.changelog` folder in
 be built by whomever is responsible for performing a release just prior to
 release - this is to avoid changelog conflicts prior to releases. For example:
 
+### Add a .changelog entry for the `ibc` crate (in the `modules` directory)
+### under the `IMPROVEMENTS` section in CHANGELOG.md.
+
 ```bash
-# Add a .changelog entry for the `ibc` crate (in the `modules` directory)
-# under the `IMPROVEMENTS` section in CHANGELOG.md.
 unclog add -c ibc improvements 1234-some-issue
+```
 
-# Add a .changelog entry for the `ibc-relayer-cli` crate (in the `relayer-cli`
-# directory) under the `FEATURES` section in CHANGELOG.md.
+### Add a .changelog entry for the `ibc-relayer-cli` crate (in the `relayer-cli`
+### directory) under the `FEATURES` section in CHANGELOG.md.
+
+```bash
 unclog add -c ibc-relayer-cli features 1235-some-other-issue
+```
 
-# Preview unreleased changes
+### Preview unreleased changes
+
+```bash
 unclog build -u
-
-# Build the new CHANGELOG.md from entries in ./.changelog/
-unclog build > CHANGELOG.md
 ```
 
 The Changelog is *not* a record of what Pull Requests were merged;
 the commit history already shows that. The Changelog is a notice to users
-about how their expectations of the software should be modified. 
+about how their expectations of the software should be modified.
 It is part of the UX of a release and is a *critical* user facing integration point.
-The Changelog must be clean, inviting, and readable, with concise, meaningful entries. 
+The Changelog must be clean, inviting, and readable, with concise, meaningful entries.
 Entries must be semantically meaningful to users. If a change takes multiple
 Pull Requests to complete, it should likely have only a single entry in the
 Changelog describing the net effect to the user. Instead of linking PRs directly, we
@@ -119,13 +123,11 @@ instead prefer to log issues, which tend to be higher-level, hence more relevant
 
 When writing Changelog entries, ensure they are targeting users of the software,
 not fellow developers. Developers have much more context and care about more
-things than users do. Changelogs are for users. 
+things than users do. Changelogs are for users.
 
-Changelog structure is modeled after 
-[Tendermint
-Core](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md)
-and 
-[Hashicorp Consul](http://github.com/hashicorp/consul/tree/master/CHANGELOG.md).
+Changelog structure is modeled after
+[Tendermint Core](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md)
+and [Hashicorp Consul](http://github.com/hashicorp/consul/tree/master/CHANGELOG.md).
 See those changelogs for examples.
 
 We currently split changes for a given release between these four sections: Breaking
@@ -166,8 +168,8 @@ exposed.
 
 ## Pull Requests
 
-The master development branch is `master`. 
-Branch names should be prefixed with the author, eg. `name/feature-x`. 
+The master development branch is `master`.
+Branch names should be prefixed with the author, eg. `name/feature-x`.
 
 Pull requests are made against `master`
 and are squash merged into master.
