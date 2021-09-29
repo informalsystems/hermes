@@ -16,6 +16,7 @@ use tendermint_rpc::{
     event::Event as RpcEvent,
     query::{EventType, Query},
     Error as RpcError, SubscriptionClient, Url, WebSocketClient, WebSocketClientDriver,
+    WebSocketConfig,
 };
 
 use ibc::{events::IbcEvent, ics02_client::height::Height, ics24_host::identifier::ChainId};
@@ -154,6 +155,13 @@ pub struct EventMonitor {
 }
 
 impl EventMonitor {
+    const WS_CONFIG: WebSocketConfig = WebSocketConfig {
+        max_send_queue: None,
+        max_message_size: Some(256 * 1024 * 1024), // 256MB
+        max_frame_size: Some(64 * 1024 * 1024),
+        accept_unmasked_frames: false,
+    };
+
     /// Create an event monitor, and connect to a node
     pub fn new(
         chain_id: ChainId,
@@ -165,11 +173,13 @@ impl EventMonitor {
 
         let ws_addr = node_addr.clone();
         let (client, driver) = rt
-            .block_on(async move { WebSocketClient::new(ws_addr).await })
+            .block_on(async move {
+                WebSocketClient::new_with_config(ws_addr, Some(Self::WS_CONFIG)).await
+            })
             .map_err(|_| Error::client_creation_failed(chain_id.clone(), node_addr.clone()))?;
 
         let (tx_err, rx_err) = mpsc::unbounded_channel();
-        let websocket_driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
+        let driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
 
         // TODO: move them to config file(?)
         let event_queries = vec![Query::from(EventType::Tx), Query::from(EventType::NewBlock)];
@@ -178,7 +188,7 @@ impl EventMonitor {
             rt,
             chain_id,
             client,
-            driver_handle: websocket_driver_handle,
+            driver_handle,
             event_queries,
             tx_batch,
             rx_err,
@@ -239,7 +249,10 @@ impl EventMonitor {
         // Try to reconnect
         let (mut client, driver) = self
             .rt
-            .block_on(WebSocketClient::new(self.node_addr.clone()))
+            .block_on(WebSocketClient::new_with_config(
+                self.node_addr.clone(),
+                Some(Self::WS_CONFIG),
+            ))
             .map_err(|_| {
                 Error::client_creation_failed(self.chain_id.clone(), self.node_addr.clone())
             })?;
